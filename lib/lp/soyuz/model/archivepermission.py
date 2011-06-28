@@ -194,8 +194,8 @@ class ArchivePermissionSet:
             if isinstance(component, basestring):
                 component = getUtility(IComponentSet)[component]
             return component
-        except NotFoundError, e:
-            raise ComponentNotFound(e)
+        except NotFoundError:
+            raise ComponentNotFound(component)
 
     def _nameToSourcePackageName(self, sourcepackagename):
         """Helper to convert a possible string name to ISourcePackageName."""

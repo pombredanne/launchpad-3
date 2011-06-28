@@ -11,22 +11,22 @@ from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
-from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.testing.pages import (
     find_main_content,
     find_tag_by_id,
     )
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.features.browser.edit import FeatureControlView
 from lp.services.features.changelog import ChangeLog
 from lp.services.features.rulesource import StormFeatureRuleSource
-from lp.testing.matchers import Contains
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
     )
+from lp.testing.matchers import Contains
 
 
 class FauxForm:

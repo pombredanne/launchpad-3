@@ -147,8 +147,8 @@ And verifies that Carlos and Salgado are now listed:
 
     >>> print_attendees(browser.contents)
     Carlos Perell&#243; Mar&#237;n
-    Sample Person
     Guilherme Salgado
+    Sample Person
 
 In order to make it easy to organize a meeting, we provide a facility
 for exporting the list of attendees in CSV format to registered users,

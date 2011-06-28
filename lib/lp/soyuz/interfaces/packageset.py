@@ -14,8 +14,11 @@ __all__ = [
     'NoSuchPackageSet',
     ]
 
+import httplib
+
 from lazr.restful.declarations import (
     collection_default_content,
+    error_status,
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_factory_operation,
@@ -26,7 +29,6 @@ from lazr.restful.declarations import (
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
-    webservice_error,
     )
 from lazr.restful.fields import Reference
 from lazr.restful.interface import copy_field
@@ -50,22 +52,19 @@ from lp.soyuz.interfaces.packagesetgroup import IPackagesetGroup
 
 class NoSuchPackageSet(NameLookupFailed):
     """Raised when we try to look up an PackageSet that doesn't exist."""
-    # Bad request.
-    webservice_error(400)
     _message_prefix = "No such package set (in the specified distro series)"
 
 
+@error_status(httplib.BAD_REQUEST)
 class DuplicatePackagesetName(Exception):
     """Raised for packagesets with the same name and distroseries."""
-    # Bad request.
-    webservice_error(400)
 
 
 class IPackagesetViewOnly(IHasOwner):
     """A read-only interface for package sets."""
     export_as_webservice_entry(publish_web_link=False)
 
-    id = Int(title=_('ID'), required=True, readonly=True)
+    id = exported(Int(title=_('ID'), required=True, readonly=True))
 
     date_created = exported(Datetime(
         title=_("Date Created"), required=True, readonly=True,
@@ -444,6 +443,17 @@ class IPackagesetSet(IPackagesetSetEdit):
         :param distroseries: A `DistroSeries`.
 
         :return: An iterable collection of `IPackageset` instances.
+        """
+
+    def getForPackages(distroseries, sourcepackagename_ids):
+        """Get `Packagesets` that directly contain the given packages.
+
+        :param distroseries: `DistroSeries` to look in.  Only packagesets for
+            this series will be returned.
+        :param sourcepackagename_ids: A sequence of `SourcePackageName` ids.
+            Only packagesets for these package names will be returned.
+        :return: A dict mapping `SourcePackageName` ids to lists of their
+            respective packagesets, in no particular order.
         """
 
     @operation_parameters(

@@ -101,6 +101,10 @@ class FileNavigationMixin:
         if library_file.deleted:
             raise DeletedProxiedLibraryFileAlias(filename, self.context)
 
+        # There can be no further path segments.
+        if len(self.request.stepstogo) > 0:
+            return None
+
         return RedirectionView(
             library_file.getURL(include_token=True),
             self.request)

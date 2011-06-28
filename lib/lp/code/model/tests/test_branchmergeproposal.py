@@ -27,7 +27,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import import_secret_test_key
 from canonical.launchpad.interfaces.launchpad import IPrivacy
-from canonical.launchpad.interfaces.message import IMessageJob
+from lp.services.messages.interfaces.message import IMessageJob
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
@@ -45,6 +45,7 @@ from lp.code.enums import (
     )
 from lp.code.errors import (
     BadStateTransition,
+    BranchMergeProposalExists,
     WrongBranchMergeProposal,
     )
 from lp.code.event.branchmergeproposal import (
@@ -78,6 +79,7 @@ from lp.code.tests.helpers import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.testing import (
+    ExpectedException,
     launchpadlib_for,
     login,
     login_person,
@@ -1627,7 +1629,7 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
         """Resubmitting a proposal with no reviewers should work."""
         bmp = make_merge_proposal_without_reviewers(self.factory)
         with person_logged_in(bmp.registrant):
-            bmp2 = bmp.resubmit(bmp.registrant)
+            bmp.resubmit(bmp.registrant)
 
     def test_resubmit_changes_branches(self):
         """Resubmit changes branches, if specified."""
@@ -1654,9 +1656,41 @@ class TestBranchMergeProposalResubmit(TestCaseWithFactory):
         """Resubmit breaks link, if specified."""
         original = self.factory.makeBranchMergeProposal()
         self.useContext(person_logged_in(original.registrant))
-        revised = original.resubmit(
+        original.resubmit(
             original.registrant, break_link=True)
         self.assertIs(None, original.superseded_by)
+
+    def test_resubmit_with_active_retains_state(self):
+        """Resubmit does not change proposal if an active proposal exists."""
+        first_mp = self.factory.makeBranchMergeProposal()
+        with person_logged_in(first_mp.registrant):
+            first_mp.rejectBranch(first_mp.target_branch.owner, 'a')
+            second_mp = self.factory.makeBranchMergeProposal(
+                source_branch=first_mp.source_branch,
+                target_branch=first_mp.target_branch)
+            expected_exc = ExpectedException(
+                BranchMergeProposalExists, 'There is already a branch merge'
+                ' proposal registered for branch .* to land on .* that is'
+                ' still active.')
+            with expected_exc:
+                first_mp.resubmit(first_mp.registrant)
+            self.assertEqual(
+                second_mp, expected_exc.caught_exc.existing_proposal)
+            self.assertEqual(
+                BranchMergeProposalStatus.REJECTED, first_mp.queue_status)
+
+    def test_resubmit_on_inactive_retains_state_new_branches(self):
+        """Resubmit with branches doesn't change proposal."""
+        first_mp = self.factory.makeBranchMergeProposal()
+        with person_logged_in(first_mp.registrant):
+            first_mp.rejectBranch(first_mp.target_branch.owner, 'a')
+            second_mp = self.factory.makeBranchMergeProposal()
+            with ExpectedException(BranchMergeProposalExists, ''):
+                first_mp.resubmit(
+                    first_mp.registrant, second_mp.source_branch,
+                    second_mp.target_branch)
+            self.assertEqual(
+                BranchMergeProposalStatus.REJECTED, first_mp.queue_status)
 
 
 class TestCreateMergeProposalJob(TestCaseWithFactory):

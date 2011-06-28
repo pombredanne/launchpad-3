@@ -85,7 +85,7 @@ along with a link to list all of them.
 
    >>> from lp.services.features.testing import FeatureFixture
    >>> derivation_enabled = FeatureFixture(
-   ...     {'soyuz.derived-series-ui.enabled': 'on'})
+   ...     {'soyuz.derived_series_ui.enabled': 'on'})
    >>> with derivation_enabled:
    ...     anon_browser.open('http://launchpad.dev/ubuntu')
    >>> print extract_text(find_tag_by_id(anon_browser.contents,

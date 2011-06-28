@@ -828,6 +828,14 @@ button.overlay-close-button {
     border-width: 0 0 1px 0;
     display: block;
     }
+.extra-form-buttons {
+    text-align: center;
+    height: 3em;
+    white-space: nowrap;
+    }
+.extra-form-buttons button {
+    margin-right: 0.7em;
+    }
 .actions * {
     /*
       Action links are those that begin the process of doing something.
@@ -884,6 +892,10 @@ table.form table.extra-options td,
 table.form table.extra-options th {
     padding-bottom: 1em;
     }
+table.form table.listing th,
+table.form table.listing td {
+    padding-bottom: 0.25em;
+}
 table.form td td {
     padding-bottom: 0;
     }
@@ -906,6 +918,9 @@ fieldset.collapsible {
     margin: 0;
     padding: 16px 0 0; /* "Add a comment/attachment" form in bug reports */
     }
+fieldset.collapsible h2 {
+    margin-top: 0;
+}
 fieldset .collapsed {
     display: none;
     }
@@ -1053,6 +1068,11 @@ table.form .error {
     }
 .sml-informational::before {
     content: url('/@@/info');
+    }
+.important-notice-popup {
+    padding: 1em 1em 0 1em;
+    width: auto;
+    overflow: hidden;
     }
 .important-notice-container {
     text-align: center;
@@ -1353,8 +1373,12 @@ div.watermark-apps-portlet span img {
     background: #fbfbfb;
     }
 .side h2 {
-    font-size: 16px; /* BAD: the markup should be h3? */
+    font-size: 16px;
     line-height: 20px;
+    }
+.side h3 {
+    font-size: 14px;
+    line-height: 18px;
     }
 .side ul {
     background: #fbfbfb;
@@ -1439,6 +1463,10 @@ div.watermark-apps-portlet span img {
     }
 .announcements li {
     margin-bottom: 0.5em;
+    /* Some announcements have long strings of characters as section headers
+     * and such.  Since they don't have whitespace they can't wrap, so they
+     * would break out of their container if we didn't clip them here. */
+    overflow: hidden;
     }
 .announcements li strong,
 .announcements li a {
@@ -1920,14 +1948,22 @@ body.tab-bugs #duplicate-actions .sprite {
     */
     display:inline;
     }
-.yui-picker-results li.sprite {
-    /* XXX: EdwinGrubbs 2009-07-27 bug=405476
-     * Override the .yui-picker-results style, so that the next icon
-     * in the sprite file won't appear for tall list items.
-     */
-    padding:2px 0 0 18px;
+
+/* Picker styles */
+.yui3-picker {
+    width: 40%;
     }
 
+.yui3-picker-results div.badge {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    left: auto;
+    }
+.yui3-picker-results div.badge img {
+    position: relative;
+    padding-left: 3px;
+    }
 
 /* ====================
    Global notifications

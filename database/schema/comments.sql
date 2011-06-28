@@ -190,6 +190,12 @@ COMMENT ON COLUMN BugJob.bug IS 'The bug on which the job is to be run.';
 COMMENT ON COLUMN BugJob.job_type IS 'The type of job (enumeration value). Allows us to query the database for a given subset of BugJobs.';
 COMMENT ON COLUMN BugJob.json_data IS 'A JSON struct containing data for the job.';
 
+-- BugMute
+COMMENT ON TABLE BugMute IS 'Mutes for bug notifications.';
+COMMENT ON COLUMN BugMute.person IS 'The person that muted all notifications from this bug.';
+COMMENT ON COLUMN BugMute.bug IS 'The bug of this record';
+COMMENT ON COLUMN BugMute.date_created IS 'The date at which this mute was created.';
+
 -- BugNomination
 COMMENT ON TABLE BugNomination IS 'A bug nominated for fixing in a distroseries or productseries';
 COMMENT ON COLUMN BugNomination.bug IS 'The bug being nominated.';
@@ -230,6 +236,18 @@ COMMENT ON TABLE BugSubscriptionFilterTag IS 'Filter by bug tag.';
 COMMENT ON COLUMN BugSubscriptionFilterTag.filter IS 'The subscription filter of this record.';
 COMMENT ON COLUMN BugSubscriptionFilterTag.tag IS 'A bug tag.';
 COMMENT ON COLUMN BugSubscriptionFilterTag.include IS 'If True, send only messages for bugs having this tag, else send only messages for bugs which do not have this tag.';
+
+-- BugSubscriptionFilterMute
+COMMENT ON TABLE BugSubscriptionFilterMute IS 'Mutes for subscription filters.';
+COMMENT ON COLUMN BugSubscriptionFilterMute.person IS 'The person that muted their subscription to this filter.';
+COMMENT ON COLUMN BugSubscriptionFilterMute.filter IS 'The subscription filter of this record';
+COMMENT ON COLUMN BugSubscriptionFilterMute.date_created IS 'The date at which this mute was created.';
+
+-- BugSummary
+
+COMMENT ON TABLE BugSummary IS 'A fact table for bug metadata aggregate queries. Each row represents the number of bugs that are in the system addressed by all the dimensions (e.g. product or productseries etc). ';
+COMMENT ON COLUMN BugSummary.milestone IS 'A milestone present on the bug. All bugs are also aggregated with a NULL entry for milestone to permit querying totals (because the milestone figures cannot be summed as many milestones can be on a single bug)';
+COMMENT ON COLUMN BugSummary.sourcepackagename IS 'The sourcepackagename for the aggregate. Counting bugs in a distribution/distroseries requires selecting all rows by sourcepackagename. If this is too slow, add the bug to the NULL row and select with sourcepackagename is NULL to exclude them from the calculations';
 
 -- BugTag
 COMMENT ON TABLE BugTag IS 'Attaches simple text tags to a bug.';
@@ -563,6 +581,7 @@ COMMENT ON COLUMN DistributionSourcePackageCache.archive IS 'The archive where t
 -- DistroSeriesDifference
 COMMENT ON TABLE DistroSeriesDifference IS 'A difference of versions for a package in a derived distroseries and its parent distroseries.';
 COMMENT ON COLUMN DistroSeriesDifference.derived_series IS 'The derived distroseries with the difference from its parent.';
+COMMENT ON COLUMN DistroSeriesDifference.parent_series IS 'The parent distroseries with the difference from its child.';
 COMMENT ON COLUMN DistroSeriesDifference.source_package_name IS 'The name of the source package which is different in the two series.';
 COMMENT ON COLUMN DistroSeriesDifference.package_diff IS 'The most recent package diff that was created for the base version to derived version.';
 COMMENT ON COLUMN DistroSeriesDifference.parent_package_diff IS 'The most recent package diff that was created for the base version to the parent version.';
@@ -576,6 +595,16 @@ COMMENT ON COLUMN DistroSeriesDifference.base_version IS 'The common base versio
 COMMENT ON TABLE DistroSeriesDifferenceMessage IS 'A message/comment on a distro series difference.';
 COMMENT ON COLUMN DistroSeriesDifferenceMessage.distro_series_difference IS 'The distro series difference for this comment.';
 COMMENT ON COLUMN DistroSeriesDifferenceMessage.message IS 'The comment for the distro series difference.';
+
+-- DistroSeriesParent
+COMMENT ON TABLE DistroSeriesParent IS 'A list of all the derived distroseries for a parent series.';
+COMMENT ON COLUMN DistroSeriesParent.derived_series is 'The derived distroseries';
+COMMENT ON COLUMN DistroSeriesParent.parent_series is 'The parent distroseries';
+COMMENT ON COLUMN DistroSeriesParent.initialized is 'Whether or not the derived series was initialized by copying packages from the parent.';
+COMMENT ON COLUMN DistroSeriesParent.is_overlay is 'Whether or not the derived series is an overlay over the parent series.';
+COMMENT ON COLUMN DistroSeriesParent.ordering is 'The parent ordering. Parents are ordered in ascending order starting from 1.';
+COMMENT ON COLUMN DistroSeriesParent.pocket is 'The pocket for this overlay.';
+COMMENT ON COLUMN DistroSeriesParent.component is 'The component for this overlay.';
 
 -- DistroSeriesPackageCache
 
@@ -1033,6 +1062,7 @@ COMMENT ON TABLE QuestionBug IS 'A link between a question and a bug, showing th
 COMMENT ON TABLE QuestionMessage IS 'A link between a question and a message. This means that the message will be displayed on the question page.';
 COMMENT ON COLUMN QuestionMessage.action IS 'The action on the question that was done with this message. This is a value from the QuestionAction enum.';
 COMMENT ON COLUMN QuestionMessage.new_status IS 'The status of the question after this message.';
+COMMENT ON COLUMN QuestionMessage.owner IS 'Denormalised owner from Message, used for efficient queries on commentors.';
 
 -- QuestionReopening
 
@@ -1115,6 +1145,16 @@ COMMENT ON COLUMN DistroSeries.language_pack_base IS 'Current full export langua
 COMMENT ON COLUMN DistroSeries.language_pack_delta IS 'Current language pack update based on language_pack_base information.';
 COMMENT ON COLUMN DistroSeries.language_pack_proposed IS 'Either a full or update language pack being tested to be used in language_pack_base or language_pack_delta.';
 COMMENT ON COLUMN DistroSeries.language_pack_full_export_requested IS 'Whether next language pack export should be a full export or an update.';
+
+
+-- PackageCopyJob
+
+COMMENT ON TABLE PackageCopyJob IS 'Contains references to jobs for copying packages between archives.';
+COMMENT ON COLUMN PackageCopyJob.source_archive IS 'The archive from which packages are copied.';
+COMMENT ON COLUMN PackageCopyJob.target_archive IS 'The archive to which packages are copied.';
+COMMENT ON COLUMN PackageCopyJob.target_distroseries IS 'The distroseries to which packages are copied.';
+COMMENT ON COLUMN PackageCopyJob.job_type IS 'The type of job';
+COMMENT ON COLUMN PackageCopyJob.json_data IS 'A JSON struct containing data for the job.';
 
 
 -- PackageDiff
@@ -1354,6 +1394,7 @@ COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other wor
 COMMENT ON COLUMN BugMessage.bugwatch IS 'The external bug this bug comment was imported from.';
 COMMENT ON COLUMN BugMessage.remote_comment_id IS 'The id this bug comment has in the external bug tracker, if it is an imported comment. If it is NULL while having a bugwatch set, this comment was added in Launchpad and needs to be pushed to the external bug tracker.';
 COMMENT ON COLUMN BugMessage.index IS 'The index (used in urls) of the message in a particular bug.';
+COMMENT ON COLUMN BugMessage.owner IS 'Denormalised owner from Message, used for efficient queries on commentors.';
 
 -- Messaging subsytem
 COMMENT ON TABLE Message IS 'This table stores a single RFC822-style message. Messages can be threaded (using the parent field). These messages can then be referenced from elsewhere in the system, such as the BugMessage table, integrating messageboard facilities with the rest of The Launchpad.';

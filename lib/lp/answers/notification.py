@@ -10,16 +10,17 @@ __all__ = [
 
 import os
 
+from zope.component import getUtility
+
 from canonical.config import config
-from canonical.launchpad.mail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.webapp.publisher import canonical_url
-from lp.answers.interfaces.questionenums import QuestionAction
+from lp.answers.enums import (
+    QuestionAction,
+    QuestionRecipientSet,
+    )
+from lp.answers.interfaces.questionjob import IQuestionEmailJobSource
 from lp.registry.interfaces.person import IPerson
 from lp.services.mail.mailwrapper import MailWrapper
-from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 
 
@@ -41,6 +42,8 @@ class QuestionNotification:
     QuestionNotification can be registered as event subscribers.
     """
 
+    recipient_set = QuestionRecipientSet.ASKER_SUBSCRIBER
+
     def __init__(self, question, event):
         """Base constructor.
 
@@ -49,21 +52,16 @@ class QuestionNotification:
         """
         self.question = question
         self.event = event
-        self.user = IPerson(self.event.user)
+        self._user = IPerson(self.event.user)
         self.initialize()
+        self.job = None
         if self.shouldNotify():
-            self.send()
+            self.job = self.enqueue()
 
-    def getFromAddress(self):
-        """Return a formatted email address suitable for user in the From
-        header of the question notification.
-
-        Default is Event Person Display Name <question#@answertracker_domain>
-        """
-        return format_address(
-            self.user.displayname,
-            'question%s@%s' % (
-                self.question.id, config.answertracker.email_domain))
+    @property
+    def user(self):
+        """Return the user from the event. """
+        return self._user
 
     def getSubject(self):
         """Return the subject of the notification.
@@ -109,18 +107,6 @@ class QuestionNotification:
 
         return headers
 
-    def getRecipients(self):
-        """Return the recipient of the notification.
-
-        Default to the question's subscribers that speaks the request
-        languages. If the question owner is subscribed, he's always consider
-        to speak the language.
-
-        :return: A `INotificationRecipientSet` containing the recipients and
-                 rationale.
-        """
-        return self.question.getRecipients()
-
     def initialize(self):
         """Initialization hook for subclasses.
 
@@ -139,27 +125,16 @@ class QuestionNotification:
         """
         return True
 
-    def send(self):
-        """Sends the notification to all the notification recipients.
-
-        This method takes care of adding the rationale for contacting each
-        recipient and also sets the X-Launchpad-Message-Rationale header on
-        each message.
-        """
-        from_address = self.getFromAddress()
+    def enqueue(self):
+        """Create a job to send email about the event."""
         subject = self.getSubject()
         body = self.getBody()
         headers = self.getHeaders()
-        recipients = self.getRecipients()
-        wrapper = MailWrapper()
-        for email in recipients.getEmails():
-            rationale, header = recipients.getReason(email)
-            headers['X-Launchpad-Message-Rationale'] = header
-            body_parts = [body, wrapper.format(rationale)]
-            if '-- ' not in body:
-                body_parts.insert(1, '-- ')
-            simple_sendmail(
-                from_address, email, subject, '\n'.join(body_parts), headers)
+        job_source = getUtility(IQuestionEmailJobSource)
+        job = job_source.create(
+            self.question, self.user, self.recipient_set,
+            subject, body, headers)
+        return job
 
     @property
     def unsupported_language(self):
@@ -180,6 +155,15 @@ class QuestionNotification:
 class QuestionAddedNotification(QuestionNotification):
     """Notification sent when a question is added."""
 
+    @property
+    def user(self):
+        """Return the question owner.
+
+        Questions can be created by other users for the owner; the
+        question is from the owner.
+        """
+        return self.question.owner
+
     def getBody(self):
         """See QuestionNotification."""
         question = self.question
@@ -196,6 +180,7 @@ class QuestionAddedNotification(QuestionNotification):
 class QuestionModifiedDefaultNotification(QuestionNotification):
     """Base implementation of a notification when a question is modified."""
 
+    recipient_set = QuestionRecipientSet.SUBSCRIBER
     # Email template used to render the body.
     body_template = "question-modified-notification.txt"
 
@@ -222,7 +207,7 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         """Textual representation of the changes to the question metadata."""
         question = self.question
         old_question = self.old_question
-        indent = 4*' '
+        indent = 4 * ' '
         info_fields = []
         if question.status != old_question.status:
             info_fields.append(indent + 'Status: %s => %s' % (
@@ -280,23 +265,9 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         return question_changes
 
     def getSubject(self):
-        """When a comment is added, its title is used as the subject,
-        otherwise the question title is used.
-        """
-        prefix = '[Question #%s]: ' % self.question.id
-        if self.new_message:
-            # Migrate old prefix.
-            subject = self.new_message.subject.replace(
-                '[Support #%s]: ' % self.question.id, prefix)
-            if prefix in subject:
-                return subject
-            elif subject[0:4] in ['Re: ', 'RE: ', 're: ']:
-                # Place prefix after possible reply prefix.
-                return subject[0:4] + prefix + subject[4:]
-            else:
-                return prefix + subject
-        else:
-            return prefix + self.question.title
+        """The reply subject line."""
+        line = super(QuestionModifiedDefaultNotification, self).getSubject()
+        return 'Re: %s' % line
 
     def getHeaders(self):
         """Add a References header."""
@@ -306,10 +277,6 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
             # The first message cannot contain a References
             # because we don't create a Message instance for the
             # question description, so we don't have a Message-ID.
-
-            # XXX sinzui 2007-02-01 bug=164435:
-            # Added an assert to gather better Opps information about
-            # the state of the messages.
             messages = list(self.question.messages)
             assert self.new_message in messages, (
                 "Question %s: message id %s not in %s." % (
@@ -318,7 +285,7 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
             index = messages.index(self.new_message)
             if index > 0:
                 headers['References'] = (
-                    self.question.messages[index-1].rfc822msgid)
+                    self.question.messages[index - 1].rfc822msgid)
         return headers
 
     def shouldNotify(self):
@@ -346,23 +313,10 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
 
         return get_email_template(self.body_template) % replacements
 
-    def getRecipients(self):
-        """The default notification goes to all question subscribers that
-        speak the request language, except the owner.
-        """
-        original_recipients = QuestionNotification.getRecipients(self)
-        recipients = NotificationRecipientSet()
-        owner = self.question.owner
-        for person in original_recipients:
-            if person != self.question.owner:
-                rationale, header = original_recipients.getReason(person)
-                recipients.add(person, rationale, header)
-        return recipients
-
     # Header template used when a new message is added to the question.
     action_header_template = {
         QuestionAction.REQUESTINFO:
-            '%(person)s requested for more information:',
+            '%(person)s requested more information:',
         QuestionAction.CONFIRM:
             '%(person)s confirmed that the question is solved:',
         QuestionAction.COMMENT:
@@ -397,6 +351,7 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
 class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
     """Notification sent to the owner when his question is modified."""
 
+    recipient_set = QuestionRecipientSet.ASKER
     # These actions will be done by the owner, so use the second person.
     action_header_template = dict(
         QuestionModifiedDefaultNotification.action_header_template)
@@ -426,16 +381,6 @@ class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
             self.body_template = self.body_template_by_action.get(
                 self.new_message.action, self.body_template)
 
-    def getRecipients(self):
-        """Return the owner of the question if he's still subscribed."""
-        recipients = NotificationRecipientSet()
-        owner = self.question.owner
-        if self.question.isSubscribed(owner):
-            original_recipients = self.question.getDirectRecipients()
-            rationale, header = original_recipients.getReason(owner)
-            recipients.add(owner, rationale, header)
-        return recipients
-
     def getBody(self):
         """See QuestionNotification."""
         body = QuestionModifiedDefaultNotification.getBody(self)
@@ -447,6 +392,8 @@ class QuestionModifiedOwnerNotification(QuestionModifiedDefaultNotification):
 class QuestionUnsupportedLanguageNotification(QuestionNotification):
     """Notification sent to answer contacts for unsupported languages."""
 
+    recipient_set = QuestionRecipientSet.CONTACT
+
     def getSubject(self):
         """See QuestionNotification."""
         return '[Question #%s]: (%s) %s' % (
@@ -456,10 +403,6 @@ class QuestionUnsupportedLanguageNotification(QuestionNotification):
     def shouldNotify(self):
         """Return True when the question is in an unsupported language."""
         return self.unsupported_language
-
-    def getRecipients(self):
-        """Notify only the answer contacts."""
-        return self.question.target.getAnswerContactRecipients(None)
 
     def getBody(self):
         """See QuestionNotification."""
@@ -471,5 +414,3 @@ class QuestionUnsupportedLanguageNotification(QuestionNotification):
             'question_url': canonical_url(question),
             'question_language': question.language.englishname,
             'comment': question.description}
-
-

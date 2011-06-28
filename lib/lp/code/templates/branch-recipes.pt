@@ -25,8 +25,6 @@
       tal:condition="link/enabled"
       tal:replace="structure link/render"
       />
-    <img src="/@@/beta" alt="beta" title="This feature is in beta"
-         tal:condition="request/features/code.recipes.beta"/>
   </div>
 
 </div>

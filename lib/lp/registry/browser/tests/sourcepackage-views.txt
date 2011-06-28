@@ -353,17 +353,30 @@ to the project series.
     >>> print view.cancel_url
     http://launchpad.dev/youbuntu/wonky/+source/stinkypackage
 
-    >>> login_person(package.packaging.owner)
+    >>> user = package.packaging.owner
+    >>> login_person(user)
     >>> form = {'field.actions.unlink': 'Unlink'}
     >>> view = create_initialized_view(
-    ...     package, name='+remove-packaging', form=form,
-    ...     principal=package.packaging.owner)
+    ...     package, name='+remove-packaging', form=form, principal=user)
     >>> view.errors
     []
 
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
     Removed upstream association between Stinky stinkyseries series and Wonky.
+
+If somebody attempts to remove this packaging link a second time,
+they get a message telling them that the link has already been
+deleted.
+
+    >>> view = create_initialized_view(
+    ...     package, name='+remove-packaging', form=form, principal=user)
+    >>> view.errors
+    []
+
+    >>> for notification in view.request.response.notifications:
+    ...     print notification.message
+    The packaging link has already been deleted.
 
     >>> view = create_initialized_view(package, name='+portlet-associations')
     >>> print extract_text(find_tag_by_id(view.render(), 'no-upstreams'))

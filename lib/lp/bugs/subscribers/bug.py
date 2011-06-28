@@ -190,17 +190,23 @@ def send_bug_details_to_new_bug_subscribers(
     This function is designed to handle situations where bugtasks get
     reassigned to new products or sourcepackages, and the new bug subscribers
     need to be notified of the bug.
+
+    A boolean is returned indicating whether any emails were sent.
     """
     prev_subs_set = set(previous_subscribers)
     cur_subs_set = set(current_subscribers)
     new_subs = cur_subs_set.difference(prev_subs_set)
+
+    if (event_creator is not None
+            and not event_creator.selfgenerated_bugnotifications):
+        new_subs.discard(event_creator)
 
     to_addrs = set()
     for new_sub in new_subs:
         to_addrs.update(get_contact_email_addresses(new_sub))
 
     if not to_addrs:
-        return
+        return False
 
     from_addr = format_address(
         'Launchpad Bug Tracker',
@@ -226,3 +232,5 @@ def send_bug_details_to_new_bug_subscribers(
             from_addr, to_addr, contents, subject, email_date,
             rationale=rationale, references=references)
         sendmail(msg)
+
+    return True

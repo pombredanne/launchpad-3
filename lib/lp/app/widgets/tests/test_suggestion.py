@@ -32,6 +32,7 @@ from lp.app.widgets.suggestion import (
     TargetBranchWidget,
     )
 from lp.testing import (
+    login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -132,8 +133,12 @@ class TestSuggestionWidget(TestCaseWithFactory):
              <input type="text" value="" ...
              onKeyPress="selectWidget('field.test_field.1', event);"
              .../>...""")
+        
+        # XXX wallyworld 2011-04-18 bug=764170: We cannot pass an unencoded
+        # unicode string to the DocTestMatcher
+        markup = markups[1].encode('utf-8')
         self.assertThat(
-            markups[1], DocTestMatches(expected_item_1, self.doctest_opts))
+            markup, DocTestMatches(expected_item_1, self.doctest_opts))
 
 
 def make_target_branch_widget(branch):
@@ -148,15 +153,24 @@ class TestTargetBranchWidget(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def makeBranchAndOldMergeProposal(self, timedelta):
+        """Make an old  merge proposal and a branch with the same target."""
+        bmp = self.factory.makeBranchMergeProposal(
+            date_created=datetime.now(utc) - timedelta)
+        login_person(bmp.registrant)
+        target = bmp.target_branch
+        return target, self.factory.makeBranchTargetBranch(target.target)
+
+    def test_recent_target(self):
+        """Targets for proposals newer than 90 days are included."""
+        target, source = self.makeBranchAndOldMergeProposal(
+            timedelta(days=89))
+        widget = make_target_branch_widget(source)
+        self.assertIn(target, widget.suggestion_vocab)
+
     def test_stale_target(self):
         """Targets for proposals older than 90 days are not considered."""
-        bmp = self.factory.makeBranchMergeProposal()
-        target = bmp.target_branch
-        source = self.factory.makeBranchTargetBranch(target.target)
-        with person_logged_in(bmp.registrant):
-            widget = make_target_branch_widget(source)
-            self.assertIn(target, widget.suggestion_vocab)
-            stale_date = datetime.now(utc) - timedelta(days=91)
-            removeSecurityProxy(bmp).date_created = stale_date
-            widget = make_target_branch_widget(source)
+        target, source = self.makeBranchAndOldMergeProposal(
+            timedelta(days=91))
+        widget = make_target_branch_widget(source)
         self.assertNotIn(target, widget.suggestion_vocab)

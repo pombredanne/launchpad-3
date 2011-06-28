@@ -3,7 +3,7 @@ contact, the maintainer will be subscribed to the bug instead.
 
     >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
     >>> browser.open("http://localhost:9000/firefox/+filebug")
-    >>> browser.getControl('Summary').value = (
+    >>> browser.getControl('Summary', index=0).value = (
     ...     "this is a newly created private bug")
     >>> browser.getControl("Continue").click()
 
@@ -74,7 +74,7 @@ subscribed instead.
     >>> browser.getControl("Change").click()
 
     >>> browser.open("http://localhost:9000/firefox/+filebug")
-    >>> browser.getControl('Summary').value = (
+    >>> browser.getControl('Summary', index=0).value = (
     ...     "this is a newly created private bug")
     >>> browser.getControl("Continue").click()
 

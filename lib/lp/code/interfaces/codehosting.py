@@ -8,6 +8,7 @@
 __metaclass__ = type
 __all__ = [
     'BRANCH_ALIAS_PREFIX',
+    'branch_id_alias',
     'BRANCH_ID_ALIAS_PREFIX',
     'BRANCH_TRANSPORT',
     'compose_public_url',
@@ -58,6 +59,11 @@ CONTROL_TRANSPORT = 'CONTROL_TRANSPORT'
 BRANCH_ALIAS_PREFIX = '+branch'
 # The path prefix for getting at branches via their id.
 BRANCH_ID_ALIAS_PREFIX = '+branch-id'
+
+
+def branch_id_alias(branch):
+    """Return the path using the branch id alias."""
+    return '/%s/%s' % (BRANCH_ID_ALIAS_PREFIX, branch.id)
 
 
 # The scheme types that are supported for codehosting.

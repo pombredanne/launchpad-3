@@ -275,7 +275,7 @@ includes commands, the email has to be OpenPGP-signed.
     >>> process_email(comment_mail)
     >>> commit()
 
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> bug_one = bugset.get(1)
     >>> added_message = getUtility(IMessageSet).get('<yada-yada-test1>')[0]
     >>> added_message in bug_one.messages
@@ -340,7 +340,7 @@ them what happened.
     ... Date: Fri Jun 17 10:10:23 BST 2005
     ... Subject: Not important
     ...
-    ...     summary "Even nicer summary" 
+    ...     summary "Even nicer summary"
     ... """
 
     >>> process_email(edit_mail)
@@ -397,7 +397,9 @@ associated with the authenticated Person in Launchpad, the principal
 will provide IWeaklyAuthenticatedPrincipal. Let's mark the current
 principal with that.
 
-    >>> from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
+    >>> from canonical.launchpad.interfaces.mail import (
+    ...     IWeaklyAuthenticatedPrincipal,
+    ...     )
     >>> from zope.interface import directlyProvides, directlyProvidedBy
     >>> from zope.security.management import queryInteraction
 
@@ -791,10 +793,11 @@ unsubscribed. Examples:
 If the user sending the email does not have permission to perform
 the unsubscribe request, an error message wil be sent.
 
+    >>> login(sampledata.NO_PRIVILEGE_EMAIL)
     >>> submit_commands(bug_four, 'unsubscribe mark')
     >>> print_latest_email()
     Subject: Submit Request Failure
-    To: test@canonical.com
+    To: no-priv@canonical.com
     <BLANKLINE>
     ...
     You do not have permission to unsubcribe Mark Shuttleworth.
@@ -1710,13 +1713,15 @@ The user is a package bug supervisor
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet,
+    ...     )
 
     >>> with lp_dbuser():
     ...     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    ...     mozilla_name = getUtility(ISourcePackageNameSet)['mozilla-firefox']
+    ...     moz_name = getUtility(ISourcePackageNameSet)['mozilla-firefox']
     ...     helge = getUtility(IPersonSet).getByName('kreutzm')
-    ...     mozilla_package = ubuntu.getSourcePackage(mozilla_name)
+    ...     mozilla_package = ubuntu.getSourcePackage(moz_name)
     ...     ignore = mozilla_package.addBugSubscription(helge, helge)
 
     >>> login('kreutzm@itp.uni-hannover.de')
@@ -2026,7 +2031,7 @@ Let's take a closer look at send_process_error_notification(), which is
 used to send the error messages. It needs the message that caused the
 error, so let's create one.
 
-    >>> msg = email.message_from_string("""From: foo.bar@canonical.com
+    >>> test_msg = email.message_from_string("""From: foo.bar@canonical.com
     ... To: bugs@launchpad.net
     ... Message-Id: <original@msg>
     ... Subject: Original Message Subject
@@ -2043,7 +2048,7 @@ send_process_error_notification().
     ...     send_process_error_notification)
     >>> send_process_error_notification(
     ...     sampledata.USER_EMAIL, 'Some subject', 'Some error message.',
-    ...     msg, failing_command=['foo bar'])
+    ...     test_msg, failing_command=['foo bar'])
 
 The To and Subject headers got set to the values we provided:
 
@@ -2095,6 +2100,24 @@ error to happen.
     >>> print msg.get_payload(decode=True)
     Original message body.
 
+Sometimes the original error was caused by the original message being
+too large.  In that case we cannot really return the entire original
+message as our outgoing message will be too big.  So, we can truncate
+the original message.
+
+    >>> max_return_size = len(str(test_msg)) / 2
+    >>> send_process_error_notification(
+    ...     sampledata.USER_EMAIL, 'Some subject', 'Some error message.',
+    ...     test_msg, failing_command=['foo bar'],
+    ...     max_return_size=max_return_size)
+    >>> commit()
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> sent_msg = email.message_from_string(raw_message)
+    >>> failure_msg, original_msg = sent_msg.get_payload()
+    >>> msg = original_msg.get_payload()[0]
+    >>> # Fudge due to new line added to the payload.
+    >>> len(str(msg)) <= (max_return_size + 1)
+    True
 
 Error handling
 --------------
@@ -2968,8 +2991,7 @@ set the datecreated field of the bug's initial message (see bug
     >>> commit()
 
     >>> with lp_dbuser():
-    ...     from canonical.launchpad.interfaces.launchpad import (
-    ...         ILaunchpadCelebrities)
+    ...     from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     ...     bug_tracker = new_bugtracker(BugTrackerType.TRAC)
     ...     bug_watch = bug_with_watch.addWatch(
     ...         bug_tracker,

@@ -4,21 +4,22 @@
 # pylint: disable-msg=W0401,C0301,F0401
 
 from __future__ import absolute_import
-from lp.testing.windmill.lpuser import LaunchpadUser
+
 
 __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
     'anonymous_logged_in',
     'api_url',
-    'build_yui_unittest_suite',
     'BrowserTestCase',
+    'build_yui_unittest_suite',
     'celebrity_logged_in',
+    'ExpectedException',
     'FakeTime',
     'get_lsb_information',
     'is_logged_in',
-    'launchpadlib_for',
     'launchpadlib_credentials_for',
+    'launchpadlib_for',
     'login',
     'login_as',
     'login_celebrity',
@@ -31,17 +32,16 @@ __all__ = [
     'person_logged_in',
     'quote_jquery_expression',
     'record_statements',
+    'run_script',
     'run_with_login',
     'run_with_storm_debug',
-    'run_script',
     'StormStatementRecorder',
+    'test_tales',
     'TestCase',
     'TestCaseWithFactory',
-    'test_tales',
     'time_counter',
     'unlink_source_packages',
     'validate_mock_class',
-    'WindmillTestCase',
     'with_anonymous_login',
     'with_celebrity_logged_in',
     'with_person_logged_in',
@@ -50,6 +50,7 @@ __all__ = [
     'ZopeTestInSubProcess',
     ]
 
+from cStringIO import StringIO
 from contextlib import contextmanager
 from datetime import (
     datetime,
@@ -72,6 +73,8 @@ import tempfile
 import time
 import unittest
 
+import simplejson
+
 from bzrlib import trace
 from bzrlib.bzrdir import (
     BzrDir,
@@ -90,8 +93,9 @@ import subunit
 import testtools
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
+from testtools.matchers import MatchesRegex
+from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
-from windmill.authoring import WindmillTestClient
 from zope.component import (
     adapter,
     getUtility,
@@ -149,8 +153,6 @@ from lp.testing._login import (
     with_celebrity_logged_in,
     with_person_logged_in,
     )
-# canonical.launchpad.ftests expects test_tales to be imported from here.
-# XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     api_url,
@@ -160,11 +162,26 @@ from lp.testing._webservice import (
     )
 from lp.testing.fixture import ZopeEventHandlerFixture
 from lp.testing.karma import KarmaRecorder
-from lp.testing.matchers import Provides
-from lp.testing.windmill import (
-    constants,
-    lpuser,
-    )
+
+# The following names have been imported for the purpose of being
+# exported. They are referred to here to silence lint warnings.
+anonymous_logged_in
+api_url
+celebrity_logged_in
+is_logged_in
+launchpadlib_credentials_for
+launchpadlib_for
+login_as
+login_celebrity
+login_person
+login_team
+oauth_access_token_for
+person_logged_in
+run_with_login
+test_tales
+with_anonymous_login
+with_celebrity_logged_in
+with_person_logged_in
 
 
 class FakeTime:
@@ -367,6 +384,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
 
     def assertProvides(self, obj, interface):
         """Assert 'obj' correctly provides 'interface'."""
+        from lp.testing.matchers import Provides
         self.assertThat(obj, Provides(interface))
 
     def assertClassImplements(self, cls, interface):
@@ -497,6 +515,29 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         self.assertTrue(
             lower_bound < variable < upper_bound,
             "%r < %r < %r" % (lower_bound, variable, upper_bound))
+
+    def assertVectorEqual(self, *args):
+        """Apply assertEqual to all given pairs in one go.
+
+        Takes any number of (expected, observed) tuples and asserts each
+        equality in one operation, thus making sure all tests are performed.
+        If any of the tuples mismatches, AssertionError is raised.
+        """
+        expected_vector, observed_vector = zip(*args)
+        return self.assertEqual(expected_vector, observed_vector)
+
+    @contextmanager
+    def expectedLog(self, regex):
+        """Expect a log to be written that matches the regex."""
+        output = StringIO()
+        handler = logging.StreamHandler(output)
+        logger = logging.getLogger()
+        logger.addHandler(handler)
+        try:
+            yield
+        finally:
+            logger.removeHandler(handler)
+        self.assertThat(output.getvalue(), MatchesRegex(regex))
 
     def pushConfig(self, section, **kwargs):
         """Push some key-value pairs into a section of the config.
@@ -757,74 +798,6 @@ class BrowserTestCase(TestCaseWithFactory):
             self.getMainContent(context, view_name, rootsite, no_login, user))
 
 
-class WindmillTestCase(TestCaseWithFactory):
-    """A TestCase class for Windmill tests.
-
-    It provides a WindmillTestClient (self.client) with Launchpad's front
-    page loaded.
-    """
-
-    suite_name = ''
-
-    def setUp(self):
-        super(WindmillTestCase, self).setUp()
-        self.client = WindmillTestClient(self.suite_name)
-        # Load the front page to make sure we don't get fooled by stale pages
-        # left by the previous test. (For some reason, when you create a new
-        # WindmillTestClient you get a new session and everything, but if you
-        # do anything before you open() something you'd be operating on the
-        # page that was last accessed by the previous test, which is the cause
-        # of things like https://launchpad.net/bugs/515494)
-        self.client.open(url=self.layer.appserver_root_url())
-
-    def getClientFor(self, obj, user=None, password='test', base_url=None,
-                     view_name=None):
-        """Return a new client, and the url that it has loaded."""
-        client = WindmillTestClient(self.suite_name)
-        if user is not None:
-            if isinstance(user, LaunchpadUser):
-                email = user.email
-                password = user.password
-            else:
-                email = removeSecurityProxy(user).preferredemail.email
-            client.open(url=lpuser.get_basic_login_url(email, password))
-            client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        if isinstance(obj, basestring):
-            url = obj
-        else:
-            url = canonical_url(
-                obj, view_name=view_name, rootsite=self.layer.facet,
-                force_local_path=True)
-        if base_url is None:
-            base_url = self.layer.base_url
-        obj_url = base_url + url
-        client.open(url=obj_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        return client, obj_url
-
-    def getClientForPerson(self, url, person, password='test'):
-        """Create a LaunchpadUser for a person and login to the url."""
-        naked_person = removeSecurityProxy(person)
-        user = LaunchpadUser(
-            person.displayname, naked_person.preferredemail.email, password)
-        return self.getClientFor(url, user=user)
-
-
-    def getClientForAnomymous(self, obj, view_name=None):
-        """Return a new client, and the url that it has loaded."""
-        client = WindmillTestClient(self.suite_name)
-        if isinstance(obj, basestring):
-            url = obj
-        else:
-            url = canonical_url(
-                obj, view_name=view_name, force_local_path=True)
-        obj_url = self.layer.base_url + url
-        obj_url = obj_url.replace('http://', 'http://foo:foo@')
-        client.open(url=obj_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        return client, obj_url
-
-
 class WebServiceTestCase(TestCaseWithFactory):
     """Test case optimized for testing the web service using launchpadlib."""
 
@@ -847,7 +820,7 @@ class WebServiceTestCase(TestCaseWithFactory):
 
         :param obj: The object to find the launchpadlib equivalent of.
         :param user: The user to use for accessing the object over
-            lauchpadlib.  Defaults to an arbitrary logged-in user.
+            launchpadlib.  Defaults to an arbitrary logged-in user.
         """
         if user is not None:
             service = self.factory.makeLaunchpadService(
@@ -863,10 +836,14 @@ def quote_jquery_expression(expression):
         "([#!$%&()+,./:;?@~|^{}\\[\\]`*\\\'\\\"])", r"\\\\\1", expression)
 
 
-class YUIUnitTestCase(WindmillTestCase):
+class YUIUnitTestCase(TestCase):
 
     layer = None
     suite_name = ''
+    js_timeout = 30000
+
+    TIMEOUT = object()
+    MISSING_REPORT = object()
 
     _yui_results = None
 
@@ -887,34 +864,36 @@ class YUIUnitTestCase(WindmillTestCase):
 
     def setUp(self):
         super(YUIUnitTestCase, self).setUp()
-        #This goes here to prevent circular import issues
-        from canonical.testing.layers import BaseLayer
-        _view_name = u'%s/+yui-unittest/' % BaseLayer.appserver_root_url()
-        yui_runner_url = _view_name + self.test_path
-
-        client = self.client
-        client.open(url=yui_runner_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        # This is very fragile for some reason, so we need a long delay here.
-        client.waits.forElement(id='complete', timeout=constants.PAGE_LOAD)
-        response = client.commands.getPageText()
+        # html5browser imports from the gir/pygtk stack which causes
+        # twisted tests to break because of gtk's initialize.
+        import html5browser
+        client = html5browser.Browser()
+        html_uri = 'file://%s' % os.path.join(
+            config.root, 'lib', self.test_path)
+        page = client.load_page(html_uri, timeout=self.js_timeout)
+        if page.return_code == page.CODE_FAIL:
+            self._yui_results = self.TIMEOUT
+            return
+        # Data['type'] is complete (an event).
+        # Data['results'] is a dict (type=report)
+        # with 1 or more dicts (type=testcase)
+        # with 1 for more dicts (type=test).
+        report = simplejson.loads(page.content)
+        if report.get('type', None) != 'complete':
+            # Did not get a report back.
+            self._yui_results = self.MISSING_REPORT
+            return
         self._yui_results = {}
-        # Maybe testing.pages should move to lp to avoid circular imports.
-        from canonical.launchpad.testing.pages import find_tags_by_class
-        entries = find_tags_by_class(
-            response['result'], 'yui3-console-entry-TestRunner')
-        for entry in entries:
-            category = entry.find(
-                attrs={'class': 'yui3-console-entry-cat'})
-            if category is None:
-                continue
-            result = category.string
-            if result not in ('pass', 'fail'):
-                continue
-            message = entry.pre.string
-            test_name, ignore = message.split(':', 1)
-            self._yui_results[test_name] = dict(
-                result=result, message=message)
+        for key, value in report['results'].items():
+            if isinstance(value, dict) and value['type'] == 'testcase':
+                testcase_name = key
+                test_case = value
+                for key, value in test_case.items():
+                    if isinstance(value, dict) and value['type'] == 'test':
+                        test_name = '%s.%s' % (testcase_name, key)
+                        test = value
+                        self._yui_results[test_name] = dict(
+                            result=test['result'], message=test['message'])
 
     def checkResults(self):
         """Check the results.
@@ -922,13 +901,20 @@ class YUIUnitTestCase(WindmillTestCase):
         The tests are run during `setUp()`, but failures need to be reported
         from here.
         """
-        if self._yui_results is None or len(self._yui_results) == 0:
-            self.fail("Test harness or js failed.")
+        if self._yui_results == self.TIMEOUT:
+            self.fail("js timed out.")
+        elif self._yui_results == self.MISSING_REPORT:
+            self.fail("The data returned by js is not a test report.")
+        elif self._yui_results is None or len(self._yui_results) == 0:
+            self.fail("Test harness or js report format changed.")
+        failures = []
         for test_name in self._yui_results:
             result = self._yui_results[test_name]
-            self.assertTrue('pass' == result['result'],
+            if result['result'] != 'pass':
+                failures.append(
                     'Failure in %s.%s: %s' % (
-                        self.test_path, test_name, result['message']))
+                    self.test_path, test_name, result['message']))
+        self.assertEqual([], failures, '\n'.join(failures))
 
 
 def build_yui_unittest_suite(app_testing_path, yui_test_class):
@@ -1092,17 +1078,19 @@ def time_counter(origin=None, delta=timedelta(seconds=5)):
         now += delta
 
 
-def run_script(cmd_line):
+def run_script(cmd_line, env=None):
     """Run the given command line as a subprocess.
 
-    Return a 3-tuple containing stdout, stderr and the process' return code.
-
-    The environment given to the subprocess is the same as the one in the
-    parent process except for the PYTHONPATH, which is removed so that the
-    script, passed as the `cmd_line` parameter, will fail if it doesn't set it
-    up properly.
+    :param cmd_line: A command line suitable for passing to
+        `subprocess.Popen`.
+    :param env: An optional environment dict.  If none is given, the
+        script will get a copy of your present environment.  Either way,
+        PYTHONPATH will be removed from it because it will break the
+        script.
+    :return: A 3-tuple of stdout, stderr, and the process' return code.
     """
-    env = os.environ.copy()
+    if env is None:
+        env = os.environ.copy()
     env.pop('PYTHONPATH', None)
     process = subprocess.Popen(
         cmd_line, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -1290,3 +1278,16 @@ def unlink_source_packages(product):
             source_package.productseries,
             source_package.sourcepackagename,
             source_package.distroseries)
+
+
+class ExpectedException(TTExpectedException):
+    """An ExpectedException that provides access to the caught exception."""
+
+    def __init__(self, exc_type, value_re):
+        super(ExpectedException, self).__init__(exc_type, value_re)
+        self.caught_exc = None
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.caught_exc = exc_value
+        return super(ExpectedException, self).__exit__(
+            exc_type, exc_value, traceback)

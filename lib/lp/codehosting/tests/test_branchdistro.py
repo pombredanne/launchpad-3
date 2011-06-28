@@ -124,11 +124,13 @@ class TestDistroBrancher(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         self.useBzrBranches(direct_database=True)
 
-    def makeOfficialPackageBranch(self, distroseries=None):
+    def makeOfficialPackageBranch(self, distroseries=None,
+                                  make_revisions=True):
         """Make an official package branch with an underlying bzr branch."""
         db_branch = self.factory.makePackageBranch(distroseries=distroseries)
         db_branch.sourcepackage.setBranch(RELEASE, db_branch, db_branch.owner)
-        self.factory.makeRevisionsForBranch(db_branch, count=1)
+        if make_revisions:
+            self.factory.makeRevisionsForBranch(db_branch, count=1)
 
         transaction.commit()
 
@@ -136,8 +138,9 @@ class TestDistroBrancher(TestCaseWithFactory):
             tree_location=self.factory.getUniqueString(), db_branch=db_branch)
         # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
         # required to generate the revision-id.
-        with override_environ(BZR_EMAIL='me@example.com'):
-            tree.commit('')
+        if make_revisions:
+            with override_environ(BZR_EMAIL='me@example.com'):
+                tree.commit('')
 
         return db_branch
 
@@ -296,6 +299,12 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertLogMessages(
             ['^WARNING .* is not an official branch$',
              '^WARNING Skipping branch$'])
+
+    def test_makeOnewNewBranch_empty_branch(self):
+        # Branches with no commits work.
+        db_branch = self.makeOfficialPackageBranch(make_revisions=False)
+        brancher = self.makeNewSeriesAndBrancher(db_branch.distroseries)
+        brancher.makeOneNewBranch(db_branch)
 
     def test_makeNewBranches(self):
         # makeNewBranches calls makeOneNewBranch for each official branch in
@@ -638,4 +647,3 @@ class TestDistroBrancher(TestCaseWithFactory):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

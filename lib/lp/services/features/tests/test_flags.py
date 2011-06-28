@@ -165,6 +165,7 @@ class TestFeatureFlags(TestCase):
 
 test_rules_list = [
     (notification_name, 'beta_user', 100, notification_value),
+    ('ui.icing', 'normal_user', 500, u'5.0'),
     ('ui.icing', 'beta_user', 300, u'4.0'),
     ('ui.icing', 'default', 100, u'3.0'),
     ]
@@ -187,6 +188,7 @@ class TestStormFeatureRuleSource(TestCase):
         self.assertEquals(
             """\
 %s\tbeta_user\t100\t%s
+ui.icing\tnormal_user\t500\t5.0
 ui.icing\tbeta_user\t300\t4.0
 ui.icing\tdefault\t100\t3.0
 """ % (notification_name, notification_value),

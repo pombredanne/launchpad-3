@@ -80,11 +80,10 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.validation import (
-    validate_new_distrotask,
     valid_upstreamtask,
+    validate_new_distrotask,
     )
 from canonical.launchpad.searchbuilder import (
     all,
@@ -101,6 +100,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
@@ -112,7 +112,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
     BugTaskStatusSearch,
-    ConjoinedBugTaskEditError,
     IBugTask,
     IBugTaskDelta,
     IBugTaskSet,
@@ -431,10 +430,16 @@ def validate_conjoined_attribute(self, attr, value):
     if self.bug is None:
         return value
 
-    if self._isConjoinedBugTask():
-        raise ConjoinedBugTaskEditError(
-            "This task cannot be edited directly, it should be"
-            " edited through its conjoined_master.")
+    # If this is a conjoined slave then call setattr on the master.
+    # Effectively this means that making a change to the slave will
+    # actually make the change to the master (which will then be passed
+    # down to the slave, of course). This helps to prevent OOPSes when
+    # people try to update the conjoined slave via the API.
+    conjoined_master = self.conjoined_master
+    if conjoined_master is not None:
+        setattr(self.conjoined_master, attr, value)
+        return value
+
     # The conjoined slave is updated before the master one because,
     # for distro tasks, conjoined_slave does a comparison on
     # sourcepackagename, and the sourcepackagenames will not match
@@ -658,6 +663,15 @@ class BugTask(SQLBase, BugTaskMixin):
                     bugtask.sourcepackagenameID == self.sourcepackagenameID):
                     bugtask.sourcepackagenameID = PassthroughValue(new_spnid)
 
+    def getContributorInfo(self, user, person):
+        """See `IBugTask`."""
+        result = {}
+        result['is_contributor'] = person.isBugContributorInTarget(
+            user, self.pillar)
+        result['person_name'] = person.displayname
+        result['pillar_name'] = self.pillar.displayname
+        return result
+
     def getConjoinedMaster(self, bugtasks, bugtasks_by_package=None):
         """See `IBugTask`."""
         conjoined_master = None
@@ -729,10 +743,6 @@ class BugTask(SQLBase, BugTaskMixin):
             self.status in self._NON_CONJOINED_STATUSES):
             conjoined_slave = None
         return conjoined_slave
-
-    def _isConjoinedBugTask(self):
-        """Return True when conjoined_master is not None, otherwise False."""
-        return self.conjoined_master is not None
 
     def _syncFromConjoinedSlave(self):
         """Ensure the conjoined master is synched from its slave.
@@ -1986,7 +1996,9 @@ class BugTaskSet:
             extra_clauses.append(bug_reporter_clause)
 
         if params.bug_commenter:
-            bug_commenter_clause = """
+            bugmessage_owner = bool(features.getFeatureFlag(
+                'malone.bugmessage_owner'))
+            bug_commenter_old_clause = """
             BugTask.id IN (
                 SELECT DISTINCT BugTask.id FROM BugTask, BugMessage, Message
                 WHERE Message.owner = %(bug_commenter)s
@@ -1995,6 +2007,14 @@ class BugTaskSet:
                     AND BugMessage.index > 0
             )
             """ % sqlvalues(bug_commenter=params.bug_commenter)
+            bug_commenter_new_clause = """
+            Bug.id IN (SELECT DISTINCT bug FROM Bugmessage WHERE
+            BugMessage.index > 0 AND BugMessage.owner = %(bug_commenter)s)
+            """ % sqlvalues(bug_commenter=params.bug_commenter)
+            if bugmessage_owner:
+                bug_commenter_clause = bug_commenter_new_clause
+            else:
+                bug_commenter_clause = bug_commenter_old_clause
             extra_clauses.append(bug_commenter_clause)
 
         if params.affects_me:

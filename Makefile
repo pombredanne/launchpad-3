@@ -29,7 +29,7 @@ endif
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
 JS_LAZR := $(LAZR_BUILT_JS_ROOT)/lazr.js
 JS_OTHER := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
-JS_LP := $(shell find lib/lp/*/javascript ! -path '*/tests/*' -name '*.js')
+JS_LP := $(shell find lib/lp/*/javascript ! -path '*/tests/*' -name '*.js' ! -name '.*.js' )
 JS_ALL := $(JS_YUI) $(JS_LAZR) $(JS_OTHER) $(JS_LP)
 JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 
@@ -55,10 +55,9 @@ BUILDOUT_BIN = \
     bin/fl-record bin/fl-run-bench bin/fl-run-test bin/googletestservice \
     bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
     bin/harness bin/iharness bin/ipy bin/jsbuild bin/jslint bin/jssize \
-    bin/jstest bin/killservice bin/kill-test-services bin/lint.sh \
-    bin/lp-windmill bin/retest bin/run bin/sprite-util \
-    bin/start_librarian bin/stxdocs bin/tags bin/test bin/tracereport \
-    bin/twistd bin/update-download-cache bin/windmill
+    bin/jstest bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
+    bin/run bin/sprite-util bin/start_librarian bin/stxdocs bin/tags \
+    bin/test bin/tracereport bin/twistd bin/update-download-cache
 
 BUILDOUT_TEMPLATES = buildout-templates/_pythonpath.py.in
 
@@ -163,7 +162,8 @@ ${LP_BUILT_JS_ROOT}/sprite.css: bin/sprite-util ${ICING}/sprite.css.in \
 
 sprite_image: ${ICING}/icon-sprites ${ICING}/icon-sprites.positioning
 
-${ICING}/icon-sprites.positioning ${ICING}/icon-sprites: bin/sprite-util
+${ICING}/icon-sprites.positioning ${ICING}/icon-sprites: bin/sprite-util \
+		${ICING}/sprite.css.in
 	${SHHH} bin/sprite-util create-image
 
 # We absolutely do not want to include the lazr.testing module and

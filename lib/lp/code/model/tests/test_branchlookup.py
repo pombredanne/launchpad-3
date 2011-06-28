@@ -12,7 +12,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.errors import (
     CannotHaveLinkedBranch,
@@ -25,7 +24,10 @@ from lp.code.interfaces.branchlookup import (
     ILinkedBranchTraverser,
     )
 from lp.code.interfaces.branchnamespace import get_branch_namespace
-from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
+from lp.code.interfaces.codehosting import (
+    branch_id_alias,
+    BRANCH_ID_ALIAS_PREFIX,
+    )
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.errors import (
     NoSuchDistroSeries,
@@ -137,28 +139,28 @@ class TestGetIdAndTrailingPath(TestCaseWithFactory):
         owner = self.factory.makePerson()
         branch = self.factory.makeAnyBranch(owner=owner, private=True)
         with person_logged_in(owner):
-            path = '/%s/%s' % (BRANCH_ID_ALIAS_PREFIX, branch.id)
+            path = branch_id_alias(branch)
         result = self.branch_set.getIdAndTrailingPath(path)
         self.assertEqual((None, None), result)
 
     def test_branch_id_alias_public(self):
         # Public branches can be accessed.
         branch = self.factory.makeAnyBranch()
-        path = '/%s/%s' % (BRANCH_ID_ALIAS_PREFIX, branch.id)
+        path = branch_id_alias(branch)
         result = self.branch_set.getIdAndTrailingPath(path)
         self.assertEqual((branch.id, ''), result)
 
     def test_branch_id_alias_public_slash(self):
         # A trailing slash is returned as the extra path.
         branch = self.factory.makeAnyBranch()
-        path = '/%s/%s/' % (BRANCH_ID_ALIAS_PREFIX, branch.id)
+        path = '%s/' % branch_id_alias(branch)
         result = self.branch_set.getIdAndTrailingPath(path)
         self.assertEqual((branch.id, '/'), result)
 
     def test_branch_id_alias_public_with_path(self):
         # All the path after the number is returned as the trailing path.
         branch = self.factory.makeAnyBranch()
-        path = '/%s/%s/foo' % (BRANCH_ID_ALIAS_PREFIX, branch.id)
+        path = '%s/foo' % branch_id_alias(branch)
         result = self.branch_set.getIdAndTrailingPath(path)
         self.assertEqual((branch.id, '/foo'), result)
 
@@ -588,8 +590,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         sourcepackage = self.factory.makeSourcePackage()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
         distro_package = sourcepackage.distribution_sourcepackage
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        registrant = ubuntu_branches.teamowner
+        registrant = sourcepackage.distribution.owner
         run_with_login(
             registrant,
             ICanHasLinkedBranch(distro_package).setBranch, branch, registrant)
@@ -687,7 +688,7 @@ class TestGetByLPPath(TestCaseWithFactory):
         # linked branch but is followed by extra path segments, then we return
         # the linked branch but chop off the extra segments. We might want to
         # change this behaviour in future.
-        branch= self.factory.makeBranch()
+        branch = self.factory.makeBranch()
         series = self.factory.makeProductSeries(branch=branch)
         result = self.branch_lookup.getByLPPath(
             '%s/%s/other/bits' % (series.product.name, series.name))
@@ -700,13 +701,10 @@ class TestGetByLPPath(TestCaseWithFactory):
         # change this behaviour in future.
         package = self.factory.makeSourcePackage()
         branch = self.factory.makePackageBranch(sourcepackage=package)
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        run_with_login(
-            ubuntu_branches.teamowner,
-            package.setBranch,
-            PackagePublishingPocket.RELEASE,
-            branch,
-            ubuntu_branches.teamowner)
+        with person_logged_in(package.distribution.owner):
+            package.setBranch(
+                PackagePublishingPocket.RELEASE, branch,
+                package.distribution.owner)
         result = self.branch_lookup.getByLPPath(
             '%s/other/bits' % package.path)
         self.assertEqual((branch, u'other/bits'), result)

@@ -98,6 +98,15 @@ class TestPersonNotificationManager(TestCaseWithFactory):
         self.assertEqual([notification], unsent)
         self.assertEqual(None, notification.date_emailed)
 
+    def test_sendNotifications_sent_to_team_admins(self):
+        team = self.factory.makeTeam()
+        self.assertIs(None, team.preferredemail)
+        notification = self.notification_set.addNotification(
+            team, 'subject', 'body')
+        unsent = self.manager.sendNotifications()
+        self.assertEqual(None, unsent)
+        self.failIf(notification.date_emailed is None)
+
     def test_purgeNotifications_old(self):
         user = self.factory.makePerson()
         notification = self.notification_set.addNotification(

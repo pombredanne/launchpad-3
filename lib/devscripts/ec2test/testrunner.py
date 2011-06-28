@@ -377,17 +377,8 @@ class EC2TestRunner:
         # Get any new sourcecode branches as requested
         for dest, src in self.branches:
             fulldest = os.path.join('/var/launchpad/test/sourcecode', dest)
-            # Most sourcecode branches share no history with Launchpad and
-            # might be in different formats so we "branch --standalone" them
-            # to avoid terribly slow on-the-fly conversions.  However, neither
-            # thing is true of canonical-identity or shipit, so we let them
-            # use the Launchpad repository.
-            if dest in ('canonical-identity-provider', 'shipit'):
-                standalone = ''
-            else:
-                standalone = '--standalone'
             user_connection.run_with_ssh_agent(
-                'bzr branch %s %s %s' % (standalone, src, fulldest))
+                'bzr branch --standalone %s %s' % (src, fulldest))
         # prepare fresh copy of sourcecode and buildout sources for building
         p = user_connection.perform
         p('rm -rf /var/launchpad/tmp')

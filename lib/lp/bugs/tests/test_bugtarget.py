@@ -28,7 +28,7 @@ from canonical.launchpad.testing.systemdocs import (
     tearDown,
     )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.testing.layers import LaunchpadFunctionalLayer
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -178,20 +178,10 @@ def sourcePackageSetUp(test):
     test.globs['question_target'] = ubuntu.getSourcePackage('mozilla-firefox')
 
 
-def sourcePackageForQuestionSetUp(test):
-    """Setup the `ISourcePackage` test for QuestionTarget testing."""
-    setUp(test)
-    ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    warty = ubuntu.getSeries('warty')
-    test.globs['bugtarget'] = warty.getSourcePackage('mozilla-firefox')
-    test.globs['filebug'] = sourcepackage_filebug_for_question
-    test.globs['question_target'] = ubuntu.getSourcePackage('mozilla-firefox')
-
-
 class TestBugTargetSearchTasks(TestCaseWithFactory):
     """Tests of IHasBugs.searchTasks()."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugTargetSearchTasks, self).setUp()
@@ -293,23 +283,21 @@ def test_suite():
         distributionSetUp,
         distributionSourcePackageSetUp,
         distributionSeriesSetUp,
-        sourcePackageForQuestionSetUp,
         ]
 
     for setUpMethod in setUpMethods:
         test = LayeredDocFileSuite('bugtarget-questiontarget.txt',
             setUp=setUpMethod, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer)
+            layer=DatabaseFunctionalLayer)
         suite.addTest(test)
 
-    setUpMethods.remove(sourcePackageForQuestionSetUp)
     setUpMethods.append(sourcePackageSetUp)
     setUpMethods.append(projectSetUp)
 
     for setUpMethod in setUpMethods:
         test = LayeredDocFileSuite('bugtarget-bugcount.txt',
             setUp=setUpMethod, tearDown=tearDown,
-            layer=LaunchpadFunctionalLayer)
+            layer=DatabaseFunctionalLayer)
         suite.addTest(test)
 
     suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))

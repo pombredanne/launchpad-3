@@ -177,23 +177,3 @@ redirected to the bug page.
     <...
     ...>pmount (Debian)</a>...
     ...
-
-If we enter a source package which doesn't exist, we get an error
-message saying so.
-
-    >>> browser.getLink(url='+distrotask').click()
-    >>> browser.getControl('Distribution').value = ['ubuntu']
-    >>> browser.getControl('Source Package Name').value = 'no-such-package'
-    >>> browser.getControl('Continue').click()
-    >>> browser.url
-    'http://bugs.launchpad.dev/debian/+source/pmount/+bug/1/+distrotask'
-    >>> print get_feedback_messages(browser.contents)
-    [u'There is 1 error.',
-     u'There is no package in Ubuntu named "no-such-package". If it should
-       be here, report this as a bug.']
-
-The link in the error page links to the Launchpad filebug page.
-
-    >>> browser.getLink('report this as a bug').click()
-    >>> print browser.title
-    Report a bug about Launchpad...

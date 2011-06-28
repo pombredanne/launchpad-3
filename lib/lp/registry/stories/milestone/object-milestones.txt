@@ -87,9 +87,9 @@ When the project is a member of a project group, the the user can see a
 link to the project groups's milestone's page.
 
     >>> anon_browser.getLink(
-    ...     'View milestones for the Mozilla Project').click()
+    ...     'View milestones for The Mozilla Project').click()
     >>> print anon_browser.title
-    Milestones : the Mozilla Project
+    Milestones : The Mozilla Project
 
 
 Product Series
@@ -203,7 +203,7 @@ Mozilla Firefox product:
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://bugs.launchpad.dev/firefox/')
     >>> browser.getLink('Report a bug').click()
-    >>> browser.getControl('Summary').value = 'Test Bug 1'
+    >>> browser.getControl('Summary', index=0).value = 'Test Bug 1'
     >>> browser.getControl('Continue').click()
 
     >>> report_bug_url = browser.url
@@ -218,7 +218,7 @@ Mozilla Firefox product:
     >>> bug_1_id = bug_1_url.split('/')[-1]
 
     >>> browser.open(report_bug_url)
-    >>> browser.getControl('Summary').value = 'Test Bug 2'
+    >>> browser.getControl('Summary', index=0).value = 'Test Bug 2'
     >>> browser.getControl('Continue').click()
 
     >>> browser.getControl('Further information').value = 'Test Bug 2'

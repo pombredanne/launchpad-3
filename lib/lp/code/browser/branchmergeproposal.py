@@ -66,7 +66,7 @@ from zope.schema.vocabulary import (
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.message import IMessageSet
+from lp.services.messages.interfaces.message import IMessageSet
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -80,7 +80,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.launchpad.webapp.menu import NavigationMenu
+from canonical.launchpad.webapp.menu import NavigationMenu, structured
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -101,7 +101,11 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     CodeReviewVote,
     )
-from lp.code.errors import WrongBranchMergeProposal
+from lp.code.errors import (
+    BranchMergeProposalExists,
+    ClaimReviewFailed,
+    WrongBranchMergeProposal,
+    )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
@@ -597,7 +601,10 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """Claim this proposal."""
         request = self.context.getVoteReference(data['review_id'])
         if request is not None:
-            request.claimReview(self.user)
+            try:
+                request.claimReview(self.user)
+            except ClaimReviewFailed as e:
+                self.request.response.addErrorNotification(unicode(e))
         self.next_url = canonical_url(self.context)
 
     @property
@@ -1009,10 +1016,19 @@ class BranchMergeProposalResubmitView(LaunchpadFormView,
     @action('Resubmit', name='resubmit')
     def resubmit_action(self, action, data):
         """Resubmit this proposal."""
-        proposal = self.context.resubmit(
-            self.user, data['source_branch'], data['target_branch'],
-            data['prerequisite_branch'], data['description'],
-            data['break_link'])
+        try:
+            proposal = self.context.resubmit(
+                self.user, data['source_branch'], data['target_branch'],
+                data['prerequisite_branch'], data['description'],
+                data['break_link'])
+        except BranchMergeProposalExists as e:
+            message = structured(
+                'Cannot resubmit because <a href="%(url)s">a similar merge'
+                ' proposal</a> is already active.',
+                url=canonical_url(e.existing_proposal))
+            self.request.response.addErrorNotification(message)
+            self.next_url = canonical_url(self.context)
+            return None
         self.next_url = canonical_url(proposal)
         return proposal
 

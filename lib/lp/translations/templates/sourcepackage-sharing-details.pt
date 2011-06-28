@@ -39,6 +39,8 @@
                 <span id="packaging-incomplete-picker">
                   <a tal:replace="structure view/set_packaging_link/escapedtext" />
                 </span>
+                <img src="/@@/spinner" class="unseen"
+                     id="packaging-incomplete-spinner"/>
             </li>
             <li tal:attributes="class view/packaging_complete_class"
                 id="packaging-complete">
@@ -51,6 +53,8 @@
               <span id="packaging-complete-picker">
                 <a tal:replace="structure view/change_packaging_link/escapedtext" />
               </span>
+              <img src="/@@/spinner" class="unseen"
+                   id="packaging-complete-spinner"/>
               <a tal:replace="structure view/remove_packaging_link/escapedtext" />
             </li>
             <li tal:attributes="class view/branch_incomplete_class"
@@ -59,6 +63,8 @@
               <span id="branch-incomplete-picker">
                 <a tal:replace="structure view/new_branch_link/escapedtext" />
               </span>
+              <img src="/@@/spinner" class="unseen"
+                   id="branch-incomplete-spinner"/>
             </li>
             <li tal:attributes="class view/branch_complete_class"
                 id="branch-complete">
@@ -69,6 +75,8 @@
               <span id="branch-complete-picker">
                 <a tal:replace="structure view/change_branch_link/escapedtext" />
               </span>
+              <img src="/@@/spinner" class="unseen"
+                   id="branch-complete-spinner"/>
             </li>
             <li tal:attributes="class view/translations_disabled_class"
                 id="translation-incomplete">
@@ -76,6 +84,8 @@
               <span id="translation-incomplete-picker">
                   <a tal:replace="structure view/configure_translations_link_unconfigured/escapedtext" />
               </span>
+              <img src="/@@/spinner" class="unseen"
+                   id="translation-incomplete-spinner"/>
             </li>
             <li tal:attributes="class view/translations_enabled_class"
                 id="translation-complete">
@@ -83,6 +93,8 @@
               <span id="translation-complete-picker">
               <a tal:replace="structure view/configure_translations_link_configured/escapedtext" />
              </span>
+              <img src="/@@/spinner" class="unseen"
+                   id="translation-complete-spinner"/>
             </li>
             <li tal:attributes="class view/upstream_sync_disabled_class"
                 id="upstream-sync-incomplete">
@@ -90,6 +102,8 @@
               <span id="upstream-sync-incomplete-picker">
               <a tal:replace="structure view/translation_sync_link_unconfigured/escapedtext" />
               </span>
+              <img src="/@@/spinner" class="unseen"
+                   id="upstream-sync-incomplete-spinner"/>
             </li>
             <li tal:attributes="class view/upstream_sync_enabled_class"
                 id="upstream-sync-complete">
@@ -97,6 +111,8 @@
               <span id="upstream-sync-complete-picker">
               <a tal:replace="structure view/translation_sync_link_configured/escapedtext" />
               </span>
+              <img src="/@@/spinner" class="unseen"
+                   id="upstream-sync-complete-spinner"/>
             </li>
           </ul>
         </dd>

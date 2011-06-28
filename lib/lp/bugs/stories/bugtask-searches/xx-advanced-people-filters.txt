@@ -189,7 +189,7 @@ first we'll register a couple of bugs for the Mozilla Firefox product:
     Report a bug...
     >>> report_bug_url = browser.url
 
-    >>> browser.getControl('Summary').value = 'Test Bug 1'
+    >>> browser.getControl('Summary', index=0).value = 'Test Bug 1'
     >>> browser.getControl('Continue').click()
 
     >>> browser.getControl('Further information').value = 'Test Bug 1'
@@ -200,7 +200,7 @@ first we'll register a couple of bugs for the Mozilla Firefox product:
     >>> bug_1_url = browser.url
 
     >>> browser.open(report_bug_url)
-    >>> browser.getControl('Summary').value = 'Test Bug 2'
+    >>> browser.getControl('Summary', index=0).value = 'Test Bug 2'
     >>> browser.getControl('Continue').click()
     >>> browser.getControl('Further information').value = 'Test Bug 2'
     >>> browser.getControl('Submit').click()

@@ -12,6 +12,9 @@
         .distroseries-localdiff-search-filter input[type="radio"] {
           margin-left: 0;
         }
+        /* Don't show a border between the
+           difference rows and their expanded sections */
+        table.listing tr.diff-extra td { border-top: 0; }
       </style>
     </metal:block>
 
@@ -23,7 +26,7 @@
     <div class="top-portlet" metal:fill-slot="main"
       tal:define="differences view/cached_differences;
                   series_name context/displayname;
-                  parent_name context/parent_series/displayname;">
+                  can_perform_sync view/canPerformSync;">
       <p><tal:replace replace="structure view/explanation/escapedtext" /></p>
 
       <tal:distroseries_localdiff_search_form
@@ -42,10 +45,22 @@
           <thead>
             <tr>
               <th>Source</th>
+              <th tal:condition="python: not(view.has_unique_parent) and view.show_parent_version">
+                Parent
+              </th>
               <th tal:condition="view/show_parent_version">
-                <tal:replace replace="parent_name" /> version</th>
+                <tal:one_parent condition="view/has_unique_parent">
+                  <a tal:attributes="href view/unique_parent/fmt:url"
+                     tal:content="view/unique_parent/displayname">Warty</a> version
+                </tal:one_parent>
+                <tal:multiple_parents condition="not: view/has_unique_parent">
+                  Parent version
+                </tal:multiple_parents>
+              </th>
               <th tal:condition="view/show_derived_version">
-                <tal:replace replace="series_name" /> version</th>
+                <a tal:attributes="href context/fmt:url"
+                   tal:content="series_name">Deriwarty</a> version
+              </th>
               <th tal:condition="view/show_parent_packagesets">
                 Parent package-sets
               </th>
@@ -60,17 +75,39 @@
             <tal:difference repeat="difference differences/batch">
             <tr tal:define="parent_source_pub difference/parent_source_pub;
                             source_pub difference/source_pub;
+                            diff_id difference/id;
                             src_name difference/source_package_name/name;"
                 tal:attributes="class src_name">
-              <td>
-                <input tal:condition="view/canPerformSync"
-                  name="field.selected_differences" type="checkbox"
-                  tal:attributes="
-                    value src_name;
-                    id string:field.selected_differences.${src_name}"/>
 
-                <a tal:attributes="href difference/fmt:url" class="toggle-extra"
+              <td>
+                <tal:checkbox
+                    condition="can_perform_sync"
+                    define="can_request python:view.canRequestSync(difference)">
+                  <input tal:condition="can_request"
+                    name="field.selected_differences" type="checkbox"
+                    tal:attributes="
+                      value diff_id;
+                      id string:field.selected_differences.${diff_id}"/>
+                  <input
+                    tal:condition="not: can_request"
+                    type="checkbox" disabled="disabled" />
+                </tal:checkbox>
+
+                <a tal:attributes="href difference/fmt:url"
+                   class="js-action toggle-extra"
                    tal:content="src_name">Foo</a>
+
+                <tal:activity
+                    define="activity python:view.describeJobs(difference)"
+                    condition="activity">
+                  &nbsp;&nbsp;
+                  <span class="lowlight" tal:content="structure activity"></span>
+                </tal:activity>
+              </td>
+              <td tal:condition="python: not(view.has_unique_parent) and view.show_parent_version">
+                <a tal:attributes="href difference/parent_series/fmt:url"
+                   tal:content="difference/parent_series/displayname"
+                   class="parent-name">Warty</a>
               </td>
               <td tal:condition="view/show_parent_version">
                 <a tal:condition="difference/parent_source_package_release"
@@ -83,6 +120,7 @@
                       tal:content="difference/parent_source_version">
                 </span>
               </td>
+
               <td tal:condition="view/show_derived_version">
                 <a tal:condition="difference/source_package_release"
                    tal:attributes="href difference/source_package_release/fmt:url"
@@ -93,47 +131,60 @@
                     class="derived-version"
                     tal:content="difference/source_version">
                 </span>
-               </td>
+              </td>
+
               <td tal:condition="view/show_parent_packagesets"
                   class="parent-packagesets">
                 <tal:replace replace="difference/@@/parent_packagesets_names"/>
               </td>
+
               <td tal:condition="view/show_packagesets"
                   class="packagesets">
                 <tal:replace replace="difference/@@/packagesets_names" />
               </td>
+
               <td>
                 <tal:parent condition="not: view/show_derived_version">
-                  <span tal:attributes="title difference/parent_source_pub/datepublished/fmt:datetime"
-                        tal:content="difference/parent_source_pub/datepublished/fmt:approximatedate">2005-09-16</span>
-                  <tal:signer condition="parent_source_pub/sourcepackagerelease/uploader">
-                    by <a tal:replace="structure parent_source_pub/sourcepackagerelease/uploader/fmt:link">Steph Smith</a>
-                  </tal:signer>
+                  <tal:published condition="parent_source_pub">
+                    <span tal:attributes="title parent_source_pub/datepublished/fmt:datetime"
+                          tal:content="parent_source_pub/datepublished/fmt:approximatedate">2005-09-16</span>
+                    <tal:signer condition="parent_source_pub/sourcepackagerelease/uploader">
+                      by <a tal:replace="structure parent_source_pub/sourcepackagerelease/uploader/fmt:link">Steph Smith</a>
+                    </tal:signer>
+                  </tal:published>
+                  <tal:not-published condition="not:parent_source_pub">
+                    <span tal:content="difference/parent_source_version" />
+                  </tal:not-published>
                 </tal:parent>
                 <tal:derived condition="view/show_derived_version">
-                  <span tal:attributes="title difference/source_pub/datepublished/fmt:datetime"
-                        tal:content="difference/source_pub/datepublished/fmt:approximatedate">2005-09-16</span>
-                  <tal:signer condition="source_pub/sourcepackagerelease/uploader">
-                    by <a tal:replace="structure source_pub/sourcepackagerelease/uploader/fmt:link">Steph Smith</a>
-                  </tal:signer>
+                  <tal:published condition="parent_source_pub">
+                    <span tal:attributes="title source_pub/datepublished/fmt:datetime"
+                          tal:content="source_pub/datepublished/fmt:approximatedate">2005-09-16</span>
+                    <tal:signer condition="source_pub/sourcepackagerelease/uploader">
+                      by <a tal:replace="structure source_pub/sourcepackagerelease/uploader/fmt:link">Steph Smith</a>
+                    </tal:signer>
+                  </tal:published>
+                  <tal:not-published condition="not:source_pub">
+                    <span tal:content="difference/source_version" />
+                  </tal:not-published>
                 </tal:derived>
               </td>
-              <td>
-                <tal:comment tal:define="comment python:difference.getComments().first();"
-                             tal:condition="comment">
-                  <span tal:replace="comment/body_text/fmt:shorten/50">I'm on this.</span>
-                  <br /><span class="greyed-out greylink"><span
-                      tal:replace="comment/comment_date/fmt:approximatedate">2005-09-16</span>
-                  by <a tal:replace="structure
-                      comment/comment_author/fmt:link">joesmith</a></span>
-                </tal:comment>
+
+              <td class="latest-comment-fragment">
+                <tal:latest-comment-fragment
+                    define="comment difference/latest_comment"
+                    content="structure comment/@@+latest-comment-fragment"
+                    condition="comment" />
               </td>
+
             </tr>
 
             </tal:difference>
           </tbody>
         </table>
-        <tal:selectable_differences_end
+        <tal:navigation_bottom
+          replace="structure differences/@@+navigation-links-lower" />
+         <tal:selectable_differences_end
                define="widget nocall:view/widgets/selected_differences;
                        field_name widget/context/__name__;
                        error python:view.getFieldError(field_name);">

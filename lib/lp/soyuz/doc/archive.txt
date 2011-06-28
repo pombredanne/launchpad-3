@@ -101,7 +101,7 @@ As a Launchpad admin, setting these properties will work.
 
     >>> login("admin@canonical.com")
     >>> cprov_archive.relative_build_score = 100
-    >>> cprov_archive.external_dependencies = "test"
+    >>> cprov_archive.external_dependencies = "deb http://foo hardy bar"
 
 The buildd_secret is used by the slave scanner when generating a
 sources.list entry for the builder to access a private archive.  It is
@@ -1043,6 +1043,7 @@ dependency is published in Mark's PPA.
     >>> print_dependencies(no_priv.archive)
     No dependencies recorded.
 
+    >>> login_person(no_priv)
     >>> archive_dependency = no_priv.archive.addArchiveDependency(
     ...     cprov.archive, release_pocket, main_component)
 
@@ -1058,8 +1059,7 @@ dependency is published in Mark's PPA.
     ...     cprov.archive, release_pocket, main_component)
     Traceback (most recent call last):
     ...
-    ArchiveDependencyError: Only one dependency record per archive is
-    supported.
+    ArchiveDependencyError: This dependency is already registered.
 
 'dependency' and target archive are the same.
 
@@ -1099,8 +1099,7 @@ Only one dependency per archive can be added.
     ...     getUtility(IComponentSet)['main'])
     Traceback (most recent call last):
     ...
-    ArchiveDependencyError: Only one dependency record per archive is
-    supported.
+    ArchiveDependencyError: This dependency is already registered.
 
 Thus archive dependency removal can be performed simply by passing the
 dependency target.
@@ -2275,7 +2274,8 @@ can ask syncSources to synchronise these packages into mark's PPA in the
 release pocket, but to do so we must have edit permissions on the archive.
 
     >>> sources = ["package1", "package2"]
-    >>> mark.archive.syncSources(sources, cprov.archive, "release")
+    >>> mark.archive.syncSources(
+    ...     sources, cprov.archive, "release", person=None)
     Traceback (most recent call last):
     ...
     Unauthorized...
@@ -2284,7 +2284,8 @@ Let's log in as mark and it will work:
 
     >>> login("mark@example.com")
 
-    >>> mark.archive.syncSources(sources, cprov.archive, "release")
+    >>> mark.archive.syncSources(
+    ...     sources, cprov.archive, "release", person=mark)
 
     >>> mark_one = mark.archive.getPublishedSources(name="package1").one()
     >>> print mark_one.sourcepackagerelease.version
@@ -2298,7 +2299,8 @@ older one.
 
 Repeating this source copy gives an error:
 
-    >>> mark.archive.syncSources(sources, cprov.archive, "release")
+    >>> mark.archive.syncSources(
+    ...     sources, cprov.archive, "release", person=mark)
     Traceback (most recent call last):
     ...
     CannotCopy:
@@ -2310,7 +2312,8 @@ Repeating this source copy gives an error:
 Repeating this copy with binaries also gives an error:
 
     >>> mark.archive.syncSources(
-    ...     sources, cprov.archive, "release", include_binaries=True)
+    ...     sources, cprov.archive, "release", include_binaries=True,
+    ...     person=mark)
     Traceback (most recent call last):
     ...
     CannotCopy:
@@ -2320,21 +2323,24 @@ Repeating this copy with binaries also gives an error:
 Specifying non-existent source names, pocket names or distroseries names
 all result in a NotFound exception:
 
-    >>> mark.archive.syncSources(["bogus"], cprov.archive, "release")
+    >>> mark.archive.syncSources(["bogus"], cprov.archive, "release",
+    ...     person=mark)
     Traceback (most recent call last):
     ...
     NoSuchSourcePackageName: No such source package: 'bogus'.
 
-    >>> mark.archive.syncSources(sources, cprov.archive, "badpocket")
+    >>> mark.archive.syncSources(sources, cprov.archive, "badpocket",
+    ...     person=mark)
     Traceback (most recent call last):
     ...
-    PocketNotFound: 'BADPOCKET'
+    PocketNotFound: No such pocket: 'BADPOCKET'.
 
     >>> mark.archive.syncSources(
-    ...     sources, cprov.archive, "release", to_series="badseries")
+    ...     sources, cprov.archive, "release", to_series="badseries",
+    ...     person=mark)
     Traceback (most recent call last):
     ...
-    DistroSeriesNotFound: badseries
+    NoSuchDistroSeries: No such distribution series: 'badseries'.
 
 We can also specify a single source to be copied with the `syncSource`
 call.  This allows a version to be specified so older versions can be
@@ -2360,7 +2366,8 @@ only match one of the test packages we created above rather than all of them.
 As with syncSources() you need to have edit permission on the archive.
 
     >>> login(ANONYMOUS)
-    >>> mark.archive.syncSource("pack", "1.0", cprov.archive, "release")
+    >>> mark.archive.syncSource("pack", "1.0", cprov.archive, "release",
+    ...     person=None)
     Traceback (most recent call last):
     ...
     Unauthorized...
@@ -2368,7 +2375,8 @@ As with syncSources() you need to have edit permission on the archive.
 Login as mark to continue.
 
     >>> login("mark@example.com")
-    >>> mark.archive.syncSource("pack", "1.0", cprov.archive, "release")
+    >>> mark.archive.syncSource("pack", "1.0", cprov.archive, "release",
+    ...     person=mark)
     >>> pack = mark.archive.getPublishedSources(
     ...     name="pack", exact_match=True).one()
     >>> print pack.sourcepackagerelease.version
@@ -2376,7 +2384,8 @@ Login as mark to continue.
 
 Copy package3 1.0 explicitly:
 
-    >>> mark.archive.syncSource("package3", "1.0", cprov.archive, "release")
+    >>> mark.archive.syncSource("package3", "1.0", cprov.archive,
+    ...     "release", person=mark)
     >>> mark_three = mark.archive.getPublishedSources(name="package3").one()
     >>> print mark_three.sourcepackagerelease.version
     1.0
@@ -2403,7 +2412,7 @@ PPA like this:
 
     >>> mark.archive.syncSource(
     ...     "built-source", "1.0", cprov.archive, "release",
-    ...     include_binaries=True)
+    ...     include_binaries=True, person=mark)
 
 Now, Mark's PPA has 'built-source' source and it's 2 binaries.
 
@@ -2415,7 +2424,7 @@ If copying packages into a PPA, you can only copy into the "release" pocket,
 or a CannotCopy exception is thrown.
 
     >>> mark.archive.syncSource(
-    ...     "package3", "1.2", cprov.archive, "updates")
+    ...     "package3", "1.2", cprov.archive, "updates", person=mark)
     Traceback (most recent call last):
     ...
     CannotCopy: Destination pocket must be 'release' for a PPA.
@@ -2446,7 +2455,7 @@ the one published in 'python' section, will be used.
 
     >>> mark.archive.syncSource(
     ...     source_name='overridden', version='1.0',
-    ...     from_archive=source_archive, to_pocket='release')
+    ...     from_archive=source_archive, to_pocket='release', person=mark)
 
     >>> copy = mark.archive.getPublishedSources(name="overridden").one()
     >>> print copy.section.name

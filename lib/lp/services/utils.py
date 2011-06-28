@@ -15,8 +15,10 @@ __all__ = [
     'compress_hash',
     'decorate_with',
     'docstring_dedent',
+    'file_exists',
     'iter_list_chunks',
     'iter_split',
+    'RegisteredSubclass',
     'run_capturing_output',
     'synchronize',
     'text_delta',
@@ -25,6 +27,7 @@ __all__ = [
     ]
 
 from itertools import tee
+import os
 from StringIO import StringIO
 import string
 import sys
@@ -48,6 +51,7 @@ def AutoDecorate(*decorators):
     """
 
     class AutoDecorateMetaClass(type):
+
         def __new__(cls, class_name, bases, class_dict):
             new_class_dict = {}
             for name, value in class_dict.items():
@@ -126,7 +130,7 @@ def iter_list_chunks(a_list, size):
     I'm amazed this isn't in itertools (mwhudson).
     """
     for i in range(0, len(a_list), size):
-        yield a_list[i:i+size]
+        yield a_list[i:i + size]
 
 
 def synchronize(source, target, add, remove):
@@ -217,11 +221,15 @@ class CachingIterator:
 
 def decorate_with(context_factory, *args, **kwargs):
     """Create a decorator that runs decorated functions with 'context'."""
+
     def decorator(function):
+
         def decorated(*a, **kw):
             with context_factory(*args, **kwargs):
                 return function(*a, **kw)
+
         return mergeFunctionMetadata(function, decorated)
+
     return decorator
 
 
@@ -232,8 +240,13 @@ def docstring_dedent(s):
     then reassemble.
     """
     # Make sure there is at least one newline so the split works.
-    first, rest = (s+'\n').split('\n', 1)
+    first, rest = (s + '\n').split('\n', 1)
     return (first + '\n' + dedent(rest)).strip()
+
+
+def file_exists(filename):
+    """Does `filename` exist?"""
+    return os.access(filename, os.F_OK)
 
 
 class CapturedOutput(Fixture):
@@ -273,3 +286,20 @@ def traceback_info(info):
     variables, and helps to avoid typos.
     """
     sys._getframe(1).f_locals["__traceback_info__"] = info
+
+
+class RegisteredSubclass(type):
+    """Metaclass for when subclasses should be registered."""
+
+    def __init__(cls, name, bases, dict_):
+        # _register_subclass must be a static method to permit upcalls.
+        #
+        # We cannot use super(Class, cls) to do the upcalls, because Class
+        # isn't fully defined yet.  (Remember, we're calling this from a
+        # metaclass.)
+        #
+        # Without using super, a classmethod that overrides another
+        # classmethod has no reasonable way to call the overridden version AND
+        # provide its class as first parameter (i.e. "cls").  Therefore, we
+        # must use a static method.
+        cls._register_subclass(cls)

@@ -14,7 +14,6 @@ __all__ = [
     'canonical_url',
     'canonical_url_iterator',
     'get_current_browser_request',
-    'HTTP_MOVED_PERMANENTLY',
     'nearest',
     'Navigation',
     'rootObject',
@@ -26,6 +25,7 @@ __all__ = [
     'UserAttributeCache',
     ]
 
+import httplib
 
 from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
@@ -51,6 +51,8 @@ from zope.security.checker import (
     )
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
+from lazr.restful.declarations import error_status
+
 from canonical.launchpad.layers import (
     LaunchpadLayer,
     setFirstLayer,
@@ -72,8 +74,10 @@ from canonical.lazr.utils import get_current_browser_request
 from lp.app.errors import NotFoundError
 from lp.services.encoding import is_ascii_only
 
-# HTTP Status code constants - define as appropriate.
-HTTP_MOVED_PERMANENTLY = 301
+
+# Monkeypatch NotFound to always avoid generating OOPS
+# from NotFound in web service calls.
+error_status(httplib.NOT_FOUND)(NotFound)
 
 
 class DecoratorAdvisor:
@@ -496,8 +500,7 @@ def canonical_url(
             raise NoCanonicalUrl(obj, obj)
         rootsite = obj_urldata.rootsite
 
-    # The request is needed when there's no rootsite specified and when
-    # handling the different shipit sites.
+    # The request is needed when there's no rootsite specified.
     if request is None:
         # Look for a request from the interaction.
         current_request = get_current_browser_request()

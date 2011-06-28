@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.message import IIndexedMessage
+from lp.services.messages.interfaces.message import IIndexedMessage
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
 

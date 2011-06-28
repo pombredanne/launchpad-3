@@ -14,6 +14,7 @@ __all__ = [
     "DBItemDisplayWidget",
     "NewLineToSpacesWidget",
     "NominationReviewActionWidget",
+    "UbuntuSourcePackageNameWidget",
     ]
 
 from xml.sax.saxutils import escape
@@ -54,6 +55,7 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.helpers import get_widget_template
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.app.widgets.popup import VocabularyPickerWidget
@@ -494,7 +496,7 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
         distribution = self.getDistribution()
 
         try:
-            source, binary = distribution.guessPackageNames(input)
+            source = distribution.guessPublishedSourcePackageName(input)
         except NotFoundError:
             try:
                 return self.convertTokensToValues([input])[0]
@@ -525,6 +527,14 @@ class BugTaskAlsoAffectsSourcePackageNameWidget(
             raise UnexpectedFormData(
                 "No such distribution: %s" % distribution_name)
         return distribution
+
+
+class UbuntuSourcePackageNameWidget(BugTaskSourcePackageNameWidget):
+    """A widget to select Ubuntu packages."""
+
+    def getDistribution(self):
+        """See `BugTaskSourcePackageNameWidget`"""
+        return getUtility(ILaunchpadCelebrities).ubuntu
 
 
 class AssigneeDisplayWidget(BrowserWidget):

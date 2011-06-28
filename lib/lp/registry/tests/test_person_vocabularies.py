@@ -6,16 +6,35 @@
 __metaclass__ = type
 
 from storm.store import Store
+from testtools.matchers import Equals
+from zope.component import getUtility
 from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+from lp.registry.interfaces.irc import IIrcIDSet
 from lp.registry.interfaces.person import (
     PersonVisibility,
     TeamSubscriptionPolicy,
     )
-from lp.testing import TestCaseWithFactory
+from lp.registry.interfaces.karma import IKarmaCacheManager
+from lp.services.features.testing import FeatureFixture
+from lp.testing import (
+    StormStatementRecorder,
+    TestCaseWithFactory,
+    )
+from lp.testing.dbuser import dbuser
+from lp.testing.matchers import HasQueryCount
+
+
+PERSON_AFFILIATION_RANK_FLAG = {
+    'disclosure.picker_enhancements.enabled': 'on',
+    'disclosure.person_affiliation_rank.enabled': 'on',
+    }
 
 
 class VocabularyTestBase:
@@ -30,9 +49,134 @@ class VocabularyTestBase:
         return self.vocabulary_registry.get(context, self.vocabulary_name)
 
     def searchVocabulary(self, context, text):
-        Store.of(context).flush()
+        if Store.of(context) is not None:
+            Store.of(context).flush()
         vocabulary = self.getVocabulary(context)
         return removeSecurityProxy(vocabulary)._doSearch(text)
+
+
+class TestValidPersonOrTeamVocabulary(VocabularyTestBase,
+                                      TestCaseWithFactory):
+    """Test that the ValidPersonOrTeamVocabulary behaves as expected.
+
+    Most tests are in lib/lp/registry/doc/vocabularies.txt.
+    """
+
+    layer = LaunchpadZopelessLayer
+    vocabulary_name = 'ValidPersonOrTeam'
+
+    def addKarma(self, person, value, product=None, distribution=None):
+        if product:
+            kwargs = dict(product_id=product.id)
+        elif distribution:
+            kwargs = dict(distribution_id=distribution.id)
+        with dbuser('karma'):
+            getUtility(IKarmaCacheManager).new(
+                value, person.id, None, **kwargs)
+
+    def test_people_with_karma_sort_higher(self):
+        self.useFixture(FeatureFixture(PERSON_AFFILIATION_RANK_FLAG))
+        exact_person = self.factory.makePerson(
+            name='fooix', displayname='Fooix Bar')
+        prefix_person = self.factory.makePerson(
+            name='fooix-bar', displayname='Fooix Bar')
+        contributor_person = self.factory.makePerson(
+            name='bar', displayname='Fooix Bar')
+        product = self.factory.makeProduct()
+
+        # Exact is better than prefix is better than FTI.
+        self.assertEqual(
+            [exact_person, prefix_person, contributor_person],
+            list(self.searchVocabulary(product, u'fooix')))
+
+        # But karma can bump people up, behind the exact match.
+        self.addKarma(contributor_person, 500, product=product)
+        self.assertEqual(
+            [exact_person, contributor_person, prefix_person],
+            list(self.searchVocabulary(product, u'fooix')))
+
+        self.addKarma(prefix_person, 500, product=product)
+        self.assertEqual(
+            [exact_person, prefix_person, contributor_person],
+            list(self.searchVocabulary(product, u'fooix')))
+
+    def assertKarmaContextConstraint(self, expected, context):
+        """Check that the karma context constraint works.
+
+        Confirms that the karma context constraint matches the expected
+        value, and that a search with it works.
+        """
+        if expected is not None:
+            expected = expected % context.id
+        self.assertEquals(
+            expected,
+            removeSecurityProxy(
+                self.getVocabulary(context))._karma_context_constraint)
+        with FeatureFixture(PERSON_AFFILIATION_RANK_FLAG):
+            self.searchVocabulary(context, 'foo')
+
+    def test_product_karma_context(self):
+        self.assertKarmaContextConstraint(
+            'product = %d', self.factory.makeProduct())
+
+    def test_project_karma_context(self):
+        self.assertKarmaContextConstraint(
+            'project = %d', self.factory.makeProject())
+
+    def test_distribution_karma_context(self):
+        self.assertKarmaContextConstraint(
+            'distribution = %d', self.factory.makeDistribution())
+
+    def test_root_karma_context(self):
+        self.assertKarmaContextConstraint(None, None)
+
+    def test_irc_nick_match_is_not_case_sensitive(self):
+        person = self.factory.makePerson()
+        irc = getUtility(IIrcIDSet).new(
+            person, 'somenet', 'MiXeD' + self.factory.getUniqueString())
+        with FeatureFixture(PERSON_AFFILIATION_RANK_FLAG):
+            self.assertContentEqual(
+                [person], self.searchVocabulary(person, irc.nickname.lower()))
+
+
+class TestValidPersonOrTeamPreloading(VocabularyTestBase,
+                                      TestCaseWithFactory):
+    """Tests for ValidPersonOrTeamVocabulary's preloading behaviour."""
+
+    layer = DatabaseFunctionalLayer
+    vocabulary_name = 'ValidPersonOrTeam'
+
+    def test_preloads_irc_nicks_and_preferredemail(self):
+        """Test that IRC nicks and preferred email addresses are preloaded."""
+        # Create three people with IRC nicks, and one without.
+        people = []
+        for num in range(3):
+            person = self.factory.makePerson(displayname='foobar %d' % num)
+            getUtility(IIrcIDSet).new(person, 'launchpad', person.name)
+            people.append(person)
+        people.append(self.factory.makePerson(displayname='foobar 4'))
+
+        # Remember the current values for checking later, and throw out
+        # the cache.
+        expected_nicks = dict(
+            (person.id, list(person.ircnicknames)) for person in people)
+        expected_emails = dict(
+            (person.id, person.preferredemail) for person in people)
+        Store.of(people[0]).invalidate()
+
+        with FeatureFixture(PERSON_AFFILIATION_RANK_FLAG):
+            results = list(self.searchVocabulary(None, u'foobar'))
+        with StormStatementRecorder() as recorder:
+            self.assertEquals(4, len(results))
+            for person in results:
+                self.assertEqual(
+                    expected_nicks[person.id], person.ircnicknames)
+                self.assertEqual(
+                    expected_emails[person.id], person.preferredemail)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+
+
+class TeamMemberVocabularyTestBase(VocabularyTestBase):
 
     def test_open_team_cannot_be_a_member_of_a_closed_team(self):
         context_team = self.factory.makeTeam(
@@ -88,7 +232,8 @@ class VocabularyTestBase:
             vocabulary.step_title)
 
 
-class TestValidTeamMemberVocabulary(VocabularyTestBase, TestCaseWithFactory):
+class TestValidTeamMemberVocabulary(TeamMemberVocabularyTestBase,
+                                    TestCaseWithFactory):
     """Test that the ValidTeamMemberVocabulary behaves as expected."""
 
     layer = DatabaseFunctionalLayer
@@ -109,7 +254,8 @@ class TestValidTeamMemberVocabulary(VocabularyTestBase, TestCaseWithFactory):
         self.assertNotIn(team, self.searchVocabulary(team, team.name))
 
 
-class TestValidTeamOwnerVocabulary(VocabularyTestBase, TestCaseWithFactory):
+class TestValidTeamOwnerVocabulary(TeamMemberVocabularyTestBase,
+                                   TestCaseWithFactory):
     """Test that the ValidTeamOwnerVocabulary behaves as expected."""
 
     layer = DatabaseFunctionalLayer

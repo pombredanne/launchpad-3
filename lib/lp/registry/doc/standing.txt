@@ -31,7 +31,7 @@ are not a member of, their message gets held for moderator approval.
     >>> message_ids = message_id_generator()
 
     # A helper for posting messages to a list.
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> from email.Utils import formatdate
     >>> from lp.registry.interfaces.mailinglist import IMailingListSet
     >>> def post_message(from_address, to_team_name):

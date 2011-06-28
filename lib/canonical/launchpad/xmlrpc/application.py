@@ -38,6 +38,8 @@ from lp.registry.interfaces.mailinglist import IMailingListApplication
 from lp.registry.interfaces.person import ISoftwareCenterAgentApplication
 
 
+# NOTE: If you add a traversal here, you should update
+# the regular expression in utilities/page-performance-report.ini
 class PrivateApplication:
     implements(IPrivateApplication)
 

@@ -11,6 +11,37 @@ which tells `lazr.restful` that it should look for webservice exports here.
 
 __all__ = [
     'IQuestion',
+    'IQuestionSet',
     ]
 
+from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
+
+from canonical.launchpad.components.apihelpers import (
+    patch_collection_return_type,
+    patch_entry_return_type,
+    patch_reference_property,
+    )
 from lp.answers.interfaces.question import IQuestion
+from lp.answers.interfaces.questioncollection import (
+    IQuestionSet,
+    ISearchableByQuestionOwner,
+    )
+from lp.answers.interfaces.questionmessage import  IQuestionMessage
+from lp.answers.interfaces.questionsperson import  IQuestionsPerson
+from lp.answers.interfaces.questiontarget import IQuestionTarget
+
+
+IQuestionSet.queryTaggedValue(
+    LAZR_WEBSERVICE_EXPORTED)['collection_entry_schema'] = IQuestion
+patch_entry_return_type(IQuestionSet, 'get', IQuestion)
+patch_collection_return_type(
+    IQuestionTarget, 'findSimilarQuestions', IQuestion)
+patch_collection_return_type(
+    ISearchableByQuestionOwner, 'searchQuestions', IQuestion)
+patch_reference_property(IQuestionMessage, 'question', IQuestion)
+patch_collection_return_type(
+    IQuestionsPerson, 'getDirectAnswerQuestionTargets', IQuestionTarget)
+patch_collection_return_type(
+    IQuestionsPerson, 'getTeamAnswerQuestionTargets', IQuestionTarget)
+patch_collection_return_type(
+    IQuestionsPerson, 'searchQuestions', IQuestion)

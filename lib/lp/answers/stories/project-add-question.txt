@@ -163,7 +163,7 @@ speaks Japanese, so we will use him.
     True
 
     >>> daf_browser.open(
-    ...     'http://answers.launchpad.dev/thunderbird/+support-contact')
+    ...     'http://answers.launchpad.dev/thunderbird/+answer-contact')
     >>> print daf_browser.title
     Answer contact for...
 

@@ -73,8 +73,7 @@ page does not show any translations to complete--even to a member of the team.
 
     >>> login('carlos@canonical.com')
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> pofile = factory.makePOFile('ru')
     >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     >>> message = factory.makeCurrentTranslationMessage(

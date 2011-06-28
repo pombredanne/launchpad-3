@@ -7,7 +7,10 @@
 
 __metaclass__ = type
 
-__all__ = ['Archive', 'ArchiveSet']
+__all__ = [
+    'Archive',
+    'ArchiveSet',
+    ]
 
 from operator import attrgetter
 import re
@@ -25,8 +28,8 @@ from storm.expr import (
     Desc,
     Or,
     Select,
-    Sum,
     SQL,
+    Sum,
     )
 from storm.locals import (
     Count,
@@ -56,16 +59,17 @@ from canonical.launchpad.components.decoratedresultset import (
     )
 from canonical.launchpad.components.tokens import (
     create_unique_token_for_table,
+    create_token,
     )
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     ISlaveStore,
     IStore,
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -73,6 +77,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.url import urlappend
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.name import valid_name
 from lp.archivepublisher.debversion import Version
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
@@ -84,6 +89,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -104,6 +110,7 @@ from lp.services.propertycache import (
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
+    archive_suffixes,
     ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
@@ -121,14 +128,15 @@ from lp.soyuz.interfaces.archive import (
     CannotSwitchPrivacy,
     CannotUploadToPocket,
     CannotUploadToPPA,
+    ComponentNotFound,
     default_name_by_purpose,
-    DistroSeriesNotFound,
     FULL_COMPONENT_SUPPORT,
     IArchive,
     IArchiveSet,
     IDistributionArchive,
     InsufficientUploadRights,
     InvalidComponent,
+    InvalidExternalDependencies,
     InvalidPocketForPartnerArchive,
     InvalidPocketForPPA,
     IPPA,
@@ -139,6 +147,7 @@ from lp.soyuz.interfaces.archive import (
     NoTokensForTeams,
     PocketNotFound,
     VersionRequiresName,
+    validate_external_dependencies,
     )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
@@ -191,7 +200,14 @@ from lp.soyuz.model.queue import (
     )
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.soyuz.scripts.packagecopier import do_copy
+
+
+def storm_validate_external_dependencies(archive, attr, value):
+    assert attr == 'external_dependencies'
+    errors = validate_external_dependencies(value)
+    if len(errors) > 0:
+        raise InvalidExternalDependencies(errors)
+    return value
 
 
 class Archive(SQLBase):
@@ -256,7 +272,7 @@ class Archive(SQLBase):
 
     publish = BoolCol(dbName='publish', notNull=True, default=True)
 
-    private = BoolCol(dbName='private', notNull=True, default=False,
+    _private = BoolCol(dbName='private', notNull=True, default=False,
                       storm_validator=_validate_archive_privacy)
 
     require_virtualized = BoolCol(
@@ -303,7 +319,8 @@ class Archive(SQLBase):
     # Launchpad and should be re-examined in October 2010 to see if it
     # is still relevant.
     external_dependencies = StringCol(
-        dbName='external_dependencies', notNull=False, default=None)
+        dbName='external_dependencies', notNull=False, default=None,
+        storm_validator=storm_validate_external_dependencies)
 
     commercial = BoolCol(
         dbName='commercial', notNull=True, default=False)
@@ -319,6 +336,22 @@ class Archive(SQLBase):
             alsoProvides(self, IPPA)
         else:
             alsoProvides(self, IDistributionArchive)
+
+    # Note: You may safely ignore lint when it complains about this
+    # declaration.  As of Python 2.6, this is a perfectly valid way
+    # of adding a setter
+    @property
+    def private(self):
+        return self._private
+
+    @private.setter
+    def private(self, private):
+        self._private = private
+        if private:
+            if not self.buildd_secret:
+                self.buildd_secret = create_token(20)
+        else:
+            self.buildd_secret = None
 
     @property
     def title(self):
@@ -408,12 +441,6 @@ class Archive(SQLBase):
     @property
     def archive_url(self):
         """See `IArchive`."""
-        archive_postfixes = {
-            ArchivePurpose.PRIMARY: '',
-            ArchivePurpose.PARTNER: '-partner',
-            ArchivePurpose.DEBUG: '-debug',
-        }
-
         if self.is_ppa:
             if self.private:
                 url = config.personalpackagearchive.private_base_url
@@ -432,7 +459,7 @@ class Archive(SQLBase):
             return urlappend(url, self.distribution.name)
 
         try:
-            postfix = archive_postfixes[self.purpose]
+            postfix = archive_suffixes[self.purpose]
         except KeyError:
             raise AssertionError(
                 "archive_url unknown for purpose: %s" % self.purpose)
@@ -473,29 +500,36 @@ class Archive(SQLBase):
         # callers are problematic. (Migrate them and test to see).
         clauses = []
         storm_clauses = [
-            SourcePackagePublishingHistory.archiveID==self.id,
-            SourcePackagePublishingHistory.sourcepackagereleaseID==
+            SourcePackagePublishingHistory.archiveID == self.id,
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 SourcePackageRelease.id,
-            SourcePackageRelease.sourcepackagenameID==
-                SourcePackageName.id
+            SourcePackageRelease.sourcepackagenameID ==
+                SourcePackageName.id,
             ]
-        orderBy = [SourcePackageName.name,
-                   Desc(SourcePackagePublishingHistory.id)]
+        orderBy = [
+            SourcePackageName.name,
+            Desc(SourcePackagePublishingHistory.id),
+            ]
 
         if name is not None:
-            if exact_match:
-                storm_clauses.append(SourcePackageName.name==name)
-            else:
+            if type(name) in (str, unicode):
+                if exact_match:
+                    storm_clauses.append(SourcePackageName.name == name)
+                else:
+                    clauses.append(
+                        "SourcePackageName.name LIKE '%%%%' || %s || '%%%%'"
+                        % quote_like(name))
+            elif len(name) != 0:
                 clauses.append(
-                    "SourcePackageName.name LIKE '%%%%' || %s || '%%%%'"
-                    % quote_like(name))
+                    "SourcePackageName.name IN %s"
+                    % sqlvalues(name))
 
         if version is not None:
             if name is None:
                 raise VersionRequiresName(
                     "The 'version' parameter can be used only together with"
                     " the 'name' parameter.")
-            storm_clauses.append(SourcePackageRelease.version==version)
+            storm_clauses.append(SourcePackageRelease.version == version)
         else:
             orderBy.insert(1, Desc(SourcePackageRelease.version))
 
@@ -510,11 +544,12 @@ class Archive(SQLBase):
 
         if distroseries is not None:
             storm_clauses.append(
-                SourcePackagePublishingHistory.distroseriesID==distroseries.id)
+                SourcePackagePublishingHistory.distroseriesID ==
+                    distroseries.id)
 
         if pocket is not None:
             storm_clauses.append(
-                SourcePackagePublishingHistory.pocket==pocket)
+                SourcePackagePublishingHistory.pocket == pocket)
 
         if created_since_date is not None:
             clauses.append(
@@ -529,6 +564,7 @@ class Archive(SQLBase):
             *orderBy)
         if not eager_load:
             return resultset
+
         # Its not clear that this eager load is necessary or sufficient, it
         # replaces a prejoin that had pathological query plans.
         def eager_load(rows):
@@ -609,7 +645,7 @@ class Archive(SQLBase):
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
 
         order_const = "SourcePackageRelease.version"
-        desc_version_order = SQLConstant(order_const+" DESC")
+        desc_version_order = SQLConstant(order_const + " DESC")
         orderBy = ['SourcePackageName.name', desc_version_order,
                    '-SourcePackagePublishingHistory.id']
 
@@ -910,13 +946,12 @@ class Archive(SQLBase):
                           source_package_name, dep_name):
         """See `IArchive`."""
         deps = expand_dependencies(
-            self, distro_arch_series.distroseries, pocket, component,
-            source_package_name)
+            self, distro_arch_series, pocket, component, source_package_name)
         archive_clause = Or([And(
             BinaryPackagePublishingHistory.archiveID == archive.id,
             BinaryPackagePublishingHistory.pocket == pocket,
             Component.name.is_in(components))
-            for (archive, pocket, components) in deps])
+            for (archive, not_used, pocket, components) in deps])
 
         store = ISlaveStore(BinaryPackagePublishingHistory)
         return store.find(
@@ -954,7 +989,14 @@ class Archive(SQLBase):
         a_dependency = self.getArchiveDependency(dependency)
         if a_dependency is not None:
             raise ArchiveDependencyError(
-                "Only one dependency record per archive is supported.")
+                "This dependency is already registered.")
+        if not check_permission('launchpad.View', dependency):
+            raise ArchiveDependencyError(
+                "You don't have permission to use this dependency.")
+            return
+        if dependency.private and not self.private:
+            raise ArchiveDependencyError(
+                "Public PPAs cannot depend on private ones.")
 
         if dependency.is_ppa:
             if pocket is not PackagePublishingPocket.RELEASE:
@@ -969,6 +1011,15 @@ class Archive(SQLBase):
         return ArchiveDependency(
             archive=self, dependency=dependency, pocket=pocket,
             component=component)
+
+    def _addArchiveDependency(self, dependency, pocket, component=None):
+        """See `IArchive`."""
+        if isinstance(component, basestring):
+            try:
+                component = getUtility(IComponentSet)[component]
+            except NotFoundError as e:
+                raise ComponentNotFound(e)
+        return self.addArchiveDependency(dependency, pocket, component)
 
     def getPermissions(self, user, item, perm_type):
         """See `IArchive`."""
@@ -999,6 +1050,19 @@ class Archive(SQLBase):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.componentsForQueueAdmin(self, person)
+
+    def hasAnyPermission(self, person):
+        """See `IArchive`."""
+        # Avoiding circular imports.
+        from lp.soyuz.model.archivepermission import ArchivePermission
+
+        any_perm_on_archive = Store.of(self).find(
+            TeamParticipation,
+            ArchivePermission.archive == self.id,
+            TeamParticipation.person == person.id,
+            TeamParticipation.teamID == ArchivePermission.personID,
+            )
+        return not any_perm_on_archive.is_empty()
 
     def getBuildCounters(self, include_needsbuild=True):
         """See `IArchiveSet`."""
@@ -1175,7 +1239,7 @@ class Archive(SQLBase):
             strict_component)
 
     def verifyUpload(self, person, sourcepackagename, component,
-                      distroseries, strict_component=True):
+                     distroseries, strict_component=True):
         """See `IArchive`."""
         if not self.enabled:
             return ArchiveDisabled(self.displayname)
@@ -1434,15 +1498,17 @@ class Archive(SQLBase):
             reason)
 
     def syncSources(self, source_names, from_archive, to_pocket,
-                    to_series=None, include_binaries=False):
+                    to_series=None, include_binaries=False, person=None):
         """See `IArchive`."""
         # Find and validate the source package names in source_names.
         sources = self._collectLatestPublishedSources(
             from_archive, source_names)
-        self._copySources(sources, to_pocket, to_series, include_binaries)
+        self._copySources(
+            sources, to_pocket, to_series, include_binaries,
+            person=person)
 
     def syncSource(self, source_name, version, from_archive, to_pocket,
-                   to_series=None, include_binaries=False):
+                   to_series=None, include_binaries=False, person=None):
         """See `IArchive`."""
         # Check to see if the source package exists, and raise a useful error
         # if it doesn't.
@@ -1451,7 +1517,9 @@ class Archive(SQLBase):
         source = from_archive.getPublishedSources(
             name=source_name, version=version, exact_match=True).first()
 
-        self._copySources([source], to_pocket, to_series, include_binaries)
+        self._copySources(
+            [source], to_pocket, to_series, include_binaries,
+            person=person)
 
     def _collectLatestPublishedSources(self, from_archive, source_names):
         """Private helper to collect the latest published sources for an
@@ -1477,17 +1545,19 @@ class Archive(SQLBase):
         return sources
 
     def _copySources(self, sources, to_pocket, to_series=None,
-                     include_binaries=False):
+                     include_binaries=False, person=None):
         """Private helper function to copy sources to this archive.
 
         It takes a list of SourcePackagePublishingHistory but the other args
         are strings.
         """
+        # Circular imports.
+        from lp.soyuz.scripts.packagecopier import do_copy
         # Convert the to_pocket string to its enum.
         try:
             pocket = PackagePublishingPocket.items[to_pocket.upper()]
-        except KeyError, error:
-            raise PocketNotFound(error)
+        except KeyError:
+            raise PocketNotFound(to_pocket.upper())
 
         # Fail immediately if the destination pocket is not Release and
         # this archive is a PPA.
@@ -1500,13 +1570,19 @@ class Archive(SQLBase):
             result = getUtility(IDistroSeriesSet).queryByName(
                 self.distribution, to_series)
             if result is None:
-                raise DistroSeriesNotFound(to_series)
+                raise NoSuchDistroSeries(to_series)
             series = result
         else:
             series = None
 
-        # Perform the copy, may raise CannotCopy.
-        do_copy(sources, self, series, pocket, include_binaries)
+        # Perform the copy, may raise CannotCopy. Don't do any further
+        # permission checking: this method is protected by
+        # launchpad.Append, which is mostly more restrictive than archive
+        # permissions, except that it also allows ubuntu-security to
+        # copy packages they wouldn't otherwise be able to.
+        do_copy(
+            sources, self, series, pocket, include_binaries, person=person,
+            check_permissions=False)
 
     def getAuthToken(self, person):
         """See `IArchive`."""
@@ -1757,6 +1833,12 @@ class Archive(SQLBase):
     enabled_restricted_families = property(_getEnabledRestrictedFamilies,
                                            _setEnabledRestrictedFamilies)
 
+    def enableRestrictedFamily(self, family):
+        """See `IArchive`."""
+        restricted = set(self.enabled_restricted_families)
+        restricted.add(family)
+        self.enabled_restricted_families = restricted
+
     @classmethod
     def validatePPA(self, person, proposed_name):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -1787,6 +1869,16 @@ class Archive(SQLBase):
         # Cast to a list so we don't trip up with the security proxy not
         # understandiung EnumItems.
         return list(PackagePublishingPocket.items)
+
+    def getOverridePolicy(self):
+        """See `IArchive`."""
+        # Circular imports.
+        from lp.soyuz.adapters.overrides import UbuntuOverridePolicy
+        # XXX StevenK: bug=785004 2011-05-19 Return PPAOverridePolicy() for
+        # a PPA that overrides the component/pocket to main/RELEASE.
+        if self.purpose in MAIN_ARCHIVE_PURPOSES:
+            return UbuntuOverridePolicy()
+        return None
 
 
 class ArchiveSet:
@@ -2141,7 +2233,7 @@ class ArchiveSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(
             Archive,
-            Archive.private == True,
+            Archive._private == True,
             Archive.purpose == ArchivePurpose.PPA)
 
     def getCommercialPPAs(self):
@@ -2169,7 +2261,7 @@ class ArchiveSet:
         if name is not None:
             extra_exprs.append(Archive.name == name)
 
-        public_archive = And(Archive.private == False,
+        public_archive = And(Archive._private == False,
                              Archive._enabled == True)
 
         if user is not None:

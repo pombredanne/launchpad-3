@@ -1,14 +1,18 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """TALES formatter for strings."""
+from base64 import urlsafe_b64encode
 
 __metaclass__ = type
 __all__ = [
     'add_word_breaks',
     'break_long_words',
     'escape',
+    'extract_bug_numbers',
+    'extract_email_addresses',
     'FormattersAPI',
+    'linkify_bug_numbers',
     're_substitute',
     'split_paragraphs',
     ]
@@ -119,7 +123,7 @@ def next_word_chunk(word, pos, minlen, maxlen):
         if nchars >= maxlen:
             # stop if we've reached the maximum chunk size
             break
-        if nchars >= minlen and not word[endpos-1].isalnum():
+        if nchars >= minlen and not word[endpos - 1].isalnum():
             # stop if we've reached the minimum chunk size and the last
             # character wasn't alphanumeric.
             break
@@ -169,6 +173,74 @@ def break_long_words(text):
     return break_text_pat.sub(replace, text)
 
 
+def extract_bug_numbers(text):
+    '''Unique bug numbers matching the "LP: #n(, #n)*" pattern in the text.'''
+    # FormattersAPI._linkify_substitution requires a match object
+    # that has named groups "bug" and "bugnum".  The matching text for
+    # the "bug" group is used as the link text and "bugnum" forms part
+    # of the URL for the link to the bug. Example:
+    #   >>> bm.groupdict( )
+    #   {'bugnum': '400686', 'bug': '#400686'}
+
+    # We need to match bug numbers of the form:
+    # LP: #1, #2, #3
+    #  #4, #5
+    # over multiple lines.
+    #
+    # Writing a single catch-all regex for this has proved rather hard
+    # so I am taking the strategy of matching  LP:(group) first, and
+    # feeding the result into another regex to pull out the bug and
+    # bugnum groups.
+    unique_bug_matches = dict()
+
+    line_matches = re.finditer(
+        'LP:\s*(?P<buglist>(.+?[^,]))($|\n)', text,
+        re.DOTALL | re.IGNORECASE)
+
+    for line_match in line_matches:
+        bug_matches = re.finditer(
+            '\s*((?P<bug>#(?P<bugnum>\d+)),?\s*)',
+            line_match.group('buglist'))
+
+        for bug_match in bug_matches:
+            bugnum = bug_match.group('bugnum')
+            if bugnum in unique_bug_matches:
+                # We got this bug already, ignore it.
+                continue
+            unique_bug_matches[bugnum] = bug_match
+
+    return unique_bug_matches
+
+
+def linkify_bug_numbers(text):
+    """Linkify to a bug if LP: #number appears in the (changelog) text."""
+    unique_bug_matches = extract_bug_numbers(text)
+    for bug_match in unique_bug_matches.values():
+        replace_text = bug_match.group('bug')
+        if replace_text is not None:
+            # XXX julian 2008-01-10
+            # Note that re.sub would be far more efficient to use
+            # instead of string.replace() but this requires a regex
+            # that matches everything in one go.  We're also at danger
+            # of replacing the wrong thing if string.replace() finds
+            # other matching substrings.  So for example in the
+            # string:
+            # "LP: #9, #999"
+            # replacing #9 with some HTML would also interfere with
+            # #999.  The liklihood of this happening is very, very
+            # small, however.
+            text = text.replace(
+                replace_text,
+                FormattersAPI._linkify_substitution(bug_match))
+    return text
+
+
+def extract_email_addresses(text):
+    '''Unique email addresses in the text.'''
+    matches = re.finditer(FormattersAPI._re_email, text)
+    return list(set([match.group() for match in matches]))
+
+
 class FormattersAPI:
     """Adapter from strings to HTML formatted text."""
 
@@ -216,7 +288,7 @@ class FormattersAPI:
         If there are opening parens in the url that are matched by closing
         parens at the start of the trailer, those closing parens should be
         part of the url."""
-        assert trailers != '', ( "Trailers must not be an empty string.")
+        assert trailers != '', ("Trailers must not be an empty string.")
         opencount = url.count('(')
         closedcount = url.count(')')
         missing = opencount - closedcount
@@ -791,7 +863,7 @@ class FormattersAPI:
     def shorten(self, maxlength):
         """Use like tal:content="context/foo/fmt:shorten/60"."""
         if len(self._stringtoformat) > maxlength:
-            return '%s...' % self._stringtoformat[:maxlength-3]
+            return '%s...' % self._stringtoformat[:maxlength - 3]
         else:
             return self._stringtoformat
 
@@ -817,7 +889,7 @@ class FormattersAPI:
         header_next = False
         for row, line in enumerate(text.splitlines()[:max_format_lines]):
             result.append('<tr>')
-            result.append('<td class="line-no">%s</td>' % (row+1))
+            result.append('<td class="line-no">%s</td>' % (row + 1))
             if line.startswith('==='):
                 css_class = 'diff-file text'
                 header_next = True
@@ -850,13 +922,26 @@ class FormattersAPI:
         result.append('</table>')
         return ''.join(result)
 
-    _css_id_strip_pattern = re.compile(r'[^a-zA-Z0-9-]+')
+    _css_id_strip_pattern = re.compile(r'[^a-zA-Z0-9-_]+')
+    _zope_css_id_strip_pattern = re.compile(r'[^a-zA-Z0-9-_\.]+')
 
     def css_id(self, prefix=None):
+        """Return a CSS compliant id."""
+        return self._css_id(self._css_id_strip_pattern, prefix)
+
+    def zope_css_id(self, prefix=None):
+        """Return a CSS compliant id compatible with zope's form fields.
+
+        The strip pattern allows ids which contain periods which is required
+        for compatibility with zope form fields.
+        """
+        return self._css_id(self._zope_css_id_strip_pattern, prefix)
+
+    def _css_id(self, strip_pattern, prefix=None):
         """Return a CSS compliant id.
 
-        The id may contain letters, numbers, and hyphens. The first
-        character must be a letter. Unsupported characters are converted
+        The id may contain letters, numbers, hyphens and underscores. The
+        first character must be a letter. Unsupported characters are converted
         to hyphens. Multiple characters are replaced by a single hyphen. The
         letter 'j' will start the id if the string's first character is not a
         letter.
@@ -868,8 +953,25 @@ class FormattersAPI:
             raw_text = prefix + self._stringtoformat
         else:
             raw_text = self._stringtoformat
-        id_ = self._css_id_strip_pattern.sub('-', raw_text)
-        if id_[0] in '-0123456789':
+        id_ = strip_pattern.sub('-', raw_text)
+
+        # If any characters are converted to a hyphen, we cannot be 100%
+        # assured of a unique id unless we take further action. Note that we
+        # use the _zope_css_id_strip_pattern for the check because ids with
+        # periods are still in common usage.
+        if self._zope_css_id_strip_pattern.search(raw_text):
+            # We need to ensure that the id is always guaranteed to be unique,
+            # hence we append URL-safe base 64 encoding of the name. However
+            # we also have to strip off any padding characters ("=") because
+            # Python's URL-safe base 64 encoding includes those and they
+            # aren't allowed in IDs either.
+            unique_suffix = urlsafe_b64encode(raw_text)
+            # Ensure we put a '-' between the id and base 64 encoding.
+            if id_[-1] != '-':
+                id_ += '-'
+            id_ += unique_suffix.replace('=', '')
+
+        if id_[0] in '-_0123456789':
             # 'j' is least common starting character in technical usage;
             # engineers love 'z', 'q', and 'y'.
             return 'j' + id_
@@ -926,6 +1028,11 @@ class FormattersAPI:
                 return self.css_id(furtherPath.pop())
             else:
                 return self.css_id()
+        elif name == 'zope-css-id':
+            if len(furtherPath) > 0:
+                return self.zope_css_id(furtherPath.pop())
+            else:
+                return self.zope_css_id()
         elif name == 'oops-id':
             return self.oops_id()
         else:

@@ -20,7 +20,7 @@ personal standing in Launchpad is unknown.
 When the message is initially held for approval, a message object is
 first created.
 
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> message_set = getUtility(IMessageSet)
     >>> message = message_set.fromEmail("""\
     ... From: foo.bar@canonical.com

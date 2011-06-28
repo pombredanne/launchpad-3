@@ -40,13 +40,17 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
-from lp.app.enums import (
-    service_uses_launchpad)
-from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    IServiceUsage,
+    )
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
@@ -74,6 +78,7 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.person import validate_person
+from lp.registry.interfaces.productrelease import IProductReleaseSet
 from lp.registry.interfaces.productseries import (
     IProductSeries,
     IProductSeriesSet,
@@ -202,11 +207,19 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def releases(self):
         """See `IProductSeries`."""
         store = Store.of(self)
+
+        # The Milestone is cached too because most uses of a ProductRelease
+        # need it. The decorated resultset returns just the ProductRelease.
+        def decorate(row):
+            product_release, milestone = row
+            return product_release
+
         result = store.find(
-            ProductRelease,
-            And(Milestone.productseries == self,
-                ProductRelease.milestone == Milestone.id))
-        return result.order_by(Desc('datereleased'))
+            (ProductRelease, Milestone),
+            Milestone.productseries == self,
+            ProductRelease.milestone == Milestone.id)
+        result = result.order_by(Desc('datereleased'))
+        return DecoratedResultSet(result, decorate)
 
     @property
     def release_files(self):
@@ -433,10 +446,13 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         """See IBugTarget."""
         return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
         """See IBugTarget."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            BugTask.productseries == self, user, wanted_tags=wanted_tags)
+            BugSummary.productseries_id == self.id, user, tag_limit=tag_limit,
+            include_tags=include_tags)
 
     def createBug(self, bug_params):
         """See IBugTarget."""
@@ -458,10 +474,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
             return None
 
     def getRelease(self, version):
-        for release in self.releases:
-            if release.version == version:
-                return release
-        return None
+        return getUtility(IProductReleaseSet).getBySeriesAndVersion(
+            self, version)
 
     def getPackage(self, distroseries):
         """See IProductSeries."""
@@ -497,16 +511,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
                     "The source package is not published in %s." %
                     distroseries.displayname)
         for pkg in self.packagings:
-            if pkg.distroseries == distroseries:
+            if (pkg.distroseries == distroseries and
+                pkg.sourcepackagename == sourcepackagename):
                 # we have found a matching Packaging record
-                if pkg.sourcepackagename == sourcepackagename:
-                    # and it has the same source package name
-                    return pkg
-                # ok, we need to update this pkging record
-                pkg.sourcepackagename = sourcepackagename
-                pkg.owner = owner
-                pkg.datecreated = UTC_NOW
-                pkg.sync()  # convert UTC_NOW to actual datetime
+                # and it has the same source package name
                 return pkg
 
         # ok, we didn't find a packaging record that matches, let's go ahead
@@ -672,6 +680,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         """
         seriesID = self.id
         productID = self.productID
+
         def weight_function(bugtask):
             if bugtask.productseriesID == seriesID:
                 return OrderedBugTask(1, bugtask.id, bugtask)

@@ -12,14 +12,18 @@
   </metal:head-epilogue>
   <body>
     <div metal:fill-slot="main">
-      <tal:enabled condition="view/is_derived_series_feature_enabled">
+
+      <tal:enabled condition="view/show_derivation_form">
       <div class="top-portlet">
         This page allows you to initialize a distribution series.
+        <a href="/+help/init-series-title-help.html"
+           target="help" class="sprite maybe">&nbsp;
+          <span class="invisible-link">Initialization help</span></a>
       </div>
       <p class="error message javascript-disabled">
         Javascript is required to use this page. Please enable
         Javascript in your browser and reload this page. Alternatively,
-        please use the <code>deriveDistroSeries</code> API call via the
+        please use the <code>initDerivedDistroSeries</code> API call via the
         web service.
       </p>
       <div class="unseen" id="initseries-form-container">
@@ -30,8 +34,13 @@
           Y.on('domready', Y.lp.registry.distroseries.initseries.setup);
         });
       </script>
+      <p class="formHelp">
+        Note that initialization is not instantaneous; initializing with
+        many thousands of packages is likely to take hours to complete.
+      </p>
       </tal:enabled>
-      <tal:disabled condition="not:view/is_derived_series_feature_enabled">
+
+      <tal:disabled condition="view/show_derivation_not_yet_available">
       <p class="error message">
         The Derivative Distributions feature is under development
         and is not yet generally available. You can read more about
@@ -40,6 +49,21 @@
         page</a>.
       </p>
       </tal:disabled>
+
+      <tal:already-initialized condition="view/show_already_initialized_message">
+      <p class="error message">
+        This series already contains source packages and cannot be
+        initialized again.
+      </p>
+      </tal:already-initialized>
+
+      <tal:already-initializing
+          condition="view/show_already_initializing_message">
+      <p class="error message">
+        This series is already being initialized.
+      </p>
+      </tal:already-initializing>
+
     </div>
   </body>
 </html>

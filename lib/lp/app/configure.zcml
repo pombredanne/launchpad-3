@@ -11,4 +11,10 @@
     i18n_domain="launchpad">
     <include package=".browser"/>
     <include package="lp.app.validators" />
+    <include package="lp.app.widgets" />
+
+    <utility
+        factory="lp.app.utilities.celebrities.LaunchpadCelebrities"
+        provides="lp.app.interfaces.launchpad.ILaunchpadCelebrities">
+    </utility>
 </configure>

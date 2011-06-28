@@ -8,7 +8,7 @@
 """Update stacked_on_location for all Bazaar branches.
 
 Expects standard input of:
-    '<id> <branch_type> <unique_name> <stacked_on_unique_name>\n'.
+    '<id> <branch_type> <unique_name> <stacked_on_id> <stacked_on_unique_name>\n'.
 
 Such input can be provided using "get-stacked-on-branches.py".
 
@@ -21,6 +21,7 @@ renamed.
 __metaclass__ = type
 
 import _pythonpath
+from collections import namedtuple
 import sys
 
 from bzrlib.bzrdir import BzrDir
@@ -29,7 +30,11 @@ from bzrlib import errors
 
 from lp.codehosting.vfs import get_rw_server, get_ro_server
 from lp.codehosting.bzrutils import get_branch_stacked_on_url
+from lp.code.interfaces.codehosting import branch_id_alias
 from lp.services.scripts.base import LaunchpadScript
+
+
+FakeBranch = namedtuple('FakeBranch', 'id')
 
 
 def set_branch_stacked_on_url(bzrdir, stacked_on_url):
@@ -57,6 +62,10 @@ class UpdateStackedBranches(LaunchpadScript):
             dest="dry_run",
             help=("Don't change anything on disk, just go through the "
                   "motions."))
+        self.parser.add_option(
+            '-i', '--id', default=False, action="store_true",
+            dest="stack_on_id",
+            help=("Stack on the +branch-id alias."))
 
     def main(self):
         if self.options.dry_run:
@@ -131,8 +140,12 @@ class UpdateStackedBranches(LaunchpadScript):
         """
         for branch_info in branches:
             (branch_id, branch_type, unique_name,
-             stacked_on_name) = branch_info
-            stacked_on_location = '/' + stacked_on_name
+             stacked_on_id, stacked_on_name) = branch_info
+            if self.options.stack_on_id:
+                branch = FakeBranch(stacked_on_id)
+                stacked_on_location = branch_id_alias(branch)
+            else:
+                stacked_on_location = '/' + stacked_on_name
             self.updateStackedOn(
                 branch_id, 'lp-internal:///' + unique_name,
                 stacked_on_location)

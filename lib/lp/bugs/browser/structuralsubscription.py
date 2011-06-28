@@ -14,7 +14,10 @@ __all__ = [
     'StructuralSubscribersPortletView',
     ]
 
-from operator import attrgetter
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 
 from lazr.restful.interfaces import (
     IJSONRequestCache,
@@ -49,6 +52,7 @@ from lp.app.browser.launchpadform import (
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.enums import ServiceUsage
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
@@ -58,6 +62,7 @@ from lp.bugs.interfaces.structuralsubscription import (
     IStructuralSubscription,
     IStructuralSubscriptionForm,
     IStructuralSubscriptionTarget,
+    IStructuralSubscriptionTargetHelper,
     )
 from lp.registry.interfaces.distribution import (
     IDistribution,
@@ -354,35 +359,53 @@ class StructuralSubscriptionMenuMixin:
         """
         sst = self._getSST()
 
-        # ProjectGroup milestones aren't really structural subscription
-        # targets as they're not real milestones, so you can't subscribe to
-        # them.
-        enabled = not IProjectGroupMilestone.providedBy(sst)
         if sst.userHasBugSubscriptions(self.user):
             text = 'Edit bug mail subscription'
             icon = 'edit'
         else:
             text = 'Subscribe to bug mail'
             icon = 'add'
-        if not enabled or (
-            not sst.userCanAlterBugSubscription(self.user, self.user)):
+        # ProjectGroup milestones aren't really structural subscription
+        # targets as they're not real milestones, so you can't subscribe to
+        # them.
+        if (not IProjectGroupMilestone.providedBy(sst) and
+            sst.userCanAlterBugSubscription(self.user, self.user)):
+            enabled = True
+        else:
             enabled = False
+
         return Link('+subscribe', text, icon=icon, enabled=enabled)
+
+    @property
+    def _enabled(self):
+        """Should the link be enabled?
+
+        True if the target uses Launchpad for bugs and the user can alter the
+        bug subscriptions.
+        """
+        sst = self._getSST()
+        # ProjectGroup milestones aren't really structural subscription
+        # targets as they're not real milestones, so you can't subscribe to
+        # them.
+        if IProjectGroupMilestone.providedBy(sst):
+            return False
+        pillar = IStructuralSubscriptionTargetHelper(sst).pillar
+        return (pillar.bug_tracking_usage == ServiceUsage.LAUNCHPAD and
+                sst.userCanAlterBugSubscription(self.user, self.user))
 
     @enabled_with_permission('launchpad.AnyPerson')
     def subscribe_to_bug_mail(self):
-        sst = self._getSST()
-        enabled = sst.userCanAlterBugSubscription(self.user, self.user)
         text = 'Subscribe to bug mail'
-        return Link('#', text, icon='add', hidden=True, enabled=enabled)
+        # Clicks to this link will be intercepted by the on-page JavaScript,
+        # but we want a link target for non-JS-enabled browsers.
+        return Link('+subscribe', text, icon='add', hidden=True,
+            enabled=self._enabled)
 
     @enabled_with_permission('launchpad.AnyPerson')
     def edit_bug_mail(self):
-        sst = self._getSST()
-        enabled = sst.userCanAlterBugSubscription(self.user, self.user)
         text = 'Edit bug mail'
         return Link('+subscriptions', text, icon='edit', site='bugs',
-                    enabled=enabled)
+                    enabled=self._enabled)
 
 
 def expose_structural_subscription_data_to_js(context, request,
@@ -391,13 +414,19 @@ def expose_structural_subscription_data_to_js(context, request,
     expose_user_administered_teams_to_js(request, user, context)
     expose_enum_to_js(request, BugTaskImportance, 'importances')
     expose_enum_to_js(request, BugTaskStatus, 'statuses')
-    if subscriptions is None or len(list(subscriptions)) == 0:
-        subscriptions = []
-        target = context
+    if subscriptions is None:
+        try:
+            # No subscriptions, which means we are on a target
+            # subscriptions page. Let's at least provide target details.
+            target_info = {}
+            target_info['title'] = context.title
+            target_info['url'] = canonical_url(context, rootsite='mainsite')
+            IJSONRequestCache(request).objects['target_info'] = target_info
+        except NoCanonicalUrl:
+            # We export nothing if the target implements no canonical URL.
+            pass
     else:
-        target = None
-    expose_user_subscriptions_to_js(
-        user, subscriptions, request, target)
+        expose_user_subscriptions_to_js(user, subscriptions, request)
 
 
 def expose_enum_to_js(request, enum, name):
@@ -411,45 +440,52 @@ def expose_enum_to_js(request, enum, name):
 def expose_user_administered_teams_to_js(request, user, context,
         absoluteURL=absoluteURL):
     """Make the list of teams the user administers available to JavaScript."""
+    # XXX: Robert Collins workaround multiple calls making this cause
+    # timeouts: see bug 788510.
+    objects = IJSONRequestCache(request).objects
+    if 'administratedTeams' in objects:
+        return
     info = []
     api_request = IWebServiceClientRequest(request)
     is_distro = IDistribution.providedBy(context)
+    if is_distro:
+        # If the context is a distro AND a bug supervisor is set then we only
+        # allow subscriptions from members of the bug supervisor team.
+        bug_supervisor = context.bug_supervisor
+    else:
+        bug_supervisor = None
     if user is not None:
-        for team in user.getAdministratedTeams():
-            # If the context is a distro AND a bug supervisor is set AND
-            # the admininistered team is not a member of the bug supervisor
-            # team THEN skip it.
-            if (is_distro and context.bug_supervisor is not None and
-                not team.inTeam(context.bug_supervisor)):
-                continue
-            info.append({
-                'link': absoluteURL(team, api_request),
-                'title': team.title,
-                'url': canonical_url(team),
-            })
-    IJSONRequestCache(request).objects['administratedTeams'] = info
+        administrated_teams = set(user.administrated_teams)
+        if administrated_teams:
+            # Get this only if we need to.
+            membership = set(user.teams_participated_in)
+            # Only consider teams the user is both in and administers:
+            #  If the user is not a member of the team itself, then
+            # skip it, because structural subscriptions and their
+            # filters can only be edited by the subscriber.
+            # This can happen if the user is an owner but not a member.
+            administers_and_in = membership.intersection(administrated_teams)
+            for team in administers_and_in:
+                if (bug_supervisor is not None and
+                    not team.inTeam(bug_supervisor)):
+                    continue
+                info.append({
+                    'has_preferredemail': team.preferredemail is not None,
+                    'link': absoluteURL(team, api_request),
+                    'title': team.title,
+                    'url': canonical_url(team),
+                })
+    objects['administratedTeams'] = info
 
 
-def expose_user_subscriptions_to_js(user, subscriptions, request, target=None):
+def expose_user_subscriptions_to_js(user, subscriptions, request):
     """Make the user's subscriptions available to JavaScript."""
-    info = {}
     api_request = IWebServiceClientRequest(request)
+    info = {}
     if user is None:
         administered_teams = []
     else:
-        administered_teams = user.getAdministratedTeams()
-
-    if target is not None:
-        try:
-            # No subscriptions, which means we are on a target
-            # subscriptions page. Let's at least provide target details.
-            target_info = {}
-            target_info['title'] = target.title
-            target_info['url'] = canonical_url(target, rootsite='mainsite')
-            IJSONRequestCache(request).objects['target_info'] = target_info
-        except NoCanonicalUrl:
-            # We export nothing if the target implements no canonical URL.
-            pass
+        administered_teams = user.administrated_teams
 
     for subscription in subscriptions:
         target = subscription.target
@@ -463,18 +499,33 @@ def expose_user_subscriptions_to_js(user, subscriptions, request, target=None):
         subscriber = subscription.subscriber
         for filter in subscription.bug_filters:
             is_team = subscriber.isTeam()
-            user_is_team_admin = (is_team and
-                                  subscriber in administered_teams)
+            user_is_team_admin = (
+                is_team and subscriber in administered_teams)
+            team_has_contact_address = (
+                is_team and subscriber.preferredemail is not None)
+            mailing_list = subscriber.mailing_list
+            user_is_on_team_mailing_list = (
+                team_has_contact_address and
+                mailing_list is not None and
+                mailing_list.is_usable and
+                mailing_list.getSubscription(subscriber) is not None)
             record['filters'].append(dict(
                 filter=filter,
                 subscriber_link=absoluteURL(subscriber, api_request),
-                subscriber_url = canonical_url(
+                subscriber_url=canonical_url(
                     subscriber, rootsite='mainsite'),
+                target_bugs_url=canonical_url(
+                    target, rootsite='bugs'),
                 subscriber_title=subscriber.title,
                 subscriber_is_team=is_team,
-                user_is_team_admin=user_is_team_admin,))
+                user_is_team_admin=user_is_team_admin,
+                team_has_contact_address=team_has_contact_address,
+                user_is_on_team_mailing_list=user_is_on_team_mailing_list,
+                can_mute=filter.isMuteAllowed(user),
+                is_muted=filter.muted(user) is not None,
+                target_title=target.title))
     info = info.values()
-    info.sort(key=lambda item: item['target_url'])
+    info.sort(key=itemgetter('target_url'))
     IJSONRequestCache(request).objects['subscription_info'] = info
 
 

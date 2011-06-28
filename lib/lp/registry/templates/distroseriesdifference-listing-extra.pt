@@ -14,22 +14,25 @@
 
     <metal:macro-parent metal:define-macro="base-to-parent">
       <span tal:replace="context/base_version">1.1.1</span> to
-      <span tal:replace="context/derived_series/parent_series/displayname">
+      <span tal:replace="context/parent_series/displayname">
         Lucid</span> version:
       <span tal:replace="context/parent_source_version">1.2.4</span>
     </metal:macro-parent>
   </metal:macros>
 
-  <tal:show_options condition="view/show_edit_options">
-    <div class="blacklist-options" style="float:right">
-      <dl>
-        <dt>Blacklisted:</dt>
-        <dd>
-          <form><tal:replace replace="structure view/widgets/blacklist_options" /></form>
-        </dd>
-      </dl>
+  <div
+    tal:attributes="class view/blacklist_options_css_class"
+    style="float:right">
+    <dl>
+      <dt>Ignored:</dt>
+      <dd>
+        <form>
+          <tal:replace
+            replace="structure view/widgets/blacklist_options" />
+        </form>
+      </dd>
+    </dl>
   </div>
-  </tal:show_options>
 
   <dl>
     <dt>Binary descriptions:</dt>
@@ -39,11 +42,14 @@
       </ul></dd>
     <tal:package-diffs tal:condition="view/can_have_packages_diffs">
     <dt>Last common version:</dt>
-    <dd tal:condition="context/base_version"
-        tal:content="context/base_version">1.2.1</dd>
+    <dd tal:condition="context/base_version">
+        <a id="last_common_version"
+           tal:attributes="href context/base_distro_source_package_release/fmt:url"
+           tal:content="context/base_version"/></dd>
     <dd tal:condition="not: context/base_version">
-      Unknown
+      Unknown, so no diffs are available
     </dd>
+    <tal:package-diffs-info condition="view/display_package_diffs_info">
     <dt
       tal:condition="view/show_package_diffs_request_link"
       class="package-diff-placeholder">
@@ -53,10 +59,10 @@
         </span>
     </dt>
     <dt
-      tal:condition="python: not(view.show_package_diffs_request_link) and context.base_version">
+      tal:condition="not:view/show_package_diffs_request_link">
       Differences from last common version:
     </dt>
-    <dd tal:condition="context/base_version">
+    <dd tal:condition="view/display_diffs">
       <ul class="package-diff-status">
         <tal:source-diff-option condition="view/display_child_diff">
           <li tal:condition="context/package_diff">
@@ -85,8 +91,7 @@
             </span>
           </li>
         </tal:source-diff-option>
-
-        <tal:parent-diff-option condition="context/parent_source_pub">
+        <tal:parent-diff-option condition="view/display_parent_diff">
           <li tal:condition="context/parent_package_diff">
             <span tal:condition="context/parent_package_diff/status/enumvalue:PENDING"
               class="sprite PENDING parent">
@@ -113,17 +118,18 @@
             </span>
           </li>
         </tal:parent-diff-option>
-
       </ul>
     </dd>
+    </tal:package-diffs-info>
+
     </tal:package-diffs>
   </dl>
 
-  <h2>Comments:</h2>
+  <strong>Comments:</strong>
   <tal:conversation replace="structure view/@@+render"/>
-  <tal:show_options condition="view/show_edit_options"
+  <tal:show_options condition="view/show_add_comment"
                     define="src_name context/source_package_name/name">
-  <div tal:attributes="class string:add-comment-placeholder ${src_name}"></div>
+    <div tal:attributes="class string:add-comment-placeholder ${src_name}"></div>
   </tal:show_options>
 
 </tal:root>

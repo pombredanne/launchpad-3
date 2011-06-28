@@ -37,6 +37,7 @@ from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codehosting import (
     BRANCH_ALIAS_PREFIX,
+    branch_id_alias,
     BRANCH_ID_ALIAS_PREFIX,
     BRANCH_TRANSPORT,
     CONTROL_TRANSPORT,
@@ -802,9 +803,10 @@ class FakeCodehosting:
             return
         if not self._canRead(requester, default_branch):
             return
+        path = branch_id_alias(default_branch)
         return (
             CONTROL_TRANSPORT,
-            {'default_stack_on': escape('/' + default_branch.unique_name)},
+            {'default_stack_on': escape(path)},
             trailing_path)
 
     def _serializeBranch(self, requester_id, branch, trailing_path,

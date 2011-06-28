@@ -11,7 +11,7 @@ ProjectGroups link their branch listing page.
     >>> browser.open('http://launchpad.dev/mozilla')
     >>> browser.getLink('Code').click()
     >>> print browser.title
-    Code : the Mozilla Project
+    Code : The Mozilla Project
 
 
 Default page for code site

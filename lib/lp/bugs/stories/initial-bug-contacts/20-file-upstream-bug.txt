@@ -5,7 +5,7 @@ well.
 
     >>> browser.open("http://launchpad.dev/firefox/+filebug")
 
-    >>> browser.getControl(name="field.title").value = "bug supervisor test"
+    >>> browser.getControl(name="field.title", index=0).value = "bug supervisor test"
     >>> browser.getControl('Continue').click()
 
     >>> browser.getControl(name="field.comment").value = "a public bug"
@@ -50,7 +50,7 @@ subscribed, because Firefox does not have a security contact.
 
     >>> browser.open("http://launchpad.dev/firefox/+filebug")
 
-    >>> browser.getControl(name="field.title").value = "bug supervisor test"
+    >>> browser.getControl(name="field.title", index=0).value = "bug supervisor test"
     >>> browser.getControl('Continue').click()
 
     >>> browser.getControl(name="field.comment").value = "a PRIVATE bug"

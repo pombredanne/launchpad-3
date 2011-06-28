@@ -26,7 +26,6 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing.layers import (
@@ -34,6 +33,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.enums import NewSpecificationDefinitionStatus
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.model.specificationbranch import SpecificationBranch
@@ -79,7 +79,7 @@ from lp.code.interfaces.branchmergeproposal import (
     )
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchrevision import IBranchRevision
-from lp.code.interfaces.codehosting import BRANCH_ID_ALIAS_PREFIX
+from lp.code.interfaces.codehosting import branch_id_alias
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
@@ -187,8 +187,7 @@ class TestBranchChanged(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch()
         stacked_on = self.factory.makeAnyBranch()
         login_person(branch.owner)
-        stacked_on_location = '/%s/%s' % (
-            BRANCH_ID_ALIAS_PREFIX, stacked_on.id)
+        stacked_on_location = branch_id_alias(stacked_on)
         branch.branchChanged(stacked_on_location, '', *self.arbitrary_formats)
         self.assertEqual(stacked_on, branch.stacked_on)
 
@@ -815,8 +814,7 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE)
         suite_sp_link = ICanHasLinkedBranch(suite_sourcepackage)
 
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = suite_sourcepackage.distribution.owner
         run_with_login(
             registrant,
             suite_sp_link.setBranch, branch, registrant)
@@ -848,8 +846,7 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
             PackagePublishingPocket.BACKPORTS)
         suite_sp_link = ICanHasLinkedBranch(suite_sourcepackage)
 
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = suite_sourcepackage.distribution.owner
         run_with_login(
             registrant,
             suite_sp_link.setBranch, branch, registrant)
@@ -880,8 +877,7 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE)
         suite_sp_link = ICanHasLinkedBranch(suite_sp)
 
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = suite_sp.distribution.owner
         run_with_login(
             registrant,
             suite_sp_link.setBranch, branch, registrant)
@@ -911,8 +907,7 @@ class TestBranchLinksAndIdentites(TestCaseWithFactory):
             PackagePublishingPocket.RELEASE)
         suite_sp_link = ICanHasLinkedBranch(suite_sourcepackage)
 
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = suite_sourcepackage.distribution.owner
         run_with_login(
             registrant,
             suite_sp_link.setBranch, branch, registrant)
@@ -1023,8 +1018,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         pocket = PackagePublishingPocket.BACKPORTS
         linked_branch = ICanHasLinkedBranch(
             branch.sourcepackage.getSuiteSourcePackage(pocket))
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = branch.sourcepackage.distribution.owner
         login_person(registrant)
         linked_branch.setBranch(branch, registrant)
         logout()
@@ -1039,8 +1033,7 @@ class TestBzrIdentity(TestCaseWithFactory):
         branch = self.factory.makePackageBranch(
             sourcepackage=distro_package.development_version)
         linked_branch = ICanHasLinkedBranch(distro_package)
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = sourcepackage.distribution.owner
         run_with_login(
             registrant,
             linked_branch.setBranch, branch, registrant)
@@ -1433,15 +1426,13 @@ class TestBranchDeletionConsequences(TestCase):
         branch = self.factory.makePackageBranch()
         package = branch.sourcepackage
         pocket = PackagePublishingPocket.RELEASE
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         run_with_login(
-            ubuntu_branches.teamowner,
+            package.distribution.owner,
             package.development_version.setBranch,
-            pocket, branch, ubuntu_branches.teamowner)
+            pocket, branch, package.distribution.owner)
         series_set = getUtility(IFindOfficialBranchLinks)
-        [link] = list(series_set.findForBranch(branch))
         self.assertEqual(
-            {link: ('alter',
+            {package: ('alter',
                     _('Branch is officially linked to a source package.'))},
             branch.deletionRequirements())
 
@@ -1452,11 +1443,10 @@ class TestBranchDeletionConsequences(TestCase):
         branch = self.factory.makePackageBranch()
         package = branch.sourcepackage
         pocket = PackagePublishingPocket.RELEASE
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         run_with_login(
-            ubuntu_branches.teamowner,
+            package.distribution.owner,
             package.development_version.setBranch,
-            pocket, branch, ubuntu_branches.teamowner)
+            pocket, branch, package.distribution.owner)
         self.assertEqual(False, branch.canBeDeleted())
         branch.destroySelf(break_references=True)
         self.assertIs(None, package.getBranch(pocket))
@@ -1505,11 +1495,10 @@ class TestBranchDeletionConsequences(TestCase):
         branch = self.factory.makePackageBranch()
         package = branch.sourcepackage
         pocket = PackagePublishingPocket.RELEASE
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
         run_with_login(
-            ubuntu_branches.teamowner,
+            package.distribution.owner,
             package.development_version.setBranch,
-            pocket, branch, ubuntu_branches.teamowner)
+            pocket, branch, package.distribution.owner)
         series_set = getUtility(IFindOfficialBranchLinks)
         [link] = list(series_set.findForBranch(branch))
         ClearOfficialPackageBranch(link)()
@@ -2801,8 +2790,6 @@ class TestWebservice(TestCaseWithFactory):
             db_branch = self.factory.makeBranch()
             launchpad = launchpadlib_for('test', db_branch.owner,
                 service_root=self.layer.appserver_root_url('api'))
-
-        configuration = simplejson.dumps({'test': 'make check'})
 
         branch = ws_object(launchpad, db_branch)
         queue = ws_object(launchpad, db_queue)

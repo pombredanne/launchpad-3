@@ -77,7 +77,7 @@ Each Launchpad user is assigned an permanent OpenID identity URL. The
 last component of this URL is specific to the user, and can be used to
 look up the user.
 
-    >>> account = account_set.getByOpenIDIdentifier('no-priv_oid')
+    >>> account = account_set.getByOpenIDIdentifier(u'no-priv_oid')
     >>> IAccount.providedBy(account)
     True
     >>> print account.displayname
@@ -85,7 +85,7 @@ look up the user.
 
 A LookupError is raised if the identifier is not used by any account.
 
-    >>> account_set.getByOpenIDIdentifier('no-such-identifier')
+    >>> account_set.getByOpenIDIdentifier(u'no-such-identifier')
     Traceback (most recent call last):
     ...
     LookupError: no-such-identifier

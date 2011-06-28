@@ -7,7 +7,7 @@ redirected to the bug page.
 Ubuntu has no security contact, so the Ubuntu maintainer, Ubuntu Team,
 will be subscribed instead.
 
-    >>> browser.getControl(name="field.title").value = "a private bug"
+    >>> browser.getControl(name="field.title", index=0).value = "a private bug"
     >>> browser.getControl('Continue').click()
 
     >>> print browser.contents
@@ -63,7 +63,7 @@ subscriptions differ.
 
     >>> browser.open("http://launchpad.dev/ubuntu/+filebug")
 
-    >>> browser.getControl(name="field.title").value = "a private bug"
+    >>> browser.getControl(name="field.title", index=0).value = "a private bug"
     >>> browser.getControl('Continue').click()
 
     >>> print browser.contents

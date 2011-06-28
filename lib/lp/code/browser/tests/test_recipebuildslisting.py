@@ -87,10 +87,7 @@ class TestRecipeBuildListing(BrowserTestCase):
         # Ensure we can see the listing when we are not logged in.
         self._test_recipebuild_listing(no_login=True)
 
-    def disabled_test_recipebuild_listing_with_user(self):
-        # XXX: JonathanLange bug=751202: This test failed for reasons unknown
-        # to me.
-        #
+    def test_recipebuild_listing_with_user(self):
         # Ensure we can see the listing when we are logged in.
         self._test_recipebuild_listing()
 

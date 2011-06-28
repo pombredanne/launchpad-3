@@ -222,7 +222,7 @@ of the team that is subscribed, or must the the person who subscribed the team
 to the branch.  There is a link shown in the subscriptions portlet to edit the
 subscription of a team that the logged in user is a member of.
 
-XXX: thumper 2007-06-11
+XXX: thumper 2007-06-11, bug 110953
 There should be a central user subscriptions page.  This could then
 be used to traverse to the branch subscriptions instead of through
 the branch itself.

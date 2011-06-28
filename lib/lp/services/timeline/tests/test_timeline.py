@@ -37,6 +37,69 @@ class TestTimeline(testtools.TestCase):
         self.assertRaises(OverlappingActionError, timeline.start,
             "Sending mail", "Noone")
 
+    def test_nested_start_permitted(self):
+        # When explicitly requested a nested start can be done
+        timeline = Timeline()
+        action = timeline.start("Calling openid", "hostname", allow_nested=True)
+        child = timeline.start("SQL Callback", "SELECT...")
+
+    def test_nested_start_is_not_transitive(self):
+        # nesting is explicit at each level - not inherited.
+        timeline = Timeline()
+        action = timeline.start("Calling openid", "hostname", allow_nested=True)
+        child = timeline.start("SQL Callback", "SELECT...")
+        self.assertRaises(OverlappingActionError, timeline.start,
+            "Sending mail", "Noone")
+
+    def test_multiple_nested_children_permitted(self):
+        # nesting is not reset by each action that is added.
+        timeline = Timeline()
+        action = timeline.start("Calling openid", "hostname", allow_nested=True)
+        child = timeline.start("SQL Callback", "SELECT...")
+        child.finish()
+        child = timeline.start("SQL Callback", "SELECT...")
+
+    def test_multiple_starts_after_nested_group_prevented(self):
+        # nesting stops being permitted when the nesting action is finished.
+        timeline = Timeline()
+        action = timeline.start("Calling openid", "hostname", allow_nested=True)
+        action.finish()
+        child = timeline.start("SQL Callback", "SELECT...")
+        self.assertRaises(OverlappingActionError, timeline.start,
+            "Sending mail", "Noone")
+
+    def test_nesting_within_nesting_permitted(self):
+        timeline = Timeline()
+        action = timeline.start("Calling openid", "hostname", allow_nested=True)
+        middle = timeline.start("Calling otherlibrary", "", allow_nested=True)
+        child = timeline.start("SQL Callback", "SELECT...")
+
+    def test_finishing_nested_within_nested_leaves_outer_nested_nesting(self):
+        timeline = Timeline()
+        action = timeline.start("Calling openid", "hostname", allow_nested=True)
+        middle = timeline.start("Calling otherlibrary", "", allow_nested=True)
+        middle.finish()
+        child = timeline.start("SQL Callback", "SELECT...")
+
+    def test_nested_actions_recorded_as_two_zero_length_actions(self):
+        timeline = Timeline()
+        action = timeline.start("Calling openid", "hostname", allow_nested=True)
+        child = timeline.start("SQL Callback", "SELECT...")
+        child.finish()
+        action.finish()
+        self.assertEqual(3, len(timeline.actions))
+        self.assertEqual(datetime.timedelta(), timeline.actions[0].duration)
+        self.assertEqual(datetime.timedelta(), timeline.actions[2].duration)
+
+    def test_nested_category_labels(self):
+        # To identify start/stop pairs '-start' and '-stop' are put onto the
+        # category of nested actions:
+        timeline = Timeline()
+        action = timeline.start("Calling openid", "hostname", allow_nested=True)
+        action.finish()
+        self.assertEqual('Calling openid-start', timeline.actions[0].category)
+        self.assertEqual('Calling openid-stop', timeline.actions[1].category)
+
     def test_start_after_finish_works(self):
         timeline = Timeline()
         action = timeline.start("Sending mail", "Noone")

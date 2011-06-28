@@ -46,8 +46,13 @@
       <div id="branch-complete">Branch selected: <span class="link"><a
           href="#" class="link"></a></span>
           <span id="branch-complete-picker"><a href="#"></a></span>
+          <img src="../../../../canonical/launchpad/images/spinner.gif"
+               id="branch-complete-spinner"/>
       </div>
-      <div id="branch-incomplete">No branch selected.</div>
+      <div id="branch-incomplete">No branch selected.
+          <img src="../../../../canonical/launchpad/images/spinner.gif"
+               id="branch-incomplete-spinner"/>
+      </div>
       <span id="branch-incomplete-picker"><a href="#"></a></span>
       <div id="translation-incomplete">
         Translations are not enabled on the upstream project.
@@ -58,12 +63,16 @@
         <a href="#enable-translations"></a>
       </div>
       <div  id="upstream-sync-incomplete">
-        Automatic synchronization of translations is not enabled.
-        <a href="#enable-sync"></a>
+          Automatic synchronization of translations is not enabled.
+        <img src="../../../../canonical/launchpad/images/spinner.gif"
+             id="upstream-sync-incomplete-spinner"/>
+        <span id="upstream-sync-incomplete-picker"><a href="#enable-sync"></a></span>
       </div>
       <div  id="upstream-sync-complete">
         Automatic synchronization of translations is enabled.
-        <a href="#enable-sync"></a>
+        <span id="upstream-sync-complete-picker"><a href="#enable-sync"></a></span>
+        <img src="../../../../canonical/launchpad/images/spinner.gif"
+             id="upstream-sync-complete-spinner"/>
       </div>
     </div>
     <!-- The test output -->

@@ -7,24 +7,21 @@ __metaclass__ = type
 
 import unittest
 
-from storm.locals import Store
-import transaction
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
     ObjectDeletedEvent,
     )
+from storm.locals import Store
+import transaction
 from zope.component import getUtility
+from zope.security.checker import canAccess
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import removeSecurityProxy
+from zope.security.management import checkPermission
 
-from canonical.launchpad.ftests import (
-    login_person,
-    logout,
-    )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks,
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.code.model.seriessourcepackagebranch import (
+    SeriesSourcePackageBranchSet,
     )
 from lp.registry.interfaces.distribution import NoPartnerArchive
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -48,15 +45,6 @@ class TestSourcePackage(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        person = self.factory.makePerson()
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        removeSecurityProxy(ubuntu_branches).addMember(
-            person, ubuntu_branches.teamowner)
-        login_person(person)
-        self.addCleanup(logout)
-
     def test_path(self):
         sourcepackage = self.factory.makeSourcePackage()
         self.assertEqual(
@@ -79,7 +67,7 @@ class TestSourcePackage(TestCaseWithFactory):
         sourcepackage = self.factory.makeSourcePackage()
         registrant = self.factory.makePerson()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        getUtility(IMakeOfficialBranchLinks).new(
+        SeriesSourcePackageBranchSet.new(
             sourcepackage.distroseries, PackagePublishingPocket.RELEASE,
             sourcepackage.sourcepackagename, branch, registrant)
         official_branch = sourcepackage.getBranch(
@@ -92,7 +80,8 @@ class TestSourcePackage(TestCaseWithFactory):
         pocket = PackagePublishingPocket.RELEASE
         registrant = self.factory.makePerson()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        sourcepackage.setBranch(pocket, branch, registrant)
+        with person_logged_in(sourcepackage.distribution.owner):
+            sourcepackage.setBranch(pocket, branch, registrant)
         self.assertEqual(branch, sourcepackage.getBranch(pocket))
 
     def test_change_branch_once_set(self):
@@ -104,8 +93,9 @@ class TestSourcePackage(TestCaseWithFactory):
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
         new_branch = self.factory.makePackageBranch(
             sourcepackage=sourcepackage)
-        sourcepackage.setBranch(pocket, branch, registrant)
-        sourcepackage.setBranch(pocket, new_branch, registrant)
+        with person_logged_in(sourcepackage.distribution.owner):
+            sourcepackage.setBranch(pocket, branch, registrant)
+            sourcepackage.setBranch(pocket, new_branch, registrant)
         self.assertEqual(new_branch, sourcepackage.getBranch(pocket))
 
     def test_unsetBranch(self):
@@ -115,8 +105,9 @@ class TestSourcePackage(TestCaseWithFactory):
         pocket = PackagePublishingPocket.RELEASE
         registrant = self.factory.makePerson()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        sourcepackage.setBranch(pocket, branch, registrant)
-        sourcepackage.setBranch(pocket, None, registrant)
+        with person_logged_in(sourcepackage.distribution.owner):
+            sourcepackage.setBranch(pocket, branch, registrant)
+            sourcepackage.setBranch(pocket, None, registrant)
         self.assertIs(None, sourcepackage.getBranch(pocket))
 
     def test_linked_branches(self):
@@ -125,7 +116,8 @@ class TestSourcePackage(TestCaseWithFactory):
         pocket = PackagePublishingPocket.RELEASE
         registrant = self.factory.makePerson()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        sourcepackage.setBranch(pocket, branch, registrant)
+        with person_logged_in(sourcepackage.distribution.owner):
+            sourcepackage.setBranch(pocket, branch, registrant)
         self.assertEqual(
             [(pocket, branch)], list(sourcepackage.linked_branches))
 
@@ -270,7 +262,7 @@ class TestSourcePackage(TestCaseWithFactory):
         store = Store.of(packaging)
         with person_logged_in(packaging.owner):
             packaging.sourcepackage.deletePackaging()
-        result = store.find(Packaging, Packaging.id==packaging_id)
+        result = store.find(Packaging, Packaging.id == packaging_id)
         self.assertIs(None, result.one())
 
     def test_setPackaging__new(self):
@@ -304,7 +296,7 @@ class TestSourcePackage(TestCaseWithFactory):
         self.assertIsInstance(event3, ObjectCreatedEvent)
 
     def test_setPackaging__change_existing_entry_different_users(self):
-        """An oridnary user cannot change a Packaging defined by
+        """An ordinary user cannot change a Packaging defined by
         somebody else.
         """
         sourcepackage = self.factory.makeSourcePackage()
@@ -317,6 +309,171 @@ class TestSourcePackage(TestCaseWithFactory):
             self.assertRaises(
                 Unauthorized, sourcepackage.setPackaging,
                 other_series, owner=other_user)
+
+    def test_setPackagingReturnSharingDetailPermissions__ordinary_user(self):
+        """An ordinary user can create a packaging link but he cannot
+        set the series' branch or translation syncronisation settings,
+        or the translation usage settings of the product.
+        """
+        sourcepackage = self.factory.makeSourcePackage()
+        productseries = self.factory.makeProductSeries()
+        packaging_owner = self.factory.makePerson()
+        with person_logged_in(packaging_owner):
+            permissions = (
+                sourcepackage.setPackagingReturnSharingDetailPermissions(
+                    productseries, packaging_owner))
+            self.assertEqual(productseries, sourcepackage.productseries)
+            self.assertFalse(
+                packaging_owner.canWrite(productseries, 'branch'))
+            self.assertFalse(
+                packaging_owner.canWrite(
+                    productseries, 'translations_autoimport_mode'))
+            self.assertFalse(
+                packaging_owner.canWrite(
+                    productseries.product, 'translations_usage'))
+            expected = {
+                'user_can_change_product_series': True,
+                'user_can_change_branch': False,
+                'user_can_change_translation_usage': False,
+                'user_can_change_translations_autoimport_mode': False,
+                }
+            self.assertEqual(expected, permissions)
+
+    def test_getSharingDetailPermissions__ordinary_user(self):
+        """An ordinary user cannot set the series' branch or translation
+        synchronisation settings, or the translation usage settings of the
+        product.
+        """
+        packaging = self.factory.makePackagingLink()
+        sourcepackage = packaging.sourcepackage
+        productseries = packaging.productseries
+        with person_logged_in(packaging.owner):
+            permissions = sourcepackage.getSharingDetailPermissions()
+            self.assertEqual(productseries, sourcepackage.productseries)
+            self.assertFalse(
+                packaging.owner.canWrite(productseries, 'branch'))
+            self.assertFalse(
+                packaging.owner.canWrite(
+                    productseries, 'translations_autoimport_mode'))
+            self.assertFalse(
+                packaging.owner.canWrite(
+                    productseries.product, 'translations_usage'))
+            expected = {
+                'user_can_change_product_series': True,
+                'user_can_change_branch': False,
+                'user_can_change_translation_usage': False,
+                'user_can_change_translations_autoimport_mode': False,
+                }
+            self.assertEqual(expected, permissions)
+
+    def makeDistinctOwnerProductSeries(self):
+        # Ensure productseries owner is distinct from product owner.
+        return self.factory.makeProductSeries(
+            owner=self.factory.makePerson())
+
+    def test_getSharingDetailPermissions__series_owner(self):
+        """A product series owner can create a packaging link, and he can
+        set the series' branch or translation syncronisation settings,
+        but he cannot set the translation usage settings of the product.
+        """
+        productseries = self.makeDistinctOwnerProductSeries()
+        series_owner = productseries.owner
+        # Ensure productseries owner is distinct from product owner.
+        productseries = self.factory.makeProductSeries(
+            owner=series_owner)
+        with person_logged_in(series_owner):
+            packaging = self.factory.makePackagingLink(
+                productseries=productseries, owner=series_owner)
+            sourcepackage = packaging.sourcepackage
+            permissions = sourcepackage.getSharingDetailPermissions()
+            self.assertEqual(productseries, sourcepackage.productseries)
+            self.assertTrue(series_owner.canWrite(productseries, 'branch'))
+            self.assertTrue(
+                series_owner.canWrite(
+                    productseries, 'translations_autoimport_mode'))
+            self.assertFalse(
+                series_owner.canWrite(
+                    productseries.product, 'translations_usage'))
+            expected = {
+                'user_can_change_product_series': True,
+                'user_can_change_branch': True,
+                'user_can_change_translation_usage': False,
+                'user_can_change_translations_autoimport_mode': True,
+                }
+            self.assertEqual(expected, permissions)
+
+    def test_getSharingDetailPermissions__product_owner(self):
+        """A product owner can create a packaging link, and he can set the
+        series' branch and the translation syncronisation settings, and the
+        translation usage settings of the product.
+        """
+        productseries = self.makeDistinctOwnerProductSeries()
+        product = productseries.product
+        with person_logged_in(product.owner):
+            packaging = self.factory.makePackagingLink(
+                productseries=productseries, owner=product.owner)
+            sourcepackage = packaging.sourcepackage
+            permissions = sourcepackage.getSharingDetailPermissions()
+            self.assertEqual(productseries, sourcepackage.productseries)
+            self.assertTrue(product.owner.canWrite(productseries, 'branch'))
+            self.assertTrue(
+                product.owner.canWrite(
+                    productseries, 'translations_autoimport_mode'))
+            self.assertTrue(
+                product.owner.canWrite(
+                    productseries.product, 'translations_usage'))
+            expected = {
+                'user_can_change_product_series': True,
+                'user_can_change_branch': True,
+                'user_can_change_translation_usage': True,
+                'user_can_change_translations_autoimport_mode': True,
+                }
+            self.assertEqual(expected, permissions)
+
+    def test_getSharingDetailPermissions_change_product(self):
+        """Test user_can_change_product_series.
+
+        Until a Packaging is created, anyone can change product series.
+        Afterward, random people cannot change product series.
+        """
+        sourcepackage = self.factory.makeSourcePackage()
+        person1 = self.factory.makePerson()
+        person2 = self.factory.makePerson()
+
+        def can_change_product_series():
+            return sourcepackage.getSharingDetailPermissions()[
+                    'user_can_change_product_series']
+        with person_logged_in(person1):
+            self.assertTrue(can_change_product_series())
+        with person_logged_in(person2):
+            self.assertTrue(can_change_product_series())
+        self.factory.makePackagingLink(
+            sourcepackage=sourcepackage, owner=person1)
+        with person_logged_in(person1):
+            self.assertTrue(can_change_product_series())
+        with person_logged_in(person2):
+            self.assertFalse(can_change_product_series())
+
+    def test_getSharingDetailPermissions_no_product_series(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        expected = {
+            'user_can_change_product_series': True,
+            'user_can_change_branch': False,
+            'user_can_change_translation_usage': False,
+            'user_can_change_translations_autoimport_mode': False}
+        with person_logged_in(self.factory.makePerson()):
+            self.assertEqual(
+                expected, sourcepackage.getSharingDetailPermissions())
+
+    def test_getSharingDetailPermissions_no_user(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        expected = {
+            'user_can_change_product_series': False,
+            'user_can_change_branch': False,
+            'user_can_change_translation_usage': False,
+            'user_can_change_translations_autoimport_mode': False}
+        self.assertEqual(
+            expected, sourcepackage.getSharingDetailPermissions())
 
 
 class TestSourcePackageWebService(WebServiceTestCase):
@@ -353,17 +510,98 @@ class TestSourcePackageWebService(WebServiceTestCase):
 
 
 class TestSourcePackageSecurity(TestCaseWithFactory):
-    """Tests for source package branch linking security."""
+    """Tests for source package security."""
 
     layer = DatabaseFunctionalLayer
 
+    def test_admins_have_launchpad_Edit(self):
+        admin = self.factory.makeAdministrator()
+        sourcepackage = self.factory.makeSourcePackage()
+        with person_logged_in(admin):
+            self.assertTrue(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Administrators should have launchpad.Edit on source "
+                "packages.")
+
+    def test_distro_owner_have_launchpad_Edit(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        with person_logged_in(sourcepackage.distribution.owner):
+            self.assertTrue(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Distribution owner should have launchpad.Edit on source "
+                "packages.")
+
+    def test_uploader_has_launchpad_edit(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        uploader = self.factory.makePerson()
+        archive = sourcepackage.get_default_archive()
+        with person_logged_in(sourcepackage.distribution.main_archive.owner):
+            archive.newPackageUploader(uploader, sourcepackage.name)
+        with person_logged_in(uploader):
+            self.assertTrue(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Uploader to the package should have launchpad.Edit on "
+                "source packages.")
+
+    def test_uploader_has_launchpad_edit_on_obsolete_series(self):
+        obsolete_series = self.factory.makeDistroRelease(
+            status=SeriesStatus.OBSOLETE)
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=obsolete_series)
+        uploader = self.factory.makePerson()
+        archive = sourcepackage.get_default_archive()
+        with person_logged_in(sourcepackage.distribution.main_archive.owner):
+            archive.newPackageUploader(uploader, sourcepackage.name)
+        with person_logged_in(uploader):
+            self.assertTrue(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Uploader to the package should have launchpad.Edit on "
+                "source packages in an OBSOLETE series.")
+
+    def test_uploader_have_launchpad_edit_on_current_series(self):
+        current_series = self.factory.makeDistroRelease(
+            status=SeriesStatus.CURRENT)
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=current_series)
+        uploader = self.factory.makePerson()
+        archive = sourcepackage.get_default_archive()
+        with person_logged_in(sourcepackage.distribution.main_archive.owner):
+            archive.newPackageUploader(uploader, sourcepackage.name)
+        with person_logged_in(uploader):
+            self.assertTrue(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Uploader to the package should have launchpad.Edit on "
+                "source packages in a CURRENT series.")
+
+    def test_uploader_have_launchpad_edit_on_supported_series(self):
+        supported_series = self.factory.makeDistroRelease(
+            status=SeriesStatus.SUPPORTED)
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=supported_series)
+        uploader = self.factory.makePerson()
+        archive = sourcepackage.get_default_archive()
+        with person_logged_in(sourcepackage.distribution.main_archive.owner):
+            archive.newPackageUploader(uploader, sourcepackage.name)
+        with person_logged_in(uploader):
+            self.assertTrue(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Uploader to the package should have launchpad.Edit on "
+                "source packages in a SUPPORTED series.")
+
+    def test_john_doe_cannot_edit(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        john_doe = self.factory.makePerson()
+        with person_logged_in(john_doe):
+            self.failIf(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Random user shouldn't have launchpad.Edit on source "
+                "packages.")
+
     def test_cannot_setBranch(self):
         sourcepackage = self.factory.makeSourcePackage()
-        pocket = PackagePublishingPocket.RELEASE
-        registrant = self.factory.makePerson()
-        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        self.assertRaises(
-            Unauthorized, sourcepackage.setBranch, pocket, branch, registrant)
+        self.failIf(
+            canAccess(sourcepackage, 'setBranch'),
+            "setBranch should only be available to admins and uploaders")
 
 
 class TestSourcePackageViews(TestCaseWithFactory):
