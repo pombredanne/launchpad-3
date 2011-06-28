@@ -2231,3 +2231,8 @@ div.translation-help-links a {
 div.translation-help-links div {
     clear: both;
     }
+/* Message boxes (especially error boxes) should be visible above other
+ * elments. */
+.yui3-activator-message-box {
+    z-index: 9999;
+    }
