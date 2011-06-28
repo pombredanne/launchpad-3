@@ -57,10 +57,7 @@ from lazr.restful import (
     ResourceJSONEncoder,
     )
 from lazr.restful.declarations import error_status
-from lazr.restful.interfaces import (
-    IJSONRequestCache,
-    IWebServiceClientRequest,
-    )
+from lazr.restful.interfaces import IJSONRequestCache
 
 from lazr.restful.tales import WebLayerAPI
 

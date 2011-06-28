@@ -33,7 +33,7 @@ class TestLaunchpadView(TestCaseWithFactory):
         return getUtility(ICountrySet)['CA']
 
     def assertIsCanada(self, json_dict):
-        self.assertIs(None, json_dict['description'] )
+        self.assertIs(None, json_dict['description'])
         self.assertEqual('CA', json_dict['iso3166code2'])
         self.assertEqual('CAN', json_dict['iso3166code3'])
         self.assertEqual('Canada', json_dict['name'])
