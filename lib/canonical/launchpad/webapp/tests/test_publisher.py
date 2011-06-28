@@ -15,7 +15,7 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from lp.services.worlddata.interfaces.country import ICountrySet
-from lp.testing import TestCaseWithFactory
+from lp.testing import person_logged_in, TestCaseWithFactory
 
 from canonical.launchpad.webapp import publisher
 
@@ -52,19 +52,33 @@ class TestLaunchpadView(TestCaseWithFactory):
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
         IJSONRequestCache(request).objects['my_bool'] = True
-        self.assertEqual('{"my_bool": true}', view.getCacheJson())
+        with person_logged_in(self.factory.makePerson()):
+            self.assertEqual('{"my_bool": true}', view.getCacheJson())
 
     def test_getCacheJson_resource_object(self):
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
         IJSONRequestCache(request).objects['country'] = self.getCanada()
-        self.assertIsCanada(simplejson.loads(view.getCacheJson())['country'])
+        with person_logged_in(self.factory.makePerson()):
+            json_dict = simplejson.loads(view.getCacheJson())['country']
+        self.assertIsCanada(json_dict)
 
     def test_getCacheJson_context_overrides_objects(self):
         request = LaunchpadTestRequest()
         view = LaunchpadView(self.getCanada(), request)
         IJSONRequestCache(request).objects['context'] = True
-        self.assertIsCanada(simplejson.loads(view.getCacheJson())['context'])
+        with person_logged_in(self.factory.makePerson()):
+            json_dict = simplejson.loads(view.getCacheJson())['context']
+        self.assertIsCanada(json_dict)
+
+    def test_getCache_anonymous(self):
+        request = LaunchpadTestRequest()
+        view = LaunchpadView(self.getCanada(), request)
+        self.assertIs(None, view.user)
+        IJSONRequestCache(request).objects['my_bool'] = True
+        json_dict = simplejson.loads(view.getCacheJson())
+        self.assertIsCanada(json_dict['context'])
+        self.assertFalse('my_bool' in json_dict)
 
 
 def test_suite():

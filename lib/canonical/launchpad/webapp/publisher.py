@@ -363,7 +363,10 @@ class LaunchpadView(UserAttributeCache):
     info_message = property(_getInfoMessage, _setInfoMessage)
 
     def getCacheJson(self):
-        cache = dict(IJSONRequestCache(self.request).objects)
+        if self.user is not None:
+            cache = dict(IJSONRequestCache(self.request).objects)
+        else:
+            cache = dict()
         if WebLayerAPI(self.context).is_entry:
             cache['context'] = self.context
         return simplejson.dumps(
