@@ -214,6 +214,7 @@ rationale and displayname are required.
 
     >>> from canonical.launchpad.interfaces.account import (
     ...     AccountCreationRationale)
+    >>> from storm.store import Store
 
     >>> login('admin@canonical.com')
     >>> passwordless_account = account_set.new(
@@ -235,6 +236,7 @@ then the method encrypts it for us.
     >>> passworded_account = account_set.new(
     ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD , 'Passworded',
     ...     password=u'clear_password')
+    >>> Store.of(passworded_account).flush()
     >>> passworded_account.password == u'clear_password'
     False
 
@@ -244,6 +246,7 @@ encrypted, by setting password_is_encrypted to True.
     >>> clear_account = account_set.new(
     ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD , 'Clear',
     ...     password=u'clear_password', password_is_encrypted=True)
+    >>> Store.of(clear_account).flush()
     >>> print clear_account.password
     clear_password
 
