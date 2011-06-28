@@ -26,6 +26,7 @@ __all__ = [
     ]
 
 import httplib
+import simplejson
 
 from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
@@ -51,7 +52,13 @@ from zope.security.checker import (
     )
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
+from lazr.restful import (
+    EntryResource,
+    ResourceJSONEncoder,
+    )
 from lazr.restful.declarations import error_status
+from lazr.restful.interfaces import IWebServiceClientRequest
+from lazr.restful.tales import WebLayerAPI
 
 from canonical.launchpad.layers import (
     LaunchpadLayer,
@@ -258,7 +265,6 @@ class LaunchpadView(UserAttributeCache):
     - render()     <-- used to render the page.  override this if you have
                        many templates not set via zcml, or you want to do
                        rendering from Python.
-    - isBetaUser   <-- whether the logged-in user is a beta tester
     """
 
     def __init__(self, context, request):
@@ -354,6 +360,15 @@ class LaunchpadView(UserAttributeCache):
                     type(info_message))
 
     info_message = property(_getInfoMessage, _setInfoMessage)
+
+    def getCacheJson(self):
+        ws_object = WebLayerAPI(self.context)
+        ws_request = IWebServiceClientRequest(self.request)
+        cache = {}
+        if ws_object.is_entry:
+            cache['context'] = EntryResource(self.context, ws_request)
+        return simplejson.dumps(cache, cls=ResourceJSONEncoder,
+                media_type=EntryResource.JSON_TYPE)
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):
