@@ -362,7 +362,7 @@ class LaunchpadView(UserAttributeCache):
 
     info_message = property(_getInfoMessage, _setInfoMessage)
 
-    def getCacheJson(self):
+    def getCacheJSON(self):
         if self.user is not None:
             cache = dict(IJSONRequestCache(self.request).objects)
         else:
