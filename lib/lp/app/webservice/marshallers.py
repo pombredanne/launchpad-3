@@ -10,11 +10,12 @@ __all__ = [
     ]
 
 
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
-
 from lazr.restful.marshallers import (
     TextFieldMarshaller as LazrTextFieldMarshaller,
     )
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
+
+from lp.services.utils import obfuscate_email
 
 
 class TextFieldMarshaller(LazrTextFieldMarshaller):
@@ -26,5 +27,5 @@ class TextFieldMarshaller(LazrTextFieldMarshaller):
         Return the value as is.
         """
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
-            return u"<email address hidden>"
+            return obfuscate_email(value)
         return value
