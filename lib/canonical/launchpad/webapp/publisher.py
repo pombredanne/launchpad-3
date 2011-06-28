@@ -366,14 +366,12 @@ class LaunchpadView(UserAttributeCache):
     info_message = property(_getInfoMessage, _setInfoMessage)
 
     def getCacheJson(self):
-        ws_request = IWebServiceClientRequest(self.request)
-        cache = {}
+        cache = dict(IJSONRequestCache(self.request).objects)
         if WebLayerAPI(self.context).is_entry:
             cache['context'] = self.context
-        for key, value in IJSONRequestCache(self.request).objects.iteritems():
-            cache[key] = value
-        return simplejson.dumps(cache, cls=ResourceJSONEncoder,
-                media_type=EntryResource.JSON_TYPE)
+        return simplejson.dumps(
+            cache, cls=ResourceJSONEncoder,
+            media_type=EntryResource.JSON_TYPE)
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):

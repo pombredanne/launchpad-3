@@ -66,6 +66,14 @@ class TestLaunchpadView(TestCaseWithFactory):
         json = view.getCacheJson()
         self.assertIsCanada(simplejson.loads(json)['country'])
 
+    def test_getCacheJson_context_overrides_objects(self):
+        request = LaunchpadTestRequest()
+        view = LaunchpadView(self.getCanada(), request)
+        IJSONRequestCache(request).objects['context'] = True
+        json = view.getCacheJson()
+        json_dict = simplejson.loads(json)['context']
+        self.assertIsCanada(json_dict)
+
 
 def test_suite():
     suite = TestSuite()
