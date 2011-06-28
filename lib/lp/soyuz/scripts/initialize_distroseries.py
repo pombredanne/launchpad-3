@@ -457,7 +457,7 @@ class InitializeDistroSeries:
         packagesets = self._store.find(
             Packageset, DistroSeries.id.is_in(self.derivation_parent_ids))
         parent_to_child = {}
-        # Create the packagesets, and any archivepermissions
+        # Create the packagesets.
         parent_distro_ids = [
             parent.distribution.id for parent in self.derivation_parents]
         for parent_ps in packagesets:
@@ -479,16 +479,7 @@ class InitializeDistroSeries:
                     parent_ps.name, parent_ps.description,
                     new_owner, distroseries=self.distroseries,
                     related_set=parent_ps)
-            # XXX: 2011-06-15 rvb bug=797599.
-            # Copying archivepermissions cross-distro is wrong.
-            self._store.execute("""
-                INSERT INTO Archivepermission
-                (person, permission, archive, packageset, explicit)
-                SELECT person, permission, %s, %s, explicit
-                FROM Archivepermission WHERE packageset = %s
-                """ % sqlvalues(
-                    self.distroseries.main_archive, child_ps.id,
-                    parent_ps.id))
+
             parent_to_child[parent_ps] = child_ps
         # Copy the relations between sets, and the contents.
         for old_series_ps, new_series_ps in parent_to_child.items():
