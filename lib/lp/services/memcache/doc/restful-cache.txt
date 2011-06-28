@@ -90,8 +90,6 @@ recognized web service versions are automatically removed from the
 cache.
 
     >>> person.homepage_content = "Whatever"
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(person)
 
     >>> print cache.get(person, json_type, "beta", default="missing")
     missing

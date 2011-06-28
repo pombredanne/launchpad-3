@@ -212,7 +212,6 @@ Creating new accounts
 New Accounts are created using the AccountSet.new() method. The account
 rationale and displayname are required.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces.account import (
     ...     AccountCreationRationale)
 
@@ -236,7 +235,6 @@ then the method encrypts it for us.
     >>> passworded_account = account_set.new(
     ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD , 'Passworded',
     ...     password=u'clear_password')
-    >>> syncUpdate(passworded_account)
     >>> passworded_account.password == u'clear_password'
     False
 
@@ -246,7 +244,6 @@ encrypted, by setting password_is_encrypted to True.
     >>> clear_account = account_set.new(
     ...     AccountCreationRationale.OWNER_CREATED_LAUNCHPAD , 'Clear',
     ...     password=u'clear_password', password_is_encrypted=True)
-    >>> syncUpdate(clear_account)
     >>> print clear_account.password
     clear_password
 
@@ -261,7 +258,6 @@ account with no email address is not valid.
     >>> account = account_set.new(
     ...     AccountCreationRationale.USER_CREATED,
     ...     "Valid Account Test")
-    >>> syncUpdate(account)
     >>> account.status = AccountStatus.ACTIVE
     >>> account.is_valid
     False
