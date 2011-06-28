@@ -28,6 +28,11 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     __call__ = ViewPageTemplateFile('templates/form-picker.pt')
 
     picker_type = 'default'
+    # Provide default values for the following properties in case someone
+    # creates a vocab picker for a person instead if using the derived
+    # PersonPicker.
+    show_assign_me_button = False
+    show_remove_button = False
 
     popup_name = 'popup-vocabulary-picker'
 
@@ -43,6 +48,9 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     # Defaults to self.vocabulary.displayname.
     header = None
 
+    def __init__(self, field, vocabulary, request):
+        super(VocabularyPickerWidget, self).__init__(field, vocabulary, request)
+        
     @cachedproperty
     def matches(self):
         """Return a list of matches (as ITokenizedTerm) to whatever the
@@ -159,6 +167,8 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 class PersonPickerWidget(VocabularyPickerWidget):
 
     include_create_team_link = False
+    show_assign_me_button = True
+    show_remove_button = True
 
     @property
     def picker_type(self):
