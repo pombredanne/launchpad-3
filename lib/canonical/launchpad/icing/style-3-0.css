@@ -1456,6 +1456,10 @@ div.watermark-apps-portlet span img {
     }
 .announcements li {
     margin-bottom: 0.5em;
+    /* Some announcements have long strings of characters as section headers
+     * and such.  Since they don't have whitespace they can't wrap, so they
+     * would break out of their container if we didn't clip them here. */
+    overflow: hidden;
     }
 .announcements li strong,
 .announcements li a {
