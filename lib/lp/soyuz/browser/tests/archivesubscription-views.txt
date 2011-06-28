@@ -318,7 +318,7 @@ Just deactivate the new token again for the remaining tests.
 This view displays a single subscription of a person, as well as the
 corresponding token information.
 
-The view includes a label to denifen its main heading.
+The view includes a label to define its main heading.
 
     >>> from lp.soyuz.browser.archivesubscription import (
     ...     PersonalArchiveSubscription)

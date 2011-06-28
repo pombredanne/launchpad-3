@@ -355,7 +355,7 @@ class PersonArchiveSubscriptionView(LaunchpadView):
         super(PersonArchiveSubscriptionView, self).initialize()
 
         # If an activation was requested and there isn't a currently
-        # active token, then create a token, provided a notification
+        # active token, then create a token, provide a notification
         # and redirect.
         if self.request.form.get('activate') and not self.active_token:
             self.context.archive.newAuthToken(self.context.subscriber)

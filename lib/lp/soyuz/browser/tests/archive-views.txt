@@ -49,8 +49,7 @@ the string 'PPA' or 'archive' depending on whether the archive is a PPA
     >>> print copy_archive_view.archive_label
     archive
 
-The ArchiveView is provides the html for the inline description
-editing widget.
+The ArchiveView provides the html for the inline description editing widget.
 
     >>> print ppa_archive_view.archive_description_html.title
     PPA description
