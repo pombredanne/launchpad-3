@@ -7,6 +7,7 @@ from doctest import (
     )
 from unittest import TestLoader, TestSuite
 
+from lazr.restful.interfaces import IJSONRequestCache
 import simplejson
 from zope.component import getUtility
 
@@ -23,13 +24,13 @@ class TestLaunchpadView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_get_cache_json_non_resource_context(self):
+    def test_getCacheJson_non_resource_context(self):
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
         json = view.getCacheJson()
         self.assertEqual('{}', json)
 
-    def test_get_cache_json_resource_context(self):
+    def test_getCacheJson_resource_context(self):
         request = LaunchpadTestRequest()
         view = LaunchpadView(getUtility(ICountrySet)['CA'], request)
         json = view.getCacheJson()
@@ -43,6 +44,13 @@ class TestLaunchpadView(TestCaseWithFactory):
             ['description', 'http_etag', 'iso3166code2', 'iso3166code3',
              'name', 'resource_type_link', 'self_link', 'title'],
             json_dict.keys())
+
+    def test_getCacheJson_non_resource_object(self):
+        request = LaunchpadTestRequest()
+        view = LaunchpadView(object(), request)
+        IJSONRequestCache(request).objects['my_bool'] = True
+        json = view.getCacheJson()
+        self.assertEqual('{"my_bool": true}', json)
 
 
 def test_suite():

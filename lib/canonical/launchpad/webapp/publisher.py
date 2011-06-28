@@ -57,7 +57,11 @@ from lazr.restful import (
     ResourceJSONEncoder,
     )
 from lazr.restful.declarations import error_status
-from lazr.restful.interfaces import IWebServiceClientRequest
+from lazr.restful.interfaces import (
+    IJSONRequestCache,
+    IWebServiceClientRequest,
+    )
+
 from lazr.restful.tales import WebLayerAPI
 
 from canonical.launchpad.layers import (
@@ -367,6 +371,8 @@ class LaunchpadView(UserAttributeCache):
         cache = {}
         if ws_object.is_entry:
             cache['context'] = EntryResource(self.context, ws_request)
+        for key, value in IJSONRequestCache(self.request).objects.iteritems():
+            cache[key] = value
         return simplejson.dumps(cache, cls=ResourceJSONEncoder,
                 media_type=EntryResource.JSON_TYPE)
 
