@@ -151,6 +151,18 @@ inplace: build logs clean_logs
 
 build: compile apidoc jsbuild css_combine sprite_image
 
+# LP_SOURCEDEPS_PATH should point to the sourcecode directory, but we
+# want the parent directory where the download-cache and eggs directory
+# are. We re-use the variable that is using for the rocketfuel-get script.
+download-cache:
+ifdef LP_SOURCEDEPS_PATH
+	utilities/link-external-sourcecode $(LP_SOURCEDEPS_PATH)/..
+else
+	@echo "Missing ./download-cache."
+	@echo "Developers: please run utilities/link-external-sourcecode."
+	@exit 1
+endif
+
 css_combine: sprite_css bin/combine-css
 	${SHHH} bin/combine-css
 
@@ -170,13 +182,13 @@ ${ICING}/icon-sprites.positioning ${ICING}/icon-sprites: bin/sprite-util \
 # its jsTestDriver test harness modifications in the lazr.js and
 # launchpad.js roll-up files.  They fiddle with built-in functions!
 # See Bug 482340.
-jsbuild_lazr: bin/jsbuild
+jsbuild_yui: bin/jsbuild
 	${SHHH} bin/jsbuild \
 	    --builddir $(LAZR_BUILT_JS_ROOT) \
 	    --exclude testing/ --filetype $(JS_BUILD) \
 	    --copy-yui-to $(LAZR_BUILT_JS_ROOT)/yui
 
-$(JS_YUI) $(JS_LAZR): jsbuild_lazr
+$(JS_YUI) $(JS_LAZR): jsbuild_yui
 
 $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
@@ -191,18 +203,6 @@ eggs:
 	# Usually this is linked via link-external-sourcecode, but in
 	# deployment we create this ourselves.
 	mkdir eggs
-
-# LP_SOURCEDEPS_PATH should point to the sourcecode directory, but we
-# want the parent directory where the download-cache and eggs directory
-# are. We re-use the variable that is using for the rocketfuel-get script.
-download-cache:
-ifdef LP_SOURCEDEPS_PATH
-	utilities/link-external-sourcecode $(LP_SOURCEDEPS_PATH)/..
-else
-	@echo "Missing ./download-cache."
-	@echo "Developers: please run utilities/link-external-sourcecode."
-	@exit 1
-endif
 
 buildonce_eggs: $(PY)
 	find eggs -name '*.pyc' -exec rm {} \;
