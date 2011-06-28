@@ -257,8 +257,8 @@
   </dd>
   <div tal:attributes="id string:expandable-${rev_no/sequence}"
        class="expandable">
-    <a class="expander-icon">Changes</a>
-    <div class="expander-content"></div>
+    <a class="unseen expander-icon js-action">Changes</a>
+    <div class="unseen expander-content"></div>
   </div>
 
   <div tal:condition="rev_info | nothing">
