@@ -1,5 +1,13 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+
+__metaclass__ = type
+
+__all__ = [
+    'FormNamespaceView',
+    'JsonModelNamespaceView',
+    ]
+
 
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.pagetemplate.viewpagetemplatefile import BoundPageTemplate
@@ -7,6 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 from zope.traversing.interfaces import TraversalError
 from zope.traversing.namespace import view
 
+from canonical.launchpad.webapp import LaunchpadView
 from lp.app.browser.launchpadform import LaunchpadFormView
 
 
@@ -35,4 +44,21 @@ class FormNamespaceView(view):
         else:
             raise TraversalError("The URL does not correspond to a form.")
 
+        return self.context
+
+
+class JsonModelNamespaceView(view):
+    """A namespace view to handle traversals with ++model++."""
+
+    def traverse(self, name, ignored):
+        """Model traversal adapter.
+
+        This adapter allows any LaunchpadView to render its JSON cache.
+        """
+        context = removeSecurityProxy(self.context)
+        if isinstance(context, LaunchpadView):
+            context.index = 'foo'
+        else:
+            raise TraversalError(
+                "The URL does not correpsond to a LaunchpadView.")
         return self.context

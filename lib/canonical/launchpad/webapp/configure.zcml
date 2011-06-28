@@ -440,6 +440,13 @@
         factory="canonical.launchpad.webapp.namespace.FormNamespaceView"
         />
 
+    <!-- Create a namespace to render the model of any LaunchpadView-->
+    <view
+        name="model" type="*"
+        provides="zope.traversing.interfaces.ITraversable" for="*"
+        factory="canonical.launchpad.webapp.namespace.JsonModelNamespaceView"
+        />
+
     <!-- Registrations to support +haproxy status url. -->
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
