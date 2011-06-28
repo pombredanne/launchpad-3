@@ -77,6 +77,7 @@ former status' count will of course decrease, and the latter's increase.
     ...         break
     >>> bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, getUtility(ILaunchBag).user)
+    >>> Store.of(bugtask).flush()
     >>> new_bug_counts = bugtarget.getBugCounts(None)
     >>> print_count_difference(
     ...     new_bug_counts, old_counts, BugTaskStatus.CONFIRMED)
@@ -96,6 +97,7 @@ count, but not No Privileges Person or the anonymous user.
     >>> old_counts = bugtarget.getBugCounts(None)
     >>> bug.setPrivate(True, getUtility(ILaunchBag).user)
     True
+    >>> Store.of(bug).flush()
     >>> sample_person_counts = bugtarget.getBugCounts(
     ...     getUtility(IPersonSet).getByEmail('test@canonical.com'))
     >>> nopriv_counts = bugtarget.getBugCounts(
@@ -115,6 +117,8 @@ count, but not No Privileges Person or the anonymous user.
 
     >>> bug.setPrivate(False, getUtility(ILaunchBag).user)
     True
+    >>> Store.of(bug).flush()
+
 
 == Duplicate Bugs ==
 
