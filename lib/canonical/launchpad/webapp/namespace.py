@@ -50,6 +50,8 @@ class FormNamespaceView(view):
 class JsonModelNamespaceView(view):
     """A namespace view to handle traversals with ++model++."""
 
+    template = ViewPageTemplateFile('templates/launchpad-model.pt')
+
     def traverse(self, name, ignored):
         """Model traversal adapter.
 
@@ -57,7 +59,7 @@ class JsonModelNamespaceView(view):
         """
         context = removeSecurityProxy(self.context)
         if isinstance(context, LaunchpadView):
-            context.index = 'foo'
+            context.index = BoundPageTemplate(self.template, context)
         else:
             raise TraversalError(
                 "The URL does not correpsond to a LaunchpadView.")

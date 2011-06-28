@@ -50,6 +50,7 @@ class TestJsonModelView(TestCase):
         namespace = JsonModelNamespaceView(view, request)
         result = namespace.traverse(view, None)
         self.assertEqual(result, view)
+        self.assertTrue(hasattr(result, 'index'))
 
     def test_JsonModelNamespace_traverse_LPFormView(self):
         # Test traversal for JSON model namespace,
@@ -60,3 +61,4 @@ class TestJsonModelView(TestCase):
         namespace = JsonModelNamespaceView(view, request)
         result = namespace.traverse(view, None)
         self.assertEqual(result, view)
+        self.assertTrue(hasattr(result, 'index'))
