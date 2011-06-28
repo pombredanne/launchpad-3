@@ -152,6 +152,7 @@ setup(
         console_scripts=[ # `console_scripts` is a magic name to setuptools
             'apiindex = lp.scripts.utilities.apiindex:main',
             'killservice = lp.scripts.utilities.killservice:main',
+            'jsbuild = lp.scripts.utilities.build.jsbuild:main',
             'run = canonical.launchpad.scripts.runlaunchpad:start_launchpad',
             'harness = canonical.database.harness:python',
             'twistd = twisted.scripts.twistd:run',
