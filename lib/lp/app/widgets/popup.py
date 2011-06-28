@@ -48,9 +48,6 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     # Defaults to self.vocabulary.displayname.
     header = None
 
-    def __init__(self, field, vocabulary, request):
-        super(VocabularyPickerWidget, self).__init__(field, vocabulary, request)
-        
     @cachedproperty
     def matches(self):
         """Return a list of matches (as ITokenizedTerm) to whatever the
