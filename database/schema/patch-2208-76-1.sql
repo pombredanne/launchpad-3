@@ -10,4 +10,4 @@ SET client_min_messages=ERROR;
 -- (And perhaps drop translationmessage__potmsgset__language__idx).
 DROP INDEX tm__language__submitter__idx;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 1);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 76, 1);
