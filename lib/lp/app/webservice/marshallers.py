@@ -9,6 +9,9 @@ __all__ = [
     'TextFieldMarshaller',
     ]
 
+
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
+
 from lazr.restful.marshallers import (
     TextFieldMarshaller as LazrTextFieldMarshaller,
     )
@@ -22,4 +25,6 @@ class TextFieldMarshaller(LazrTextFieldMarshaller):
 
         Return the value as is.
         """
+        if IUnauthenticatedPrincipal.providedBy(self.request.principal):
+            return u"<email address hidden>"
         return value

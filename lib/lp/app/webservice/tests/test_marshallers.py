@@ -27,6 +27,7 @@ class TestTextFieldMarshaller(TestCaseWithFactory):
                 getUtility(IPlacelessAuthUtility).unauthenticatedPrincipal())
         else:
             request.setPrincipal(self.factory.makePerson())
+        return request
 
     def test_unmarshall_obfuscated(self):
         # Data is obfuccated if the request is anonynous.
