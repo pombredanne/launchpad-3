@@ -365,12 +365,13 @@ class FormattersAPI:
             # devaluing the return on effort for spammers that consider
             # using Launchpad.
             if not FormattersAPI._linkify_url_should_be_ignored(url):
-                link_string = ('<a rel="nofollow" '
-                               'href="%(url)s">%(linked_text)s</a>%(trailers)s' % {
-                                    'url': cgi.escape(url, quote=True),
-                                    'linked_text': add_word_breaks(cgi.escape(url)),
-                                    'trailers': cgi.escape(trailers)
-                                    })
+                link_string = (
+                    '<a rel="nofollow" '
+                    'href="%(url)s">%(linked_text)s</a>%(trailers)s' % {
+                        'url': cgi.escape(url, quote=True),
+                        'linked_text': add_word_breaks(cgi.escape(url)),
+                        'trailers': cgi.escape(trailers)
+                        })
                 return link_string
             else:
                 return full_url

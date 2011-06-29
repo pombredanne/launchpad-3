@@ -49,6 +49,7 @@ class TestTextFieldMarshaller(TestCaseWithFactory):
         result = marshaller.unmarshall(None, u"foo@example.com")
         self.assertEqual(u"foo@example.com", result)
 
+
 class TestWebServiceObfuscation(TestCaseWithFactory):
     """Integration test for obfuscation marshaller.
 
@@ -83,7 +84,7 @@ class TestWebServiceObfuscation(TestCaseWithFactory):
             ws_bug.description)
 
     def test_email_address_not_obfuscated(self):
-        # Email address are not obfuscated for authendticated users.
+        # Email address are not obfuscated for authenticated users.
         ws = self.factory.makeLaunchpadService(anonymous=False)
         bug = self._makeBug()
         ws_bug = ws_object(ws, bug)

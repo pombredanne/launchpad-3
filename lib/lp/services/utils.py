@@ -327,6 +327,7 @@ re_email_address = re.compile(r"""
     \.[a-zA-Z0-9.-]{1,251}\b      # Dot starts one or more domains.
     """, re.VERBOSE)              # ' <- font-lock turd
 
+
 def obfuscate_email(text_to_obfuscate):
     """Obfuscate an email address.
 
