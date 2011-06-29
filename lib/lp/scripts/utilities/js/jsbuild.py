@@ -17,9 +17,7 @@ import pkg_resources
 
 HERE = os.path.dirname(__file__)
 BUILD_DIR = os.path.normpath(os.path.join(HERE, '..', '..', '..', 'build'))
-DEFAULT_SRC_DIR = os.path.normpath(os.path.join(HERE, '..', '..', '..'))
-PKG_SRC_DIR = pkg_resources.resource_filename(
-    pkg_resources.Requirement.parse("lazr-js"), "lazrjs")
+DEFAULT_SRC_DIR = os.path.normpath(os.path.join(HERE, '..', '..', '..', 'app', 'javascript'))
 
 ESCAPE_STAR_PROPERTY_RE = re.compile(r'\*([a-zA-Z0-9_-]+):')
 UNESCAPE_STAR_PROPERTY_RE = re.compile(r'([a-zA-Z0-9_-]+)_ie_star_hack:')
@@ -189,9 +187,8 @@ class CSSComboFile(ComboFile):
 
 class Builder:
 
-    def __init__(self, name='lazr', build_dir=BUILD_DIR, src_dir=PKG_SRC_DIR,
-                 extra_files=None, exclude_regex='', file_type='raw',
-                 copy_yui_to=BUILD_DIR):
+    def __init__(self, name='lazr', build_dir=BUILD_DIR, src_dir=DEFAULT_SRC_DIR,
+                 extra_files=None, exclude_regex='', file_type='raw'):
         """Create a new Builder.
 
         :param name: The name of the package we are building. This will
@@ -207,8 +204,6 @@ class Builder:
             file.  Possible values are 'raw', 'min', and 'debug'.  File types
             are identified by their basename suffix: foo.js, foo-min.js,
             foo-debug.js, etc.
-        :param copy_yui_to: The absolute path (as a string) to the place where
-            the YUI modules should be copied to. Defaults to BUILD_DIR.
         """
         self.name = name
         self.build_dir = build_dir
@@ -227,7 +222,6 @@ class Builder:
 
         self.exclusion_regex = exclude_regex
         self.file_type = file_type
-        self.copy_yui_to = copy_yui_to
 
         self.log("Using filter: " + self.file_type)
 
@@ -417,17 +411,7 @@ class Builder:
                 continue
             yield name, path
 
-    def copy_yui_package(self):
-        """Copy the contents of our 'yui' dir to self.copy_yui_to."""
-        yui_dirs = glob(os.path.join(self.src_dir, 'yui') + '/*')
-        for dir in yui_dirs:
-            dir_name = os.path.split(dir)[-1]
-            dst_dir = os.path.join(self.copy_yui_to, dir_name)
-            if not os.path.isdir(dst_dir):
-                shutil.copytree(dir, dst_dir)
-
     def do_build(self):
-        self.copy_yui_package()
         for name, cpath in self.find_components():
             files_to_link = glob(os.path.join(cpath, '*.js'))
             if len(files_to_link) == 0:
@@ -458,7 +442,7 @@ def get_options():
         '-b', '--builddir', dest='build_dir', default=BUILD_DIR,
         help=('The directory that should contain built files.'))
     parser.add_option(
-        '-s', '--srcdir', dest='src_dir', default=PKG_SRC_DIR,
+        '-s', '--srcdir', dest='src_dir', default=DEFAULT_SRC_DIR,
         help=('The directory containing the src files.'))
     parser.add_option(
         '-x', '--exclude', dest='exclude', default='',
@@ -469,20 +453,17 @@ def get_options():
         help=('Only bundle files in the source directory that match the '
               'specified file-type filter. Possible values are '
               '[min, raw, debug]. [default: %default]'))
-    parser.add_option(
-        '-c', '--copy-yui-to', dest='copy_yui_to', default=BUILD_DIR,
-        help=('Copy the YUI tree to the given directory before building'))
     return parser.parse_args()
 
 
 def main():
-   options, extra= get_options()
-   Builder(
+    options, extra= get_options()
+
+    Builder(
        name=options.name,
        build_dir=options.build_dir,
        src_dir=options.src_dir,
        extra_files=extra,
        exclude_regex=options.exclude,
        file_type=options.file_type,
-       copy_yui_to=options.copy_yui_to,
        ).do_build()
