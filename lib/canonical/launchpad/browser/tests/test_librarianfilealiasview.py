@@ -5,13 +5,12 @@
 
 __metaclass__ = type
 
-import httplib
-
 from zope.component import getMultiAdapter
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.app.errors import GoneError
 from lp.testing import TestCaseWithFactory
 
 
@@ -27,5 +26,5 @@ class TestLibraryFileAliasView(TestCaseWithFactory):
         request = LaunchpadTestRequest(
             environ={'REQUEST_METHOD': 'GET', 'HTTP_X_SCHEME' : 'http' })
         view = getMultiAdapter((lfa, request), name='+index')
-        view.initialize()
-        self.assertEqual(httplib.GONE, view.request.response.getStatus())
+        self.assertRaisesWithContent(
+            GoneError, "'File deleted.'", view.initialize)

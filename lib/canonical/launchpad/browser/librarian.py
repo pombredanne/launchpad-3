@@ -13,9 +13,8 @@ __all__ = [
     'ProxiedLibraryFileAlias',
     ]
 
-import httplib
-
 from lazr.delegates import delegates
+from lazr.restful.interfaces import IWebBrowserOriginatingRequest
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
 
@@ -31,7 +30,7 @@ from canonical.launchpad.webapp.publisher import (
 from canonical.launchpad.webapp.url import urlappend
 from canonical.lazr.utils import get_current_browser_request
 from canonical.librarian.client import url_path_quote
-from lazr.restful.interfaces import IWebBrowserOriginatingRequest
+from lp.app.errors import GoneError
 
 
 class LibraryFileAliasView(LaunchpadView):
@@ -49,8 +48,7 @@ class LibraryFileAliasView(LaunchpadView):
         assert not self.context.restricted
         # If the LFA is deleted, throw a 410.
         if self.context.deleted:
-            self.request.response.setStatus(httplib.GONE)
-            return
+            raise GoneError("File deleted.")
         # Redirect based on the scheme of the request, as set by
         # Apache in the 'X-SCHEME' environment variable, which is
         # mapped to 'HTTP_X_SCHEME.  Note that only some requests
