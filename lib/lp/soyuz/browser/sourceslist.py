@@ -152,8 +152,9 @@ class SourcesListEntriesWidget:
                 self.archive.series_with_sources)
             return SourcesListEntriesView(entries, self.request)
         else:
-            comment = "Personal access of %s to %s" % (
+            comment = "Personal access of %s (%s) to %s" % (
                 self.user.displayname,
+                self.user.name,
                 self.archive.displayname)
             entries = SourcesListEntries(
                 self.archive.distribution,
