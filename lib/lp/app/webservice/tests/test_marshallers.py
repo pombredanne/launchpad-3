@@ -8,6 +8,8 @@ __metaclass__ = type
 import transaction
 from zope.component import getUtility
 
+from canonical.launchpad.testing.pages import setupBrowser
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.servers import WebServiceTestRequest
 from canonical.testing.layers import (
@@ -19,6 +21,18 @@ from lp.testing import (
     TestCaseWithFactory,
     ws_object,
     )
+
+
+def ws_url(launchpad, obj):
+    """Get the webservice URL of the given objct.
+
+    :param launchpad: The Launchpad instance to convert from.
+    :param obj: The object to the URL for.
+    :return: A URL.
+    """
+    
+    api_request = WebServiceTestRequest(SERVER_URL=str(launchpad._root_uri))
+    return canonical_url(obj, request=api_request)
 
 
 class TestTextFieldMarshaller(TestCaseWithFactory):
@@ -92,3 +106,26 @@ class TestWebServiceObfuscation(TestCaseWithFactory):
             self.bug_title % self.email_address, ws_bug.title)
         self.assertEqual(
             self.bug_description % self.email_address, ws_bug.description)
+
+    def test_xhtml_email_address_obfuscated(self):
+        # Email address are not obfuscated for authenticated users.
+        ws = self.factory.makeLaunchpadService(anonymous=False)
+        bug = self._makeBug()
+        browser = self.getUserBrowser()
+        browser.addHeader('Accept', 'application/xhtml+xml')
+        browser.open(ws_url(ws, bug))
+
+        self.assertIn(self.email_address, browser.contents)
+        self.assertNotIn(self.email_address_obfuscated, browser.contents)
+
+    def test_xhtml_email_address_not_obfuscated(self):
+        # Email address are not obfuscated for authenticated users.
+        ws = self.factory.makeLaunchpadService(anonymous=True)
+        bug = self._makeBug()
+        browser = setupBrowser()
+        browser.addHeader('Accept', 'application/xhtml+xml')
+        browser.open(ws_url(ws, bug))
+        print browser.contents
+
+#        self.assertNotIn(self.email_address, browser.contents)
+#        self.assertIn(self.email_address_obfuscated, browser.contents)
