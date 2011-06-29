@@ -10,7 +10,7 @@
 
 <div metal:fill-slot="main">
 
-  <p>
+  <p id="distro-branch-warning">
     <strong>This page is for a packaging branch for a program in
     <tal:name replace="context/distribution/displayname"/>.</strong> Changes
     should be made here to
