@@ -349,6 +349,9 @@ class PersonArchiveSubscriptionView(LaunchpadView, SourcesListEntriesWidget):
     def initialize(self):
         """Process any posted actions."""
         super(PersonArchiveSubscriptionView, self).initialize()
+        # Set the archive attribute so SourcesListEntriesWidget can be built
+        # correctly.
+        self.archive = self.context.archive
 
         # If an activation was requested and there isn't a currently
         # active token, then create a token, provide a notification
@@ -373,6 +376,3 @@ class PersonArchiveSubscriptionView(LaunchpadView, SourcesListEntriesWidget):
                 "\"sources.list\"." % self.context.archive.displayname)
 
             self.request.response.redirect(self.request.getURL())
-        # Set the archive attribute so SourcesListEntriesWidget can be built
-        # correctly.
-        self.archive = self.context.archive

@@ -153,7 +153,7 @@ class SourcesListEntriesWidget:
         else:
             comment = "Personal access of %s to %s" % (
                 self.user.displayname,
-                self.context.displayname)
+                self.archive.displayname)
 
             entries = SourcesListEntries(
                 self.archive.distribution,
@@ -164,7 +164,27 @@ class SourcesListEntriesWidget:
 
     @cachedproperty
     def active_token(self):
-        """Returns the corresponding current token for this subscription."""
+        """Return the corresponding current token for this subscription."""
         token_set = getUtility(IArchiveAuthTokenSet)
         return token_set.getActiveTokenForArchiveAndPerson(
             self.archive, self.user)
+
+    @property
+    def archive_url(self):
+        """Return an archive_url where available, or None."""
+        if self.has_sources and not self.archive.is_copy:
+            return self.archive.archive_url
+        else:
+            return None
+
+    @cachedproperty
+    def has_sources(self):
+        """Whether or not this PPA has any sources for the view.
+
+        This can be overridden by subclasses as necessary. It allows
+        the view to determine whether to display "This PPA does not yet
+        have any published sources" or "No sources matching 'blah'."
+        """
+        return not self.archive.getPublishedSources().is_empty()
+
+

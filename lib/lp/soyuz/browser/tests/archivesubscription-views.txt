@@ -333,11 +333,6 @@ Initially the subscription does not have an active token:
     >>> print view.active_token
     None
 
-Therefore, it will not return a sources_list_entry either:
-
-    >>> print view.sources_list_entries
-    None
-
 But if 'activate' is posted, the view will generate a new token and
 redirect:
 

@@ -560,7 +560,7 @@ class ArchivePackagesActionMenu(NavigationMenu, ArchiveMenuMixin):
     links = ['copy', 'delete']
 
 
-class ArchiveViewBase(LaunchpadView):
+class ArchiveViewBase(LaunchpadView, SourcesListEntriesWidget):
     """Common features for Archive view classes."""
 
     def initialize(self):
@@ -580,20 +580,13 @@ class ArchiveViewBase(LaunchpadView):
                     "being dispatched.")
             self.request.response.addNotification(structured(notification))
         super(ArchiveViewBase, self).initialize()
+        # Set the archive attribute so SourcesListEntriesWidget can be built
+        # correctly.
+        self.archive = self.context
 
     @cachedproperty
     def private(self):
         return self.context.private
-
-    @cachedproperty
-    def has_sources(self):
-        """Whether or not this PPA has any sources for the view.
-
-        This can be overridden by subclasses as necessary. It allows
-        the view to determine whether to display "This PPA does not yet
-        have any published sources" or "No sources matching 'blah'."
-        """
-        return not self.context.getPublishedSources().is_empty()
 
     @cachedproperty
     def repository_usage(self):
@@ -643,14 +636,6 @@ class ArchiveViewBase(LaunchpadView):
             used_percentage=used_percentage,
             used_css_class=used_css_class,
             quota=quota)
-
-    @property
-    def archive_url(self):
-        """Return an archive_url where available, or None."""
-        if self.has_sources and not self.context.is_copy:
-            return self.context.archive_url
-        else:
-            return None
 
     @property
     def archive_label(self):
@@ -878,7 +863,7 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
         return self.filtered_sources.count() > 0
 
 
-class ArchiveView(ArchiveSourcePackageListViewBase, SourcesListEntriesWidget):
+class ArchiveView(ArchiveSourcePackageListViewBase):
     """Default Archive view class.
 
     Implements useful actions and collects useful sets for the page template.
@@ -893,9 +878,6 @@ class ArchiveView(ArchiveSourcePackageListViewBase, SourcesListEntriesWidget):
                 canonical_url(self.context.distribution))
             return
         super(ArchiveView, self).initialize()
-        # Set the archive attribute so SourcesListEntriesWidget can be built
-        # correctly.
-        self.archive = self.context
 
     @property
     def displayname_edit_widget(self):
