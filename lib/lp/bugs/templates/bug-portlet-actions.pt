@@ -37,26 +37,27 @@
       >bug #42</a>
         <span
           tal:condition="not:duplicateof/required:launchpad.View"
-          tal:replace="string:a private bug" /></li>
+          tal:replace="string:a private bug" /></span></li>
     </tal:block>
-  <li
-    tal:define="link context_menu/createquestion"
-    tal:condition="link/enabled"
-    tal:content="structure link/render" />
-  <li
-    tal:define="link context_menu/removequestion"
-    tal:condition="link/enabled"
-    tal:content="structure link/render" />
-  <li
-    tal:define="link context_menu/addbranch"
-    tal:condition="link/enabled"
-    tal:content="structure link/render" />
-  <li
-    tal:define="link context_menu/linktocve"
-    tal:condition="link/enabled"
-    tal:content="structure link/render" />
-  <li
-    tal:define="link context_menu/unlinkcve"
-    tal:condition="link/enabled"
-    tal:content="structure link/render" />
+    <li
+      tal:define="link context_menu/createquestion"
+      tal:condition="link/enabled"
+      tal:content="structure link/render" />
+    <li
+      tal:define="link context_menu/removequestion"
+      tal:condition="link/enabled"
+      tal:content="structure link/render" />
+    <li
+      tal:define="link context_menu/addbranch"
+      tal:condition="link/enabled"
+      tal:content="structure link/render" />
+    <li
+      tal:define="link context_menu/linktocve"
+      tal:condition="link/enabled"
+      tal:content="structure link/render" />
+    <li
+      tal:define="link context_menu/unlinkcve"
+      tal:condition="link/enabled"
+      tal:content="structure link/render" />
+  </ul>
 </div>
