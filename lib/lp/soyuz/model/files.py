@@ -70,8 +70,8 @@ class BinaryPackageFileSet:
 
     def loadLibraryFiles(self, binary_files):
         """See `IBinaryPackageFileSet`."""
-        lfas = load_related(LibraryFileAlias, binary_files, ['libraryfile'])
-        load_related(LibraryFileContent, lfas, ['content'])
+        lfas = load_related(LibraryFileAlias, binary_files, ['libraryfileID'])
+        load_related(LibraryFileContent, lfas, ['contentID'])
         return lfas
 
 

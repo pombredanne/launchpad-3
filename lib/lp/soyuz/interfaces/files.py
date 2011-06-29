@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -22,6 +22,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
@@ -36,10 +37,13 @@ class IBinaryPackageFile(Interface):
             required=True, readonly=False,
             )
 
-    libraryfile = Int(
-            title=_('The library file alias for this .deb'), required=True,
-            readonly=False,
-            )
+    libraryfileID = Int(
+            title=_("The LibraryFileAlias id for this .deb"), required=True,
+            readonly=True)
+
+    libraryfile = Reference(
+        ILibraryFileAlias, title=_("The library file alias for this .deb"),
+        required=True, readonly=False)
 
     filetype = Int(
             title=_('The type of this file'), required=True, readonly=False,
