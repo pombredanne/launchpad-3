@@ -27,6 +27,7 @@ class SourcesListEntries:
 
     Represents a set of distroseries in a distribution archive.
     """
+
     def __init__(self, distribution, archive_url, valid_series):
         self.distribution = distribution
         self.archive_url = archive_url
@@ -154,13 +155,12 @@ class SourcesListEntriesWidget:
             comment = "Personal access of %s to %s" % (
                 self.user.displayname,
                 self.archive.displayname)
-
             entries = SourcesListEntries(
                 self.archive.distribution,
                 self.active_token.archive_url,
                 self.archive.series_with_sources)
-
-            return SourcesListEntriesView(entries, self.request, comment=comment)
+            return SourcesListEntriesView(
+                entries, self.request, comment=comment)
 
     @cachedproperty
     def active_token(self):
@@ -186,5 +186,3 @@ class SourcesListEntriesWidget:
         have any published sources" or "No sources matching 'blah'."
         """
         return not self.archive.getPublishedSources().is_empty()
-
-

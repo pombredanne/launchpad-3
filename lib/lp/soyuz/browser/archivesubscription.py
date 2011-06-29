@@ -152,7 +152,7 @@ class ArchiveSubscribersView(LaunchpadFormView):
     def subscriptions(self):
         """Return all the subscriptions for this archive."""
         result = list(getUtility(IArchiveSubscriberSet
-            ).getByArchive( self.context))
+            ).getByArchive(self.context))
         ids = set(map(attrgetter('subscriber_id'), result))
         list(getUtility(IPersonSet).getPrecachedPersonsFromIDs(ids,
             need_validity=True))
