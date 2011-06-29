@@ -140,6 +140,11 @@ class IPackageUpload(Interface):
     package_copy_job = Reference(
         schema=IPackageCopyJob,
         description=_("The PackageCopyJob for this upload, if it has one."),
+        title=_("Raw Package Copy Job"), required=False, readonly=True)
+
+    concrete_package_copy_job = Reference(
+        schema=IPackageCopyJob,
+        description=_("Concrete IPackageCopyJob implementation, if any."),
         title=_("Package Copy Job"), required=False, readonly=True)
 
     archive = exported(

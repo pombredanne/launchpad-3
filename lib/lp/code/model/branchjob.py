@@ -13,6 +13,7 @@ __all__ = [
 ]
 
 import contextlib
+from itertools import chain
 import operator
 import os
 import shutil
@@ -41,6 +42,7 @@ from lazr.enum import (
 import simplejson
 from sqlobject import (
     ForeignKey,
+    SQLObjectNotFound,
     StringCol,
     )
 from storm.expr import (
@@ -58,6 +60,7 @@ from zope.interface import (
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp import (
     canonical_url,
     errorlog,
@@ -101,10 +104,14 @@ from lp.codehosting.vfs import (
     get_rw_server,
     )
 from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from lp.services.job.runner import BaseRunnableJob
-from lp.scripts.helpers import TransactionFreeOperation
+from lp.services.job.runner import (
+    BaseRunnableJob,
+    BaseRunnableJobSource,
+    )
+from lp.services.utils import RegisteredSubclass
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
@@ -215,6 +222,20 @@ class BranchJob(SQLBase):
 
 class BranchJobDerived(BaseRunnableJob):
 
+    __metaclass__ = RegisteredSubclass
+    _subclass = {}
+
+    @staticmethod
+    def _register_subclass(cls):
+        """Register this class with its enumeration."""
+        # Why not a classmethod?  See RegisteredSubclass.__init__.
+        job_type = getattr(cls, 'class_job_type', None)
+        if job_type is not None:
+            value = cls._subclass.setdefault(job_type, cls)
+            assert value is cls, (
+                '%s already registered to %s.' % (
+                    job_type.name, value.__name__))
+
     delegates(IBranchJob)
 
     def __init__(self, branch_job):
@@ -249,7 +270,29 @@ class BranchJobDerived(BaseRunnableJob):
             And(BranchJob.job_type == cls.class_job_type,
                 BranchJob.job == Job.id,
                 Job.id.is_in(Job.ready_jobs)))
-        return (cls(job) for job in jobs)
+        return (cls._getInstance(job) for job in jobs)
+
+    @classmethod
+    def _getInstance(cls, job):
+        return cls._subclass[job.job_type](job)
+
+    @classmethod
+    def get(cls, key, desired_classes=None):
+        """Return the instance of this class (or a subclass) whose key
+        is supplied.  Calling this method on a subclass returns only values
+        for that subclass.
+
+        :raises: SQLObjectNotFound
+        """
+        if desired_classes is None:
+            desired_classes = cls
+        branchjob = IStore(BranchJob).get(BranchJob, key)
+        if branchjob is not None:
+            job = cls._getInstance(branchjob)
+            if isinstance(job, cls):
+                return job
+        raise SQLObjectNotFound(
+            'No occurrence of %s has key %s' % (cls.__name__, key))
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
@@ -313,6 +356,7 @@ class BranchScanJob(BranchJobDerived):
 
     classProvides(IBranchScanJobSource)
     class_job_type = BranchJobType.SCAN_BRANCH
+    memory_limit = 2 * (1024 ** 3)
     server = None
 
     @classmethod
@@ -749,6 +793,25 @@ class RevisionsAddedJob(BranchJobDerived):
         return outf.getvalue()
 
 
+class BranchMailJobSource(BaseRunnableJobSource):
+    """Source of jobs that send mail about branches."""
+
+    memory_limit = 2 * (1024 ** 3)
+
+    @staticmethod
+    def contextManager():
+        return get_ro_server()
+
+    @staticmethod
+    def iterReady():
+        return chain(
+            RevisionMailJob.iterReady(), RevisionsAddedJob.iterReady())
+
+    @staticmethod
+    def get(key):
+        return BranchJobDerived.get(key, (RevisionMailJob, RevisionsAddedJob))
+
+
 class RosettaUploadJob(BranchJobDerived):
     """A Job that uploads translation files to Rosetta."""
 
@@ -945,7 +1008,7 @@ class RosettaUploadJob(BranchJobDerived):
                 file_names, changed_files, uploader = iter_info
                 for upload_file_name, upload_file_content in changed_files:
                     if len(upload_file_content) == 0:
-                        continue # Skip empty files
+                        continue  # Skip empty files
                     entry = translation_import_queue.addOrUpdateEntry(
                         upload_file_name, upload_file_content,
                         True, uploader, productseries=series)

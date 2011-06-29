@@ -89,33 +89,30 @@
                      <input type="checkbox" name="QUEUE_ID"
                             tal:attributes="value packageupload/id"/>
                 </td>
-                <td style="padding-top: 5px">
-                  <metal:iconlist use-macro="template/macros/package-iconlist"/>
+                <td
+                  style="padding-top: 5px"
+                  tal:content="structure packageupload/icons_and_name">
                 </td>
 
                 <td style="padding-top: 5px"
                     tal:content="packageupload/displayversion">2.0.17-6
                 </td>
                 <tal:is_source define="is_source packageupload/contains_source">
-                  <td style="padding-top: 5px">
-                    <tal:component condition="is_source"
-                         content="packageupload/sourcepackagerelease/component/name/lower">
-                    </tal:component>
+                  <td
+                    style="padding-top: 5px"
+                    tal:content="packageupload/display_component">
                   </td>
-                  <td style="padding-top: 5px">
-                    <tal:section condition="is_source"
-                         content="packageupload/sourcepackagerelease/section/name/lower">
-                    </tal:section>
+                  <td
+                    style="padding-top: 5px"
+                    tal:content="packageupload/display_section">
                   </td>
-                  <td style="padding-top: 5px">
-                    <tal:priority condition="is_source"
-                         content="packageupload/sourcepackagerelease/urgency/name/lower">
-                    </tal:priority>
+                  <td
+                    style="padding-top: 5px"
+                    tal:content="packageupload/display_priority">
                   </td>
-                  <td style="padding-top: 5px">
-                    <tal:packagesets condition="is_source"
-                         content="packageupload/package_sets">
-                    </tal:packagesets>
+                  <td
+                    style="padding-top: 5px"
+                    tal:content="packageupload/display_package_sets">
                   </td>
                 </tal:is_source>
                 <td style="padding-top: 5px"
@@ -232,7 +229,9 @@
           style="display:none">
         <td/>
         <td tal:condition="view/availableActions"/>
-        <td tal:define="libraryfilealias file/libraryfile">
+        <td
+          tal:define="libraryfilealias file/libraryfile"
+          tal:condition="libraryfilealias">
           <metal:file use-macro="template/macros/package-file"/>
         </td>
         <td colspan="6"/>
@@ -298,59 +297,15 @@
     :libraryfilealias: A LibraryFileAlias to link to. If it is expired,
       no link will be created.
   </tal:comment>
-  <tal:not-none condition="libraryfilealias">
-    <tal:unexpired tal:condition="libraryfilealias/content">
-      <a tal:attributes="href libraryfilealias/http_url">
-        <tal:filename replace="libraryfilealias/filename"/>
-      </a>
-      (<span tal:replace="libraryfilealias/content/filesize/fmt:bytes" />)
-    </tal:unexpired>
-    <tal:expired tal:condition="not:libraryfilealias/content">
-      <span tal:content="libraryfilealias/filename"/>
-    </tal:expired>
-  </tal:not-none>
-</metal:macro>
-
-<metal:macro define-macro="package-iconlist">
-  <tal:comment replace="nothing">
-    This macro expects the following variables defined:
-    :packageupload: A PackageUpload record for which we display icons.
-  </tal:comment>
-
-  <div tal:attributes="id string:queue${packageupload/id}-iconlist">
-    <img tal:condition="packageupload/contains_source"
-         alt="[Source]" src="/@@/package-source" title="Source"/>
-    <img tal:condition="packageupload/contains_build"
-         alt="[Build]" src="/@@/package-binary" title="Binary"/>
-    <img tal:condition="packageupload/contains_translation"
-         alt="[Translation]" src="/@@/translation-file"
-         title="Translation"/>
-    <img tal:condition="packageupload/contains_installer"
-         alt="[Installer]" src="/@@/ubuntu-icon"
-         title="Installer"/>
-    <img tal:condition="packageupload/contains_upgrader"
-         alt="[Upgrader]" src="/@@/ubuntu-icon"
-         title="Upgrader"/>
-    <img tal:condition="packageupload/contains_ddtp"
-         alt="[Debian Description Translation Project Indexes]"
-         src="/@@/ubuntu-icon"
-         title="Debian Description Translation Project Indexes"/>
-    <tal:not-delayed condition="not: packageupload/pending_delayed_copy">
-      <a tal:condition="packageupload/changesfile"
-         tal:content="packageupload/displayname"
-         tal:attributes="
-           href packageupload/changesfile/http_url;
-           title string:Changes file for ${packageupload/displayname};">
-      </a>
-      <tal:no-changes-file
-        condition="not: packageupload/changesfile"
-        replace="packageupload/displayname"/>
-    </tal:not-delayed>
-    <tal:pending_delayed_copy_title
-      condition="packageupload/pending_delayed_copy"
-      replace="packageupload/displayname" />
-    <tal:arches replace="string: (${packageupload/displayarchs})"/>
-  </div>
+  <tal:unexpired tal:condition="libraryfilealias/content">
+    <a tal:attributes="href libraryfilealias/http_url">
+      <tal:filename replace="libraryfilealias/filename"/>
+    </a>
+    (<span tal:replace="libraryfilealias/content/filesize/fmt:bytes" />)
+  </tal:unexpired>
+  <tal:expired tal:condition="not:libraryfilealias/content">
+    <span tal:content="libraryfilealias/filename"/>
+  </tal:expired>
 </metal:macro>
 
 </metal:macros>

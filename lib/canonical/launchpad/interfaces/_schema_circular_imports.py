@@ -200,6 +200,7 @@ from lp.soyuz.interfaces.packageset import (
     IPackageset,
     IPackagesetSet,
     )
+from lp.soyuz.interfaces.processor import IProcessorFamily
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
     ISourcePackagePublishingHistory,
@@ -377,6 +378,8 @@ patch_reference_property(
 # IArchive apocalypse.
 patch_reference_property(IArchive, 'distribution', IDistribution)
 patch_collection_property(IArchive, 'dependencies', IArchiveDependency)
+patch_collection_property(
+    IArchive, 'enabled_restricted_families', IProcessorFamily)
 patch_collection_return_type(
     IArchive, 'getPermissionsForPerson', IArchivePermission)
 patch_collection_return_type(
@@ -442,6 +445,8 @@ patch_choice_parameter_type(
     IArchive, '_addArchiveDependency', 'pocket', PackagePublishingPocket)
 patch_entry_return_type(
     IArchive, '_addArchiveDependency', IArchiveDependency)
+patch_plain_parameter_type(
+    IArchive, 'enableRestrictedFamily', 'family', IProcessorFamily)
 
 
 # IBuildFarmJob
@@ -894,7 +899,7 @@ patch_entry_explicit_version(IHWDBApplication, 'beta')
 patch_operations_explicit_version(
     IHWDBApplication, 'beta', "deviceDriverOwnersAffectedByBugs", "devices",
     "drivers", "hwInfoByBugRelatedUsers", "numDevicesInSubmissions",
-    "numOwnersOfDevice", "numSubmissionsWithDevice", "vendorIDs")
+    "numOwnersOfDevice", "numSubmissionsWithDevice", "search", "vendorIDs")
 
 # IHWDevice
 patch_entry_explicit_version(IHWDevice, 'beta')

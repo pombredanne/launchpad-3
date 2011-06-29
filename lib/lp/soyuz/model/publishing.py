@@ -35,7 +35,9 @@ from storm.expr import (
     Or,
     Sum,
     )
+from storm.zope.interfaces import ISQLObjectResultSet
 from storm.store import Store
+from storm.zope import IResultSet
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
@@ -1336,6 +1338,19 @@ class PublishingSet:
     def copyBinariesTo(self, binaries, distroseries, pocket, archive,
                        policy=None):
         """See `IPublishingSet`."""
+        if binaries is None:
+            return
+
+        if type(removeSecurityProxy(binaries)) == list:
+            if len(binaries) == 0:
+                return
+        else:
+            if ISQLObjectResultSet.providedBy(binaries):
+                # Adapt to ResultSet
+                binaries = IResultSet(binaries)
+            if binaries.is_empty():
+                return
+
         if policy is not None:
             bpn_archtag = {}
             for bpph in binaries:

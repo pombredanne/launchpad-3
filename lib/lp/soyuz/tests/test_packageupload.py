@@ -8,7 +8,6 @@ from email import message_from_string
 import os
 import shutil
 
-from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -371,14 +370,11 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
 
     def makeUploadWithPackageCopyJob(self, sourcepackagename=None):
         """Create a `PackageUpload` plus attached `PlainPackageCopyJob`."""
-        job_factory_args = {}
-        if sourcepackagename is not None:
-            job_factory_args['package_name'] = sourcepackagename.name
-            job_factory_args['package_version'] = '1.0'
-        job = self.factory.makePlainPackageCopyJob(**job_factory_args)
-        naked_job = removeSecurityProxy(job).context
-        upload = self.factory.makePackageUpload(package_copy_job=naked_job)
-        return upload, job
+        from lp.soyuz.model.packagecopyjob import IPackageCopyJobSource
+        upload = self.factory.makeCopyJobPackageUpload(
+            sourcepackagename=sourcepackagename)
+        return upload, getUtility(IPackageCopyJobSource).wrap(
+            upload.package_copy_job)
 
     def test_package_copy_job_property(self):
         # Test that we can set and get package_copy_job.
@@ -396,25 +392,48 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
     def test_overrideSource_with_copy_job(self):
         # The overrides should be stored in the job's metadata.
         pu, pcj = self.makeUploadWithPackageCopyJob()
+        old_component = getUtility(IComponentSet)[pcj.component_name]
         component = getUtility(IComponentSet)['restricted']
         section = getUtility(ISectionSet)['games']
 
-        expected_metadata = {
+        expected_metadata = {}
+        expected_metadata.update(pcj.metadata)
+        expected_metadata.update({
             'component_override': component.name,
             'section_override': section.name,
-        }
-        expected_metadata.update(pcj.metadata)
+            })
 
-        pu.overrideSource(component, section, allowed_components=[component])
+        result = pu.overrideSource(
+            component, section, allowed_components=[component, old_component])
 
+        self.assertTrue(result)
         self.assertEqual(expected_metadata, pcj.metadata)
+
+    def test_overrideSource_checks_permission_for_old_component(self):
+        pu = self.factory.makeCopyJobPackageUpload()
+        only_allowed_component = self.factory.makeComponent()
+        section = self.factory.makeSection()
+        self.assertRaises(
+            QueueInconsistentStateError,
+            pu.overrideSource,
+            only_allowed_component, section, [only_allowed_component])
+
+    def test_overrideSource_checks_permission_for_new_component(self):
+        pu, pcj = self.makeUploadWithPackageCopyJob()
+        current_component = getUtility(IComponentSet)[pcj.component_name]
+        disallowed_component = self.factory.makeComponent()
+        section = self.factory.makeSection()
+        self.assertRaises(
+            QueueInconsistentStateError,
+            pu.overrideSource,
+            disallowed_component, section, [current_component])
 
     def test_acceptFromQueue_with_copy_job(self):
         # acceptFromQueue should accept the upload and resume the copy
         # job.
         pu, pcj = self.makeUploadWithPackageCopyJob()
+        pu.pocket = PackagePublishingPocket.RELEASE
         self.assertEqual(PackageUploadStatus.NEW, pu.status)
-        pcj.suspend()
 
         pu.acceptFromQueue()
 
@@ -424,7 +443,6 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
     def test_rejectFromQueue_with_copy_job(self):
         # rejectFromQueue will reject the upload and fail the copy job.
         pu, pcj = self.makeUploadWithPackageCopyJob()
-        pcj.suspend()
 
         pu.rejectFromQueue()
 
@@ -443,20 +461,19 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         self.assertEqual(job.package_name, upload.package_name)
         self.assertEqual(job.package_version, upload.package_version)
 
-    def test_displayarchs_for_copy_job_is_source(self):
+    def test_displayarchs_for_copy_job_is_sync(self):
         # For copy jobs, displayarchs is "source."
         upload, job = self.makeUploadWithPackageCopyJob()
-        self.assertEqual('source', upload.displayarchs)
+        self.assertEqual('sync', upload.displayarchs)
 
     def test_component_and_section_name(self):
         # An upload with a copy job takes its component and section
         # names from the job.
         spn = self.factory.makeSourcePackageName()
-        upload, job = self.makeUploadWithPackageCopyJob(sourcepackagename=spn)
+        upload, pcj = self.makeUploadWithPackageCopyJob(sourcepackagename=spn)
         component = self.factory.makeComponent()
         section = self.factory.makeSection()
-        job.addSourceOverride(SourceOverride(
-            source_package_name=spn, component=component, section=section))
+        pcj.addSourceOverride(SourceOverride(spn, component, section))
         self.assertEqual(component.name, upload.component_name)
 
     def test_displayname_is_package_name(self):
@@ -788,75 +805,3 @@ class TestPackageUploadSet(TestCaseWithFactory):
             [upload],
             upload_set.getAll(
                 distroseries, name=spn.name, version=upload.displayversion))
-
-
-class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
-    dbuser = config.uploadqueue.dbuser
-
-    def test_package_copy_job_property(self):
-        # Test that we can set and get package_copy_job.
-        pcj = removeSecurityProxy(
-            self.factory.makePlainPackageCopyJob()).context
-        pu = self.factory.makePackageUpload(package_copy_job=pcj)
-        Store.of(pu).flush()
-
-        self.assertEqual(pcj, pu.package_copy_job)
-
-    def test_getByPackageCopyJobIDs(self):
-        pcj = removeSecurityProxy(
-            self.factory.makePlainPackageCopyJob()).context
-        pu = self.factory.makePackageUpload(package_copy_job=pcj)
-        result = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
-            [pcj.id])
-        self.assertEqual(pu, result.one())
-
-    def test_overrideSource_with_copy_job(self):
-        # The overrides should be stored in the job's metadata.
-        plain_copy_job = self.factory.makePlainPackageCopyJob()
-        pcj = removeSecurityProxy(plain_copy_job).context
-        pu = self.factory.makePackageUpload(package_copy_job=pcj)
-        component = getUtility(IComponentSet)['restricted']
-        section = getUtility(ISectionSet)['games']
-
-        expected_metadata = {
-            'component_override': component.name,
-            'section_override': section.name
-        }
-        expected_metadata.update(plain_copy_job.metadata)
-
-        pu.overrideSource(component, section, allowed_components=[component])
-
-        self.assertEqual(
-            expected_metadata, plain_copy_job.metadata)
-
-    def test_acceptFromQueue_with_copy_job(self):
-        # acceptFromQueue should accept the upload and resume the copy
-        # job.
-        plain_copy_job = self.factory.makePlainPackageCopyJob()
-        pcj = removeSecurityProxy(plain_copy_job).context
-        pu = self.factory.makePackageUpload(package_copy_job=pcj)
-        self.assertEqual(PackageUploadStatus.NEW, pu.status)
-        plain_copy_job.suspend()
-
-        pu.acceptFromQueue()
-
-        self.assertEqual(PackageUploadStatus.ACCEPTED, pu.status)
-        self.assertEqual(JobStatus.WAITING, plain_copy_job.status)
-
-    def test_rejectFromQueue_with_copy_job(self):
-        # rejectFromQueue will reject the upload and fail the copy job.
-        plain_copy_job = self.factory.makePlainPackageCopyJob()
-        pcj = removeSecurityProxy(plain_copy_job).context
-        pu = self.factory.makePackageUpload(package_copy_job=pcj)
-        plain_copy_job.suspend()
-
-        pu.rejectFromQueue()
-
-        self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
-        self.assertEqual(JobStatus.FAILED, plain_copy_job.status)
-
-        # It cannot be resurrected after rejection.
-        self.assertRaises(
-            QueueInconsistentStateError, pu.acceptFromQueue, None)

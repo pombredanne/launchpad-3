@@ -235,32 +235,50 @@ class QueueAction:
         self.display(self.__doc__)
         raise QueueActionError(extended_info)
 
+    def _makeTag(self, queue_item):
+        """Compose an upload type tag for `queue_item`.
+
+        A source upload without binaries is tagged as "S-".
+        A binary upload without source is tagged as "-B."
+        An upload with both source and binaries is tagged as "SB".
+        An upload with a package copy job is tagged as "X-".
+        """
+        # XXX cprov 2006-07-31: source_tag and build_tag ('S' & 'B')
+        # are necessary simply to keep the format legaxy.
+        # We may discuss a more reasonable output format later
+        # and avoid extra boring code. The IDRQ.displayname should
+        # do should be enough.
+        if queue_item.package_copy_job is not None:
+            return "X-"
+
+        source_tag = {
+            True: 'S',
+            False: '-',
+        }
+        binary_tag = {
+            True: 'B',
+            False: '-',
+        }
+        return (
+            source_tag[bool(queue_item.contains_source)] +
+            binary_tag[bool(queue_item.contains_build)])
+
     def displayItem(self, queue_item):
         """Display one line summary of the queue item provided."""
-        source_tag = '-'
-        build_tag = '-'
+        tag = self._makeTag(queue_item)
         displayname = queue_item.displayname
         version = queue_item.displayversion
         age = DurationFormatterAPI(
             datetime.now(pytz.timezone('UTC')) -
             queue_item.date_created).approximateduration()
 
-        # XXX cprov 2006-07-31: source_tag and build_tag ('S' & 'B')
-        # are necessary simply to keep the format legaxy.
-        # We may discuss a more reasonable output format later
-        # and avoid extra boring code. The IDRQ.displayname should
-        # do should be enough.
-        if queue_item.contains_source:
-            source_tag = 'S'
         if queue_item.contains_build:
-            build_tag = 'B'
             displayname = "%s (%s)" % (queue_item.displayname,
                                        queue_item.displayarchs)
 
-        self.display("%8d | %s%s | %s | %s | %s" %
-                     (queue_item.id, source_tag, build_tag,
-                      displayname.ljust(20)[:20], version.ljust(20)[:20],
-                      age))
+        self.display("%8d | %s | %s | %s | %s" %
+                     (queue_item.id, tag, displayname.ljust(20)[:20],
+                     version.ljust(20)[:20], age))
 
     def displayInfo(self, queue_item, only=None):
         """Displays additional information about the provided queue item.

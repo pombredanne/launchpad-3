@@ -30,7 +30,6 @@ from storm.locals import (
     SQL,
     )
 from storm.store import (
-    EmptyResultSet,
     Store,
     )
 from zope.component import getUtility
@@ -102,6 +101,7 @@ from lp.blueprints.model.specification import (
     Specification,
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtask import (
@@ -112,7 +112,6 @@ from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     BugSet,
     get_bug_tags,
-    get_bug_tags_open_count,
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -221,9 +220,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasBugHeatMixin, HasDriversMixin, TranslationPolicyMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IDistribution, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
-        IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IServiceUsage)
+        IBugSummaryDimension, IDistribution, IFAQTarget, IHasBugHeat,
+        IHasBugSupervisor, IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
+        ILaunchpadUsage, IServiceUsage)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -639,9 +638,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return self.name
 
-    def _getBugTaskContextWhereClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
-        return "BugTask.distribution = %d" % self.id
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return And(
+                BugSummary.distribution_id == self.id,
+                BugSummary.sourcepackagename_id == None)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this distribution."""
@@ -650,16 +653,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def getUsedBugTags(self):
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
-
-    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
-                                     include_tags=None):
-        """See IBugTarget."""
-        # Circular fail.
-        from lp.bugs.model.bugsummary import BugSummary
-        return get_bug_tags_open_count(
-            And(BugSummary.distribution_id == self.id,
-                BugSummary.sourcepackagename_id == None),
-            user, tag_limit=tag_limit, include_tags=include_tags)
 
     def getMirrorByName(self, name):
         """See `IDistribution`."""
@@ -722,10 +715,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See canonical.launchpad.interfaces.IBugTarget."""
         bug_params.setBugTarget(distribution=self)
         return BugSet().createBug(bug_params)
-
-    def _getBugTaskContextClause(self):
-        """See BugTargetBase."""
-        return 'BugTask.distribution = %s' % sqlvalues(self)
 
     @property
     def currentseries(self):
@@ -1396,9 +1385,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # effort to find a package.
             publishing = IStore(SourcePackagePublishingHistory).find(
                 SourcePackagePublishingHistory,
-                SourcePackagePublishingHistory.archiveID == Archive.id,
-                Archive.distribution == self,
-                Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES),
+                # We use an extra query to get the IDs instead of an
+                # inner join on archive because of the skewness in the
+                # archive data. (There are many, many PPAs to consider
+                # and PostgreSQL picks a bad query plan resulting in
+                # timeouts).
+                SourcePackagePublishingHistory.archiveID.is_in(
+                    self.all_distro_archive_ids),
                 SourcePackagePublishingHistory.sourcepackagereleaseID ==
                     SourcePackageRelease.id,
                 SourcePackageRelease.sourcepackagename == sourcepackagename,
@@ -1429,9 +1422,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # the sourcepackagename from that.
             bpph = IStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
-                BinaryPackagePublishingHistory.archiveID == Archive.id,
-                Archive.distribution == self,
-                Archive.purpose.is_in(MAIN_ARCHIVE_PURPOSES),
+                # See comment above for rationale for using an extra query 
+                # instead of an inner join. (Bottom line, it would time out
+                # otherwise.)
+                BinaryPackagePublishingHistory.archiveID.is_in(
+                    self.all_distro_archive_ids),
                 BinaryPackagePublishingHistory.binarypackagereleaseID ==
                     BinaryPackageRelease.id,
                 BinaryPackageRelease.binarypackagename == binarypackagename,
@@ -1850,11 +1845,10 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def has_published_sources(self):
-        archives_sources = EmptyResultSet()
         for archive in self.all_distro_archives:
-            archives_sources = archives_sources.union(
-                archive.getPublishedSources())
-        return not archives_sources.is_empty()
+            if not archive.getPublishedSources().order_by().is_empty():
+                return True
+        return False
 
 
 class DistributionSet:
