@@ -52,6 +52,14 @@ class IBinaryPackageFileSet(Interface):
     def getByPackageUploadIDs(package_upload_ids):
         """Return `BinaryPackageFile`s for the `PackageUpload` IDs."""
 
+    def loadLibraryFiles(binary_files):
+        """Bulk-load Librarian files associated with `binary_files`.
+
+        This loads the `LibraryFileAlias` and `LibraryFileContent` for each
+        of `binary_files` into the ORM cache, and returns an iterable of
+        `LibraryFileAlias`.
+        """
+
 
 class ISourcePackageReleaseFile(Interface):
     """A source package release to librarian link record."""
