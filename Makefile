@@ -183,9 +183,7 @@ ${ICING}/icon-sprites.positioning ${ICING}/icon-sprites: bin/sprite-util \
 # launchpad.js roll-up files.  They fiddle with built-in functions!
 # See Bug 482340.
 jsbuild_minify: bin/jsbuild
-	rm $(LAZR_BUILT_JS_ROOT)/yui
-	ln -s ../../../../lp-sourcedeps/yui-3.3/yui $(LAZR_BUILT_JS_ROOT)/yui
-	bin/jsbuild \
+	${SHHH} bin/jsbuild \
 	    --builddir $(LAZR_BUILT_JS_ROOT) \
 	    --exclude testing/ --filetype $(JS_BUILD)
 
@@ -198,7 +196,7 @@ else
 	cat $^ > $@
 endif
 
-jsbuild: $(JS_OUT)
+jsbuild: $(PY) $(JS_OUT)
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
