@@ -182,13 +182,14 @@ ${ICING}/icon-sprites.positioning ${ICING}/icon-sprites: bin/sprite-util \
 # its jsTestDriver test harness modifications in the lazr.js and
 # launchpad.js roll-up files.  They fiddle with built-in functions!
 # See Bug 482340.
-jsbuild_yui: bin/jsbuild
-	${SHHH} bin/jsbuild \
+jsbuild_minify: bin/jsbuild
+	rm $(LAZR_BUILT_JS_ROOT)/yui
+	ln -s ../../../../lp-sourcedeps/yui-3.3/yui $(LAZR_BUILT_JS_ROOT)/yui
+	bin/jsbuild \
 	    --builddir $(LAZR_BUILT_JS_ROOT) \
-	    --exclude testing/ --filetype $(JS_BUILD) \
-	    --copy-yui-to $(LAZR_BUILT_JS_ROOT)/yui
+	    --exclude testing/ --filetype $(JS_BUILD)
 
-$(JS_YUI) $(JS_LAZR): jsbuild_yui
+$(JS_YUI) $(JS_LAZR): jsbuild_minify
 
 $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
@@ -483,6 +484,6 @@ pydoctor:
 	test_build test_inplace pagetests check schema default \
 	launchpad.pot pull_branches scan_branches sync_branches	\
 	reload-apache hosted_branches check_mailman check_config \
-	jsbuild jsbuild_lazr clean_js clean_buildout buildonce_eggs \
+	jsbuild jsbuild_minify clean_js clean_buildout buildonce_eggs \
 	build_eggs sprite_css sprite_image css_combine compile \
 	check_schema pydoctor clean_logs 
