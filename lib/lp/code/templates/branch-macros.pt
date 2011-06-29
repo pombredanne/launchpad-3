@@ -202,6 +202,15 @@
                   condition="revisions | nothing">
         <metal:landing-target use-macro="branch/@@+macros/revision-text"/>
     </tal:revision>
+    <tal:diff-expander condition="show_diff_expander | nothing">
+      <div class="revision-group-diff" tal:condition="revisions | nothing">
+        <a class="unseen expander-icon js-action"
+           tal:define="start_revno python:revisions[0];
+                       last_revno python:revisions[-1]"
+           tal:attributes="id string:expandable-${start_revno}-${last_revno}"
+        >Changes</a>
+      </div>
+    </tal>
   </dl>
 
 </metal:branch-revisions>
