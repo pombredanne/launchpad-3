@@ -142,8 +142,8 @@
     <h2>Recipe contents</h2>
     <tal:widget replace="structure view/recipe_text_widget"/>
     <p>
-        <a href="https://help.launchpad.net/Packaging/SourceBuilds/Recipes">Read 
-        about recipe syntax</a>
+        <a href="https://help.launchpad.net/Packaging/SourceBuilds/Recipes">
+        Get help with recipe syntax</a>
     </p>
   </div>
 

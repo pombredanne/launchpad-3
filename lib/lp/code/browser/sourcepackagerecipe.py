@@ -557,8 +557,8 @@ class ISourcePackageEditSchema(Interface):
         Text(
             title=u'Recipe text', required=True,
             description=u"""Enter your recipe here.
-                <a href="https://help.launchpad.net/Packaging/SourceBuilds/Recipes" 
-                target="_blank">(Get help with recipe syntax)</a>
+                (<a href="https://help.launchpad.net/Packaging/SourceBuilds/Recipes" 
+                >Get help with recipe syntax</a>)
                """))
 
 
