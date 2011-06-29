@@ -660,6 +660,12 @@ table.listing td {
     border: 1px #d2d2d2;
     border-style: dotted none none none;
     }
+table.listing td.section-break {
+    border-width: 1px 0 0 0;
+    border-style: solid;
+    border-color: #d2d2d2;
+    height: 1em;
+    }
 table.listing .note td {
     border-style: none;
     }

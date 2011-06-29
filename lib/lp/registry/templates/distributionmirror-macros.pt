@@ -58,10 +58,7 @@
         vertical spacing to separate the next country.
       </tal:comment>
       <tr>
-        <td>&nbsp;</td>
-        <td>&nbsp;</td>
-        <td>&nbsp;</td>
-        <td>&nbsp;</td>
+        <td colspan="5" class="section-break" />
       </tr>
 
     </tal:country_and_mirrors>
