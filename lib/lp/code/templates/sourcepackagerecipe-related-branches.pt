@@ -1,6 +1,6 @@
 <fieldset id="related-branches"
               xmlns:tal="http://xml.zope.org/namespaces/tal"
-              class="collapsible collapsed" style="width: 60em"
+              class="collapsible" style="width: 60em"
               tal:define="seriesBranches view/related_series_branch_info;
                           packageBranches view/related_package_branch_info"
               tal:condition="python: seriesBranches or packageBranches">

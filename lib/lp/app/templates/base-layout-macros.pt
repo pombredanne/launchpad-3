@@ -107,11 +107,15 @@
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
   <script id="base-layout-load-scripts" type="text/javascript">
-    LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', function(Y) {
+    LPS.use('node', 'event-delegate', 'lp', 'lp.app.links',
+            'lp.app.widgets.expander', function(Y) {
         Y.on('load', function(e) {
             sortables_init();
             initInlineHelp();
             Y.lp.activate_collapsibles();
+            //Y.lp.app.widgets.expander.createByCSS(
+            //  '.collapsible', 'legend', 'table');
+
             activateFoldables();
             activateConstrainBugExpiration();
             Y.lp.app.links.check_valid_lp_links();

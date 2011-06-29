@@ -2,6 +2,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   omit-tag="">
+
 <metal:basic_filebug_widgets define-macro="basic_filebug_widgets">
 
   <tal:bugtarget
@@ -64,8 +65,8 @@
 
   <tr>
     <td colspan="2">
-      <fieldset id="filebug-extra-options" class="collapsible collapsed">
-        <legend>Extra options</legend>
+      <fieldset id="filebug-extra-options" class="collapsible-table">
+        <legend><a>Extra options</a></legend>
         <table>
           <tal:status
               define="widget nocall:view/widgets/status|nothing"
