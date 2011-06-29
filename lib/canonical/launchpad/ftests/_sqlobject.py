@@ -5,7 +5,6 @@
 
 __all__ = [
     'print_date_attribute',
-    'sync',
     ]
 
 from storm.sqlobject import SQLObjectBase as SQLObject
@@ -16,18 +15,6 @@ from zope.security.proxy import (
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
-
-
-def sync(object):
-    """Sync the object's from the database.
-
-    This is useful if the object's connection was commited in Zopeless mode,
-    or if the database was updated outside the ORM.
-    """
-    if zope_isinstance(object, SQLObject):
-        removeSecurityProxy(object).sync()
-    else:
-        raise TypeError('%r is not an SQLObject' % object)
 
 
 def print_date_attribute(object, colname):
