@@ -44,3 +44,14 @@ Since there are no branches, there is no branch listing table:
     ...     find_tag_by_id(browser.contents, 'branch-summary')))
     u'There are no branches for the \u201cfoo\u201d package
     in distro\nin Launchpad.'
+
+    >>> print_tag_with_id(browser.contents, 'distro-branch-warning')
+    This page is for a packaging branch for a program in
+    distro. Changes
+    should be made here to
+    distro packaging or
+    for changes specific to
+    distro's
+    needs. Changes to the program in general should be made on the
+    upstream branch
+    which is not currently known to Launchpad.
