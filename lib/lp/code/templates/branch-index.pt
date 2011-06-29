@@ -52,8 +52,11 @@
         }, window);
 
     Y.on('domready', function() {
-        Y.lp.app.widgets.expander.setupExpanders(
-            '.expandable', Y.lp.code.branch.expandable.diff_loader);
+        Y.lp.app.widgets.expander.createByCSS(
+            '.revision-expander',
+            '.expander-icon',
+            '.expander-content',
+            Y.lp.code.branch.expandable.diff_loader);
     });
 
     });
@@ -84,7 +87,7 @@
     <tal:registrant replace="structure context/registrant/fmt:link" />
   on
     <tal:created-on replace="structure context/date_created/fmt:date" />
-  and last modified on 
+  and last modified on
     <tal:last-modified replace="structure context/date_last_modified/fmt:date" />
 </tal:registering>
 

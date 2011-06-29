@@ -255,10 +255,11 @@
       The revision commit message.
     </tal:commit-message>
   </dd>
-  <div tal:attributes="id string:expandable-${rev_no/sequence}"
-       class="expandable">
-    <a class="unseen expander-icon js-action">Changes</a>
-    <div class="unseen expander-content"></div>
+  <div class="revision-expander">
+    <a class="unseen expander-icon js-action"
+       tal:attributes="id string:expandable-${rev_no/sequence}"
+     >Changes</a>
+    <div class="unseen expander-content">Loading diff</div>
   </div>
 
   <div tal:condition="rev_info | nothing">
