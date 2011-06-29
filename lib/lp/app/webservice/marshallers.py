@@ -26,6 +26,7 @@ class TextFieldMarshaller(LazrTextFieldMarshaller):
 
         Return the value as is.
         """
-        if IUnauthenticatedPrincipal.providedBy(self.request.principal):
+        if (value is not None and
+                IUnauthenticatedPrincipal.providedBy(self.request.principal)):
             return obfuscate_email(value)
         return value
