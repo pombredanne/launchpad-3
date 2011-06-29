@@ -5,14 +5,20 @@
 
 __metaclass__ = type
 
+import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.servers import WebServiceTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    )
 from lp.app.webservice.marshallers import TextFieldMarshaller
-from lp.testing import TestCaseWithFactory
-
+from lp.testing import (
+    TestCaseWithFactory,
+    ws_object,
+    )
 
 
 class TestTextFieldMarshaller(TestCaseWithFactory):
@@ -42,3 +48,46 @@ class TestTextFieldMarshaller(TestCaseWithFactory):
         marshaller = TextFieldMarshaller(None, request)
         result = marshaller.unmarshall(None, u"foo@example.com")
         self.assertEqual(u"foo@example.com", result)
+
+class TestWebServiceObfuscation(TestCaseWithFactory):
+    """Integration test for obfuscation marshaller.
+
+    Not using WebServiceTestCase because that assumes too much about users
+    """
+
+    layer = AppServerLayer
+
+    email_address = "joe@example.com"
+    email_address_obfuscated = "<email address hidden>"
+    bug_title = "Title with address %s in it"
+    bug_description = "Description with address %s in it"
+
+    def _makeBug(self):
+        """Create a bug with an email address in title and description."""
+        bug = self.factory.makeBug(
+            title=self.bug_title % self.email_address,
+            description=self.bug_description % self.email_address)
+        transaction.commit()
+        return bug
+
+    def test_email_address_obfuscated(self):
+        # Email address are obfuscated for anonymous users.
+        ws = self.factory.makeLaunchpadService(anonymous=True)
+        bug = self._makeBug()
+        ws_bug = ws_object(ws, bug)
+        self.assertEqual(
+            self.bug_title % self.email_address_obfuscated,
+            ws_bug.title)
+        self.assertEqual(
+            self.bug_description % self.email_address_obfuscated,
+            ws_bug.description)
+
+    def test_email_address_not_obfuscated(self):
+        # Email address are not obfuscated for authendticated users.
+        ws = self.factory.makeLaunchpadService(anonymous=False)
+        bug = self._makeBug()
+        ws_bug = ws_object(ws, bug)
+        self.assertEqual(
+            self.bug_title % self.email_address, ws_bug.title)
+        self.assertEqual(
+            self.bug_description % self.email_address, ws_bug.description)
