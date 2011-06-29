@@ -28,7 +28,6 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.testing.pages import find_tag_by_id
@@ -51,6 +50,7 @@ from lp.registry.browser.distroseries import (
     RESOLVED,
     seriesToVocab,
     )
+from canonical.config import config
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
@@ -1737,15 +1737,16 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
             "updating and synchronizing&hellip;", view.describeJobs(dsd))
 
     def _syncAndGetView(self, derived_series, person, sync_differences,
-                        difference_type=None, view_name='+localpackagediffs'):
+                        difference_type=None, view_name='+localpackagediffs',
+                        query_string=''):
         # A helper to get the POST'ed sync view.
         with person_logged_in(person):
             view = create_initialized_view(
                 derived_series, view_name,
                 method='POST', form={
                     'field.selected_differences': sync_differences,
-                    'field.actions.sync': 'Sync',
-                    })
+                    'field.actions.sync': 'Sync'},
+                query_string=query_string)
             return view
 
     def test_sync_error_nothing_selected(self):
@@ -1927,6 +1928,22 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
         pcj = PlainPackageCopyJob.getActiveJobs(
             derived_series.main_archive).one()
         self.assertEqual(PackagePublishingPocket.UPDATES, pcj.target_pocket)
+
+    def test_diff_view_action_url(self):
+        # The difference pages have a fixed action_url so that the sync
+        # form self-posts.
+        derived_series, parent_series, unused, diff_id = self._setUpDSD(
+            'my-src-name')
+        person = self.factory.makePerson()
+        set_derived_series_sync_feature_flag(self)
+        with person_logged_in(person):
+            view = create_initialized_view(
+                derived_series, '+localpackagediffs', method='GET',
+                query_string='start=1&batch=1')
+
+        self.assertEquals(
+            'http://127.0.0.1?start=1&batch=1',
+            view.action_url)
 
 
 class TestDistroSeriesNeedsPackagesView(TestCaseWithFactory):
