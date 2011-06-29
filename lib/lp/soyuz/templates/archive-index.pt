@@ -95,10 +95,10 @@
               target="help">Read about installing</a>)
         </p>
 
-        <div id="ppa-install-slide-trigger">
-          <div class="widget-header">
-            Technical details about this PPA
-          </div>
+        <div id="ppa-details">
+
+        <div class="widget-header">
+          Technical details about this PPA
         </div>
 
         <div class="widget-body">
@@ -143,39 +143,18 @@
           </div> <!--archive-dependencies -->
         </div> <!-- widget-body -->
 
+        </div> <!-- ppa-details -->
+
         <p>For questions and bugs with software in this PPA please contact
           <a tal:replace="structure context/owner/fmt:link"
             >Celso Providelo</a>.</p>
 
         <script type="text/javascript">
-    LPS.use('node', 'event', 'lazr.effects', function(Y) {
-
-    // Hide the widget body contents.
-    Y.one('#ppa-install .widget-body').addClass('lazr-closed');
-
-    // Ensure that the widget header uses the correct sprite icon
-    // and gets the styling for javascript actions applied.
-    var widget_header = Y.one('#ppa-install .widget-header');
-    widget_header.addClass('sprite');
-    widget_header.addClass('treeCollapsed');
-    widget_header.addClass('js-action');
-
-    var slide;
-    function toggle_body_visibility(e) {
-        if (!slide) {
-            slide = Y.lazr.effects.slide_out('#ppa-install .widget-body');
-            widget_header.replaceClass('treeCollapsed', 'treeExpanded');
-        } else {
-            slide.set('reverse', !slide.get('reverse'));
-            widget_header.toggleClass('treeExpanded');
-            widget_header.toggleClass('treeCollapsed');
-        }
-        slide.stop();
-        slide.run();
-    }
-    Y.on('click', toggle_body_visibility,
-         '#ppa-install-slide-trigger');
-});
+          LPS.use('lp.app.widgets.expander', function(Y) {
+              // Create the expander.
+              Y.lp.app.widgets.expander.createByCSS(
+                  '#ppa-details', '.widget-header', '.widget-body');
+          });
         </script>
       </tal:is-active>
 
