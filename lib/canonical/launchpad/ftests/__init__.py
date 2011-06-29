@@ -17,7 +17,6 @@ __all__ = [
     'print_date_attribute',
     'set_so_attr',
     'sync',
-    'syncUpdate',
     ]
 
 from canonical.launchpad.ftests._launchpadformharness import (
@@ -27,7 +26,6 @@ from canonical.launchpad.ftests._sqlobject import (
     print_date_attribute,
     set_so_attr,
     sync,
-    syncUpdate,
     )
 from canonical.launchpad.ftests.keys_for_tests import (
     decrypt_content,
