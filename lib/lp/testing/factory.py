@@ -4065,8 +4065,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return getUtility(ITemporaryStorageManager).fetch(new_uuid)
 
-    def makeLaunchpadService(self, person=None, version="devel"):
-        if person is None:
+    def makeLaunchpadService(self, person=None, version="devel",
+                             anonymous=False):
+        assert not(person is not None and anonymous), (
+            "person needs to be None for anonymous service")
+        if person is None and not anonymous:
             person = self.makePerson()
         from canonical.testing import BaseLayer
         launchpad = launchpadlib_for(
