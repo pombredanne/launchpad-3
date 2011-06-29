@@ -306,7 +306,7 @@ class BranchListingSort(EnumeratedType):
         """)
 
     LEAST_RECENTLY_CHANGED_FIRST = Item("""
-        least recently changed first
+        most neglected first
 
         Sort branches from the least recently to the most recently
         changed.

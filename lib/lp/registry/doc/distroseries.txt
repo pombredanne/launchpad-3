@@ -318,6 +318,7 @@ again" type set of assertions.
     >>> humpy = ubuntu.newSeries('humpy', 'Humpy Hippo',
     ...                          'The Humpy Hippo', 'Fat', 'Yo Momma',
     ...                          '99.2', None, hoary.owner)
+    >>> humpy.previous_series = hoary
     >>> ids = InitializeDistroSeries(humpy, [hoary.id])
     >>> ids.initialize()
     >>> hoary.getPublishedSources('pmount').count()
@@ -352,6 +353,7 @@ one coherent published source + binary, mozilla-firefox)
     >>> bumpy = ubuntu.newSeries('bumpy', 'Bumpy',
     ...                          'The Bumpy', 'Fat', 'Boom',
     ...                          '99.3', None, warty.owner)
+    >>> bumpy.previous_series = warty
     >>> ids = InitializeDistroSeries(bumpy, [warty.id])
     >>> ids.initialize()
 

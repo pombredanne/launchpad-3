@@ -13,7 +13,11 @@ from lp.testing.windmill.constants import FOR_ELEMENT
 
 
 class TestDateTimeCalendarWidget(WindmillTestCase):
-    """Test datetime calendar widget."""
+    """Test datetime calendar widget.
+
+    XXX: This entire test should move to YUI test.
+    It asserts widget state, but has no XHR component.
+    """
 
     layer = RegistryWindmillLayer
     suite_name = 'DateTimeCalendarWidget'

@@ -55,10 +55,9 @@ BUILDOUT_BIN = \
     bin/fl-record bin/fl-run-bench bin/fl-run-test bin/googletestservice \
     bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
     bin/harness bin/iharness bin/ipy bin/jsbuild bin/jslint bin/jssize \
-    bin/jstest bin/killservice bin/kill-test-services bin/lint.sh \
-    bin/lp-windmill bin/retest bin/run bin/sprite-util \
-    bin/start_librarian bin/stxdocs bin/tags bin/test bin/tracereport \
-    bin/twistd bin/update-download-cache bin/windmill
+    bin/jstest bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
+    bin/run bin/sprite-util bin/start_librarian bin/stxdocs bin/tags \
+    bin/test bin/tracereport bin/twistd bin/update-download-cache
 
 BUILDOUT_TEMPLATES = buildout-templates/_pythonpath.py.in
 

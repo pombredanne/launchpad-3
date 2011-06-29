@@ -1,6 +1,6 @@
 = Displaying Numbers with ZPT =
 
-    >>> from canonical.launchpad.ftests import test_tales
+    >>> from lp.testing import test_tales
 
 == bytes: Byte contractions ==
 

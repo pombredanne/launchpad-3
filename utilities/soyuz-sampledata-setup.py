@@ -228,6 +228,7 @@ def create_series(parent, full_name, version, status):
     new_series.status = status
     notify(ObjectCreatedEvent(new_series))
 
+    new_series.previous_series = parent
     ids = InitializeDistroSeries(new_series, [parent.id])
     ids.initialize()
     return new_series

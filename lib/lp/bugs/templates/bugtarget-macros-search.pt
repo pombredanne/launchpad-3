@@ -53,7 +53,7 @@
     <option
       value="date_last_updated"
       tal:attributes="selected python:orderby == 'date_last_updated'"
-    >least recently changed</option>
+    >most neglected</option>
     <option
       value="-date_last_updated"
       tal:attributes="selected python:orderby == '-date_last_updated'"
