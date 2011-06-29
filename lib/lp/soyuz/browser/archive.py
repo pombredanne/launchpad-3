@@ -123,10 +123,7 @@ from lp.soyuz.browser.build import (
     BuildNavigationMixin,
     BuildRecordsView,
     )
-from lp.soyuz.browser.sourceslist import (
-    SourcesListEntries,
-    SourcesListEntriesView,
-    )
+from lp.soyuz.browser.sourceslist import SourcesListEntriesWidget
 from lp.soyuz.browser.widgets.archive import PPANameWidget
 from lp.soyuz.enums import (
     ArchivePermissionType,
@@ -881,7 +878,7 @@ class ArchiveSourcePackageListViewBase(ArchiveViewBase, LaunchpadFormView):
         return self.filtered_sources.count() > 0
 
 
-class ArchiveView(ArchiveSourcePackageListViewBase):
+class ArchiveView(ArchiveSourcePackageListViewBase, SourcesListEntriesWidget):
     """Default Archive view class.
 
     Implements useful actions and collects useful sets for the page template.
@@ -896,20 +893,15 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
                 canonical_url(self.context.distribution))
             return
         super(ArchiveView, self).initialize()
+        # Set the archive attribute so SourcesListEntriesWidget can be built
+        # correctly.
+        self.archive = self.context
 
     @property
     def displayname_edit_widget(self):
         display_name = IArchive['displayname']
         title = "Edit the displayname"
         return TextLineEditorWidget(self.context, display_name, title, 'h1')
-
-    @property
-    def sources_list_entries(self):
-        """Setup and return the source list entries widget."""
-        entries = SourcesListEntries(
-            self.context.distribution, self.archive_url,
-            self.context.series_with_sources)
-        return SourcesListEntriesView(entries, self.request)
 
     @property
     def default_series_filter(self):

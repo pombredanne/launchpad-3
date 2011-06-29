@@ -8,6 +8,7 @@
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.utility import setUpWidget
+from zope.component import getUtility
 from zope.schema import Choice
 from zope.schema.vocabulary import (
     SimpleTerm,
@@ -17,6 +18,8 @@ from zope.schema.vocabulary import (
 from canonical.launchpad import _
 from canonical.launchpad.webapp import LaunchpadView
 from lp.services.browser_helpers import get_user_agent_distroseries
+from lp.services.propertycache import cachedproperty
+from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 
 
 class SourcesListEntries:
@@ -132,3 +135,36 @@ class SourcesListEntriesView(LaunchpadView):
             # user that they should select a distroseries.
             return self.initial_value_without_selection
 
+
+class SourcesListEntriesWidget:
+    """Setup the sources list entries widget.
+
+    This class assumes self.user is set in child classes.
+    """
+
+    @cachedproperty
+    def sources_list_entries(self):
+        """Setup and return the sources list entries widget."""
+        if self.active_token is None:
+            entries = SourcesListEntries(
+                self.archive.distribution, self.archive_url,
+                self.archive.series_with_sources)
+            return SourcesListEntriesView(entries, self.request)
+        else:
+            comment = "Personal access of %s to %s" % (
+                self.user.displayname,
+                self.context.displayname)
+
+            entries = SourcesListEntries(
+                self.archive.distribution,
+                self.active_token.archive_url,
+                self.archive.series_with_sources)
+
+            return SourcesListEntriesView(entries, self.request, comment=comment)
+
+    @cachedproperty
+    def active_token(self):
+        """Returns the corresponding current token for this subscription."""
+        token_set = getUtility(IArchiveAuthTokenSet)
+        return token_set.getActiveTokenForArchiveAndPerson(
+            self.archive, self.user)
