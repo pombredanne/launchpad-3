@@ -139,9 +139,6 @@
          Add comment
     </div>
 
-    <tal:script replace="structure string:&lt;script id='codereview-inline-diff-script' type='text/javascript'&gt;" />
-    var branch_name='<tal:branch-name replace="context/source_branch/unique_name"/>';
-    <tal:script replace="structure string:&lt;/script&gt;" />
     <div id="conversation"
          tal:content="structure view/conversation/@@+render"/>
   </div>
