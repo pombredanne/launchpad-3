@@ -14,8 +14,10 @@ import sys
 
 from pytz import UTC
 from testtools.matchers import (
+    Equals,
     GreaterThan,
     LessThan,
+    MatchesAny,
     )
 
 from lp.services.utils import (
@@ -320,8 +322,10 @@ class TestUTCNow(TestCase):
 
     def test_time_is_now(self):
         # utc_now() returns a timestamp which is now.
+        LessThanOrEqual = lambda x: MatchesAny(LessThan(x), Equals(x))
+        GreaterThanOrEqual = lambda x: MatchesAny(GreaterThan(x), Equals(x))
         old_now = datetime.now().replace(tzinfo=UTC)
         now = utc_now()
         new_now = datetime.now().replace(tzinfo=UTC)
-        self.assertThat(now, GreaterThan(old_now))
-        self.assertThat(now, LessThan(new_now))
+        self.assertThat(now, GreaterThanOrEqual(old_now))
+        self.assertThat(now, LessThanOrEqual(new_now))
