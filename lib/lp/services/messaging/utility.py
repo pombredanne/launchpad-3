@@ -10,11 +10,13 @@ __all__ = [
     ]
 
 
-from amqplib import client_0_8 as amqp
-import transaction
 from threading import local as thread_local
 
+from amqplib import client_0_8 as amqp
+import transaction
+
 from canonical.config import config
+
 
 LAUNCHPAD_EXCHANGE = "launchpad-exchange"
 
@@ -89,8 +91,7 @@ class Messaging:
         :param oncommit: If True, the data is sent only when the current
             transaction is committed, otherwise it is sent immediately.
         """
-        self.initalize()
-        msg = amqp.Message(json_data)
+        self.initialize()
 
         if not oncommit:
             self._send_now(routing_key, json_data)
@@ -134,6 +135,19 @@ class Messaging:
 
         message = channel.basic_get(queue_name)
         return message.body
+
+    def listen(self, queue_name, routing_key):
+        """Create a new transient queue and bind it to `routing_key`.
+
+        If the queue already exists this just binds `routing_key` in addition
+        to previous binds.
+        """
+        self.initialize()
+        channel = self.locals.rabbit.channel()
+        channel.queue_declare(queue_name, auto_delete=True)
+        channel.queue_bind(
+            queue=queue_name, exchange=LAUNCHPAD_EXCHANGE,
+            routing_key=routing_key)
 
 
 # Messaging() is a singleton.

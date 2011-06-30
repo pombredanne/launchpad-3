@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-from uuid import uuid4
+from itertools import count
 
 from ..adapters import LongPollSubscriber
 from ..interfaces import (
@@ -18,6 +18,7 @@ from zope.interface import implements
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
+from lp.services.messaging.utility import messaging
 from lp.testing import TestCase
 from lp.testing.matchers import Contains
 
@@ -26,8 +27,10 @@ class FakeEmitter:
 
     implements(ILongPollEmitter)
 
+    emit_key_indexes = count(1)
+
     def __init__(self):
-        self.emit_key = str(uuid4())
+        self.emit_key = "emit-key-%d" % next(self.emit_key_indexes)
 
 
 class TestLongPollSubscriber(TestCase):
@@ -56,8 +59,16 @@ class TestLongPollSubscriber(TestCase):
         self.assertEqual(subscriber.subscribe_key, subscriber2.subscribe_key)
 
     def test_subscribe_queue(self):
-        # LongPollSubscriber creates a new queue with a new unique name.
-        pass
+        # LongPollSubscriber.subscribe() creates a new queue with a new unique
+        # name that is bound to the emitter's emit_key.
+        request = LaunchpadTestRequest()
+        emitter = FakeEmitter()
+        subscriber = ILongPollSubscriber(request)
+        subscriber.subscribe(emitter)
+        message = '{"hello": 1234}'
+        messaging.send(emitter.emit_key, message, oncommit=False)
+        self.assertEqual(
+            message, messaging.receive(subscriber.subscribe_key))
 
     def test_json_cache_populated_on_init(self):
         # LongPollSubscriber puts the name of the new queue into the JSON

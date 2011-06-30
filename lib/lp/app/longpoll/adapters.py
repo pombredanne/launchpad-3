@@ -15,6 +15,8 @@ from zope.component import adapts
 from zope.interface import implements
 from zope.publisher.interfaces import IApplicationRequest
 
+from lp.services.messaging.utility import messaging
+
 
 class LongPollSubscriber:
 
@@ -36,5 +38,6 @@ class LongPollSubscriber:
         return cache.objects["longpoll"]["key"]
 
     def subscribe(self, emitter):
+        messaging.listen(self.subscribe_key, emitter.emit_key)
         cache = IJSONRequestCache(self.request)
         cache.objects["longpoll"]["subscriptions"].append(emitter.emit_key)
