@@ -238,7 +238,8 @@ class InlineEditPickerWidget(WidgetBase):
 
     def __init__(self, context, exported_field, default_html,
                  content_box_id=None, header='Select an item',
-                 step_title='Search', remove_button_text='Remove',
+                 step_title='Search', assign_button_text='Pick Me',
+                 remove_button_text='Remove Person',
                  null_display_value='None',
                  edit_view="+edit", edit_url=None, edit_title=''):
         """Create a widget wrapper.
@@ -251,6 +252,7 @@ class InlineEditPickerWidget(WidgetBase):
             Automatically generated if this is not provided.
         :param header: The large text at the top of the picker.
         :param step_title: Smaller line of text below the header.
+        :param assign_button_text: Override default button text: "Pick Me"
         :param remove_button_text: Override default button text: "Remove"
         :param null_display_value: This will be shown for a missing value
         :param edit_view: The view name to use to generate the edit_url if
@@ -265,6 +267,7 @@ class InlineEditPickerWidget(WidgetBase):
         self.default_html = default_html
         self.header = header
         self.step_title = step_title
+        self.assign_button_text = assign_button_text
         self.remove_button_text = remove_button_text
         self.null_display_value = null_display_value
 
@@ -278,6 +281,7 @@ class InlineEditPickerWidget(WidgetBase):
     def config(self):
         return dict(
             header=self.header, step_title=self.step_title,
+            assign_button_text=self.assign_button_text,
             remove_button_text=self.remove_button_text,
             null_display_value=self.null_display_value,
             show_remove_button=self.optional_field,

@@ -386,13 +386,11 @@ indicates the anonymous user.
 If one of the bugs is set to private, anonymous users can no longer see
 it as being marked for expiration.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> private_bug = ubuntu_bugtask.bug
     >>> private_bug.title
     u'expirable_distro'
     >>> private_bug.setPrivate(True, sample_person)
     True
-    >>> syncUpdate(private_bug)
 
     >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(
     ...     0, user=None, target=ubuntu)
