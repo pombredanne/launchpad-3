@@ -33,7 +33,7 @@ JS_LP := $(shell find lib/lp/*/javascript ! -path '*/tests/*' ! -path '*/app/jav
 JS_ALL := $(JS_YUI) $(JS_LAZR) $(JS_OTHER) $(JS_LP)
 JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 
-INS_TO_SHUTDOWN=15
+MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 
@@ -371,6 +371,7 @@ clean_buildout:
 	$(RM) .installed.cfg
 	$(RM) -r build
 	$(RM) _pythonpath.py
+	$(RM) -r yui/*
 
 clean_logs:
 	$(RM) logs/thread*.request
