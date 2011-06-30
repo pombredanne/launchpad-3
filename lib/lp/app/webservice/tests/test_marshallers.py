@@ -107,7 +107,7 @@ class TestWebServiceObfuscation(TestCaseWithFactory):
         self.assertEqual(
             self.bug_description % self.email_address, ws_bug.description)
 
-    def test_xhtml_email_address_obfuscated(self):
+    def test_xhtml_email_address_not_obfuscated(self):
         # Email address are not obfuscated for authenticated users.
         ws = self.factory.makeLaunchpadService(anonymous=False)
         bug = self._makeBug()
@@ -118,14 +118,13 @@ class TestWebServiceObfuscation(TestCaseWithFactory):
         self.assertIn(self.email_address, browser.contents)
         self.assertNotIn(self.email_address_obfuscated, browser.contents)
 
-    def test_xhtml_email_address_not_obfuscated(self):
-        # Email address are not obfuscated for authenticated users.
+    def test_xhtml_email_address_obfuscated(self):
+        # Email address are obfuscated for anonymous users.
         ws = self.factory.makeLaunchpadService(anonymous=True)
         bug = self._makeBug()
         browser = setupBrowser()
         browser.addHeader('Accept', 'application/xhtml+xml')
         browser.open(ws_url(ws, bug))
-        print browser.contents
 
-#        self.assertNotIn(self.email_address, browser.contents)
-#        self.assertIn(self.email_address_obfuscated, browser.contents)
+        self.assertNotIn(self.email_address, browser.contents)
+        self.assertIn(self.email_address_obfuscated, browser.contents)
