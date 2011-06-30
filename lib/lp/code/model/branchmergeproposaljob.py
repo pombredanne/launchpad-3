@@ -380,7 +380,9 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         self.branch_merge_proposal.preview_diff = preview
 
         # Send a message to Rabbit announcing that the diff is ready.
-        messaging.send("job.UpdatePreviewDiffJob.finished.%d" % self.job.id)
+        from lp.app.longpoll.interfaces import ILongPollEmitter
+        key = ILongPollEmitter(self, name="Completed").emit_key
+        messaging.send(key)
 
     def getOperationDescription(self):
         return ('generating the diff for a merge proposal')
