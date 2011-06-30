@@ -139,6 +139,9 @@
          Add comment
     </div>
 
+    <tal:script replace="structure string:&lt;script id='codereview-inline-diff-script' type='text/javascript'&gt;" />
+    var branch_name='<tal:branch-name replace="context/source_branch/unique_name"/>';
+    <tal:script replace="structure string:&lt;/script&gt;" />
     <div id="conversation"
          tal:content="structure view/conversation/@@+render"/>
   </div>
@@ -200,7 +203,8 @@
   conf = <tal:status-config replace="view/status_config" />
   <!--
   LPS.use('io-base', 'lp.code.branchmergeproposal.reviewcomment',
-          'lp.code.branchmergeproposal.status', 'lp.app.comment', function(Y) {
+          'lp.code.branchmergeproposal.status', 'lp.app.comment', 
+          'lp.app.widgets.expander', 'lp.code.branch.expandable', function(Y) {
 
     Y.on('load', function() {
         var logged_in = LP.links['me'] !== undefined;
@@ -219,6 +223,14 @@
         (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
             ).render();
       }, window);
+
+    Y.on('domready', function() {
+        Y.lp.app.widgets.expander.createByCSS(
+            '.revision-group-diff',
+            '.expander-icon',
+            '.expander-content',
+            Y.lp.code.branch.expandable.bmp_diff_loader);
+    });
   });
   -->
 <tal:script replace="structure string:&lt;/script&gt;" />

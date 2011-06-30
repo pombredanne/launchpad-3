@@ -205,12 +205,13 @@
     <tal:diff-expander condition="show_diff_expander | nothing">
       <div class="revision-group-diff" tal:condition="revisions | nothing">
         <a class="unseen expander-icon js-action"
-           tal:define="start_revno python:revisions[0];
-                       last_revno python:revisions[-1]"
-           tal:attributes="id string:expandable-${start_revno}-${last_revno}"
-        >Changes</a>
+           tal:define="start_rev python:revisions[0];
+                       last_rev python:revisions[-1]"
+           tal:attributes="id string:expandable-${start_rev/sequence}-${last_rev/sequence}"
+        >See diff</a>
+      <div class="unseen expander-content">Loading diff</div>
       </div>
-    </tal>
+    </tal:diff-expander>
   </dl>
 
 </metal:branch-revisions>
