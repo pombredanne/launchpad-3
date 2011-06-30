@@ -345,7 +345,7 @@ class RevisionSet:
         # author per revision, so we use the first on the assumption that
         # this is the primary author.
         try:
-            author = bzr_revision.get_apparent_authors()[0]
+            author = authors[0]
         except IndexError:
             author = None
         return self.new(

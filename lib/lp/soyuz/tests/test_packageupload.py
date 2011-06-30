@@ -370,14 +370,11 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
 
     def makeUploadWithPackageCopyJob(self, sourcepackagename=None):
         """Create a `PackageUpload` plus attached `PlainPackageCopyJob`."""
-        job_factory_args = {}
-        if sourcepackagename is not None:
-            job_factory_args['package_name'] = sourcepackagename.name
-            job_factory_args['package_version'] = '1.0'
-        job = self.factory.makePlainPackageCopyJob(**job_factory_args)
-        naked_job = removeSecurityProxy(job).context
-        upload = self.factory.makePackageUpload(package_copy_job=naked_job)
-        return upload, job
+        from lp.soyuz.model.packagecopyjob import IPackageCopyJobSource
+        upload = self.factory.makeCopyJobPackageUpload(
+            sourcepackagename=sourcepackagename)
+        return upload, getUtility(IPackageCopyJobSource).wrap(
+            upload.package_copy_job)
 
     def test_package_copy_job_property(self):
         # Test that we can set and get package_copy_job.
@@ -395,25 +392,48 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
     def test_overrideSource_with_copy_job(self):
         # The overrides should be stored in the job's metadata.
         pu, pcj = self.makeUploadWithPackageCopyJob()
+        old_component = getUtility(IComponentSet)[pcj.component_name]
         component = getUtility(IComponentSet)['restricted']
         section = getUtility(ISectionSet)['games']
 
-        expected_metadata = {
+        expected_metadata = {}
+        expected_metadata.update(pcj.metadata)
+        expected_metadata.update({
             'component_override': component.name,
             'section_override': section.name,
-        }
-        expected_metadata.update(pcj.metadata)
+            })
 
-        pu.overrideSource(component, section, allowed_components=[component])
+        result = pu.overrideSource(
+            component, section, allowed_components=[component, old_component])
 
+        self.assertTrue(result)
         self.assertEqual(expected_metadata, pcj.metadata)
+
+    def test_overrideSource_checks_permission_for_old_component(self):
+        pu = self.factory.makeCopyJobPackageUpload()
+        only_allowed_component = self.factory.makeComponent()
+        section = self.factory.makeSection()
+        self.assertRaises(
+            QueueInconsistentStateError,
+            pu.overrideSource,
+            only_allowed_component, section, [only_allowed_component])
+
+    def test_overrideSource_checks_permission_for_new_component(self):
+        pu, pcj = self.makeUploadWithPackageCopyJob()
+        current_component = getUtility(IComponentSet)[pcj.component_name]
+        disallowed_component = self.factory.makeComponent()
+        section = self.factory.makeSection()
+        self.assertRaises(
+            QueueInconsistentStateError,
+            pu.overrideSource,
+            disallowed_component, section, [current_component])
 
     def test_acceptFromQueue_with_copy_job(self):
         # acceptFromQueue should accept the upload and resume the copy
         # job.
         pu, pcj = self.makeUploadWithPackageCopyJob()
+        pu.pocket = PackagePublishingPocket.RELEASE
         self.assertEqual(PackageUploadStatus.NEW, pu.status)
-        pcj.suspend()
 
         pu.acceptFromQueue()
 
@@ -423,7 +443,6 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
     def test_rejectFromQueue_with_copy_job(self):
         # rejectFromQueue will reject the upload and fail the copy job.
         pu, pcj = self.makeUploadWithPackageCopyJob()
-        pcj.suspend()
 
         pu.rejectFromQueue()
 
@@ -451,11 +470,10 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
         # An upload with a copy job takes its component and section
         # names from the job.
         spn = self.factory.makeSourcePackageName()
-        upload, job = self.makeUploadWithPackageCopyJob(sourcepackagename=spn)
+        upload, pcj = self.makeUploadWithPackageCopyJob(sourcepackagename=spn)
         component = self.factory.makeComponent()
         section = self.factory.makeSection()
-        job.addSourceOverride(SourceOverride(
-            source_package_name=spn, component=component, section=section))
+        pcj.addSourceOverride(SourceOverride(spn, component, section))
         self.assertEqual(component.name, upload.component_name)
 
     def test_displayname_is_package_name(self):

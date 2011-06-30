@@ -647,10 +647,20 @@ class LaunchpadRootNavigation(Navigation):
         if name in self.stepto_utilities:
             return getUtility(self.stepto_utilities[name])
 
-        # Allow traversal to ~foo for People
-        if name.startswith('~'):
-            # account for common typing mistakes
+        if name == '~':
+            person = getUtility(ILaunchBag).user
+            if person is None:
+                raise Unauthorized()
+            # Keep the context and the subtree so that
+            # bugs.l.n/~/+assignedbugs goes to the person's canonical
+            # assigned list.
+            return self.redirectSubTree(
+                canonical_url(self.context) + "~"
+                + canonical_name(person.name),
+                status=302)
+        elif name.startswith('~'):  # Allow traversal to ~foo for People
             if canonical_name(name) != name:
+                # (for instance, uppercase username?)
                 if self.request.method == 'POST':
                     raise POSTToNonCanonicalURL
                 return self.redirectSubTree(

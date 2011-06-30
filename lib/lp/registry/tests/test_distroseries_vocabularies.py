@@ -226,3 +226,16 @@ class TestDistroSeriesDerivationVocabulary(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             DistroSeriesDerivationVocabulary(distroseries).terms
             self.assertThat(recorder, HasQueryCount(Equals(2)))
+
+    def test_no_duplicates(self):
+        # No duplicates are present in the returned vocabulary.
+        distroseries = self.makeDistroSeriesWithDistroArch()
+        vocabulary = DistroSeriesDerivationVocabulary(distroseries)
+        expected_distroseries = (
+            set(self.all_series_with_arch).difference(
+                distroseries.distribution.series))
+        observed_distroseries = [term.value for term in vocabulary]
+
+        self.assertContentEqual(
+            expected_distroseries,
+            observed_distroseries)

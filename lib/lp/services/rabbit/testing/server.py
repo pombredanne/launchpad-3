@@ -14,6 +14,7 @@ import re
 import signal
 import socket
 import subprocess
+from textwrap import dedent
 import time
 
 from amqplib import client_0_8 as amqp
@@ -101,6 +102,7 @@ class RabbitServerResources(Fixture):
     :ivar logfile: The logfile allocated for the server.
     :ivar nodename: The name of the node.
     """
+
     def setUp(self):
         super(RabbitServerResources, self).setUp()
         self.hostname = 'localhost'
@@ -109,6 +111,13 @@ class RabbitServerResources(Fixture):
         self.mnesiadir = self.useFixture(TempDir()).path
         self.logfile = os.path.join(self.homedir, 'server.log')
         self.nodename = os.path.basename(self.useFixture(TempDir()).path)
+        self.service_config = dedent("""\
+            [rabbitmq]
+            host: localhost:%d
+            userid: guest
+            password: guest
+            virtual_host: /
+            """ % self.port)
 
     @property
     def fq_nodename(self):

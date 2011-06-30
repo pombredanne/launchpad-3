@@ -30,6 +30,7 @@ __all__ = [
     'CommercialProjectsVocabulary',
     'DistributionOrProductOrProjectGroupVocabulary',
     'DistributionOrProductVocabulary',
+    'DistributionSourcePackageVocabulary',
     'DistributionVocabulary',
     'DistroSeriesDerivationVocabulary',
     'DistroSeriesVocabulary',
@@ -167,6 +168,9 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.distribution import Distribution
+from lp.registry.model.distributionsourcepackage import (
+    DistributionSourcePackage,
+    )
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesparent import DistroSeriesParent
 from lp.registry.model.featuredproject import FeaturedProject
@@ -190,7 +194,16 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.distroarchseries import DistroArchSeries
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 class BasePersonVocabulary:
@@ -1806,7 +1819,7 @@ class DistroSeriesDerivationVocabulary:
             *where)
         query = query.order_by(
             Distribution.displayname,
-            Desc(DistroSeries.date_created))
+            Desc(DistroSeries.date_created)).config(distinct=True)
         return [series for (series, distribution) in query]
 
     def searchParents(self, query=None):
@@ -1949,3 +1962,89 @@ class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
         # package names are always lowercase.
         return super(SourcePackageNameVocabulary, self).getTermByToken(
             token.lower())
+ 
+
+class DistributionSourcePackageVocabulary:
+
+    implements(IHugeVocabulary)
+    displayname = 'Select a package'
+    step_title = 'Search'
+
+    def __init__(self, context=None):
+        self.context = context
+
+    def __contains__(self, obj):
+        pass
+
+    def __iter__(self):
+        pass
+
+    def __len__(self):
+        pass
+
+    def toTerm(self, dsp):
+        """See `IVocabulary`."""
+        # SimpleTerm(value, token=None, title=None)
+        if dsp.publishing_history:
+            binaries = dsp.publishing_history[0].getBuiltBinaries()
+            summary = ', '.join(
+                [binary.binary_package_name for binary in binaries])
+        else:
+            summary = "Not yet built."
+        token = '%s-%s' % (dsp.distribution.name, dsp.name)
+        return SimpleTerm(summary, token, dsp.name)
+
+    def getTerm(self, dsp):
+        """See `IBaseVocabulary`."""
+        return self.toTerm(dsp)
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        pass
+
+    def searchForTerms(self, query=None):
+        """See `IHugeVocabulary`."""
+        distribution = self.context
+        if query is None:
+            return
+        search_term = unicode(query)
+        store = IStore(SourcePackagePublishingHistory)
+        spns = store.using(
+            SourcePackagePublishingHistory,
+            LeftJoin(
+                SourcePackageRelease,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    SourcePackageRelease.id),
+            LeftJoin(
+                SourcePackageName,
+                SourcePackageRelease.sourcepackagenameID ==
+                    SourcePackageName.id),
+            LeftJoin(
+                DistroSeries,
+                SourcePackagePublishingHistory.distroseriesID ==
+                    DistroSeries.id),
+            LeftJoin(
+                BinaryPackageBuild,
+                BinaryPackageBuild.source_package_release_id ==
+                    SourcePackageRelease.id),
+            LeftJoin(
+                BinaryPackageRelease,
+                BinaryPackageRelease.buildID == BinaryPackageBuild.id),
+            LeftJoin(
+                BinaryPackageName,
+                BinaryPackageRelease.binarypackagenameID ==
+                    BinaryPackageName.id
+            )).find(
+                SourcePackageName,
+                DistroSeries.distributionID == distribution.id,
+                SourcePackagePublishingHistory.status.is_in((
+                    PackagePublishingStatus.PENDING,
+                    PackagePublishingStatus.PUBLISHED)),
+                SourcePackagePublishingHistory.archive ==
+                    distribution.main_archive,
+                Or(
+                    SourcePackageName.name.contains_string(search_term),
+                    BinaryPackageName.name.contains_string(
+                        search_term))).config(distinct=True)
+        return [
+            self.toTerm(distribution.getSourcePackage(spn)) for spn in spns]

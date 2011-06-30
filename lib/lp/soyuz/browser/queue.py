@@ -46,7 +46,6 @@ from lp.soyuz.interfaces.queue import (
     QueueInconsistentStateError,
     )
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.model.queue import PackageUploadSource
 
 
 QUEUE_SIZE = 30
@@ -199,6 +198,7 @@ class QueueItemsView(LaunchpadView):
         in the +queue template.
         """
         # Avoid circular imports.
+        from lp.soyuz.model.queue import PackageUploadSource
         from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
         uploads = list(self.batchnav.currentBatch())
@@ -214,6 +214,7 @@ class QueueItemsView(LaunchpadView):
                     upload.status != PackageUploadStatus.DONE)]
         binary_file_set = getUtility(IBinaryPackageFileSet)
         binary_files = binary_file_set.getByPackageUploadIDs(upload_ids)
+        binary_file_set.loadLibraryFiles(binary_files)
         packageuploadsources = load_referencing(
             PackageUploadSource, uploads, ['packageuploadID'])
         source_file_set = getUtility(ISourcePackageReleaseFileSet)
@@ -226,6 +227,7 @@ class QueueItemsView(LaunchpadView):
         # Get a dictionary of lists of binary files keyed by upload ID.
         package_upload_builds_dict = self.builds_dict(
             upload_ids, binary_files)
+
         build_upload_files, binary_package_names = self.binary_files_dict(
             package_upload_builds_dict, binary_files)
 
@@ -396,14 +398,13 @@ class QueueItemsView(LaunchpadView):
                                (queue_item.displayname, info))
             else:
                 if source_overridden:
-                    success.append("OK: %(name)s(%(component)s/%(section)s)" %
-                                   feedback_interpolations)
+                    desc = "%(name)s(%(component)s/%(section)s)"
                 elif binary_overridden:
-                    success.append(
-                        "OK: %(name)s(%(component)s/%(section)s/%(priority)s)"
-                            % feedback_interpolations)
+                    desc = "%(name)s(%(component)s/%(section)s/%(priority)s)"
                 else:
-                    success.append('OK: %s' % queue_item.displayname)
+                    desc = "%(name)s"
+                success.append(
+                    "OK: " + desc % feedback_interpolations)
 
         for message in success:
             self.request.response.addInfoNotification(message)
@@ -480,11 +481,8 @@ class CompletePackageUpload:
         # Create a list of source files if this is a source upload.
         self.source_files = source_upload_files.get(self.id, None)
 
-        # Pre-fetch the sourcepackagerelease if it exists.
         if self.contains_source:
             self.sourcepackagerelease = self.sources[0].sourcepackagerelease
-        else:
-            self.sourcepackagerelease = None
 
         if self.contains_source:
             self.package_sets = package_sets.get(
@@ -513,27 +511,26 @@ class CompletePackageUpload:
     @property
     def display_package_sets(self):
         """Package sets, if any, for display on the +queue page."""
-        if self.contains_source:
-            return ' '.join(sorted(
-                packageset.name for packageset in self.package_sets))
-        else:
-            return ""
+        return ' '.join(sorted(
+            packageset.name for packageset in self.package_sets))
 
     @property
     def display_component(self):
         """Component name, if any, for display on the +queue page."""
-        if self.contains_source:
-            return self.component_name.lower()
-        else:
+        component_name = self.component_name
+        if component_name is None:
             return ""
+        else:
+            return component_name.lower()
 
     @property
     def display_section(self):
         """Section name, if any, for display on the +queue page."""
-        if self.contains_source:
-            return self.section_name.lower()
-        else:
+        section_name = self.section_name
+        if section_name is None:
             return ""
+        else:
+            return section_name.lower()
 
     @property
     def display_priority(self):
