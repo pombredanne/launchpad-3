@@ -20,73 +20,11 @@ from lp.testing.windmill import (
 from lp.translations.windmill.testing import TranslationsWindmillLayer
 
 
-class POFileNewTranslationFieldKeybindings(WindmillTestCase):
-    """Tests for keybinding actions associated to the translation field.
-
-    These tests should cover both simple (ie. pt) and composed (ie. pt_br)
-    language codes.
-    """
-
-    layer = TranslationsWindmillLayer
-    suite_name = 'POFile Translate'
-
-    def _checkTranslationAutoselect(
-        self, url, new_translation_id, new_translation_select_id):
-        """Checks that the select radio button is checked when typing a new
-        translation.
-        """
-        # Go to the translation page.
-        client, start_url = self.getClientFor(url, user=self.test_user)
-
-        # Wait for the new translation field and it's associated radio button.
-        client.waits.forElement(
-            id=new_translation_id, timeout=constants.FOR_ELEMENT)
-        client.waits.forElement(
-            id=new_translation_select_id, timeout=constants.FOR_ELEMENT)
-
-        # Check that the associated radio button is not selected.
-        client.asserts.assertNotChecked(id=new_translation_select_id)
-
-        # Type a new translation.
-        client.type(id=new_translation_id, text=u'New translation')
-
-        # Check that the associated radio button is selected.
-        client.asserts.assertChecked(id=new_translation_select_id)
-
-    def test_pofile_new_translation_autoselect(self):
-        """Test for automatically selecting new translation on text input.
-
-        When new text is typed into the new translation text fields, the
-        associated radio button should be automatically selected.
-        """
-        self.test_user = lpuser.TRANSLATIONS_ADMIN
-
-        # Test the zoom out view for Evolution trunk Spanish (es).
-        start_url = '/evolution/trunk/+pots/evolution-2.2/es/+translate'
-        new_translation_id = u'msgset_1_es_translation_0_new'
-        new_translation_select_id = u'msgset_1_es_translation_0_new_select'
-        self._checkTranslationAutoselect(
-            start_url, new_translation_id, new_translation_select_id)
-
-        # Test the zoom in view for Evolution trunk Brazilian (pt_BR).
-        start_url = '/evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate'
-        new_translation_id = u'msgset_1_pt_BR_translation_0_new'
-        new_translation_select_id = u'msgset_1_pt_BR_translation_0_new_select'
-        self._checkTranslationAutoselect(
-            start_url, new_translation_id, new_translation_select_id)
-
-        # Test the zoom out view for Ubuntu Hoary Brazilian (pt_BR).
-        start_url = ('/ubuntu/hoary/+source/mozilla/+pots/pkgconf-mozilla/'
-                        'pt_BR/1/+translate')
-        new_translation_id = u'msgset_152_pt_BR_translation_0_new'
-        new_translation_select_id = (u'msgset_152_pt_BR'
-                                       '_translation_0_new_select')
-        self._checkTranslationAutoselect(
-            start_url, new_translation_id, new_translation_select_id)
-
-
 class POFileTranslationActions(WindmillTestCase):
-    """Tests for actions that can be done on a translation message."""
+    """Tests for actions that can be done on a translation message.
+
+    XXX: Move to YUI test.
+    """
 
     layer = TranslationsWindmillLayer
     suite_name = 'POFile Translation Actions'
@@ -290,6 +228,7 @@ class POFileTranslationActions(WindmillTestCase):
     def test_pofile_reset_translation_select(self):
         """Test for automatically selecting new translation when
         'Someone needs to review this translations' is checked.
+
         """
         # Go to the zoom in page for a translation with plural forms.
         client, start_url = self.getClientFor(
@@ -384,88 +323,3 @@ class POFileTranslationActions(WindmillTestCase):
         client.asserts.assertNotChecked(
             id=u'msgset_139_es_translation_0_new_select')
 
-
-class POFileTranslatorAndReviewerWorkingMode(WindmillTestCase):
-    """Tests for page behaviour in reviewer or translator mode."""
-
-    layer = TranslationsWindmillLayer
-    suite_name = 'POFile Translate'
-
-    test_user = lpuser.TRANSLATIONS_ADMIN
-
-    switch_working_mode = u'translation-switch-working-mode'
-    force_suggestion = u'msgset_1_force_suggestion'
-    new_translation = u'msgset_1_pt_BR_translation_0_new'
-    js_code = ("lookupNode({id: '%s'}).innerHTML.search('eviewer') > 0" %
-                switch_working_mode)
-
-    def test_pofile_reviewer_mode(self):
-        """Test for reviewer mode.
-
-        Adding new translations will force them as suggestions.
-        """
-
-        self.client, start_url = self.getClientFor(
-            '/evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate',
-            user=self.test_user)
-
-        self._ensureTranslationMode(reviewer=True)
-
-        self.client.waits.forElement(
-            id=self.force_suggestion, timeout=constants.FOR_ELEMENT)
-        self.client.type(text=u'New translation', id=self.new_translation)
-        self.client.asserts.assertNotChecked(id=self.force_suggestion)
-
-    def test_pofile_translator_mode(self):
-        """Test for translator mode.
-
-        Adding new translations will not force them as suggestions.
-        """
-
-        self.client, start_url = self.getClientFor(
-            '/evolution/trunk/+pots/evolution-2.2/pt_BR/1/+translate',
-            user=self.test_user)
-
-        self._ensureTranslationMode(translator=True)
-
-        self.client.waits.forElement(
-            id=self.force_suggestion, timeout=constants.FOR_ELEMENT)
-        self.client.type(text=u'New translation', id=self.new_translation)
-        self.client.asserts.assertChecked(id=self.force_suggestion)
-
-        # The new translation will be forced only if the previous new
-        # translation field is empty. Othewise the force suggestion checkbox
-        # will remain unchecked.
-        self.client.click(id=self.force_suggestion)
-        self.client.keyPress(
-            id=self.new_translation,
-            options='a,true,false,false,false,false')
-        self.client.asserts.assertNotChecked(id=self.force_suggestion)
-
-    def _ensureTranslationMode(self, reviewer=False, translator=False):
-        """Ensure the specified mode is currently selected."""
-
-        if reviewer is translator:
-            raise AssertionError("You must specify a single working mode.")
-
-        self.client.waits.forElement(
-            id=self.switch_working_mode, timeout=constants.FOR_ELEMENT)
-
-        current_is_reviewer = self.client.commands.execJS(
-            js=self.js_code)['result']
-        need_to_switch_mode = (
-            reviewer and not current_is_reviewer or
-            translator and current_is_reviewer)
-        if need_to_switch_mode:
-            self.client.click(id=self.switch_working_mode)
-        else:
-            return
-
-        # We check that the mode was changed.
-        current_is_reviewer = self.client.commands.execJS(
-            js=self.js_code)['result']
-
-        switch_done = (
-            reviewer and current_is_reviewer or
-            translator and not current_is_reviewer)
-        assert switch_done is True, "Could not switch working mode."
