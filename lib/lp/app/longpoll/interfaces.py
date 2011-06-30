@@ -25,6 +25,7 @@ class ILongPollEmitter(Interface):
 
 class ILongPollSubscriber(Interface):
 
+    # XXX: Probably don't need this.
     subscribe_key = Attribute(
         "The key which the subscriber must know in order to be able "
         "to long-poll for subscribed events. Should be infeasible to "
