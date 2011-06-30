@@ -200,7 +200,7 @@
     <tal:revision repeat="rev_no revisions"
                   define="codebrowse view/codebrowse_url"
                   condition="revisions | nothing">
-        <metal:landing-target use-macro="branch/@@+macros/revision-text"/>
+      <metal:landing-target use-macro="branch/@@+macros/revision-text"/>
     </tal:revision>
   </dl>
 
@@ -255,12 +255,6 @@
       The revision commit message.
     </tal:commit-message>
   </dd>
-  <div class="revision-expander">
-    <a class="unseen expander-icon js-action"
-       tal:attributes="id string:expandable-${rev_no/sequence}"
-     >Changes</a>
-    <div class="unseen expander-content">Loading diff</div>
-  </div>
 
   <div tal:condition="rev_info | nothing">
     <div tal:define="merge_proposal python:rev_info['merge_proposal']"
