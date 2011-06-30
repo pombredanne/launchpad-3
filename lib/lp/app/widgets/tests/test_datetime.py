@@ -8,6 +8,7 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.date import DateTimeWidget
 from lp.testing import TestCase
 
+
 class TestDateTimeWidget(TestCase):
 
     layer = DatabaseFunctionalLayer
