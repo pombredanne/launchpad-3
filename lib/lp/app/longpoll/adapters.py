@@ -23,6 +23,7 @@ from zope.interface import implements
 from zope.publisher.interfaces import IApplicationRequest
 
 from lp.services.messaging.utility import messaging
+from lp.services.job.interfaces.job import IJob
 
 
 class LongPollSubscriber:
@@ -60,3 +61,16 @@ def subscribe(target, event):
     emitter = getAdapter(target, ILongPollEmitter, name=event)
     request = get_current_browser_request()
     ILongPollSubscriber(request).subscribe(emitter)
+
+
+class JobLongPollEmitter:
+
+    adapts(IJob)
+    implements(ILongPollEmitter)
+
+    def __init__(self, job):
+        self.job = job
+
+    @property
+    def emit_key(self):
+        return "longpoll.job.%d.Completed" % self.job.id
