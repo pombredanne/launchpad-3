@@ -67,6 +67,7 @@ class TestWebServiceObfuscation(TestCaseWithFactory):
 
     email_address = "joe@example.com"
     email_address_obfuscated = "<email address hidden>"
+    email_address_obfuscated_escaped = "&lt;email address hidden&gt;"
     bug_title = "Title with address %s in it"
     bug_description = "Description with address %s in it"
 
@@ -108,7 +109,8 @@ class TestWebServiceObfuscation(TestCaseWithFactory):
         browser.open(ws_url(bug))
 
         self.assertIn(self.email_address, browser.contents)
-        self.assertNotIn(self.email_address_obfuscated, browser.contents)
+        self.assertNotIn(
+            self.email_address_obfuscated_escaped, browser.contents)
 
     def test_xhtml_email_address_obfuscated(self):
         # Email address are obfuscated for anonymous users.
@@ -119,5 +121,6 @@ class TestWebServiceObfuscation(TestCaseWithFactory):
         browser.addHeader('Accept', 'application/xhtml+xml')
         browser.open(ws_url(bug))
 
+        
         self.assertNotIn(self.email_address, browser.contents)
-        self.assertIn(self.email_address_obfuscated, browser.contents)
+        self.assertIn(self.email_address_obfuscated_escaped, browser.contents)
