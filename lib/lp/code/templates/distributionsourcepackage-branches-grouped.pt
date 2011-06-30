@@ -69,7 +69,7 @@
           </td>
           <td>
             <span tal:attributes="title branch/date_last_modified/fmt:datetime"
-                  tal:content="branch/since_updated/fmt:approximateduration/use-digits">
+                  tal:content="branch/date_last_updated/fmt:approximatedate">
               sometime
               </span> ago
           </td>
