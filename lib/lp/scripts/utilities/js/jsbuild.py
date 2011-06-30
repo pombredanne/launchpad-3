@@ -7,17 +7,15 @@ __all__ = []
 import optparse
 import os
 import re
-import shutil
 import sys
 
 from glob import glob
 
 import cssutils
-import pkg_resources
 
 HERE = os.path.dirname(__file__)
 BUILD_DIR = os.path.normpath(os.path.join(HERE, '..', '..', '..', 'build'))
-DEFAULT_SRC_DIR = os.path.normpath(os.path.join(HERE, '..', '..', '..', 'app', 'javascript'))
+DEFAULT_SRC_DIR = os.path.normpath(os.path.join(HERE, '..', '..', '..', 'app', 'javascript', 'lazr'))
 
 ESCAPE_STAR_PROPERTY_RE = re.compile(r'\*([a-zA-Z0-9_-]+):')
 UNESCAPE_STAR_PROPERTY_RE = re.compile(r'([a-zA-Z0-9_-]+)_ie_star_hack:')
