@@ -43,21 +43,6 @@
       html, body {background-image: url(/@@/demo) !important;}
     </style>
 
-    <tal:comment condition="nothing">
-      This CSS collapses the contents of collapsible fieldsets,
-      without the flashing that would result from doing it in JavaScript.
-      activateCollapsibles() removes the class="collapsed" from fieldsets, to
-      re-show their divs, once the children themselves have been collapsed.
-    </tal:comment>
-    <style type="text/css">
-      fieldset.collapsed div, fieldset div.collapsed {display: none;}
-    </style>
-    <noscript>
-      <style type="text/css">
-        fieldset.collapsible div, fieldset div.collapsed {display: block;}
-      </style>
-    </noscript>
-
     <metal:page-javascript
         use-macro="context/@@+base-layout-macros/page-javascript" />
     <metal:block define-slot="head_epilogue"></metal:block>
