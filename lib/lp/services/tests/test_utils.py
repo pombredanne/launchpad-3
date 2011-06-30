@@ -6,10 +6,17 @@
 __metaclass__ = type
 
 from contextlib import contextmanager
+from datetime import datetime
 import hashlib
 import itertools
 import os
 import sys
+
+from pytz import UTC
+from testtools.matchers import (
+    GreaterThan,
+    LessThan,
+    )
 
 from lp.services.utils import (
     AutoDecorate,
@@ -22,6 +29,7 @@ from lp.services.utils import (
     iter_split,
     run_capturing_output,
     traceback_info,
+    utc_now,
     )
 from lp.testing import TestCase
 
@@ -299,3 +307,21 @@ class TestFileExists(TestCase):
     def test_is_not_upset_by_missing_directory(self):
         self.assertFalse(
             file_exists("a-nonexistent-directory/a-nonexistent-file.txt"))
+
+
+class TestUTCNow(TestCase):
+    """Tests for `utc_now`."""
+
+    def test_tzinfo(self):
+        # utc_now() returns a timezone-aware timestamp with the timezone of
+        # UTC.
+        now = utc_now()
+        self.assertEqual(now.tzinfo, UTC)
+
+    def test_time_is_now(self):
+        # utc_now() returns a timestamp which is now.
+        old_now = datetime.now().replace(tzinfo=UTC)
+        now = utc_now()
+        new_now = datetime.now().replace(tzinfo=UTC)
+        self.assertThat(now, GreaterThan(old_now))
+        self.assertThat(now, LessThan(new_now))
