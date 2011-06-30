@@ -117,7 +117,7 @@ class DateTimeWidget(TextWidget):
     """
 
     timeformat = '%Y-%m-%d %H:%M:%S'
-    
+
 
     required_time_zone = None
     display_zone = True
@@ -343,7 +343,7 @@ class DateTimeWidget(TextWidget):
             try:
                 datetime.strptime(input.strip(), fmt)
             except (ValueError), e:
-                if 'unconverted data remains' in e.message:
+                if 'unconverted data remains' in str(e):
                     return
                 else:
                     failure = e

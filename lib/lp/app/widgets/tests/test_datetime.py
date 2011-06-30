@@ -16,7 +16,7 @@ class TestDateTimeWidget(TestCase):
         super(TestDateTimeWidget, self).setUp()
         field = Field(__name__='foo', title=u'Foo')
         request = LaunchpadTestRequest()
-        self.widget = DateTimeWidget(field, request) 
+        self.widget = DateTimeWidget(field, request)
 
     def test_unsupported_format_errors(self):
         # Dates in unsupported formats result in a ConversionError
@@ -33,7 +33,7 @@ class TestDateTimeWidget(TestCase):
         try:
             datetime.strptime(test_str, fmt)
         except (ValueError,), e:
-            self.assertTrue('unconverted data' in e.message)
+            self.assertTrue('unconverted data' in str(e))
 
     def test_whitespace_does_not_trick_validation(self):
         # Trailing whitespace doesn't get through because of the
