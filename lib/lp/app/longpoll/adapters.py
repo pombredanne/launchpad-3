@@ -10,7 +10,12 @@ __all__ = []
 from uuid import uuid4
 
 from .interfaces import ILongPollSubscriber
-from zope.interface import implements
+from zope.component import adapter
+from zope.interface import (
+    implementer,
+    implements,
+    )
+from zope.publisher.interfaces import IApplicationRequest
 
 
 class LongPollSubscriber:
@@ -27,3 +32,18 @@ class LongPollSubscriber:
 
     def subscribe(self, emitter):
         pass
+
+
+LongPollSubscriber.ANNOTATION_KEY = "%s.%s" % (
+    LongPollSubscriber.__module__, LongPollSubscriber.__name__)
+
+
+@adapter(IApplicationRequest)
+@implementer(ILongPollSubscriber)
+def long_poll_subscriber(request):
+    annotations = request.annotations
+    subscriber = annotations.get(LongPollSubscriber.ANNOTATION_KEY)
+    if subscriber is None:
+        subscriber = LongPollSubscriber(request)
+        annotations[LongPollSubscriber.ANNOTATION_KEY] = subscriber
+    return subscriber
