@@ -1819,7 +1819,7 @@ class DistroSeriesDerivationVocabulary:
             *where)
         query = query.order_by(
             Distribution.displayname,
-            Desc(DistroSeries.date_created))
+            Desc(DistroSeries.date_created)).config(distinct=True)
         return [series for (series, distribution) in query]
 
     def searchParents(self, query=None):
@@ -1962,7 +1962,7 @@ class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
         # package names are always lowercase.
         return super(SourcePackageNameVocabulary, self).getTermByToken(
             token.lower())
-        
+ 
 
 class DistributionSourcePackageVocabulary:
 
