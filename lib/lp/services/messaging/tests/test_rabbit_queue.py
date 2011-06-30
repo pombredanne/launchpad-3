@@ -16,18 +16,35 @@ from lp.testing import TestCase
 class TestRabbitQueue(TestCase):
     layer = RabbitMQLayer
 
+    def setUp(self):
+        super(TestCase, self).setUp()
+        self.queue = RabbitQueue('whatever')
+
+    def tearDown(self):
+        if hasattr(self.queue.class_locals, 'rabbit_connection'):
+            self.queue.class_locals.rabbit_connection.close()
+            del self.queue.class_locals.rabbit_connection
+        super(TestCase, self).tearDown()
+
     def test_implements(self):
-        queue = RabbitQueue('whatever')
-        IMessageQueue.providedBy(queue)
+        IMessageQueue.providedBy(self.queue)
 
     def test_send_now(self):
         queue = RabbitQueue('arbitary_queue_name')
         key = 'arbitrary.routing.key'
         queue.subscribe(key)
+        for data in range(50, 60):
+            queue.send_now(key, data)
+            received_data = queue.receive(blocking=True)
+            self.assertEqual(received_data, data)
+
+    def test_send_now_not_backwards(self):
+        queue = RabbitQueue('arbitary_queue_name')
+        key = 'arbitrary.routing.key'
+        queue.subscribe(key)
         for data in range(1, 10):
             queue.send_now(key, data)
-        # XXX: WTF are they backwards
-        for date in range(9, 0):
+        for data in range(1, 10):
             received_data = queue.receive(blocking=True)
             self.assertEqual(received_data, data)
 
@@ -36,7 +53,7 @@ class TestRabbitQueue(TestCase):
         key = 'arbitrary.routing.key'
         queue.subscribe(key)
 
-        for data in range(1, 10):
+        for data in range(90, 100):
             queue.send(key, data)
 
         queue.send_now(key, 'sync')

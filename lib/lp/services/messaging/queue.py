@@ -87,18 +87,16 @@ class RabbitQueue:
             self.class_locals.messages = []
 
         conn = self.class_locals.rabbit_connection
-        self.send_channel = conn.channel()
-        self.send_channel.exchange_declare(
+        self.channel = conn.channel()
+        self.channel.exchange_declare(
             LAUNCHPAD_EXCHANGE, "direct", durable=False,
             auto_delete=False)
-
-        self.receive_channel = conn.channel()
-        self.receive_channel.queue_declare(self.name)
+        self.channel.queue_declare(self.name)
 
     def subscribe(self, key):
         """Only receive messages for requested routing keys."""
         self._initialize()
-        self.receive_channel.queue_bind(
+        self.channel.queue_bind(
             queue=self.name, exchange=LAUNCHPAD_EXCHANGE,
             routing_key=key)
 
@@ -106,6 +104,7 @@ class RabbitQueue:
         """See `IMessageQueue`."""
         self._initialize()
         messages = self.class_locals.messages
+        # XXX: The data manager should close channels and flush too
         if not messages:
             transaction.get().join(MessagingDataManager(messages))
         messages.append((self.send_now, key, data))
@@ -115,7 +114,7 @@ class RabbitQueue:
         self._initialize()
         json_data = json.dumps(data)
         msg = amqp.Message(json_data)
-        self.send_channel.basic_publish(
+        self.channel.basic_publish(
             exchange=LAUNCHPAD_EXCHANGE, routing_key=key, msg=msg)
 
     def receive(self, blocking=True):
@@ -127,7 +126,7 @@ class RabbitQueue:
         self._initialize()
 
         if not blocking:
-            message = self.receive_channel.basic_get(self.name)
+            message = self.channel.basic_get(self.name)
             if message is None:
                 # We need to raise an exception, as None is a legitimate
                 # return value.
@@ -138,7 +137,7 @@ class RabbitQueue:
         # Hacked blocking get
         import time
         while True:
-            message = self.receive_channel.basic_get(self.name)
+            message = self.channel.basic_get(self.name)
             if message is None:
                 time.sleep(0.1)
             else:
@@ -149,7 +148,6 @@ class RabbitQueue:
         def callback(msg):
             result.append(json.loads(msg.body))
 
-        self.channel.basic_consume(
-            self.name, callback=callback, no_ack=True)
+        self.channel.basic_consume(self.name, callback=callback)
         self.channel.wait()
         return result[0]
