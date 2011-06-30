@@ -15,13 +15,12 @@ are not a member of, their message gets held for moderator approval.
     ...     IPersonSet,
     ...     PersonalStanding,
     ...     )
-    >>> from canonical.launchpad.ftests import sync, syncUpdate
+    >>> from canonical.launchpad.ftests import sync
 
     >>> person_set = getUtility(IPersonSet)
     >>> lifeless = person_set.getByName('lifeless')
     >>> lifeless.personal_standing = PersonalStanding.UNKNOWN
     >>> lifeless.personal_standing_reason = ''
-    >>> syncUpdate(lifeless)
 
     # A unique Message-ID generator.
     >>> from itertools import count
@@ -53,7 +52,6 @@ are not a member of, their message gets held for moderator approval.
     >>> def lifeless_post(to_team_name):
     ...     return post_message('robertc@robertcollins.net', to_team_name)
 
-    >>> import logging
     >>> from lp.registry.scripts.standing import (
     ...     UpdatePersonalStanding)
     >>> from canonical.config import config

@@ -339,8 +339,6 @@ reason for the change.
     >>> from lp.registry.interfaces.person import PersonalStanding
     >>> lifeless.personal_standing = PersonalStanding.GOOD
     >>> lifeless.personal_standing_reason = 'Such a cool guy!'
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(lifeless)
 
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.GOOD...
