@@ -371,6 +371,7 @@ clean_buildout:
 	$(RM) .installed.cfg
 	$(RM) -r build
 	$(RM) _pythonpath.py
+	$(RM) -r yui/*
 
 clean_logs:
 	$(RM) logs/thread*.request
