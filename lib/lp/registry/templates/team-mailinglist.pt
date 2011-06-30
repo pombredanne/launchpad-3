@@ -50,7 +50,7 @@
               tal:content="context/visibility/title/fmt:lower" /> archive
           </li>
           <li>
-            Launchpad will silently delete email sent from addresses that are
+            Launchpad will silently discard email sent from addresses that are
             not associated with a Launchpad account.
           </li>
         </ul>
