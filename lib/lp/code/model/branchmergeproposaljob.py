@@ -66,6 +66,7 @@ from lp.services.messages.model.message import (
     MessageJobAction,
     )
 from lp.services.messages.interfaces.message import IMessageJob
+from lp.services.messaging.utility import messaging
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.webapp.interfaces import (
@@ -377,6 +378,9 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         preview = PreviewDiff.fromBranchMergeProposal(
             self.branch_merge_proposal)
         self.branch_merge_proposal.preview_diff = preview
+
+        # Send a message to Rabbit announcing that the diff is ready.
+        messaging.send("job.UpdatePreviewDiffJob.finished.%d" % self.job.id)
 
     def getOperationDescription(self):
         return ('generating the diff for a merge proposal')
