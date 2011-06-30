@@ -5,11 +5,12 @@
 
 __metaclass__ = type
 
-from canonical.testing.layers import RabbitMQLayer
-from lp.testing import TestCase
+import transaction
 
+from canonical.testing.layers import RabbitMQLayer
 from lp.services.messaging.interfaces import IMessageQueue
 from lp.services.messaging.queue import RabbitQueue
+from lp.testing import TestCase
 
 
 class TestRabbitQueue(TestCase):
@@ -33,6 +34,7 @@ class TestRabbitQueue(TestCase):
     def test_send(self):
         queue = RabbitQueue('arbitary_queue_name')
         key = 'arbitrary.routing.key'
+        queue.subscribe(key)
 
         for data in range(1, 10):
             queue.send(key, data)

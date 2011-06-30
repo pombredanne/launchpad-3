@@ -58,8 +58,8 @@ class MessagingDataManager:
         return "zz_messaging_%s" % id(self)
 
     def commit(self, txn):
-        for queue, key, data in self.messages:
-            queue.send(key, data, oncommit=False)
+        for send_func, key, data in self.messages:
+            send_func(key, data)
         self._cleanup()
 
 
@@ -82,22 +82,23 @@ class RabbitQueue:
                 password=config.rabbitmq.password,
                 virtual_host=config.rabbitmq.virtual_host, insist=False)
             self.class_locals.rabbit_connection = conn
-            self.channel = conn.channel()
-            self.channel.exchange_declare(
-                LAUNCHPAD_EXCHANGE, "direct", durable=False,
-                auto_delete=False)
 
             # Initialize storage for oncommit messages.
             self.class_locals.messages = []
-        else:
-            self.channel = self.class_locals.rabbit_connection.channel()
 
-        self.channel.queue_declare(self.name)
+        conn = self.class_locals.rabbit_connection
+        self.send_channel = conn.channel()
+        self.send_channel.exchange_declare(
+            LAUNCHPAD_EXCHANGE, "direct", durable=False,
+            auto_delete=False)
+
+        self.receive_channel = conn.channel()
+        self.receive_channel.queue_declare(self.name)
 
     def subscribe(self, key):
         """Only receive messages for requested routing keys."""
         self._initialize()
-        self.channel.queue_bind(
+        self.receive_channel.queue_bind(
             queue=self.name, exchange=LAUNCHPAD_EXCHANGE,
             routing_key=key)
 
@@ -114,7 +115,7 @@ class RabbitQueue:
         self._initialize()
         json_data = json.dumps(data)
         msg = amqp.Message(json_data)
-        self.channel.basic_publish(
+        self.send_channel.basic_publish(
             exchange=LAUNCHPAD_EXCHANGE, routing_key=key, msg=msg)
 
     def receive(self, blocking=True):
@@ -126,7 +127,7 @@ class RabbitQueue:
         self._initialize()
 
         if not blocking:
-            message = self.channel.basic_get(self.name)
+            message = self.receive_channel.basic_get(self.name)
             if message is None:
                 # We need to raise an exception, as None is a legitimate
                 # return value.
@@ -137,7 +138,7 @@ class RabbitQueue:
         # Hacked blocking get
         import time
         while True:
-            message = self.channel.basic_get(self.name)
+            message = self.receive_channel.basic_get(self.name)
             if message is None:
                 time.sleep(0.1)
             else:
