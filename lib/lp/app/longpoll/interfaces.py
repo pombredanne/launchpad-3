@@ -4,10 +4,16 @@
 """Long-poll infrastructure interfaces."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    "ILongPollEmitter",
+    "ILongPollSubscriber",
+    ]
 
 
-from zope.interface import Attribute, Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 
 
 class ILongPollEmitter(Interface):
