@@ -9,6 +9,24 @@
 
 <body>
 
+<div metal:fill-slot="heading">
+  <script type="text/javascript">
+    LPS.use('node', 'lp.app.widgets.expander', function(Y) {
+        Y.on('domready', function() {
+            var all_expanders = Y.all('.expander-link');
+            all_expanders.each(function(link) {
+                var base_id = link.get('id').replace('-icon', '');
+                var all_subrows = Y.all('.' + base_id);
+                debugger;
+                var expander = new Y.lp.app.widgets.expander.Expander(
+                    link, all_subrows);
+                expander.setUp();
+            });
+        });
+    });
+  </script>
+</div>
+
 <div metal:fill-slot="main"
      tal:define="setup view/setupQueueList;
                  message view/performQueueAction;
@@ -78,11 +96,10 @@
                   other browsers look odd, now. :/
                 </tal:comment>
                 <td width="14" style="padding-top: 5px">
-                  <a tal:attributes="href string:#;
-                     onclick string:return toggleExpandableTableRows('${filelist_class}')">
-                    <img tal:attributes="id string:${filelist_class}-arrow"
-                         width="14" height="14"
-                         src="/@@/treeCollapsed" alt="view files"/>
+                  <a href="#"
+                     tal:attributes="id string:${filelist_class}-icon"
+                     class="expander-link">
+                    &nbsp;
                   </a>
                 </td>
                 <td class="icon left" tal:condition="view/availableActions">
@@ -205,8 +222,7 @@
     <tal:copy condition="packageupload/pending_delayed_copy">
       <tr tal:attributes="class string:${filelist_class}"
           tal:define="archive
-                      packageupload/sourcepackagerelease/upload_archive"
-          style="display:none">
+                      packageupload/sourcepackagerelease/upload_archive">
         <td />
         <td tal:condition="view/availableActions" />
         <td>Copied from
@@ -225,8 +241,7 @@
 
     <tal:upload condition="not: packageupload/pending_delayed_copy">
       <tr tal:repeat="file packageupload/source_files"
-          tal:attributes="class string:${filelist_class}"
-          style="display:none">
+          tal:attributes="class string:${filelist_class}">
         <td/>
         <td tal:condition="view/availableActions"/>
         <td
@@ -244,8 +259,7 @@
                 section_name package/section/name/lower;
                 version package/version">
         <tr tal:repeat="file python:packageupload.binary_packages[package]"
-            tal:attributes="class string:${filelist_class}"
-            style="display:none">
+            tal:attributes="class string:${filelist_class}">
           <td/>
           <td tal:condition="view/availableActions"/>
           <td tal:define="libraryfilealias file/libraryfile">
@@ -263,8 +277,7 @@
 
     <tal:custom define="customfiles packageupload/customfiles">
       <tr tal:repeat="custom python:list(customfiles)"
-          tal:attributes="class string:${filelist_class}"
-          style="display:none">
+          tal:attributes="class string:${filelist_class}">
         <td/>
         <td tal:condition="view/availableActions"></td>
         <td tal:define="libraryfilealias custom/libraryfilealias">
@@ -277,8 +290,7 @@
     <tal:diffs condition="packageupload/sourcepackagerelease">
       <tr tal:define="diffs packageupload/sourcepackagerelease/package_diffs"
           tal:repeat="diff diffs"
-          tal:attributes="class string:${filelist_class}"
-          style="display:none">
+          tal:attributes="class string:${filelist_class}">
         <td/>
         <td tal:condition="view/availableActions"></td>
         <td>
