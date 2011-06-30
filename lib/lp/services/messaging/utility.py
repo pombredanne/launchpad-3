@@ -92,5 +92,20 @@ class Messaging:
             msg=amqp.Message(json_data)
             )
 
+    def receive(self, queue_name, blocking=True):
+        channel = self.locals.rabbit.channel()
+        result = []
+
+        def callback(msg):
+            result.append(msg.body)
+
+        if blocking:
+            channel.basic_consume(queue_name, callback=callback, no_ack=True)
+            channel.wait()
+            return result[0]
+
+        message = channel.basic_get(queue_name)
+        return message.body
+
 
 messaging = Messaging()
