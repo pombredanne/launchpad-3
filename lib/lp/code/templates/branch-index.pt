@@ -36,7 +36,7 @@
               'lp.code.branch.status',
               'lp.code.branchmergeproposal.diff',
               'lp.code.branch.subscription',
-              'lp.code.branch.expandable',
+              'lp.code.branch.revisionexpander',
               function(Y) {
 
         Y.on('load', function(e) {
@@ -56,7 +56,7 @@
             '.revision-expander',
             '.expander-icon',
             '.expander-content',
-            Y.lp.code.branch.expandable.diff_loader);
+            Y.lp.code.branch.revisionexpander.diff_loader);
     });
 
     });
