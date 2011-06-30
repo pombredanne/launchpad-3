@@ -45,8 +45,16 @@ class TestLongPollSubscriber(TestCase):
     def test_subscribe_key(self):
         request = LaunchpadTestRequest()
         subscriber = LongPollSubscriber(request)
-        self.assertIsInstance(subscriber.subscribe_key, str)
-        self.assertEqual(36, len(subscriber.subscribe_key))
+        # A subscribe key is not generated yet.
+        self.assertIs(subscriber.subscribe_key, None)
+        # It it only generated on the first subscription.
+        subscriber.subscribe(FakeEmitter())
+        subscribe_key = subscriber.subscribe_key
+        self.assertIsInstance(subscribe_key, str)
+        self.assertEqual(36, len(subscribe_key))
+        # It remains the same for later subscriptions.
+        subscriber.subscribe(FakeEmitter())
+        self.assertEqual(subscribe_key, subscriber.subscribe_key)
 
     def test_adapter(self):
         request = LaunchpadTestRequest()
@@ -70,16 +78,14 @@ class TestLongPollSubscriber(TestCase):
         self.assertEqual(
             message, messaging.receive(subscriber.subscribe_key))
 
-    def test_json_cache_populated_on_init(self):
-        # LongPollSubscriber puts the name of the new queue into the JSON
-        # cache.
+    def test_json_cache_not_populated_on_init(self):
+        # LongPollSubscriber does not put the name of the new queue into the
+        # JSON cache.
         request = LaunchpadTestRequest()
         cache = IJSONRequestCache(request)
         self.assertThat(cache.objects, Not(Contains("longpoll")))
-        ILongPollSubscriber(request)  # Side-effects!
-        self.assertThat(cache.objects, Contains("longpoll"))
-        self.assertThat(cache.objects["longpoll"], Contains("key"))
-        self.assertThat(cache.objects["longpoll"], Contains("subscriptions"))
+        ILongPollSubscriber(request)
+        self.assertThat(cache.objects, Not(Contains("longpoll")))
 
     def test_json_cache_populated_on_subscribe(self):
         # To aid with debugging the emit_key of subscriptions are added to the
@@ -87,10 +93,14 @@ class TestLongPollSubscriber(TestCase):
         request = LaunchpadTestRequest()
         cache = IJSONRequestCache(request)
         emitter1 = FakeEmitter()
-        ILongPollSubscriber(request).subscribe(emitter1)
+        ILongPollSubscriber(request).subscribe(emitter1)  # Side-effects!
+        self.assertThat(cache.objects, Contains("longpoll"))
+        self.assertThat(cache.objects["longpoll"], Contains("key"))
+        self.assertThat(cache.objects["longpoll"], Contains("subscriptions"))
         self.assertEqual(
             [emitter1.emit_key],
             cache.objects["longpoll"]["subscriptions"])
+        # More emitters can be subscribed.
         emitter2 = FakeEmitter()
         ILongPollSubscriber(request).subscribe(emitter2)
         self.assertEqual(
