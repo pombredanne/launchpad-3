@@ -11,44 +11,26 @@ from uuid import uuid4
 
 from .interfaces import ILongPollSubscriber
 from lazr.restful.interfaces import IJSONRequestCache
-from zope.component import adapter
-from zope.interface import (
-    implementer,
-    implements,
-    )
+from zope.component import adapts
+from zope.interface import implements
 from zope.publisher.interfaces import IApplicationRequest
 
 
 class LongPollSubscriber:
 
+    adapts(IApplicationRequest)
     implements(ILongPollSubscriber)
 
     def __init__(self, request):
         self.request = request
-        self.subscribe_uuid = uuid4()
-        # Put subscription information into the JSON cache.
         cache = IJSONRequestCache(request)
-        longpoll = cache.objects.setdefault("longpoll", {})
-        longpoll["subscribe_key"] = str(self.subscribe_uuid)
+        if "longpoll" not in cache.objects:
+            cache.objects["longpoll"] = {"key": str(uuid4())}
 
     @property
     def subscribe_key(self):
-        return str(self.subscribe_uuid)
+        cache = IJSONRequestCache(self.request)
+        return cache.objects["longpoll"]["key"]
 
     def subscribe(self, emitter):
         pass
-
-
-LongPollSubscriber.ANNOTATION_KEY = "%s.%s" % (
-    LongPollSubscriber.__module__, LongPollSubscriber.__name__)
-
-
-@adapter(IApplicationRequest)
-@implementer(ILongPollSubscriber)
-def long_poll_subscriber(request):
-    annotations = request.annotations
-    subscriber = annotations.get(LongPollSubscriber.ANNOTATION_KEY)
-    if subscriber is None:
-        subscriber = LongPollSubscriber(request)
-        annotations[LongPollSubscriber.ANNOTATION_KEY] = subscriber
-    return subscriber

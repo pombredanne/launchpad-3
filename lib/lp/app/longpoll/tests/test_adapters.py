@@ -35,8 +35,11 @@ class TestLongPollSubscriber(TestCase):
         request = LaunchpadTestRequest()
         subscriber = ILongPollSubscriber(request)
         self.assertIsInstance(subscriber, LongPollSubscriber)
-        # The same subscriber is returned on subsequent adaptions.
-        self.assertIs(subscriber, ILongPollSubscriber(request))
+        # A difference subscriber is returned on subsequent adaptions, but it
+        # has the same subscribe_key.
+        subscriber2 = ILongPollSubscriber(request)
+        self.assertIsNot(subscriber, subscriber2)
+        self.assertEqual(subscriber.subscribe_key, subscriber2.subscribe_key)
 
     def test_subscribe_queue(self):
         # LongPollSubscriber creates a new queue with a new unique name.
@@ -50,4 +53,4 @@ class TestLongPollSubscriber(TestCase):
         self.assertThat(cache.objects, Not(Contains("longpoll")))
         ILongPollSubscriber(request)  # Side-effects!
         self.assertThat(cache.objects, Contains("longpoll"))
-        self.assertThat(cache.objects["longpoll"], Contains("subscribe_key"))
+        self.assertThat(cache.objects["longpoll"], Contains("key"))
