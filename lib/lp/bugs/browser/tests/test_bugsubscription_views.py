@@ -592,8 +592,8 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
 
         expected_result = {
             'subscriber': {
-                'name': 'team',
-                'display_name': 'Team Name',
+                'name': 'user',
+                'display_name': 'Subscriber Name',
                 'is_team': False,
                 'can_edit': True,
                 'web_link': canonical_url(subscriber),
