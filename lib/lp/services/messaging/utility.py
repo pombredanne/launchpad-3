@@ -5,7 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
-    "messaging"
+    "LAUNCHPAD_EXCHANGE",
+    "messaging",
     ]
 
 
