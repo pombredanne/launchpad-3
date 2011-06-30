@@ -21,3 +21,9 @@ class TestLongPollSubscriber(TestCase):
         request = LaunchpadTestRequest()
         subscriber = LongPollSubscriber(request)
         self.assertProvides(subscriber, ILongPollSubscriber)
+
+    def test_subscribe_key(self):
+        request = LaunchpadTestRequest()
+        subscriber = LongPollSubscriber(request)
+        self.assertIsInstance(subscriber.subscribe_key, str)
+        self.assertEqual(36, len(subscriber.subscribe_key))
