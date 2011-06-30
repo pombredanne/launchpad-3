@@ -25,7 +25,10 @@ class LongPollSubscriber:
         self.request = request
         cache = IJSONRequestCache(request)
         if "longpoll" not in cache.objects:
-            cache.objects["longpoll"] = {"key": str(uuid4())}
+            cache.objects["longpoll"] = {
+                "key": str(uuid4()),
+                "subscriptions": [],
+                }
 
     @property
     def subscribe_key(self):
@@ -33,4 +36,5 @@ class LongPollSubscriber:
         return cache.objects["longpoll"]["key"]
 
     def subscribe(self, emitter):
-        pass
+        cache = IJSONRequestCache(self.request)
+        cache.objects["longpoll"]["subscriptions"].append(emitter.emit_key)
