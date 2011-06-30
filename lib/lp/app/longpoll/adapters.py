@@ -57,10 +57,13 @@ def subscribe(target, event):
 
     :param target: Something that can be adapted to `ILongPollEmitter`.
     :param event: The name of the event to subscribe to.
+
+    :return: The key that has been subscribed to.
     """
     emitter = getAdapter(target, ILongPollEmitter, name=event)
     request = get_current_browser_request()
     ILongPollSubscriber(request).subscribe(emitter)
+    return emitter.emit_key
 
 
 class JobLongPollEmitter:

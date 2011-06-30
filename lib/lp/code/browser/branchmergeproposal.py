@@ -596,6 +596,13 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     label = "Proposal to merge branch"
     schema = ClaimButton
 
+    def initialize(self):
+        super(BranchMergeProposalView, self).initialize()
+        if self.next_preview_diff_job is not None:
+            from lp.app.longpoll import subscribe
+            self.pending_diff_key = subscribe(
+                self.next_preview_diff_job, "Completed")
+
     @action('Claim', name='claim')
     def claim_action(self, action, data):
         """Claim this proposal."""
@@ -662,10 +669,14 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             result.append(dict(style=style, comment=comment))
         return result
 
+    @cachedproperty
+    def next_preview_diff_job(self):
+        return self.context.next_preview_diff_job
+
     @property
     def pending_diff(self):
         return (
-            self.context.next_preview_diff_job is not None or
+            self.next_preview_diff_job is not None or
             self.context.source_branch.pending_writes)
 
     @cachedproperty
