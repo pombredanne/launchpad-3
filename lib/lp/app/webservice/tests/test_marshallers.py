@@ -23,16 +23,9 @@ from lp.testing import (
     )
 
 
-def ws_url(launchpad, obj):
-    """Get the webservice URL of the given objct.
-
-    :param launchpad: The Launchpad instance to convert from.
-    :param obj: The object to the URL for.
-    :return: A URL.
-    """
-    
-    api_request = WebServiceTestRequest(SERVER_URL=str(launchpad._root_uri))
-    return canonical_url(obj, request=api_request)
+def ws_url(bug):
+    url = "http://api.launchpad.dev:8085/devel/bugs/%d" % bug.id
+    return url
 
 
 class TestTextFieldMarshaller(TestCaseWithFactory):
@@ -109,22 +102,22 @@ class TestWebServiceObfuscation(TestCaseWithFactory):
 
     def test_xhtml_email_address_not_obfuscated(self):
         # Email address are not obfuscated for authenticated users.
-        ws = self.factory.makeLaunchpadService(anonymous=False)
         bug = self._makeBug()
         browser = self.getUserBrowser()
         browser.addHeader('Accept', 'application/xhtml+xml')
-        browser.open(ws_url(ws, bug))
+        browser.open(ws_url(bug))
 
         self.assertIn(self.email_address, browser.contents)
         self.assertNotIn(self.email_address_obfuscated, browser.contents)
 
     def test_xhtml_email_address_obfuscated(self):
         # Email address are obfuscated for anonymous users.
-        ws = self.factory.makeLaunchpadService(anonymous=True)
         bug = self._makeBug()
+        from zope.security.management import endInteraction
+        endInteraction()
         browser = setupBrowser()
         browser.addHeader('Accept', 'application/xhtml+xml')
-        browser.open(ws_url(ws, bug))
+        browser.open(ws_url(bug))
 
         self.assertNotIn(self.email_address, browser.contents)
         self.assertIn(self.email_address_obfuscated, browser.contents)
