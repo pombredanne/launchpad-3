@@ -119,3 +119,16 @@ class TestWebServiceObfuscation(TestCaseWithFactory):
             ws_url(bug), headers={'Accept': 'application/xhtml+xml'})
         self.assertNotIn(self.email_address, result.body)
         self.assertIn(self.email_address_obfuscated_escaped, result.body)
+
+    def test_etags_differ_for_anon_and_non_anon_represetations(self):
+        # The etag header sent for anonmoues requests where email
+        # addresses are obfusacted differs from the etag header
+        # sent in non-obfuscated responses.
+        bug = self._makeBug()
+        user = self.factory.makePerson()
+        webservice = webservice_for_person(user)
+        etag_logged_in = webservice(ws_url(bug)).getheader('etag')
+        logout()
+        webservice = LaunchpadWebServiceCaller()
+        etag_logged_out = webservice(ws_url(bug)).getheader('etag')
+        self.assertNotEqual(etag_logged_in, etag_logged_out)
