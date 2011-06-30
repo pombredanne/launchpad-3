@@ -10,12 +10,12 @@
 
   <tr tal:define="editstatus_url string:${context/fmt:url}/+editstatus"
       tal:attributes="class view/getTaskRowCSSClass; id row_id">
-    <td class="sprite">
+    <td>
       <metal:expander
           metal:define-macro="expander"
           tal:define="expander_link_text expander_link_text|nothing">
         <a tal:condition="expandable"
-           tal:attributes="href tasklink" class="sprite bugtask-expander">
+           tal:attributes="href tasklink" class="bugtask-expander">
           <tal:link_text tal:replace="expander_link_text" />
           &nbsp;
         </a>
@@ -181,7 +181,9 @@
           // Set-up the expander on the bug task summary row.
           var icon_node = Y.one('tr#${row_id} a.bugtask-expander');
           var content_node = Y.one('tr#${form_row_id}');
-          Y.lp.app.widgets.expander.createExpander(icon_node, content_node);
+          var expander = new Y.lp.app.widgets.expander.Expander(
+            icon_node, content_node);
+          expander.setUp();
         });
     });
   "/>

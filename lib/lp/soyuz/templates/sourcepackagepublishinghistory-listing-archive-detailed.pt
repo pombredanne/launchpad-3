@@ -13,10 +13,10 @@
         tal:condition="view/allow_selection"
         tal:attributes="value context/id;
                         id string:field.selected_sources.${context/id}"/>
-      <a class="sprite expander-icon"
-         tal:attributes="id string:pub${context/id}-expander-icon;"></a>
       <a tal:attributes="
-          href string:+sourcepub/${context/id}/+listing-archive-extra">
+           href string:+sourcepub/${context/id}/+listing-archive-extra;
+           id string:pub${context/id}-expander"
+         class="sprite expander">
         <img src="/@@/package-source" />
         <tal:source_name replace="context/sourcepackagerelease/title">
           foo - 1.0
