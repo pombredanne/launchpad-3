@@ -27,3 +27,12 @@ class TestLongPollSubscriber(TestCase):
         subscriber = LongPollSubscriber(request)
         self.assertIsInstance(subscriber.subscribe_key, str)
         self.assertEqual(36, len(subscriber.subscribe_key))
+
+    def test_subscribe_queue(self):
+        # LongPollSubscriber creates a new queue with a new unique name.
+        pass
+
+    def test_json_cache_populated(self):
+        # LongPollSubscriber puts the name of the new queue into the JSON
+        # cache.
+        pass
