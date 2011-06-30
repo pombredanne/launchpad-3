@@ -8,23 +8,19 @@ __metaclass__ = type
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.testing.pages import setupBrowser
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.testing.pages import (
+    LaunchpadWebServiceCaller,
+    webservice_for_person,
+    )
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.servers import WebServiceTestRequest
-from canonical.testing.layers import (
-    AppServerLayer,
-    DatabaseFunctionalLayer,
-    )
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.webservice.marshallers import TextFieldMarshaller
-from lp.testing import (
-    TestCaseWithFactory,
-    ws_object,
-    )
+from lp.testing import logout, TestCaseWithFactory
 
 
 def ws_url(bug):
-    url = "http://api.launchpad.dev:8085/devel/bugs/%d" % bug.id
+    url = "/bugs/%d" % bug.id
     return url
 
 
@@ -63,7 +59,7 @@ class TestWebServiceObfuscation(TestCaseWithFactory):
     Not using WebServiceTestCase because that assumes too much about users
     """
 
-    layer = AppServerLayer
+    layer = DatabaseFunctionalLayer
 
     email_address = "joe@example.com"
     email_address_obfuscated = "<email address hidden>"
@@ -80,47 +76,46 @@ class TestWebServiceObfuscation(TestCaseWithFactory):
         return bug
 
     def test_email_address_obfuscated(self):
-        # Email address are obfuscated for anonymous users.
-        ws = self.factory.makeLaunchpadService(anonymous=True)
+        # Email addresses are obfuscated for anonymous users.
         bug = self._makeBug()
-        ws_bug = ws_object(ws, bug)
+        logout()
+        webservice = LaunchpadWebServiceCaller()
+        result = webservice(ws_url(bug)).jsonBody()
         self.assertEqual(
             self.bug_title % self.email_address_obfuscated,
-            ws_bug.title)
+            result['title'])
         self.assertEqual(
             self.bug_description % self.email_address_obfuscated,
-            ws_bug.description)
+            result['description'])
 
     def test_email_address_not_obfuscated(self):
-        # Email address are not obfuscated for authenticated users.
-        ws = self.factory.makeLaunchpadService(anonymous=False)
+        # Email addresses are not obfuscated for authenticated users.
         bug = self._makeBug()
-        ws_bug = ws_object(ws, bug)
+        user = self.factory.makePerson()
+        webservice = webservice_for_person(user)
+        result = webservice(ws_url(bug)).jsonBody()
+        self.assertEqual(self.bug_title % self.email_address, result['title'])
         self.assertEqual(
-            self.bug_title % self.email_address, ws_bug.title)
-        self.assertEqual(
-            self.bug_description % self.email_address, ws_bug.description)
+            self.bug_description % self.email_address, result['description'])
 
     def test_xhtml_email_address_not_obfuscated(self):
-        # Email address are not obfuscated for authenticated users.
+        # Email addresses are not obfuscated for authenticated users.
         bug = self._makeBug()
-        browser = self.getUserBrowser()
-        browser.addHeader('Accept', 'application/xhtml+xml')
-        browser.open(ws_url(bug))
-
-        self.assertIn(self.email_address, browser.contents)
+        user = self.factory.makePerson()
+        webservice = webservice_for_person(user)
+        result = webservice(
+            ws_url(bug), headers={'Accept': 'application/xhtml+xml'})
+        self.assertIn(self.email_address, result.body)
         self.assertNotIn(
-            self.email_address_obfuscated_escaped, browser.contents)
+            self.email_address_obfuscated_escaped, result.body)
 
     def test_xhtml_email_address_obfuscated(self):
-        # Email address are obfuscated for anonymous users.
+        # Email addresses are obfuscated in the XML representation for
+        # anonymous users.
         bug = self._makeBug()
-        from zope.security.management import endInteraction
-        endInteraction()
-        browser = setupBrowser()
-        browser.addHeader('Accept', 'application/xhtml+xml')
-        browser.open(ws_url(bug))
-
-        
-        self.assertNotIn(self.email_address, browser.contents)
-        self.assertIn(self.email_address_obfuscated_escaped, browser.contents)
+        logout()
+        webservice = LaunchpadWebServiceCaller()
+        result = webservice(
+            ws_url(bug), headers={'Accept': 'application/xhtml+xml'})
+        self.assertNotIn(self.email_address, result.body)
+        self.assertIn(self.email_address_obfuscated_escaped, result.body)
