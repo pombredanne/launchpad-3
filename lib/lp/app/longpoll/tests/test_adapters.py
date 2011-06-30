@@ -7,10 +7,13 @@ __metaclass__ = type
 
 from ..adapters import LongPollSubscriber
 from ..interfaces import ILongPollSubscriber
+from lazr.restful.interfaces import IJSONRequestCache
+from testtools.matchers import Not
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import TestCase
+from lp.testing.matchers import Contains
 
 
 class TestLongPollSubscriber(TestCase):
@@ -42,4 +45,9 @@ class TestLongPollSubscriber(TestCase):
     def test_json_cache_populated(self):
         # LongPollSubscriber puts the name of the new queue into the JSON
         # cache.
-        pass
+        request = LaunchpadTestRequest()
+        cache = IJSONRequestCache(request)
+        self.assertThat(cache.objects, Not(Contains("longpoll")))
+        ILongPollSubscriber(request)  # Side-effects!
+        self.assertThat(cache.objects, Contains("longpoll"))
+        self.assertThat(cache.objects["longpoll"], Contains("subscribe_key"))

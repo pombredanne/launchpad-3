@@ -10,6 +10,7 @@ __all__ = []
 from uuid import uuid4
 
 from .interfaces import ILongPollSubscriber
+from lazr.restful.interfaces import IJSONRequestCache
 from zope.component import adapter
 from zope.interface import (
     implementer,
@@ -25,6 +26,10 @@ class LongPollSubscriber:
     def __init__(self, request):
         self.request = request
         self.subscribe_uuid = uuid4()
+        # Put subscription information into the JSON cache.
+        cache = IJSONRequestCache(request)
+        longpoll = cache.objects.setdefault("longpoll", {})
+        longpoll["subscribe_key"] = str(self.subscribe_uuid)
 
     @property
     def subscribe_key(self):
