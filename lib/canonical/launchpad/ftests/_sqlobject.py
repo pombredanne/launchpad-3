@@ -1,12 +1,13 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for testing SQLObjects."""
 
-__all__ = ['print_date_attribute',
-           'set_so_attr',
-           'sync',
-           'syncUpdate']
+__all__ = [
+    'print_date_attribute',
+    'set_so_attr',
+    'sync',
+    ]
 
 from storm.sqlobject import SQLObjectBase as SQLObject
 from zope.security.proxy import (
@@ -26,14 +27,6 @@ def sync(object):
     """
     if zope_isinstance(object, SQLObject):
         removeSecurityProxy(object).sync()
-    else:
-        raise TypeError('%r is not an SQLObject' % object)
-
-
-def syncUpdate(object):
-    """Write the object's changes to the database."""
-    if zope_isinstance(object, SQLObject):
-        removeSecurityProxy(object).syncUpdate()
     else:
         raise TypeError('%r is not an SQLObject' % object)
 
@@ -62,7 +55,6 @@ def print_date_attribute(object, colname):
     """
     if zope_isinstance(object, SQLObject):
         cls = removeSecurityProxy(object).__class__
-        syncUpdate(object)
         query_template = 'id=%%s AND %s=%%s' % colname
         found_object = cls.selectOne(
             query_template % sqlvalues(object.id, UTC_NOW))
