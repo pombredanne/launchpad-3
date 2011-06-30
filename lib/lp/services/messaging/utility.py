@@ -77,21 +77,17 @@ class Messaging:
                 LAUNCHPAD_EXCHANGE, "direct", durable=False,
                 auto_delete=False)
 
-    def send(self, routing_key, json_data=None, pickle=None, oncommit=True):
+    def send(self, routing_key, json_data=None, oncommit=True):
         """Send a message to the broker.
 
         :param routing_key: This identifies the send point for a message.
             Normally something else would bind a queue name to this routing
             key so that any messages sent to the routing key are multiplexed
             to all the queues.
-        :param json_data: A blob of data to send.
-        :param pickle: Currently unimplemented.
+        :param data: A blob of data to send.  It must be serializable.
         :param oncommit: If True, the data is sent only when the current
             transaction is committed, otherwise it is sent immediately.
         """
-        if pickle is not None:
-            raise AssertionError("pickle param not implemented yet")
-
         self.initalize()
         msg = amqp.Message(json_data)
 
@@ -107,7 +103,7 @@ class Messaging:
         self.locals.messages.append(
             dict(routing_key=routing_key, json_data=json_data))
 
-    def _send_now(self, routing_key, json_data=None, pickle=None):
+    def _send_now(self, routing_key, json_data=None):
         """Immediately send a message to the broker."""
         channel = self.locals.rabbit.channel()
         channel.basic_publish(
