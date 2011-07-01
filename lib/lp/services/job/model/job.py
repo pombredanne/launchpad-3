@@ -37,7 +37,6 @@ from lp.services.job.interfaces.job import (
     JobStatus,
     LeaseHeld,
     )
-from lp.services.messaging.utility import messaging
 
 
 UTC = pytz.timezone('UTC')
@@ -107,6 +106,11 @@ class Job(SQLBase):
         emit(self, status, event)
 
     status = property(lambda x: x._status)
+
+    @property
+    def job_id(self):
+        """See `IJob`."""
+        return self.id
 
     @classmethod
     def createMultiple(self, store, num_jobs):
