@@ -70,6 +70,7 @@ from lp.app.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription,
     )
 from lp.app.widgets.owner import HiddenUserWidget
+from lp.app.widgets.popup import PersonPickerWidget
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.interfaces.mailinglist import (
     IMailingList,
@@ -1034,6 +1035,9 @@ class TeamMemberAddView(LaunchpadFormView):
 
     schema = ITeamMember
     label = "Select the new member"
+    custom_widget(
+        'newmember', PersonPickerWidget,
+        show_assign_me_button=False, show_remove_button=False)
 
     @property
     def page_title(self):
