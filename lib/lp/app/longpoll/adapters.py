@@ -19,16 +19,9 @@ from zope.component import (
     adapts,
     getMultiAdapter,
     )
-from zope.interface import (
-    implements,
-    Interface,
-    )
+from zope.interface import implements
 from zope.publisher.interfaces import IApplicationRequest
 
-from lp.services.job.interfaces.job import (
-    IJob,
-    JobStatus,
-    )
 from lp.services.messaging.utility import messaging
 
 
@@ -75,21 +68,3 @@ def subscribe(target, event):
 def emit(source, event, data):
     emitter = getMultiAdapter((source, event), ILongPollEmitter)
     messaging.send(emitter.emit_key, data)
-
-
-class JobLongPollEmitter:
-
-    adapts(IJob, Interface)
-    implements(ILongPollEmitter)
-
-    def __init__(self, job, status):
-        self.job = job
-        if status not in JobStatus:
-            raise AssertionError(
-                "%r does not emit %r events." % (job, status))
-        self.status = status
-
-    @property
-    def emit_key(self):
-        return "longpoll.job.%d.%s" % (
-            self.job.id, self.status.name)
