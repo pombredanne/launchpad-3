@@ -324,8 +324,8 @@ class TestUTCNow(TestCase):
         # utc_now() returns a timestamp which is now.
         LessThanOrEqual = lambda x: MatchesAny(LessThan(x), Equals(x))
         GreaterThanOrEqual = lambda x: MatchesAny(GreaterThan(x), Equals(x))
-        old_now = datetime.now().replace(tzinfo=UTC)
+        old_now = datetime.utcnow().replace(tzinfo=UTC)
         now = utc_now()
-        new_now = datetime.now().replace(tzinfo=UTC)
+        new_now = datetime.utcnow().replace(tzinfo=UTC)
         self.assertThat(now, GreaterThanOrEqual(old_now))
         self.assertThat(now, LessThanOrEqual(new_now))
