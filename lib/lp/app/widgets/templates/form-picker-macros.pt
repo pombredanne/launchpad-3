@@ -43,6 +43,10 @@
                 extra_no_results_message: ${view/extra_no_results_message},
                 picker_type: '${view/picker_type}'
             };
+            if (config.picker_type == 'person') {
+                config.show_assign_me_button = ${view/show_assign_me_button}
+                config.show_remove_button = ${view/show_remove_button}
+            }
             var picker = Y.lp.app.picker.create('${view/vocabulary_name}', config);
             if (config.extra_no_results_message !== null) {
                 picker.before('resultsChange', function (e) {
@@ -65,7 +69,7 @@
             // Sort out the Choose... link.
             var show_widget_node = Y.one('#${view/show_widget_id}');
 
-            show_widget_node.set('innerHTML', 'Choose&hellip;');
+            show_widget_node.set('innerHTML', 'Cohoose&hellip;');
             show_widget_node.addClass('js-action');
             show_widget_node.get('parentNode').removeClass('unseen');
             show_widget_node.on('click', function (e) {
