@@ -35,7 +35,6 @@ from bzrlib.errors import (
     )
 from bzrlib.transport import get_transport
 import bzrlib.ui
-from bzrlib.upgrade import upgrade
 from bzrlib.urlutils import (
     join as urljoin,
     local_path_from_url,
