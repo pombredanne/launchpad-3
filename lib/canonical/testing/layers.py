@@ -77,6 +77,7 @@ from fixtures import (
     )
 from lazr.restful.utils import safe_hasattr
 import psycopg2
+from rabbitfixture.server import RabbitServer
 from storm.zope.interfaces import IZStorm
 import transaction
 import wsgi_intercept
@@ -149,7 +150,6 @@ from lp.services.mail.mailbox import TestMailBox
 import lp.services.mail.stub
 from lp.services.memcache.client import memcache_client_factory
 from lp.services.osutils import kill_by_pidfile
-from lp.services.rabbit.testing.server import RabbitServer
 from lp.testing import (
     ANONYMOUS,
     is_logged_in,

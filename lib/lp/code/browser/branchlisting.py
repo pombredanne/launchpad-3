@@ -216,16 +216,6 @@ class BranchListingItem(BzrIdentityMixin, BranchBadges):
         return [series for series in self.associated_product_series
                 if series.status != SeriesStatus.OBSOLETE]
 
-    @property
-    def since_updated(self):
-        """How long since the branch was last updated."""
-        return self._now - self.context.date_last_modified
-
-    @property
-    def since_created(self):
-        """How long since the branch was created."""
-        return self._now - self.context.date_created
-
     def isBugBadgeVisible(self):
         return self.show_bug_badge
 
