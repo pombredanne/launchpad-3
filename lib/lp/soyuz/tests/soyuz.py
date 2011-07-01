@@ -18,7 +18,6 @@ from canonical.config import config
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.ftests import (
     import_public_test_keys,
-    syncUpdate,
     )
 from canonical.launchpad.testing.fakepackager import FakePackager
 from canonical.testing.layers import LaunchpadZopelessLayer
@@ -104,7 +103,6 @@ class SoyuzTestHelper:
                 pocket=pocket)
             # Flush the object changes into DB do guarantee stable database
             # ID order as expected in the callsites.
-            syncUpdate(pub)
             sample_pub.append(pub)
         return sample_pub
 
@@ -129,7 +127,6 @@ class SoyuzTestHelper:
                 pocket=pocket)
             # Flush the object changes into DB do guarantee stable database
             # ID order as expected in the callsites.
-            syncUpdate(pub)
             sample_pub.append(pub)
         return sample_pub
 

@@ -119,9 +119,9 @@ registerLaunchpadFunction(hookUpFilterSubmission);
             2005-02-12 13:45 EST
           </span>
           <span tal:attributes="title branch/date_created/fmt:datetime"
-                tal:content="branch/since_created/fmt:approximateduration/use-digits">
+                tal:content="branch/date_created/fmt:approximatedate">
             sometime
-            </span> ago
+            </span>
         </td>
         <td tal:condition="context/show_column/product|nothing">
           <a tal:condition="branch/product"
@@ -137,9 +137,9 @@ registerLaunchpadFunction(hookUpFilterSubmission);
             2005-02-12 13:45 EST
           </span>
           <span tal:attributes="title branch/date_last_modified/fmt:datetime"
-                tal:content="branch/since_updated/fmt:approximateduration/use-digits">
+                tal:content="branch/date_last_modified/fmt:approximatedate">
             sometime
-          </span> ago
+          </span>
         </td>
 
         <tal:no_commit condition="not: branch/last_commit">
