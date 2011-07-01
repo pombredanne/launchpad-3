@@ -292,4 +292,4 @@ def traceback_info(info):
 
 def utc_now():
     """Return a timezone-aware timestamp for the current time."""
-    return datetime.now().replace(tzinfo=pytz.UTC)
+    return datetime.now(tz=pytz.UTC)

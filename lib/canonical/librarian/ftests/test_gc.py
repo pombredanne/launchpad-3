@@ -54,7 +54,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # criteria.
         self.recent_past = utc_now() - timedelta(days=6, hours=23)
         # A time beyond the stay of execution.
-        self.ancient_past = utc_now - timedelta(days=30)
+        self.ancient_past = utc_now() - timedelta(days=30)
 
         self.f1_id, self.f2_id = self._makeDupes()
 
