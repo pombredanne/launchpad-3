@@ -34,6 +34,7 @@ IS_PRIVATE_CLASS = (
 
 
 class TestSecurityOverlay(WindmillTestCase):
+    """XXX: This should be split between YUI test and selnium."""
 
     layer = BugsWindmillLayer
     suite_name = "Bug privacy settings test"

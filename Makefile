@@ -29,7 +29,7 @@ endif
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
 JS_LAZR := $(LAZR_BUILT_JS_ROOT)/lazr.js
 JS_OTHER := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
-JS_LP := $(shell find lib/lp/*/javascript ! -path '*/tests/*' -name '*.js' ! -name '.*.js' )
+JS_LP := $(shell find lib/lp/*/javascript ! -path '*/tests/*' ! -path '*/app/javascript/lazr/*' -name '*.js' ! -name '.*.js' )
 JS_ALL := $(JS_YUI) $(JS_LAZR) $(JS_OTHER) $(JS_LP)
 JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 
@@ -55,10 +55,9 @@ BUILDOUT_BIN = \
     bin/fl-record bin/fl-run-bench bin/fl-run-test bin/googletestservice \
     bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
     bin/harness bin/iharness bin/ipy bin/jsbuild bin/jslint bin/jssize \
-    bin/jstest bin/killservice bin/kill-test-services bin/lint.sh \
-    bin/lp-windmill bin/retest bin/run bin/sprite-util \
-    bin/start_librarian bin/stxdocs bin/tags bin/test bin/tracereport \
-    bin/twistd bin/update-download-cache bin/windmill
+    bin/jstest bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
+    bin/run bin/sprite-util bin/start_librarian bin/stxdocs bin/tags \
+    bin/test bin/tracereport bin/twistd bin/update-download-cache
 
 BUILDOUT_TEMPLATES = buildout-templates/_pythonpath.py.in
 
@@ -152,6 +151,18 @@ inplace: build logs clean_logs
 
 build: compile apidoc jsbuild css_combine sprite_image
 
+# LP_SOURCEDEPS_PATH should point to the sourcecode directory, but we
+# want the parent directory where the download-cache and eggs directory
+# are. We re-use the variable that is using for the rocketfuel-get script.
+download-cache:
+ifdef LP_SOURCEDEPS_PATH
+	utilities/link-external-sourcecode $(LP_SOURCEDEPS_PATH)/..
+else
+	@echo "Missing ./download-cache."
+	@echo "Developers: please run utilities/link-external-sourcecode."
+	@exit 1
+endif
+
 css_combine: sprite_css bin/combine-css
 	${SHHH} bin/combine-css
 
@@ -171,13 +182,12 @@ ${ICING}/icon-sprites.positioning ${ICING}/icon-sprites: bin/sprite-util \
 # its jsTestDriver test harness modifications in the lazr.js and
 # launchpad.js roll-up files.  They fiddle with built-in functions!
 # See Bug 482340.
-jsbuild_lazr: bin/jsbuild
+jsbuild_minify: bin/jsbuild
 	${SHHH} bin/jsbuild \
 	    --builddir $(LAZR_BUILT_JS_ROOT) \
-	    --exclude testing/ --filetype $(JS_BUILD) \
-	    --copy-yui-to $(LAZR_BUILT_JS_ROOT)/yui
+	    --exclude testing/ --filetype $(JS_BUILD)
 
-$(JS_YUI) $(JS_LAZR): jsbuild_lazr
+$(JS_YUI) $(JS_LAZR): jsbuild_minify
 
 $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
@@ -186,24 +196,13 @@ else
 	cat $^ > $@
 endif
 
-jsbuild: $(JS_OUT)
+jsbuild: $(PY) $(JS_OUT)
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
 	# deployment we create this ourselves.
 	mkdir eggs
-
-# LP_SOURCEDEPS_PATH should point to the sourcecode directory, but we
-# want the parent directory where the download-cache and eggs directory
-# are. We re-use the variable that is using for the rocketfuel-get script.
-download-cache:
-ifdef LP_SOURCEDEPS_PATH
-	utilities/link-external-sourcecode $(LP_SOURCEDEPS_PATH)/..
-else
-	@echo "Missing ./download-cache."
-	@echo "Developers: please run utilities/link-external-sourcecode."
-	@exit 1
-endif
+	mkdir yui
 
 buildonce_eggs: $(PY)
 	find eggs -name '*.pyc' -exec rm {} \;
@@ -373,6 +372,7 @@ clean_buildout:
 	$(RM) .installed.cfg
 	$(RM) -r build
 	$(RM) _pythonpath.py
+	$(RM) -r yui/*
 
 clean_logs:
 	$(RM) logs/thread*.request
@@ -484,6 +484,6 @@ pydoctor:
 	test_build test_inplace pagetests check schema default \
 	launchpad.pot pull_branches scan_branches sync_branches	\
 	reload-apache hosted_branches check_mailman check_config \
-	jsbuild jsbuild_lazr clean_js clean_buildout buildonce_eggs \
+	jsbuild jsbuild_minify clean_js clean_buildout buildonce_eggs \
 	build_eggs sprite_css sprite_image css_combine compile \
 	check_schema pydoctor clean_logs 

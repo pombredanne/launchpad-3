@@ -16,16 +16,14 @@
   <table class="listing" id="mirrors_list">
   <tbody>
     <tal:country_and_mirrors repeat="country_and_mirrors mirrors_by_country">
-      <tr class="highlight">
-        <th colspan="2" style="text-align: left"
+      <tr class="head">
+        <th colspan="2" 
             tal:content="country_and_mirrors/country" />
-        <th style="text-align: left"
-            tal:content="country_and_mirrors/throughput"/>
-        <th style="text-align: left" tal:condition="show_mirror_type">
+        <th tal:content="country_and_mirrors/throughput"/>
+        <th tal:condition="show_mirror_type">
           Type
         </th>
-        <th style="text-align: left"
-            tal:define="mirror_count country_and_mirrors/number">
+        <th tal:define="mirror_count country_and_mirrors/number">
           <tal:count replace="mirror_count" />
           <span tal:condition="python:mirror_count == 1">mirror</span>
           <span tal:condition="python:mirror_count != 1">mirrors</span>
@@ -59,20 +57,19 @@
         Include a blank row after the last entry of a country to provide
         vertical spacing to separate the next country.
       </tal:comment>
-      <tr class="lesser">
-        <td>&nbsp;</td>
+      <tr class="section-break">
+        <td colspan="5" />
       </tr>
 
     </tal:country_and_mirrors>
-    <tr class="highlight">
-      <th colspan="5" style="text-align: left; font-weight: bold;">Total</th>
+    <tr class="head">
+      <th colspan="5" >Total</th>
     </tr>
     <tr>
       <td colspan="2" />
-      <td style="text-align: left; font-weight: bold;"
-          tal:content="total_throughput" />
+      <td tal:content="total_throughput" />
       <td tal:condition="show_mirror_type"></td>
-      <td style="text-align: left; font-weight: bold;">
+      <td>
           <tal:count replace="total_mirror_count" />
           <span tal:condition="python:total_mirror_count == 1">mirror</span>
           <span tal:condition="python:total_mirror_count != 1">mirrors</span>

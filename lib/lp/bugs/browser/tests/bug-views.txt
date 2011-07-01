@@ -74,9 +74,6 @@ The user specified a binary package name, so that's been added to the
 bug description and the first comment:
 
     >>> print latest_ubuntu_bugtask.bug.description
-    Binary package hint: linux-2.6.12
-    <BLANKLINE>
-    <BLANKLINE>
     a bug in a bin pkg
 
 the source package from which the binary was built has been set on
@@ -166,7 +163,7 @@ grab a new view to actually see them:
     3
     >>> [ (c.index, c.owner.name, c.text_contents)
     ...  for c in ubuntu_bugview.comments ]
-    [(0, u'name16', u'Binary package hint: linux-2.6.12...'),
+    [(0, u'name16', u'a bug in a bin pkg'),
      (1, u'name16', u'I can reproduce this bug.'),
      (2, u'name16', u'I can reproduce this bug.')]
 
@@ -178,17 +175,11 @@ When a user posts a new bug, the first comment and the description are
 identical. Take as an example the first bug posted above:
 
     >>> print latest_ubuntu_bugtask.bug.description
-    Binary package hint: linux-2.6.12
-    <BLANKLINE>
-    <BLANKLINE>
     a bug in a bin pkg
 
 Its description has the same contents as the bug's first comment:
 
     >>> print latest_ubuntu_bugtask.bug.messages[0].text_contents
-    Binary package hint: linux-2.6.12
-    <BLANKLINE>
-    <BLANKLINE>
     a bug in a bin pkg
 
 The view class offers a method to check exactly that:
@@ -408,10 +399,7 @@ can't know if the user is subscribed or not.
     a dupe of bug #3, then Steve gets indirectly subscribed to bug #3, and
     is presented with the "Edit subscription" link.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
-
     >>> bug_two.markAsDuplicate(bug_three)
-    >>> syncUpdate(bug_two)
 
     >>> bug_menu.subscription().text
     'Edit subscription'
@@ -422,7 +410,6 @@ can't know if the user is subscribed or not.
     Subscribe link initially.
 
     >>> bug_two.markAsDuplicate(None)
-    >>> syncUpdate(bug_two)
 
     >>> login("foo.bar@canonical.com")
 
@@ -437,7 +424,6 @@ can't know if the user is subscribed or not.
         <lp.bugs.model.bugsubscription.BugSubscription ...>
 
     >>> bug_two.markAsDuplicate(bug_three)
-    >>> syncUpdate(bug_two)
 
     >>> bug_menu.subscription().text
     'Subscribe'

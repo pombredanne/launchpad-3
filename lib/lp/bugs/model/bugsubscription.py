@@ -19,6 +19,7 @@ from canonical.database.enumcol import DBEnum
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.registry.interfaces.person import validate_person
+from lp.registry.interfaces.role import IPersonRoles
 from lp.services.database.stormbase import StormBase
 
 
@@ -79,6 +80,6 @@ class BugSubscription(StormBase):
         """See `IBugSubscription`."""
         if user is None:
             return False
-        if self.person.is_team:
-            return user.inTeam(self.person)
-        return user == self.person
+        return (user.inTeam(self.person) or
+                user.inTeam(self.subscribed_by) or
+                IPersonRoles(user).in_admin)

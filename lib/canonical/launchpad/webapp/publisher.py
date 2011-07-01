@@ -14,7 +14,6 @@ __all__ = [
     'canonical_url',
     'canonical_url_iterator',
     'get_current_browser_request',
-    'HTTP_MOVED_PERMANENTLY',
     'nearest',
     'Navigation',
     'rootObject',
@@ -26,6 +25,7 @@ __all__ = [
     'UserAttributeCache',
     ]
 
+import httplib
 
 from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
@@ -74,12 +74,10 @@ from canonical.lazr.utils import get_current_browser_request
 from lp.app.errors import NotFoundError
 from lp.services.encoding import is_ascii_only
 
-# HTTP Status code constants - define as appropriate.
-HTTP_MOVED_PERMANENTLY = 301
 
 # Monkeypatch NotFound to always avoid generating OOPS
 # from NotFound in web service calls.
-error_status(404)(NotFound)
+error_status(httplib.NOT_FOUND)(NotFound)
 
 
 class DecoratorAdvisor:

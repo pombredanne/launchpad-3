@@ -906,7 +906,6 @@ In the default implementation, the following database modification will
 be automatically reverted in a GET request.
 
     >>> from canonical.launchpad.database.emailaddress import EmailAddress
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.launchpad.interfaces.lpstorm import IMasterStore
     >>> from lp.registry.model.person import Person
     >>> login('foo.bar@canonical.com')
@@ -920,7 +919,6 @@ be automatically reverted in a GET request.
     >>> print foo_bar.homepage_content
     None
     >>> foo_bar.homepage_content = 'Montreal'
-    >>> syncUpdate(foo_bar)
 
     >>> request, publication = get_request_and_publication(method='GET')
 
@@ -939,7 +937,6 @@ But not if the request uses POST, the changes will be preserved.
 
     >>> txn = transaction.begin()
     >>> get_foo_bar_person().homepage_content = 'Darwin'
-    >>> syncUpdate(foo_bar)
 
     >>> request, publication = get_request_and_publication(method='POST')
 
@@ -1195,7 +1192,6 @@ raised, though.
     >>> import pytz
     >>> now = datetime.now(pytz.timezone('UTC'))
     >>> access_token.date_expires = now - timedelta(days=1)
-    >>> syncUpdate(access_token)
     >>> form2 = form.copy()
     >>> form2['oauth_nonce'] = '1764572616e48616d6d65724c61686'
     >>> test_request = LaunchpadTestRequest(form=form2)
@@ -1205,7 +1201,6 @@ raised, though.
     TokenException: Expired token...
 
     >>> access_token.date_expires = now + timedelta(days=1)
-    >>> syncUpdate(access_token)
 
     >>> form2 = form.copy()
     >>> form2['oauth_token'] += 'z'

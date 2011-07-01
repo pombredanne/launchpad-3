@@ -56,12 +56,19 @@ class IDistroSeriesParent(Interface):
         title=_("The component for this overlay"), required=False,
         vocabulary='Component')
 
+    ordering = Int(
+            title=_("Parent build dependency ordering"), required=False,
+            default=1,
+            description=_(
+                "Parents are ordered in decreasing order of preference "
+                "starting from 1."))
+
 
 class IDistroSeriesParentSet(Interface):
     """`DistroSeriesParentSet` interface."""
 
     def new(derived_series, parent_series, initialized, is_overlay=False,
-            pocket=None, component=None):
+            pocket=None, component=None, ordering=1):
         """Create a new `DistroSeriesParent`."""
 
     def getByDerivedSeries(derived_series):

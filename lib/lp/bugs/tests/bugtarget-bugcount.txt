@@ -69,7 +69,6 @@ If we file a few bugs in each status, the counts will increase.
 If we take a bug that is in one status and changes it to another, the
 former status' count will of course decrease, and the latter's increase.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> bug = filebug(bugtarget, "Test Bug", status=BugTaskStatus.CONFIRMED)
     >>> Store.of(bug).flush()
     >>> old_counts = bugtarget.getBugCounts(None)
@@ -78,7 +77,7 @@ former status' count will of course decrease, and the latter's increase.
     ...         break
     >>> bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, getUtility(ILaunchBag).user)
-    >>> syncUpdate(bugtask)
+    >>> Store.of(bugtask).flush()
     >>> new_bug_counts = bugtarget.getBugCounts(None)
     >>> print_count_difference(
     ...     new_bug_counts, old_counts, BugTaskStatus.CONFIRMED)
@@ -98,7 +97,7 @@ count, but not No Privileges Person or the anonymous user.
     >>> old_counts = bugtarget.getBugCounts(None)
     >>> bug.setPrivate(True, getUtility(ILaunchBag).user)
     True
-    >>> syncUpdate(bug)
+    >>> Store.of(bug).flush()
     >>> sample_person_counts = bugtarget.getBugCounts(
     ...     getUtility(IPersonSet).getByEmail('test@canonical.com'))
     >>> nopriv_counts = bugtarget.getBugCounts(
@@ -118,7 +117,8 @@ count, but not No Privileges Person or the anonymous user.
 
     >>> bug.setPrivate(False, getUtility(ILaunchBag).user)
     True
-    >>> syncUpdate(bug)
+    >>> Store.of(bug).flush()
+
 
 == Duplicate Bugs ==
 
@@ -130,7 +130,6 @@ as a duplicate of another bug, the count will decrease.
     >>> Store.of(another_bug).flush()
     >>> old_counts = bugtarget.getBugCounts(None)
     >>> another_bug.markAsDuplicate(bug)
-    >>> syncUpdate(another_bug)
     >>> new_counts = bugtarget.getBugCounts(None)
     >>> print_count_difference(
     ...     new_counts, old_counts, BugTaskStatus.NEW)

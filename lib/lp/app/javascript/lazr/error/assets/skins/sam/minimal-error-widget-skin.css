@@ -1,0 +1,32 @@
+/*
+Copyright (c) 2009, Canonical Ltd.  All rights reserved.
+Licensed under the GNU Affero General Public License:
+http://www.gnu.org/licenses/agpl.txt
+*/
+.yui3-lazr-minimal-error-widget {
+    position: fixed;
+    width: 80%;
+    margin: 0 10%;
+    bottom: 0;
+    background-color: #f0f0f0;
+    border-top: dashed 1px black;
+    border-left: dashed 1px black;
+    border-right: dashed 1px black;
+}
+
+.yui3-lazr-minimal-error-widget div.error-controls {
+    float: right;
+    margin: 0 1em;
+}
+
+.yui3-lazr-minimal-error-widget .error-info li {
+    display: none;
+}
+
+.yui3-lazr-minimal-error-widget .error-info li.current {
+    display: block;
+}
+
+.yui3-lazr-minimal-error-widget button.close {
+    background-image: url('images/close.gif');
+}

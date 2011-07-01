@@ -796,8 +796,6 @@ active and set to expire tomorrow).
     >>> login_person(karl)
     >>> karl.renewTeamMembership(mirror_admins)
 
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(karl_on_mirroradmins)
 
 Now the membership can't be renewed by the member as it's not going to
 expire soon.

@@ -25,7 +25,6 @@ __metaclass__ = type
 __all__ = [
     'AppServerLayer',
     'BaseLayer',
-    'BaseWindmillLayer',
     'DatabaseFunctionalLayer',
     'DatabaseLayer',
     'ExperimentalLaunchpadZopelessLayer',
@@ -52,6 +51,7 @@ __all__ = [
     'reconnect_stores',
     ]
 
+from cProfile import Profile
 import datetime
 import errno
 import gc
@@ -62,77 +62,100 @@ import socket
 import subprocess
 import sys
 import tempfile
+from textwrap import dedent
 import threading
 import time
-from cProfile import Profile
-from textwrap import dedent
-from unittest import TestCase, TestResult
+from unittest import (
+    TestCase,
+    TestResult,
+    )
 from urllib import urlopen
 
 from fixtures import (
     Fixture,
     MonkeyPatch,
     )
+from lazr.restful.utils import safe_hasattr
 import psycopg2
+from rabbitfixture.server import RabbitServer
 from storm.zope.interfaces import IZStorm
 import transaction
 import wsgi_intercept
 from wsgi_intercept import httplib2_intercept
-
-from lazr.restful.utils import safe_hasattr
-
-from windmill.bin.admin_lib import (
-    start_windmill, teardown as windmill_teardown)
-
-import zope.app.testing.functional
-import zope.publisher.publish
 from zope.app.publication.httpfactory import chooseClasses
-from zope.app.testing.functional import FunctionalTestSetup, ZopePublication
-from zope.component import getUtility, provideUtility
-from zope.component import globalregistry
+import zope.app.testing.functional
+from zope.app.testing.functional import (
+    FunctionalTestSetup,
+    ZopePublication,
+    )
+from zope.component import (
+    getUtility,
+    globalregistry,
+    provideUtility,
+    )
 from zope.component.interfaces import ComponentLookupError
+import zope.publisher.publish
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
 from zope.testing.testrunner.runner import FakeInputContinueGenerator
 
-import canonical.launchpad.webapp.session
-from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.lazr import pidfile
-from canonical.config import CanonicalConfig, config, dbconfig
+from canonical.config import (
+    CanonicalConfig,
+    config,
+    dbconfig,
+    )
 from canonical.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )
 from canonical.database.revision import (
-    confirm_dbrevision, confirm_dbrevision_on_startup)
+    confirm_dbrevision,
+    confirm_dbrevision_on_startup,
+    )
 from canonical.database.sqlbase import (
     cursor,
     session_store,
     ZopelessTransactionManager,
     )
 from canonical.launchpad.interfaces.mailbox import IMailBox
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-from lp.testing import ANONYMOUS, login, logout, is_logged_in
-import lp.services.mail.stub
-from lp.services.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from lp.services.googlesearch.tests.googleserviceharness import (
-    GoogleServiceTestSetup)
 from canonical.launchpad.webapp.interfaces import (
-        DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
+    DEFAULT_FLAVOR,
+    IOpenLaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.launchpad.webapp.servers import (
-    LaunchpadAccessLogger, register_launchpad_request_publication_factories)
+    LaunchpadAccessLogger,
+    register_launchpad_request_publication_factories,
+    )
+import canonical.launchpad.webapp.session
+from canonical.launchpad.webapp.vhosts import allvhosts
+from canonical.lazr import pidfile
 from canonical.lazr.testing.layers import MockRootFolder
 from canonical.lazr.timeout import (
-    get_default_timeout_function, set_default_timeout_function)
-from canonical.lp import initZopeless
+    get_default_timeout_function,
+    set_default_timeout_function,
+    )
 from canonical.librarian.testing.server import LibrarianServerFixture
+from canonical.lp import initZopeless
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
 from canonical.testing.smtpd import SMTPController
+from lp.services.googlesearch.tests.googleserviceharness import (
+    GoogleServiceTestSetup,
+    )
+from lp.services.mail.mailbox import TestMailBox
+import lp.services.mail.stub
 from lp.services.memcache.client import memcache_client_factory
 from lp.services.osutils import kill_by_pidfile
+from lp.testing import (
+    ANONYMOUS,
+    is_logged_in,
+    login,
+    logout,
+    )
 from lp.testing.pgsql import PgTestSetup
 
 
@@ -640,6 +663,46 @@ class MemcachedLayer(BaseLayer):
         MemcachedLayer.client.flush_all()  # Only do this in tests!
 
 
+class RabbitMQLayer(BaseLayer):
+    """Provides tests access to a rabbitMQ instance."""
+    _reset_between_tests = True
+
+    rabbit = RabbitServer()
+
+    _is_setup = False
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        cls.rabbit.setUp()
+        cls.config_fixture.add_section(
+            cls.rabbit.config.service_config)
+        cls.appserver_config_fixture.add_section(
+            cls.rabbit.config.service_config)
+        cls._is_setup = True
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        if not cls._is_setup:
+            return
+        cls.rabbit.cleanUp()
+        cls._is_setup = False
+        # Can't pop the config above, so bail here and let the test runner
+        # start a sub-process.
+        raise NotImplementedError
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
+
+
 # We store a reference to the DB-API connect method here when we
 # put a proxy in its place.
 _org_connect = None
@@ -937,7 +1000,7 @@ def test_default_timeout():
     return None
 
 
-class LaunchpadLayer(LibrarianLayer, MemcachedLayer):
+class LaunchpadLayer(LibrarianLayer, MemcachedLayer, RabbitMQLayer):
     """Provides access to the Launchpad database and daemons.
 
     We need to ensure that the database setup runs before the daemon
@@ -1978,134 +2041,6 @@ class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer):
     @profiled
     def testTearDown(cls):
         LayerProcessController.postTestInvariants()
-
-
-class BaseWindmillLayer(AppServerLayer):
-    """Layer for Windmill tests.
-
-    This layer shouldn't be used directly. A subclass needs to be
-    created specifying which base URL to use (e.g.
-    http://bugs.launchpad.dev:8085/).
-    """
-
-    facet = None
-    base_url = None
-    shell_objects = None
-    config_file = None
-
-    @classmethod
-    @profiled
-    def setUp(cls):
-        if cls.base_url is None:
-            # Only do the setup if we're in a subclass that defines
-            # base_url. With no base_url, we can't create the config
-            # file windmill needs.
-            return
-
-        cls._fixStandardInputFileno()
-        cls._configureWindmillLogging()
-        cls._configureWindmillStartup()
-
-        # Tell windmill to start its browser and server.  Our testrunner will
-        # keep going, passing commands to the server for execution.
-        cls.shell_objects = start_windmill()
-
-        # Patch the config to provide the port number and not use https.
-        sites = (
-            (('vhost.%s' % sitename,
-            'rooturl: %s/' % cls.appserver_root_url(sitename))
-            for sitename in ['mainsite', 'answers', 'blueprints', 'bugs',
-                            'code', 'testopenid', 'translations']))
-        for site in sites:
-            config.push('windmillsettings', "\n[%s]\n%s\n" % site)
-        allvhosts.reload()
-
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        if cls.shell_objects is not None:
-            windmill_teardown(cls.shell_objects)
-        if cls.config_file is not None:
-            # Close the file so that it gets deleted.
-            cls.config_file.close()
-        config.reloadConfig()
-        reset_logging()
-        # XXX: deryck 2011-01-28 bug=709438
-        # Windmill mucks about with the default timeout and this is
-        # a fix until the library itself can be cleaned up.
-        socket.setdefaulttimeout(None)
-
-    @classmethod
-    @profiled
-    def testSetUp(cls):
-        # Left-over threads should be harmless, since they should all
-        # belong to Windmill, which will be cleaned up on layer
-        # tear down.
-        BaseLayer.disable_thread_check = True
-        socket.setdefaulttimeout(120)
-
-    @classmethod
-    @profiled
-    def testTearDown(cls):
-        # To play nice with Windmill layers, we need to reset
-        # the socket timeout default in this method, too.
-        socket.setdefaulttimeout(None)
-
-    @classmethod
-    def _fixStandardInputFileno(cls):
-        """Patch the STDIN fileno so Windmill doesn't break."""
-        # If we're running in a bin/test sub-process, sys.stdin is
-        # replaced by FakeInputContinueGenerator, which doesn't have a
-        # fileno method. When Windmill starts Firefox,
-        # sys.stdin.fileno() is called, so we add such a method here, to
-        # prevent it from breaking. By returning None, we should ensure
-        # that it doesn't try to use the return value for anything.
-        if not safe_hasattr(sys.stdin, 'fileno'):
-            assert isinstance(sys.stdin, FakeInputContinueGenerator), (
-                "sys.stdin (%r) doesn't have a fileno method." % sys.stdin)
-            sys.stdin.fileno = lambda: None
-
-    @classmethod
-    def _configureWindmillLogging(cls):
-        """Override the default windmill log handling."""
-        if not config.windmill.debug_log:
-            return
-
-        # Add a new log handler to capture all of the windmill testrunner
-        # output. This overrides windmill's own log handling, which we do not
-        # have direct access to.
-        # We'll overwrite the previous log contents to keep the disk usage
-        # low, and because the contents are only meant as an in-situ debugging
-        # aid.
-        filehandler = logging.FileHandler(config.windmill.debug_log, mode='w')
-        filehandler.setLevel(logging.NOTSET)
-        filehandler.setFormatter(
-            logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
-        logging.getLogger('windmill').addHandler(filehandler)
-
-        # Make sure that everything sent to the windmill logger is captured.
-        # This works because windmill configures the root logger for its
-        # purposes, and we are pre-empting that by inserting a new logger one
-        # level higher in the logger chain.
-        logging.getLogger('windmill').setLevel(logging.NOTSET)
-
-    @classmethod
-    def _configureWindmillStartup(cls):
-        """Pass our startup parameters to the windmill server."""
-        # Windmill needs a config file on disk to load its settings from.
-        # There is no way to directly pass settings to the windmill test
-        # driver from out here.
-        config_text = dedent("""\
-            START_FIREFOX = True
-            TEST_URL = '%s/'
-            CONSOLE_LOG_LEVEL = %d
-            """ % (cls.base_url, logging.NOTSET))
-        cls.config_file = tempfile.NamedTemporaryFile(suffix='.py')
-        cls.config_file.write(config_text)
-        # Flush the file so that windmill can read it.
-        cls.config_file.flush()
-        os.environ['WINDMILL_CONFIG_FILE'] = cls.config_file.name
 
 
 class YUITestLayer(FunctionalLayer):

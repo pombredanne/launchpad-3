@@ -12,9 +12,9 @@ import datetime
 from itertools import repeat
 import logging
 import os
-import stat
 import re
 import rfc822
+import stat
 import types
 import urllib
 import urlparse
@@ -30,7 +30,6 @@ from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.traversing.namespace import view
 
 from canonical.config import config
-from lp.app import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
 from canonical.launchpad.webapp.adapter import (
     get_request_duration,
@@ -40,12 +39,15 @@ from canonical.launchpad.webapp.interfaces import (
     IErrorReport,
     IErrorReportEvent,
     IErrorReportRequest,
+    IUnloggedException,
     )
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.utils import safe_hasattr
+from lp.app import versioninfo
 from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from lp.services.timeline.requesttimeline import get_request_timeline
+
 
 UTC = pytz.utc
 
@@ -313,6 +315,28 @@ class ErrorReportingUtility:
         finally:
             oops_report.close()
 
+    def getOopsReportById(self, oops_id):
+        """Return the oops report for a given OOPS-ID.
+
+        Only recent reports are found.  The report's filename is assumed to
+        have the same numeric suffix as the oops_id.  The OOPS report must be
+        located in the error directory used by this ErrorReportingUtility.
+
+        If no report is found, return None.
+        """
+        suffix = re.search('[0-9]*$', oops_id).group(0)
+        for directory, name in self.log_namer.listRecentReportFiles():
+            if not name.endswith(suffix):
+                continue
+            with open(os.path.join(directory, name), 'r') as oops_report_file:
+                try:
+                    report = ErrorReport.read(oops_report_file)
+                except TypeError:
+                    continue
+            if report.id != oops_id:
+                continue
+            return report
+
     def getLastOopsReport(self):
         """Return the last ErrorReport reported with the current config.
 
@@ -372,7 +396,18 @@ class ErrorReportingUtility:
         notify(ErrorReportEvent(entry))
         return entry
 
-    def _isIgnoredException(self, strtype, request=None):
+    def _isIgnoredException(self, strtype, request=None, exception=None):
+        """Should the given exception generate an OOPS or be ignored?
+
+        Exceptions will be ignored if they
+            - are specially tagged as being ignorable by having the marker
+              interface IUnloggedException
+            - are of a type included in self._ignored_exceptions, or
+            - were requested with an off-site REFERRER header and are of a
+              type included in self._ignored_exceptions_for_offsite_referer
+        """
+        if IUnloggedException.providedBy(exception):
+            return True
         if strtype in self._ignored_exceptions:
             return True
         if strtype in self._ignored_exceptions_for_offsite_referer:
@@ -409,7 +444,7 @@ class ErrorReportingUtility:
         tb_text = None
 
         strtype = str(getattr(info[0], '__name__', info[0]))
-        if self._isIgnoredException(strtype, request):
+        if self._isIgnoredException(strtype, request, info[1]):
             return
 
         if not isinstance(info[2], basestring):

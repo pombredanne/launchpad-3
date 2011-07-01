@@ -43,12 +43,15 @@ __all__ = [
     'ParameterError',
     ]
 
+import httplib
+
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
 from lazr.restful.declarations import (
     call_with,
+    error_status,
     export_as_webservice_entry,
     export_destructor_operation,
     export_read_operation,
@@ -58,7 +61,6 @@ from lazr.restful.declarations import (
     operation_returns_collection_of,
     operation_returns_entry,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -105,6 +107,7 @@ def validate_new_submission_key(submission_key):
             'Submission key already exists.')
     return True
 
+
 def validate_email_address(emailaddress):
     """Validate an email address.
 
@@ -115,6 +118,7 @@ def validate_email_address(emailaddress):
         raise LaunchpadValidationError(
             'Invalid email address')
     return True
+
 
 class HWSubmissionKeyNotUnique(Exception):
     """Prevent two or more submission with identical submission_key."""
@@ -144,6 +148,7 @@ class HWSubmissionProcessingStatus(DBEnumeratedType):
 
         The submitted data has been processed.
         """)
+
 
 class HWSubmissionFormat(DBEnumeratedType):
     """The format version of the submitted data."""
@@ -431,6 +436,7 @@ class IHWSystemFingerprintSet(Interface):
 
         Return the new entry."""
 
+
 class IHWDriver(Interface):
     """Information about a device driver."""
     export_as_webservice_entry(publish_web_link=False)
@@ -455,28 +461,29 @@ class IHWDriver(Interface):
         Choice(
             title=u'License of the Driver', required=False,
             vocabulary=License))
+
     @operation_parameters(
         distribution=Reference(
             IDistribution,
             title=u'A Distribution',
-            description=
+            description=(
                 u'If specified, the result set is limited to sumbissions '
-                'made for the given distribution.',
+                'made for the given distribution.'),
             required=False),
         distroseries=Reference(
             IDistroSeries,
             title=u'A Distribution Series',
-            description=
+            description=(
                 u'If specified, the result set is limited to sumbissions '
-                'made for the given distribution series.',
+                'made for the given distribution series.'),
             required=False),
-        architecture = TextLine(
+        architecture=TextLine(
             title=u'A processor architecture',
-            description=
+            description=(
                 u'If specified, the result set is limited to sumbissions '
-                'made for the given architecture.',
+                'made for the given architecture.'),
             required=False),
-        owner = copy_field(IHWSubmission['owner']))
+        owner=copy_field(IHWSubmission['owner']))
     @operation_returns_collection_of(IHWSubmission)
     @export_read_operation()
     def getSubmissions(distribution=None, distroseries=None,
@@ -812,32 +819,32 @@ class IHWDevice(Interface):
         driver=Reference(
             IHWDriver,
             title=u'A driver used for this device in a submission',
-            description=
+            description=(
                 u'If specified, the result set is limited to sumbissions '
                 'made for the given distribution, distroseries or '
-                'distroarchseries.',
+                'distroarchseries.'),
             required=False),
         distribution=Reference(
             IDistribution,
             title=u'A Distribution',
-            description=
+            description=(
                 u'If specified, the result set is limited to sumbissions '
-                'made for the given distribution.',
+                'made for the given distribution.'),
             required=False),
         distroseries=Reference(
             IDistroSeries,
             title=u'A Distribution Series',
-            description=
+            description=(
                 u'If specified, the result set is limited to sumbissions '
-                'made for the given distribution series.',
+                'made for the given distribution series.'),
             required=False),
-        architecture = TextLine(
+        architecture=TextLine(
             title=u'A processor architecture',
-            description=
-                u'If specified, the result set is limited to sumbissions '
-                'made for the given architecture.',
+            description=(
+                u'If specified, the result set is limited to submissions '
+                'made for the given architecture.'),
             required=False),
-        owner = copy_field(IHWSubmission['owner']))
+        owner=copy_field(IHWSubmission['owner']))
     @operation_returns_collection_of(IHWSubmission)
     @export_read_operation()
     def getSubmissions(driver=None, distribution=None,
@@ -1189,18 +1196,18 @@ class IHWDBApplication(ILaunchpadApplication):
         package_name=TextLine(
             title=u'The name of the package containing the driver.',
             required=False,
-            description=
+            description=(
                 u'If package_name is omitted, all driver records '
                 'returned, optionally limited to those matching the '
                 'parameter name. If package_name is '' (empty string), '
                 'those records are returned where package_name is '' or '
-                'None.'),
+                'None.')),
         name=TextLine(
             title=u'The name of the driver.', required=False,
-            description=
+            description=(
                 u'If name is omitted, all driver records are '
                 'returned, optionally limited to those matching the '
-                'parameter package_name.'))
+                'parameter package_name.')))
     @operation_returns_collection_of(IHWDriver)
     @export_read_operation()
     def drivers(package_name=None, name=None):
@@ -1221,16 +1228,17 @@ class IHWDBApplication(ILaunchpadApplication):
     driver_names = exported(
         CollectionField(
             title=u'Driver Names',
-            description=
-                u'All known distinct driver names appearing in HWDriver',
+            description=(
+                u'All known distinct driver names appearing in HWDriver'),
             value_type=Reference(schema=IHWDriverName),
             readonly=True))
 
     package_names = exported(
         CollectionField(
             title=u'Package Names',
-            description=
-                u'All known distinct package names appearing in HWDriver.',
+            description=(
+                u'All known distinct package names appearing in '
+                'HWDriver.'),
             value_type=Reference(schema=IHWDriverPackageName),
             readonly=True))
 
@@ -1576,10 +1584,11 @@ class IHWDBApplication(ILaunchpadApplication):
         """
 
 
+@error_status(httplib.BAD_REQUEST)
 class IllegalQuery(Exception):
     """Exception raised when trying to run an illegal submissions query."""
-    webservice_error(400) #Bad request.
 
+
+@error_status(httplib.BAD_REQUEST)
 class ParameterError(Exception):
     """Exception raised when a method parameter does not match a constrint."""
-    webservice_error(400) #Bad request.
