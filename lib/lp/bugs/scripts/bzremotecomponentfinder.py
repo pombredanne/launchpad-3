@@ -146,11 +146,11 @@ class BugzillaRemoteComponentFinder:
                 self.logger.debug("...Fetching page")
                 page_text = bz_bugtracker.getPage()
             except HTTPError, error:
-                self.logger.error("Error fetching %s: %s" % (
+                self.logger.warning("Could not fetch %s: %s" % (
                     lp_bugtracker.baseurl, error))
                 continue
             except:
-                self.logger.error("Failed to access %s" % (
+                self.logger.warning("Failed to access %s" % (
                     lp_bugtracker.baseurl))
                 continue
 
