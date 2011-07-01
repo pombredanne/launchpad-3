@@ -5,7 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
-    "messaging"
+    "RabbitRoutingKey",
+    "RabbitQueue",
     ]
 
 from amqplib import client_0_8 as amqp
@@ -16,7 +17,8 @@ from zope.interface import implements
 
 from canonical.config import config
 from lp.services.messaging.interfaces import (
-    IMessageQueue,
+    IMessageConsumer,
+    IMessageProducer,
     EmptyQueueException,
     )
 
@@ -63,17 +65,12 @@ class MessagingDataManager:
         self._cleanup()
 
 
-class RabbitQueue:
-    """A RabbitMQ Queue."""
-
-    implements(IMessageQueue)
+class RabbitMessageBase:
+    """Base class for all RabbitMQ messaging."""
 
     class_locals = thread_local()
 
     channel = None
-
-    def __init__(self, name):
-        self.name = name
 
     def _initialize(self):
         # Open a connection and channel for this thread if necessary.
@@ -95,38 +92,69 @@ class RabbitQueue:
         self.channel.exchange_declare(
             LAUNCHPAD_EXCHANGE, "direct", durable=False,
             auto_delete=False, nowait=True)
-        self.channel.queue_declare(self.name, nowait=True)
 
-    def subscribe(self, key):
+    def close(self):
+        # Note the connection is not closed - it is shared with other
+        # queues. Just close our channel.
+        if self.channel:
+            self.channel.close()
+
+    def _disconnect(self):
+        """Disconnect from rabbit. The connection is shared, so this will
+        break other RabbitQueue instances."""
+        self.close()
+        if hasattr(self.class_locals, 'rabbit_connection'):
+            self.class_locals.rabbit_connection.close()
+            del self.class_locals.rabbit_connection
+
+
+class RabbitRoutingKey(RabbitMessageBase):
+    """A RabbitMQ data origination point."""
+
+    implements(IMessageProducer)
+
+    def __init__(self, routing_key):
+        self.key = routing_key
+
+    def associateConsumer(self, consumer):
         """Only receive messages for requested routing key."""
         self._initialize()
         self.channel.queue_bind(
-            queue=self.name, exchange=LAUNCHPAD_EXCHANGE,
-            routing_key=key, nowait=True)
+            queue=consumer.name, exchange=LAUNCHPAD_EXCHANGE,
+            routing_key=self.key, nowait=True)
 
-    def unsubscribe(self, key):
+    def disassociateConsumer(self, consumer):
         """Stop receiving messages for the requested routing key."""
         self._initialize()
         self.channel.queue_unbind(
-            queue=self.name, exchange=LAUNCHPAD_EXCHANGE,
-            routing_key=key, nowait=True)
+            queue=consumer.name, exchange=LAUNCHPAD_EXCHANGE,
+            routing_key=self.key, nowait=True)
 
-    def send(self, key, data):
+    def send(self, data):
         """See `IMessageQueue`."""
         self._initialize()
         messages = self.class_locals.messages
         # XXX: The data manager should close channels and flush too
         if not messages:
             transaction.get().join(MessagingDataManager(messages))
-        messages.append((self.send_now, key, data))
+        messages.append((self.send_now, self.key, data))
 
-    def send_now(self, key, data):
+    def send_now(self, data):
         """Immediately send a message to the broker."""
         self._initialize()
         json_data = json.dumps(data)
         msg = amqp.Message(json_data)
         self.channel.basic_publish(
-            exchange=LAUNCHPAD_EXCHANGE, routing_key=key, msg=msg)
+            exchange=LAUNCHPAD_EXCHANGE, routing_key=self.key, msg=msg)
+
+
+class RabbitQueue(RabbitMessageBase):
+    """A RabbitMQ Queue."""
+
+    implements(IMessageConsumer)
+
+    def __init__(self, name):
+        self.name = name
 
     def receive(self, blocking=True):
         """Pull a message from the queue.
@@ -135,6 +163,7 @@ class RabbitQueue:
             returning immediately if there is nothing on the queue.
         """
         self._initialize()
+        self.channel.queue_declare(self.name, nowait=True)
 
         if not blocking:
             message = self.channel.basic_get(self.name)
@@ -163,17 +192,3 @@ class RabbitQueue:
         self.channel.wait()
         return result[0]
 
-    def close(self):
-        """See `IMessageQueue`."""
-        # Note the connection is not closed - it is shared with other
-        # queues. Just close our channel.
-        if self.channel:
-            self.channel.close()
-
-    def _disconnect(self):
-        """Disconnect from rabbit. The connection is shared, so this will
-        break other RabbitQueue instances."""
-        self.close()
-        if hasattr(self.class_locals, 'rabbit_connection'):
-            self.class_locals.rabbit_connection.close()
-            del self.class_locals.rabbit_connection

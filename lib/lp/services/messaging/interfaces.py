@@ -6,7 +6,8 @@
 __metaclass__ = type
 __all__ = [
     'EmptyQueueException',
-    'IMessageQueue',
+    'IMessageProducer',
+    'IMessageConsumer',
     ]
 
 
@@ -18,13 +19,7 @@ class EmptyQueueException(Exception):
     pass
 
 
-class IMessageQueue(Interface):
-    def send(key, data):
-        """Serialize `data` into JSON and send it to the queue on commit."""
-
-    def send_now(key, data):
-        """Serialize `data` into JSON and send it to the queue immediately."""
-
+class IMessageConsumer(Interface):
     def receive(blocking=True):
         """Receive data from the queue.
 
@@ -33,3 +28,27 @@ class IMessageQueue(Interface):
 
     def close():
         """Cleanup nicely."""
+
+
+class IMessageProducer(Interface):
+
+    def send(data):
+        """Serialize `data` into JSON and send it to the queue on commit."""
+
+    def send_now(data):
+        """Serialize `data` into JSON and send it to the queue immediately."""
+
+    def close():
+        """Cleanup nicely."""
+
+    def associateConsumer(consumer):
+        """Make the consumer receive messages from this producer.
+
+        :param consumer: An `IMessageConsumer`
+        """
+
+    def disassociateConsumer(consumer):
+        """Make the consumer stop receiving messages from this producer.
+
+        :param consumer: An `IMessageConsumer`
+        """
