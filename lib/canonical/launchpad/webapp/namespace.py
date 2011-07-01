@@ -59,18 +59,29 @@ class JsonModelNamespaceView(view):
 
         This adapter allows any LaunchpadView to render its JSON cache.
         """
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
+        # XXX If the context is not a view then find and return the default
+        # view.
         return self
 
     def browserDefault(self, request):
         # Tell traversal to stop, dammit.
         return self, None
 
+    @property
+    def display_breadcrumbs(self):
+        return False
+
     def __call__(self):
         # This will render the parent view so that the object cache is
         # initialized.  This is a bit paranoid.
+        # XXX register a <browser:pages> directive in the ZCML for
+        # LaunchpadView to make the security settings work.
         import pdb; pdb.set_trace(); # DO NOT COMMIT
-        _discard = self.context()
-        cache = IJSONRequestCache(self.request)
-        #return restful-json-dumps(cache)
-        return dumps(cache)
+        #naked_context = removeSecurityProxy(self.context)
+        #naked_context.initialize()
+        self.context.initialize()
+        ## cache = IJSONRequestCache(self.request)
+        ## #cache = {'name': 'brad'}
+        ## return dumps(cache.objects)
+        cache = self.context.getCacheJson()
+        return cache

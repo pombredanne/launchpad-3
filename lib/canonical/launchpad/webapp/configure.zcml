@@ -440,6 +440,11 @@
         factory="canonical.launchpad.webapp.namespace.FormNamespaceView"
         />
 
+    <!-- Expose LaunchpadView methods. -->
+    <class class="canonical.launchpad.webapp.publisher.LaunchpadView">
+      <allow attributes="getCacheJson initialize" />
+    </class>
+
     <!-- Create a namespace to render the model of any LaunchpadView-->
     <view
         name="model" type="*"
