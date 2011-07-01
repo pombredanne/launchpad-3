@@ -2089,8 +2089,14 @@ class DateTimeFormatterAPI:
             amount = minutes
             unit = 'minute'
         else:
-            amount = seconds
-            unit = 'second'
+            if seconds <= 10:
+                result += 'a moment'
+                if not future:
+                    result += ' ago'
+                return result
+            else:
+                amount = seconds
+                unit = 'second'
         if amount != 1:
             unit += 's'
         result += '%s %s' % (amount, unit)
