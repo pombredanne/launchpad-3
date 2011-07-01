@@ -2177,8 +2177,7 @@ class DurationFormatterAPI:
     def approximateduration(self):
         """Return a nicely-formatted approximate duration.
 
-        E.g. 'an hour', '3 minutes', '1 hour 10 minutes' and so
-        forth.
+        E.g. '1 hour', '3 minutes', '1 hour 10 minutes' and so forth.
 
         See https://launchpad.canonical.com/PresentingLengthsOfTime.
         """
@@ -2221,8 +2220,6 @@ class DurationFormatterAPI:
         # built-in bisect module.
         second_boundaries, display_values = zip(*representation_in_seconds)
 
-        number_name = dict((number, number) for number in range(2, 11))
-
         # Convert seconds into minutes, and round it.
         minutes, remaining_seconds = divmod(seconds, 60)
         minutes += remaining_seconds / 60.0
@@ -2231,7 +2228,7 @@ class DurationFormatterAPI:
         if minutes == 1:
             return "1 minute"
         elif minutes <= 59:
-            return "%s minutes" % number_name.get(minutes, str(minutes))
+            return "%d minutes" % minutes
 
         # Is the duration less than an hour and 5 minutes?
         if seconds < (60 + 5) * 60:
@@ -2254,12 +2251,11 @@ class DurationFormatterAPI:
                 else:
                     return "%d hours %s minutes" % (hours, minutes)
             else:
-                number_as_text = number_name.get(hours, str(hours))
-                return "%s hours" % number_as_text
+                return "%d hours" % hours
 
         # Is the duration less than ten and a half hours?
         if seconds < (10.5 * 3600):
-            return '%s hours' % number_name[10]
+            return '10 hours'
 
         # Try to calculate the approximate number of hours, to a
         # maximum of 47.
@@ -2269,22 +2265,22 @@ class DurationFormatterAPI:
 
         # Is the duration fewer than two and a half days?
         if seconds < (2.5 * 24 * 3600):
-            return '%s days' % number_name[2]
+            return '2 days'
 
         # Try to approximate to day granularity, up to a maximum of 13
         # days.
         days = int(round(seconds / (24 * 3600)))
         if days <= 13:
-            return "%s days" % number_name.get(days, str(days))
+            return "%s days" % days
 
         # Is the duration fewer than two and a half weeks?
         if seconds < (2.5 * 7 * 24 * 3600):
-            return '%s weeks' % number_name[2]
+            return '2 weeks'
 
         # If we've made it this far, we'll calculate the duration to a
         # granularity of weeks, once and for all.
         weeks = int(round(seconds / (7 * 24 * 3600.0)))
-        return "%s weeks" % number_name.get(weeks, str(weeks))
+        return "%d weeks" % weeks
 
 
 class LinkFormatterAPI(ObjectFormatterAPI):
