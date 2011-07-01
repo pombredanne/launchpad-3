@@ -35,4 +35,4 @@ class JobLongPollEmitter:
     @property
     def emit_key(self):
         return "longpoll.job.%d.%s" % (
-            self.job.id, self.status.name)
+            self.job.job_id, self.status.name)
