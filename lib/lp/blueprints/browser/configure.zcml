@@ -135,6 +135,7 @@
         permission="zope.Public"/>
     <browser:pages
         for="lp.blueprints.interfaces.sprint.IHasSprints"
+        class="canonical.launchpad.webapp.LaunchpadView"
         facet="overview"
         permission="zope.Public">
         <browser:page

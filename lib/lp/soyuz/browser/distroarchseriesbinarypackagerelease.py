@@ -11,6 +11,7 @@ __all__ = [
 
 from canonical.launchpad.webapp import (
     ApplicationMenu,
+    LaunchpadView,
     Navigation,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
@@ -38,7 +39,7 @@ class DistroArchSeriesBinaryPackageReleaseNavigation(Navigation):
     usedfor = IDistroArchSeriesBinaryPackageRelease
 
 
-class DistroArchSeriesBinaryPackageReleaseView:
+class DistroArchSeriesBinaryPackageReleaseView(LaunchpadView):
 
     def __init__(self, context, request):
         self.context = context
