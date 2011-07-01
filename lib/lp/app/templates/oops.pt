@@ -10,9 +10,11 @@
        icingroot string:/+icing/rev${revno}"
      >
     <title>Oops!</title>
-    <style type="text/css" media="screen, print"
-           tal:attributes="href string:${icingroot}/combo.css">
-    </style>
+    <link
+        type="text/css"
+        rel="stylesheet"
+        media="screen, print"
+        tal:attributes="href string:${icingroot}/combo.css" />
     <script type="text/javascript"
         tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
   </head>
