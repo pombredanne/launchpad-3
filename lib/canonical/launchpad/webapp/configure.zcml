@@ -446,10 +446,13 @@
         provides="zope.traversing.interfaces.ITraversable" for="*"
         factory="canonical.launchpad.webapp.namespace.JsonModelNamespaceView"
         permission="zope.Public"
-        allowed_attributes="browserDefault"
-        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         />
 
+    <class class="canonical.launchpad.webapp.namespace.JsonModelNamespaceView">
+        <allow
+          attributes="__call__"
+          interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
+    </class>
 
     <!-- Registrations to support +haproxy status url. -->
     <browser:page

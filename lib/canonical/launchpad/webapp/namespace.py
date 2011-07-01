@@ -62,7 +62,7 @@ class JsonModelNamespaceView(view):
         import pdb; pdb.set_trace(); # DO NOT COMMIT
         return self
 
-    def browserDefault(self):
+    def browserDefault(self, request):
         # Tell traversal to stop, dammit.
         return self, None
 
