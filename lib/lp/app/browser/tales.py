@@ -2220,6 +2220,16 @@ class DurationFormatterAPI:
         # built-in bisect module.
         second_boundaries, display_values = zip(*representation_in_seconds)
 
+        # Is seconds small enough that we can produce a representation
+        # in seconds (up to '1 minute'?)
+        if seconds < second_boundaries[-1]:
+            # Use the built-in bisection algorithm to locate the index
+            # of the item which "seconds" sorts after.
+            matching_element_index = bisect.bisect(second_boundaries, seconds)
+
+            # Return the corresponding display value.
+            return display_values[matching_element_index]
+
         # Convert seconds into minutes, and round it.
         minutes, remaining_seconds = divmod(seconds, 60)
         minutes += remaining_seconds / 60.0
