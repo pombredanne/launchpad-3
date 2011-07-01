@@ -106,7 +106,3 @@ class TestLongPollSubscriber(TestCase):
         self.assertEqual(
             [emitter1.emit_key, emitter2.emit_key],
             cache.objects["longpoll"]["subscriptions"])
-
-    def test_subscribe(self):
-        # TODO
-        pass
