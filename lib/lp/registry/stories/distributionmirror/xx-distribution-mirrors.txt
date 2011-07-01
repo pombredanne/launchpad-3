@@ -12,13 +12,13 @@ on their status and content.
     ...     country = extract_text(header.find('th'))
     ...     mirrors = []
     ...     for tr in header.findNextSiblings('tr'):
-    ...         if 'highlight' in str(tr.attrs):
+    ...         if 'head' in str(tr.attrs):
     ...             print "%s: %s" % (country, mirrors)
     ...             country = extract_text(tr.find('th'))
     ...             if country == 'Total':
     ...                 break
     ...             mirrors = []
-    ...         elif 'lesser' in str(tr.attrs):
+    ...         elif 'section-break' in str(tr.attrs):
     ...             # This is an empty row to visually separate the mirrors
     ...             # from different countries, so we'll just skip it.
     ...             pass
