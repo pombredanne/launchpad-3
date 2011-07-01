@@ -224,6 +224,7 @@ class LaunchpadBrowserPublication(
         return txn
 
     def getDefaultTraversal(self, request, ob):
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
         superclass = zope.app.publication.browser.BrowserPublication
         return superclass.getDefaultTraversal(self, request, ob)
 

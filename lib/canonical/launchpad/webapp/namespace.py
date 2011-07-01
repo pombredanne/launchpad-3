@@ -14,10 +14,12 @@ from zope.app.pagetemplate.viewpagetemplatefile import BoundPageTemplate
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.interfaces import TraversalError
 from zope.traversing.namespace import view
+from zope.interface import implements
+from zope.publisher.interfaces.browser import IBrowserPublisher
+from lazr.restful.interfaces import IJSONRequestCache
 
-from canonical.launchpad.webapp import LaunchpadView
 from lp.app.browser.launchpadform import LaunchpadFormView
-
+from simplejson import dumps
 
 class FormNamespaceView(view):
     """A namespace view to handle traversals with ++form++."""
@@ -37,7 +39,7 @@ class FormNamespaceView(view):
         context = removeSecurityProxy(self.context)
 
         if isinstance(context, LaunchpadFormView):
-            # Note: without explicitely creating the BoundPageTemplate here
+            # Note: without explicitly creating the BoundPageTemplate here
             # the view fails to render.
             context.index = BoundPageTemplate(FormNamespaceView.template,
                                               context)
@@ -50,17 +52,25 @@ class FormNamespaceView(view):
 class JsonModelNamespaceView(view):
     """A namespace view to handle traversals with ++model++."""
 
-    template = ViewPageTemplateFile('templates/launchpad-model.pt')
+    implements(IBrowserPublisher)
 
     def traverse(self, name, ignored):
         """Model traversal adapter.
 
         This adapter allows any LaunchpadView to render its JSON cache.
         """
-        context = removeSecurityProxy(self.context)
-        if isinstance(context, LaunchpadView):
-            context.index = BoundPageTemplate(self.template, context)
-        else:
-            raise TraversalError(
-                "The URL does not correpsond to a LaunchpadView.")
-        return self.context
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
+        return self
+
+    def browserDefault(self):
+        # Tell traversal to stop, dammit.
+        return self, None
+
+    def __call__(self):
+        # This will render the parent view so that the object cache is
+        # initialized.  This is a bit paranoid.
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
+        _discard = self.context()
+        cache = IJSONRequestCache(self.request)
+        #return restful-json-dumps(cache)
+        return dumps(cache)

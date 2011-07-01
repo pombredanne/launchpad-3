@@ -8,6 +8,7 @@
   dir="ltr"
   i18n:domain="launchpad">
 
+  <h1>MODEL, DAMMIT</h1>
   <tal:json replace="structure context/getCacheJSON" />
 
 </div>
