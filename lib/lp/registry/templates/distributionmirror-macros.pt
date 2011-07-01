@@ -57,8 +57,8 @@
         Include a blank row after the last entry of a country to provide
         vertical spacing to separate the next country.
       </tal:comment>
-      <tr>
-        <td colspan="5" class="section-break" />
+      <tr class="section-break">
+        <td colspan="5" />
       </tr>
 
     </tal:country_and_mirrors>

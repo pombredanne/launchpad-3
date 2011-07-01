@@ -660,7 +660,7 @@ table.listing td {
     border: 1px #d2d2d2;
     border-style: dotted none none none;
     }
-table.listing td.section-break {
+table.listing .section-break td {
     border-width: 1px 0 0 0;
     border-style: solid;
     border-color: #d2d2d2;
