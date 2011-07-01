@@ -70,6 +70,8 @@ class RabbitQueue:
 
     class_locals = thread_local()
 
+    channel = None
+
     def __init__(self, name):
         self.name = name
 
@@ -88,17 +90,26 @@ class RabbitQueue:
 
         conn = self.class_locals.rabbit_connection
         self.channel = conn.channel()
+        #self.channel.access_request(
+        #    '/data', active=True, write=True, read=True)
         self.channel.exchange_declare(
             LAUNCHPAD_EXCHANGE, "direct", durable=False,
-            auto_delete=False)
-        self.channel.queue_declare(self.name)
+            auto_delete=False, nowait=True)
+        self.channel.queue_declare(self.name, nowait=True)
 
     def subscribe(self, key):
-        """Only receive messages for requested routing keys."""
+        """Only receive messages for requested routing key."""
         self._initialize()
         self.channel.queue_bind(
             queue=self.name, exchange=LAUNCHPAD_EXCHANGE,
-            routing_key=key)
+            routing_key=key, nowait=True)
+
+    def unsubscribe(self, key):
+        """Stop receiving messages for the requested routing key."""
+        self._initialize()
+        self.channel.queue_unbind(
+            queue=self.name, exchange=LAUNCHPAD_EXCHANGE,
+            routing_key=key, nowait=True)
 
     def send(self, key, data):
         """See `IMessageQueue`."""
@@ -134,7 +145,7 @@ class RabbitQueue:
             else:
                 return json.loads(message.body)
 
-        # Hacked blocking get
+        # XXX: Hacked blocking get. Using basic_consume will be better.
         import time
         while True:
             message = self.channel.basic_get(self.name)
@@ -151,3 +162,18 @@ class RabbitQueue:
         self.channel.basic_consume(self.name, callback=callback)
         self.channel.wait()
         return result[0]
+
+    def close(self):
+        """See `IMessageQueue`."""
+        # Note the connection is not closed - it is shared with other
+        # queues. Just close our channel.
+        if self.channel:
+            self.channel.close()
+
+    def _disconnect(self):
+        """Disconnect from rabbit. The connection is shared, so this will
+        break other RabbitQueue instances."""
+        self.close()
+        if hasattr(self.class_locals, 'rabbit_connection'):
+            self.class_locals.rabbit_connection.close()
+            del self.class_locals.rabbit_connection

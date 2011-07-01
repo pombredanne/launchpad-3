@@ -30,3 +30,6 @@ class IMessageQueue(Interface):
 
         :raises EmptyQueueException: If non-blocking and the queue is empty.
         """
+
+    def close():
+        """Cleanup nicely."""
