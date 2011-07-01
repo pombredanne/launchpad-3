@@ -9,6 +9,7 @@ __all__ = []
 
 import os
 import transaction
+from urllib2 import HTTPError
 
 from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.ftests import (
@@ -39,7 +40,7 @@ class StaticTextBugzillaRemoteComponentScraper(
     BugzillaRemoteComponentScraper):
     """A scraper that just returns static text for getPage()"""
     def __init__(self):
-        super(StaticTextBugzillaRemoteComponentScraper, self).__init__(
+        BugzillaRemoteComponentScraper.__init__(
             self, "http://www.example.com")
 
     def getPage(self):
@@ -51,7 +52,7 @@ class FaultyBugzillaRemoteComponentScraper(
     """A scraper that trips asserts when getPage() is called"""
 
     def __init__(self, error=None):
-        super(StaticTextBugzillaRemoteComponentScraper, self).__init__(
+        BugzillaRemoteComponentScraper.__init__(
             self, "http://www.example.com")
         self.error = error
 
@@ -178,8 +179,7 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
             title="fdo-example",
             name="fdo-example")
         transaction.commit()
-        bz_scraper = StaticTextBugzillaRemoteComponentScraper(
-            base_url="http://bugzilla.example.org")
+        bz_scraper = StaticTextBugzillaRemoteComponentScraper()
 
         finder = BugzillaRemoteComponentFinder(
             logger=BufferLogger(),
@@ -198,7 +198,7 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
     def test_get_remote_products_and_components_encounters_301(self):
         lp_bugtracker = self.factory.makeBugTracker()
         transaction.commit()
-        bz_scraper = FaultyStaticTextBugzillaRemoteComponentScraper(
+        bz_scraper = FaultyBugzillaRemoteComponentScraper(
             error=HTTPError("http://bugzilla.example.com",
                             301, 'Moved Permanently', {}, None))
         finder = BugzillaRemoteComponentFinder(
@@ -209,7 +209,7 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
     def test_get_remote_products_and_components_encounters_400(self):
         lp_bugtracker = self.factory.makeBugTracker()
         transaction.commit()
-        bz_scraper = FaultyStaticTextBugzillaRemoteComponentScraper(
+        bz_scraper = FaultyBugzillaRemoteComponentScraper(
             error=HTTPError("http://bugzilla.example.com",
                             400, 'Bad Request', {}, None))
         finder = BugzillaRemoteComponentFinder(
@@ -220,7 +220,7 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
     def test_get_remote_products_and_components_encounters_404(self):
         lp_bugtracker = self.factory.makeBugTracker()
         transaction.commit()
-        bz_scraper = FaultyStaticTextBugzillaRemoteComponentScraper(
+        bz_scraper = FaultyBugzillaRemoteComponentScraper(
             error=HTTPError("http://bugzilla.example.com",
                             404, 'Not Found', {}, None))
         finder = BugzillaRemoteComponentFinder(
@@ -231,7 +231,7 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
     def test_get_remote_products_and_components_encounters_500(self):
         lp_bugtracker = self.factory.makeBugTracker()
         transaction.commit()
-        bz_scraper = FaultyStaticTextBugzillaRemoteComponentScraper(
+        bz_scraper = FaultyBugzillaRemoteComponentScraper(
             error=HTTPError("http://bugzilla.example.com",
                             500, 'Internal Server Error', {}, None))
         finder = BugzillaRemoteComponentFinder(
