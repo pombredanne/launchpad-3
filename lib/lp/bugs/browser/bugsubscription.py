@@ -7,8 +7,7 @@ __metaclass__ = type
 __all__ = [
     'AdvancedSubscriptionMixin',
     'BugMuteSelfView',
-    'BugPortletDuplicateSubcribersContents',
-    'BugPortletSubcribersContents',
+    'BugPortletSubscribersWithDetails',
     'BugSubscriptionAddView',
     'BugSubscriptionListView',
     ]
@@ -16,7 +15,10 @@ __all__ = [
 import cgi
 
 from lazr.delegates import delegates
-from lazr.restful.interfaces import IJSONRequestCache
+from lazr.restful.interfaces import (
+    IJSONRequestCache,
+    IWebServiceClientRequest,
+)
 from simplejson import dumps
 from zope import formlib
 from zope.app.form import CustomWidgetFactory
@@ -26,6 +28,8 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+from zope.security.proxy import removeSecurityProxy
+from zope.traversing.browser import absoluteURL
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
@@ -39,17 +43,17 @@ from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
-from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
     )
 from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     )
-from lp.services import features
 from lp.services.propertycache import cachedproperty
 
 
@@ -106,12 +110,6 @@ class AdvancedSubscriptionMixin:
     """
 
     @cachedproperty
-    def _use_advanced_features(self):
-        """Return True if advanced subscriptions features are enabled."""
-        return features.getFeatureFlag(
-            'malone.advanced-subscriptions.enabled')
-
-    @cachedproperty
     def _bug_notification_level_field(self):
         """Return a custom form field for bug_notification_level."""
         # We rebuild the items that we show in the field so that the
@@ -140,10 +138,6 @@ class AdvancedSubscriptionMixin:
 
     def _setUpBugNotificationLevelField(self):
         """Set up the bug_notification_level field."""
-        if not self._use_advanced_features:
-            # If advanced features are disabled, do nothing.
-            return
-
         self.form_fields = self.form_fields.omit('bug_notification_level')
         self.form_fields += formlib.form.Fields(
             self._bug_notification_level_field)
@@ -172,10 +166,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
 
     @property
     def field_names(self):
-        if self._use_advanced_features:
-            return ['bug_notification_level']
-        else:
-            return []
+        return ['bug_notification_level']
 
     @property
     def next_url(self):
@@ -232,7 +223,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
 
     @cachedproperty
     def _unsubscribe_current_user_term(self):
-        if self._use_advanced_features and self.user_is_muted:
+        if self.user_is_muted:
             label = "unmute bug mail from this bug"
         else:
             label = 'unsubscribe me from this bug'
@@ -252,7 +243,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     def _subscription_field(self):
         subscription_terms = []
         self_subscribed = False
-        is_really_muted = self._use_advanced_features and self.user_is_muted
+        is_really_muted = self.user_is_muted
         if is_really_muted:
             subscription_terms.insert(0, self._unmute_user_term)
         for person in self._subscribers_for_current_user:
@@ -261,8 +252,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                     # We've already added the unmute option.
                     continue
                 else:
-                    if (self._use_advanced_features and
-                        self.user_is_subscribed_directly):
+                    if self.user_is_subscribed_directly:
                         subscription_terms.append(
                             self._update_subscription_term)
                     subscription_terms.insert(
@@ -296,8 +286,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
             subscription_terms[-1].title += '.'
 
         subscription_vocabulary = SimpleVocabulary(subscription_terms)
-        if (self._use_advanced_features and
-            (self.user_is_subscribed_directly or self.user_is_muted)):
+        if self.user_is_subscribed_directly or self.user_is_muted:
             default_subscription_value = self._update_subscription_term.value
         else:
             default_subscription_value = (
@@ -324,25 +313,24 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
         """See `LaunchpadFormView`."""
         super(BugSubscriptionSubscribeSelfView, self).setUpWidgets()
         self.widgets['subscription'].widget_class = 'bug-subscription-basic'
-        if self._use_advanced_features:
-            self.widgets['bug_notification_level'].widget_class = (
-                'bug-notification-level-field')
-            if (len(self.form_fields['subscription'].field.vocabulary)==1):
-                # We hide the subscription widget if the user isn't
-                # subscribed, since we know who the subscriber is and we
-                # don't need to present them with a single radio button.
-                self.widgets['subscription'].visible = False
-            else:
-                # We show the subscription widget when the user is
-                # subscribed via a team, because they can either
-                # subscribe theirself or unsubscribe their team.
-                self.widgets['subscription'].visible = True
+        self.widgets['bug_notification_level'].widget_class = (
+            'bug-notification-level-field')
+        if (len(self.form_fields['subscription'].field.vocabulary) == 1):
+            # We hide the subscription widget if the user isn't
+            # subscribed, since we know who the subscriber is and we
+            # don't need to present them with a single radio button.
+            self.widgets['subscription'].visible = False
+        else:
+            # We show the subscription widget when the user is
+            # subscribed via a team, because they can either
+            # subscribe theirself or unsubscribe their team.
+            self.widgets['subscription'].visible = True
 
-            if self.user_is_subscribed_to_dupes_only:
-                # If the user is subscribed via a duplicate but is not
-                # directly subscribed, we hide the
-                # bug_notification_level field, since it's not used.
-                self.widgets['bug_notification_level'].visible = False
+        if self.user_is_subscribed_to_dupes_only:
+            # If the user is subscribed via a duplicate but is not
+            # directly subscribed, we hide the
+            # bug_notification_level field, since it's not used.
+            self.widgets['bug_notification_level'].visible = False
 
     @cachedproperty
     def user_is_muted(self):
@@ -392,10 +380,7 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
     def subscribe_action(self, action, data):
         """Handle subscription requests."""
         subscription_person = self.widgets['subscription'].getInputValue()
-        if self._use_advanced_features:
-            bug_notification_level = data.get('bug_notification_level', None)
-        else:
-            bug_notification_level = None
+        bug_notification_level = data.get('bug_notification_level', None)
 
         if (subscription_person == self._update_subscription_term.value and
             (self.user_is_subscribed or self.user_is_muted)):
@@ -541,58 +526,65 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
                 'dupe_links_string': dupe_links_string})
 
 
-class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
-    """View for the contents for the subscribers portlet."""
+class BugPortletSubscribersWithDetails(LaunchpadView):
+    """A view that returns a JSON dump of the subscriber details for a bug."""
 
     @property
-    def sorted_direct_subscriptions(self):
-        """Get the list of direct subscriptions to the bug.
-
-        The list is sorted such that subscriptions you can unsubscribe appear
-        before all other subscriptions.
-        """
-        direct_subscriptions = [
-            SubscriptionAttrDecorator(subscription)
-            for subscription in self.context.getDirectSubscriptions().sorted]
-        can_unsubscribe = []
-        cannot_unsubscribe = []
-        for subscription in direct_subscriptions:
-            if not check_permission('launchpad.View', subscription.person):
-                continue
-            if subscription.person == self.user:
-                can_unsubscribe = [subscription] + can_unsubscribe
-            elif subscription.canBeUnsubscribedByUser(self.user):
-                can_unsubscribe.append(subscription)
-            else:
-                cannot_unsubscribe.append(subscription)
-        return can_unsubscribe + cannot_unsubscribe
-
-
-class BugPortletDuplicateSubcribersContents(LaunchpadView, BugViewMixin):
-    """View for the contents for the subscribers-from-dupes portlet block."""
-
-    @property
-    def sorted_subscriptions_from_dupes(self):
-        """Get the list of subscriptions to duplicates of this bug."""
-        return [
-            SubscriptionAttrDecorator(subscription)
-            for subscription in sorted(
-                self.context.getSubscriptionsFromDuplicates(),
-                key=(lambda subscription: subscription.person.displayname))]
-
-
-class BugPortletSubcribersIds(LaunchpadView, BugViewMixin):
-    """A view that returns a JSON dump of the subscriber IDs for a bug."""
-
-    @property
-    def subscriber_ids_js(self):
+    def subscriber_data_js(self):
         """Return subscriber_ids in a form suitable for JavaScript use."""
-        return dumps(self.subscriber_ids)
+        data = []
+        if IBug.providedBy(self.context):
+            bug = self.context
+        elif IBugTask.providedBy(self.context):
+            bug = self.context.bug
+        details = list(bug.getDirectSubscribersWithDetails())
+        api_request = IWebServiceClientRequest(self.request)
+        for person, subscription in details:
+            can_edit = subscription.canBeUnsubscribedByUser(self.user)
+            if person == self.user or (person.private and not can_edit):
+                # Skip the current user viewing the page,
+                # and private teams user is not a member of.
+                continue
+
+            subscriber = {
+                'name': person.name,
+                'display_name': person.displayname,
+                'web_link': canonical_url(person, rootsite='mainsite'),
+                'self_link': absoluteURL(person, api_request),
+                'is_team': person.is_team,
+                'can_edit': can_edit,
+                }
+            record = {
+                'subscriber': subscriber,
+                'subscription_level': str(
+                    removeSecurityProxy(subscription.bug_notification_level)),
+                }
+            data.append(record)
+
+        others = list(bug.getIndirectSubscribers())
+        for person in others:
+            if person == self.user:
+                # Skip the current user viewing the page.
+                continue
+            subscriber = {
+                'name': person.name,
+                'display_name': person.displayname,
+                'web_link': canonical_url(person, rootsite='mainsite'),
+                'self_link': absoluteURL(person, api_request),
+                'is_team': person.is_team,
+                'can_edit': False,
+                }
+            record = {
+                'subscriber': subscriber,
+                'subscription_level': 'Maybe',
+                }
+            data.append(record)
+        return dumps(data)
 
     def render(self):
         """Override the default render() to return only JSON."""
         self.request.response.setHeader('content-type', 'application/json')
-        return self.subscriber_ids_js
+        return self.subscriber_data_js
 
 
 class SubscriptionAttrDecorator:
@@ -612,8 +604,8 @@ class BugSubscriptionListView(LaunchpadView):
 
     def initialize(self):
         super(BugSubscriptionListView, self).initialize()
-        subscriptions = get_structural_subscriptions_for_bug(
-            self.context.bug, self.user)
+        subscriptions = list(get_structural_subscriptions_for_bug(
+            self.context.bug, self.user))
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user, subscriptions)
         subscriptions_info = PersonSubscriptions(

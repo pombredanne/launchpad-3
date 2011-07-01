@@ -166,6 +166,8 @@
                 custom_file_urls
                 date_created
                 sourcepackagerelease
+                component_name
+                concrete_package_copy_job
                 contains_source
                 contains_build
                 contains_translation
@@ -178,6 +180,9 @@
                 is_delayed_copy
                 isPPA
                 package_copy_job
+                package_name
+                package_version
+                section_name
                 components"/>
         <require
             permission="launchpad.Edit"
@@ -395,6 +400,7 @@
             set_attributes="description displayname publish status"/>
         <require
             permission="launchpad.Commercial"
+	    interface="lp.soyuz.interfaces.archive.IArchiveCommercial"
             set_attributes="authorized_size build_debug_symbols buildd_secret
                             commercial enabled_restricted_families
                             external_dependencies private
@@ -886,14 +892,14 @@
         <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
     </class>
 
-    <!-- InitialiseDistroSeriesJobSource -->
+    <!-- InitializeDistroSeriesJobSource -->
     <securedutility
-      component="lp.soyuz.model.initialisedistroseriesjob.InitialiseDistroSeriesJob"
-      provides="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJobSource">
-        <allow interface="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJobSource"/>
+      component="lp.soyuz.model.initializedistroseriesjob.InitializeDistroSeriesJob"
+      provides="lp.soyuz.interfaces.distributionjob.IInitializeDistroSeriesJobSource">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IInitializeDistroSeriesJobSource"/>
     </securedutility>
-    <class class="lp.soyuz.model.initialisedistroseriesjob.InitialiseDistroSeriesJob">
-        <allow interface="lp.soyuz.interfaces.distributionjob.IInitialiseDistroSeriesJob" />
+    <class class="lp.soyuz.model.initializedistroseriesjob.InitializeDistroSeriesJob">
+        <allow interface="lp.soyuz.interfaces.distributionjob.IInitializeDistroSeriesJob" />
         <allow interface="lp.soyuz.interfaces.distributionjob.IDistributionJob" />
     </class>
 
@@ -910,10 +916,24 @@
 
     <!-- PackageCopyJobSource -->
     <securedutility
+        component=".model.packagecopyjob.PackageCopyJob"
+        provides=".interfaces.packagecopyjob.IPackageCopyJobSource">
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobSource"/>
+    </securedutility>
+    <securedutility
         component=".model.packagecopyjob.PlainPackageCopyJob"
         provides=".interfaces.packagecopyjob.IPlainPackageCopyJobSource">
       <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJobSource"/>
     </securedutility>
+
+    <!-- PackageCopyJob -->
+    <class class=".model.packagecopyjob.PackageCopyJob">
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJob"/>
+      <require permission="launchpad.Edit" set_schema=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
+    </class>
+
+    <!-- PlainPackageCopyJob -->
     <class class=".model.packagecopyjob.PlainPackageCopyJob">
       <allow interface=".interfaces.packagecopyjob.IPackageCopyJob" />
       <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJob" />

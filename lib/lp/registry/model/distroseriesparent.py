@@ -55,6 +55,8 @@ class DistroSeriesParent(Storm):
     component_id = Int(name='component', allow_none=True)
     component = Reference(component_id, 'Component.id')
 
+    ordering = Int(allow_none=False, default=1)
+
 
 class DistroSeriesParentSet:
     """See `IDistroSeriesParentSet`."""
@@ -62,7 +64,7 @@ class DistroSeriesParentSet:
     title = "Cross reference of parent and derived distroseries."
 
     def new(self, derived_series, parent_series, initialized,
-            is_overlay=False, pocket=None, component=None):
+            is_overlay=False, pocket=None, component=None, ordering=1):
         """Make and return a new `DistroSeriesParent`."""
         store = IMasterStore(DistroSeriesParent)
         dsp = DistroSeriesParent()
@@ -72,6 +74,7 @@ class DistroSeriesParentSet:
         dsp.is_overlay = is_overlay
         dsp.pocket = pocket
         dsp.component = component
+        dsp.ordering = ordering
         store.add(dsp)
         return dsp
 

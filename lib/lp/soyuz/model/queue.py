@@ -23,10 +23,13 @@ from sqlobject import (
     SQLMultipleJoin,
     SQLObjectNotFound,
     )
+from storm.expr import LeftJoin
 from storm.locals import (
+    And,
     Desc,
     Int,
     Join,
+    Or,
     Reference,
     )
 from storm.store import (
@@ -44,6 +47,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -58,14 +62,17 @@ from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
 from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.mail.signedmessage import strip_pgp_signature
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.adapters.notification import notify
+from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.enums import (
     PackageUploadCustomFormat,
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
+from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJobSource
 from lp.soyuz.interfaces.publishing import (
     IPublishingSet,
     ISourcePackagePublishingHistory,
@@ -83,6 +90,8 @@ from lp.soyuz.interfaces.queue import (
     QueueSourceAcceptError,
     QueueStateWriteProtectedError,
     )
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.pas import BuildDaemonPackagesArchSpecific
 from lp.soyuz.scripts.processaccepted import close_bugs_for_queue_item
 
@@ -115,6 +124,63 @@ def validate_status(self, attr, value):
         raise QueueStateWriteProtectedError(
             'Directly write on queue status is forbidden use the '
             'provided methods to set it.')
+
+
+def match_exact_string(haystack, needle):
+    """Try an exact string match: is `haystack` equal to `needle`?
+
+    Helper for `PackageUploadSet.getAll`.
+
+    :param haystack: A database column being matched.
+        Storm database column.
+    :param needle: The string you're looking for.
+    :return: A Storm expression that returns True for a match or False for a
+        non-match.
+    """
+    return haystack == needle
+
+
+def match_substring(haystack, needle):
+    """Try a substring match: does `haystack` contain `needle`?
+
+    Helper for `PackageUploadSet.getAll`.
+
+    :param haystack: A database column being matched.
+    :param needle: The string you're looking for.
+    :return: A Storm expression that returns True for a match or False for a
+        non-match.
+    """
+    return haystack.contains_string(needle)
+
+
+def get_string_matcher(exact_match=False):
+    """Return a string-matching function of the right sort.
+
+    :param exact_match: If True, return a string matcher that compares a
+        database column to a string.  If False, return one that looks for a
+        substring match.
+    :return: A matching function: (database column, search string) -> bool.
+    """
+    if exact_match:
+        return match_exact_string
+    else:
+        return match_substring
+
+
+def strip_duplicates(sequence):
+    """Remove duplicates from `sequence`, preserving order.
+
+    Optimized for very short sequences.  Do not use with large data.
+
+    :param sequence: An iterable of comparable items.
+    :return: A list of the unique items in `sequence`, in the order in which
+        they first occur there.
+    """
+    result = []
+    for item in sequence:
+        if item not in result:
+            result.append(item)
+    return result
 
 
 class PackageUploadQueue:
@@ -403,25 +469,39 @@ class PackageUpload(SQLBase):
         self._closeBugs(changesfile_path, logger)
         self._giveKarma()
 
-    def acceptFromQueue(self, logger=None, dry_run=False):
-        """See `IPackageUpload`."""
-        assert not self.is_delayed_copy, 'Cannot process delayed copies.'
+    def _acceptSyncFromQueue(self):
+        """Accept a sync upload from the queue."""
+        # Circular imports :(
+        from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
 
-        if self.package_copy_job is not None:
-            if self.status == PackageUploadStatus.REJECTED:
-                raise QueueInconsistentStateError(
-                    "Can't resurrect rejected syncs")
-            # Circular imports :(
-            from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
-            # Release the job hounds, Smithers.
-            self.setAccepted()
-            job = PlainPackageCopyJob.get(self.package_copy_job_id)
-            job.resume()
-            # The copy job will send emails as appropriate.  We don't
-            # need to worry about closing bugs from syncs, although we
-            # should probably give karma but that needs more work to
-            # fix here.
-            return
+        assert self.package_copy_job is not None, (
+            "This method is for copy-job uploads only.")
+        assert not self.is_delayed_copy, (
+            "This method is not for delayed copies.")
+
+        if self.status == PackageUploadStatus.REJECTED:
+            raise QueueInconsistentStateError(
+                "Can't resurrect rejected syncs")
+
+        # Release the job hounds, Smithers.
+        self.setAccepted()
+        job = PlainPackageCopyJob.get(self.package_copy_job_id)
+        job.resume()
+        # The copy job will send emails as appropriate.  We don't
+        # need to worry about closing bugs from syncs, although we
+        # should probably give karma but that needs more work to
+        # fix here.
+
+    def _acceptNonSyncFromQueue(self, logger=None, dry_run=False):
+        """Accept a "regular" upload from the queue.
+
+        This is the normal case, for uploads that are not delayed and are not
+        attached to package copy jobs.
+        """
+        assert self.package_copy_job is None, (
+            "This method is not for copy-job uploads.")
+        assert not self.is_delayed_copy, (
+            "This method is not for delayed copies.")
 
         self.setAccepted()
 
@@ -450,6 +530,15 @@ class PackageUpload(SQLBase):
 
         # Give some karma!
         self._giveKarma()
+
+    def acceptFromQueue(self, logger=None, dry_run=False):
+        """See `IPackageUpload`."""
+        assert not self.is_delayed_copy, 'Cannot process delayed copies.'
+
+        if self.package_copy_job is None:
+            self._acceptNonSyncFromQueue(logger, dry_run)
+        else:
+            self._acceptSyncFromQueue()
 
     def acceptFromCopy(self):
         """See `IPackageUpload`."""
@@ -537,12 +626,52 @@ class PackageUpload(SQLBase):
         return (PackageUploadCustomFormat.DDTP_TARBALL
                 in self._customFormats)
 
+    @property
+    def package_name(self):
+        """See `IPackageUpload`."""
+        if self.package_copy_job_id is not None:
+            return self.package_copy_job.package_name
+        elif self.sourcepackagerelease is not None:
+            return self.sourcepackagerelease.sourcepackagename.name
+        else:
+            return None
+
+    @property
+    def package_version(self):
+        """See `IPackageUpload`."""
+        if self.package_copy_job_id is not None:
+            return self.package_copy_job.package_version
+        elif self.sourcepackagerelease is not None:
+            return self.sourcepackagerelease.version
+        else:
+            return None
+
+    @property
+    def component_name(self):
+        """See `IPackageUpload`."""
+        if self.package_copy_job_id is not None:
+            return self.package_copy_job.component_name
+        elif self.contains_source:
+            return self.sourcepackagerelease.component.name
+        else:
+            return None
+
+    @property
+    def section_name(self):
+        """See `IPackageUpload`."""
+        if self.package_copy_job_id is not None:
+            return self.package_copy_job.section_name
+        elif self.contains_source:
+            return self.sourcepackagerelease.section.name
+        else:
+            return None
+
     @cachedproperty
     def displayname(self):
         """See `IPackageUpload`."""
         names = []
-        for queue_source in self.sources:
-            names.append(queue_source.sourcepackagerelease.name)
+        if self.contains_source or self.package_copy_job_id is not None:
+            names.append(self.package_name)
         for queue_build in self.builds:
             names.append(queue_build.build.source_package_release.name)
         for queue_custom in self.customfiles:
@@ -558,7 +687,9 @@ class PackageUpload(SQLBase):
     def displayarchs(self):
         """See `IPackageUpload`"""
         archs = []
-        for queue_source in self.sources:
+        if self.package_copy_job_id is not None:
+            archs.append('sync')
+        if self.contains_source:
             archs.append('source')
         for queue_build in self.builds:
             archs.append(queue_build.build.distro_arch_series.architecturetag)
@@ -569,42 +700,20 @@ class PackageUpload(SQLBase):
     @cachedproperty
     def displayversion(self):
         """See `IPackageUpload`"""
-        if self.sources:
-            return self.sources[0].sourcepackagerelease.version
-        if self.builds:
-            return self.builds[0].build.source_package_release.version
-        if self.customfiles:
+        package_version = self.package_version
+        if package_version is not None:
+            return package_version
+        elif self.customfiles:
             return '-'
-
-    @cachedproperty
-    def sourcepackagerelease(self):
-        """The source package release related to this queue item.
-
-        This is currently heuristic but may be more easily calculated later.
-        """
-        if self.sources:
-            return self.sources[0].sourcepackagerelease
-        elif self.builds:
-            return self.builds[0].build.source_package_release
         else:
             return None
 
-    @property
-    def my_source_package_release(self):
-        """The source package release related to this queue item.
-
-        al-maisan, Wed, 30 Sep 2009 17:58:31 +0200:
-        The cached property version above behaves very finicky in
-        tests and I've had a *hell* of a time revising these and
-        making them pass.
-
-        In any case, Celso's advice was to stay away from it
-        and I am hence introducing this non-cached variant for
-        usage inside the content class.
-        """
-        if self.sources is not None and bool(self.sources):
+    @cachedproperty
+    def sourcepackagerelease(self):
+        """See `IPackageUpload`."""
+        if self.contains_source:
             return self.sources[0].sourcepackagerelease
-        elif self.builds is not None and bool(self.builds):
+        elif self.contains_build:
             return self.builds[0].build.source_package_release
         else:
             return None
@@ -769,45 +878,66 @@ class PackageUpload(SQLBase):
                     existing_components.add(binary.component)
         return existing_components
 
-    def overrideSource(self, new_component, new_section, allowed_components):
+    @cachedproperty
+    def concrete_package_copy_job(self):
         """See `IPackageUpload`."""
-        if new_component is None and new_section is None:
-            # Nothing needs overriding, bail out.
+        return getUtility(IPackageCopyJobSource).wrap(self.package_copy_job)
+
+    def _overrideSyncSource(self, new_component, new_section,
+                            allowed_components):
+        """Override source on the upload's `PackageCopyJob`, if any."""
+        if self.package_copy_job is None:
             return False
 
-        if self.package_copy_job is not None:
-            # We just need to add the required component/section to the
-            # job metadata.
-            extra_data = {}
-            if new_component is not None:
-                extra_data['component_override'] = new_component.name
-            if new_section is not None:
-                extra_data['section_override'] = new_section.name
-            self.package_copy_job.extendMetadata(extra_data)
-            return
+        copy_job = self.concrete_package_copy_job
+        allowed_component_names = [
+            component.name for component in allowed_components]
+        if copy_job.component_name not in allowed_component_names:
+            raise QueueInconsistentStateError(
+                "No rights to override from %s" % copy_job.component_name)
+        copy_job.addSourceOverride(SourceOverride(
+            copy_job.package_name, new_component, new_section))
 
-        if not self.contains_source:
-            return False
+        return True
+
+    def _overrideNonSyncSource(self, new_component, new_section,
+                               allowed_components):
+        """Override sources on a source upload."""
+        made_changes = False
 
         for source in self.sources:
-            if (new_component not in allowed_components or
-                source.sourcepackagerelease.component not in
-                    allowed_components):
-                # The old or the new component is not in the list of
-                # allowed components to override.
+            old_component = source.sourcepackagerelease.component
+            if old_component not in allowed_components:
+                # The old component is not in the list of allowed components
+                # to override.
                 raise QueueInconsistentStateError(
-                    "No rights to override from %s to %s" % (
-                        source.sourcepackagerelease.component.name,
-                        new_component.name))
+                    "No rights to override from %s" % old_component.name)
             source.sourcepackagerelease.override(
                 component=new_component, section=new_section)
+            made_changes = True
 
         # We override our own archive too, as it is used to create
         # the SPPH during publish().
         self.archive = self.distroseries.distribution.getArchiveByComponent(
             new_component.name)
 
-        return True
+        return made_changes
+
+    def overrideSource(self, new_component, new_section, allowed_components):
+        """See `IPackageUpload`."""
+        if new_component is None and new_section is None:
+            # Nothing needs overriding, bail out.
+            return False
+
+        if new_component not in allowed_components:
+            raise QueueInconsistentStateError(
+                "No rights to override to %s" % new_component.name)
+
+        return (
+            self._overrideSyncSource(
+                new_component, new_section, allowed_components) or
+            self._overrideNonSyncSource(
+                new_component, new_section, allowed_components))
 
     def overrideBinaries(self, new_component, new_section, new_priority,
                          allowed_components):
@@ -820,16 +950,18 @@ class PackageUpload(SQLBase):
             # Nothing needs overriding, bail out.
             return False
 
+        if new_component not in allowed_components:
+            raise QueueInconsistentStateError(
+                "No rights to override to %s" % new_component.name)
+
         for build in self.builds:
             for binarypackage in build.build.binarypackages:
-                if (new_component not in allowed_components or
-                    binarypackage.component not in allowed_components):
+                if binarypackage.component not in allowed_components:
                     # The old or the new component is not in the list of
                     # allowed components to override.
                     raise QueueInconsistentStateError(
-                        "No rights to override from %s to %s" % (
-                            binarypackage.component.name,
-                            new_component.name))
+                        "No rights to override from %s" % (
+                            binarypackage.component.name))
                 binarypackage.override(
                     component=new_component,
                     section=new_section,
@@ -1259,7 +1391,6 @@ class PackageUploadSet:
         """See `IPackageUploadSet`."""
         # Avoiding circular imports.
         from lp.registry.model.distroseries import DistroSeries
-        from lp.registry.model.sourcepackagename import SourcePackageName
         from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
         store = IMasterStore(PackageUpload)
@@ -1307,14 +1438,13 @@ class PackageUploadSet:
         return PackageUpload.select(query).count()
 
     def getAll(self, distroseries, created_since_date=None, status=None,
-               archive=None, pocket=None, custom_type=None):
+               archive=None, pocket=None, custom_type=None, name=None,
+               version=None, exact_match=False):
         """See `IPackageUploadSet`."""
-        # XXX Julian 2009-07-02 bug=394645
-        # This method is an incremental deprecation of
-        # IDistroSeries.getQueueItems(). It's basically re-writing it
-        # using Storm queries instead of SQLObject, but not everything
-        # is implemented yet.  When it is, this comment and the old
-        # method can be removed and call sites updated to use this one.
+        # Avoid circular imports.
+        from lp.soyuz.model.packagecopyjob import PackageCopyJob
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
         store = Store.of(distroseries)
 
         def dbitem_tuple(item_or_list):
@@ -1323,38 +1453,108 @@ class PackageUploadSet:
             else:
                 return tuple(item_or_list)
 
-        timestamp_query_clause = ()
-        if created_since_date is not None:
-            timestamp_query_clause = (
-                PackageUpload.date_created > created_since_date,)
+        # Collect the joins here, table first.  Don't worry about
+        # duplicates; we filter out repetitions at the end.
+        joins = [PackageUpload]
 
-        status_query_clause = ()
+        # Collection "WHERE" conditions here.
+        conditions = []
+
+        if created_since_date is not None:
+            conditions.append(PackageUpload.date_created > created_since_date)
+
         if status is not None:
             status = dbitem_tuple(status)
-            status_query_clause = (PackageUpload.status.is_in(status),)
+            conditions.append(PackageUpload.status.is_in(status))
 
         archives = distroseries.distribution.getArchiveIDList(archive)
-        archive_query_clause = (PackageUpload.archiveID.is_in(archives),)
+        conditions.append(PackageUpload.archiveID.is_in(archives))
 
-        pocket_query_clause = ()
         if pocket is not None:
             pocket = dbitem_tuple(pocket)
-            pocket_query_clause = (PackageUpload.pocket.is_in(pocket),)
+            conditions.append(PackageUpload.pocket.is_in(pocket))
 
-        custom_type_query_clause = ()
         if custom_type is not None:
             custom_type = dbitem_tuple(custom_type)
-            custom_type_query_clause = (
+            joins.append(Join(PackageUploadCustom, And(
                 PackageUpload.id == PackageUploadCustom.packageuploadID,
-                PackageUploadCustom.customformat.is_in(custom_type))
+                PackageUploadCustom.customformat.is_in(custom_type))))
 
-        return store.find(
+        match_column = get_string_matcher(exact_match)
+
+        package_copy_job_join = LeftJoin(
+            PackageCopyJob,
+            PackageCopyJob.id == PackageUpload.package_copy_job_id)
+        source_join = LeftJoin(
+            PackageUploadSource,
+            PackageUploadSource.packageuploadID == PackageUpload.id)
+        spr_join = LeftJoin(
+            SourcePackageRelease,
+            SourcePackageRelease.id ==
+                PackageUploadSource.sourcepackagereleaseID)
+        bpr_join = LeftJoin(
+            BinaryPackageRelease,
+            BinaryPackageRelease.buildID == PackageUploadBuild.buildID)
+        build_join = LeftJoin(
+            PackageUploadBuild,
+            PackageUploadBuild.packageuploadID == PackageUpload.id)
+
+        if name is not None and name != '':
+            spn_join = LeftJoin(
+                SourcePackageName,
+                SourcePackageName.id ==
+                    SourcePackageRelease.sourcepackagenameID)
+            bpn_join = LeftJoin(
+                BinaryPackageName,
+                BinaryPackageName.id ==
+                    BinaryPackageRelease.binarypackagenameID)
+            custom_join = LeftJoin(
+                PackageUploadCustom,
+                PackageUploadCustom.packageuploadID == PackageUpload.id)
+            file_join = LeftJoin(
+                LibraryFileAlias, And(
+                    LibraryFileAlias.id ==
+                        PackageUploadCustom.libraryfilealiasID))
+
+            joins += [
+                package_copy_job_join,
+                source_join,
+                spr_join,
+                spn_join,
+                build_join,
+                bpr_join,
+                bpn_join,
+                custom_join,
+                file_join,
+                ]
+
+            # One of these attached items must have a matching name.
+            conditions.append(Or(
+                match_column(PackageCopyJob.package_name, name),
+                match_column(SourcePackageName.name, name),
+                match_column(BinaryPackageName.name, name),
+                match_column(LibraryFileAlias.filename, name)))
+
+        if version is not None and version != '':
+            joins += [
+                source_join,
+                spr_join,
+                build_join,
+                bpr_join,
+                ]
+
+            # One of these attached items must have a matching version.
+            conditions.append(Or(
+                match_column(SourcePackageRelease.version, version),
+                match_column(BinaryPackageRelease.version, version),
+                ))
+
+        query = store.using(*strip_duplicates(joins)).find(
             PackageUpload,
             PackageUpload.distroseries == distroseries,
-            *(status_query_clause + archive_query_clause +
-              pocket_query_clause + timestamp_query_clause +
-              custom_type_query_clause)).order_by(
-                  Desc(PackageUpload.id)).config(distinct=True)
+            *conditions)
+        query = query.order_by(Desc(PackageUpload.id))
+        return query.config(distinct=True)
 
     def getBuildByBuildIDs(self, build_ids):
         """See `IPackageUploadSet`."""

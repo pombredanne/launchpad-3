@@ -102,7 +102,7 @@ def main():
         # store distroarchseries as the current IHasBuildRecord provider
         build_provider = dar
 
-    log.info("Initialising Build Mass-Retry for '%s/%s'"
+    log.info("Initializing Build Mass-Retry for '%s/%s'"
               % (build_provider.title, pocket.name))
 
     requested_states_map = {

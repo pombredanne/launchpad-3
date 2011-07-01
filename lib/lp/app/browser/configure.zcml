@@ -414,6 +414,10 @@
     factory="lp.app.browser.vocabulary.SourcePackageNamePickerEntryAdapter"
     />
 
+  <adapter
+    factory="lp.app.browser.vocabulary.ArchivePickerEntryAdapter"
+    />
+
   <!-- TALES namespaces. -->
 
   <!-- TALES lp: namespace (should be deprecated) -->

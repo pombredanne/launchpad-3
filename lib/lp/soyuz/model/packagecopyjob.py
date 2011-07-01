@@ -6,7 +6,7 @@ __metaclass__ = type
 __all__ = [
     "PackageCopyJob",
     "PlainPackageCopyJob",
-]
+    ]
 
 from lazr.delegates import delegates
 import simplejson
@@ -17,12 +17,12 @@ from storm.locals import (
     Unicode,
     )
 import transaction
-
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import sqlvalues
@@ -38,12 +38,12 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.registry.model.distroseries import DistroSeries
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import (
     JobStatus,
@@ -62,6 +62,7 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.copypolicy import ICopyPolicy
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
+    IPackageCopyJobSource,
     IPlainPackageCopyJob,
     IPlainPackageCopyJobSource,
     PackageCopyJobType,
@@ -76,6 +77,7 @@ class PackageCopyJob(StormBase):
     """Base class for package copying jobs."""
 
     implements(IPackageCopyJob)
+    classProvides(IPackageCopyJobSource)
 
     __storm_table__ = 'PackageCopyJob'
 
@@ -100,6 +102,34 @@ class PackageCopyJob(StormBase):
 
     _json_data = Unicode('json_data')
 
+    # Derived concrete classes.  The entire class gets one dict for
+    # this; it's not meant to be on an instance.
+    concrete_classes = {}
+
+    @classmethod
+    def registerConcreteClass(cls, new_class):
+        """Register a concrete `IPackageCopyJob`-implementing class."""
+        assert new_class.class_job_type not in cls.concrete_classes, (
+            "Class %s is already registered." % new_class)
+        cls.concrete_classes[new_class.class_job_type] = new_class
+
+    @classmethod
+    def wrap(cls, package_copy_job):
+        """See `IPackageCopyJobSource`."""
+        if package_copy_job is None:
+            return None
+        # Read job_type so You Don't Have To.  If any other code reads
+        # job_type, that's probably a sign that the interfaces need more
+        # work.
+        job_type = removeSecurityProxy(package_copy_job).job_type
+        concrete_class = cls.concrete_classes[job_type]
+        return concrete_class(package_copy_job)
+
+    @classmethod
+    def getByID(cls, pcj_id):
+        """See `IPackageCopyJobSource`."""
+        return cls.wrap(IStore(PackageCopyJob).get(PackageCopyJob, pcj_id))
+
     def __init__(self, source_archive, target_archive, target_distroseries,
                  job_type, metadata, package_name=None, copy_policy=None):
         super(PackageCopyJob, self).__init__()
@@ -121,11 +151,25 @@ class PackageCopyJob(StormBase):
     def metadata(self):
         return simplejson.loads(self._json_data)
 
+    @property
+    def package_version(self):
+        return self.metadata["package_version"]
+
     def extendMetadata(self, metadata_dict):
         """Add metadata_dict to the existing metadata."""
         existing = self.metadata
         existing.update(metadata_dict)
         self._json_data = self.serializeMetadata(existing)
+
+    @property
+    def component_name(self):
+        """See `IPackageCopyJob`."""
+        return self.metadata.get("component_override")
+
+    @property
+    def section_name(self):
+        """See `IPackageCopyJob`."""
+        return self.metadata.get("section_override")
 
 
 class PackageCopyJobDerived(BaseRunnableJob):
@@ -195,7 +239,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     @classmethod
     def _makeMetadata(cls, target_pocket, package_version, include_binaries):
-        """."""
+        """Produce a metadata dict for this job."""
         return {
             'target_pocket': target_pocket.value,
             'package_version': package_version,
@@ -315,10 +359,6 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         return PackagePublishingPocket.items[self.metadata['target_pocket']]
 
     @property
-    def package_version(self):
-        return self.metadata["package_version"]
-
-    @property
     def include_binaries(self):
         return self.metadata['include_binaries']
 
@@ -345,8 +385,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def getSourceOverride(self):
         """Fetch an `ISourceOverride` from the metadata."""
         name = self.package_name
-        component_name = self.metadata.get("component_override")
-        section_name = self.metadata.get("section_override")
+        component_name = self.component_name
+        section_name = self.section_name
         source_package_name = getUtility(ISourcePackageNameSet)[name]
         try:
             component = getUtility(IComponentSet)[component_name]
@@ -509,3 +549,6 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def getPolicyImplementation(self):
         """Return the `ICopyPolicy` applicable to this job."""
         return ICopyPolicy(self.copy_policy)
+
+
+PackageCopyJob.registerConcreteClass(PlainPackageCopyJob)

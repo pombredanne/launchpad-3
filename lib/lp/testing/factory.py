@@ -231,6 +231,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.interfaces.ssh import ISSHKeySet
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
+from lp.services.job.interfaces.job import SuspendJobException
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.messages.model.message import (
@@ -242,6 +243,7 @@ from lp.services.propertycache import clear_property_cache
 from lp.services.utils import AutoDecorate
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -250,6 +252,7 @@ from lp.soyuz.enums import (
     PackageDiffStatus,
     PackagePublishingPriority,
     PackagePublishingStatus,
+    PackageUploadCustomFormat,
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import (
@@ -267,6 +270,7 @@ from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import IPublishingSet
+from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.model.files import (
@@ -383,7 +387,7 @@ class ObjectFactory:
     __metaclass__ = AutoDecorate(default_master_store)
 
     def __init__(self):
-        # Initialise the unique identifier.
+        # Initialize the unique identifier.
         self._local = local()
 
     def getUniqueEmailAddress(self):
@@ -3388,6 +3392,67 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             status_changers[status]()
         return package_upload
 
+    def makeSourcePackageUpload(self, distroseries=None,
+                                sourcepackagename=None):
+        """Make a `PackageUpload` with a `PackageUploadSource` attached."""
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+        upload = self.makePackageUpload(
+            distroseries=distroseries, archive=distroseries.main_archive)
+        upload.addSource(self.makeSourcePackageRelease(
+            sourcepackagename=sourcepackagename))
+        return upload
+
+    def makeBuildPackageUpload(self, distroseries=None,
+                               binarypackagename=None):
+        """Make a `PackageUpload` with a `PackageUploadBuild` attached."""
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+        upload = self.makePackageUpload(
+            distroseries=distroseries, archive=distroseries.main_archive)
+        build = self.makeBinaryPackageBuild()
+        upload.addBuild(build)
+        self.makeBinaryPackageRelease(
+            binarypackagename=binarypackagename, build=build)
+        return upload
+
+    def makeCustomPackageUpload(self, distroseries=None, custom_type=None,
+                                filename=None):
+        """Make a `PackageUpload` with a `PackageUploadCustom` attached."""
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+        if custom_type is None:
+            custom_type = PackageUploadCustomFormat.DEBIAN_INSTALLER
+        upload = self.makePackageUpload(
+            distroseries=distroseries, archive=distroseries.main_archive)
+        file_alias = self.makeLibraryFileAlias(filename=filename)
+        upload.addCustom(file_alias, custom_type)
+        return upload
+
+    def makeCopyJobPackageUpload(self, distroseries=None,
+                                 sourcepackagename=None):
+        """Make a `PackageUpload` with a `PackageCopyJob` attached."""
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+        spph = self.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackagename)
+        spr = spph.sourcepackagerelease
+        job = self.makePlainPackageCopyJob(
+            package_name=spr.sourcepackagename.name,
+            package_version=spr.version,
+            source_archive=spph.archive,
+            target_archive=distroseries.main_archive,
+            target_distroseries=distroseries)
+        job.addSourceOverride(SourceOverride(
+            spr.sourcepackagename, spr.component, spr.section))
+        try:
+            job.run()
+        except SuspendJobException:
+            # Expected exception.
+            job.suspend()
+        upload_set = getUtility(IPackageUploadSet)
+        return upload_set.getByPackageCopyJobIDs([job.id]).one()
+
     def makeSourcePackageRelease(self, archive=None, sourcepackagename=None,
                                  distroseries=None, maintainer=None,
                                  creator=None, component=None,
@@ -3424,8 +3489,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 distribution=distroseries.distribution,
                 purpose=ArchivePurpose.PRIMARY)
 
-        if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
+        if (sourcepackagename is None or
+            isinstance(sourcepackagename, basestring)):
+            sourcepackagename = self.getOrMakeSourcePackageName(
+                sourcepackagename)
 
         if component is None:
             component = self.makeComponent()
@@ -3492,13 +3559,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBinaryPackageBuild(self, source_package_release=None,
             distroarchseries=None, archive=None, builder=None,
-            status=None, pocket=None, date_created=None, processor=None):
+            status=None, pocket=None, date_created=None, processor=None,
+            sourcepackagename=None):
         """Create a BinaryPackageBuild.
 
         If archive is not supplied, the source_package_release is used
         to determine archive.
         :param source_package_release: The SourcePackageRelease this binary
             build uses as its source.
+        :param sourcepackagename: when source_package_release is None, the
+            sourcepackagename from which the build will come.
         :param distroarchseries: The DistroArchSeries to use.
         :param archive: The Archive to use.
         :param builder: An optional builder to assign.
@@ -3525,7 +3595,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             multiverse = self.makeComponent(name='multiverse')
             source_package_release = self.makeSourcePackageRelease(
                 archive, component=multiverse,
-                distroseries=distroarchseries.distroseries)
+                distroseries=distroarchseries.distroseries,
+                sourcepackagename=sourcepackagename)
             self.makeSourcePackagePublishingHistory(
                 distroseries=source_package_release.upload_distroseries,
                 archive=archive, sourcepackagerelease=source_package_release,
@@ -3623,12 +3694,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return spph
 
     def makeBinaryPackagePublishingHistory(self, binarypackagerelease=None,
+                                           binarypackagename=None,
                                            distroarchseries=None,
                                            component=None, section_name=None,
                                            priority=None, status=None,
                                            scheduleddeletiondate=None,
                                            dateremoved=None,
-                                           pocket=None, archive=None):
+                                           pocket=None, archive=None,
+                                           source_package_release=None,
+                                           sourcepackagename=None):
         """Make a `BinaryPackagePublishingHistory`."""
         if distroarchseries is None:
             if archive is None:
@@ -3658,8 +3732,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # in the same archive and suite.
             binarypackagebuild = self.makeBinaryPackageBuild(
                 archive=archive, distroarchseries=distroarchseries,
-                pocket=pocket)
+                pocket=pocket, source_package_release=source_package_release,
+                sourcepackagename=sourcepackagename)
             binarypackagerelease = self.makeBinaryPackageRelease(
+                binarypackagename=binarypackagename,
                 build=binarypackagebuild,
                 component=component,
                 section_name=section_name,
@@ -3723,8 +3799,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """Make a `BinaryPackageRelease`."""
         if build is None:
             build = self.makeBinaryPackageBuild()
-        if binarypackagename is None:
-            binarypackagename = self.makeBinaryPackageName()
+        if (binarypackagename is None or
+            isinstance(binarypackagename, basestring)):
+            binarypackagename = self.getOrMakeBinaryPackageName(
+                binarypackagename)
         if version is None:
             version = build.source_package_release.version
         if binpackageformat is None:

@@ -193,10 +193,16 @@
         module="lp.registry.browser.distroseriesdifference"
         classes="DistroSeriesDifferenceNavigation"/>
     <browser:url
-        for="lp.registry.interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceComment"
+        for="..interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceComment"
         path_expression="string:comments/${id}"
         attribute_to_parent="distro_series_difference"
         rootsite="mainsite"/>
+    <browser:page
+        for="..interfaces.distroseriesdifferencecomment.IDistroSeriesDifferenceComment"
+        template="../templates/distroseriesdifferencecomment-latest-comment-fragment.pt"
+        class="..browser.distroseriesdifferencecomment.DistroSeriesDifferenceCommentView"
+        permission="zope.Public"
+        name="+latest-comment-fragment" />
     <adapter
       factory="lp.registry.browser.distroseriesdifference.CommentXHTMLRepresentation"
       name="lazr.restful.EntryResource" />
@@ -2010,7 +2016,7 @@
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="lp.registry.browser.distroseries.DistroSeriesInitializeView"
         facet="overview"
-        permission="launchpad.Admin"
+        permission="launchpad.Edit"
         template="../templates/distroseries-initialize.pt">
     </browser:page>
 

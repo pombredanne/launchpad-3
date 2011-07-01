@@ -30,7 +30,10 @@ from bzrlib.bzrdir import (
     BzrDirFormat,
     )
 from bzrlib.errors import (
+    ConnectionError,
+    InvalidEntryName,
     NoSuchFile,
+    NoRepositoryPresent,
     NotBranchError,
     )
 from bzrlib.transport import get_transport
@@ -66,6 +69,8 @@ class CodeImportWorkerExitCode:
     FAILURE = 1
     SUCCESS_NOCHANGE = 2
     SUCCESS_PARTIAL = 3
+    FAILURE_INVALID = 4
+    FAILURE_UNSUPPORTED_FEATURE = 5
 
 
 class BazaarBranchStore:
@@ -133,11 +138,37 @@ class BazaarBranchStore:
         except NotBranchError:
             remote_branch = BzrDir.create_branch_and_repo(
                 target_url, format=required_format)
+            old_branch = None
+        else:
+            if remote_branch.bzrdir.needs_format_conversion(
+                    required_format):
+                # For upgrades, push to a new branch in
+                # the new format. When done pushing,
+                # retire the old .bzr directory and rename
+                # the new one in place.
+                old_branch = remote_branch
+                upgrade_url = urljoin(target_url, "backup.bzr")
+                try:
+                    remote_branch.bzrdir.root_transport.delete_tree(
+                        'backup.bzr')
+                except NoSuchFile:
+                    pass
+                remote_branch = BzrDir.create_branch_and_repo(
+                    upgrade_url, format=required_format)
+            else:
+                old_branch = None
         pull_result = remote_branch.pull(bzr_branch, overwrite=True)
         # Because of the way we do incremental imports, there may be revisions
         # in the branch's repo that are not in the ancestry of the branch tip.
         # We need to transfer them too.
         remote_branch.repository.fetch(bzr_branch.repository)
+        if old_branch is not None:
+            # The format has changed; move the new format
+            # branch in place.
+            base_transport = old_branch.bzrdir.root_transport
+            base_transport.delete_tree('.bzr')
+            base_transport.rename("backup.bzr/.bzr", ".bzr")
+            base_transport.rmdir("backup.bzr")
         return pull_result.old_revid != pull_result.new_revid
 
 
@@ -457,7 +488,7 @@ class ImportWorker:
     def _doImport(self):
         """Perform the import.
 
-        :return: True if the import actually imported some new revisions.
+        :return: A CodeImportWorkerExitCode
         """
         raise NotImplementedError()
 
@@ -500,7 +531,7 @@ class CSCVSImportWorker(ImportWorker):
         last_commit = cscvs.findLastCscvsCommit(scm_branch)
 
         # If branch in `bazaar_tree` doesn't have any identifiable CSCVS
-        # revisions, CSCVS "initialises" the branch.
+        # revisions, CSCVS "initializes" the branch.
         if last_commit is None:
             self._runToBaz(
                 foreign_directory, "-SI", "MAIN.1", bzr_directory)
@@ -551,6 +582,16 @@ class PullingImportWorker(ImportWorker):
     needs_bzr_tree = False
 
     @property
+    def invalid_branch_exceptions(self):
+        """Exceptions that indicate no (valid) remote branch is present."""
+        raise NotImplementedError
+
+    @property
+    def unsupported_feature_exceptions(self):
+        """The exceptions to consider for unsupported features."""
+        raise NotImplementedError
+
+    @property
     def probers(self):
         """The probers that should be tried for this import."""
         raise NotImplementedError
@@ -578,20 +619,33 @@ class PullingImportWorker(ImportWorker):
                 except NotBranchError:
                     pass
             else:
-                raise NotBranchError(self.source_details.url)
+                self._logger.info("No branch found at remote location.")
+                return CodeImportWorkerExitCode.FAILURE_INVALID
             remote_branch = format.open(transport).open_branch()
             remote_branch_tip = remote_branch.last_revision()
             inter_branch = InterBranch.get(remote_branch, bazaar_branch)
             self._logger.info("Importing branch.")
-            inter_branch.fetch(limit=self.getRevisionLimit())
-            if bazaar_branch.repository.has_revision(remote_branch_tip):
-                pull_result = inter_branch.pull(overwrite=True)
-                if pull_result.old_revid != pull_result.new_revid:
-                    result = CodeImportWorkerExitCode.SUCCESS
+            try:
+                inter_branch.fetch(limit=self.getRevisionLimit())
+                if bazaar_branch.repository.has_revision(remote_branch_tip):
+                    pull_result = inter_branch.pull(overwrite=True)
+                    if pull_result.old_revid != pull_result.new_revid:
+                        result = CodeImportWorkerExitCode.SUCCESS
+                    else:
+                        result = CodeImportWorkerExitCode.SUCCESS_NOCHANGE
                 else:
-                    result = CodeImportWorkerExitCode.SUCCESS_NOCHANGE
-            else:
-                result = CodeImportWorkerExitCode.SUCCESS_PARTIAL
+                    result = CodeImportWorkerExitCode.SUCCESS_PARTIAL
+            except Exception, e:
+                if e.__class__ in self.unsupported_feature_exceptions:
+                    self._logger.info(
+                        "Unable to import branch because of limitations in Bazaar.")
+                    self._logger.info(str(e))
+                    return CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE
+                elif e.__class__ in self.invalid_branch_exceptions:
+                    self._logger.info("Branch invalid: %s", e(str))
+                    return CodeImportWorkerExitCode.FAILURE_INVALID
+                else:
+                    raise
             self._logger.info("Pushing local import branch to central store.")
             self.pushBazaarBranch(bazaar_branch)
             self._logger.info("Job complete.")
@@ -605,6 +659,22 @@ class GitImportWorker(PullingImportWorker):
 
     The only behaviour we add is preserving the 'git.db' shamap between runs.
     """
+
+    @property
+    def invalid_branch_exceptions(self):
+        return [
+            NoRepositoryPresent,
+            NotBranchError,
+            ConnectionError,
+        ]
+
+    @property
+    def unsupported_feature_exceptions(self):
+        from bzrlib.plugins.git.fetch import SubmodulesRequireSubtrees
+        return [
+            InvalidEntryName,
+            SubmodulesRequireSubtrees,
+        ]
 
     @property
     def probers(self):
@@ -662,6 +732,20 @@ class HgImportWorker(PullingImportWorker):
     """
 
     @property
+    def invalid_branch_exceptions(self):
+        return [
+            NoRepositoryPresent,
+            NotBranchError,
+            ConnectionError,
+        ]
+
+    @property
+    def unsupported_feature_exceptions(self):
+        return [
+            InvalidEntryName,
+        ]
+
+    @property
     def probers(self):
         """See `PullingImportWorker.probers`."""
         from bzrlib.plugins.hg import HgProber
@@ -712,6 +796,22 @@ class HgImportWorker(PullingImportWorker):
 
 class BzrSvnImportWorker(PullingImportWorker):
     """An import worker for importing Subversion via bzr-svn."""
+
+    @property
+    def invalid_branch_exceptions(self):
+        return [
+            NoRepositoryPresent,
+            NotBranchError,
+            ConnectionError,
+        ]
+
+    @property
+    def unsupported_feature_exceptions(self):
+        from bzrlib.plugins.svn.errors import InvalidFileName
+        return [
+            InvalidEntryName,
+            InvalidFileName,
+        ]
 
     def getRevisionLimit(self):
         """See `PullingImportWorker.getRevisionLimit`."""

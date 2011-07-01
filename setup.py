@@ -66,6 +66,7 @@ setup(
         'pytz',
         # This appears to be a broken indirect dependency from zope.security:
         'RestrictedPython',
+        'selenium',
         'setproctitle',
         'setuptools',
         'Sphinx',
@@ -133,7 +134,8 @@ setup(
         # bug 383360 is fixed and we include it as a source dist.
         'Paste',
         'PasteDeploy',
-        'SimpleTal'
+        'SimpleTal',
+        'lazr.amqp',
     ],
     url='https://launchpad.net/',
     classifiers=[

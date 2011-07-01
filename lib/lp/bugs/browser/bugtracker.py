@@ -463,7 +463,7 @@ class BugTrackerNavigation(Navigation):
 class BugTrackerEditComponentView(LaunchpadEditFormView):
     """Provides editing form for setting source packages for components.
 
-    In this class we assume that bug tracker components are always
+    This class assumes that bug tracker components are always
     linked to source packages in the Ubuntu distribution.
     """
     schema = IBugTrackerComponent

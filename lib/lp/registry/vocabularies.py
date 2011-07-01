@@ -30,6 +30,7 @@ __all__ = [
     'CommercialProjectsVocabulary',
     'DistributionOrProductOrProjectGroupVocabulary',
     'DistributionOrProductVocabulary',
+    'DistributionSourcePackageVocabulary',
     'DistributionVocabulary',
     'DistroSeriesDerivationVocabulary',
     'DistroSeriesVocabulary',
@@ -167,6 +168,9 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.distribution import Distribution
+from lp.registry.model.distributionsourcepackage import (
+    DistributionSourcePackage,
+    )
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesparent import DistroSeriesParent
 from lp.registry.model.featuredproject import FeaturedProject
@@ -188,8 +192,18 @@ from lp.services.database import bulk
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import (
     cachedproperty,
-    get_property_cache
+    get_property_cache,
     )
+from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.distroarchseries import DistroArchSeries
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 class BasePersonVocabulary:
@@ -747,21 +761,21 @@ class ValidPersonOrTeamVocabulary(
                     SELECT Person.id,
                     (case
                         when person.name=? then 100
-                        when lower(person.name) like ? || '%%' then 5
-                        when lower(person.displayname) like ? || '%%' then 4
+                        when person.name like ? || '%%' then 0.6
+                        when lower(person.displayname) like ? || '%%' then 0.5
                         else rank(fti, ftq(?))
                     end) as rank
                     FROM Person
-                    WHERE lower(Person.name) LIKE ? || '%%'
+                    WHERE Person.name LIKE ? || '%%'
                     or lower(Person.displayname) LIKE ? || '%%'
                     or Person.fti @@ ftq(?)
                     UNION ALL
-                    SELECT Person.id, 3 AS rank
+                    SELECT Person.id, 0.8 AS rank
                     FROM Person, IrcID
                     WHERE Person.id = IrcID.person
-                        AND IrcID.nickname = ?
+                        AND LOWER(IrcID.nickname) = LOWER(?)
                     UNION ALL
-                    SELECT Person.id, 2 AS rank
+                    SELECT Person.id, 0.4 AS rank
                     FROM Person, EmailAddress
                     WHERE Person.id = EmailAddress.person
                         AND LOWER(EmailAddress.email) LIKE ? || '%%'
@@ -778,8 +792,8 @@ class ValidPersonOrTeamVocabulary(
                 private_ranking_sql = SQL("""
                     (case
                         when person.name=? then 100
-                        when lower(person.name) like ? || '%%' then 5
-                        when lower(person.displayname) like ? || '%%' then 3
+                        when person.name like ? || '%%' then 0.6
+                        when lower(person.displayname) like ? || '%%' then 0.5
                         else rank(fti, ftq(?))
                     end) as rank
                 """, (text, text, text, text))
@@ -793,7 +807,7 @@ class ValidPersonOrTeamVocabulary(
                                 SQL("true as is_private_team")),
                     where=And(
                         SQL("""
-                            lower(Person.name) LIKE ? || '%%'
+                            Person.name LIKE ? || '%%'
                             OR lower(Person.displayname) LIKE ? || '%%'
                             OR Person.fti @@ ftq(?)
                             """, [text, text, text]),
@@ -866,15 +880,15 @@ class ValidPersonOrTeamVocabulary(
                 for email in emails
                 if email.status == EmailAddressStatus.PREFERRED)
 
-            # The irc nicks.
-            nicks = bulk.load_referencing(IrcID, persons, ['personID'])
-            nicks_by_person = dict((nick.personID, nicks)
-                for nick in nicks)
-
             for person in persons:
                 cache = get_property_cache(person)
                 cache.preferredemail = email_by_person.get(person.id, None)
-                cache.ircnicknames = nicks_by_person.get(person.id, None)
+                cache.ircnicknames = []
+
+            # The irc nicks.
+            nicks = bulk.load_referencing(IrcID, persons, ['personID'])
+            for nick in nicks:
+                get_property_cache(nick.person).ircnicknames.append(nick)
 
         return DecoratedResultSet(result, pre_iter_hook=pre_iter_hook)
 
@@ -929,7 +943,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         else:
             if self.enhanced_picker_enabled:
                 name_match_query = SQL("""
-                    lower(Person.name) LIKE ? || '%%'
+                    Person.name LIKE ? || '%%'
                     OR lower(Person.displayname) LIKE ? || '%%'
                     OR Person.fti @@ ftq(?)
                     """, [text, text, text]),
@@ -1728,6 +1742,9 @@ class DistroSeriesDerivationVocabulary:
     derived at a later date, but as soon as this happens, the above rule
     applies.
 
+    Also, a series must have architectures setup in LP to be a potential
+    parent.
+
     It is permissible for a distribution to have both derived and non-derived
     series at the same time.
     """
@@ -1802,14 +1819,15 @@ class DistroSeriesDerivationVocabulary:
             *where)
         query = query.order_by(
             Distribution.displayname,
-            Desc(DistroSeries.date_created))
+            Desc(DistroSeries.date_created)).config(distinct=True)
         return [series for (series, distribution) in query]
 
     def searchParents(self, query=None):
         """See `IHugeVocabulary`."""
         parent = ClassAlias(DistroSeries, "parent")
         child = ClassAlias(DistroSeries, "child")
-        where = []
+        # Select only the series with architectures setup in LP.
+        where = [DistroSeries.id == DistroArchSeries.distroseriesID]
         if query is not None:
             term = '%' + query.lower() + '%'
             search = Or(
@@ -1817,22 +1835,20 @@ class DistroSeriesDerivationVocabulary:
                     DistroSeries.description.lower().like(term),
                     DistroSeries.summary.lower().like(term))
             where.append(search)
-        parent_distributions = Select(
+        parent_distributions = list(IStore(DistroSeries).find(
             parent.distributionID, And(
                 parent.distributionID != self.distribution.id,
                 child.distributionID == self.distribution.id,
                 child.id == DistroSeriesParent.derived_series_id,
-                parent.id == DistroSeriesParent.parent_series_id))
-        where.append(
-            DistroSeries.distributionID.is_in(parent_distributions))
-        terms = self.find_terms(where)
-        if len(terms) == 0:
-            where = []
-            if query is not None:
-                where.append(search)
-            where.append(DistroSeries.distribution != self.distribution)
-            terms = self.find_terms(where)
-        return terms
+                parent.id == DistroSeriesParent.parent_series_id)))
+        if parent_distributions != []:
+            where.append(
+                DistroSeries.distributionID.is_in(parent_distributions))
+            return self.find_terms(where)
+        else:
+            where.append(
+                DistroSeries.distribution != self.distribution)
+            return self.find_terms(where)
 
 
 class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
@@ -1946,3 +1962,89 @@ class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
         # package names are always lowercase.
         return super(SourcePackageNameVocabulary, self).getTermByToken(
             token.lower())
+ 
+
+class DistributionSourcePackageVocabulary:
+
+    implements(IHugeVocabulary)
+    displayname = 'Select a package'
+    step_title = 'Search'
+
+    def __init__(self, context=None):
+        self.context = context
+
+    def __contains__(self, obj):
+        pass
+
+    def __iter__(self):
+        pass
+
+    def __len__(self):
+        pass
+
+    def toTerm(self, dsp):
+        """See `IVocabulary`."""
+        # SimpleTerm(value, token=None, title=None)
+        if dsp.publishing_history:
+            binaries = dsp.publishing_history[0].getBuiltBinaries()
+            summary = ', '.join(
+                [binary.binary_package_name for binary in binaries])
+        else:
+            summary = "Not yet built."
+        token = '%s-%s' % (dsp.distribution.name, dsp.name)
+        return SimpleTerm(summary, token, dsp.name)
+
+    def getTerm(self, dsp):
+        """See `IBaseVocabulary`."""
+        return self.toTerm(dsp)
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        pass
+
+    def searchForTerms(self, query=None):
+        """See `IHugeVocabulary`."""
+        distribution = self.context
+        if query is None:
+            return
+        search_term = unicode(query)
+        store = IStore(SourcePackagePublishingHistory)
+        spns = store.using(
+            SourcePackagePublishingHistory,
+            LeftJoin(
+                SourcePackageRelease,
+                SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                    SourcePackageRelease.id),
+            LeftJoin(
+                SourcePackageName,
+                SourcePackageRelease.sourcepackagenameID ==
+                    SourcePackageName.id),
+            LeftJoin(
+                DistroSeries,
+                SourcePackagePublishingHistory.distroseriesID ==
+                    DistroSeries.id),
+            LeftJoin(
+                BinaryPackageBuild,
+                BinaryPackageBuild.source_package_release_id ==
+                    SourcePackageRelease.id),
+            LeftJoin(
+                BinaryPackageRelease,
+                BinaryPackageRelease.buildID == BinaryPackageBuild.id),
+            LeftJoin(
+                BinaryPackageName,
+                BinaryPackageRelease.binarypackagenameID ==
+                    BinaryPackageName.id
+            )).find(
+                SourcePackageName,
+                DistroSeries.distributionID == distribution.id,
+                SourcePackagePublishingHistory.status.is_in((
+                    PackagePublishingStatus.PENDING,
+                    PackagePublishingStatus.PUBLISHED)),
+                SourcePackagePublishingHistory.archive ==
+                    distribution.main_archive,
+                Or(
+                    SourcePackageName.name.contains_string(search_term),
+                    BinaryPackageName.name.contains_string(
+                        search_term))).config(distinct=True)
+        return [
+            self.toTerm(distribution.getSourcePackage(spn)) for spn in spns]

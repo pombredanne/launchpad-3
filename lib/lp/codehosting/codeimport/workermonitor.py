@@ -248,14 +248,20 @@ class CodeImportWorkerMonitor:
         Different exit codes are presumed by Twisted to be errors, but are
         different kinds of success for us.
         """
+        exit_code_map = {
+            CodeImportWorkerExitCode.SUCCESS_NOCHANGE:
+                CodeImportResultStatus.SUCCESS_NOCHANGE,
+            CodeImportWorkerExitCode.SUCCESS_PARTIAL:
+                CodeImportResultStatus.SUCCESS_PARTIAL,
+            CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE:
+                CodeImportResultStatus.FAILURE_UNSUPPORTED_FEATURE,
+            CodeImportWorkerExitCode.FAILURE_INVALID:
+                CodeImportResultStatus.FAILURE_INVALID,
+                }
         if isinstance(reason, failure.Failure):
             if reason.check(error.ProcessTerminated):
-                if reason.value.exitCode == \
-                       CodeImportWorkerExitCode.SUCCESS_NOCHANGE:
-                    return CodeImportResultStatus.SUCCESS_NOCHANGE
-                elif reason.value.exitCode == \
-                       CodeImportWorkerExitCode.SUCCESS_PARTIAL:
-                    return CodeImportResultStatus.SUCCESS_PARTIAL
+                return exit_code_map.get(reason.value.exitCode,
+                    CodeImportResultStatus.FAILURE)
             return CodeImportResultStatus.FAILURE
         else:
             return CodeImportResultStatus.SUCCESS

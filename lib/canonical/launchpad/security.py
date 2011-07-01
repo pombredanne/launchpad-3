@@ -119,7 +119,6 @@ from lp.registry.interfaces.nameblacklist import (
     INameBlacklistSet,
     )
 from lp.registry.interfaces.packaging import IPackaging
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -176,6 +175,7 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageReleaseDownloadCount,
     )
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
+from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJobEdit
 from lp.soyuz.interfaces.packageset import (
     IPackageset,
     IPackagesetSet,
@@ -1449,7 +1449,18 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
         permissions = permission_set.componentsForQueueAdmin(
             self.obj.distroseries.distribution.all_distro_archives,
             user.person)
-        return permissions.count() > 0
+        return not permissions.is_empty()
+
+
+class EditPackageCopyJob(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IPackageCopyJobEdit
+
+    def checkAuthenticated(self, user):
+        permission_set = getUtility(IArchivePermissionSet)
+        permissions = permission_set.componentsForQueueAdmin(
+            self.obj.target_archive, user.person)
+        return not permissions.is_empty()
 
 
 class EditPackageUpload(AdminByAdminsTeam):
@@ -2606,10 +2617,12 @@ class EditSourcePackage(AuthorizationBase):
         if user.inTeam(distribution.owner):
             return True
 
-        # checkUpload() returns the reason the user can't upload
+        # We use verifyUpload() instead of checkUpload() because
+        # we don't have a pocket.
+        # It returns the reason the user can't upload
         # or None if they are allowed.
-        reason = distribution.main_archive.checkUpload(
-            user.person, self.obj.distroseries, self.obj.sourcepackagename,
-            component=None, pocket=PackagePublishingPocket.RELEASE,
-            strict_component=False)
+        reason = distribution.main_archive.verifyUpload(
+            user.person, distroseries=self.obj.distroseries,
+            sourcepackagename=self.obj.sourcepackagename,
+            component=None, strict_component=False)
         return reason is None

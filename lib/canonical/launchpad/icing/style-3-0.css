@@ -892,6 +892,10 @@ table.form table.extra-options td,
 table.form table.extra-options th {
     padding-bottom: 1em;
     }
+table.form table.listing th,
+table.form table.listing td {
+    padding-bottom: 0.25em;
+}
 table.form td td {
     padding-bottom: 0;
     }
@@ -914,6 +918,9 @@ fieldset.collapsible {
     margin: 0;
     padding: 16px 0 0; /* "Add a comment/attachment" form in bug reports */
     }
+fieldset.collapsible h2 {
+    margin-top: 0;
+}
 fieldset .collapsed {
     display: none;
     }
@@ -955,6 +962,9 @@ h1 .edit {
 .yui3-ieditor {
     padding-right: 288px;
     }
+.yui3-skin-sam .yui3-ieditor-input {
+    margin-top: 0;
+}
 h1 .yui3-ieditor-errors {
     font-size: 12px;
     }
@@ -1456,6 +1466,10 @@ div.watermark-apps-portlet span img {
     }
 .announcements li {
     margin-bottom: 0.5em;
+    /* Some announcements have long strings of characters as section headers
+     * and such.  Since they don't have whitespace they can't wrap, so they
+     * would break out of their container if we didn't clip them here. */
+    overflow: hidden;
     }
 .announcements li strong,
 .announcements li a {
@@ -1939,6 +1953,10 @@ body.tab-bugs #duplicate-actions .sprite {
     }
 
 /* Picker styles */
+.yui3-picker {
+    width: 40%;
+    }
+
 .yui3-picker-results div.badge {
     position: absolute;
     top: 3px;
@@ -2226,4 +2244,9 @@ div.translation-help-links a {
     }
 div.translation-help-links div {
     clear: both;
+    }
+/* Message boxes (especially error boxes) should be visible above other
+ * elments. */
+.yui3-activator-message-box {
+    z-index: 9999;
     }
