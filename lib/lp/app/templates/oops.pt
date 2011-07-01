@@ -1,15 +1,25 @@
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
-  xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/locationless"
-  i18n:domain="launchpad"
+  xml:lang="en"
+  lang="en"
 >
+  <head
+     tal:define="
+       revno modules/lp.app.versioninfo/revno | string:unknown;
+       icingroot string:/+icing/rev${revno}"
+     >
+    <title>Oops!</title>
+    <style type="text/css" media="screen, print"
+           tal:attributes="href string:${icingroot}/combo.css">
+    </style>
+    <script type="text/javascript"
+        tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
+  </head>
   <body>
-    <div class="top-portlet" metal:fill-slot="main">
+    <div class="yui-d0">
 
-
+      <div id="maincontent">
         <h1 class="exception">Oops!</h1>
         <p>
           Sorry, something just went wrong in Launchpad.
@@ -34,6 +44,8 @@
             </li>
           </ul>
         </div>
+      </div>
     </div>
+
   </body>
 </html>
