@@ -132,7 +132,7 @@ class RabbitRoutingKey(RabbitMessageBase):
             routing_key=self.key, nowait=False)
 
     def send(self, data):
-        """See `IMessageQueue`."""
+        """See `IMessageProducer`."""
         self._initialize()
         messages = self.class_locals.messages
         # XXX: The data manager should close channels and flush too

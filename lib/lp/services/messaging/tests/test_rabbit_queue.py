@@ -80,3 +80,18 @@ class TestRabbitQueue(TestCase):
         # There are no more messages. They have all been consumed.
         self.key.send_now('sync')
         self.assertEqual(self.queue.receive(timeout=5), 'sync')
+
+    def test_abort(self):
+        for data in range(90, 100):
+            self.key.send(data)
+
+        self.key.send_now('sync')
+        # There is nothing in the queue except the sync we just sent.
+        self.assertEqual(self.queue.receive(timeout=5), 'sync')
+
+        # Messages get forgotten on abort.
+        transaction.abort()
+
+        # There are no more messages. They have all been consumed.
+        self.key.send_now('sync2')
+        self.assertEqual(self.queue.receive(timeout=5), 'sync2')
