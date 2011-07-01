@@ -34,7 +34,8 @@ class MessagingDataManager:
 
     def _cleanup(self):
         """Completely remove the list of stored messages"""
-        del self.utility.messages
+        if hasattr(self.utility, "messages"):
+            del self.utility.messages
 
     def abort(self, txn):
         pass
