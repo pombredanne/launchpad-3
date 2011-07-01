@@ -46,34 +46,35 @@ class TestRabbitQueue(TestCase):
 
     def test_send_now_not_backwards(self):
         for data in range(1, 10):
-            self.queue.send_now(self.key, data)
+            self.key.send_now(data)
         for data in range(1, 10):
-            received_data = self.queue.receive(blocking=True)
+            received_data = self.queue.receive(timeout=5)
             self.assertEqual(received_data, data)
 
     def test_receive_consumes(self):
         for data in range(55, 65):
-            self.queue.send_now(self.key, data)
-            self.assertEqual(self.queue.receive(blocking=True), data)
+            self.key.send_now(data)
+            self.assertEqual(self.queue.receive(timeout=5), data)
 
-        # None of the messages we received where put back. They were all
+        # None of the messages we received were put back. They were all
         # consumed.
         self.assertRaises(
             EmptyQueueException,
-            self.queue.receive, blocking=False)
+            self.queue.receive, timeout=5)
 
         # New connections to the queue see an empty queue too.
         self.queue._disconnect()
+        key = RabbitRoutingKey(self.key.key)
         queue = RabbitQueue(self.queue_name)
-        queue.subscribe(self.key)
-        queue.send(self.key, 'new conn sync')
-        self.assertEqual(queue.receive(blocking=True), 'new conn sync')
+        key.associateConsumer(self.queue)
+        key.send('new conn sync')
+        self.assertEqual(queue.receive(timeout=5), 'new conn sync')
 
     def test_send(self):
         for data in range(90, 100):
-            self.queue.send(key, data)
+            self.key.send(data)
 
-        self.queue.send_now(key, 'sync')
+        self.key.send_now('sync')
         # There is nothing in the queue except the sync we just sent.
         self.assertEqual(self.queue.receive(), 'sync')
 
@@ -83,5 +84,5 @@ class TestRabbitQueue(TestCase):
             self.assertEqual(self.queue.receive(), data)
 
         # There are no more messages. They have all been consumed.
-        self.queue.send_now(key, 'sync')
+        self.key.send_now('sync')
         self.assertEqual(self.queue.receive(), 'sync')
