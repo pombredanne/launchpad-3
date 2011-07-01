@@ -600,8 +600,9 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         super(BranchMergeProposalView, self).initialize()
         if self.next_preview_diff_job is not None:
             from lp.app.longpoll import subscribe
+            from lp.services.job.interfaces.job import JobStatus
             self.pending_diff_key = subscribe(
-                self.next_preview_diff_job, "Completed")
+                self.next_preview_diff_job, JobStatus.COMPLETED)
 
     @action('Claim', name='claim')
     def claim_action(self, action, data):
