@@ -202,6 +202,7 @@ eggs:
 	# Usually this is linked via link-external-sourcecode, but in
 	# deployment we create this ourselves.
 	mkdir eggs
+	mkdir yui
 
 buildonce_eggs: $(PY)
 	find eggs -name '*.pyc' -exec rm {} \;
