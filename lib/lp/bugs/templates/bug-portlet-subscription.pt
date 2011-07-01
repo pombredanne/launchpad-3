@@ -36,17 +36,19 @@
             tal:content="view/notifications_text/muted" />
     </div>
     <div id="sub-unsub-spinner">Subscribing...</div>
-    <tal:show-mute condition="view/user">
-      <div tal:attributes="class python:
-                'hidden' if not view.user_should_see_mute_link else None"
-           id="mute-link-container">
-        <span tal:replace="structure context_menu/mute_subscription/render"
-        />&nbsp;<a target="help" class="sprite maybe mute-help"
-            href="/+help/subscription-mute.html"
-          >&nbsp;<span class="invisible-link">Mute help</span></a>
-      </div>
-    </tal:show-mute>
-    <div tal:content="structure context_menu/editsubscriptions/render" />
+    <ul>
+      <li tal:condition="view/user">
+        <div tal:attributes="class python:
+                  'hidden' if not view.user_should_see_mute_link else None"
+            id="mute-link-container">
+          <span tal:replace="structure context_menu/mute_subscription/render"
+          />&nbsp;<a target="help" class="sprite maybe mute-help"
+              href="/+help/subscription-mute.html"
+            >&nbsp;<span class="invisible-link">Mute help</span></a>
+        </div>
+      </li>
+      <li tal:content="structure context_menu/editsubscriptions/render" />
+    </ul>
   </div>
   <script type="text/javascript">
     LPS.use('io-base', 'node',

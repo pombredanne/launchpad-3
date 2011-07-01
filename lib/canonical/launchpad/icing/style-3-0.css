@@ -1949,7 +1949,7 @@ body.tab-bugs #duplicate-actions .sprite {
     /* Override sprite style for edit icon on "Mark as duplicate"
        to make the text not appear on a second line.
     */
-    display:inline;
+    display: inline;
     }
 
 /* Picker styles */
