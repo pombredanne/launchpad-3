@@ -17,13 +17,19 @@ from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import get_current_browser_request
 from zope.component import (
     adapts,
-    getAdapter,
+    getMultiAdapter,
     )
-from zope.interface import implements
+from zope.interface import (
+    implements,
+    Interface,
+    )
 from zope.publisher.interfaces import IApplicationRequest
 
+from lp.services.job.interfaces.job import (
+    IJob,
+    JobStatus,
+    )
 from lp.services.messaging.utility import messaging
-from lp.services.job.interfaces.job import IJob
 
 
 class LongPollSubscriber:
@@ -60,20 +66,30 @@ def subscribe(target, event):
 
     :return: The key that has been subscribed to.
     """
-    emitter = getAdapter(target, ILongPollEmitter, name=event)
+    emitter = getMultiAdapter((target, event), ILongPollEmitter)
     request = get_current_browser_request()
     ILongPollSubscriber(request).subscribe(emitter)
     return emitter.emit_key
 
 
+def emit(source, event, data):
+    emitter = getMultiAdapter((source, event), ILongPollEmitter)
+    messaging.send(emitter.emit_key, data)
+
+
 class JobLongPollEmitter:
 
-    adapts(IJob)
+    adapts(IJob, Interface)
     implements(ILongPollEmitter)
 
-    def __init__(self, job):
+    def __init__(self, job, status):
         self.job = job
+        if status not in JobStatus:
+            raise AssertionError(
+                "%r does not emit %r events." % (job, status))
+        self.status = status
 
     @property
     def emit_key(self):
-        return "longpoll.job.%d.Completed" % self.job.id
+        return "longpoll.job.%d.%s" % (
+            self.job.id, self.status.name)

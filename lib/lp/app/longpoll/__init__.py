@@ -5,9 +5,13 @@
 
 __metaclass__ = type
 __all__ = [
+    "emit",
     "subscribe",
     ]
 
-from .adapters import subscribe
+from .adapters import (
+    emit,
+    subscribe,
+    )
 
 
