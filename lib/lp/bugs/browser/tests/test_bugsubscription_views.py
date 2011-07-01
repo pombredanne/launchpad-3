@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from simplejson import dumps
 
+from zope.component import getUtility
 from zope.traversing.browser import absoluteURL
 
 from canonical.launchpad.ftests import LaunchpadFormHarness
@@ -19,10 +20,12 @@ from lp.bugs.browser.bugsubscription import (
     BugSubscriptionSubscribeSelfView,
     )
 from lp.bugs.enum import BugNotificationLevel
+from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
 
@@ -570,6 +573,67 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
             'subscription_level': "Lifecycle",
             }
         with person_logged_in(subscriber.teamowner):
+            self.assertEqual(
+                dumps([expected_result]), harness.view.subscriber_data_js)
+
+    def test_data_subscription_lp_admin(self):
+        # For a subscription, subscriber_data_js has can_edit
+        # set to true for a Launchpad admin.
+        bug = self._makeBugWithNoSubscribers()
+        member = self.factory.makePerson()
+        subscriber = self.factory.makePerson(
+            name='user', displayname='Subscriber Name')
+        with person_logged_in(member):
+            bug.subscribe(subscriber, subscriber,
+                          level=BugNotificationLevel.LIFECYCLE)
+        harness = LaunchpadFormHarness(
+            bug, BugPortletSubscribersWithDetails)
+        api_request = IWebServiceClientRequest(harness.request)
+
+        expected_result = {
+            'subscriber': {
+                'name': 'user',
+                'display_name': 'Subscriber Name',
+                'is_team': False,
+                'can_edit': True,
+                'web_link': canonical_url(subscriber),
+                'self_link': absoluteURL(subscriber, api_request),
+                },
+            'subscription_level': "Lifecycle",
+            }
+
+        # Login as admin
+        admin = getUtility(IPersonSet).find(ADMIN_EMAIL).any()
+        with person_logged_in(admin):
+            self.assertEqual(
+                dumps([expected_result]), harness.view.subscriber_data_js)
+
+    def test_data_person_subscription_subscriber(self):
+        # For a subscription, subscriber_data_js has can_edit
+        # set to true for the subscriber.
+        bug = self._makeBugWithNoSubscribers()
+        subscriber = self.factory.makePerson(
+            name='user', displayname='Subscriber Name')
+        subscribed_by = self.factory.makePerson(
+            name='someone', displayname='Subscribed By Name')
+        with person_logged_in(subscriber):
+            bug.subscribe(subscriber, subscribed_by,
+                          level=BugNotificationLevel.LIFECYCLE)
+        harness = LaunchpadFormHarness(bug, BugPortletSubscribersWithDetails)
+        api_request = IWebServiceClientRequest(harness.request)
+
+        expected_result = {
+            'subscriber': {
+                'name': 'user',
+                'display_name': 'Subscriber Name',
+                'is_team': False,
+                'can_edit': True,
+                'web_link': canonical_url(subscriber),
+                'self_link': absoluteURL(subscriber, api_request),
+                },
+            'subscription_level': "Lifecycle",
+            }
+        with person_logged_in(subscribed_by):
             self.assertEqual(
                 dumps([expected_result]), harness.view.subscriber_data_js)
 

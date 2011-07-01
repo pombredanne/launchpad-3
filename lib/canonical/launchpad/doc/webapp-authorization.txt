@@ -60,13 +60,11 @@ The access level of a principal also specifies whether or not it has
 access to private objects.  For instance, the above principal has
 permission to read private and non-private objects (READ_PRIVATE).
 
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> login('test@canonical.com')
     >>> bug_1 = getUtility(IBugSet).get(1)
     >>> bug_1.setPrivate(True, sample_person)
     True
-    >>> syncUpdate(bug_1)
     >>> check_permission('launchpad.View', bug_1)
     True
 
