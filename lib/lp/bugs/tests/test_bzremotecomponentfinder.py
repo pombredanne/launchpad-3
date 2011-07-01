@@ -121,6 +121,14 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
         super(TestBugzillaRemoteComponentFinder, self).setUp()
         login(ADMIN_EMAIL)
 
+    def assertGetRemoteProductsAndComponentsDoesNotAssert(self, finder):
+        asserted = None
+        try:
+            finder.getRemoteProductsAndComponents()
+        except Exception as e:
+            asserted = e
+        self.assertIs(None, asserted)
+
     def test_store(self):
         """Check that already-parsed data gets stored to database"""
         lp_bugtracker = self.factory.makeBugTracker()
@@ -230,14 +238,6 @@ class TestBugzillaRemoteComponentFinder(TestCaseWithFactory):
             logger=BufferLogger(), static_bugzilla_scraper=bz_scraper)
 
         self.assertGetRemoteProductsAndComponentsDoesNotAssert(finder)
-
-    def assertGetRemoteProductsAndComponentsDoesNotAssert(self, finder):
-        asserted = None
-        try:
-            finder.getRemoteProductsAndComponents()
-        except Exception as e:
-            asserted = e
-        self.assertIs(None, asserted)
 
 # FIXME: This takes ~9 sec to run, but mars says new testsuites need to
 #        compete in 2
