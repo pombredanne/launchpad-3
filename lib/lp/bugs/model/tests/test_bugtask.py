@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 from datetime import timedelta
-from doctest import DocTestSuite
 import unittest
 
 from lazr.lifecycle.snapshot import Snapshot
