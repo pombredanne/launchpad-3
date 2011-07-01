@@ -75,7 +75,7 @@
                              age python:view.patchAge(patch)"
                  tal:attributes="id string:patch-cell-${repeat/patch_task/index}">
                    <a tal:attributes="href python:view.proxiedUrlForLibraryFile(patch)"
-                      tal:content="age/fmt:approximateduration/use-digits"></a>
+                      tal:content="age/fmt:approximateduration"></a>
                <div class="popupTitle"
                     tal:attributes="id string:patch-popup-${repeat/patch_task/index};">
                  <p tal:define="submitter patch/message/owner">
