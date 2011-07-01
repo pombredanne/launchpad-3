@@ -202,19 +202,22 @@
                   condition="revisions | nothing">
         <metal:landing-target use-macro="branch/@@+macros/revision-text"/>
     </tal:revision>
-    <tal:diff-expander condition="show_diff_expander | nothing">
-      <div class="revision-group-diff" tal:condition="revisions | nothing">
-        <a class="unseen expander-icon js-action"
-           tal:define="start_revno python:revisions[0].sequence;
-                       last_revno python:revisions[-1].sequence"
-           tal:attributes="id string:expandable-${start_revno}-${last_revno}"
-        >Changes added by revision <tal:revno replace="start_revno">1</tal:revno>
-          <tal:plural condition="python: start_revno!=last_revno">
-            to revision <tal:revno replace="last_revno">2</tal:revno>
-          </tal:plural></a>
-      <div class="unseen expander-content">Loading diff</div>
-      </div>
-    </tal:diff-expander>
+    <tal:ajax-revision-diffs
+        condition="request/features/code.ajax_revision_diffs.enabled">
+      <tal:diff-expander condition="show_diff_expander | nothing">
+	<div class="revision-group-diff" tal:condition="revisions | nothing">
+	  <a class="unseen expander-icon"
+	     tal:define="start_revno python:revisions[0].sequence;
+			 last_revno python:revisions[-1].sequence"
+	     tal:attributes="id string:expandable-${start_revno}-${last_revno}"
+	  >Changes added by revision <tal:revno replace="start_revno">1</tal:revno>
+	    <tal:plural condition="python: start_revno!=last_revno">
+	      to revision <tal:revno replace="last_revno">2</tal:revno>
+	    </tal:plural></a>
+	<div class="unseen expander-content">Loading diff</div>
+	</div>
+      </tal:diff-expander>
+    </tal:ajax-revision-diffs>
   </dl>
 
 </metal:branch-revisions>
@@ -268,8 +271,10 @@
       The revision commit message.
     </tal:commit-message>
   </dd>
-  <div class="revision-expander">
-    <a class="unseen expander-icon js-action"
+  <div
+      class="revision-expander"
+      tal:condition="request/features/code.ajax_revision_diffs.enabled">
+    <a class="unseen expander-icon"
        tal:attributes="id string:expandable-${rev_no/sequence}"
      >Changes</a>
     <div class="unseen expander-content">
