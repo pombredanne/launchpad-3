@@ -10,9 +10,13 @@ import transaction
 from canonical.testing.layers import RabbitMQLayer
 from lp.services.messaging.interfaces import (
     EmptyQueueException,
-    IMessageQueue,
+    IMessageConsumer,
+    IMessageProducer,
     )
-from lp.services.messaging.queue import RabbitQueue
+from lp.services.messaging.queue import (
+    RabbitQueue,
+    RabbitRoutingKey,
+    )
 from lp.testing import TestCase
 
 
@@ -23,20 +27,21 @@ class TestRabbitQueue(TestCase):
         super(TestCase, self).setUp()
         self.queue_name = 'whatever'
         self.queue = RabbitQueue(self.queue_name)
-        self.key = 'arbitrary.routing.key'
-        self.queue.subscribe(self.key)
+        self.key = RabbitRoutingKey('arbitrary.routing.key')
+        self.key.associateConsumer(self.queue)
 
     def tearDown(self):
         self.queue._disconnect()
         super(TestCase, self).tearDown()
 
     def test_implements(self):
-        IMessageQueue.providedBy(self.queue)
+        self.assertTrue(IMessageConsumer.providedBy(self.queue))
+        self.assertTrue(IMessageProducer.providedBy(self.key))
 
     def test_send_now(self):
         for data in range(50, 60):
-            self.queue.send_now(self.key, data)
-            received_data = queue.receive(blocking=True)
+            self.key.send_now(data)
+            received_data = self.queue.receive(timeout=5)
             self.assertEqual(received_data, data)
 
     def test_send_now_not_backwards(self):

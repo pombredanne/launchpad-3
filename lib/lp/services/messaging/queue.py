@@ -12,6 +12,7 @@ __all__ = [
 from amqplib import client_0_8 as amqp
 import json
 from threading import local as thread_local
+import time
 import transaction
 from zope.interface import implements
 
@@ -91,7 +92,7 @@ class RabbitMessageBase:
         #    '/data', active=True, write=True, read=True)
         self.channel.exchange_declare(
             LAUNCHPAD_EXCHANGE, "direct", durable=False,
-            auto_delete=False, nowait=True)
+            auto_delete=False, nowait=False)
 
     def close(self):
         # Note the connection is not closed - it is shared with other
@@ -121,14 +122,14 @@ class RabbitRoutingKey(RabbitMessageBase):
         self._initialize()
         self.channel.queue_bind(
             queue=consumer.name, exchange=LAUNCHPAD_EXCHANGE,
-            routing_key=self.key, nowait=True)
+            routing_key=self.key, nowait=False)
 
     def disassociateConsumer(self, consumer):
         """Stop receiving messages for the requested routing key."""
         self._initialize()
         self.channel.queue_unbind(
             queue=consumer.name, exchange=LAUNCHPAD_EXCHANGE,
-            routing_key=self.key, nowait=True)
+            routing_key=self.key, nowait=False)
 
     def send(self, data):
         """See `IMessageQueue`."""
@@ -155,35 +156,28 @@ class RabbitQueue(RabbitMessageBase):
 
     def __init__(self, name):
         self.name = name
+        self._initialize()
+        self.channel.queue_declare(self.name, nowait=False)
 
-    def receive(self, blocking=True):
+    def receive(self, timeout=0.0):
         """Pull a message from the queue.
 
-        :param blocking: If True, wait until a message is received instead of
-            returning immediately if there is nothing on the queue.
+        :param timeout: Wait a maximum of `timeout` seconds before giving up,
+            trying at least once.  If timeout is None, block forever.
+        :raises: EmptyQueueException if the timeout passes.
         """
-        self._initialize()
-        self.channel.queue_declare(self.name, nowait=True)
-
-        if not blocking:
-            message = self.channel.basic_get(self.name)
-            if message is None:
-                # We need to raise an exception, as None is a legitimate
-                # return value.
-                raise EmptyQueueException()
-            else:
-                return json.loads(message.body)
-
-        # XXX: Hacked blocking get. Using basic_consume will be better.
-        import time
+        starttime = time.time()
         while True:
             message = self.channel.basic_get(self.name)
             if message is None:
+                if time.time() > (starttime + timeout):
+                    raise EmptyQueueException
                 time.sleep(0.1)
             else:
                 return json.loads(message.body)
 
-
+        # XXX The code below will be useful when we can implement this
+        # properly.
         result = []
         def callback(msg):
             result.append(json.loads(msg.body))
