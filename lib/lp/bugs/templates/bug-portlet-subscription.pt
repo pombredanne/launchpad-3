@@ -37,7 +37,7 @@
     </div>
     <div id="sub-unsub-spinner">Subscribing...</div>
     <ul>
-      <li condition="view/user">
+      <li tal:condition="view/user">
         <div tal:attributes="class python:
                   'hidden' if not view.user_should_see_mute_link else None"
             id="mute-link-container">
