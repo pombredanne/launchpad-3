@@ -128,11 +128,6 @@ Make the uploaded orig file available to librarian lookups
     >>> import transaction
     >>> transaction.commit()
 
-Ensure the previous transaction is *really* in the database before the next
-test:
-
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(bar_src.queue_root)
 
 Uploading the same package again will result in a rejection email:
 

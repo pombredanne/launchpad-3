@@ -150,8 +150,6 @@ it.
     >>> print owner.displayname
     No Privileges Person
     >>> held_message.approve(owner)
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(held_message)
 
 This sets the status of the hold to APPROVAL_PENDING because Mailman
 still needs to see this approval.
@@ -183,7 +181,6 @@ bounced back to the sender.
     ... """)
     >>> held_message = list_one.holdMessage(message)
     >>> held_message.reject(owner)
-    >>> syncUpdate(held_message)
 
     >>> print held_message.message_id
     <second-post>
@@ -211,7 +208,6 @@ message.
     ... """)
     >>> held_message = list_one.holdMessage(message)
     >>> held_message.discard(owner)
-    >>> syncUpdate(held_message)
 
     >>> print held_message.message_id
     <third-post>
