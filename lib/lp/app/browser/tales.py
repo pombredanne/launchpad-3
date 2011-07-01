@@ -2235,9 +2235,7 @@ class DurationFormatterAPI:
         minutes += remaining_seconds / 60.0
         minutes = int(round(minutes))
 
-        if minutes == 1:
-            return "1 minute"
-        elif minutes <= 59:
+        if minutes <= 59:
             return "%d minutes" % minutes
 
         # Is the duration less than an hour and 5 minutes?
