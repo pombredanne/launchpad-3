@@ -27,7 +27,8 @@ class TestRabbitQueue(TestCase):
         super(TestCase, self).setUp()
         self.queue_name = 'whatever'
         self.queue = RabbitQueue(self.queue_name)
-        self.key = RabbitRoutingKey('arbitrary.routing.key')
+        self.key_name = "arbitrary.routing.key"
+        self.key = RabbitRoutingKey(self.key_name)
         self.key.associateConsumer(self.queue)
 
     def tearDown(self):
@@ -44,13 +45,6 @@ class TestRabbitQueue(TestCase):
             received_data = self.queue.receive(timeout=5)
             self.assertEqual(received_data, data)
 
-    def test_send_now_not_backwards(self):
-        for data in range(1, 10):
-            self.key.send_now(data)
-        for data in range(1, 10):
-            received_data = self.queue.receive(timeout=5)
-            self.assertEqual(received_data, data)
-
     def test_receive_consumes(self):
         for data in range(55, 65):
             self.key.send_now(data)
@@ -64,10 +58,10 @@ class TestRabbitQueue(TestCase):
 
         # New connections to the queue see an empty queue too.
         self.queue._disconnect()
-        key = RabbitRoutingKey(self.key.key)
+        key = RabbitRoutingKey(self.key_name)
         queue = RabbitQueue(self.queue_name)
-        key.associateConsumer(self.queue)
-        key.send('new conn sync')
+        key.associateConsumer(queue)
+        key.send_now('new conn sync')
         self.assertEqual(queue.receive(timeout=5), 'new conn sync')
 
     def test_send(self):
@@ -76,7 +70,7 @@ class TestRabbitQueue(TestCase):
 
         self.key.send_now('sync')
         # There is nothing in the queue except the sync we just sent.
-        self.assertEqual(self.queue.receive(), 'sync')
+        self.assertEqual(self.queue.receive(timeout=5), 'sync')
 
         # Messages get sent on commit
         transaction.commit()
@@ -85,4 +79,4 @@ class TestRabbitQueue(TestCase):
 
         # There are no more messages. They have all been consumed.
         self.key.send_now('sync')
-        self.assertEqual(self.queue.receive(), 'sync')
+        self.assertEqual(self.queue.receive(timeout=5), 'sync')

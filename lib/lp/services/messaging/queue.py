@@ -61,8 +61,8 @@ class MessagingDataManager:
         return "zz_messaging_%s" % id(self)
 
     def commit(self, txn):
-        for send_func, key, data in self.messages:
-            send_func(key, data)
+        for send_func, data in self.messages:
+            send_func(data)
         self._cleanup()
 
 
@@ -138,7 +138,7 @@ class RabbitRoutingKey(RabbitMessageBase):
         # XXX: The data manager should close channels and flush too
         if not messages:
             transaction.get().join(MessagingDataManager(messages))
-        messages.append((self.send_now, self.key, data))
+        messages.append((self.send_now, data))
 
     def send_now(self, data):
         """Immediately send a message to the broker."""
@@ -174,7 +174,9 @@ class RabbitQueue(RabbitMessageBase):
                     raise EmptyQueueException
                 time.sleep(0.1)
             else:
-                return json.loads(message.body)
+                data = json.loads(message.body)
+                self.channel.basic_ack(message.delivery_tag)
+                return data
 
         # XXX The code below will be useful when we can implement this
         # properly.
