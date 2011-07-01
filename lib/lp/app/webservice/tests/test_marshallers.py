@@ -121,9 +121,14 @@ class TestWebServiceObfuscation(TestCaseWithFactory):
         self.assertIn(self.email_address_obfuscated_escaped, result.body)
 
     def test_etags_differ_for_anon_and_non_anon_represetations(self):
-        # The etag header sent for anonmoues requests where email
-        # addresses are obfusacted differs from the etag header
-        # sent in non-obfuscated responses.
+        # When a webservice client retrieves data anonymously, this
+        # data should not be used in later write requests, if the
+        # text fields contain obfuscated email addresses. The etag
+        # for a GET request is calculated after the email address
+        # obfuscation and thus differs from the etag returned for
+        # not obfuscated data, so clients usings etags to check if the
+        # cached data is up to date will not use the obfuscated data
+        # in PATCH or PUT requests.
         bug = self._makeBug()
         user = self.factory.makePerson()
         webservice = webservice_for_person(user)
