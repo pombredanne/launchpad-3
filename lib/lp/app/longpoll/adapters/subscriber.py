@@ -6,22 +6,14 @@
 __metaclass__ = type
 __all__ = []
 
-
 from uuid import uuid4
 
-from .interfaces import (
-    ILongPollEmitter,
-    ILongPollSubscriber,
-    )
 from lazr.restful.interfaces import IJSONRequestCache
-from lazr.restful.utils import get_current_browser_request
-from zope.component import (
-    adapts,
-    getMultiAdapter,
-    )
+from zope.component import adapts
 from zope.interface import implements
 from zope.publisher.interfaces import IApplicationRequest
 
+from lp.app.longpoll.interfaces import ILongPollSubscriber
 from lp.services.messaging.utility import messaging
 
 
@@ -49,22 +41,3 @@ class LongPollSubscriber:
                 }
         messaging.listen(self.subscribe_key, emitter.emit_key)
         cache.objects["longpoll"]["subscriptions"].append(emitter.emit_key)
-
-
-def subscribe(target, event):
-    """Convenience method to subscribe the current request.
-
-    :param target: Something that can be adapted to `ILongPollEmitter`.
-    :param event: The name of the event to subscribe to.
-
-    :return: The key that has been subscribed to.
-    """
-    emitter = getMultiAdapter((target, event), ILongPollEmitter)
-    request = get_current_browser_request()
-    ILongPollSubscriber(request).subscribe(emitter)
-    return emitter.emit_key
-
-
-def emit(source, event, data):
-    emitter = getMultiAdapter((source, event), ILongPollEmitter)
-    messaging.send(emitter.emit_key, data)

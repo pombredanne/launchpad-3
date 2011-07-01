@@ -10,5 +10,4 @@
   <class class=".model.job.Job">
     <allow interface=".interfaces.job.IJob" />
   </class>
-  <adapter factory=".adapters.JobLongPollEmitter" />
 </configure>

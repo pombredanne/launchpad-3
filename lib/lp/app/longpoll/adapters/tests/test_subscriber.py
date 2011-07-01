@@ -1,14 +1,14 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Long-poll adapter tests."""
+"""Long-poll subscriber adapter tests."""
 
 __metaclass__ = type
 
 from itertools import count
 
-from ..adapters import LongPollSubscriber
-from ..interfaces import (
+from lp.app.longpoll.adapters.subscriber import LongPollSubscriber
+from lp.app.longpoll.interfaces import (
     ILongPollEmitter,
     ILongPollSubscriber,
     )
