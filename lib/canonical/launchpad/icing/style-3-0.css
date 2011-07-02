@@ -1447,6 +1447,9 @@ div.watermark-apps-portlet span img {
     padding: 0;
     font-weight: bold;
     }
+.involvement li.single {
+    border-top: 0;
+}
 .involvement a {
     display: block;
     padding: 0.3em;
