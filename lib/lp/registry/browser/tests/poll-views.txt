@@ -101,7 +101,7 @@ and an owner is the owner has a link to create more polls.
     >>> print extract_text(view.render())
     Polls
     title - closes on ...
-    You have seven days left to vote in this poll.
+    You have 7 days left to vote in this poll.
     Show polls
 
     >>> login_person(owner)
@@ -109,7 +109,7 @@ and an owner is the owner has a link to create more polls.
     >>> print extract_text(view.render())
     Polls
     title - closes on ...
-    You have seven days left to vote in this poll.
+    You have 7 days left to vote in this poll.
     Show polls
     Create a poll
 
