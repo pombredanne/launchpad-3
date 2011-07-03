@@ -191,7 +191,7 @@ $(JS_YUI) $(JS_LAZR): jsbuild_minify
 
 $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
-	cat $^ | $(PY) -m jsmin > $@
+	cat $^ | $(PY) -m lp.scripts.utilities.js.jsmin > $@
 else
 	cat $^ > $@
 endif
