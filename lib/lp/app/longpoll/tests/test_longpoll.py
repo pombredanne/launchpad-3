@@ -23,7 +23,7 @@ from lp.app.longpoll import (
     emit,
     subscribe,
     )
-from lp.app.longpoll.interfaces import ILongPollEmitter
+from lp.app.longpoll.interfaces import ILongPollEvent
 from lp.testing import TestCase
 from lp.testing.matchers import Contains
 
@@ -45,14 +45,14 @@ class FakeObject:
 class FakeEmitter:
 
     adapts(IFakeObject, Interface)
-    implements(ILongPollEmitter)
+    implements(ILongPollEvent)
 
     def __init__(self, source, event):
         self.source = source
         self.event = event
 
     @property
-    def emit_key(self):
+    def event_key(self):
         return "emit-key-%s-%s" % (
             self.source.ident, self.event)
 
@@ -81,8 +81,8 @@ class TestSubscribe(TestCase):
         cache = IJSONRequestCache(request)
         an_object = FakeObject(12345)
         with AdapterFixture(FakeEmitter):
-            emit_key = subscribe(an_object, "foo", request=request)
-        self.assertEqual("emit-key-12345-foo", emit_key)
+            event_key = subscribe(an_object, "foo", request=request)
+        self.assertEqual("emit-key-12345-foo", event_key)
         self.assertThat(
             cache.objects["longpoll"]["subscriptions"],
             Contains("emit-key-12345-foo"))

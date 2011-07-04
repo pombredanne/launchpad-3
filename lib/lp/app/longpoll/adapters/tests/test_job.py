@@ -7,7 +7,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCase
-from lp.app.longpoll.interfaces import ILongPollEmitter
+from lp.app.longpoll.interfaces import ILongPollEvent
 from zope.component import getMultiAdapter
 
 
@@ -18,7 +18,7 @@ class TestJobLongPollEmitter(TestCase):
     def test_adapt(self):
         job = Job()
         adapter = getMultiAdapter(
-            (job, JobStatus.RUNNING), ILongPollEmitter)
+            (job, JobStatus.RUNNING), ILongPollEvent)
         self.assertEqual(
             "longpoll.job.%d.RUNNING" % job.id,
-            adapter.emit_key)
+            adapter.event_key)

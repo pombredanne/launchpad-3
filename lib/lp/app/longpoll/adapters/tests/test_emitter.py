@@ -9,7 +9,7 @@ from zope.interface import implements
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.app.longpoll.adapters.emitter import LongPollEmitter
-from lp.app.longpoll.interfaces import ILongPollEmitter
+from lp.app.longpoll.interfaces import ILongPollEvent
 from lp.services.messaging.queue import RabbitMessageBase
 from lp.testing import TestCase
 from lp.testing.matchers import Contains
@@ -17,10 +17,10 @@ from lp.testing.matchers import Contains
 
 class FakeEmitter(LongPollEmitter):
 
-    implements(ILongPollEmitter)
+    implements(ILongPollEvent)
 
     @property
-    def emit_key(self):
+    def event_key(self):
         return "emit-key-%s-%s" % (self.source, self.event)
 
 
@@ -30,16 +30,16 @@ class TestLongPollEmitter(TestCase):
 
     def test_interface(self):
         emitter = FakeEmitter("source", "event")
-        self.assertProvides(emitter, ILongPollEmitter)
+        self.assertProvides(emitter, ILongPollEvent)
 
-    def test_emit_key(self):
-        # emit_key is not implemented in LongPollEmitter; subclasses must
+    def test_event_key(self):
+        # event_key is not implemented in LongPollEmitter; subclasses must
         # provide it.
         emitter = LongPollEmitter("source", "event")
-        self.assertRaises(NotImplementedError, getattr, emitter, "emit_key")
+        self.assertRaises(NotImplementedError, getattr, emitter, "event_key")
 
     def test_emit(self):
-        # LongPollEmitter.emit() sends the given data to `emit_key`.
+        # LongPollEmitter.emit() sends the given data to `event_key`.
         emitter = FakeEmitter("source", "event")
         emitter.emit({"hello": 1234})
         messages = [

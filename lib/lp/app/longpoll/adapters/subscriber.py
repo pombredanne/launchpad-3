@@ -44,6 +44,6 @@ class LongPollSubscriber:
                 "subscriptions": [],
                 }
         subscribe_queue = RabbitQueue(self.subscribe_key)
-        routing_key = RabbitRoutingKey(emitter.emit_key)
+        routing_key = RabbitRoutingKey(emitter.event_key)
         routing_key.associateConsumer(subscribe_queue)
-        cache.objects["longpoll"]["subscriptions"].append(emitter.emit_key)
+        cache.objects["longpoll"]["subscriptions"].append(emitter.event_key)

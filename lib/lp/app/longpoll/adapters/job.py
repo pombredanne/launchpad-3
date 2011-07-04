@@ -14,7 +14,7 @@ from zope.interface import (
     )
 
 from lp.app.longpoll.adapters.emitter import LongPollEmitter
-from lp.app.longpoll.interfaces import ILongPollEmitter
+from lp.app.longpoll.interfaces import ILongPollEvent
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
@@ -24,7 +24,7 @@ from lp.services.job.interfaces.job import (
 class JobLongPollEmitter(LongPollEmitter):
 
     adapts(IJob, Interface)
-    implements(ILongPollEmitter)
+    implements(ILongPollEvent)
 
     def __init__(self, source, event):
         if event not in JobStatus:
@@ -33,6 +33,6 @@ class JobLongPollEmitter(LongPollEmitter):
         super(JobLongPollEmitter, self).__init__(source, event)
 
     @property
-    def emit_key(self):
+    def event_key(self):
         return "longpoll.job.%d.%s" % (
             self.source.job_id, self.event.name)

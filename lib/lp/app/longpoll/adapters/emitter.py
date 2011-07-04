@@ -15,16 +15,16 @@ class LongPollEmitter:
     """Base-class for emitter adapters."""
 
     #adapts(Interface, Interface)
-    #implements(ILongPollEmitter)
+    #implements(ILongPollEvent)
 
     def __init__(self, source, event):
         self.source = source
         self.event = event
 
     @property
-    def emit_key(self):
-        raise NotImplementedError(self.__class__.emit_key)
+    def event_key(self):
+        raise NotImplementedError(self.__class__.event_key)
 
     def emit(self, data):
-        routing_key = RabbitRoutingKey(self.emit_key)
+        routing_key = RabbitRoutingKey(self.event_key)
         routing_key.send(data)

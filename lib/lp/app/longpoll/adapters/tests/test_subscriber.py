@@ -15,7 +15,7 @@ from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.app.longpoll.adapters.subscriber import LongPollSubscriber
 from lp.app.longpoll.interfaces import (
-    ILongPollEmitter,
+    ILongPollEvent,
     ILongPollSubscriber,
     )
 from lp.services.messaging.queue import (
@@ -28,12 +28,12 @@ from lp.testing.matchers import Contains
 
 class FakeEmitter:
 
-    implements(ILongPollEmitter)
+    implements(ILongPollEvent)
 
-    emit_key_indexes = count(1)
+    event_key_indexes = count(1)
 
     def __init__(self):
-        self.emit_key = "emit-key-%d" % next(self.emit_key_indexes)
+        self.event_key = "emit-key-%d" % next(self.event_key_indexes)
 
 
 class TestLongPollSubscriber(TestCase):
@@ -71,13 +71,13 @@ class TestLongPollSubscriber(TestCase):
 
     def test_subscribe_queue(self):
         # LongPollSubscriber.subscribe() creates a new queue with a new unique
-        # name that is bound to the emitter's emit_key.
+        # name that is bound to the emitter's event_key.
         request = LaunchpadTestRequest()
         emitter = FakeEmitter()
         subscriber = ILongPollSubscriber(request)
         subscriber.subscribe(emitter)
         message = '{"hello": 1234}'
-        routing_key = RabbitRoutingKey(emitter.emit_key)
+        routing_key = RabbitRoutingKey(emitter.event_key)
         routing_key.send_now(message)
         subscribe_queue = RabbitQueue(subscriber.subscribe_key)
         self.assertEqual(
@@ -93,7 +93,7 @@ class TestLongPollSubscriber(TestCase):
         self.assertThat(cache.objects, Not(Contains("longpoll")))
 
     def test_json_cache_populated_on_subscribe(self):
-        # To aid with debugging the emit_key of subscriptions are added to the
+        # To aid with debugging the event_key of subscriptions are added to the
         # JSON cache.
         request = LaunchpadTestRequest()
         cache = IJSONRequestCache(request)
@@ -103,11 +103,11 @@ class TestLongPollSubscriber(TestCase):
         self.assertThat(cache.objects["longpoll"], Contains("key"))
         self.assertThat(cache.objects["longpoll"], Contains("subscriptions"))
         self.assertEqual(
-            [emitter1.emit_key],
+            [emitter1.event_key],
             cache.objects["longpoll"]["subscriptions"])
         # More emitters can be subscribed.
         emitter2 = FakeEmitter()
         ILongPollSubscriber(request).subscribe(emitter2)
         self.assertEqual(
-            [emitter1.emit_key, emitter2.emit_key],
+            [emitter1.event_key, emitter2.event_key],
             cache.objects["longpoll"]["subscriptions"])

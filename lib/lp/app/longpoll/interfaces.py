@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    "ILongPollEmitter",
+    "ILongPollEvent",
     "ILongPollSubscriber",
     ]
 
@@ -16,7 +16,7 @@ from zope.interface import (
     )
 
 
-class ILongPollEmitter(Interface):
+class ILongPollEvent(Interface):
 
     source = Attribute(
         "The event source.")
@@ -24,12 +24,12 @@ class ILongPollEmitter(Interface):
     event = Attribute(
         "An object indicating the type of event.")
 
-    emit_key = Attribute(
+    event_key = Attribute(
         "The key with which events will be emitted. Should be predictable "
         "and stable.")
 
     def emit(data):
-        """Emit the given data to `emit_key`.
+        """Emit the given data to `event_key`.
 
         :param data: Any data structure that can be dumped as JSON.
         """
@@ -45,5 +45,5 @@ class ILongPollSubscriber(Interface):
     def subscribe(emitter):
         """Subscribe to the given event emitter.
 
-        :type emitter: ILongPollEmitter
+        :type emitter: ILongPollEvent
         """
