@@ -61,6 +61,11 @@ from zope.interface import (
 
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
+from lp.services.messages.model.message import (
+    MessageJob,
+    MessageJobAction,
+    )
+from lp.services.messages.interfaces.message import IMessageJob
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.webapp.interfaces import (
@@ -100,7 +105,6 @@ from lp.codehosting.vfs import (
     get_rw_server,
     )
 from lp.registry.interfaces.person import IPersonSet
-from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import (
@@ -108,11 +112,7 @@ from lp.services.job.runner import (
     BaseRunnableJobSource,
     )
 from lp.services.mail.sendmail import format_address_for_person
-from lp.services.messages.interfaces.message import IMessageJob
-from lp.services.messages.model.message import (
-    MessageJob,
-    MessageJobAction,
-    )
+from lp.services.database.stormbase import StormBase
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
