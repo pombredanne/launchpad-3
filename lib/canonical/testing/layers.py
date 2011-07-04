@@ -1656,13 +1656,6 @@ class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
 
     @classmethod
     @profiled
-    def resetBetweenTests(cls, flag):
-        LibrarianLayer._reset_between_tests = flag
-        DatabaseLayer._reset_between_tests = flag
-        MemcachedLayer._reset_between_tests = flag
-
-    @classmethod
-    @profiled
     def setUp(cls):
         if os.environ.get('PROFILE_PAGETESTS_REQUESTS'):
             PageTestLayer.profiler = Profile()
@@ -1692,12 +1685,10 @@ class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
         PageTestLayer.orig__call__ = (
                 zope.app.testing.functional.HTTPCaller.__call__)
         zope.app.testing.functional.HTTPCaller.__call__ = my__call__
-        PageTestLayer.resetBetweenTests(True)
 
     @classmethod
     @profiled
     def tearDown(cls):
-        PageTestLayer.resetBetweenTests(True)
         zope.app.testing.functional.HTTPCaller.__call__ = (
                 PageTestLayer.orig__call__)
         if PageTestLayer.profiler:
@@ -1706,25 +1697,8 @@ class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
 
     @classmethod
     @profiled
-    def startStory(cls):
-        MemcachedLayer.testSetUp()
-        DatabaseLayer.testSetUp()
-        LibrarianLayer.testSetUp()
-        LaunchpadLayer.resetSessionDb()
-        PageTestLayer.resetBetweenTests(False)
-
-    @classmethod
-    @profiled
-    def endStory(cls):
-        PageTestLayer.resetBetweenTests(True)
-        LibrarianLayer.testTearDown()
-        DatabaseLayer.testTearDown()
-        MemcachedLayer.testTearDown()
-
-    @classmethod
-    @profiled
     def testSetUp(cls):
-        pass
+        LaunchpadLayer.resetSessionDb()
 
     @classmethod
     @profiled

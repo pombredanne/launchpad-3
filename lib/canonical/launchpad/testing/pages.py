@@ -883,14 +883,7 @@ class PageStoryTestCase(unittest.TestCase):
     def run(self, result=None):
         if result is None:
             result = self.defaultTestResult()
-        PageTestLayer.startStory()
-        try:
-            # XXX Robert Collins 2006-01-17: we can hook in pre and post
-            # story actions here much more tidily (and in self.debug too)
-            # - probably via self.setUp and self.tearDown
-            self._suite.run(result)
-        finally:
-            PageTestLayer.endStory()
+        return self._suite.run(result)
 
     def debug(self):
         self._suite.debug()
