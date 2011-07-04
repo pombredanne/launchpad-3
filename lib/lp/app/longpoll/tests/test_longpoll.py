@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from lazr.restful.interfaces import IJSONRequestCache
 from zope.component import adapts
 from zope.interface import (
     Attribute,
@@ -19,14 +18,19 @@ from lp.app.longpoll import (
     emit,
     subscribe,
     )
-from lp.app.longpoll.interfaces import ILongPollEvent
+from lp.app.longpoll.interfaces import (
+    ILongPollEvent,
+    ILongPollSubscriber,
+    )
+from lp.services.messaging.queue import (
+    RabbitQueue,
+    RabbitRoutingKey,
+    )
 from lp.testing import TestCase
 from lp.testing.fixture import ZopeAdapterFixture
-from lp.testing.matchers import Contains
 
 
 class IFakeObject(Interface):
-    """A marker interface."""
 
     ident = Attribute("ident")
 
@@ -53,6 +57,10 @@ class FakeEvent:
         return "event-key-%s-%s" % (
             self.source.ident, self.event)
 
+    def emit(self, data):
+        # Don't cargo-cult this; see .adapters.event.LongPollEvent instead.
+        RabbitRoutingKey(self.event_key).send_now(data)
+
 
 class TestSubscribe(TestCase):
 
@@ -60,16 +68,19 @@ class TestSubscribe(TestCase):
 
     def test_subscribe(self):
         request = LaunchpadTestRequest()
-        cache = IJSONRequestCache(request)
         an_object = FakeObject(12345)
         with ZopeAdapterFixture(FakeEvent):
             event = subscribe(an_object, "foo", request=request)
         self.assertIsInstance(event, FakeEvent)
         self.assertEqual("event-key-12345-foo", event.event_key)
-        self.assertThat(
-            cache.objects["longpoll"]["subscriptions"],
-            Contains("event-key-12345-foo"))
-        # TODO: Send a message to the subscriber.
+        # Emitting an event-key-12345-foo event will put something on the
+        # subscriber's queue.
+        event_data = {"1234": 5678}
+        event.emit(event_data)
+        subscriber = ILongPollSubscriber(request)
+        subscribe_queue = RabbitQueue(subscriber.subscribe_key)
+        message = subscribe_queue.receive(timeout=5)
+        self.assertEqual(event_data, message)
 
 
 class TestEmit(TestCase):
