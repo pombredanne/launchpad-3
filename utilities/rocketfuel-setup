@@ -95,12 +95,12 @@ fi
 # Enable relevant Ubuntu package repositories
 grep -q "^deb http:.* ${DISTRIB_CODENAME} .*universe" /etc/apt/sources.list
 if [ $? -ne 0 ]; then
-    echo "Please enable the 'universe' component in /etc/apt/source.list'"
+    echo "Please enable the 'universe' component in /etc/apt/sources.list'"
     exit 1
 fi
 grep -q "^deb http:.* ${DISTRIB_CODENAME} .*multiverse" /etc/apt/sources.list
 if [ $? -ne 0 ]; then
-    echo "Please enable the 'multiverse' component in /etc/apt/source.list'"
+    echo "Please enable the 'multiverse' component in /etc/apt/sources.list'"
     exit 1
 fi
 

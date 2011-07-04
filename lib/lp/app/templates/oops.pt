@@ -4,14 +4,19 @@
   xml:lang="en"
   lang="en"
 >
-  <head>
+  <head
+     tal:define="
+       revno modules/lp.app.versioninfo/revno | string:unknown;
+       icingroot string:/+icing/rev${revno}"
+     >
     <title>Oops!</title>
-    <style type="text/css" media="screen, print">
-      @import url(/+icing/rev5/combo.css);
-    </style>
+    <link
+        type="text/css"
+        rel="stylesheet"
+        media="screen, print"
+        tal:attributes="href string:${icingroot}/combo.css" />
     <script type="text/javascript"
         tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
-    <script type="text/javascript" src="/+icing/rev5/build/lp/lp.js"></script>
   </head>
   <body>
     <div class="yui-d0">
