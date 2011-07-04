@@ -137,7 +137,7 @@ if __name__ == '__main__':
     for source, destination in missing_files:
         link(source, destination)
 
-    for folder_name in ('download-cache', 'eggs'):
+    for folder_name in ('download-cache', 'eggs', 'yui'):
         source = abspath(join(options.parent, folder_name))
         destination = abspath(join(options.target, folder_name))
         if not exists(destination):

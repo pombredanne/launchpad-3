@@ -26,16 +26,6 @@ class TestBugAlsoAffects(WindmillTestCase):
                             '%s/tomcat/+bug/3/+choose-affected-product'
                             % BugsWindmillLayer.base_url)
 
-    def test_bug_also_affects_picker(self):
-        test_bug_also_affects_picker = FormPickerWidgetTest(
-            name='test_bug_also_affects',
-            url=self.choose_affected_url,
-            short_field_name='product',
-            search_text='firefox',
-            result_index=1,
-            new_value='firefox')
-        test_bug_also_affects_picker()
-
     def test_bug_also_affects_register_link(self):
         """Test that picker shows "Register it" link.
 

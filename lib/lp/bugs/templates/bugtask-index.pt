@@ -73,6 +73,16 @@
     </metal:block>
 
     <metal:side fill-slot="side" tal:define="context_menu context/menu:context">
+      <div id="involvement" class="portlet">
+        <ul class="involvement">
+          <li class="single">
+            <a tal:attributes="href string:${context/target/fmt:url}/+filebug" 
+               class="sprite bugs">
+              Report a bug
+            </a>
+          </li>
+        </ul>
+      </div>
       <div tal:replace="structure context/bug/@@+portlet-privacy" />
       <div tal:replace="structure context/bug/@@+portlet-actions" />
       <div tal:replace="structure context/bug/@@+portlet-duplicates" />
@@ -366,24 +376,6 @@
           </div>
         </tal:comment-list-truncated>
       </tal:comments>
-
-      <div class="related">
-        <h2>What next?</h2>
-        <ul>
-          <li>
-            <a
-                tal:attributes="href string:${context/target/fmt:url}/+filebug"
-                >Report another bug</a>
-            about <tal:context replace="context/target/displayname" />
-          </li>
-          <li>
-            <a
-                tal:attributes="href string:${context/target/fmt:url}/+bugs"
-                >List open bugs</a>
-            for <tal:context replace="context/target/displayname" />
-          </li>
-        </ul>
-      </div>
 
       </div><!-- class="top-portlet" -->
         </div><!-- id="nonportlets"-->

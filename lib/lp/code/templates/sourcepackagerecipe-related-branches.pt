@@ -4,7 +4,7 @@
               tal:define="seriesBranches view/related_series_branch_info;
                           packageBranches view/related_package_branch_info"
               tal:condition="python: seriesBranches or packageBranches">
-  <legend>Related Branches</legend>
+  <legend>Related branches</legend>
   <div class="extra-options">
 
     <div tal:condition="packageBranches" id="related-package-branches">

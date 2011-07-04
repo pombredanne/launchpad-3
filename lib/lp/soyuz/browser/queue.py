@@ -214,6 +214,7 @@ class QueueItemsView(LaunchpadView):
                     upload.status != PackageUploadStatus.DONE)]
         binary_file_set = getUtility(IBinaryPackageFileSet)
         binary_files = binary_file_set.getByPackageUploadIDs(upload_ids)
+        binary_file_set.loadLibraryFiles(binary_files)
         packageuploadsources = load_referencing(
             PackageUploadSource, uploads, ['packageuploadID'])
         source_file_set = getUtility(ISourcePackageReleaseFileSet)
@@ -226,6 +227,7 @@ class QueueItemsView(LaunchpadView):
         # Get a dictionary of lists of binary files keyed by upload ID.
         package_upload_builds_dict = self.builds_dict(
             upload_ids, binary_files)
+
         build_upload_files, binary_package_names = self.binary_files_dict(
             package_upload_builds_dict, binary_files)
 

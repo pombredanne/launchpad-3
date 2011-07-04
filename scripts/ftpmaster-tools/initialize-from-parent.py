@@ -81,13 +81,7 @@ def main():
         arches = ()
         if options.arches is not None:
             arches = tuple(options.arches.split(','))
-        # InitializeDistroSeries does not like it if the parent series is
-        # specified on the child, so we must unset it and pass it in. This is
-        # a temporary hack until confidence in InitializeDistroSeriesJob is
-        # good, at which point this script will be obsolete.
-        parent, distroseries.previous_series = (
-            distroseries.previous_series, None)
-        ids = InitializeDistroSeries(distroseries, [parent.id], arches)
+        ids = InitializeDistroSeries(distroseries, arches=arches)
         ids.check()
         log.debug('initializing from parent(s), copying publishing records.')
         ids.initialize()
