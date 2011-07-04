@@ -37,9 +37,7 @@ import operator
 from lazr.delegates import delegates
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.restful.interface import copy_field
-from lazr.restful.interfaces import (
-    IWebServiceClientRequest,
-    )
+from lazr.restful.interfaces import IWebServiceClientRequest
 import simplejson
 from zope.app.form.browser import TextAreaWidget
 from zope.component import (
@@ -66,7 +64,6 @@ from zope.schema.vocabulary import (
 
 from canonical.config import config
 from canonical.launchpad import _
-from lp.services.messages.interfaces.message import IMessageSet
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -80,18 +77,22 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
-from canonical.launchpad.webapp.menu import NavigationMenu, structured
+from canonical.launchpad.webapp.menu import (
+    NavigationMenu,
+    structured,
+    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
-   )
+    )
 from lp.app.browser.lazrjs import (
     TextAreaEditorWidget,
     vocabulary_to_choice_edit_items,
     )
 from lp.app.browser.tales import DateTimeFormatterAPI
+from lp.app.longpoll import subscribe
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.browser.decorations import DecoratedBranch
@@ -120,6 +121,8 @@ from lp.services.fields import (
     Summary,
     Whiteboard,
     )
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.messages.interfaces.message import IMessageSet
 from lp.services.propertycache import cachedproperty
 
 
@@ -599,9 +602,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     def initialize(self):
         super(BranchMergeProposalView, self).initialize()
         if self.next_preview_diff_job is not None:
-            from lp.app.longpoll import subscribe
-            from lp.services.job.interfaces.job import JobStatus
-            self.pending_diff_key = subscribe(
+            self.pending_diff_event = subscribe(
                 self.next_preview_diff_job, JobStatus.COMPLETED)
 
     @action('Claim', name='claim')
