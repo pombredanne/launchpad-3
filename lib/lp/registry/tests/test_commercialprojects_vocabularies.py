@@ -17,7 +17,6 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     logout,
-    syncUpdate,
     )
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -56,13 +55,11 @@ class TestCommProjVocabulary(TestCase):
                                          licenses=[License.OTHER_PROPRIETARY])
             naked_widget = removeSecurityProxy(widget)
             naked_widget.owner = self.owner
-            syncUpdate(naked_widget)
         # Create an open source project with a GNU license.
         widget = factory.makeProduct(name='openwidget',
                                      licenses=[License.GNU_GPL_V3])
         naked_widget = removeSecurityProxy(widget)
         naked_widget.owner = self.owner
-        syncUpdate(naked_widget)
 
     def test_emptySearch(self):
         """An empty search should return all commercial projects."""
@@ -119,7 +116,6 @@ class TestCommProjVocabulary(TestCase):
         widget = getUtility(IProductSet).getByName(project_name)
         naked_widget = removeSecurityProxy(widget)
         naked_widget.licenses = [License.GNU_GPL_V3]
-        syncUpdate(naked_widget)
 
         # The project is no longer commercial so it is not found.
         results = self.vocab.searchForTerms(project_name)
