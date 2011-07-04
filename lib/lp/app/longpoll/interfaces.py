@@ -18,6 +18,12 @@ from zope.interface import (
 
 class ILongPollEmitter(Interface):
 
+    source = Attribute(
+        "The event source.")
+
+    event = Attribute(
+        "An object indicating the type of event.")
+
     emit_key = Attribute(
         "The key with which events will be emitted. Should be predictable "
         "and stable.")
