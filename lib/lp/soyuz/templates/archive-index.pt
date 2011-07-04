@@ -98,7 +98,7 @@
         <div id="ppa-details">
 
         <div class="widget-header">
-          Technical details about this PPA
+          <a href="#" class="js-action">Technical details about this PPA</a>
         </div>
 
         <div class="widget-body">

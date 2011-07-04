@@ -65,8 +65,9 @@
 
   <tr>
     <td colspan="2">
-      <fieldset id="filebug-extra-options" class="collapsible-table">
-        <legend><a>Extra options</a></legend>
+      <fieldset id="filebug-extra-options" class="collapsible">
+        <legend><a href="#" class="js-action">Extra options</a></legend>
+        <div>
         <table>
           <tal:status
               define="widget nocall:view/widgets/status|nothing"
@@ -94,6 +95,7 @@
         </table>
         <metal:attachment-form
             use-macro="context/@@bug-attachment-macros/attachment-form" />
+        </div>
       </fieldset>
     </td>
   </tr>
