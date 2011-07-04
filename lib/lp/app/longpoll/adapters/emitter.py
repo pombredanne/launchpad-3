@@ -4,18 +4,18 @@
 """Long poll adapters."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    "LongPollEmitter",
+    ]
 
-from zope.interface import implements
-
-from lp.app.longpoll.interfaces import ILongPollEmitter
 from lp.services.messaging.queue import RabbitRoutingKey
 
 
 class LongPollEmitter:
+    """Base-class for emitter adapters."""
 
     #adapts(Interface, Interface)
-    implements(ILongPollEmitter)
+    #implements(ILongPollEmitter)
 
     def __init__(self, source, event):
         self.source = source

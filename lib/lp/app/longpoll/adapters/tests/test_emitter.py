@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+from zope.interface import implements
+
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.app.longpoll.adapters.emitter import LongPollEmitter
 from lp.app.longpoll.interfaces import ILongPollEmitter
@@ -14,6 +16,8 @@ from lp.testing.matchers import Contains
 
 
 class FakeEmitter(LongPollEmitter):
+
+    implements(ILongPollEmitter)
 
     @property
     def emit_key(self):

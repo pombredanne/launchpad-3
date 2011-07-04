@@ -13,6 +13,7 @@ from zope.interface import (
     Interface,
     )
 
+from lp.app.longpoll.adapters.emitter import LongPollEmitter
 from lp.app.longpoll.interfaces import ILongPollEmitter
 from lp.services.job.interfaces.job import (
     IJob,
@@ -20,19 +21,18 @@ from lp.services.job.interfaces.job import (
     )
 
 
-class JobLongPollEmitter:
+class JobLongPollEmitter(LongPollEmitter):
 
     adapts(IJob, Interface)
     implements(ILongPollEmitter)
 
-    def __init__(self, job, status):
-        self.job = job
-        if status not in JobStatus:
+    def __init__(self, source, event):
+        if event not in JobStatus:
             raise AssertionError(
-                "%r does not emit %r events." % (job, status))
-        self.status = status
+                "%r does not emit %r events." % (source, event))
+        super(JobLongPollEmitter, self).__init__(source, event)
 
     @property
     def emit_key(self):
         return "longpoll.job.%d.%s" % (
-            self.job.job_id, self.status.name)
+            self.source.job_id, self.event.name)
