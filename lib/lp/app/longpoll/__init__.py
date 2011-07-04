@@ -40,6 +40,8 @@ def emit(source, event, data):
     :param source: Something, along with `event`, that can be adapted to
         `ILongPollEvent`.
     :param event: A name/key of the event that is emitted.
+    :return: The `ILongPollEvent` that has been emitted.
     """
     event = getMultiAdapter((source, event), ILongPollEvent)
     event.emit(data)
+    return event

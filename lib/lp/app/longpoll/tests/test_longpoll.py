@@ -62,7 +62,7 @@ class FakeEvent:
         RabbitRoutingKey(self.event_key).send_now(data)
 
 
-class TestSubscribe(TestCase):
+class TestModule(TestCase):
 
     layer = LaunchpadFunctionalLayer
 
@@ -82,11 +82,16 @@ class TestSubscribe(TestCase):
         message = subscribe_queue.receive(timeout=5)
         self.assertEqual(event_data, message)
 
-
-class TestEmit(TestCase):
-
-    layer = LaunchpadFunctionalLayer
-
     def test_emit(self):
-        # TODO
-        emit
+        an_object = FakeObject(12345)
+        with ZopeAdapterFixture(FakeEvent):
+            event = emit(an_object, "bar", {})
+            routing_key = RabbitRoutingKey(event.event_key)
+            subscribe_queue = RabbitQueue("whatever")
+            routing_key.associateConsumer(subscribe_queue)
+            # Emit the event again; the subscribe queue was not associated
+            # with the event before now.
+            event_data = {"8765": 4321}
+            event = emit(an_object, "bar", event_data)
+        message = subscribe_queue.receive(timeout=5)
+        self.assertEqual(event_data, message)
