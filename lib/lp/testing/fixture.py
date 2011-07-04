@@ -5,7 +5,9 @@
 
 __metaclass__ = type
 __all__ = [
+    'ZopeAdapterFixture',
     'ZopeEventHandlerFixture',
+    'ZopeViewReplacementFixture',
     ]
 
 from fixtures import Fixture
@@ -20,6 +22,22 @@ from zope.security.checker import (
     getCheckerForInstancesOf,
     undefineChecker,
     )
+
+
+class ZopeAdapterFixture(Fixture):
+    """A fixture to register and unregister an adapter."""
+
+    def __init__(self, *args, **kwargs):
+        self._args, self._kwargs = args, kwargs
+
+    def setUp(self):
+        super(ZopeAdapterFixture, self).setUp()
+        site_manager = getGlobalSiteManager()
+        site_manager.registerAdapter(
+            *self._args, **self._kwargs)
+        self.addCleanup(
+            site_manager.unregisterAdapter,
+            *self._args, **self._kwargs)
 
 
 class ZopeEventHandlerFixture(Fixture):

@@ -5,12 +5,8 @@
 
 __metaclass__ = type
 
-from fixtures import Fixture
 from lazr.restful.interfaces import IJSONRequestCache
-from zope.component import (
-    adapts,
-    getSiteManager,
-    )
+from zope.component import adapts
 from zope.interface import (
     Attribute,
     implements,
@@ -25,6 +21,7 @@ from lp.app.longpoll import (
     )
 from lp.app.longpoll.interfaces import ILongPollEvent
 from lp.testing import TestCase
+from lp.testing.fixture import ZopeAdapterFixture
 from lp.testing.matchers import Contains
 
 
@@ -57,21 +54,6 @@ class FakeEvent:
             self.source.ident, self.event)
 
 
-class AdapterFixture(Fixture):
-
-    def __init__(self, *args, **kwargs):
-        self._args, self._kwargs = args, kwargs
-
-    def setUp(self):
-        super(AdapterFixture, self).setUp()
-        site_manager = getSiteManager()
-        site_manager.registerAdapter(
-            *self._args, **self._kwargs)
-        self.addCleanup(
-            site_manager.unregisterAdapter,
-            *self._args, **self._kwargs)
-
-
 class TestSubscribe(TestCase):
 
     layer = LaunchpadFunctionalLayer
@@ -80,7 +62,7 @@ class TestSubscribe(TestCase):
         request = LaunchpadTestRequest()
         cache = IJSONRequestCache(request)
         an_object = FakeObject(12345)
-        with AdapterFixture(FakeEvent):
+        with ZopeAdapterFixture(FakeEvent):
             event = subscribe(an_object, "foo", request=request)
         self.assertIsInstance(event, FakeEvent)
         self.assertEqual("event-key-12345-foo", event.event_key)
