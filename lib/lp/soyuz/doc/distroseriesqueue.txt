@@ -304,7 +304,6 @@ Check State Machine over PackageUploadBuilds:
 
 Performing full acceptance:
 
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> items = breezy_autotest.getPackageUploads(PackageUploadStatus.NEW)
     >>> for item in items:
     ...      try:
@@ -313,7 +312,6 @@ Performing full acceptance:
     ...          print item.displayname, e
     ...      else:
     ...          print item.displayname, item.status.name
-    ...      syncUpdate(item)
     netapplet-1.0.0.tar.gz ACCEPTED
     netapplet-1.0.0.tar.gz ACCEPTED
     alsa-utils ACCEPTED
@@ -328,7 +326,6 @@ Move the ACCEPTED items back to NEW.
     >>> for item in items:
     ...     item.setNew()
     ...     print item.displayname, item.status.name
-    ...     syncUpdate(item)
     netapplet-1.0.0.tar.gz NEW
     netapplet-1.0.0.tar.gz NEW
     alsa-utils NEW

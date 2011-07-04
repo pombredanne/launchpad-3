@@ -28,15 +28,6 @@ Create a sample branch.
     >>> nopriv_browser = setupBrowser(
     ...     auth='Basic nopriv@canonical.com:test')
 
-There should be a link on the branch page that says "No recipes" that leads to
-the recipe listings page.
-
-The link to the source package recipe listings should not be shown.
-
-    >>> nopriv_browser.open(recipeless_branch_url)
-    >>> print nopriv_browser.getLink('No recipes').url
-    http://code.launchpad.dev/%7Eperson-name.../product-name.../branch.../+recipes
-
 Create a new sample branch, but this time create some source package branches
 to go along with them.
 
