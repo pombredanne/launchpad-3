@@ -64,6 +64,11 @@ class DistroSeriesDifferenceComment(Storm):
         """See `IDistroSeriesDifferenceComment`."""
         return self.message.datecreated
 
+    @property
+    def source_package_name(self):
+        """See `IDistroSeriesDifferenceCommentSource`."""
+
+
     @staticmethod
     def new(distro_series_difference, owner, comment):
         """See `IDistroSeriesDifferenceCommentSource`."""

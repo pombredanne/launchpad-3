@@ -89,6 +89,14 @@ class DistroSeriesDifferenceCommentTestCase(TestCaseWithFactory):
             dsd_comment, get_comment_source().getForDifference(
                 dsd_comment.distro_series_difference, dsd_comment.id))
 
+    def test_source_package_name_returns_package_name(self):
+        # The comment "knows" the name of the source package it's for.
+        package_name = self.factory.getUniqueUnicode()
+        dsd = self.factory.makeDistroSeriesDifference(
+            source_package_name_str=package_name)
+        comment = self.factory.makeDistroSeriesDifferenceComment(dsd)
+        self.assertEqual(package_name, comment.source_package_name)
+
 
 class TestDistroSeriesDifferenceCommentSource(TestCaseWithFactory):
 
