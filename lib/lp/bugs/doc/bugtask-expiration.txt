@@ -85,7 +85,6 @@ that no bug tasks can be expired.
 
     # An expirable bugtask, a distroseries. The ubuntu bugtask is its
     # conjoined slave.
-    >>> from lp.bugs.tests.bug import sync_bugtasks
     >>> hoary_bugtask = bugtaskset.createTask(
     ...     bug=ubuntu_bugtask.bug, owner=sample_person,
     ...     distroseries=ubuntu.currentseries)
@@ -93,7 +92,6 @@ that no bug tasks can be expired.
     True
     >>> ubuntu_bugtask.bug.permits_expiration
     True
-    >>> sync_bugtasks([ubuntu_bugtask, hoary_bugtask])
     >>> ubuntu_bugtask.bug.can_expire
     True
 
@@ -291,7 +289,6 @@ If the valid bugtask becomes Invalid or Won't Fix, the hoary bugtask
 will be expirable.
 
     >>> new_bugtask.transitionToStatus(BugTaskStatus.WONTFIX, sample_person)
-    >>> sync_bugtasks(new_bugtask)
     >>> hoary_bugtask.bug.can_expire
     True
     >>> summarize_bugtasks(hoary_bugtask.bug.bugtasks)
@@ -558,8 +555,6 @@ True for a project, old bugs will be expired the next time the bugs are
 expired.
 
     >>> no_expiration_bugtask.pillar.enable_bug_expiration = True
-    >>> from canonical.launchpad.ftests import sync
-    >>> sync(no_expiration_bugtask.pillar)
 
     >>> no_expiration_bugtask.bug.permits_expiration
     True

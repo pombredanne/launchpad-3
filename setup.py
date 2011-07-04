@@ -48,7 +48,6 @@ setup(
         'lazr.smtptest',
         'lazr.testing',
         'lazr.uri',
-        'lazr-js',
         # Required for launchpadlib
         'keyring',
         'manuel',
@@ -153,6 +152,9 @@ setup(
         console_scripts=[ # `console_scripts` is a magic name to setuptools
             'apiindex = lp.scripts.utilities.apiindex:main',
             'killservice = lp.scripts.utilities.killservice:main',
+            'jsbuild = lp.scripts.utilities.js.jsbuild:main',
+            'jslint = lp.scripts.utilities.js.jslint:main',
+            'jssize = lp.scripts.utilities.js.jssize:main',
             'run = canonical.launchpad.scripts.runlaunchpad:start_launchpad',
             'harness = canonical.database.harness:python',
             'twistd = twisted.scripts.twistd:run',

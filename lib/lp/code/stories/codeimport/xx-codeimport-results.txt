@@ -29,19 +29,19 @@ file stored with the result.
     >>> import_results = find_tag_by_id(browser.contents, 'import-results')
     >>> print extract_text(import_results).replace('&mdash;', '--')
     Import started on 2007-12-07 on odin and finished on 2007-12-07
-      taking seven hours -- see the log
+      taking 7 hours -- see the log
     Import started on 2007-12-06 on odin and finished on 2007-12-06
-      taking six hours -- see the log
+      taking 6 hours -- see the log
     Import started on 2007-12-05 on odin and finished on 2007-12-05
-      taking five hours -- see the log
+      taking 5 hours -- see the log
     Import started on 2007-12-04 on odin and finished on 2007-12-04
-      taking four hours -- see the log
+      taking 4 hours -- see the log
     Import started on 2007-12-03 on odin and finished on 2007-12-03
-      taking three hours -- see the log
+      taking 3 hours -- see the log
     Import started on 2007-12-02 on odin and finished on 2007-12-02
-      taking two hours -- see the log
+      taking 2 hours -- see the log
     Import started on 2007-12-01 on odin and finished on 2007-12-01
-      taking an hour -- see the log
+      taking 1 hour -- see the log
 
 Each of the lines is prefixed with a tick if the result status was
 success, or a cross if the status was a failure.  The title of the image
