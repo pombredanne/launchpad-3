@@ -14,7 +14,10 @@ from zope.interface import implements
 from zope.publisher.interfaces import IApplicationRequest
 
 from lp.app.longpoll.interfaces import ILongPollSubscriber
-from lp.services.messaging.utility import messaging
+from lp.services.messaging.queue import (
+    RabbitQueue,
+    RabbitRoutingKey,
+    )
 
 
 class LongPollSubscriber:
@@ -36,8 +39,11 @@ class LongPollSubscriber:
         cache = IJSONRequestCache(self.request)
         if "longpoll" not in cache.objects:
             cache.objects["longpoll"] = {
+                # TODO: Add something descriptive into the key.
                 "key": str(uuid4()),
                 "subscriptions": [],
                 }
-        messaging.listen(self.subscribe_key, emitter.emit_key)
+        subscribe_queue = RabbitQueue(self.subscribe_key)
+        routing_key = RabbitRoutingKey(emitter.emit_key)
+        routing_key.associateConsumer(subscribe_queue)
         cache.objects["longpoll"]["subscriptions"].append(emitter.emit_key)

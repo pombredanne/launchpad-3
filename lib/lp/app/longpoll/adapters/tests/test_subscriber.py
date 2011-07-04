@@ -7,18 +7,21 @@ __metaclass__ = type
 
 from itertools import count
 
-from lp.app.longpoll.adapters.subscriber import LongPollSubscriber
-from lp.app.longpoll.interfaces import (
-    ILongPollEmitter,
-    ILongPollSubscriber,
-    )
 from lazr.restful.interfaces import IJSONRequestCache
 from testtools.matchers import Not
 from zope.interface import implements
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
-from lp.services.messaging.utility import messaging
+from lp.app.longpoll.adapters.subscriber import LongPollSubscriber
+from lp.app.longpoll.interfaces import (
+    ILongPollEmitter,
+    ILongPollSubscriber,
+    )
+from lp.services.messaging.queue import (
+    RabbitQueue,
+    RabbitRoutingKey,
+    )
 from lp.testing import TestCase
 from lp.testing.matchers import Contains
 
@@ -74,9 +77,11 @@ class TestLongPollSubscriber(TestCase):
         subscriber = ILongPollSubscriber(request)
         subscriber.subscribe(emitter)
         message = '{"hello": 1234}'
-        messaging.send(emitter.emit_key, message, oncommit=False)
+        routing_key = RabbitRoutingKey(emitter.emit_key)
+        routing_key.send_now(message)
+        subscribe_queue = RabbitQueue(subscriber.subscribe_key)
         self.assertEqual(
-            message, messaging.receive(subscriber.subscribe_key))
+            message, subscribe_queue.receive(timeout=5))
 
     def test_json_cache_not_populated_on_init(self):
         # LongPollSubscriber does not put the name of the new queue into the
