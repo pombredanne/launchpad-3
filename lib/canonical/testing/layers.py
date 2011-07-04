@@ -575,7 +575,6 @@ class MemcachedLayer(BaseLayer):
     ZopelessLayer, FunctionalLayer or sublayer as they will be accessing
     memcached using a utility.
     """
-    _reset_between_tests = True
 
     # A memcache.Client instance.
     client = None
@@ -644,9 +643,8 @@ class MemcachedLayer(BaseLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        if MemcachedLayer._reset_between_tests:
-            MemcachedLayer.client.forget_dead_hosts()
-            MemcachedLayer.client.flush_all()
+        MemcachedLayer.client.forget_dead_hosts()
+        MemcachedLayer.client.flush_all()
 
     @classmethod
     @profiled
@@ -665,7 +663,6 @@ class MemcachedLayer(BaseLayer):
 
 class RabbitMQLayer(BaseLayer):
     """Provides tests access to a rabbitMQ instance."""
-    _reset_between_tests = True
 
     rabbit = RabbitServer()
 
@@ -710,11 +707,6 @@ _org_connect = None
 
 class DatabaseLayer(BaseLayer):
     """Provides tests access to the Launchpad sample database."""
-
-    # If set to False, database will not be reset between tests. It is
-    # your responsibility to set it back to True and call
-    # Database.force_dirty_database() when you do so.
-    _reset_between_tests = True
 
     _is_setup = False
     _db_fixture = None
@@ -781,8 +773,7 @@ class DatabaseLayer(BaseLayer):
 
     @classmethod
     def _ensure_db(cls):
-        if cls._reset_between_tests:
-            cls._db_fixture.setUp()
+        cls._db_fixture.setUp()
         # Ensure that the database is connectable. Because we might have
         # just created it, keep trying for a few seconds incase PostgreSQL
         # is taking its time getting its house in order.
@@ -806,8 +797,7 @@ class DatabaseLayer(BaseLayer):
         # Ensure that the database is connectable
         cls.connect().close()
 
-        if cls._reset_between_tests:
-            cls._db_fixture.tearDown()
+        cls._db_fixture.tearDown()
 
         # Fail tests that forget to uninstall their database policies.
         from canonical.launchpad.webapp.adapter import StoreSelector
@@ -894,17 +884,12 @@ class LibrarianLayer(DatabaseLayer):
     Calls to the Librarian will fail unless there is also a Launchpad
     database available.
     """
-    _reset_between_tests = True
 
     librarian_fixture = None
 
     @classmethod
     @profiled
     def setUp(cls):
-        if not cls._reset_between_tests:
-            raise LayerInvariantError(
-                    "_reset_between_tests changed before LibrarianLayer "
-                    "was actually used.")
         cls.librarian_fixture = LibrarianServerFixture(
             BaseLayer.config_fixture)
         cls.librarian_fixture.setUp()
@@ -927,13 +912,7 @@ class LibrarianLayer(DatabaseLayer):
         finally:
             librarian = cls.librarian_fixture
             cls.librarian_fixture = None
-            try:
-                if not cls._reset_between_tests:
-                    raise LayerInvariantError(
-                        "_reset_between_tests not reset before "
-                        "LibrarianLayer shutdown")
-            finally:
-                librarian.cleanUp()
+            librarian.cleanUp()
 
     @classmethod
     @profiled
@@ -951,8 +930,7 @@ class LibrarianLayer(DatabaseLayer):
                     "LibrarianLayer.reveal() where possible, and ensure "
                     "the Librarian is restarted if it absolutely must be "
                     "shutdown: " + str(e))
-        if cls._reset_between_tests:
-            cls.librarian_fixture.clear()
+        cls.librarian_fixture.clear()
 
     @classmethod
     @profiled
