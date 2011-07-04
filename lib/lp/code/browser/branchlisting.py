@@ -191,7 +191,7 @@ class BranchListingItem(BzrIdentityMixin, BranchBadges):
     """
     delegates(IBranch, 'context')
 
-    def __init__(self, branch, last_commit, now, show_bug_badge,
+    def __init__(self, branch, last_commit, show_bug_badge,
                  show_blueprint_badge, show_mp_badge,
                  associated_product_series, suite_source_packages):
         BranchBadges.__init__(self, branch)
@@ -199,7 +199,6 @@ class BranchListingItem(BzrIdentityMixin, BranchBadges):
         self.show_bug_badge = show_bug_badge
         self.show_blueprint_badge = show_blueprint_badge
         self.show_merge_proposals = show_mp_badge
-        self._now = now
         self.associated_product_series = associated_product_series
         self.suite_source_packages = suite_source_packages
 
@@ -215,16 +214,6 @@ class BranchListingItem(BzrIdentityMixin, BranchBadges):
     def active_series(self):
         return [series for series in self.associated_product_series
                 if series.status != SeriesStatus.OBSOLETE]
-
-    @property
-    def since_updated(self):
-        """How long since the branch was last updated."""
-        return self._now - self.context.date_last_modified
-
-    @property
-    def since_created(self):
-        """How long since the branch was created."""
-        return self._now - self.context.date_created
 
     def isBugBadgeVisible(self):
         return self.show_bug_badge
@@ -353,7 +342,6 @@ class BranchListingItemsMixin:
     #   visible_branches_for_view
     def __init__(self, user):
         self._distro_series_map = {}
-        self._now = datetime.now(pytz.UTC)
         self.view_user = user
 
     def getBranchCollection(self):
@@ -494,9 +482,8 @@ class BranchListingItemsMixin:
         associated_product_series = self.getProductSeries(branch)
         suite_source_packages = self.getSuiteSourcePackages(branch)
         return BranchListingItem(
-            branch, last_commit, self._now, show_bug_badge,
-            show_blueprint_badge, show_mp_badge,
-            associated_product_series, suite_source_packages)
+            branch, last_commit, show_bug_badge, show_blueprint_badge,
+            show_mp_badge, associated_product_series, suite_source_packages)
 
     def decoratedBranches(self, branches):
         """Return the decorated branches for the branches passed in."""

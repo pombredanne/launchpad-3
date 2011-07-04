@@ -17,7 +17,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.ftests import sync
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
@@ -227,7 +226,6 @@ def create_old_bug(
             bugtracker=external_bugtracker, remotebug='1234')
     date = datetime.now(UTC) - timedelta(days=days_old)
     removeSecurityProxy(bug).date_last_updated = date
-    sync_bugtasks([bugtask])
     return bugtask
 
 
@@ -251,15 +249,6 @@ def summarize_bugtasks(bugtasks):
             bugtask.bug.duplicateof is not None,
             bugtask.milestone is not None,
             bugtask.bug.messages.count() == 1)
-
-
-def sync_bugtasks(bugtasks):
-    """Sync the bugtask and its bug to the database."""
-    if not isinstance(bugtasks, list):
-        bugtasks = [bugtasks]
-    for bugtask in bugtasks:
-        sync(bugtask)
-        sync(bugtask.bug)
 
 
 def print_upstream_linking_form(browser):

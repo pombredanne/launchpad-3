@@ -518,6 +518,7 @@ th {
 th, td {
     vertical-align: baseline;
     }
+.head th,
 thead th, tr.thead th {
     text-align: left;
     vertical-align: bottom;
@@ -624,6 +625,7 @@ table.listing, table.listing tbody, table.listing td.end-of-section {
 table.listing th {
     font-weight: bold;
     }
+table.listing .head, table.listing .head th,
 table.listing thead, table.listing thead th, table.listing tfoot tr,
 table.listing tr.thead th {
     border: 1px solid #d2d2d2;
@@ -657,6 +659,12 @@ table.listing thead th, table.listing tr.thead th {
 table.listing td {
     border: 1px #d2d2d2;
     border-style: dotted none none none;
+    }
+table.listing .section-break td {
+    border-width: 1px 0 0 0;
+    border-style: solid;
+    border-color: #d2d2d2;
+    height: 1em;
     }
 table.listing .note td {
     border-style: none;
@@ -1439,6 +1447,9 @@ div.watermark-apps-portlet span img {
     padding: 0;
     font-weight: bold;
     }
+.involvement li.single {
+    border-top: 0;
+}
 .involvement a {
     display: block;
     padding: 0.3em;
@@ -1949,7 +1960,7 @@ body.tab-bugs #duplicate-actions .sprite {
     /* Override sprite style for edit icon on "Mark as duplicate"
        to make the text not appear on a second line.
     */
-    display:inline;
+    display: inline;
     }
 
 /* Picker styles */
