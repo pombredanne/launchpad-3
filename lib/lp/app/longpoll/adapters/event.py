@@ -23,8 +23,11 @@ class LongPollEvent:
 
     @property
     def event_key(self):
+        """See `ILongPollEvent`."""
         raise NotImplementedError(self.__class__.event_key)
 
     def emit(self, data):
+        """See `ILongPollEvent`."""
+        payload = {"event_key": self.event_key, "event_data": data}
         routing_key = RabbitRoutingKey(self.event_key)
-        routing_key.send(data)
+        routing_key.send(payload)

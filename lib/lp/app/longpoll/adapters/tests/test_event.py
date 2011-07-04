@@ -41,9 +41,13 @@ class TestLongPollEvent(TestCase):
     def test_emit(self):
         # LongPollEvent.emit() sends the given data to `event_key`.
         event = FakeEvent("source", "event")
-        event.emit({"hello": 1234})
-        messages = [
+        event_data = {"hello": 1234}
+        event.emit(event_data)
+        expected_message = {
+            "event_key": event.event_key,
+            "event_data": event_data,
+            }
+        pending_messages = [
             message for (call, message) in
             RabbitMessageBase.class_locals.messages]
-        self.assertThat(
-            messages, Contains(message))
+        self.assertThat(pending_messages, Contains(expected_message))
