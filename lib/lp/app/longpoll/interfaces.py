@@ -22,10 +22,15 @@ class ILongPollEmitter(Interface):
         "The key with which events will be emitted. Should be predictable "
         "and stable.")
 
+    def emit(data):
+        """Emit the given data to `emit_key`.
+
+        :param data: Any data structure that can be dumped as JSON.
+        """
+
 
 class ILongPollSubscriber(Interface):
 
-    # XXX: Probably don't need this.
     subscribe_key = Attribute(
         "The key which the subscriber must know in order to be able "
         "to long-poll for subscribed events. Should be infeasible to "

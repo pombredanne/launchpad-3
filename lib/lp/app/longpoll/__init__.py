@@ -16,8 +16,6 @@ from .interfaces import (
 from lazr.restful.utils import get_current_browser_request
 from zope.component import getMultiAdapter
 
-from lp.services.messaging.queue import RabbitRoutingKey
-
 
 def subscribe(target, event, request=None):
     """Convenience method to subscribe the current request.
@@ -31,18 +29,17 @@ def subscribe(target, event, request=None):
     emitter = getMultiAdapter((target, event), ILongPollEmitter)
     if request is None:
         request = get_current_browser_request()
-    ILongPollSubscriber(request).subscribe(emitter)
+    subscriber = ILongPollSubscriber(request)
+    subscriber.subscribe(emitter)
     return emitter.emit_key
 
 
 def emit(source, event, data):
     """Convenience method to emit a message for an event.
 
-    :param source: Something that can be adapted to `ILongPollEmitter`.
-    :param event: The name/key of the event to subscribe to.
-
-    :return: The key that has been subscribed to.
+    :param source: Something, along with `event`, that can be adapted to
+        `ILongPollEmitter`.
+    :param event: A name/key of the event that is emitted.
     """
     emitter = getMultiAdapter((source, event), ILongPollEmitter)
-    routing_key = RabbitRoutingKey(emitter.emit_key)
-    routing_key.send(data)
+    emitter.emit(data)
