@@ -903,6 +903,17 @@ class IDistroSeriesPublic(
     def isInitialized():
         """Has this series been initialized?"""
 
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getDifferenceComments(since=None):
+        """Get `IDistroSeriesDifferenceComment`s.
+
+        :param since: Ignore comments older than this date.
+        :return: A Storm result set of `IDistroSeriesDifferenceComment`s
+            for this distroseries, ordered from oldest to newest comment.
+        """
+
 
 class IDistroSeriesEditRestricted(Interface):
     """IDistroSeries properties which require launchpad.Edit."""
