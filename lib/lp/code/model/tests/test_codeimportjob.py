@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for CodeImportJob and CodeImportJobWorkflow."""
@@ -646,6 +646,21 @@ class TestCodeImportJobWorkflowStartJob(TestCaseWithFactory,
             getUtility(ICodeImportJobWorkflow).requestJob,
             job, machine)
 
+    def test_startJob(self):
+        # After startJob, the date_started and heartbeat fields are both
+        # updated to the current time, the logtail is the empty string,
+        # machine is set to the supplied import machine and the state is
+        # RUNNING.
+        code_import = self.factory.makeCodeImport()
+        machine = self.factory.makeCodeImportMachine(set_online=True)
+        job = self.factory.makeCodeImportJob(code_import)
+        getUtility(ICodeImportJobWorkflow).startJob(job, machine)
+        self.assertSqlAttributeEqualsDate(job, 'date_started', UTC_NOW)
+        self.assertSqlAttributeEqualsDate(job, 'heartbeat', UTC_NOW)
+        self.assertEqual('', job.logtail)
+        self.assertEqual(machine, job.machine)
+        self.assertEqual(CodeImportJobState.RUNNING, job.state)
+
     def test_offlineMachine(self):
         # Calling startJob with a machine which is not ONLINE is an error.
         machine = self.factory.makeCodeImportMachine()
@@ -678,6 +693,19 @@ class TestCodeImportJobWorkflowUpdateHeartbeat(TestCaseWithFactory,
             "PENDING." % code_import.branch.unique_name,
             getUtility(ICodeImportJobWorkflow).updateHeartbeat,
             job, u'')
+
+    def test_updateHeartboat(self):
+        code_import = self.factory.makeCodeImport()
+        machine = self.factory.makeCodeImportMachine(set_online=True)
+        job = self.factory.makeCodeImportJob(code_import)
+        workflow = getUtility(ICodeImportJobWorkflow)
+        workflow.startJob(job, machine)
+        # Set heartbeat to something wrong so that we can prove that it was
+        # changed.
+        removeSecurityProxy(job).heartbeat = None
+        workflow.updateHeartbeat(job, u'some interesting log output')
+        self.assertSqlAttributeEqualsDate(job, 'heartbeat', UTC_NOW)
+        self.assertEqual(u'some interesting log output', job.logtail)
 
 
 class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
@@ -968,6 +996,71 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
             running_job, CodeImportResultStatus.FAILURE, None)
         self.assertEqual(
             CodeImportReviewStatus.FAILING, code_import.review_status)
+
+
+class TestCodeImportJobWorkflowReclaimJob(TestCaseWithFactory,
+        AssertFailureMixin, AssertEventMixin):
+    """Tests for reclaimJob.
+
+    The code import worker is meant to update the heartbeat field of the row
+    of CodeImportJob frequently.  The code import watchdog periodically checks
+    the heartbeats of the running jobs and if it finds that a heartbeat was
+    not updated recently enough, it assumes it has become stuck somehow and
+    'reclaims' the job -- removes the job from the database and creates a
+    pending job for the same import that is due immediately.  This reclaiming
+    is done by the 'reclaimJob' code import job workflow method.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestCodeImportJobWorkflowReclaimJob, self).setUp()
+        login_for_code_imports()
+        self.machine = self.factory.makeCodeImportMachine(set_online=True)
+
+    def makeRunningJob(self, code_import=None):
+        """Make and return a CodeImportJob object with state==RUNNING.
+
+        This is suitable for passing into finishJob().
+        """
+        if code_import is None:
+            code_import = self.factory.makeCodeImport()
+        job = code_import.import_job
+        if job is None:
+            job = self.factory.makeCodeImportJob(code_import)
+        getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
+        return job
+
+    def test_deletes_job(self):
+        running_job = self.makeRunningJob()
+        job_id = running_job.id
+        getUtility(ICodeImportJobWorkflow).reclaimJob(running_job)
+        matching_job = getUtility(ICodeImportJobSet).getById(job_id)
+        self.assertIs(None, matching_job)
+
+    def test_makes_reclaim_result(self):
+        running_job = self.makeRunningJob()
+        getUtility(ICodeImportJobWorkflow).reclaimJob(running_job)
+        [result] = list(running_job.code_import.results)
+        self.assertEqual(CodeImportResultStatus.RECLAIMED, result.status)
+
+    def test_creates_new_job(self):
+        running_job = self.makeRunningJob()
+        code_import = running_job.code_import
+        getUtility(ICodeImportJobWorkflow).reclaimJob(running_job)
+        self.assertSqlAttributeEqualsDate(
+            code_import.import_job, 'date_due', UTC_NOW)
+
+    def test_logs_reclaim_event(self):
+        running_job = self.makeRunningJob()
+        code_import = running_job.code_import
+        machine = running_job.machine
+        new_events = NewEvents()
+        getUtility(ICodeImportJobWorkflow).reclaimJob(running_job)
+        [reclaim_event] = list(new_events)
+        self.assertEventLike(
+            reclaim_event, CodeImportEventType.RECLAIM,
+            code_import, machine)
 
 
 logged_in_for_code_imports = with_celebrity_logged_in('vcs_imports')

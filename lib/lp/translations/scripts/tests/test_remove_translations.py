@@ -19,7 +19,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.testing.loghandler import Handler
 
-from canonical.launchpad.ftests import sync
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.scripts.base import LaunchpadScriptFailure
@@ -277,7 +276,6 @@ class TestRemoveTranslations(TestCase):
         """Create message, and translate it to Dutch & German."""
         message = self.factory.makePOTMsgSet(self.potemplate, template_text,
                                              sequence=0)
-        owner = self.potemplate.owner
         new_nl_message = self._setTranslation(
             message, self.nl_pofile, nl_text, submitter=submitter,
             is_current_upstream=is_current_upstream)
@@ -304,8 +302,7 @@ class TestRemoveTranslations(TestCase):
         invariant is restored.
         """
         # First make sure we're not reading out of cache.
-        sync(self.nl_pofile)
-        sync(self.de_pofile)
+        Store.of(self.nl_pofile).flush()
 
         self.assertEqual(
             self._getContents(self.nl_pofile),
@@ -359,8 +356,7 @@ class TestRemoveTranslations(TestCase):
         # on reviewer instead.
         new_nl_message.reviewer = self.potemplate.owner
 
-        rowcount = self._removeMessages(submitter=carlos)
-
+        self._removeMessages(submitter=carlos)
         self._checkInvariant()
 
     def test_RemoveByReviewer(self):
@@ -372,8 +368,7 @@ class TestRemoveTranslations(TestCase):
         new_nl_message.reviewer = carlos
         new_de_message.reviewer = carlos
 
-        rowcount = self._removeMessages(reviewer=carlos)
-
+        self._removeMessages(reviewer=carlos)
         self._checkInvariant()
 
     def test_RemoveByTemplate(self):
@@ -395,7 +390,7 @@ class TestRemoveTranslations(TestCase):
             translations={0: "Foe"})
 
         ids = [new_nl_message.id, new_de_message.id, unrelated_nl_message.id]
-        rowcount = self._removeMessages(
+        self._removeMessages(
             ids=ids, potemplate=self.potemplate.id)
 
         self._checkInvariant()
@@ -610,7 +605,7 @@ class TestRemoveTranslationsUnmasking(TestCaseWithFactory):
     def test_unmask_upstream_message(self):
         # Basic use case: upstream message is unmasked.
         remove_translations(ids=[self.ubuntu.id])
-        sync(self.upstream)
+        Store.of(self.upstream).autoreload()
         self.assertTrue(self.upstream.is_current_upstream)
         self.assertTrue(self.upstream.is_current_ubuntu)
 
@@ -619,8 +614,7 @@ class TestRemoveTranslationsUnmasking(TestCaseWithFactory):
         # the unique constraint on is_current_upstream.
         inactive = self.factory.makeSuggestion(self.pofile, self.potmsgset)
         remove_translations(ids=[self.ubuntu.id])
-        sync(self.upstream)
-        sync(inactive)
+        Store.of(self.upstream).autoreload()
         self.assertTrue(self.upstream.is_current_ubuntu)
         self.assertFalse(inactive.is_current_ubuntu)
 

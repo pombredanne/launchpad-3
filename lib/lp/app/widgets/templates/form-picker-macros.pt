@@ -69,7 +69,7 @@
             // Sort out the Choose... link.
             var show_widget_node = Y.one('#${view/show_widget_id}');
 
-            show_widget_node.set('innerHTML', 'Cohoose&hellip;');
+            show_widget_node.set('innerHTML', 'Choose&hellip;');
             show_widget_node.addClass('js-action');
             show_widget_node.get('parentNode').removeClass('unseen');
             show_widget_node.on('click', function (e) {
