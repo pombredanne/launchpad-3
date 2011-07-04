@@ -154,3 +154,21 @@ class TestDistroSeriesDifferenceCommentSource(TestCaseWithFactory):
             for dsd in dsds]
         source = get_comment_source()
         self.assertEqual(comments, list(source.getForDistroSeries(series)))
+
+    def test_getForDistroSeries_matches_on_package_name(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        series = dsd.derived_series
+        package_name = dsd.source_package_name.name
+        comment = self.factory.makeDistroSeriesDifferenceComment(dsd)
+        source = get_comment_source()
+        self.assertContentEqual([comment], source.getForDistroSeries(
+            series, source_package_name=package_name))
+
+    def test_getForDistroSeries_filters_by_package_name(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        series = dsd.derived_series
+        other_package = self.factory.getUniqueUnicode()
+        comment = self.factory.makeDistroSeriesDifferenceComment(dsd)
+        source = get_comment_source()
+        self.assertContentEqual([], source.getForDistroSeries(
+            series, source_package_name=other_package))

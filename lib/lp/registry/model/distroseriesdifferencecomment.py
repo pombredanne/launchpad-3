@@ -31,6 +31,7 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceComment,
     IDistroSeriesDifferenceCommentSource,
     )
+from lp.registry.model.sourcepackagename import SourcePackageName
 
 
 class DistroSeriesDifferenceComment(Storm):
@@ -98,7 +99,8 @@ class DistroSeriesDifferenceComment(Storm):
             DSDComment.id == id).one()
 
     @staticmethod
-    def getForDistroSeries(distroseries, since=None):
+    def getForDistroSeries(distroseries, since=None,
+                           source_package_name=None):
         """See `IDistroSeriesDifferenceCommentSource`."""
         # Avoid circular imports.
         from lp.registry.model.distroseriesdifference import (
@@ -111,6 +113,12 @@ class DistroSeriesDifferenceComment(Storm):
             DSDComment.distro_series_difference_id == DSD.id,
             DSD.derived_series_id == distroseries.id,
             ]
+
+        if source_package_name is not None:
+            conditions += [
+                SourcePackageName.id == DSD.source_package_name_id,
+                SourcePackageName.name == source_package_name,
+                ]
 
         if since is not None:
             after_msgid = store.find(
