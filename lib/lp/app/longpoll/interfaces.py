@@ -42,8 +42,8 @@ class ILongPollSubscriber(Interface):
         "to long-poll for subscribed events. Should be infeasible to "
         "guess, a UUID for example.")
 
-    def subscribe(emitter):
-        """Subscribe to the given event emitter.
+    def subscribe(event):
+        """Subscribe to the given event.
 
-        :type emitter: ILongPollEvent
+        :type event: ILongPollEvent
         """

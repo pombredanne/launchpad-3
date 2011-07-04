@@ -35,7 +35,7 @@ class LongPollSubscriber:
             return objects["longpoll"]["key"]
         return None
 
-    def subscribe(self, emitter):
+    def subscribe(self, event):
         cache = IJSONRequestCache(self.request)
         if "longpoll" not in cache.objects:
             cache.objects["longpoll"] = {
@@ -44,6 +44,6 @@ class LongPollSubscriber:
                 "subscriptions": [],
                 }
         subscribe_queue = RabbitQueue(self.subscribe_key)
-        routing_key = RabbitRoutingKey(emitter.event_key)
+        routing_key = RabbitRoutingKey(event.event_key)
         routing_key.associateConsumer(subscribe_queue)
-        cache.objects["longpoll"]["subscriptions"].append(emitter.event_key)
+        cache.objects["longpoll"]["subscriptions"].append(event.event_key)

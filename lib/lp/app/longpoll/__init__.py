@@ -24,14 +24,14 @@ def subscribe(target, event, request=None):
     :param event: The name of the event to subscribe to.
     :param request: The request for which to get an `ILongPollSubscriber`. It
         a request is not specified the currently active request is used.
-    :return: The key that has been subscribed to.
+    :return: The `ILongPollEvent` that has been subscribed to.
     """
-    emitter = getMultiAdapter((target, event), ILongPollEvent)
+    event = getMultiAdapter((target, event), ILongPollEvent)
     if request is None:
         request = get_current_browser_request()
     subscriber = ILongPollSubscriber(request)
-    subscriber.subscribe(emitter)
-    return emitter.event_key
+    subscriber.subscribe(event)
+    return event
 
 
 def emit(source, event, data):
@@ -41,5 +41,5 @@ def emit(source, event, data):
         `ILongPollEvent`.
     :param event: A name/key of the event that is emitted.
     """
-    emitter = getMultiAdapter((source, event), ILongPollEvent)
-    emitter.emit(data)
+    event = getMultiAdapter((source, event), ILongPollEvent)
+    event.emit(data)

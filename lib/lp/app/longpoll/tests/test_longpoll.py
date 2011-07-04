@@ -42,7 +42,7 @@ class FakeObject:
         self.ident = ident
 
 
-class FakeEmitter:
+class FakeEvent:
 
     adapts(IFakeObject, Interface)
     implements(ILongPollEvent)
@@ -53,7 +53,7 @@ class FakeEmitter:
 
     @property
     def event_key(self):
-        return "emit-key-%s-%s" % (
+        return "event-key-%s-%s" % (
             self.source.ident, self.event)
 
 
@@ -80,12 +80,13 @@ class TestSubscribe(TestCase):
         request = LaunchpadTestRequest()
         cache = IJSONRequestCache(request)
         an_object = FakeObject(12345)
-        with AdapterFixture(FakeEmitter):
-            event_key = subscribe(an_object, "foo", request=request)
-        self.assertEqual("emit-key-12345-foo", event_key)
+        with AdapterFixture(FakeEvent):
+            event = subscribe(an_object, "foo", request=request)
+        self.assertIsInstance(event, FakeEvent)
+        self.assertEqual("event-key-12345-foo", event.event_key)
         self.assertThat(
             cache.objects["longpoll"]["subscriptions"],
-            Contains("emit-key-12345-foo"))
+            Contains("event-key-12345-foo"))
         # TODO: Send a message to the subscriber.
 
 

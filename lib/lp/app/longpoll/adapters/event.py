@@ -5,14 +5,14 @@
 
 __metaclass__ = type
 __all__ = [
-    "LongPollEmitter",
+    "LongPollEvent",
     ]
 
 from lp.services.messaging.queue import RabbitRoutingKey
 
 
-class LongPollEmitter:
-    """Base-class for emitter adapters."""
+class LongPollEvent:
+    """Base-class for event adapters."""
 
     #adapts(Interface, Interface)
     #implements(ILongPollEvent)
