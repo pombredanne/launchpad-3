@@ -168,7 +168,7 @@ class TestDistroSeriesDifferenceCommentSource(TestCaseWithFactory):
         dsd = self.factory.makeDistroSeriesDifference()
         series = dsd.derived_series
         other_package = self.factory.getUniqueUnicode()
-        comment = self.factory.makeDistroSeriesDifferenceComment(dsd)
+        self.factory.makeDistroSeriesDifferenceComment(dsd)
         source = get_comment_source()
         self.assertContentEqual([], source.getForDistroSeries(
             series, source_package_name=other_package))
