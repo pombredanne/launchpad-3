@@ -16,23 +16,31 @@ from cStringIO import StringIO
 import os
 import signal
 import smtplib
-from cStringIO import StringIO
 from urllib import urlopen
 
+from amqplib import client_0_8 as amqp
 from fixtures import (
-    Fixture,
     EnvironmentVariableFixture,
+    Fixture,
     TestWithFixtures,
     )
-import psycopg2
-import testtools
-from zope.component import getUtility, ComponentLookupError
-
-from canonical.config import config, dbconfig
 from lazr.config import as_host_port
-from canonical.librarian.client import LibrarianClient, UploadFailed
-from canonical.librarian.interfaces import ILibrarianClient
+import testtools
+from zope.component import (
+    ComponentLookupError,
+    getUtility,
+    )
+
+from canonical.config import (
+    config,
+    dbconfig,
+    )
 from canonical.lazr.pidfile import pidfile_path
+from canonical.librarian.client import (
+    LibrarianClient,
+    UploadFailed,
+    )
+from canonical.librarian.interfaces import ILibrarianClient
 from canonical.testing.layers import (
     AppServerLayer,
     BaseLayer,
@@ -48,6 +56,7 @@ from canonical.testing.layers import (
     LayerProcessController,
     LibrarianLayer,
     MemcachedLayer,
+    RabbitMQLayer,
     ZopelessLayer,
     )
 from lp.services.memcache.client import memcache_client_factory
@@ -56,7 +65,7 @@ from lp.services.memcache.client import memcache_client_factory
 class BaseLayerIsolator(Fixture):
     """A fixture for isolating BaseLayer.
 
-    This is useful to test interactions with LP_PERSISTENT_TEST_SERVICES 
+    This is useful to test interactions with LP_PERSISTENT_TEST_SERVICES
     which makes tests within layers unable to test that easily.
     """
 
@@ -162,6 +171,7 @@ class BaseTestCase(testtools.TestCase):
     want_functional_flag = False
     want_zopeless_flag = False
     want_memcached = False
+    want_rabbitmq = False
 
     def testBaseIsSetUpFlag(self):
         self.failUnlessEqual(BaseLayer.isSetUp, True)
@@ -218,7 +228,7 @@ class BaseTestCase(testtools.TestCase):
         client = LibrarianClient()
         data = 'Whatever'
         try:
-            file_alias_id = client.addFile(
+            client.addFile(
                     'foo.txt', len(data), StringIO(data), 'text/plain'
                     )
         except UploadFailed:
@@ -258,6 +268,20 @@ class BaseTestCase(testtools.TestCase):
         else:
             self.assertEqual(
                 is_live, False, "memcached is live but should not be.")
+
+    def testRabbitWorking(self):
+        rabbitmq = config.rabbitmq
+        if not self.want_rabbitmq:
+            self.assertEqual(None, rabbitmq.host)
+        else:
+            self.assertNotEqual(None, rabbitmq.host)
+            conn = amqp.Connection(
+                host=rabbitmq.host,
+                userid=rabbitmq.userid,
+                password=rabbitmq.password,
+                virtual_host=rabbitmq.virtual_host,
+                insist=False)
+            conn.close()
 
 
 class MemcachedTestCase(BaseTestCase):
@@ -380,6 +404,11 @@ class LibrarianHideTestCase(testtools.TestCase):
             'foo', len(data), StringIO(data), 'text/plain')
 
 
+class RabbitMQTestCase(BaseTestCase):
+    layer = RabbitMQLayer
+    want_rabbitmq = True
+
+
 class DatabaseTestCase(BaseTestCase):
     layer = DatabaseLayer
 
@@ -432,6 +461,7 @@ class LaunchpadTestCase(BaseTestCase):
     want_launchpad_database = True
     want_librarian_running = True
     want_memcached = True
+    want_rabbitmq = True
 
 
 class FunctionalTestCase(BaseTestCase):
@@ -458,6 +488,7 @@ class LaunchpadFunctionalTestCase(BaseTestCase):
     want_librarian_running = True
     want_functional_flag = True
     want_memcached = True
+    want_rabbitmq = True
 
 
 class LaunchpadZopelessTestCase(BaseTestCase):
@@ -468,6 +499,7 @@ class LaunchpadZopelessTestCase(BaseTestCase):
     want_librarian_running = True
     want_zopeless_flag = True
     want_memcached = True
+    want_rabbitmq = True
 
 
 class LaunchpadScriptTestCase(BaseTestCase):
@@ -478,6 +510,7 @@ class LaunchpadScriptTestCase(BaseTestCase):
     want_librarian_running = True
     want_zopeless_flag = True
     want_memcached = True
+    want_rabbitmq = True
 
     def testSwitchDbConfig(self):
         # Test that we can switch database configurations, and that we
@@ -503,6 +536,7 @@ class LayerProcessControllerInvariantsTestCase(BaseTestCase):
     want_functional_flag = True
     want_zopeless_flag = False
     want_memcached = True
+    want_rabbitmq = True
 
     def testAppServerIsAvailable(self):
         # Test that the app server is up and running.
@@ -579,6 +613,7 @@ class LayerProcessControllerTestCase(testtools.TestCase):
 
 class TestNameTestCase(testtools.TestCase):
     layer = BaseLayer
+
     def testTestName(self):
         self.failUnlessEqual(
                 BaseLayer.test_name,

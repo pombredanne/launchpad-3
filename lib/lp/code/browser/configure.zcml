@@ -414,9 +414,6 @@
             name="+index"
             template="../templates/branch-index.pt"/>
         <browser:page
-            name="+portlet-details"
-            template="../templates/branch-portlet-details.pt"/>
-        <browser:page
             name="++bug-links"
             template="../templates/branch-bug-links.pt"/>
 
