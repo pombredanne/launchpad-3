@@ -19,16 +19,18 @@ from zope.component import getMultiAdapter
 from lp.services.messaging.utility import messaging
 
 
-def subscribe(target, event):
+def subscribe(target, event, request=None):
     """Convenience method to subscribe the current request.
 
     :param target: Something that can be adapted to `ILongPollEmitter`.
     :param event: The name of the event to subscribe to.
-
+    :param request: The request for which to get an `ILongPollSubscriber`. It
+        a request is not specified the currently active request is used.
     :return: The key that has been subscribed to.
     """
     emitter = getMultiAdapter((target, event), ILongPollEmitter)
-    request = get_current_browser_request()
+    if request is None:
+        request = get_current_browser_request()
     ILongPollSubscriber(request).subscribe(emitter)
     return emitter.emit_key
 
