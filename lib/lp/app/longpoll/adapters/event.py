@@ -5,10 +5,16 @@
 
 __metaclass__ = type
 __all__ = [
+    "generate_event_key",
     "LongPollEvent",
     ]
 
 from lp.services.messaging.queue import RabbitRoutingKey
+
+
+def generate_event_key(source_name, event_name):
+    """Generate a suitable event name."""
+    return "longpoll.event.%s.%s" % (source_name, event_name)
 
 
 class LongPollEvent:

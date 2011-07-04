@@ -8,12 +8,21 @@ __metaclass__ = type
 from itertools import count
 
 from lazr.restful.interfaces import IJSONRequestCache
-from testtools.matchers import Not
+from testtools.matchers import (
+    Not,
+    StartsWith,
+    )
 from zope.interface import implements
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import LaunchpadFunctionalLayer
-from lp.app.longpoll.adapters.subscriber import LongPollSubscriber
+from canonical.testing.layers import (
+    BaseLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.app.longpoll.adapters.subscriber import (
+    generate_subscribe_key,
+    LongPollSubscriber,
+    )
 from lp.app.longpoll.interfaces import (
     ILongPollEvent,
     ILongPollSubscriber,
@@ -111,3 +120,15 @@ class TestLongPollSubscriber(TestCase):
         self.assertEqual(
             [event1.event_key, event2.event_key],
             cache.objects["longpoll"]["subscriptions"])
+
+
+class TestModule(TestCase):
+
+    layer = BaseLayer
+
+    def test_generate_subscribe_key(self):
+        subscribe_key = generate_subscribe_key()
+        expected_prefix = "longpoll.subscribe."
+        self.assertThat(subscribe_key, StartsWith(expected_prefix))
+        # The key contains a 36 character UUID.
+        self.assertEqual(len(expected_prefix) + 36, len(subscribe_key))

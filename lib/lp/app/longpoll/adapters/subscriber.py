@@ -4,7 +4,10 @@
 """Long poll adapters."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    "generate_subscribe_key",
+    "LongPollSubscriber",
+    ]
 
 from uuid import uuid4
 
@@ -18,6 +21,11 @@ from lp.services.messaging.queue import (
     RabbitQueue,
     RabbitRoutingKey,
     )
+
+
+def generate_subscribe_key():
+    """Generate a suitable new, unique, subscribe key."""
+    return "longpoll.subscribe.%s" % uuid4()
 
 
 class LongPollSubscriber:
@@ -40,7 +48,7 @@ class LongPollSubscriber:
         if "longpoll" not in cache.objects:
             cache.objects["longpoll"] = {
                 # TODO: Add something descriptive into the key.
-                "key": str(uuid4()),
+                "key": generate_subscribe_key(),
                 "subscriptions": [],
                 }
         subscribe_queue = RabbitQueue(self.subscribe_key)

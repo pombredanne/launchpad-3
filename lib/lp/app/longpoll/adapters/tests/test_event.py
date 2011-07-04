@@ -7,8 +7,14 @@ __metaclass__ = type
 
 from zope.interface import implements
 
-from canonical.testing.layers import LaunchpadFunctionalLayer
-from lp.app.longpoll.adapters.event import LongPollEvent
+from canonical.testing.layers import (
+    BaseLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.app.longpoll.adapters.event import (
+    generate_event_key,
+    LongPollEvent,
+    )
 from lp.app.longpoll.interfaces import ILongPollEvent
 from lp.services.messaging.queue import RabbitMessageBase
 from lp.testing import TestCase
@@ -51,3 +57,13 @@ class TestLongPollEvent(TestCase):
             message for (call, message) in
             RabbitMessageBase.class_locals.messages]
         self.assertThat(pending_messages, Contains(expected_message))
+
+
+class TestModule(TestCase):
+
+    layer = BaseLayer
+
+    def test_generate_event_key(self):
+        self.assertEqual(
+            "longpoll.event.source-name.event-name",
+            generate_event_key("source-name", "event-name"))
