@@ -13,7 +13,10 @@ from zope.interface import (
     Interface,
     )
 
-from lp.app.longpoll.adapters.event import LongPollEvent
+from lp.app.longpoll.adapters.event import (
+    generate_event_key,
+    LongPollEvent,
+    )
 from lp.app.longpoll.interfaces import ILongPollEvent
 from lp.services.job.interfaces.job import (
     IJob,
@@ -34,5 +37,5 @@ class JobLongPollEvent(LongPollEvent):
 
     @property
     def event_key(self):
-        return "longpoll.job.%d.%s" % (
-            self.source.job_id, self.event.name)
+        return generate_event_key(
+            "job", self.source.job_id, self.event.name)

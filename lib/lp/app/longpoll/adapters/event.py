@@ -12,9 +12,13 @@ __all__ = [
 from lp.services.messaging.queue import RabbitRoutingKey
 
 
-def generate_event_key(source_name, event_name):
+def generate_event_key(*components):
     """Generate a suitable event name."""
-    return "longpoll.event.%s.%s" % (source_name, event_name)
+    if len(components) == 0:
+        raise AssertionError(
+            "Event keys must contain at least one component.")
+    return "longpoll.event.%s" % ".".join(
+        str(component) for component in components)
 
 
 class LongPollEvent:

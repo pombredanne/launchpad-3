@@ -63,7 +63,22 @@ class TestModule(TestCase):
 
     layer = BaseLayer
 
+    def test_generate_event_key_no_components(self):
+        self.assertRaises(
+            AssertionError, generate_event_key)
+
     def test_generate_event_key(self):
+        self.assertEqual(
+            "longpoll.event.event-name",
+            generate_event_key("event-name"))
         self.assertEqual(
             "longpoll.event.source-name.event-name",
             generate_event_key("source-name", "event-name"))
+        self.assertEqual(
+            "longpoll.event.type-name.source-name.event-name",
+            generate_event_key("type-name", "source-name", "event-name"))
+
+    def test_generate_event_key_stringifies_components(self):
+        self.assertEqual(
+            "longpoll.event.job.1234.COMPLETED",
+            generate_event_key("job", 1234, "COMPLETED"))
