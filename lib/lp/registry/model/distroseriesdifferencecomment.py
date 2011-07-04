@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A comment/message for a difference between two distribution series."""
@@ -13,6 +13,7 @@ from email.Utils import make_msgid
 
 from storm.locals import (
     Int,
+    Max,
     Reference,
     Storm,
     )
@@ -90,3 +91,27 @@ class DistroSeriesDifferenceComment(Storm):
             DSDComment,
             DSDComment.distro_series_difference == distro_series_difference,
             DSDComment.id == id).one()
+
+    @staticmethod
+    def getForDistroSeries(distroseries, since=None):
+        """See `IDistroSeriesDifferenceCommentSource`."""
+        # Avoid circular imports.
+        from lp.registry.model.distroseriesdifference import (
+            DistroSeriesDifference,
+            )
+        store = IStore(DistroSeriesDifferenceComment)
+        DSD = DistroSeriesDifference
+        DSDComment = DistroSeriesDifferenceComment
+        conditions = [
+            DSDComment.distro_series_difference_id == DSD.id,
+            DSD.derived_series_id == distroseries.id,
+            ]
+
+        if since is not None:
+            after_msgid = store.find(
+                Max(Message.id), Message.datecreated < since).one()
+            if after_msgid is not None:
+                conditions.append(DSDComment.message_id > after_msgid)
+
+        return store.find(DSDComment, *conditions).order_by(
+            DSDComment.message_id)
