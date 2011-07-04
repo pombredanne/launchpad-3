@@ -56,7 +56,7 @@ has not opened.
     >>> from lp.registry.interfaces.poll import IPollSubset, PollSecrecy
     >>> from lp.services.utils import utc_now
 
-    >>> open_date = utc_now()
+    >>> open_date = utc_now() + timedelta(hours=6)
     >>> close_date = open_date + timedelta(weeks=1)
     >>> poll_subset = IPollSubset(team)
     >>> poll = poll_subset.new(
