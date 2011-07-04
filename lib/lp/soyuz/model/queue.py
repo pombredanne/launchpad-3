@@ -1502,10 +1502,12 @@ class PackageUploadSet:
         if name is not None and name != '':
             spn_join = LeftJoin(
                 SourcePackageName,
-                match_column(SourcePackageName.name, name))
+                SourcePackageName.id ==
+                    SourcePackageRelease.sourcepackagenameID)
             bpn_join = LeftJoin(
                 BinaryPackageName,
-                match_column(BinaryPackageName.name, name))
+                BinaryPackageName.id ==
+                    BinaryPackageRelease.binarypackagenameID)
             custom_join = LeftJoin(
                 PackageUploadCustom,
                 PackageUploadCustom.packageuploadID == PackageUpload.id)
@@ -1516,12 +1518,12 @@ class PackageUploadSet:
 
             joins += [
                 package_copy_job_join,
-                spn_join,
                 source_join,
                 spr_join,
-                bpn_join,
+                spn_join,
                 build_join,
                 bpr_join,
+                bpn_join,
                 custom_join,
                 file_join,
                 ]
@@ -1529,10 +1531,8 @@ class PackageUploadSet:
             # One of these attached items must have a matching name.
             conditions.append(Or(
                 match_column(PackageCopyJob.package_name, name),
-                SourcePackageRelease.sourcepackagenameID ==
-                    SourcePackageName.id,
-                BinaryPackageRelease.binarypackagenameID ==
-                    BinaryPackageName.id,
+                match_column(SourcePackageName.name, name),
+                match_column(BinaryPackageName.name, name),
                 match_column(LibraryFileAlias.filename, name)))
 
         if version is not None and version != '':
