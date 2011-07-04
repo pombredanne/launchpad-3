@@ -24,9 +24,9 @@ class TestLaunchpadView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_getCacheJson_non_resource_context(self):
+    def test_getCacheJSON_non_resource_context(self):
         view = LaunchpadView(object(), LaunchpadTestRequest())
-        self.assertEqual('{}', view.getCacheJson())
+        self.assertEqual('{}', view.getCacheJSON())
 
     @staticmethod
     def getCanada():
@@ -43,32 +43,32 @@ class TestLaunchpadView(TestCaseWithFactory):
              'name', 'resource_type_link', 'self_link', 'title'],
             json_dict.keys())
 
-    def test_getCacheJson_resource_context(self):
+    def test_getCacheJSON_resource_context(self):
         view = LaunchpadView(self.getCanada(), LaunchpadTestRequest())
-        json_dict = simplejson.loads(view.getCacheJson())['context']
+        json_dict = simplejson.loads(view.getCacheJSON())['context']
         self.assertIsCanada(json_dict)
 
-    def test_getCacheJson_non_resource_object(self):
+    def test_getCacheJSON_non_resource_object(self):
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
         IJSONRequestCache(request).objects['my_bool'] = True
         with person_logged_in(self.factory.makePerson()):
-            self.assertEqual('{"my_bool": true}', view.getCacheJson())
+            self.assertEqual('{"my_bool": true}', view.getCacheJSON())
 
-    def test_getCacheJson_resource_object(self):
+    def test_getCacheJSON_resource_object(self):
         request = LaunchpadTestRequest()
         view = LaunchpadView(object(), request)
         IJSONRequestCache(request).objects['country'] = self.getCanada()
         with person_logged_in(self.factory.makePerson()):
-            json_dict = simplejson.loads(view.getCacheJson())['country']
+            json_dict = simplejson.loads(view.getCacheJSON())['country']
         self.assertIsCanada(json_dict)
 
-    def test_getCacheJson_context_overrides_objects(self):
+    def test_getCacheJSON_context_overrides_objects(self):
         request = LaunchpadTestRequest()
         view = LaunchpadView(self.getCanada(), request)
         IJSONRequestCache(request).objects['context'] = True
         with person_logged_in(self.factory.makePerson()):
-            json_dict = simplejson.loads(view.getCacheJson())['context']
+            json_dict = simplejson.loads(view.getCacheJSON())['context']
         self.assertIsCanada(json_dict)
 
     def test_getCache_anonymous(self):
@@ -76,7 +76,7 @@ class TestLaunchpadView(TestCaseWithFactory):
         view = LaunchpadView(self.getCanada(), request)
         self.assertIs(None, view.user)
         IJSONRequestCache(request).objects['my_bool'] = True
-        json_dict = simplejson.loads(view.getCacheJson())
+        json_dict = simplejson.loads(view.getCacheJSON())
         self.assertIsCanada(json_dict['context'])
         self.assertFalse('my_bool' in json_dict)
 

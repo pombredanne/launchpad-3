@@ -165,15 +165,9 @@
       tal:content="string:LP.links['${key}'] =
                    '${links/?key/fmt:api_url}';">
     </script>
-    <script tal:repeat="key objects"
-      tal:content="string:LP.cache['${key}'] =
-                   ${objects/?key/webservice:json};">
-    </script>
   </tal:cache>
 
-  <script tal:condition="context/webservice:is_entry"
-    tal:content="string:LP.cache['context'] =
-                 ${context/webservice:json/fmt:obfuscate-email};">
+  <script tal:content="string:LP.cache = ${view/getCacheJSON};">
   </script>
 </metal:lp-client-cache>
 

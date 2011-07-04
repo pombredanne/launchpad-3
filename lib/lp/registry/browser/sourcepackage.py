@@ -424,7 +424,7 @@ class SourcePackageRemoveUpstreamView(ReturnToReferrerMixin,
                 'The packaging link has already been deleted.')
 
 
-class SourcePackageView:
+class SourcePackageView(LaunchpadView):
     """A view for (distro series) source packages."""
 
     def initialize(self):
