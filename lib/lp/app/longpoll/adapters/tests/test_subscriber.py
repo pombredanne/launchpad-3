@@ -63,7 +63,7 @@ class TestLongPollSubscriber(TestCase):
         subscriber.subscribe(FakeEvent())
         subscribe_key = subscriber.subscribe_key
         self.assertIsInstance(subscribe_key, str)
-        self.assertEqual(36, len(subscribe_key))
+        self.assertNotEqual(0, len(subscribe_key))
         # It remains the same for later subscriptions.
         subscriber.subscribe(FakeEvent())
         self.assertEqual(subscribe_key, subscriber.subscribe_key)

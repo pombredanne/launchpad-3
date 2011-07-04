@@ -21,5 +21,5 @@ class TestJobLongPollEvent(TestCase):
         adapter = getMultiAdapter(
             (job, JobStatus.RUNNING), ILongPollEvent)
         self.assertEqual(
-            "longpoll.job.%d.RUNNING" % job.id,
+            "longpoll.event.job.%d.RUNNING" % job.id,
             adapter.event_key)
