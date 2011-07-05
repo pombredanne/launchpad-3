@@ -429,6 +429,8 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
             disallowed_component, section, [current_component])
 
     def test_overrideSource_ignores_None_component_change(self):
+        # overrideSource accepts None as a component; it will not object
+        # based on permissions for the new component.
         pu, pcj = self.makeUploadWithPackageCopyJob()
         current_component = getUtility(IComponentSet)[pcj.component_name]
         new_section = self.factory.makeSection()
