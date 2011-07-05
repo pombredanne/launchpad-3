@@ -22,10 +22,14 @@ def generate_event_key(*components):
 
 
 class LongPollEvent:
-    """Base-class for event adapters."""
+    """Base-class for event adapters.
 
-    #adapts(Interface, Interface)
-    #implements(ILongPollEvent)
+    Sub-classes need to declare something along the lines of:
+
+        adapts(Interface, Interface)
+        implements(ILongPollEvent)
+
+    """
 
     def __init__(self, source, event):
         self.source = source
