@@ -907,7 +907,7 @@ class IDistroSeriesPublic(
     @export_read_operation()
     @operation_for_version('devel')
     def getDifferenceComments(since=None, source_package_name=None):
-        """Get `IDistroSeriesDifferenceComment`s.
+        """Get `IDistroSeriesDifferenceComment` items.
 
         :param since: Ignore comments older than this date.
         :param source_package_name: Return only comments for a source package
