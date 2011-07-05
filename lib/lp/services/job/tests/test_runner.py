@@ -17,6 +17,7 @@ from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
 from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource
 from lp.services.job.interfaces.job import (
@@ -501,7 +502,7 @@ class MemoryHogJob(StaticJobSource):
 
 class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
     def setUp(self):
         super(TestTwistedJobRunner, self).setUp()

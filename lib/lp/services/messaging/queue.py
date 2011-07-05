@@ -23,7 +23,6 @@ from lp.services.messaging.interfaces import (
     EmptyQueueException,
     )
 
-
 LAUNCHPAD_EXCHANGE = "launchpad-exchange"
 
 
@@ -188,3 +187,4 @@ class RabbitQueue(RabbitMessageBase):
         self.channel.basic_consume(self.name, callback=callback)
         self.channel.wait()
         return result[0]
+
