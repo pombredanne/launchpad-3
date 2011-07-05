@@ -912,8 +912,9 @@ class IDistroSeriesPublic(
         :param since: Ignore comments older than this date.
         :param source_package_name: Return only comments for a source package
             with this name.
-        :return: A Storm result set of `IDistroSeriesDifferenceComment`s
-            for this distroseries, ordered from oldest to newest comment.
+        :return: A Storm result set of `IDistroSeriesDifferenceComment`
+            objects for this distroseries, ordered from oldest to newest
+            comment.
         """
 
 
