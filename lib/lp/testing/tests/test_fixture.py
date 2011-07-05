@@ -49,6 +49,8 @@ class TestZopeAdapterFixture(TestCase):
     layer = BaseLayer
 
     def test_register_and_unregister(self):
+        # Entering ZopeAdapterFixture's context registers the given adapter,
+        # and exiting the context unregisters the adapter again.
         context = Foo()
         # No adapter from Foo to Bar is registered.
         self.assertIs(None, queryAdapter(context, IBar))
@@ -57,5 +59,5 @@ class TestZopeAdapterFixture(TestCase):
             adapter = queryAdapter(context, IBar)
             self.assertIsNot(None, adapter)
             self.assertIsInstance(adapter, FooToBar)
-        # Again, it's no longer registered.
+        # The adapter is no longer registered.
         self.assertIs(None, queryAdapter(context, IBar))

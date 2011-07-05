@@ -1,7 +1,7 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Long-poll subscriber adapter tests."""
+"""Tests for lp.app.longpoll."""
 
 __metaclass__ = type
 
@@ -62,11 +62,15 @@ class FakeEvent:
         RabbitRoutingKey(self.event_key).send_now(data)
 
 
-class TestModule(TestCase):
+class TestFunctions(TestCase):
 
     layer = LaunchpadFunctionalLayer
 
     def test_subscribe(self):
+        # subscribe() gets the ILongPollEvent for the given (target, event)
+        # and the ILongPollSubscriber for the given request (or the current
+        # request is discovered). It subscribes the latter to the event, then
+        # returns the event.
         request = LaunchpadTestRequest()
         an_object = FakeObject(12345)
         with ZopeAdapterFixture(FakeEvent):
@@ -83,6 +87,9 @@ class TestModule(TestCase):
         self.assertEqual(event_data, message)
 
     def test_emit(self):
+        # subscribe() gets the ILongPollEvent for the given (target, event)
+        # and passes the given data to its emit() method. It then returns the
+        # event.
         an_object = FakeObject(12345)
         with ZopeAdapterFixture(FakeEvent):
             event = emit(an_object, "bar", {})
