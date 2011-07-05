@@ -78,7 +78,8 @@ TIMESTAMP_ACCEPTANCE_WINDOW = 60 # seconds
 # amount.
 TIMESTAMP_SKEW_WINDOW = 60*60 # seconds, +/-
 
-class OAuthBase(SQLBase):
+
+class OAuthBase:
     """Base class for all OAuth database classes."""
 
     @staticmethod
@@ -95,7 +96,7 @@ class OAuthBase(SQLBase):
     getStore = _get_store
 
 
-class OAuthConsumer(OAuthBase):
+class OAuthConsumer(OAuthBase, SQLBase):
     """See `IOAuthConsumer`."""
     implements(IOAuthConsumer)
 
@@ -191,7 +192,7 @@ class OAuthConsumerSet:
         return OAuthConsumer.selectOneBy(key=key)
 
 
-class OAuthAccessToken(OAuthBase):
+class OAuthAccessToken(OAuthBase, SQLBase):
     """See `IOAuthAccessToken`."""
     implements(IOAuthAccessToken)
 
@@ -272,7 +273,7 @@ class OAuthAccessToken(OAuthBase):
             access_token=self, nonce=nonce, request_timestamp=date)
 
 
-class OAuthRequestToken(OAuthBase):
+class OAuthRequestToken(OAuthBase, SQLBase):
     """See `IOAuthRequestToken`."""
     implements(IOAuthRequestToken)
 
@@ -387,7 +388,7 @@ class OAuthRequestTokenSet:
         return OAuthRequestToken.selectOneBy(key=key)
 
 
-class OAuthNonce(OAuthBase):
+class OAuthNonce(OAuthBase, SQLBase):
     """See `IOAuthNonce`."""
     implements(IOAuthNonce)
 
