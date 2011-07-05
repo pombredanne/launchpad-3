@@ -371,16 +371,12 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     def addSourceOverride(self, override):
         """Add an `ISourceOverride` to the metadata."""
-        component = ""
-        section = ""
+        metadata_changes = {}
         if override.component is not None:
-            component = override.component.name
+            metadata_changes['component_override'] = override.component.name
         if override.section is not None:
-            section = override.section.name
-        metadata_dict = dict(
-            component_override=component,
-            section_override=section)
-        self.context.extendMetadata(metadata_dict)
+            metadata_changes['section_override'] = override.section.name
+        self.context.extendMetadata(metadata_changes)
 
     def getSourceOverride(self):
         """Fetch an `ISourceOverride` from the metadata."""

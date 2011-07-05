@@ -929,7 +929,7 @@ class PackageUpload(SQLBase):
             # Nothing needs overriding, bail out.
             return False
 
-        if new_component not in allowed_components:
+        if new_component not in list(allowed_components) + [None]:
             raise QueueInconsistentStateError(
                 "No rights to override to %s" % new_component.name)
 
