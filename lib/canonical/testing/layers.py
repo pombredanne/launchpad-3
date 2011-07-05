@@ -77,7 +77,7 @@ from fixtures import (
     )
 from lazr.restful.utils import safe_hasattr
 import psycopg2
-from rabbitfixture.server import RabbitServer
+from lp.testing.fixture import RabbitServer
 from storm.zope.interfaces import IZStorm
 import transaction
 import wsgi_intercept
