@@ -274,7 +274,7 @@ merge-proposal-jobs:
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
 run: check_schema inplace stop
-	bin/run -r librarian,google-webservice,memcached -i $(LPCONFIG)
+	bin/run -r librarian,google-webservice,memcached,rabbitmq -i $(LPCONFIG)
 
 run.gdb:
 	echo 'run' > run.gdb
@@ -285,7 +285,7 @@ start-gdb: check_schema inplace stop support_files run.gdb
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
 run_all: check_schema inplace stop
-	bin/run -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached \
+	bin/run -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached,rabbitmq \
 	    -i $(LPCONFIG)
 
 run_codebrowse: build

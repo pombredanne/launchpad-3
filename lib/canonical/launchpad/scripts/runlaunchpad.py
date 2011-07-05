@@ -14,6 +14,7 @@ import subprocess
 import sys
 
 import fixtures
+from rabbitfixture.server import RabbitServerResources
 from zope.app.server.main import main
 
 from canonical.config import config
@@ -22,9 +23,10 @@ from canonical.lazr.pidfile import (
     make_pidfile,
     pidfile_path,
     )
+from lp.services.googlesearch import googletestservice
 from lp.services.mailman import runmailman
 from lp.services.osutils import ensure_directory_exists
-from lp.services.googlesearch import googletestservice
+from lp.services.rabbit.server import RabbitServer
 
 
 def make_abspath(path):
@@ -221,6 +223,19 @@ class ForkingSessionService(Service):
         process.stdin.close()
 
 
+class RabbitService(Service):
+
+    @property
+    def should_launch(self):
+        return config.rabbitmq.launch
+
+    def launch(self):
+        hostname, port = config.rabbitmq.host.split(":")
+        self.server = RabbitServer(
+            RabbitServerResources(hostname=hostname, port=int(port)))
+        self.useFixture(self.server)
+
+
 def stop_process(process):
     """kill process and BLOCK until process dies.
 
@@ -245,6 +260,7 @@ SERVICES = {
     'codebrowse': CodebrowseService(),
     'google-webservice': GoogleWebService(),
     'memcached': MemcachedService(),
+    'rabbitmq': RabbitService(),
     }
 
 
