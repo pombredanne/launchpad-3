@@ -327,8 +327,9 @@ class InitializeDistroSeries:
 
                 # Some packagesets where selected but not a single
                 # source from this parent: we skip the copy since
-                # calling copy with spns=[] would copy all the packagesets.
-                if spns == []:
+                # calling copy with spns=[] would copy all the packagesets
+                # from this parent.
+                if len(spns) == 0:
                     continue
 
             distroarchseries_list = distroarchseries_lists[parent]

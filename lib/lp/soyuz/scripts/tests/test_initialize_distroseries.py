@@ -268,36 +268,35 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         parent_srcs = test1.getSourcesIncluded(direct_inclusion=True)
         self.assertEqual(parent_srcs, child_srcs)
 
-    def test_copying_packagesets_multiple_parents_same_source(self):
-        # If a source with the same packagename is included in two parents,
-        # only the one from the selected packageset is copied.
-        self.parent, self.parent_das = self.setupParent()
-        self.parent2, self.parent_das = self.setupParent()
+    def test_copying_packagesets_multiple_parents(self):
+        # When a packageset id is passed to the initialisation method,
+        # only the packages in this packageset (and in the corresponding
+        # distroseries) are copied.
+        self.parent1, not_used = self.setupParent(
+            packages={'udev': '0.1-1', 'firefox': '2.1'})
+        self.parent2, not_used = self.setupParent(
+            packages={'firefox': '3.1'})
         uploader = self.factory.makePerson()
         test1 = getUtility(IPackagesetSet).new(
-            u'test1', u'test 1 packageset', self.parent.owner,
-            distroseries=self.parent)
-        test2 = getUtility(IPackagesetSet).new(
-            u'test2', u'test 2 packageset', self.parent2.owner,
-            distroseries=self.parent2)
+            u'test1', u'test 1 packageset', self.parent1.owner,
+            distroseries=self.parent1)
         test1.addSources('udev')
-        test2.addSources('udev')
+        test1.addSources('firefox')
         getUtility(IArchivePermissionSet).newPackagesetUploader(
-            self.parent.main_archive, uploader, test1)
+            self.parent1.main_archive, uploader, test1)
         child = self._fullInitialize(
-            [self.parent, self.parent2], packagesets=(str(test1.id),))
-        child_test1 = getUtility(IPackagesetSet).getByName(
-            u'test1', distroseries=child)
-        self.assertEqual(test1.description, child_test1.description)
-        self.assertEqual(child_test1.relatedSets().one(), test1)
-        self.assertEqual(
-            list(child_test1.relatedSets()),
-            [test1])
-        # The contents of the packagesets will have been copied.
-        child_srcs = child_test1.getSourcesIncluded(
-            direct_inclusion=True)
-        parent_srcs = test1.getSourcesIncluded(direct_inclusion=True)
-        self.assertEqual(parent_srcs, child_srcs)
+            [self.parent1, self.parent2], packagesets=(str(test1.id),))
+        # Only the packages from the packageset test1 (from
+        # self.parent1) are copied.
+        published_sources = child.main_archive.getPublishedSources(
+            distroseries=child)
+        pub_sources = sorted(
+            [(s.sourcepackagerelease.sourcepackagename.name,
+              s.sourcepackagerelease.version)
+                for s in published_sources])
+        self.assertContentEqual(
+            [(u'udev', u'0.1-1'), (u'firefox', u'2.1')],
+            pub_sources)
 
     def test_no_cross_distro_perm_copying(self):
         # No cross-distro archivepermissions copying should happen.
