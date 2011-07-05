@@ -685,22 +685,20 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=["Language.englishname"])
         return result
 
-    @cachedproperty
-    def prior_series(self):
+    def priorReleasedSeries(self):
         """See `IDistroSeries`."""
-        # This property is cached because it is used intensely inside
-        # sourcepackage.py; avoiding regeneration reduces a lot of
-        # count(*) queries.
         datereleased = self.datereleased
         # if this one is unreleased, use the last released one
         if not datereleased:
-            datereleased = 'NOW'
-        results = DistroSeries.select('''
-                distribution = %s AND
-                datereleased < %s
-                ''' % sqlvalues(self.distribution.id, datereleased),
-                orderBy=['-datereleased'])
-        return list(results)
+            datereleased = UTC_NOW
+        store = Store.of(self)
+        results = store.find(
+            DistroSeries,
+            DistroSeries.distributionID == self.distribution.id,
+            DistroSeries.datereleased < datereleased
+        ).order_by(Desc(DistroSeries.datereleased))
+
+        return results
 
     @property
     def bug_reporting_guidelines(self):

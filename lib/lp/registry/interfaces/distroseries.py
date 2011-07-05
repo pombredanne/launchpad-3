@@ -360,9 +360,8 @@ class IDistroSeriesPublic(
             automatically upgrade within backports, but not into it.
             """))
 
-    # other properties
-    prior_series = Attribute(
-        "Prior series *by date* from the same distribution.")
+    def priorReleasedSeries():
+        """Prior series *by date* from the same distribution."""
 
     main_archive = exported(
         Reference(

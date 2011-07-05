@@ -5,10 +5,15 @@
 
 __metaclass__ = type
 
+from datetime import (
+    datetime,
+    timedelta,
+)
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
@@ -20,6 +25,7 @@ from canonical.testing.layers import (
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.utils import utc_now
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -255,6 +261,29 @@ class TestDistroSeries(TestCaseWithFactory):
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=distroseries, archive=distroseries.main_archive)
         self.assertTrue(distroseries.isInitialized())
+
+    def test_priorReleasedSeries(self):
+        # Make sure that previousReleasedSeries returns all series with a
+        # release date less than the contextual series,
+        # ordered by descending date.
+        distro = self.factory.makeDistribution()
+        ds1 = self.factory.makeDistroSeries(distribution=distro)
+        ds2 = self.factory.makeDistroSeries(distribution=distro)
+        ds3 = self.factory.makeDistroSeries(distribution=distro)
+        ds4 = self.factory.makeDistroSeries(distribution=distro)
+
+        now = utc_now()
+        older = now - timedelta(days=5)
+        oldest = now - timedelta(days=10)
+        newer = now + timedelta(days=15)
+        removeSecurityProxy(ds1).datereleased = oldest
+        removeSecurityProxy(ds2).datereleased = older
+        removeSecurityProxy(ds4).datereleased = newer
+
+        prior = ds3.priorReleasedSeries()
+        self.assertEqual(
+            [ds2, ds1],
+            list(prior))
 
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):

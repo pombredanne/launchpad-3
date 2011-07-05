@@ -428,7 +428,7 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         # if we are an ubuntu sourcepackage, try the previous series of
         # ubuntu
         if self.distribution == ubuntu:
-            ubuntuseries = self.distroseries.prior_series
+            ubuntuseries = self.distroseries.priorReleasedSeries()
             if ubuntuseries:
                 previous_ubuntu_series = ubuntuseries[0]
                 sp = SourcePackage(sourcepackagename=self.sourcepackagename,
