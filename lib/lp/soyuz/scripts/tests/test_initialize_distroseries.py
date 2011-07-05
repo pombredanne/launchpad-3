@@ -268,7 +268,7 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         parent_srcs = test1.getSourcesIncluded(direct_inclusion=True)
         self.assertEqual(parent_srcs, child_srcs)
 
-    def test_copying_packagesets_multiple_parent_same_source(self):
+    def test_copying_packagesets_multiple_parents_same_source(self):
         # If a source with the same packagename is included in two parents,
         # only the one from the selected packageset is copied.
         self.parent, self.parent_das = self.setupParent()
