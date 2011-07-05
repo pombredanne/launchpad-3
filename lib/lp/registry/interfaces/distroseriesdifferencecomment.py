@@ -83,7 +83,7 @@ class IDistroSeriesDifferenceCommentSource(Interface):
         """Get comments for `distroseries` (since `since` if given).
 
         :param distroseries: The `DistroSeries` to find comments for.
-        :param since: A date.  No comments older than this date will be
+        :param since: A timestamp.  No comments older than this will be
             returned.
         :return: A result set of `DistroSeriesDifferenceComment`s, ordered
             from oldest to newest.

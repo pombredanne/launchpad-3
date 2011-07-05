@@ -903,13 +903,23 @@ class IDistroSeriesPublic(
     def isInitialized():
         """Has this series been initialized?"""
 
+    @operation_parameters(
+        since=Datetime(
+            title=_("Minimum creation timestamp"),
+            description=_(
+                "Ignore comments that are older than this."),
+            required=False),
+        source_package_name=TextLine(
+            title=_("Name of source package"),
+            description=_("Only return comments for this source package."),
+            required=False))
     @operation_returns_collection_of(Interface)
     @export_read_operation()
     @operation_for_version('devel')
     def getDifferenceComments(since=None, source_package_name=None):
         """Get `IDistroSeriesDifferenceComment` items.
 
-        :param since: Ignore comments older than this date.
+        :param since: Ignore comments older than this timestamp.
         :param source_package_name: Return only comments for a source package
             with this name.
         :return: A Storm result set of `IDistroSeriesDifferenceComment`
