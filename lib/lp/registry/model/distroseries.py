@@ -691,14 +691,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # if this one is unreleased, use the last released one
         if not datereleased:
             datereleased = UTC_NOW
-        store = Store.of(self)
-        results = store.find(
-            DistroSeries,
-            DistroSeries.distributionID == self.distribution.id,
-            DistroSeries.datereleased < datereleased
-        ).order_by(Desc(DistroSeries.datereleased))
-
-        return results
+        return getUtility(IDistroSeriesSet).priorReleasedSeries(
+            self.distribution, datereleased)
 
     @property
     def bug_reporting_guidelines(self):
@@ -2019,4 +2013,16 @@ class DistroSeriesSet:
         if orderBy is not None:
             return DistroSeries.select(where_clause, orderBy=orderBy)
         else:
+
             return DistroSeries.select(where_clause)
+
+    def priorReleasedSeries(self, distribution, prior_to_date):
+            """See `IDistroSeriesSet`."""
+            store = Store.of(distribution)
+            results = store.find(
+                DistroSeries,
+                DistroSeries.distributionID == distribution.id,
+                DistroSeries.datereleased < prior_to_date
+            ).order_by(Desc(DistroSeries.datereleased))
+
+            return results

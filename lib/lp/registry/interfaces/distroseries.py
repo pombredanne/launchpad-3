@@ -1045,6 +1045,18 @@ class IDistroSeriesSet(Interface):
         released == None will do no filtering on status.
         """
 
+    def priorReleasedSeries(self, distribution, prior_to_date):
+        """Find distroseries for the supplied distro  released before a
+        certain date.
+
+        :param distribution: An `IDistribution` in which to search for its
+            series.
+        :param prior_to_date: A `datetime`
+
+        :return: `IResultSet` of `IDistroSeries` that were released before
+            prior_to_date, ordered in increasing order of age.
+        """
+
 
 @error_status(httplib.BAD_REQUEST)
 class DerivationError(Exception):

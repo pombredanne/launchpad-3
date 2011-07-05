@@ -620,6 +620,7 @@ class DistroSeriesAddView(LaunchpadFormView):
     @action(_('Add Series'), name='create')
     def createAndAdd(self, action, data):
         """Create and add a new Distribution Series"""
+        previous_series = self.cont
         distroseries = self.context.newSeries(
             name=data['name'],
             displayname=data['displayname'],
