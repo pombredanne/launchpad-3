@@ -18,15 +18,17 @@ __all__ = [
     'file_exists',
     'iter_list_chunks',
     'iter_split',
-    're_email_address',
     'obfuscate_email',
+    're_email_address',
     'run_capturing_output',
     'synchronize',
     'text_delta',
     'traceback_info',
+    'utc_now',
     'value_string',
     ]
 
+from datetime import datetime
 from itertools import tee
 import os
 import re
@@ -41,6 +43,7 @@ from fixtures import (
     MonkeyPatch,
     )
 from lazr.enum import BaseItem
+import pytz
 from twisted.python.util import mergeFunctionMetadata
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -290,21 +293,9 @@ def traceback_info(info):
     sys._getframe(1).f_locals["__traceback_info__"] = info
 
 
-class RegisteredSubclass(type):
-    """Metaclass for when subclasses should be registered."""
-
-    def __init__(cls, name, bases, dict_):
-        # _register_subclass must be a static method to permit upcalls.
-        #
-        # We cannot use super(Class, cls) to do the upcalls, because Class
-        # isn't fully defined yet.  (Remember, we're calling this from a
-        # metaclass.)
-        #
-        # Without using super, a classmethod that overrides another
-        # classmethod has no reasonable way to call the overridden version AND
-        # provide its class as first parameter (i.e. "cls").  Therefore, we
-        # must use a static method.
-        cls._register_subclass(cls)
+def utc_now():
+    """Return a timezone-aware timestamp for the current time."""
+    return datetime.now(tz=pytz.UTC)
 
 
 # This is a regular expression that matches email address embedded in
