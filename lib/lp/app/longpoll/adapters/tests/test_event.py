@@ -59,7 +59,7 @@ class TestLongPollEvent(TestCase):
         self.assertThat(pending_messages, Contains(expected_message))
 
 
-class TestModule(TestCase):
+class TestFunctions(TestCase):
 
     layer = BaseLayer
 

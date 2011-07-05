@@ -122,7 +122,7 @@ class TestLongPollSubscriber(TestCase):
             cache.objects["longpoll"]["subscriptions"])
 
 
-class TestModule(TestCase):
+class TestFunctions(TestCase):
 
     layer = BaseLayer
 
