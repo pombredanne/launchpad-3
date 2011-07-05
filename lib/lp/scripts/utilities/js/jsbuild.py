@@ -15,14 +15,12 @@ import cssutils
 
 HERE = os.path.dirname(__file__)
 BUILD_DIR = os.path.normpath(os.path.join(HERE, '..', '..', '..', 'build'))
-DEFAULT_SRC_DIR = os.path.normpath(os.path.join(HERE, '..', '..', '..', 'app', 'javascript', 'lazr'))
+DEFAULT_SRC_DIR = os.path.normpath(os.path.join(
+    HERE, '..', '..', '..', 'app', 'javascript'))
 
 ESCAPE_STAR_PROPERTY_RE = re.compile(r'\*([a-zA-Z0-9_-]+):')
 UNESCAPE_STAR_PROPERTY_RE = re.compile(r'([a-zA-Z0-9_-]+)_ie_star_hack:')
 URL_RE = re.compile("url\([ \"\']*([^ \"\']+)[ \"\']*\)")
-
-from jsmin import JavascriptMinify
-
 
 def relative_path(from_file, to_file):
     """Return the relative path between from_file and to_file."""
@@ -185,8 +183,8 @@ class CSSComboFile(ComboFile):
 
 class Builder:
 
-    def __init__(self, name='lazr', build_dir=BUILD_DIR, src_dir=DEFAULT_SRC_DIR,
-                 extra_files=None, exclude_regex='', file_type='raw'):
+    def __init__(self, name='launchpad', build_dir=BUILD_DIR,
+                 src_dir=DEFAULT_SRC_DIR, extra_files=None):
         """Create a new Builder.
 
         :param name: The name of the package we are building. This will
@@ -195,13 +193,6 @@ class Builder:
         :param src_dir: The directory containing the source files.
         :param extra_files: List of files that should be bundled in the
             standalone file.
-        :param exclude_regex: A regex that will exclude file paths from the
-            final rollup.  -min and -debug versions will still be built.
-        :param file_type: A string specifying which type of files to include
-            in the final rollup.  Default is to use the raw, unmodified JS
-            file.  Possible values are 'raw', 'min', and 'debug'.  File types
-            are identified by their basename suffix: foo.js, foo-min.js,
-            foo-debug.js, etc.
         """
         self.name = name
         self.build_dir = build_dir
@@ -218,11 +209,6 @@ class Builder:
         else:
             self.extra_files = extra_files
 
-        self.exclusion_regex = exclude_regex
-        self.file_type = file_type
-
-        self.log("Using filter: " + self.file_type)
-
     def log(self, msg):
         sys.stdout.write(msg + '\n')
 
@@ -230,13 +216,6 @@ class Builder:
         """An error was encountered, abort build."""
         sys.stderr.write(msg + '\n')
         sys.exit(1)
-
-    def file_is_excluded(self, filepath):
-        """Is the given file path excluded from the rollup process?"""
-        if not self.exclusion_regex:
-            # Include everything.
-            return False
-        return re.search(self.exclusion_regex, filepath)
 
     def ensure_build_directory(self, path):
         """Make sure that the named relative path is a directory."""
@@ -259,34 +238,6 @@ class Builder:
         else:
             self.log('Linking %s -> %s' % (src, dst))
             os.symlink(src, dst)
-
-    def link_and_minify(self, component, js_file):
-        """Create raw, debug and min version of js_file."""
-        component_dir = os.path.join(self.build_dir, component)
-        basename = os.path.splitext(os.path.basename(js_file))[0]
-
-        raw_file = os.path.join(component_dir, basename + '.js')
-        rel_js_file = relative_path(raw_file, js_file)
-        self.ensure_link(rel_js_file, raw_file)
-
-        debug_file = os.path.join(component_dir, basename + '-debug.js')
-        self.ensure_link(rel_js_file, debug_file)
-
-        min_file = os.path.join(component_dir, basename + '-min.js')
-        if (not os.path.exists(min_file)
-            or os.stat(min_file).st_mtime < os.stat(js_file).st_mtime):
-            self.log("Minifying %s into %s." % (js_file, min_file))
-            js_in = open(js_file, 'r')
-            min_out = open(min_file, 'w')
-            minifier = JavascriptMinify()
-            minifier.minify(js_in, min_out)
-            js_in.close()
-            min_out.close()
-
-        self.built_files.append(
-            {'raw': raw_file,
-             'debug': debug_file,
-             'min': min_file})
 
     def build_assets(self, component_name):
         """Build a component's "assets" directory."""
@@ -369,25 +320,6 @@ class Builder:
                     target_skin_file))
                 combined_css.update()
 
-    def update_combined_js_file(self):
-        # Compile all the files in one JS file.  Apply the filter to see
-        # which file extensions we should include.
-        build_file = os.path.join(self.build_dir, "%s.js" % self.name)
-
-        included_files = []
-        extra_files = [f for f in self.extra_files if f.endswith('.js')]
-        built_files = [f[self.file_type] for f in self.built_files]
-
-        included_files.extend(extra_files)
-        included_files.extend(built_files)
-        files_to_combine = [f for f in included_files
-                            if not self.file_is_excluded(f)]
-
-        combined_js = JSComboFile(files_to_combine, build_file)
-        if combined_js.needs_update():
-            self.log('Updating %s...' % build_file)
-            combined_js.update()
-
     def update_combined_css_skins(self):
         """Create one combined CSS file per skin."""
         extra_css_files = [f for f in self.extra_files if f.endswith('.css')]
@@ -401,27 +333,12 @@ class Builder:
                 self.log('Updating %s...' % skin_build_file)
                 combined_css.update()
 
-    def find_components(self):
-        """Find all of the project sub-component names and directories."""
+    def do_build(self):
         for name in os.listdir(self.src_dir):
             path = os.path.join(self.src_dir, name)
             if not os.path.isdir(path):
                 continue
-            yield name, path
-
-    def do_build(self):
-        for name, cpath in self.find_components():
-            files_to_link = glob(os.path.join(cpath, '*.js'))
-            if len(files_to_link) == 0:
-                continue
-            self.ensure_build_directory(name)
-
-            for js_file in files_to_link:
-                self.link_and_minify(name, js_file)
-
             self.build_assets(name)
-
-        self.update_combined_js_file()
         self.update_combined_css_skins()
 
 
@@ -433,24 +350,15 @@ def get_options():
             "Create a build directory of CSS/JS files. "
             ))
     parser.add_option(
-        '-n', '--name', dest='name', default='lazr',
+        '-n', '--name', dest='name', default='launchpad',
         help=('The basename of the generated compilation file. Defaults to '
-            '"lazr".'))
+            '"launchpad".'))
     parser.add_option(
         '-b', '--builddir', dest='build_dir', default=BUILD_DIR,
         help=('The directory that should contain built files.'))
     parser.add_option(
         '-s', '--srcdir', dest='src_dir', default=DEFAULT_SRC_DIR,
         help=('The directory containing the src files.'))
-    parser.add_option(
-        '-x', '--exclude', dest='exclude', default='',
-        metavar='REGEX',
-        help=('Exclude any files that match the given regular expression.'))
-    parser.add_option(
-        '-f', '--filetype', dest='file_type', default='min',
-        help=('Only bundle files in the source directory that match the '
-              'specified file-type filter. Possible values are '
-              '[min, raw, debug]. [default: %default]'))
     return parser.parse_args()
 
 
@@ -462,6 +370,4 @@ def main():
        build_dir=options.build_dir,
        src_dir=options.src_dir,
        extra_files=extra,
-       exclude_regex=options.exclude,
-       file_type=options.file_type,
        ).do_build()
