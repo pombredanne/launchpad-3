@@ -6,14 +6,12 @@
 __metaclass__ = type
 
 from datetime import (
-    datetime,
     timedelta,
 )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,

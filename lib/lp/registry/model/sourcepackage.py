@@ -44,7 +44,6 @@ from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,
     )
-from lp.bugs.model.bugtask import BugTask
 from lp.buildmaster.enums import BuildStatus
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
@@ -500,7 +499,8 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         """See `IBugTarget`."""
         return self.distroseries.getUsedBugTags()
 
-    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
+                                     include_tags=None):
         """See IBugTarget."""
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary

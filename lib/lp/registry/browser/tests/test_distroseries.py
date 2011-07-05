@@ -512,7 +512,7 @@ class TestDistroSeriesAddView(TestCaseWithFactory):
         # Creating a new series when one already exists should set the
         # previous_series.
         old_series = self.factory.makeDistroSeries(self.distribution)
-        old_time =  utc_now() - timedelta (days=5)
+        old_time = utc_now() - timedelta(days=5)
         removeSecurityProxy(old_series).datereleased = old_time
         distroseries = self.createNewDistroseries()
         self.assertEqual(old_series, distroseries.previous_series)
