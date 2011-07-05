@@ -268,6 +268,37 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         parent_srcs = test1.getSourcesIncluded(direct_inclusion=True)
         self.assertEqual(parent_srcs, child_srcs)
 
+    def test_copying_packagesets_multiple_parent_same_source(self):
+        # If a source with the same packagename is included in two parents,
+        # only the one from the selected packageset is copied.
+        self.parent, self.parent_das = self.setupParent()
+        self.parent2, self.parent_das = self.setupParent()
+        uploader = self.factory.makePerson()
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent.owner,
+            distroseries=self.parent)
+        test2 = getUtility(IPackagesetSet).new(
+            u'test2', u'test 2 packageset', self.parent2.owner,
+            distroseries=self.parent2)
+        test1.addSources('udev')
+        test2.addSources('udev')
+        getUtility(IArchivePermissionSet).newPackagesetUploader(
+            self.parent.main_archive, uploader, test1)
+        child = self._fullInitialize(
+            [self.parent, self.parent2], packagesets=(str(test1.id),))
+        child_test1 = getUtility(IPackagesetSet).getByName(
+            u'test1', distroseries=child)
+        self.assertEqual(test1.description, child_test1.description)
+        self.assertEqual(child_test1.relatedSets().one(), test1)
+        self.assertEqual(
+            list(child_test1.relatedSets()),
+            [test1])
+        # The contents of the packagesets will have been copied.
+        child_srcs = child_test1.getSourcesIncluded(
+            direct_inclusion=True)
+        parent_srcs = test1.getSourcesIncluded(direct_inclusion=True)
+        self.assertEqual(parent_srcs, child_srcs)
+
     def test_no_cross_distro_perm_copying(self):
         # No cross-distro archivepermissions copying should happen.
         self.parent, self.parent_das = self.setupParent()
@@ -704,7 +735,7 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
              "and no parent was passed to the initilization method"
              ".").format(child=child),
              ids.check)
-             
+
     def test_copy_method_diff_archive_empty_target(self):
         # If the archives are different and the target archive is
         # empty: use the cloner.

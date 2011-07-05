@@ -315,15 +315,22 @@ class InitializeDistroSeries:
         """
         archive_set = getUtility(IArchiveSet)
 
-        spns = []
-        # The overhead from looking up each packageset is mitigated by
-        # this usually running from a job.
-        if self.packagesets:
-            for pkgsetid in self.packagesets:
-                pkgset = self._store.get(Packageset, int(pkgsetid))
-                spns += list(pkgset.getSourcesIncluded())
-
         for parent in self.derivation_parents:
+            spns = []
+            # The overhead from looking up each packageset is mitigated by
+            # this usually running from a job.
+            if self.packagesets:
+                for pkgsetid in self.packagesets:
+                    pkgset = self._store.get(Packageset, int(pkgsetid))
+                    if pkgset.distroseries == parent:
+                        spns += list(pkgset.getSourcesIncluded())
+
+                # Some packagesets where selected but not a single
+                # source from this parent: we skip the copy since
+                # calling copy with spns=[] would copy all the packagesets.
+                if spns == []:
+                    continue
+
             distroarchseries_list = distroarchseries_lists[parent]
             for archive in parent.distribution.all_distro_archives:
                 if archive.purpose not in (
