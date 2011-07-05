@@ -120,7 +120,7 @@ class InitializeDistroSeries:
             # Use-case #2.
             self.derivation_parents = [self.distroseries.previous_series]
             self.derivation_parent_ids = [
-                p.id for p in self.derivation_parents]
+                p.id for p in self.derivation_parents if p is not None]
             if self.parent_ids == []:
                 self.parents = (
                     self.distroseries.previous_series.getParentSeries())
@@ -129,6 +129,13 @@ class InitializeDistroSeries:
         if self.distroseries.isDerivedSeries():
             raise InitializationError(
                 ("DistroSeries {child.name} has already been initialized"
+                 ".").format(
+                    child=self.distroseries))
+        if (self.distroseries.distribution.has_published_sources and
+            self.distroseries.previous_series is None):
+            raise InitializationError(
+                ("DistroSeries {child.name} has no previous series and "
+                 "the distribution already has initialized series"
                  ".").format(
                     child=self.distroseries))
         self._checkParents()

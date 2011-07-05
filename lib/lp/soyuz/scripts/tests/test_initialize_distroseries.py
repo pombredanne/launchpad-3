@@ -107,6 +107,25 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
             "Can not copy distroarchseries from parent, there are already "
             "distroarchseries(s) initialized for this series.", ids.check)
 
+    def test_failure_when_previous_series_none(self):
+        # Initialising a distroseries with no previous_series if the
+        # distribution already has initialized series will error.
+        self.parent, self.parent_das = self.setupParent()
+        child = self.factory.makeDistroSeries(
+            previous_series=None, name='series')
+        another_distroseries = self.factory.makeDistroSeries(
+            distribution=child.distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+             distroseries=another_distroseries)
+        self.factory.makeDistroArchSeries(distroseries=child)
+        ids = InitializeDistroSeries(child, [self.parent.id])
+        self.assertRaisesWithContent(
+            InitializationError,
+            ("DistroSeries series has no previous series and "
+             "the distribution already has initialized series"
+             ".").format(child=child),
+             ids.check)
+
     def test_failure_with_pending_builds(self):
         # If the parent series has pending builds, and the child is a series
         # of the same distribution (which means they share an archive), we
@@ -704,7 +723,7 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
              "and no parent was passed to the initilization method"
              ".").format(child=child),
              ids.check)
-             
+
     def test_copy_method_diff_archive_empty_target(self):
         # If the archives are different and the target archive is
         # empty: use the cloner.
