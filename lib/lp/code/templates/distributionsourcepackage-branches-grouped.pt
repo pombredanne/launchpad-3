@@ -71,7 +71,7 @@
             <span tal:attributes="title branch/date_last_modified/fmt:datetime"
                   tal:content="branch/date_last_modified/fmt:approximatedate">
               sometime
-              </span> ago
+              </span>
           </td>
         </tr>
         <tr tal:condition="group/more-branch-count">

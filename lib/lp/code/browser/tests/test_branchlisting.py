@@ -349,6 +349,7 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
             dsp, name='+code-index', rootsite='code')
         html = view()
         self.assertIn(branch.name, html)
+        self.assertIn('a moment ago</span>\n', html)
 
 
 class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):
