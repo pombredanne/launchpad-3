@@ -12,6 +12,7 @@ import datetime
 import time
 
 import pytz
+import simplejson
 from sqlobject import (
     IntCol,
     StringCol,
@@ -30,6 +31,7 @@ from canonical.database.sqlbase import (
     quote,
     SQLBase,
     )
+from lp.app.longpoll import emit
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
@@ -98,9 +100,17 @@ class Job(SQLBase):
     def _set_status(self, status):
         if status not in self._valid_transitions[self._status]:
             raise InvalidTransition(self._status, status)
-        self._status = status
+        old_status, self._status = self._status, status
+        # Announce the status change.
+        event = simplejson.dumps(dict(old_status=old_status.name))
+        emit(self, status, event)
 
     status = property(lambda x: x._status)
+
+    @property
+    def job_id(self):
+        """See `IJob`."""
+        return self.id
 
     @classmethod
     def createMultiple(self, store, num_jobs):

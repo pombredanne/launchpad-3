@@ -12,7 +12,10 @@ from storm.locals import Store
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing.layers import ZopelessDatabaseLayer
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.services.job.interfaces.job import (
     IJob,
     JobStatus,
@@ -28,11 +31,17 @@ from lp.testing import TestCase
 class TestJob(TestCase):
     """Ensure Job behaves as intended."""
 
-    layer = ZopelessDatabaseLayer
+    layer = LaunchpadZopelessLayer
 
     def test_implements_IJob(self):
         """Job should implement IJob."""
         verifyObject(IJob, Job())
+
+    def test_job_id(self):
+        """The job_id is a unique ID for a job (i.e. a primary key)."""
+        job = Job()
+        self.assertIsNot(None, job.id)
+        self.assertEqual(job.id, job.job_id)
 
     def test_default_status(self):
         """The default status should be WAITING."""
