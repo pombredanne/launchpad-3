@@ -30,9 +30,6 @@ from lp.soyuz.model.distributionjob import (
     DistributionJobDerived,
     )
 from lp.soyuz.scripts.initialize_distroseries import InitializeDistroSeries
-from canonical.launchpad.components.decoratedresultset import (
-    DecoratedResultSet,
-    )
 
 
 class InitializeDistroSeriesJob(DistributionJobDerived):

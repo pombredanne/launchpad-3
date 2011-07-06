@@ -26,7 +26,6 @@ from lp.soyuz.model.initializedistroseriesjob import InitializeDistroSeriesJob
 from lp.soyuz.scripts.initialize_distroseries import InitializationError
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
-from lp.services.job.interfaces.job import JobStatus
 
 
 class InitializeDistroSeriesJobTests(TestCaseWithFactory):
