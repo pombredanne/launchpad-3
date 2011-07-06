@@ -24,7 +24,6 @@ __all__ = [
 
 import cgi
 from datetime import (
-    datetime,
     timedelta,
     )
 import operator
@@ -43,7 +42,6 @@ from zope.component import (
 from zope.datetime import (
     DateTimeError,
     parseDatetimetz,
-    tzinfo,
     )
 from zope.i18nmessageid import Message
 from zope.interface import implements
@@ -143,6 +141,7 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.propertycache import cachedproperty
+from lp.services.utils import utc_now
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
@@ -374,8 +373,7 @@ class MaintenanceMessage:
             except DateTimeError:
                 # XXX SteveAlexander 2005-09-22: log a warning here.
                 return ''
-            nowtz = datetime.utcnow().replace(tzinfo=tzinfo(0))
-            timeleft = maintenancetime - nowtz
+            timeleft = maintenancetime - utc_now()
             if timeleft > self.toomuchtime:
                 return ''
             elif timeleft < self.notmuchtime:

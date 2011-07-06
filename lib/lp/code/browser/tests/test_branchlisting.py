@@ -340,6 +340,17 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
         expected = official[:3] + branches
         self.assertGroupBranchesEqual(expected, series)
 
+    def test_distributionsourcepackage_branch(self):
+        source_package = self.factory.makeSourcePackage()
+        dsp = source_package.distribution.getSourcePackage(
+            source_package.sourcepackagename)
+        branch = self.factory.makeBranch(sourcepackage=source_package)
+        view = create_initialized_view(
+            dsp, name='+code-index', rootsite='code')
+        html = view()
+        self.assertIn(branch.name, html)
+        self.assertIn('a moment ago</span>\n', html)
+
 
 class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):
     """Make sure that the bzr_identity of the branches are correct."""

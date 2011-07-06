@@ -1844,30 +1844,55 @@ class BugTaskSet:
                     sqlvalues(personid=params.subscriber.id))
 
         if params.structural_subscriber is not None:
-            with_clauses.append('''ss as (SELECT * from StructuralSubscription
-                WHERE StructuralSubscription.subscriber = %s)'''
-                % sqlvalues(params.structural_subscriber))
+            ssub_match_product = (
+                BugTask.productID ==
+                StructuralSubscription.productID)
+            ssub_match_productseries = (
+                BugTask.productseriesID ==
+                StructuralSubscription.productseriesID)
+            # Prevent circular import problems.
+            from lp.registry.model.product import Product
+            ssub_match_project = And(
+                Product.projectID ==
+                StructuralSubscription.projectID,
+                BugTask.product == Product.id)
+            ssub_match_distribution = (
+                BugTask.distributionID ==
+                StructuralSubscription.distributionID)
+            ssub_match_sourcepackagename = (
+                BugTask.sourcepackagenameID ==
+                StructuralSubscription.sourcepackagenameID)
+            ssub_match_null_sourcepackagename = (
+                StructuralSubscription.sourcepackagename == None)
+            ssub_match_distribution_with_optional_package = And(
+                ssub_match_distribution, Or(
+                    ssub_match_sourcepackagename,
+                    ssub_match_null_sourcepackagename))
+            ssub_match_distribution_series = (
+                BugTask.distroseriesID ==
+                StructuralSubscription.distroseriesID)
+            ssub_match_milestone = (
+                BugTask.milestoneID ==
+                StructuralSubscription.milestoneID)
 
+            join_clause = Or(
+                ssub_match_product,
+                ssub_match_productseries,
+                ssub_match_project,
+                ssub_match_distribution_with_optional_package,
+                ssub_match_distribution_series,
+                ssub_match_milestone)
+
+            join_tables.append(
+                (Product, LeftJoin(Product, And(
+                                BugTask.productID == Product.id,
+                                Product.active))))
+            join_tables.append(
+                (StructuralSubscription,
+                 Join(StructuralSubscription, join_clause)))
             extra_clauses.append(
-                """BugTask.id IN (
-                SELECT DISTINCT BugTask.id
-                    FROM BugTask
-                LEFT JOIN Product ON (
-                    BugTask.product = Product.id AND Product.active)
-                LEFT JOIN ss ss1 ON BugTask.product = ss1.product
-                LEFT JOIN ss ss2 ON BugTask.productseries = ss2.productseries
-                LEFT JOIN ss ss3 ON Product.project = ss3.project
-                LEFT JOIN ss ss4 ON (
-                    BugTask.distribution = ss4.distribution AND (
-                        BugTask.sourcepackagename = ss4.sourcepackagename OR
-                        ss4.sourcepackagename IS NULL))
-                LEFT JOIN ss ss5 ON BugTask.distroseries = ss5.distroseries
-                LEFT JOIN ss ss6 ON BugTask.milestone = ss6.milestone
-                WHERE
-                    NULL_COUNT(ARRAY[ss1.id, ss2.id, ss3.id,
-                                     ss4.id, ss5.id, ss6.id]) < 6)
-                """
-                )
+                'StructuralSubscription.subscriber = %s'
+                % sqlvalues(params.structural_subscriber))
             has_duplicate_results = True
 
 

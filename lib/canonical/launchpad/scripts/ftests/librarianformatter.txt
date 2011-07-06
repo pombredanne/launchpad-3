@@ -36,6 +36,8 @@ Librarian is not significant.
 >>> from canonical.testing.layers import LibrarianLayer
 >>> LibrarianLayer.hide()
 
+>>> from lp.services.utils import utc_now
+
 >>> normal_log, normal_out= make_logger(logging.Formatter)
 >>> librarian_log, librarian_out = make_logger(LibrarianFormatter)
 >>> import time
@@ -95,8 +97,7 @@ We keep exceptions from expiring for about 3 months.
 >>> from canonical.launchpad.database.librarian import LibraryFileAlias
 >>> transaction.abort() # To see db changes made by the librarian
 >>> alias = LibraryFileAlias.get(alias_id)
->>> now = datetime.now().replace(tzinfo=utc)
->>> alias.expires > now + timedelta(days=89)
+>>> alias.expires > utc_now() + timedelta(days=89)
 True
 
 Note that we also need to remain informative with dud exceptions, such as
