@@ -903,8 +903,11 @@ class IDistroSeriesPublic(
     def isInitialized():
         """Has this series been initialized?"""
 
-    def getMostRecentInitializationJob():
-        """Get the last `IInitializeDistroSeriesJob` for this series."""
+    def getInitializationJob():
+        """Get the last `IInitializeDistroSeriesJob` for this series.
+
+        :return: `None` if no job is found or an `IInitializeDistroSeriesJob`.
+        """
 
 
 class IDistroSeriesEditRestricted(Interface):
