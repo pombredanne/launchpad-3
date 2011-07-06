@@ -795,6 +795,40 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             section=Equals(metadata_section))
         self.assertThat(override, matcher)
 
+    def test_addSourceOverride_accepts_None_component_as_no_change(self):
+        # When given an override with None as the component,
+        # addSourceOverride will update the section but not the
+        # component.
+        pcj = self.factory.makePlainPackageCopyJob()
+        old_component = self.factory.makeComponent()
+        old_section = self.factory.makeSection()
+        pcj.addSourceOverride(SourceOverride(
+            source_package_name=pcj.package_name,
+            component=old_component, section=old_section))
+        new_section = self.factory.makeSection()
+        pcj.addSourceOverride(SourceOverride(
+            source_package_name=pcj.package_name,
+            component=None, section=new_section))
+        self.assertEqual(old_component.name, pcj.component_name)
+        self.assertEqual(new_section.name, pcj.section_name)
+
+    def test_addSourceOverride_accepts_None_section_as_no_change(self):
+        # When given an override with None for the section,
+        # addSourceOverride will update the component but not the
+        # section.
+        pcj = self.factory.makePlainPackageCopyJob()
+        old_component = self.factory.makeComponent()
+        old_section = self.factory.makeSection()
+        pcj.addSourceOverride(SourceOverride(
+            source_package_name=pcj.package_name,
+            component=old_component, section=old_section))
+        new_component = self.factory.makeComponent()
+        pcj.addSourceOverride(SourceOverride(
+            source_package_name=pcj.package_name,
+            component=new_component, section=None))
+        self.assertEqual(new_component.name, pcj.component_name)
+        self.assertEqual(old_section.name, pcj.section_name)
+
     def test_getSourceOverride(self):
         # Test the getSourceOverride which gets an ISourceOverride from
         # the metadata.
