@@ -153,9 +153,10 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         initialize_utility = getUtility(IInitializeDistroSeriesJobSource)
         get_jobs = initialize_utility.getJobsForDistroseries
         [job] = get_jobs(distroseries)
+        self.assertIsInstance(job, InitializeDistroSeriesJob)
         self.assertEqual(job.distroseries, distroseries)
-        job.job.start()
-        job.job.complete()
+        job.start()
+        job.complete()
         # By default, only pending jobs are returned.
         self.assertContentEqual([], get_jobs(distroseries))
         # A set of interesting statuses can be supplied.

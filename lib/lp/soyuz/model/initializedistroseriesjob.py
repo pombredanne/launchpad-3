@@ -30,6 +30,9 @@ from lp.soyuz.model.distributionjob import (
     DistributionJobDerived,
     )
 from lp.soyuz.scripts.initialize_distroseries import InitializeDistroSeries
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 
 
 class InitializeDistroSeriesJob(DistributionJobDerived):
@@ -78,17 +81,15 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
     @classmethod
     def getJobsForDistroseries(cls, distroseries, statuses=None):
         """See `IInitializeDistroSeriesJob`."""
-        # XXX: GavinPanella 2011-07-06 bug=???: This should return
-        # InitializeDistroSeriesJob instances *not* DistributionJob
-        # instances. That's just silly!
         if statuses is None:
             statuses = Job.PENDING_STATUSES
-        return IStore(DistributionJob).find(
+        distribution_jobs = IStore(DistributionJob).find(
             DistributionJob,
             DistributionJob.job_id == Job.id,
             DistributionJob.job_type == cls.class_job_type,
             DistributionJob.distroseries_id == distroseries.id,
             Job._status.is_in(statuses))
+        return DecoratedResultSet(distribution_jobs, cls)
 
     @property
     def parents(self):

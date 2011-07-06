@@ -113,6 +113,7 @@ class IInitializeDistroSeriesJobSource(IJobSource):
         :param statuses: If `None` return pending jobs, otherwise return jobs
             with one of the given statuses.
         :type statuses: Any iterable, or `None`.
+        :return: An `IResultSet` yielding `IInitializeDistroSeriesJob`.
         """
 
 
