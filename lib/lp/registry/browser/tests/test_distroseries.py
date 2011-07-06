@@ -511,7 +511,10 @@ class TestDistroSeriesAddView(TestCaseWithFactory):
     def test_submit_sets_previous_series(self):
         # Creating a new series when one already exists should set the
         # previous_series.
-        old_series = self.factory.makeDistroSeries(self.distribution)
+        old_series = self.factory.makeDistroSeries(self.distribution,
+                                                   version='11.10')
+        older_series = self.factory.makeDistroSeries(self.distribution,
+                                                     version='11.04')
         old_time = utc_now() - timedelta(days=5)
         removeSecurityProxy(old_series).datereleased = old_time
         distroseries = self.createNewDistroseries()
