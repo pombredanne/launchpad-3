@@ -256,7 +256,7 @@ class TestDistroSeries(TestCaseWithFactory):
             distroseries=distroseries, archive=distroseries.main_archive)
         self.assertTrue(distroseries.isInitialized())
 
-    def test_getInitializationJob_queued_job(self):
+    def test_getInitializationJob(self):
         # getInitializationJob() returns the most recent
         # `IInitializeDistroSeriesJob` for the given series.
         distroseries = self.factory.makeDistroSeries()
