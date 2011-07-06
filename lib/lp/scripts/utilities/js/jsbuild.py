@@ -22,6 +22,7 @@ ESCAPE_STAR_PROPERTY_RE = re.compile(r'\*([a-zA-Z0-9_-]+):')
 UNESCAPE_STAR_PROPERTY_RE = re.compile(r'([a-zA-Z0-9_-]+)_ie_star_hack:')
 URL_RE = re.compile("url\([ \"\']*([^ \"\']+)[ \"\']*\)")
 
+
 def relative_path(from_file, to_file):
     """Return the relative path between from_file and to_file."""
     dir_from, base_from = os.path.split(from_file)
@@ -75,7 +76,8 @@ class ComboFile:
                 content = fh.read()
                 fh.close()
                 try:
-                    target_fh.write(self.filter_file_content(content, src_file))
+                    target_fh.write(
+                        self.filter_file_content(content, src_file))
                 except Exception:
                     os.remove(self.target_file)
                     raise
@@ -145,6 +147,7 @@ class CSSComboFile(ComboFile):
             src_dir = os.path.dirname(path)
             relative_parts = relative_path(self.target_file, src_dir).split(
                 os.path.sep)
+
             def fix_relative_url(match):
                 url = match.group(1)
                 # Don't modify absolute URLs or 'data:' urls.
@@ -363,7 +366,7 @@ def get_options():
 
 
 def main():
-    options, extra= get_options()
+    options, extra = get_options()
 
     Builder(
        name=options.name,
