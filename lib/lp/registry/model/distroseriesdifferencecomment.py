@@ -15,6 +15,7 @@ from storm.locals import (
     Int,
     Max,
     Reference,
+    Select,
     Storm,
     )
 from zope.interface import (
@@ -121,10 +122,13 @@ class DistroSeriesDifferenceComment(Storm):
                 ]
 
         if since is not None:
-            after_msgid = store.find(
-                Max(Message.id), Message.datecreated < since).one()
-            if after_msgid is not None:
-                conditions.append(DSDComment.message_id > after_msgid)
+            older_messages = store.find(
+                Max(Message.id), Message.datecreated == Select(
+                    Max(Message.datecreated),
+                    Message.datecreated < since))
+            after_message_id = older_messages.one()
+            if after_message_id is not None:
+                conditions.append(DSDComment.message_id > after_message_id)
 
         return store.find(DSDComment, *conditions).order_by(
             DSDComment.message_id)
