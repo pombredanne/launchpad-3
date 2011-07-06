@@ -150,8 +150,7 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         another_distroseries = self.factory.makeDistroSeries()
         self.job_source.create(distroseries, [parent.id])
         self.job_source.create(another_distroseries, [parent.id])
-        initialize_utility = getUtility(IInitializeDistroSeriesJobSource)
-        get_jobs = initialize_utility.getJobsForDistroseries
+        get_jobs = self.job_source.getJobsForDistroseries
         [job] = get_jobs(distroseries)
         self.assertIsInstance(job, InitializeDistroSeriesJob)
         self.assertEqual(job.distroseries, distroseries)
