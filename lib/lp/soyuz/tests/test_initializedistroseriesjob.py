@@ -26,6 +26,7 @@ from lp.soyuz.model.initializedistroseriesjob import InitializeDistroSeriesJob
 from lp.soyuz.scripts.initialize_distroseries import InitializationError
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+from lp.services.job.interfaces.job import JobStatus
 
 
 class InitializeDistroSeriesJobTests(TestCaseWithFactory):
@@ -142,17 +143,24 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         naked_job = removeSecurityProxy(job)
         self.assertEqual((parent.id, ), naked_job.parents)
 
-    def test_getPendingJobsForDistroseries(self):
-        # Pending initialization jobs can be retrieved per distroseries.
+    def test_getJobsForDistroseries(self):
+        # Initialization jobs can be retrieved per distroseries.
         parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
         another_distroseries = self.factory.makeDistroSeries()
         self.job_source.create(distroseries, [parent.id])
         self.job_source.create(another_distroseries, [parent.id])
         initialize_utility = getUtility(IInitializeDistroSeriesJobSource)
-        [job] = list(initialize_utility.getPendingJobsForDistroseries(
-            distroseries))
+        get_jobs = initialize_utility.getJobsForDistroseries
+        [job] = get_jobs(distroseries)
         self.assertEqual(job.distroseries, distroseries)
+        job.job.start()
+        job.job.complete()
+        # By default, only pending jobs are returned.
+        self.assertContentEqual([], get_jobs(distroseries))
+        # A set of interesting statuses can be supplied.
+        completed_jobs = get_jobs(distroseries, (JobStatus.COMPLETED,))
+        self.assertContentEqual([job], completed_jobs)
 
 
 class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):

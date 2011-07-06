@@ -107,7 +107,7 @@ class IInitializeDistroSeriesJobSource(IJobSource):
                overlay_pockets, overlay_components):
         """Create a new initialization job for a distroseries."""
 
-    def getPendingJobsForDistroseries(distroseries):
+    def getJobsForDistroseries(distroseries):
         """Retrieve pending initialization jobs for a distroseries.
         """
 

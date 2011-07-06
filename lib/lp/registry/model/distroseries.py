@@ -1887,7 +1887,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def isInitializing(self):
         """See `IDistroSeries`."""
         job_source = getUtility(IInitializeDistroSeriesJobSource)
-        pending_jobs = job_source.getPendingJobsForDistroseries(self)
+        pending_jobs = job_source.getJobsForDistroseries(self)
         return not pending_jobs.is_empty()
 
     def isInitialized(self):
