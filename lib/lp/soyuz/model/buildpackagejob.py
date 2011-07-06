@@ -29,7 +29,15 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
+from lp.soyuz.interfaces.buildpackagejob import (
+    COPY_ARCHIVE_SCORE_PENALTY,
+    IBuildPackageJob,
+    PRIVATE_ARCHIVE_SCORE_BONUS,
+    SCORE_BY_COMPONENT,
+    SCORE_BY_POCKET,
+    SCORE_BY_URGENCY,
+    )
+
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 
 
@@ -58,29 +66,6 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
 
     def score(self):
         """See `IBuildPackageJob`."""
-        score_pocketname = {
-            PackagePublishingPocket.BACKPORTS: 0,
-            PackagePublishingPocket.RELEASE: 1500,
-            PackagePublishingPocket.PROPOSED: 3000,
-            PackagePublishingPocket.UPDATES: 3000,
-            PackagePublishingPocket.SECURITY: 4500,
-            }
-
-        score_componentname = {
-            'multiverse': 0,
-            'universe': 250,
-            'restricted': 750,
-            'main': 1000,
-            'partner': 1250,
-            }
-
-        score_urgency = {
-            SourcePackageUrgency.LOW: 5,
-            SourcePackageUrgency.MEDIUM: 10,
-            SourcePackageUrgency.HIGH: 15,
-            SourcePackageUrgency.EMERGENCY: 20,
-            }
-
         # Define a table we'll use to calculate the score based on the time
         # in the build queue.  The table is a sorted list of (upper time
         # limit in seconds, score) tuples.
@@ -93,15 +78,6 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             (300, 5),
         ]
 
-        private_archive_increment = 10000
-
-        # For build jobs in rebuild archives a score value of -1
-        # was chosen because their priority is lower than build retries
-        # or language-packs. They should be built only when there is
-        # nothing else to build.
-        rebuild_archive_score = -2600
-
-
         # Please note: the score for language packs is to be zero because
         # they unduly delay the building of packages in the main component
         # otherwise.
@@ -111,15 +87,16 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
         score = 0
 
         # Calculates the urgency-related part of the score.
-        urgency = score_urgency[self.build.source_package_release.urgency]
+        urgency = SCORE_BY_URGENCY[
+            self.build.source_package_release.urgency]
         score += urgency
 
         # Calculates the pocket-related part of the score.
-        score_pocket = score_pocketname[self.build.pocket]
+        score_pocket = SCORE_BY_POCKET[self.build.pocket]
         score += score_pocket
 
         # Calculates the component-related part of the score.
-        score += score_componentname.get(
+        score += SCORE_BY_COMPONENT.get(
             self.build.current_component.name, 0)
 
         # Calculates the build queue time component of the score.
@@ -132,15 +109,15 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
 
         # Private builds get uber score.
         if self.build.archive.private:
-            score += private_archive_increment
+            score += PRIVATE_ARCHIVE_SCORE_BONUS
+
+        if self.build.archive.is_copy:
+            score -= COPY_ARCHIVE_SCORE_PENALTY
 
         # Lastly, apply the archive score delta.  This is to boost
         # or retard build scores for any build in a particular
         # archive.
         score += self.build.archive.relative_build_score
-
-        if self.build.archive.is_copy:
-            score += rebuild_archive_score
 
         return score
 

@@ -26,6 +26,7 @@ from lp.soyuz.interfaces.archive import (
     )
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
+from lp.soyuz.interfaces.buildpackagejob import COPY_ARCHIVE_SCORE_PENALTY
 from lp.soyuz.scripts.ftpmaster import (
     PackageLocationError,
     SoyuzScriptError,
@@ -724,4 +725,5 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
             series.distribution, ArchivePurpose.COPY, archive_name)
         self.assertIsNotNone(copy_archive, "COPY archive wasn't created")
-        self.assertEquals(10, copy_archive.relative_build_score)
+        self.assertEquals(
+            COPY_ARCHIVE_SCORE_PENALTY, copy_archive.relative_build_score)

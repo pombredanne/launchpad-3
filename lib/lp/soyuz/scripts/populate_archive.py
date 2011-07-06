@@ -17,6 +17,7 @@ from lp.app.errors import NotFoundError
 from lp.app.validators.name import valid_name
 from lp.soyuz.adapters.packagelocation import build_package_location
 from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.buildpackagejob import COPY_ARCHIVE_SCORE_PENALTY
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
@@ -226,7 +227,7 @@ class ArchivePopulator(SoyuzScript):
 
             # If --raise-priority was specified, offset the penalty
             # normally assigned to copy builds.
-            copy_archive.relative_build_score = 10
+            copy_archive.relative_build_score = COPY_ARCHIVE_SCORE_PENALTY
         else:
             # Archive name clash! Creation requested for existing archive with
             # the same name and distribution.
