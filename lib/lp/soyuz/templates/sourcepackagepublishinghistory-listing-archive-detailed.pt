@@ -69,7 +69,7 @@
     </td>
   </tr>
   <tr tal:attributes="id string:pub${context/id}">
-    <td colspan="7">
+    <td colspan="7" style="padding: 0px;">
       <div class="package-details"
            tal:attributes="id string:pub${context/id}-container" />
     </td>
