@@ -1034,9 +1034,9 @@ class TeamMemberAddView(LaunchpadFormView):
 
     schema = ITeamMember
     label = "Select the new member"
-    # XXX: jcsackett 5.7.2011 The assignment of 'false' to the vars below
-    # should be changed to the more appropriate False bool when we're making
-    # use of the JSON cache to setup pickers, rather than assembling
+    # XXX: jcsackett 5.7.2011 bug=799847 The assignment of 'false' to the vars
+    # below should be changed to the more appropriate False bool when we're
+    # making use of the JSON cache to setup pickers, rather than assembling
     # javascript in a view macro.
     custom_widget(
         'newmember', PersonPickerWidget,
