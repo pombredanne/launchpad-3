@@ -29,7 +29,6 @@ from storm.expr import (
     Select,
     SQL,
     )
-from storm.info import ClassAlias
 from storm.locals import (
     Int,
     Reference,
@@ -59,6 +58,7 @@ from lp.code.enums import (
 from lp.code.errors import (
     BadBranchMergeProposalSearchContext,
     BadStateTransition,
+    BranchMergeProposalExists,
     UserNotBranchReviewer,
     WrongBranchMergeProposal,
     )
@@ -560,6 +560,11 @@ class BranchMergeProposal(SQLBase):
         if target_branch is None:
             target_branch = self.target_branch
         # DEFAULT instead of None, because None is a valid value.
+        proposals = BranchMergeProposalGetter.activeProposalsForBranches(
+            source_branch, target_branch)
+        for proposal in proposals:
+            if proposal is not self:
+                raise BranchMergeProposalExists(proposal)
         if prerequisite_branch is DEFAULT:
             prerequisite_branch = self.prerequisite_branch
         if description is None:
@@ -656,9 +661,11 @@ class BranchMergeProposal(SQLBase):
             LIMIT 10)""" % self.source_branch.id)
         where = SQL("""BranchRevision.revision NOT IN (SELECT revision from
             BranchRevision AS target where target.branch = %s and
-            BranchRevision.revision = target.revision)""" % self.target_branch.id)
+            BranchRevision.revision = target.revision)""" %
+            self.target_branch.id)
         using = SQL("""source as BranchRevision""")
-        revisions = store.with_(source).using(using).find(BranchRevision, where)
+        revisions = store.with_(source).using(using).find(
+            BranchRevision, where)
         return list(revisions.order_by(
             Desc(BranchRevision.sequence)).config(limit=10))
 

@@ -51,12 +51,14 @@ class TestAddMilestone(WindmillTestCase):
 
         # Verify that the milestone was added to the SELECT input,
         # and that it is now selected.
+        # XXX: push to YUI test, if we care.
         client.waits.sleep(milliseconds=SLEEP)
         client.asserts.assertSelected(id="field.milestone_for_release",
                                       validator=milestone_name.lower())
 
         # Verify error message when trying to create a milestone with a
         # conflicting name.
+        # XXX: don't check errors in browser
         client.click(id=u'create-milestone-link')
         client.waits.forElement(id=u'field.name', timeout=FOR_ELEMENT)
         client.type(id='field.name', text=milestone_name)

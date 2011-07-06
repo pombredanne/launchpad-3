@@ -38,7 +38,7 @@ bugtasks on contexts that don't use Launchpad are Invalid, those bugs
 are not included in the report.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.ftests import login, logout, syncUpdate
+    >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -50,7 +50,6 @@ are not included in the report.
     ...     if not bugtask.target_uses_malone:
     ...         bugtask.transitionToStatus(
     ...             BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
-    ...         syncUpdate(bugtask)
 
     >>> for bugtask in bug_two.bugtasks:
     ...     print "%s, %s" % (

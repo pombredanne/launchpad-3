@@ -1395,6 +1395,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # effort to find a package.
             publishing = IStore(SourcePackagePublishingHistory).find(
                 SourcePackagePublishingHistory,
+                # We use an extra query to get the IDs instead of an
+                # inner join on archive because of the skewness in the
+                # archive data. (There are many, many PPAs to consider
+                # and PostgreSQL picks a bad query plan resulting in
+                # timeouts).
                 SourcePackagePublishingHistory.archiveID.is_in(
                     self.all_distro_archive_ids),
                 SourcePackagePublishingHistory.sourcepackagereleaseID ==
@@ -1427,6 +1432,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # the sourcepackagename from that.
             bpph = IStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
+                # See comment above for rationale for using an extra query 
+                # instead of an inner join. (Bottom line, it would time out
+                # otherwise.)
                 BinaryPackagePublishingHistory.archiveID.is_in(
                     self.all_distro_archive_ids),
                 BinaryPackagePublishingHistory.binarypackagereleaseID ==

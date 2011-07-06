@@ -16,7 +16,7 @@ usually done:
     <html metal:use-macro="view/macro:page/main_side" />
 
 
-    >>> from canonical.launchpad.ftests import test_tales
+    >>> from lp.testing import test_tales
     >>> view = FakeView()
 
     # Return value is the compiled macro expression.

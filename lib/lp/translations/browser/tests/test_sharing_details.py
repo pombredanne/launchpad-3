@@ -952,8 +952,8 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         tbody = find_tag_by_id(
             browser.contents, 'template-table').find('tbody')
         self.assertIsNot(None, tbody)
-        self.assertTextMatchesExpressionIgnoreWhitespace("""
-            foo-template  only in Ubuntu  0  \d+ second(s)? ago""",
+        self.assertEqual(
+            "foo-template\nonly in Ubuntu\n0\na moment ago",
             extract_text(tbody))
 
     def test_potlist_sharing(self):
@@ -968,10 +968,9 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         tbody = find_tag_by_id(
             browser.contents, 'template-table').find('tbody')
         self.assertIsNot(None, tbody)
-        self.assertTextMatchesExpressionIgnoreWhitespace("""
-            foo-template  shared
-            0  \d+ second(s)? ago  0  \d+ second(s)? ago""",
-            extract_text(tbody))
+        self.assertEqual(
+            "foo-template\nshared\n0\na moment ago\n0\na moment ago\n"
+            "View upstream", extract_text(tbody))
 
     def test_potlist_only_upstream(self):
         # A template that is only present in upstream is called
@@ -984,8 +983,8 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         tbody = find_tag_by_id(
             browser.contents, 'template-table').find('tbody')
         self.assertIsNot(None, tbody)
-        self.assertTextMatchesExpressionIgnoreWhitespace("""
-            foo-template  only in upstream  0  \d+ second(s)? ago""",
+        self.assertEqual(
+            "foo-template\nonly in upstream\n0\na moment ago\nView upstream",
             extract_text(tbody))
 
     def test_potlist_linking(self):

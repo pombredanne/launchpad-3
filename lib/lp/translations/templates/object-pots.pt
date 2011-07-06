@@ -81,7 +81,7 @@
         <div tal:replace="structure potemplate/@@+preferred-chart" />
 
         <div align="right">
-          [ <a href="/+editmylanguages">Choose preferred languages...</a> 
+          [ <a href="/+editmylanguages">Change your preferred languages...</a> 
             &mdash;
             <a tal:attributes="href potemplate/fmt:url">
               View template &amp; all languages...</a> 

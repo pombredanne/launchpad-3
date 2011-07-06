@@ -10,6 +10,7 @@
     xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
     <include package=".browser"/>
+    <include package=".longpoll" />
     <include package="lp.app.validators" />
     <include package="lp.app.widgets" />
 

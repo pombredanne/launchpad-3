@@ -42,6 +42,7 @@ BRANCH_SEARCCH_RESULT = (
     u'//ul[@class="yui3-picker-results"]//span[@class="yui3-picker-result-title"]')
 
 
+#XXX: Should be re-enabled for Selenium2.
 #class TestPopupOnBranchPage(WindmillTestCase):
 #    """Test the popup diff."""
 #

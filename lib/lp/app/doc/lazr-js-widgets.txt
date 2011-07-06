@@ -278,7 +278,7 @@ Other nifty links
 *****************
 
 If the logged in user is in the defined vocabulary (only occurs with people
-type vocabularies), a link is shown "Assign me'.
+type vocabularies), a link is shown "Assign to me'.
 
 If the field is optional, a "Remove" link is shown.  The "Remove" text is
 customizable thought the "remove_button_text" parameter.

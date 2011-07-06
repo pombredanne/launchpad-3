@@ -30,6 +30,7 @@ fi
 
 LP_DOWNLOAD_CACHE_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/download-cache"
 LP_EGGS_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/eggs"
+YUI_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/yui"
 LP_DOWNLOAD_CACHE_PATH="$(eval echo ${LP_DOWNLOAD_CACHE_PATH})"
 LP_EGGS_PATH="$(eval echo ${LP_EGGS_PATH})"
 
@@ -39,7 +40,7 @@ bzr pull -d "$LP_TRUNK_PATH"
 FINAL_REV=$(bzr revno "$LP_TRUNK_PATH")
 
 # Make sure our directories are around.
-mkdir -p "$LP_SOURCEDEPS_PATH" "$LP_EGGS_PATH"
+mkdir -p "$LP_SOURCEDEPS_PATH" "$LP_EGGS_PATH" "$YUI_PATH"
 
 # Get/update the download cache.
 if [ -d "$LP_DOWNLOAD_CACHE_PATH" ]
