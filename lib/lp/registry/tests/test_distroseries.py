@@ -265,6 +265,7 @@ class TestDistroSeries(TestCaseWithFactory):
         # release date less than the contextual series,
         # ordered by descending date.
         distro = self.factory.makeDistribution()
+        unreleased = self.factory.makeDistroSeries(distribution=distro)
         ds1 = self.factory.makeDistroSeries(distribution=distro)
         ds2 = self.factory.makeDistroSeries(distribution=distro)
         ds3 = self.factory.makeDistroSeries(distribution=distro)

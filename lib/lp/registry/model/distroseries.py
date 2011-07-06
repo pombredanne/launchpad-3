@@ -2022,7 +2022,8 @@ class DistroSeriesSet:
             results = store.find(
                 DistroSeries,
                 DistroSeries.distributionID == distribution.id,
-                DistroSeries.datereleased < prior_to_date
+                DistroSeries.datereleased < prior_to_date,
+                DistroSeries.datereleased != None
             ).order_by(Desc(DistroSeries.datereleased))
 
             return results
