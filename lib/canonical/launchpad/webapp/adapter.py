@@ -514,10 +514,12 @@ class LaunchpadSessionDatabase(Postgres):
     name = 'session'
 
     def raw_connect(self):
-        self._dsn = 'dbname=%s user=%s' % (config.launchpad_session.dbname,
-                                           config.launchpad_session.dbuser)
-        if config.launchpad_session.dbhost:
-            self._dsn += ' host=%s' % config.launchpad_session.dbhost
+        self._dsn = config.launchpad_session.database
+        if not self._dsn:
+            self._dsn = 'dbname=%s user=%s' % (config.launchpad_session.dbname,
+                                            config.launchpad_session.dbuser)
+            if config.launchpad_session.dbhost:
+                self._dsn += ' host=%s' % config.launchpad_session.dbhost
 
         flags = _get_dirty_commit_flags()
         raw_connection = super(LaunchpadSessionDatabase, self).raw_connect()
