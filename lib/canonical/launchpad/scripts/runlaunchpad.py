@@ -224,6 +224,7 @@ class ForkingSessionService(Service):
 
 
 class RabbitService(Service):
+    """A RabbitMQ service."""
 
     @property
     def should_launch(self):
