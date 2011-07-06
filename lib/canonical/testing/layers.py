@@ -145,13 +145,13 @@ from lp.services.mail.mailbox import TestMailBox
 import lp.services.mail.stub
 from lp.services.memcache.client import memcache_client_factory
 from lp.services.osutils import kill_by_pidfile
+from lp.services.rabbit.server import RabbitServer
 from lp.testing import (
     ANONYMOUS,
     is_logged_in,
     login,
     logout,
     )
-from lp.testing.fixture import RabbitServer
 from lp.testing.pgsql import PgTestSetup
 
 
