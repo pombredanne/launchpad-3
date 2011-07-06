@@ -22,7 +22,6 @@ from canonical.database.sqlbase import sqlvalues
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -161,9 +160,6 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
         """See `IBuildFarmJob`."""
-        # Avoiding circular import.
-        from lp.buildmaster.model.builder import Builder
-
         private_statuses = (
             PackagePublishingStatus.PUBLISHED,
             PackagePublishingStatus.SUPERSEDED,

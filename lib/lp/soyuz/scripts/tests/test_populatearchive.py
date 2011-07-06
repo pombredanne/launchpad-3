@@ -703,7 +703,6 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         # should break in case of a sample data change/corruption).
         self.assertEqual(src_names, self.expected_src_names)
 
-
     def testRaisePriority(self):
         # The --raise-priority option should create a copy archive
         # with a relative_build_score of 10 to offset the -10 of copy

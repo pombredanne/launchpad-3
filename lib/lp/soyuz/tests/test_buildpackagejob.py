@@ -50,7 +50,7 @@ def assign_to_builder(test, job_name, builder_number, processor='386'):
         builder = None
         builders = test.builders.get(builder_key(build), [])
         try:
-            builder = builders[n-1]
+            builder = builders[n - 1]
         except IndexError:
             pass
         return builder
