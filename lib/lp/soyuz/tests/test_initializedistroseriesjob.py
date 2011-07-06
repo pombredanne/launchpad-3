@@ -142,7 +142,7 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         naked_job = removeSecurityProxy(job)
         self.assertEqual((parent.id, ), naked_job.parents)
 
-    def test_getJobsForDistroseries(self):
+    def test_get(self):
         # InitializeDistroSeriesJob.get() returns the initialization job for
         # the given distroseries. There should only ever be one.
         parent = self.factory.makeDistroSeries()
