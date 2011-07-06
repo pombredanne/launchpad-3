@@ -26,10 +26,15 @@ else
 JS_BUILD := min
 endif
 
+define JS_LP_FIND
+find lib/lp/*/javascript ! -path '*/tests/*' \
+    ! -path '*/app/javascript/lazr/*' -name '*.js' ! -name '.*.js'
+endef
+
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
 JS_LAZR := $(LAZR_BUILT_JS_ROOT)/lazr.js
 JS_OTHER := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
-JS_LP := $(shell find lib/lp/*/javascript ! -path '*/tests/*' ! -path '*/app/javascript/lazr/*' -name '*.js' ! -name '.*.js' )
+JS_LP := $(shell $(JS_LP_FIND))
 JS_ALL := $(JS_YUI) $(JS_LAZR) $(JS_OTHER) $(JS_LP)
 JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 
@@ -445,7 +450,9 @@ copy-certificates:
 copy-apache-config:
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
-	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' configs/development/local-launchpad-apache > /etc/apache2/sites-available/local-launchpad
+	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' \
+		configs/development/local-launchpad-apache > \
+		/etc/apache2/sites-available/local-launchpad
 	cp configs/development/local-vostok-apache \
 		/etc/apache2/sites-available/local-vostok
 	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
@@ -486,4 +493,4 @@ pydoctor:
 	reload-apache hosted_branches check_mailman check_config \
 	jsbuild jsbuild_minify clean_js clean_buildout buildonce_eggs \
 	build_eggs sprite_css sprite_image css_combine compile \
-	check_schema pydoctor clean_logs 
+	check_schema pydoctor clean_logs
