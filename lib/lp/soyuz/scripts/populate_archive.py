@@ -223,6 +223,10 @@ class ArchivePopulator(SoyuzScript):
             # Associate the newly created copy archive with the processor
             # families specified by the user.
             set_archive_architectures(copy_archive, proc_families)
+
+            # If --raise-priority was specified, offset the penalty
+            # normally assigned to copy builds.
+            copy_archive.relative_build_score = 10
         else:
             # Archive name clash! Creation requested for existing archive with
             # the same name and distribution.
@@ -392,3 +396,9 @@ class ArchivePopulator(SoyuzScript):
             "--nonvirtualized", dest="nonvirtualized", default=False,
             action="store_true",
             help='Create the archive as nonvirtual if specified.')
+
+        self.parser.add_option(
+            "--raise-priority", dest="priority", default=False,
+            action="store_true",
+            help='The builds from this copy archive will use the regular '
+            'score instead of the lower COPY score.')

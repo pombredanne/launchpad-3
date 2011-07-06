@@ -701,3 +701,27 @@ class TestPopulateArchiveScript(TestCaseWithFactory):
         # Make sure the source to be copied are the ones we expect (this
         # should break in case of a sample data change/corruption).
         self.assertEqual(src_names, self.expected_src_names)
+
+
+    def testRaisePriority(self):
+        # The --raise-priority option should create a copy archive
+        # with a relative_build_score of 10 to offset the -10 of copy
+        # archives.
+        series = self.factory.makeDistroSeries()
+        archive_name = self.factory.getUniqueString('copy-archive')
+        script = self.getScript([
+            '--from-distribution', series.distribution.name,
+            '--from-suite', series.name,
+            '--to-distribution', series.distribution.name,
+            '--to-suite', series.name,
+            '--to-archive', archive_name,
+            '--to-user', series.registrant.name,
+            '--reason', 'testing!',
+            '--architecture', '386',
+            '--raise-priority'])
+        script.mainTask()
+
+        copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            series.distribution, ArchivePurpose.COPY, archive_name)
+        self.assertIsNotNone(copy_archive, "COPY archive wasn't created")
+        self.assertEquals(10, copy_archive.relative_build_score)
