@@ -180,7 +180,7 @@
 
           // Set-up the expander on the bug task summary row.
           var icon_node = Y.one('tr#${row_id} a.bugtask-expander');
-          var content_node = Y.one('tr#${form_row_id}');
+          var content_node = Y.one('tr#${form_row_id} td form');
           var expander = new Y.lp.app.widgets.expander.Expander(
             icon_node, content_node);
           expander.setUp();
@@ -194,7 +194,8 @@
       tal:condition="expandable"
       class="bugtask-collapsible-content"
     >
-     <td colspan="7" tal:content="structure view/edit_view" />
+      <td colspan="6" tal:content="structure view/edit_view"
+          style="padding: 0px"/>
     </tr>
   </tal:form>
 </tal:bugtask>
