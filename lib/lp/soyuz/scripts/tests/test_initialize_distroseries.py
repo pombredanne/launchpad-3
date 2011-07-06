@@ -268,6 +268,36 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         parent_srcs = test1.getSourcesIncluded(direct_inclusion=True)
         self.assertEqual(parent_srcs, child_srcs)
 
+    def test_copying_packagesets_multiple_parents(self):
+        # When a packageset id is passed to the initialisation method,
+        # only the packages in this packageset (and in the corresponding
+        # distroseries) are copied.
+        self.parent1, not_used = self.setupParent(
+            packages={'udev': '0.1-1', 'firefox': '2.1'})
+        self.parent2, not_used = self.setupParent(
+            packages={'firefox': '3.1'})
+        uploader = self.factory.makePerson()
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent1.owner,
+            distroseries=self.parent1)
+        test1.addSources('udev')
+        test1.addSources('firefox')
+        getUtility(IArchivePermissionSet).newPackagesetUploader(
+            self.parent1.main_archive, uploader, test1)
+        child = self._fullInitialize(
+            [self.parent1, self.parent2], packagesets=(str(test1.id),))
+        # Only the packages from the packageset test1 (from
+        # self.parent1) are copied.
+        published_sources = child.main_archive.getPublishedSources(
+            distroseries=child)
+        pub_sources = sorted(
+            [(s.sourcepackagerelease.sourcepackagename.name,
+              s.sourcepackagerelease.version)
+                for s in published_sources])
+        self.assertContentEqual(
+            [(u'udev', u'0.1-1'), (u'firefox', u'2.1')],
+            pub_sources)
+
     def test_no_cross_distro_perm_copying(self):
         # No cross-distro archivepermissions copying should happen.
         self.parent, self.parent_das = self.setupParent()
@@ -704,7 +734,7 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
              "and no parent was passed to the initilization method"
              ".").format(child=child),
              ids.check)
-             
+
     def test_copy_method_diff_archive_empty_target(self):
         # If the archives are different and the target archive is
         # empty: use the cloner.

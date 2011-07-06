@@ -17,7 +17,6 @@ __all__ = [
     'MINUTES',
     ]
 
-from datetime import datetime
 import operator
 import os
 import time
@@ -25,7 +24,6 @@ from urlparse import urljoin
 from xml.sax.saxutils import escape as xml_escape
 
 from BeautifulSoup import BeautifulSoup
-import pytz
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.datetime import rfc1123_date
@@ -51,6 +49,7 @@ from canonical.lazr.interfaces import (
     UnsupportedFeedFormat,
     )
 from lp.services.propertycache import cachedproperty
+from lp.services.utils import utc_now
 
 
 SUPPORTED_FEEDS = ('.atom', '.html')
@@ -181,7 +180,7 @@ class FeedBase(LaunchpadView):
             # datetime.isoformat() doesn't place the necessary "+00:00"
             # for the feedvalidator's check of the iso8601 date format
             # unless a timezone is specified with tzinfo.
-            return datetime.utcnow().replace(tzinfo=pytz.utc)
+            return utc_now()
         last_modified = sorted_items[0].last_modified
         if last_modified is None:
             raise AssertionError, 'All feed entries require a date updated.'
@@ -257,8 +256,6 @@ class FeedEntry:
         if authors is None:
             authors = []
         self.authors = authors
-        if contributors is None:
-            contribuors = []
         self.contributors = contributors
         if id_ is None:
             self.id = self.construct_id()
