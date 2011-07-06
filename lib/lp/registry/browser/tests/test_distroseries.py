@@ -490,20 +490,10 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
                 "Series initialization has failed\n"
                 "You cannot attempt initialization again, "
                 "but Person-... may be able to help."))
-
-    def test_initialization_failed_cannot_retry_owner_is_team(self):
-        # When initialization has failed and the user does not have the
-        # ability to retry it suggests contacting someone who can. When the
-        # owner is a team the message differs slightly from when the owner is
-        # an individual.
-        set_derived_series_ui_feature_flag(self)
-        series = self.factory.makeDistroSeries()
+        # When the owner is a team the message differs slightly from when the
+        # owner is an individual.
         with person_logged_in(series.distribution.owner):
             series.distribution.owner = self.factory.makeTeam()
-        parent = self.factory.makeDistroSeries()
-        job = self.job_source.create(series, [parent.id])
-        job.start()
-        job.fail()
         with anonymous_logged_in():
             view = create_initialized_view(series, '+portlet-derivation')
             html_content = view()
