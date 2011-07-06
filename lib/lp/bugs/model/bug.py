@@ -174,6 +174,7 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     get_structural_subscribers,
     )
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.model.branch import Branch
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.interfaces.distribution import IDistribution
@@ -1320,16 +1321,11 @@ BugMessage""" % sqlvalues(self.id))
 
     @property
     def linked_branches(self):
-        store = Store.of(self)
-        bug_branches = store.find(
-            BugBranch,
-            BugBranch.bug == self)
-        # Pre-load the branches so as to avoid late evaluation.
-        load_related(Branch, bug_branches, ['branchID'])
-        user = getUtility(ILaunchBag).user
-        return [
-            bug_branch for bug_branch in bug_branches
-                if bug_branch.branch.visibleByUser(user)]
+        """See `IBug`."""
+        current_user = getUtility(ILaunchBag).user
+        all_branches = getUtility(IAllBranches)
+        visible_branches = all_branches.visibleByUser(current_user)
+        return visible_branches.linkedToBug(self).getBranches()
 
     @cachedproperty
     def has_cves(self):

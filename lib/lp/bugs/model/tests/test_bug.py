@@ -327,7 +327,6 @@ class TestBug(TestCaseWithFactory):
         public_branch = self.factory.makeBranch()
         with person_logged_in(public_branch.registrant):
             bug.linkBranch(public_branch, public_branch.registrant)
-            linked_branches = [
-                bug_branch.branch for bug_branch in bug.linked_branches]
+            linked_branches = bug.linked_branches
             self.assertIn(public_branch, linked_branches)
             self.assertNotIn(private_branch, linked_branches)
