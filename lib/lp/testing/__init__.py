@@ -920,16 +920,25 @@ class YUIUnitTestCase(TestCase):
 def build_yui_unittest_suite(app_testing_path, yui_test_class):
     suite = unittest.TestSuite()
     testing_path = os.path.join(config.root, 'lib', app_testing_path)
-    unit_test_names = [
-        file_name for file_name in os.listdir(testing_path)
-        if file_name.startswith('test_') and file_name.endswith('.html')]
-    for unit_test_name in unit_test_names:
-        test_path = os.path.join(app_testing_path, unit_test_name)
+    unit_test_names = _harvest_yui_test_files(testing_path)
+    for unit_test_path in unit_test_names:
         test_case = yui_test_class()
-        test_case.initialize(test_path)
+        test_case.initialize(unit_test_path)
         suite.addTest(test_case)
     return suite
 
+def _harvest_yui_test_files(file_path):
+    file_names = []
+    dirs = []
+    for file_name in os.listdir(file_path):
+        full_name = os.path.join(file_path, file_name)
+        if file_name.startswith('test_') and file_name.endswith('.html'):
+            file_names.append(full_name)
+        elif os.path.isdir(full_name):
+            dirs.append(full_name)
+    for dir_name in dirs:
+        file_names.extend(_harvest_yui_test_files(dir_name))
+    return file_names
 
 class ZopeTestInSubProcess:
     """Run tests in a sub-process, respecting Zope idiosyncrasies.
