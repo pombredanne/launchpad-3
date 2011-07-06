@@ -609,6 +609,14 @@ class GenericBranchCollection:
                       BranchMergeProposal.target_branch == Branch.id),
             symmetric=False)
 
+    def linkedToBug(self, bug):
+        """See `IBranchCollection`."""
+        return self._filterBy(
+            [BugBranch.bug == bug],
+            table=BugBranch,
+            join=Join(BugBranch, BugBranch.branch == Branch.id),
+            symmetric=False)
+
     def visibleByUser(self, person):
         """See `IBranchCollection`."""
         if (person == LAUNCHPAD_SERVICES or
