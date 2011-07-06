@@ -69,5 +69,19 @@
       define="job context/getInitializationJob"
       condition="job/status/enumvalue:FAILED|nothing">
     <h2>Series initialization has failed</h2>
+    <tal:retry
+        define="can_retry context/@@+initseries/required:launchpad.Edit ">
+      <tal:can_retry condition="can_retry">
+        You can <a tal:attributes="href context/fmt:url/+initseries">
+        attempt initialization again</a>.
+      </tal:can_retry>
+      <tal:cannot_retry
+          define="owner context/owner"
+          condition="not:can_retry">
+        You cannot attempt initialization again, but <tal:team
+        condition="owner/is_team"> a member of </tal:team> <tal:owner
+        replace="structure owner/fmt:link" /> may be able to help.
+      </tal:cannot_retry>
+    </tal:retry>
   </tal:failed_initialization>
 </div>
