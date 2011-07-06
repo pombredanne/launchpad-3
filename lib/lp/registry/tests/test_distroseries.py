@@ -256,6 +256,46 @@ class TestDistroSeries(TestCaseWithFactory):
             distroseries=distroseries, archive=distroseries.main_archive)
         self.assertTrue(distroseries.isInitialized())
 
+    def test_getMostRecentInitializationJob_queued_job(self):
+        # getMostRecentInitializationJob() returns the most recent
+        # `IInitializeDistroSeriesJob` for the given series.
+        distroseries = self.factory.makeDistroSeries()
+        parent_distroseries = self.factory.makeDistroSeries()
+        self.assertIs(None, distroseries.getMostRecentInitializationJob())
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
+        job = job_source.create(distroseries, [parent_distroseries.id])
+        self.assertIs(job, distroseries.getMostRecentInitializationJob())
+
+    def test_getMostRecentInitializationJob_running_job(self):
+        # getMostRecentInitializationJob() returns running jobs.
+        distroseries = self.factory.makeDistroSeries()
+        parent_distroseries = self.factory.makeDistroSeries()
+        self.assertIs(None, distroseries.getMostRecentInitializationJob())
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
+        job = job_source.create(distroseries, [parent_distroseries.id])
+        job.start()
+        self.assertIs(job, distroseries.getMostRecentInitializationJob())
+
+    def test_getMostRecentInitializationJob_completed_job(self):
+        # getMostRecentInitializationJob() returns completed jobs.
+        distroseries = self.factory.makeDistroSeries()
+        parent_distroseries = self.factory.makeDistroSeries()
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
+        job = job_source.create(distroseries, [parent_distroseries.id])
+        job.start()
+        job.complete()
+        self.assertIs(job, distroseries.getMostRecentInitializationJob())
+
+    def test_getMostRecentInitializationJob_failed_job(self):
+        # getMostRecentInitializationJob() returns failed jobs.
+        distroseries = self.factory.makeDistroSeries()
+        parent_distroseries = self.factory.makeDistroSeries()
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
+        job = job_source.create(distroseries, [parent_distroseries.id])
+        job.start()
+        job.fail()
+        self.assertIs(job, distroseries.getMostRecentInitializationJob())
+
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):
 

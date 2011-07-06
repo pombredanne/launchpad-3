@@ -1895,6 +1895,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         published = self.main_archive.getPublishedSources(distroseries=self)
         return not published.is_empty()
 
+    def getMostRecentInitializationJob(self):
+        pass
+
 
 class DistroSeriesSet:
     implements(IDistroSeriesSet)

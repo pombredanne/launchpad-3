@@ -903,6 +903,9 @@ class IDistroSeriesPublic(
     def isInitialized():
         """Has this series been initialized?"""
 
+    def getMostRecentInitializationJob():
+        """Get the last `IInitializeDistroSeriesJob` for this series."""
+
 
 class IDistroSeriesEditRestricted(Interface):
     """IDistroSeries properties which require launchpad.Edit."""
