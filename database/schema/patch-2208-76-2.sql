@@ -3,6 +3,6 @@
 
 SET client_min_messages=ERROR;
 
-CREATE INDEX CONCURRENTLY message_datecreated ON Message(datecreated);
+CREATE INDEX message_datecreated ON Message(datecreated);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 76, 2);
