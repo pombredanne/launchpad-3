@@ -95,10 +95,8 @@
               target="help">Read about installing</a>)
         </p>
 
-        <div id="ppa-details">
-
         <div class="widget-header">
-          <a href="#" class="js-action">Technical details about this PPA</a>
+          Technical details about this PPA
         </div>
 
         <div class="widget-body">
@@ -143,17 +141,17 @@
           </div> <!--archive-dependencies -->
         </div> <!-- widget-body -->
 
-        </div> <!-- ppa-details -->
-
         <p>For questions and bugs with software in this PPA please contact
           <a tal:replace="structure context/owner/fmt:link"
             >Celso Providelo</a>.</p>
 
         <script type="text/javascript">
           LPS.use('lp.app.widgets.expander', function(Y) {
-              // Create the expander.
-              Y.lp.app.widgets.expander.createByCSS(
-                  '#ppa-details', '.widget-header', '.widget-body');
+              var widget_header = Y.one('#ppa-install .widget-header');
+              var content = Y.one('.widget-body');
+              var expander = new Y.lp.app.widgets.expander.Expander(
+                  widget_header, content);
+              expander.setUp(true);
           });
         </script>
       </tal:is-active>
