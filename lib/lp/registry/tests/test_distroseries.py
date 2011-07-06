@@ -277,7 +277,12 @@ class TestDistroSeries(TestCaseWithFactory):
         newer = now + timedelta(days=15)
         removeSecurityProxy(ds1).datereleased = oldest
         removeSecurityProxy(ds2).datereleased = older
+        removeSecurityProxy(ds3).datereleased = now
         removeSecurityProxy(ds4).datereleased = newer
+
+        # The data set up here is 5 distroseries. where one is unreleased,
+        # ds1 and ds2 are released and in the past and ds4 is released but
+        # in the future compared to ds3.
 
         prior = ds3.priorReleasedSeries()
         self.assertEqual(
