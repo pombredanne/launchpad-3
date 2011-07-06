@@ -482,6 +482,8 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
         job = self.job_source.create(series, [parent.id])
         job.start()
         job.fail()
+        with person_logged_in(series.distribution.owner):
+            series.distribution.owner.displayname = u"Bob Individual"
         with anonymous_logged_in():
             view = create_initialized_view(series, '+portlet-derivation')
             html_content = view()
@@ -489,19 +491,20 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
             extract_text(html_content), DocTestMatches(
                 "Series initialization has failed\n"
                 "You cannot attempt initialization again, "
-                "but Person-... may be able to help."))
+                "but Bob Individual may be able to help."))
         # When the owner is a team the message differs slightly from when the
         # owner is an individual.
         with person_logged_in(series.distribution.owner):
-            series.distribution.owner = self.factory.makeTeam()
+            series.distribution.owner = self.factory.makeTeam(
+                displayname=u"Team Teamy Team Team")
         with anonymous_logged_in():
             view = create_initialized_view(series, '+portlet-derivation')
             html_content = view()
         self.assertThat(
             extract_text(html_content), DocTestMatches(
                 "Series initialization has failed\n"
-                "You cannot attempt initialization again, but "
-                "a member of Team ... may be able to help."))
+                "You cannot attempt initialization again, but a "
+                "member of Team Teamy Team Team may be able to help."))
 
 
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
