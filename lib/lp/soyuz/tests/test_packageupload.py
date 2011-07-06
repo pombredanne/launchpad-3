@@ -428,6 +428,16 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
             pu.overrideSource,
             disallowed_component, section, [current_component])
 
+    def test_overrideSource_ignores_None_component_change(self):
+        # overrideSource accepts None as a component; it will not object
+        # based on permissions for the new component.
+        pu, pcj = self.makeUploadWithPackageCopyJob()
+        current_component = getUtility(IComponentSet)[pcj.component_name]
+        new_section = self.factory.makeSection()
+        pu.overrideSource(None, new_section, [current_component])
+        self.assertEqual(current_component.name, pcj.component_name)
+        self.assertEqual(new_section.name, pcj.section_name)
+
     def test_acceptFromQueue_with_copy_job(self):
         # acceptFromQueue should accept the upload and resume the copy
         # job.

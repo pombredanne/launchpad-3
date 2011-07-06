@@ -43,10 +43,6 @@
                 extra_no_results_message: ${view/extra_no_results_message},
                 picker_type: '${view/picker_type}'
             };
-            if (config.picker_type == 'person') {
-                config.show_assign_me_button = ${view/show_assign_me_button}
-                config.show_remove_button = ${view/show_remove_button}
-            }
             var picker = Y.lp.app.picker.create('${view/vocabulary_name}', config);
             if (config.extra_no_results_message !== null) {
                 picker.before('resultsChange', function (e) {
@@ -60,7 +56,7 @@
                     }
                 });
             }
-            picker.plug(Y.lazr.TextFieldPickerPlugin,
+            picker.plug(Y.lazr.picker.TextFieldPickerPlugin,
                         {input_element: '[id=\x22${view/input_id}\x22]'});
             return picker;
         }
