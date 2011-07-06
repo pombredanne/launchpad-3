@@ -1037,7 +1037,7 @@ class TeamMemberAddView(LaunchpadFormView):
     # XXX: jcsackett 5.7.2011 The assignment of 'false' to the vars below
     # should be changed to the more appropriate False bool when we're making
     # use of the JSON cache to setup pickers, rather than assembling
-    # javascript in a a view hacro.
+    # javascript in a view macro.
     custom_widget(
         'newmember', PersonPickerWidget,
         show_assign_me_button='false', show_remove_button='false')

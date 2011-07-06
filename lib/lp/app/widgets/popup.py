@@ -29,7 +29,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
     picker_type = 'default'
     # Provide default values for the following properties in case someone
-    # creates a vocab picker for a person instead if using the derived
+    # creates a vocab picker for a person instead of using the derived
     # PersonPicker.
     show_assign_me_button = 'false'
     show_remove_button = 'false'
