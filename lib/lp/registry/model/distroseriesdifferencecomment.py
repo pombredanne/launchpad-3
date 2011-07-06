@@ -12,10 +12,9 @@ __all__ = [
 from email.Utils import make_msgid
 
 from storm.locals import (
+    Desc,
     Int,
-    Max,
     Reference,
-    Select,
     Storm,
     )
 from zope.interface import (
@@ -123,12 +122,11 @@ class DistroSeriesDifferenceComment(Storm):
 
         if since is not None:
             older_messages = store.find(
-                Max(Message.id), Message.datecreated == Select(
-                    Max(Message.datecreated),
-                    Message.datecreated < since))
-            after_message_id = older_messages.one()
-            if after_message_id is not None:
-                conditions.append(DSDComment.message_id > after_message_id)
+                Message.id, Message.datecreated < since).order_by(
+                    Desc(Message.datecreated))
+            preceding_message = older_messages.first()
+            if preceding_message is not None:
+                conditions.append(DSDComment.message_id > preceding_message)
 
         return store.find(DSDComment, *conditions).order_by(
             DSDComment.message_id)
