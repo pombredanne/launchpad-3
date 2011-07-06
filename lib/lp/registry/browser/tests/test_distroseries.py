@@ -355,8 +355,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
             )
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
-                derived_series, '+portlet-derivation',
-                principal=self.simple_user)
+                derived_series, '+index', principal=self.simple_user)
             html_content = view()
         self.assertThat(html_content, portlet_display)
 
