@@ -107,13 +107,10 @@ class IInitializeDistroSeriesJobSource(IJobSource):
                overlay_pockets, overlay_components):
         """Create a new initialization job for a distroseries."""
 
-    def getJobsForDistroseries(distroseries, statuses=None):
-        """Retrieve initialization jobs for a distroseries.
+    def get(distroseries):
+        """Retrieve the initialization job for a distroseries, if any.
 
-        :param statuses: If `None` return pending jobs, otherwise return jobs
-            with one of the given statuses.
-        :type statuses: Any iterable, or `None`.
-        :return: An `IResultSet` yielding `IInitializeDistroSeriesJob`.
+        :return: `None` or an `IInitializeDistroSeriesJob`.
         """
 
 

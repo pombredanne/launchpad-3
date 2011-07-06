@@ -144,23 +144,17 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         self.assertEqual((parent.id, ), naked_job.parents)
 
     def test_getJobsForDistroseries(self):
-        # Initialization jobs can be retrieved per distroseries.
+        # InitializeDistroSeriesJob.get() returns the initialization job for
+        # the given distroseries. There should only ever be one.
         parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
         another_distroseries = self.factory.makeDistroSeries()
+        self.assertIs(None, self.job_source.get(distroseries))
         self.job_source.create(distroseries, [parent.id])
         self.job_source.create(another_distroseries, [parent.id])
-        get_jobs = self.job_source.getJobsForDistroseries
-        [job] = get_jobs(distroseries)
+        job = self.job_source.get(distroseries)
         self.assertIsInstance(job, InitializeDistroSeriesJob)
         self.assertEqual(job.distroseries, distroseries)
-        job.start()
-        job.complete()
-        # By default, only pending jobs are returned.
-        self.assertContentEqual([], get_jobs(distroseries))
-        # A set of interesting statuses can be supplied.
-        completed_jobs = get_jobs(distroseries, (JobStatus.COMPLETED,))
-        self.assertContentEqual([job], completed_jobs)
 
 
 class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
