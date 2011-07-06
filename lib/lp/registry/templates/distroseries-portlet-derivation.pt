@@ -65,4 +65,9 @@
     <h2>Series initialization in progress</h2>
       This series is initializing.
   </tal:is_initializing>
+  <tal:failed_initialization
+      define="job context/getInitializationJob"
+      condition="job/status/enumvalue:FAILED|nothing">
+    <h2>Series initialization has failed</h2>
+  </tal:failed_initialization>
 </div>
