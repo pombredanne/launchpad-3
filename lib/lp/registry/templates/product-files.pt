@@ -68,31 +68,27 @@
                      tal:condition="python: release.release_notes or release.changelog">
 
                   <fieldset class="collapsible" style="padding: 0px;">
-                    <legend><a>Release information</a></legend>
-                    <div>
-                      <div tal:condition="release/release_notes">
-                        <strong>Release notes:</strong>
-                        <div style="margin-bottom: 0px;"
-                             tal:attributes="
-                               id release/version/fmt:css-id/release-notes-"
-                             tal:define="
-                               notes release/release_notes/fmt:shorten/800"
-                             tal:content="structure notes/fmt:text-to-html">
-                          ProductRelease.release_notes
-                        </div>
-                      </div>
-
-                      <div tal:condition="release/changelog">
-                        <strong>Changelog:</strong>
-                        <div style="margin-bottom: 0px;"
-                             tal:attributes="
-                               id release/version/fmt:css-id/changelog-"
-                             tal:content="
-                               structure release/changelog/fmt:obfuscate-email/fmt:text-to-html">
-                          ProductRelease.changelog.
-                        </div>
+                    <legend>Release information</legend>
+                    <div class="unseen">
+                    <div tal:condition="release/release_notes">
+                      <strong>Release notes:</strong>
+                      <div style="margin-bottom: 0px;"
+                           tal:attributes="id release/version/fmt:css-id/release-notes-"
+                           tal:define="notes release/release_notes/fmt:shorten/800"
+                           tal:content="structure notes/fmt:text-to-html">
+                        ProductRelease.release_notes
                       </div>
                     </div>
+
+                    <div tal:condition="release/changelog">
+                      <strong>Changelog:</strong>
+                      <div style="margin-bottom: 0px;"
+                           tal:attributes="id release/version/fmt:css-id/changelog-"
+                           tal:content="structure release/changelog/fmt:obfuscate-email/fmt:text-to-html">
+                        ProductRelease.changelog.
+                      </div>
+                  </div>
+                  </div>
                   </fieldset>
                 </div>
                 <div>
