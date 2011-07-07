@@ -17,6 +17,8 @@ import optparse
 import os
 import sys
 
+import bzrlib
+from bzrlib.branch import Branch
 from zope.component import getUtility
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 
@@ -30,14 +32,14 @@ from canonical.launchpad.systemhomes import WebServiceApplication
 from lazr.restful.interfaces import IWebServiceConfiguration
 
 
-def write(filename, content):
+def write(filename, content, timestamp):
     """Replace the named file with the given string."""
     f = open(filename, 'w')
     f.write(content)
     f.close()
+    os.utime(filename, (timestamp, timestamp)) # (atime, mtime)
 
-
-def make_files(directory, version, force):
+def make_files(directory, version, timestamp, force):
     version_directory = os.path.join(directory, version)
     base_filename = os.path.join(version_directory, os.environ['LPCONFIG'])
     wadl_filename = base_filename + '.wadl'
@@ -61,7 +63,7 @@ def make_files(directory, version, force):
         if (not os.path.exists(src) or force):
             print "Writing %s for version %s to %s." % (
                 name, version, src)
-            write(src, gen(version))
+            write(src, gen(version), timestamp)
         else:
             print "Skipping already present %s file: %s" % (
                 name, src)
@@ -105,7 +107,7 @@ def make_files(directory, version, force):
         print "Writing apidoc for version %s to %s" % (
             version, html_filename)
         write(html_filename, generate_html(wadl_filename,
-            suppress_stderr=False))
+            suppress_stderr=False), timestamp)
     else:
         print "Skipping already present HTML file:", html_filename
 
@@ -131,11 +133,19 @@ def main(directory, force=False):
     f = open(index_filename, 'w')
     f.write(template(config=config))
 
+    # Get the time of the last commit.  We will use this as the mtime for the
+    # generated files so that we can safely use it as part of Apache's etag
+    # generation in the face of multiple servers/filesystems.
+    with bzrlib.initialize():
+        branch = Branch.open(os.path.dirname(os.path.dirname(__file__)))
+        timestamp = branch.repository.get_revision(
+            branch.last_revision()).timestamp
+
     # Start a process to build each set of WADL and HTML files.
     processes = []
     for version in config.active_versions:
         p = Process(target=make_files,
-            args=(directory, version, force))
+            args=(directory, version, timestamp, force))
         p.start()
         processes.append(p)
 
