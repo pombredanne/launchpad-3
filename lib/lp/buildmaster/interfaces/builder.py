@@ -385,9 +385,6 @@ class IBuilderSet(Interface):
     def getBuilders():
         """Return all active configured builders."""
 
-    def getBuildersByArch(arch):
-        """Return all configured builders for a given DistroArchSeries."""
-
     def getBuildQueueSizes():
         """Return the number of pending builds for each processor.
 

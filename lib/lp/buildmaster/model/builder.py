@@ -896,13 +896,6 @@ class BuilderSet(object):
         return Builder.selectBy(
             active=True, orderBy=['virtualized', 'processor', 'name'])
 
-    def getBuildersByArch(self, arch):
-        """See IBuilderSet."""
-        return Builder.select('builder.processor = processor.id '
-                              'AND processor.family = %d'
-                              % arch.processorfamily.id,
-                              clauseTables=("Processor",))
-
     def getBuildQueueSizes(self):
         """See `IBuilderSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
