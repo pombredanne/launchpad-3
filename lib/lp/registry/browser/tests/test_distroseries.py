@@ -640,6 +640,30 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
                 message.text, EqualsIgnoringWhitespace(
                     u"This series is already being initialized."))
 
+    def test_form_hidden_when_previous_series_none(self):
+        # If the distribution has an initialized series and the
+        # distroseries' previous_series is None: the form is hidden and
+        # the page contains an error message.
+        distroseries = self.factory.makeDistroSeries(
+            previous_series=None)
+        another_distroseries = self.factory.makeDistroSeries(
+            distribution=distroseries.distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=another_distroseries)
+        view = create_initialized_view(distroseries, "+initseries")
+        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
+        with FeatureFixture(flags):
+            root = html.fromstring(view())
+            self.assertEqual(
+                [], root.cssselect("#initseries-form-container"))
+            # Instead an explanatory message is shown.
+            [message] = root.cssselect("p.error.message")
+            self.assertThat(
+                message.text, EqualsIgnoringWhitespace(
+                    u'Unable to initialise series: the distribution '
+                    u'already has initialised series and this distroseries '
+                    u'has no previous series.'))
+
 
 class TestDistroSeriesInitializeViewAccess(TestCaseWithFactory):
     """Test access to IDS.+initseries."""
