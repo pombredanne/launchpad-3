@@ -52,7 +52,6 @@ from lp.soyuz.enums import (
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
-from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.model.queue import PackageUploadBuild
 from lp.soyuz.scripts.processaccepted import (
@@ -1062,12 +1061,10 @@ class TestQueueActionLite(TestCaseWithFactory):
         action.run()
 
         # Overriding a sync means putting the overrides in the job itself.
-        component = getUtility(IComponentSet)[
-            upload.package_copy_job.component_name]
-        section = getUtility(IComponentSet)[
-           upload.package_copy_job.section_name]
-        self.assertEqual(new_component.name, component)
-        self.assertEqual(new_section.name, section)
+        self.assertEqual(
+            new_component.name, upload.package_copy_job.component_name)
+        self.assertEqual(
+            new_section.name, upload.package_copy_job.section_name)
 
     def test_makeTag_returns_S_for_source_upload(self):
         upload = self.factory.makeSourcePackageUpload()
