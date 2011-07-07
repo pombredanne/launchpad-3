@@ -674,7 +674,8 @@ class DistroSeriesInitializeView(LaunchpadFormView):
         distribution = self.context.distribution
         is_first_derivation = not distribution.has_published_sources
         cache['is_first_derivation'] = is_first_derivation
-        if not is_first_derivation:
+        if (not is_first_derivation and
+            self.context.previous_series is not None):
             cache['previous_series'] = seriesToVocab(
                 self.context.previous_series)
             previous_parents = self.context.previous_series.getParentSeries()
@@ -697,8 +698,19 @@ class DistroSeriesInitializeView(LaunchpadFormView):
     def show_derivation_form(self):
         return (
             self.is_derived_series_feature_enabled and
+            not self.show_previous_series_empty_message and
             not self.context.isInitializing() and
             not self.context.isInitialized())
+
+    @property
+    def show_previous_series_empty_message(self):
+        # There is a problem here:
+        # The distribution already has initialised series and this
+        # distroseries has no previous_series.
+        return (
+            self.is_derived_series_feature_enabled and
+            self.context.distribution.has_published_sources and
+            self.context.previous_series is None)
 
     @property
     def show_already_initialized_message(self):

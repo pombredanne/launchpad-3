@@ -289,6 +289,14 @@ class TestDistroSeries(TestCaseWithFactory):
             [ds2, ds1],
             list(prior))
 
+    def test_getDifferenceComments_gets_DistroSeriesDifferenceComments(self):
+        distroseries = self.factory.makeDistroSeries()
+        dsd = self.factory.makeDistroSeriesDifference(
+            derived_series=distroseries)
+        comment = self.factory.makeDistroSeriesDifferenceComment(dsd)
+        self.assertContentEqual(
+            [comment], distroseries.getDifferenceComments())
+
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):
 
