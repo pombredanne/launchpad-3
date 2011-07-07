@@ -10,5 +10,5 @@ ALTER TABLE oauthnonce ADD PRIMARY KEY
 
 ALTER TABLE oauthnonce DROP COLUMN id;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 77, 0);
 
