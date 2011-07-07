@@ -7,7 +7,6 @@
           tasklink view/taskLink;
           row_id string:tasksummary${context/id};
           form_row_id string:task${context/id}">
-
   <tr tal:define="editstatus_url string:${context/fmt:url}/+editstatus"
       tal:attributes="class view/getTaskRowCSSClass; id row_id">
     <td>
