@@ -73,21 +73,19 @@
       </div>
 
       <div id="show-hide-configs"
-           class="collapsible-table">
+           class="collapsible">
         <legend>
-          <div class="config-options"
-               style="margin-bottom: 0.5em">
-            <a class="js-action">Configuration options</a>
-          </div>
+          <div style="margin-bottom: 0.5em;">Configuration options</div>
         </legend>
-        <table
-          tal:condition="view/configuration_links"
-          style="width: 100%; padding-top: 1em"
-          id="configuration_links"
+        <div
           tal:attributes="class
             python: 'expanded'
               if not view.registration_done
               else ''">
+        <table
+          tal:condition="view/configuration_links"
+          style="width: 100%; padding-top: 1em"
+          id="configuration_links">
           <tal:item repeat="link_status view/configuration_links">
             <tr>
               <td>
@@ -101,6 +99,7 @@
             </tr>
           </tal:item>
         </table>
+        </div>
       </div>
     </tal:show-registration>
 
