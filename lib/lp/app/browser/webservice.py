@@ -18,7 +18,7 @@ from zope.interface import (
     )
 from zope.schema.interfaces import IText
 
-from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.browser.lazrjs import standard_text_html_representation
 from lp.app.browser.tales import format_link
 
 
@@ -41,6 +41,4 @@ def reference_xhtml_representation(context, field, request):
 @implementer(IFieldHTMLRenderer)
 def text_xhtml_representation(context, field, request):
     """Render text as XHTML using the webservice."""
-    return lambda text: (
-        '' if text is None
-        else FormattersAPI(text).text_to_html(linkify_text=True))
+    return standard_text_html_representation
