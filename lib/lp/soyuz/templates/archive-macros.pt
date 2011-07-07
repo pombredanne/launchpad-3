@@ -100,10 +100,7 @@ function setupPackageListExpanders() {
     }
 }
 
-Y.on('domready', function() {
-  setupPackageListExpanders();
-});
-
+Y.on('domready', setupPackageListExpanders);
 });
 </script>
 
