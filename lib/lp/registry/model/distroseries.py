@@ -101,6 +101,9 @@ from lp.registry.interfaces.distroseries import (
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
+from lp.registry.interfaces.distroseriesdifferencecomment import (
+    IDistroSeriesDifferenceCommentSource,
+    )
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
@@ -1897,6 +1900,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getInitializationJob(self):
         """See `IDistroSeries`."""
         return getUtility(IInitializeDistroSeriesJobSource).get(self)
+
+    def getDifferenceComments(self, since=None, source_package_name=None):
+        """See `IDistroSeries`."""
+        comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
+        return comment_source.getForDistroSeries(
+            self, since=since, source_package_name=source_package_name)
 
 
 class DistroSeriesSet:

@@ -266,6 +266,14 @@ class TestDistroSeries(TestCaseWithFactory):
         job = job_source.create(distroseries, [parent_distroseries.id])
         self.assertEqual(job, distroseries.getInitializationJob())
 
+    def test_getDifferenceComments_gets_DistroSeriesDifferenceComments(self):
+        distroseries = self.factory.makeDistroSeries()
+        dsd = self.factory.makeDistroSeriesDifference(
+            derived_series=distroseries)
+        comment = self.factory.makeDistroSeriesDifferenceComment(dsd)
+        self.assertContentEqual(
+            [comment], distroseries.getDifferenceComments())
+
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):
 
