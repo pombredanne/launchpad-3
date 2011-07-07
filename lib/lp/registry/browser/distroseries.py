@@ -697,7 +697,7 @@ class DistroSeriesInitializeView(LaunchpadFormView):
     @property
     def show_previous_series_empty_message(self):
         # There is a problem here:
-        # The distribution already has initialised series and this
+        # The distribution already has initialized series and this
         # distroseries has no previous_series.
         return (
             self.is_derived_series_feature_enabled and
