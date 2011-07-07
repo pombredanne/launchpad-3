@@ -428,8 +428,8 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         # ubuntu
         if self.distribution == ubuntu:
             ubuntuseries = self.distroseries.priorReleasedSeries()
-            if ubuntuseries:
-                previous_ubuntu_series = ubuntuseries[0]
+            previous_ubuntu_series = ubuntuseries.first()
+            if previous_ubuntu_series is not None:
                 sp = SourcePackage(sourcepackagename=self.sourcepackagename,
                                    distroseries=previous_ubuntu_series)
                 return sp.packaging
