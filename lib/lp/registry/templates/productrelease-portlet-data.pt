@@ -83,9 +83,9 @@
 
     <fieldset class="collapsible" style="padding: 0px;"
       tal:condition="view/release/changelog">
-      <legend><a>View the full changelog</a></legend>
+      <legend>View the full changelog</legend>
 
-      <div id="changelog" style="margin-bottom: 0px;"
+      <div id="changelog" class="unseen" style="margin-bottom: 0px;"
         tal:content="structure view/release/changelog/fmt:obfuscate-email/fmt:text-to-html">
         ProductRelease.changelog.
       </div>
