@@ -1,8 +1,10 @@
 """build.py - Minifies and creates the JS build directory."""
 
 __metaclass__ = type
-__all__ = []
-
+__all__ = [
+    'CSSComboFile',
+    'JSComboFile',
+    ]
 
 import optparse
 import os
