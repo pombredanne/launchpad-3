@@ -20,6 +20,7 @@ from zope.component import getUtility
 from zope.interface import providedBy
 from zope.publisher.interfaces.browser import IDefaultSkin
 from zope.security.management import restoreInteraction
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import IOpenLaunchBag
 import canonical.launchpad.layers as layers
@@ -119,9 +120,10 @@ def test_traverse(url):
     getUtility(IOpenLaunchBag).clear()
     app = publication.getApplication(request)
     view = request.traverse(app)
-    # Since the last traversed object is the view, the second last should be
-    # the object that the view is on.
-    obj = request.traversed_objects[-2]
+    # Find the object from the view instead on relying that it stays
+    # in the traversed_objects stack. That doesn't apply to the web
+    # service for example.
+    obj = removeSecurityProxy(view).context
 
     restoreInteraction()
 

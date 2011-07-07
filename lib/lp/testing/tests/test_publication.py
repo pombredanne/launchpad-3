@@ -23,6 +23,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lazr.restful import EntryResource
 from lp.testing import (
     ANONYMOUS,
     login,
@@ -47,6 +48,7 @@ class TestTestTraverse(TestCaseWithFactory):
         name = '+' + self.factory.getUniqueString()
         class new_class(simple):
             def __init__(self, context, request):
+                self.context = context
                 view_callable()
         required = {}
         for n in ('browserDefault', '__call__', 'publishTraverse'):
@@ -102,3 +104,11 @@ class TestTestTraverse(TestCaseWithFactory):
             self.registerViewCallable(record_user))
         self.assertEqual(1, len(users))
         self.assertEqual(person, users[0])
+
+    def test_webservice_traverse(self):
+        login(ANONYMOUS)
+        product = self.factory.makeProduct()
+        context, view, request = test_traverse(
+            'http://api.launchpad.dev/devel/' + product.name)
+        self.assertEqual(product, context)
+        self.assertIsInstance(view, EntryResource)
