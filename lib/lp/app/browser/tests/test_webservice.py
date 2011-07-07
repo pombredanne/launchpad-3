@@ -42,9 +42,9 @@ class TestXHTMLRepresentations(TestCaseWithFactory):
         request = get_current_web_service_request()
         renderer = getMultiAdapter(
             (product, field, request), IFieldHTMLRenderer)
-        # The representation is linkified html.
+        # The representation is linkified html with hidden email.
         self.assertEqual(
-            u'<p>\N{SNOWMAN} snowman@example.com '
+            u'<p>\N{SNOWMAN} &lt;email address hidden&gt; '
             '<a href="/bugs/1">bug 1</a></p>',
             renderer(text))
 
