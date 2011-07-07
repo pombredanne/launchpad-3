@@ -317,6 +317,33 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
             [(u'udev', u'0.1-1'), (u'firefox', u'2.1')],
             pub_sources)
 
+    def test_intra_distro_perm_copying(self):
+        # If child.distribution equals parent.distribution, we also
+        # copy the archivepermissions.
+        self.parent, self.parent_das = self.setupParent()
+        uploader = self.factory.makePerson()
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent.owner,
+            distroseries=self.parent)
+        test1.addSources('udev')
+        getUtility(IArchivePermissionSet).newPackagesetUploader(
+            self.parent.main_archive, uploader, test1)
+        # Create child series in the same distribution.
+        child = self.factory.makeDistroSeries(
+            distribution=self.parent.distribution,
+            previous_series=self.parent)
+        self._fullInitialize([self.parent], child=child)
+
+        # The uploader can upload to the new distroseries.
+        self.assertTrue(
+            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
+                self.parent.main_archive, 'udev', uploader,
+                distroseries=self.parent))
+        self.assertTrue(
+            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
+                child.main_archive, 'udev', uploader,
+                distroseries=child))
+
     def test_no_cross_distro_perm_copying(self):
         # No cross-distro archivepermissions copying should happen.
         self.parent, self.parent_das = self.setupParent()
