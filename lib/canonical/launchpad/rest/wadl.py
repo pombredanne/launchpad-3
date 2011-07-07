@@ -70,4 +70,3 @@ def generate_html(wadl_filename, suppress_stderr=True):
         raise subprocess.CalledProcessError(process.returncode, args)
 
     return output
-

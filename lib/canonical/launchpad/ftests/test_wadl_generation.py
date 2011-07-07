@@ -5,25 +5,17 @@
 
 __metaclass__ = type
 
-import pkg_resources
-import shutil
-import subprocess
-import tempfile
-
 from testtools.matchers import StartsWith
 
 from zope.component import getUtility
 
 from canonical.launchpad.rest.wadl import (
     generate_json,
-    generate_html,
     generate_wadl,
     )
-from canonical.launchpad.systemhomes import WebServiceApplication
 from canonical.testing import LaunchpadFunctionalLayer
 from lazr.restful.interfaces import IWebServiceConfiguration
 from lp.testing import TestCase
-from lp.testing.matchers import Contains
 
 
 class SmokeTestWadlAndDocGeneration(TestCase):

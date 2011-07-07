@@ -486,4 +486,4 @@ pydoctor:
 	reload-apache hosted_branches check_mailman check_config \
 	jsbuild jsbuild_lazr clean_js clean_buildout buildonce_eggs \
 	build_eggs sprite_css sprite_image css_combine compile \
-	check_schema pydoctor clean_logs 
+	check_schema pydoctor clean_logs

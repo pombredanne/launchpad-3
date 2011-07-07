@@ -10,7 +10,7 @@ Example:
     % LPCONFIG=development bin/py utilities/create-lp-wadl-and-apidoc.py \\
       "lib/canonical/launchpad/apidoc/wadl-development-%(version)s.xml"
 """
-import _pythonpath # Not lint, actually needed.
+import _pythonpath  # Not lint, actually needed.
 
 from multiprocessing import Process
 import optparse
@@ -26,7 +26,7 @@ from canonical.launchpad.rest.wadl import (
     generate_html,
     generate_json,
     generate_wadl,
-    ) 
+    )
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.systemhomes import WebServiceApplication
 from lazr.restful.interfaces import IWebServiceConfiguration
@@ -37,7 +37,8 @@ def write(filename, content, timestamp):
     f = open(filename, 'w')
     f.write(content)
     f.close()
-    os.utime(filename, (timestamp, timestamp)) # (atime, mtime)
+    os.utime(filename, (timestamp, timestamp))  # (atime, mtime)
+
 
 def make_files(directory, version, timestamp, force):
     version_directory = os.path.join(directory, version)
@@ -98,7 +99,7 @@ def make_files(directory, version, timestamp, force):
     # We support that here.
     if not os.path.exists(brokenwadl_index):
         os.symlink(os.path.basename(wadl_index), brokenwadl_index)
-    
+
     # Now, convert the WADL into an human-readable description and
     # put the HTML in the same directory as the WADL.
     # If the HTML file doesn't exist or we're being forced to regenerate
@@ -120,7 +121,7 @@ def make_files(directory, version, timestamp, force):
 
 
 def main(directory, force=False):
-    WebServiceApplication.cached_wadl = None # do not use cached file version
+    WebServiceApplication.cached_wadl = None  # do not use cached file version
     execute_zcml_for_scripts()
     config = getUtility(IWebServiceConfiguration)
 
