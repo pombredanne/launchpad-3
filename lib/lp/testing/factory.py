@@ -891,16 +891,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return family.addProcessor(name, title, description)
 
     def makeProcessorFamily(self, name=None, title=None, description=None,
-                            restricted=False,
-                            default_processor_name=None):
+                            restricted=False):
         """Create a new processor family.
+
+        A default processor for the family will be created with the
+        same name than the family.
 
         :param name: Name of the family (e.g. x86)
         :param title: Optional title of the family
         :param description: Optional extended description
         :param restricted: Whether the processor family is restricted
-        :param default_processor_name: A default processor for the family,
-            will be created. This is the optional name to use for it.
         :return: A `IProcessorFamily`
         """
         if name is None:
@@ -909,11 +909,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             description = "Description of the %s processor family" % name
         if title is None:
             title = "%s and compatible processors." % name
-        family = getUtility(IProcessorFamilySet).new(name, title, description,
-            restricted=restricted)
+        family = getUtility(IProcessorFamilySet).new(
+            name, title, description, restricted=restricted)
         # Make sure there's at least one processor in the family, so that
         # other things can have a default processor.
-        self.makeProcessor(name=default_processor_name, family=family)
+        self.makeProcessor(name=name, family=family)
         return family
 
     def makeProductRelease(self, milestone=None, product=None,
