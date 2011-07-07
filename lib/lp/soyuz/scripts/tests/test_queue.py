@@ -1053,8 +1053,7 @@ class TestQueueActionLite(TestCaseWithFactory):
         # Patch this out because it uses data we don't have in the test;
         # it's unnecessary anyway.
         self.patch(action, "displayTitle", FakeMethod)
-        action.terms = [
-            "source", str(upload.id)] #package_copy_job.package_name]
+        action.terms = ["source", str(upload.id)]
         self.layer.txn.commit()
         self.layer.switchDbUser(config.uploadqueue.dbuser)
         action.initialize()
