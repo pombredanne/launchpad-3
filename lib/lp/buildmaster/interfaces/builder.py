@@ -29,13 +29,13 @@ from lazr.restful.declarations import (
     operation_returns_entry,
     operation_for_version,
     )
+from lazr.restful.fields import ReferenceChoice
 from zope.interface import (
     Attribute,
     Interface,
     )
 from zope.schema import (
     Bool,
-    Choice,
     Field,
     Int,
     Text,
@@ -46,6 +46,7 @@ from canonical.launchpad import _
 from lp.app.validators.name import name_validator
 from lp.app.validators.url import builder_url_validator
 from lp.registry.interfaces.role import IHasOwner
+from lp.soyuz.interfaces.processor import IProcessor
 from lp.services.fields import (
     Description,
     PersonChoice,
@@ -107,10 +108,12 @@ class IBuilder(IHasOwner):
 
     id = Attribute("Builder identifier")
 
-    processor = Choice(
+    processor = exported(ReferenceChoice(
         title=_('Processor'), required=True, vocabulary='Processor',
+        schema=IProcessor,
         description=_('Build Slave Processor, used to identify '
-                      'which jobs can be built by this device.'))
+                      'which jobs can be built by this device.')),
+        as_of='devel', readonly=True)
 
     owner = exported(PersonChoice(
         title=_('Owner'), required=True, vocabulary='ValidOwner',
