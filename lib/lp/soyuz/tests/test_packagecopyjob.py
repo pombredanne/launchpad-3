@@ -734,6 +734,10 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         pu.acceptFromQueue()
         self.runJob(job)
 
+        # The job should have set the PU status to DONE:
+        self.assertEqual(PackageUploadStatus.DONE, pu.status)
+
+        # Make sure packages were actually copied.
         existing_sources = target_archive.getPublishedSources(name='copyme')
         self.assertIsNot(None, existing_sources.any())
 
