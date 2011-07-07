@@ -2,7 +2,6 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   omit-tag="">
-
 <metal:basic_filebug_widgets define-macro="basic_filebug_widgets">
 
   <tal:bugtarget
