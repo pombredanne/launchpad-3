@@ -44,7 +44,6 @@ from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,
     )
-from lp.bugs.model.bugtask import BugTask
 from lp.buildmaster.enums import BuildStatus
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
@@ -428,9 +427,9 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         # if we are an ubuntu sourcepackage, try the previous series of
         # ubuntu
         if self.distribution == ubuntu:
-            ubuntuseries = self.distroseries.prior_series
-            if ubuntuseries:
-                previous_ubuntu_series = ubuntuseries[0]
+            ubuntuseries = self.distroseries.priorReleasedSeries()
+            previous_ubuntu_series = ubuntuseries.first()
+            if previous_ubuntu_series is not None:
                 sp = SourcePackage(sourcepackagename=self.sourcepackagename,
                                    distroseries=previous_ubuntu_series)
                 return sp.packaging
@@ -499,6 +498,16 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
     def getUsedBugTags(self):
         """See `IBugTarget`."""
         return self.distroseries.getUsedBugTags()
+
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
+                                     include_tags=None):
+        """See IBugTarget."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return get_bug_tags_open_count(
+            And(BugSummary.distroseries == self.distroseries,
+                BugSummary.sourcepackagename == self.sourcepackagename),
+            user, tag_limit=tag_limit, include_tags=include_tags)
 
     @property
     def max_bug_heat(self):

@@ -93,7 +93,9 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
-from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseries import (
+    IDistroSeries,
+    )
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
@@ -620,6 +622,12 @@ class DistroSeriesAddView(LaunchpadFormView):
     @action(_('Add Series'), name='create')
     def createAndAdd(self, action, data):
         """Create and add a new Distribution Series"""
+        # 'series' is a cached property so this won't issue 2 queries.
+        if self.context.series:
+            previous_series = self.context.series[0]
+        else:
+            previous_series = None
+        # previous_series will be None if there isn't one.
         distroseries = self.context.newSeries(
             name=data['name'],
             displayname=data['displayname'],
@@ -627,7 +635,7 @@ class DistroSeriesAddView(LaunchpadFormView):
             summary=data['summary'],
             description=u"",
             version=data['version'],
-            previous_series=None,
+            previous_series=previous_series,
             registrant=self.user)
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)
