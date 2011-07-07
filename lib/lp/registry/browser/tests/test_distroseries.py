@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from datetime import timedelta
 import difflib
 import re
 from textwrap import TextWrapper
@@ -62,6 +63,7 @@ from lp.services.features import (
     getFeatureFlag,
     )
 from lp.services.features.testing import FeatureFixture
+from lp.services.utils import utc_now
 from lp.soyuz.enums import (
     ArchivePermissionType,
     PackagePublishingStatus,
@@ -469,13 +471,12 @@ class TestDistroSeriesAddView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_submit(self):
-        # When creating a new DistroSeries via DistroSeriesAddView, the title
-        # is set to the same as the displayname (title is, in any case,
-        # deprecated), the description is left empty, and previous_series is
-        # None (DistroSeriesInitializeView takes care of setting that).
-        user = self.factory.makePerson()
-        distribution = self.factory.makeDistribution(owner=user)
+    def setUp(self):
+        super(TestDistroSeriesAddView, self).setUp()
+        self.user = self.factory.makePerson()
+        self.distribution = self.factory.makeDistribution(owner=self.user)
+
+    def createNewDistroseries(self):
         form = {
             "field.name": u"polished",
             "field.version": u"12.04",
@@ -483,17 +484,41 @@ class TestDistroSeriesAddView(TestCaseWithFactory):
             "field.summary": u"Even The Register likes it.",
             "field.actions.create": u"Add Series",
             }
-        with person_logged_in(user):
-            create_initialized_view(distribution, "+addseries", form=form)
-        distroseries = distribution.getSeries(u"polished")
+        with person_logged_in(self.user):
+            create_initialized_view(self.distribution, "+addseries",
+                                    form=form)
+        distroseries = self.distribution.getSeries(u"polished")
+        return distroseries
+
+    def assertCreated(self, distroseries):
         self.assertEqual(u"polished", distroseries.name)
         self.assertEqual(u"12.04", distroseries.version)
         self.assertEqual(u"Polished Polecat", distroseries.displayname)
         self.assertEqual(u"Polished Polecat", distroseries.title)
         self.assertEqual(u"Even The Register likes it.", distroseries.summary)
         self.assertEqual(u"", distroseries.description)
+        self.assertEqual(self.user, distroseries.owner)
+
+    def test_plain_submit(self):
+        # When creating a new DistroSeries via DistroSeriesAddView, the title
+        # is set to the same as the displayname (title is, in any case,
+        # deprecated), the description is left empty, and previous_series is
+        # None (DistroSeriesInitializeView takes care of setting that).
+        distroseries = self.createNewDistroseries()
+        self.assertCreated(distroseries)
         self.assertIs(None, distroseries.previous_series)
-        self.assertEqual(user, distroseries.owner)
+
+    def test_submit_sets_previous_series(self):
+        # Creating a new series when one already exists should set the
+        # previous_series.
+        old_series = self.factory.makeDistroSeries(self.distribution,
+                                                   version='11.10')
+        older_series = self.factory.makeDistroSeries(self.distribution,
+                                                     version='11.04')
+        old_time = utc_now() - timedelta(days=5)
+        removeSecurityProxy(old_series).datereleased = old_time
+        distroseries = self.createNewDistroseries()
+        self.assertEqual(old_series, distroseries.previous_series)
 
 
 class TestDistroSeriesInitializeView(TestCaseWithFactory):
@@ -660,8 +685,8 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
             [message] = root.cssselect("p.error.message")
             self.assertThat(
                 message.text, EqualsIgnoringWhitespace(
-                    u'Unable to initialise series: the distribution '
-                    u'already has initialised series and this distroseries '
+                    u'Unable to initialize series: the distribution '
+                    u'already has initialized series and this distroseries '
                     u'has no previous series.'))
 
 
