@@ -75,7 +75,9 @@
       <div id="show-hide-configs"
            class="collapsible">
         <legend>
-          <div style="margin-bottom: 0.5em;">Configuration options</div>
+          <div class="config-options" style="margin-bottom: 0.5em;">
+            Configuration options
+          </div>
         </legend>
         <div
           tal:attributes="class
