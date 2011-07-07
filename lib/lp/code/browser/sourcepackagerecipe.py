@@ -106,7 +106,6 @@ from lp.code.interfaces.sourcepackagerecipe import (
 from lp.code.model.branchtarget import PersonBranchTarget
 from lp.code.model.sourcepackagerecipe import get_buildable_distroseries_set
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.model.archive import Archive
 
@@ -841,7 +840,7 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
             self.form_fields = self.form_fields.omit('daily_build_archive')
 
             owner_field = self.schema['owner']
-            any_owner_choice = PersonChoice(
+            any_owner_choice = Choice(
                 __name__='owner', title=owner_field.title,
                 description=(u"As an administrator you are able to reassign"
                              u" this branch to any person or team."),

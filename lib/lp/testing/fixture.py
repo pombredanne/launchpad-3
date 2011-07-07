@@ -5,10 +5,16 @@
 
 __metaclass__ = type
 __all__ = [
+    'RabbitServer',
+    'ZopeAdapterFixture',
     'ZopeEventHandlerFixture',
+    'ZopeViewReplacementFixture',
     ]
 
+from textwrap import dedent
+
 from fixtures import Fixture
+import rabbitfixture.server
 from zope.component import (
     getGlobalSiteManager,
     provideHandler,
@@ -20,6 +26,40 @@ from zope.security.checker import (
     getCheckerForInstancesOf,
     undefineChecker,
     )
+
+
+class RabbitServer(rabbitfixture.server.RabbitServer):
+    """A RabbitMQ server fixture with Launchpad-specific config.
+
+    :ivar service_config: A snippet of .ini that describes the `rabbitmq`
+        configuration.
+    """
+
+    def setUp(self):
+        super(RabbitServer, self).setUp()
+        self.config.service_config = dedent("""\
+            [rabbitmq]
+            host: localhost:%d
+            userid: guest
+            password: guest
+            virtual_host: /
+            """ % self.config.port)
+
+
+class ZopeAdapterFixture(Fixture):
+    """A fixture to register and unregister an adapter."""
+
+    def __init__(self, *args, **kwargs):
+        self._args, self._kwargs = args, kwargs
+
+    def setUp(self):
+        super(ZopeAdapterFixture, self).setUp()
+        site_manager = getGlobalSiteManager()
+        site_manager.registerAdapter(
+            *self._args, **self._kwargs)
+        self.addCleanup(
+            site_manager.unregisterAdapter,
+            *self._args, **self._kwargs)
 
 
 class ZopeEventHandlerFixture(Fixture):
