@@ -375,6 +375,12 @@
         <allow
             interface="lp.soyuz.interfaces.processor.IProcessorFamilySet"/>
     </securedutility>
+    <securedutility
+        class="lp.soyuz.model.processor.ProcessorSet"
+        provides="lp.soyuz.interfaces.processor.IProcessorSet">
+        <allow
+            interface="lp.soyuz.interfaces.processor.IProcessorSet"/>
+    </securedutility>
     <adapter
         for="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"

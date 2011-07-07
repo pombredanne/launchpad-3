@@ -5,13 +5,27 @@
 
 from zope.component import getUtility
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadZopelessLayer,
+    )
+
 from lp.soyuz.interfaces.processor import (
     IProcessor,
     IProcessorFamily,
     IProcessorFamilySet,
+    IProcessorSet,
+    ProcessorNotFound,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    ExpectedException,
+    TestCaseWithFactory,
+    )
 
 
 class ProcessorFamilyTests(TestCaseWithFactory):
@@ -42,3 +56,31 @@ class ProcessorFamilyTests(TestCaseWithFactory):
             "Another small processor family", restricted=True)
         self.assertFalse(normal_family in family_set.getRestricted())
         self.assertTrue(restricted_family in family_set.getRestricted())
+
+
+class ProcessorSetTests(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def test_getByName(self):
+        processor_set = getUtility(IProcessorSet)
+        q1 = self.factory.makeProcessorFamily(name='q1')
+        self.assertEquals(q1.processors[0], processor_set.getByName('q1'))
+
+    def test_getByName_not_found(self):
+        processor_set = getUtility(IProcessorSet)
+        with ExpectedException(ProcessorNotFound, 'No such processor.*'):
+            processor_set.getByName('q1')
+
+    def test_getAll(self):
+        processor_set = getUtility(IProcessorSet)
+        # Make it easy to filter out sample data
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store.execute("UPDATE Processor SET name = 'sample_data_' || name")
+        self.factory.makeProcessorFamily(name='q1')
+        self.factory.makeProcessorFamily(name='i686')
+        self.factory.makeProcessorFamily(name='g4')
+        self.assertEquals(
+            ['g4', 'i686', 'q1'],
+            sorted(
+            processor.name for processor in processor_set.getAll()
+            if not processor.name.startswith('sample_data_') ))

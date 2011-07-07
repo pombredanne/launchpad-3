@@ -11,6 +11,8 @@ __all__ = [
     'IProcessor',
     'IProcessorFamily',
     'IProcessorFamilySet',
+    'IProcessorSet',
+    'ProcessorNotFound',
     ]
 
 from zope.interface import (
@@ -38,6 +40,12 @@ from lazr.restful.fields import (
     CollectionField,
     Reference,
     )
+from lp.app.errors import NameLookupFailed
+
+
+class ProcessorNotFound(NameLookupFailed):
+    """Exception raised when a processor name isn't found."""
+    _message_prefix = 'No such processor'
 
 
 class IProcessor(Interface):
@@ -121,6 +129,23 @@ class IProcessorFamily(Interface):
         :param description: Description of the processor
         :return: A `IProcessor`
         """
+
+
+class IProcessorSet(Interface):
+    """Operations related to Processor instances."""
+
+    def getByName(name):
+        """Return the IProcessor instance with the matching name.
+
+        :param name: The name to look for.
+
+        :raise ProcessorNotFound: if there is no processor with tha name.
+
+        :return: A `IProcessorFamily` instance if found
+        """
+
+    def getAll():
+        """Return all the IProcessor known to Launchpad."""
 
 
 class IProcessorFamilySet(Interface):
