@@ -27,6 +27,7 @@ from lazr.restful.declarations import (
     exported,
     operation_parameters,
     operation_returns_entry,
+    operation_for_version,
     )
 from zope.interface import (
     Attribute,
@@ -385,6 +386,8 @@ class IBuilderSet(Interface):
     def getBuilders():
         """Return all active configured builders."""
 
+    @export_read_operation()
+    @operation_for_version('devel')
     def getBuildQueueSizes():
         """Return the number of pending builds for each processor.
 
