@@ -16,9 +16,10 @@ from glob import glob
 import cssutils
 
 HERE = os.path.dirname(__file__)
-BUILD_DIR = os.path.normpath(os.path.join(HERE, '..', '..', '..', 'build'))
+BUILD_DIR = os.path.normpath(os.path.join(
+    HERE, os.pardir, os.pardir, os.pardir, 'build'))
 DEFAULT_SRC_DIR = os.path.normpath(os.path.join(
-    HERE, '..', '..', '..', 'app', 'javascript'))
+    HERE, os.pardir, os.pardir, os.pardir, 'app', 'javascript'))
 
 ESCAPE_STAR_PROPERTY_RE = re.compile(r'\*([a-zA-Z0-9_-]+):')
 UNESCAPE_STAR_PROPERTY_RE = re.compile(r'([a-zA-Z0-9_-]+)_ie_star_hack:')
