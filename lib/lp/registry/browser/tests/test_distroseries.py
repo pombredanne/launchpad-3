@@ -685,8 +685,8 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
             [message] = root.cssselect("p.error.message")
             self.assertThat(
                 message.text, EqualsIgnoringWhitespace(
-                    u'Unable to initialise series: the distribution '
-                    u'already has initialised series and this distroseries '
+                    u'Unable to initialize series: the distribution '
+                    u'already has initialized series and this distroseries '
                     u'has no previous series.'))
 
 
