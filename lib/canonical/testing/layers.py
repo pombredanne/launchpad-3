@@ -61,7 +61,6 @@ import signal
 import socket
 import subprocess
 import sys
-import tempfile
 from textwrap import dedent
 import threading
 import time
@@ -75,7 +74,6 @@ from fixtures import (
     Fixture,
     MonkeyPatch,
     )
-from lazr.restful.utils import safe_hasattr
 import psycopg2
 from storm.zope.interfaces import IZStorm
 import transaction
@@ -97,7 +95,6 @@ import zope.publisher.publish
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
-from zope.testing.testrunner.runner import FakeInputContinueGenerator
 
 from canonical.config import (
     CanonicalConfig,
@@ -130,7 +127,6 @@ from canonical.launchpad.webapp.servers import (
     register_launchpad_request_publication_factories,
     )
 import canonical.launchpad.webapp.session
-from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr import pidfile
 from canonical.lazr.testing.layers import MockRootFolder
 from canonical.lazr.timeout import (
@@ -149,13 +145,13 @@ from lp.services.mail.mailbox import TestMailBox
 import lp.services.mail.stub
 from lp.services.memcache.client import memcache_client_factory
 from lp.services.osutils import kill_by_pidfile
-from lp.services.rabbit.testing.server import RabbitServer
 from lp.testing import (
     ANONYMOUS,
     is_logged_in,
     login,
     logout,
     )
+from lp.testing.fixture import RabbitServer
 from lp.testing.pgsql import PgTestSetup
 
 
@@ -725,8 +721,8 @@ class DatabaseLayer(BaseLayer):
         if os.environ.get('LP_TEST_INSTANCE'):
             template_name = '_'.join([LaunchpadTestSetup.template,
                 os.environ.get('LP_TEST_INSTANCE')])
-            cls._db_template_fixture = LaunchpadTestSetup(dbname=template_name,
-                reset_sequences_sql=reset_sequences_sql)
+            cls._db_template_fixture = LaunchpadTestSetup(
+                dbname=template_name, reset_sequences_sql=reset_sequences_sql)
             cls._db_template_fixture.setUp()
         else:
             template_name = LaunchpadTestSetup.template

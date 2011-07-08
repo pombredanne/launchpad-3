@@ -101,6 +101,9 @@ from lp.registry.interfaces.distroseries import (
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
+from lp.registry.interfaces.distroseriesdifferencecomment import (
+    IDistroSeriesDifferenceCommentSource,
+    )
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
@@ -685,22 +688,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=["Language.englishname"])
         return result
 
-    @cachedproperty
-    def prior_series(self):
+    def priorReleasedSeries(self):
         """See `IDistroSeries`."""
-        # This property is cached because it is used intensely inside
-        # sourcepackage.py; avoiding regeneration reduces a lot of
-        # count(*) queries.
         datereleased = self.datereleased
         # if this one is unreleased, use the last released one
         if not datereleased:
-            datereleased = 'NOW'
-        results = DistroSeries.select('''
-                distribution = %s AND
-                datereleased < %s
-                ''' % sqlvalues(self.distribution.id, datereleased),
-                orderBy=['-datereleased'])
-        return list(results)
+            datereleased = UTC_NOW
+        return getUtility(IDistroSeriesSet).priorReleasedSeries(
+            self.distribution, datereleased)
 
     @property
     def bug_reporting_guidelines(self):
@@ -1895,6 +1890,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         published = self.main_archive.getPublishedSources(distroseries=self)
         return not published.is_empty()
 
+    def getDifferenceComments(self, since=None, source_package_name=None):
+        """See `IDistroSeries`."""
+        comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
+        return comment_source.getForDistroSeries(
+            self, since=since, source_package_name=source_package_name)
+
 
 class DistroSeriesSet:
     implements(IDistroSeriesSet)
@@ -2021,4 +2022,17 @@ class DistroSeriesSet:
         if orderBy is not None:
             return DistroSeries.select(where_clause, orderBy=orderBy)
         else:
+
             return DistroSeries.select(where_clause)
+
+    def priorReleasedSeries(self, distribution, prior_to_date):
+            """See `IDistroSeriesSet`."""
+            store = Store.of(distribution)
+            results = store.find(
+                DistroSeries,
+                DistroSeries.distributionID == distribution.id,
+                DistroSeries.datereleased < prior_to_date,
+                DistroSeries.datereleased != None
+            ).order_by(Desc(DistroSeries.datereleased))
+
+            return results

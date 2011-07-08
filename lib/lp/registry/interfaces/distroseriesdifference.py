@@ -297,7 +297,8 @@ class IDistroSeriesDifferenceSource(Interface):
         source_package_name_filter=None,
         status=None,
         child_version_higher=False,
-        parent_series=None):
+        parent_series=None,
+        packagesets=None):
         """Return differences for the derived distro series sorted by
         package name.
 
@@ -319,6 +320,7 @@ class IDistroSeriesDifferenceSource(Interface):
         :param parent_series: The parent series to consider. Consider all
             parent series if this parameter is None.
         :type distro_series: `IDistroSeries`.
+        :param packagesets: Optional iterable of `Packageset` to filter by.
         :return: A result set of `IDistroSeriesDifference`.
         """
 

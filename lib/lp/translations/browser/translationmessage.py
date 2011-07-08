@@ -128,6 +128,9 @@ class POTMsgSetBatchNavigator(BatchNavigator):
         results is an iterable of results. request is the web request
         being processed. size is a default batch size which the callsite
         can choose to provide.
+
+        Why a custom BatchNavigator is required is a great mystery and
+        should be documented here.
         """
         schema, netloc, path, parameters, query, fragment = (
             urlparse(str(request.URL)))
@@ -164,7 +167,7 @@ class POTMsgSetBatchNavigator(BatchNavigator):
 
         BatchNavigator.__init__(self, results, request, start_value, size)
 
-    def generateBatchURL(self, batch):
+    def generateBatchURL(self, batch, backwards=False):
         """Return a custom batch URL for `ITranslationMessage`'s views."""
         url = ""
         if batch is None:

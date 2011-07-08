@@ -39,6 +39,16 @@
 
 
     <metal:portlets fill-slot="side">
+      <div id="involvement" class="portlet">
+        <ul class="involvement">
+          <li class="single">
+            <a tal:attributes="href view/new_question_url"
+               class="sprite answers">
+              Ask a question
+            </a>
+          </li>
+        </ul>
+      </div>
       <div tal:replace="structure context/@@+global-actions" />
       <div tal:replace="structure context/@@+portlet-subscribers" />
     </metal:portlets>
@@ -170,21 +180,6 @@
             To post a message you must <a href="+login">log in</a>.
           </div>
         </tal:not-logged-in>
-      </div>
-
-      <div
-        class="related"
-        id="ask-your-own-question"
-        xml:lang="en" lang="en" dir="ltr"
-        tal:condition="not: view/is_question_owner"
-      >
-        <h2>Got a question of your own?</h2>
-
-        <p>For best results,
-          <a href="+addquestion"
-            tal:attributes="href view/new_question_url">ask your own question
-            separately</a>.
-        </p>
       </div>
     </div>
   </body>

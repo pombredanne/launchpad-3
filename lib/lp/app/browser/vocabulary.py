@@ -42,6 +42,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.pillaraffiliation import IHasAffiliation
 from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
 from lp.services.features import getFeatureFlag
+from lp.soyuz.interfaces.archive import IArchive
 
 # XXX: EdwinGrubbs 2009-07-27 bug=405476
 # This limits the output to one line of text, since the sprite class
@@ -183,6 +184,18 @@ class SourcePackageNamePickerEntryAdapter(DefaultPickerEntryAdapter):
         descriptions = getSourcePackageDescriptions([sourcepackagename])
         extra.description = descriptions.get(
             sourcepackagename.name, "Not yet built")
+        return extra
+
+
+@adapter(IArchive)
+class ArchivePickerEntryAdapter(DefaultPickerEntryAdapter):
+    """Adapts IArchive to IPickerEntry."""
+
+    def getPickerEntry(self, associated_object, **kwarg):
+        archive = self.context
+        extra = super(ArchivePickerEntryAdapter, self).getPickerEntry(
+            associated_object)
+        extra.description = '%s/%s' % (archive.owner.name, archive.name)
         return extra
 
 

@@ -1207,7 +1207,7 @@ Let's add a new suggestion as a person without privileges.
     ...     name='msgset_134_es_translation_0_new').value = 'new suggestion'
     >>> browser.getControl(name='submit_translations').click()
     >>> print browser.url
-    http://.../ubuntu/.../evolution/+pots/evolution-2.2/es/+translate?start=10
+    http://.../ubuntu/.../evolution/+pots/evolution-2.2/es/+translate?...
 
     >>> browser.getLink('Previous').click()
 

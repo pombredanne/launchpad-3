@@ -188,12 +188,6 @@ member of the Launchpad admin team so there are no permission errors.
 
     >>> login('foo.bar@canonical.com')
 
-The syncUpdate call is necessary to make sure the database has the
-private flag set correctly for the branch.
-
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(branch)
-
     >>> branch_set = getUtility(IBranchSet)
 
 Anonymous users see just the public branches.

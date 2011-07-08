@@ -18,14 +18,15 @@ __all__ = [
     'file_exists',
     'iter_list_chunks',
     'iter_split',
-    'RegisteredSubclass',
     'run_capturing_output',
     'synchronize',
     'text_delta',
     'traceback_info',
+    'utc_now',
     'value_string',
     ]
 
+from datetime import datetime
 from itertools import tee
 import os
 from StringIO import StringIO
@@ -39,6 +40,7 @@ from fixtures import (
     MonkeyPatch,
     )
 from lazr.enum import BaseItem
+import pytz
 from twisted.python.util import mergeFunctionMetadata
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -130,7 +132,7 @@ def iter_list_chunks(a_list, size):
     I'm amazed this isn't in itertools (mwhudson).
     """
     for i in range(0, len(a_list), size):
-        yield a_list[i:i + size]
+        yield a_list[i:i+size]
 
 
 def synchronize(source, target, add, remove):
@@ -240,7 +242,7 @@ def docstring_dedent(s):
     then reassemble.
     """
     # Make sure there is at least one newline so the split works.
-    first, rest = (s + '\n').split('\n', 1)
+    first, rest = (s+'\n').split('\n', 1)
     return (first + '\n' + dedent(rest)).strip()
 
 
@@ -288,18 +290,6 @@ def traceback_info(info):
     sys._getframe(1).f_locals["__traceback_info__"] = info
 
 
-class RegisteredSubclass(type):
-    """Metaclass for when subclasses should be registered."""
-
-    def __init__(cls, name, bases, dict_):
-        # _register_subclass must be a static method to permit upcalls.
-        #
-        # We cannot use super(Class, cls) to do the upcalls, because Class
-        # isn't fully defined yet.  (Remember, we're calling this from a
-        # metaclass.)
-        #
-        # Without using super, a classmethod that overrides another
-        # classmethod has no reasonable way to call the overridden version AND
-        # provide its class as first parameter (i.e. "cls").  Therefore, we
-        # must use a static method.
-        cls._register_subclass(cls)
+def utc_now():
+    """Return a timezone-aware timestamp for the current time."""
+    return datetime.now(tz=pytz.UTC)

@@ -15,7 +15,7 @@ explicit. There are two implicit subscribers.
     ...     "http://launchpad.dev/bugs/2/+bug-portlet-subscribers-details")
 
     >>> print_direct_subscribers(browser.contents)
-    Steve Alexander
+    Steve Alexander (Unsubscribe)
     >>> print_also_notified(browser.contents)
     Also notified:
     Sample Person
@@ -38,8 +38,8 @@ All the implicit subscribers have been made explicit.
   >>> browser.open(
   ...     "http://launchpad.dev/bugs/2/+bug-portlet-subscribers-details")
   >>> print_direct_subscribers(browser.contents)
-  Sample Person
-  Steve Alexander
+  Sample Person (Unsubscribe)
+  Steve Alexander (Unsubscribe)
   Ubuntu Team (Unsubscribe)
 
   >>> print_also_notified(browser.contents)
