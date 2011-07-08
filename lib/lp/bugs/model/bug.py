@@ -1322,15 +1322,17 @@ BugMessage""" % sqlvalues(self.id))
         """See `IBug`."""
         current_user = getUtility(ILaunchBag).user
         all_branches = getUtility(IAllBranches)
-        linked_branches = all_branches.visibleByUser(
-            current_user).linkedToBugs([self]).getBranches(eager_load=True)
-        if linked_branches.is_empty():
+        linked_branches = list(all_branches.visibleByUser(
+            current_user).linkedToBugs([self]).getBranches(eager_load=True))
+        if len(linked_branches) == 0:
             return EmptyResultSet()
-        store = Store.of(self)
-        return store.find(
-            BugBranch,
-            BugBranch.bug == self,
-            In(BugBranch.branchID, [branch.id for branch in linked_branches]))
+        else:
+            store = Store.of(self)
+            branch_ids = [branch.id for branch in linked_branches]
+            return store.find(
+                BugBranch,
+                BugBranch.bug == self,
+                In(BugBranch.branchID, branch_ids))
 
     @cachedproperty
     def has_cves(self):
