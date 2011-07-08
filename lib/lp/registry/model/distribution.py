@@ -68,6 +68,11 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasMugshot,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.launchpad.webapp.url import urlparse
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -659,6 +664,23 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             And(BugSummary.distribution_id == self.id,
                 BugSummary.sourcepackagename_id == None),
             user, tag_limit=tag_limit, include_tags=include_tags)
+
+    def getBranchTips(self, since=None):
+        """See `IDistribution`."""
+        query = """
+            SELECT unique_name, last_scanned_id FROM Branch JOIN DistroSeries
+            ON Branch.distroseries = DistroSeries.id JOIN Distribution ON
+            DistroSeries.distribution = Distribution.id WHERE
+            Distribution.name = %s""" % sqlvalues(self.name)
+        if since is None:
+            query += ';'
+        else:
+            query += (
+                'AND branch.last_scanned > %s;' % sqlvalues(since))
+
+        results = Store.of(self).execute(query)
+        # Returning the result set leads to a ForbiddenAttribute error.
+        return list(results)
 
     def getMirrorByName(self, name):
         """See `IDistribution`."""

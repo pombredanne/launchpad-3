@@ -63,6 +63,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.mail import signed_message_from_string
 from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR,
     IStoreSelector,
     MAIN_STORE,
     SLAVE_FLAVOR,

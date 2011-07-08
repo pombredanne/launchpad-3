@@ -28,6 +28,7 @@ from lazr.restful.declarations import (
     export_operation_as,
     export_read_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -389,6 +390,35 @@ class IDistributionPublic(
 
         :param name_or_version: The `IDistroSeries.name` or
             `IDistroSeries.version`.
+        """
+
+#    @operation_parameters(
+#        since=Datetime(
+#            title=_("Time of last change"),
+#            description=_(
+#                "Return branches that have new tips since this timestamp."),
+#            required=False))
+##    @operation_returns_entry(ISourcePackage)
+##    @operation_returns_collection_of(Interface)
+#    @export_operation_as(name="getBranchTips")
+#    @export_read_operation()
+##    @operation_for_version('devel')
+##    @operation_for_version("beta")
+#    def getBranchTips(since):
+#        """Return a collection of branches which have new tips since a date.
+#        """
+
+    @operation_parameters(
+        since=Datetime(
+            title=_("Time of last change"),
+            description=_(
+                "Return branches that have new tips since this timestamp."),
+            required=False))
+    @export_operation_as(name="getBranchTips")
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getBranchTips(since):
+        """Return a collection of branches which have new tips since a date.
         """
 
     @operation_parameters(

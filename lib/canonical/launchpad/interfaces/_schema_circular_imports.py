@@ -467,6 +467,8 @@ patch_entry_return_type(
     IDistribution, 'getSeries', IDistroSeries)
 patch_collection_return_type(
     IDistribution, 'getDevelopmentSeries', IDistroSeries)
+#patch_collection_return_type(
+#    IDistribution, 'getBranchTips', IDistroSeries)
 patch_entry_return_type(
     IDistribution, 'getSourcePackage', IDistributionSourcePackage)
 patch_collection_return_type(
