@@ -20,7 +20,7 @@ from lp.soyuz.interfaces.distributionjob import (
     IInitializeDistroSeriesJobSource,
     )
 from lp.soyuz.scripts.tests.test_initialize_distroseries import (
-    InitializationTestHelper,
+    InitializationHelperTestCase,
     )
 from lp.testing import (
     ANONYMOUS,
@@ -67,7 +67,7 @@ class TestDeriveDistroSeries(TestCaseWithFactory):
         self.assertEqual(job.distroseries, self.child)
 
 
-class TestDeriveDistroSeriesMultipleParents(InitializationTestHelper):
+class TestDeriveDistroSeriesMultipleParents(InitializationHelperTestCase):
 
     layer = LaunchpadZopelessLayer
 

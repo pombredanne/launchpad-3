@@ -42,7 +42,7 @@ from lp.soyuz.scripts.initialize_distroseries import (
 from lp.testing import TestCaseWithFactory
 
 
-class InitializationTestHelper(TestCaseWithFactory):
+class InitializationHelperTestCase(TestCaseWithFactory):
     # Helper class to:
     # - setup/populate parents with packages;
     # - initialize a child from parents.
@@ -112,7 +112,7 @@ class InitializationTestHelper(TestCaseWithFactory):
         return child
 
 
-class TestInitializeDistroSeries(InitializationTestHelper):
+class TestInitializeDistroSeries(InitializationHelperTestCase):
 
     layer = LaunchpadZopelessLayer
 
