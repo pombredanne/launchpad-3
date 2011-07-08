@@ -40,6 +40,7 @@ from lp.answers.model.question import (
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
+from lp.bugs.model.bug import get_bug_tags_open_count
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,
