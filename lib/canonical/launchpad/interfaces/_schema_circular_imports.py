@@ -516,6 +516,8 @@ patch_choice_parameter_type(
     DistroSeriesDifferenceType)
 patch_collection_return_type(
     IDistroSeries, 'getDifferencesTo', IDistroSeriesDifference)
+patch_collection_return_type(
+    IDistroSeries, 'getDifferenceComments', IDistroSeriesDifferenceComment)
 
 
 # IDistroSeriesDifference
