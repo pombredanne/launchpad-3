@@ -371,6 +371,10 @@ class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
     _table = Person
     _orderBy = 'displayname'
 
+    def toTerm(self, obj):
+        """See `IVocabulary`."""
+        return SimpleTerm(obj, obj.name, obj.displayname)
+
     def __iter__(self):
         kw = {}
         if self._orderBy:
