@@ -381,12 +381,15 @@ class WebServiceApplication(ServiceRootResource):
 
     cached_wadl = {}
 
+    # This should only be used by devel instances: production serves root
+    # WADL (and JSON) from the filesystem.
+
     @classmethod
     def cachedWADLPath(cls, instance_name, version):
         """Helper method to calculate the path to a cached WADL file."""
         return os.path.join(
             os.path.dirname(os.path.normpath(__file__)),
-            'apidoc', 'wadl-%s-%s.xml' % (instance_name, version))
+            'apidoc', version, '%s.wadl' % (instance_name,))
 
     def toWADL(self):
         """See `IWebServiceApplication`.
