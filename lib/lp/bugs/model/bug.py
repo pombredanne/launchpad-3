@@ -1323,7 +1323,7 @@ BugMessage""" % sqlvalues(self.id))
         current_user = getUtility(ILaunchBag).user
         all_branches = getUtility(IAllBranches)
         linked_branches = list(all_branches.visibleByUser(
-            current_user).linkedToBugs([self]).getBranches(eager_load=True))
+            current_user).linkedToBugs([self]).getBranches())
         if len(linked_branches) == 0:
             return EmptyResultSet()
         else:

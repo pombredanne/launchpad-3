@@ -10,7 +10,12 @@ from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
     login_person,
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
+    )
+from lp.testing.matchers import (
+    Equals,
+    HasQueryCount,
     )
 
 
@@ -324,10 +329,20 @@ class TestBug(TestCaseWithFactory):
             owner=private_branch_owner, private=True)
         with person_logged_in(private_branch_owner):
             bug.linkBranch(private_branch, private_branch.registrant)
-        public_branch = self.factory.makeBranch()
-        with person_logged_in(public_branch.registrant):
-            bug.linkBranch(public_branch, public_branch.registrant)
-            linked_branches = [
-                bug_branch.branch for bug_branch in bug.linked_branches]
-            self.assertIn(public_branch, linked_branches)
-            self.assertNotIn(private_branch, linked_branches)
+        public_branch_owner = self.factory.makePerson()
+        public_branches = [
+            self.factory.makeBranch() for i in range(4)]
+        with person_logged_in(public_branch_owner):
+            for public_branch in public_branches:
+                bug.linkBranch(public_branch, public_branch.registrant)
+            with StormStatementRecorder() as recorder:
+                linked_branches = [
+                    bug_branch.branch for bug_branch in bug.linked_branches]
+                self.assertContentEqual(public_branches, linked_branches)
+                self.assertNotIn(private_branch, linked_branches)
+                # We check that the query count is low, since that's
+                # part of the point of the way that linked_branches is
+                # implemented. If we try eager-loading all the linked
+                # branches the query count jumps to 10, which is not
+                # what we want.
+                self.assertThat(recorder, HasQueryCount(Equals(4)))
