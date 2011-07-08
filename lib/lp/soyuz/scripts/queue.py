@@ -591,11 +591,15 @@ class QueueActionOverride(QueueAction):
         for queue_item in self.items:
             # We delegate to the queue_item itself to override any/all
             # of its sources.
-            if queue_item.contains_source:
+            if queue_item.contains_source or queue_item.package_copy_job:
+                if queue_item.sourcepackagerelease:
+                    old_component = queue_item.sourcepackagerelease.component
+                else:
+                    old_component = getUtility(IComponentSet)[
+                        queue_item.package_copy_job.component_name]
                 queue_item.overrideSource(
                     component, section, [
-                        component,
-                        queue_item.sourcepackagerelease.component])
+                        component, old_component])
                 self.overrides_performed += 1
             self.displayInfo(queue_item)
 
