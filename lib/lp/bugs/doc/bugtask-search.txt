@@ -986,7 +986,7 @@ We can search for bugs having branches linked to them.
     >>> search_params = BugTaskSearchParams(
     ...     user=None, linked_branches=BugBranchSearch.BUGS_WITH_BRANCHES)
     >>> for task in firefox.searchTasks(search_params):
-    ...     print task.bug.id, len(task.bug.linked_branches)
+    ...     print task.bug.id, task.bug.linked_branches.count()
     4 2
     5 1
 
@@ -996,7 +996,7 @@ Similarly, we can search for bugs that do not have any linked branches.
     >>> search_params = BugTaskSearchParams(
     ...     user=None, linked_branches=BugBranchSearch.BUGS_WITHOUT_BRANCHES)
     >>> for task in firefox.searchTasks(search_params):
-    ...     print task.bug.id, len(task.bug.linked_branches)
+    ...     print task.bug.id, task.bug.linked_branches.count()
     1 0
     6 0
     18 0
