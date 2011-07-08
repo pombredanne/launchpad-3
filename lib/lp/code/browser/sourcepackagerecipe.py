@@ -23,7 +23,10 @@ from bzrlib.plugins.builder.recipe import (
     )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful.interface import use_template, copy_field
+from lazr.restful.interface import (
+    copy_field,
+    use_template,
+    )
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
     IWebServiceClientRequest,
