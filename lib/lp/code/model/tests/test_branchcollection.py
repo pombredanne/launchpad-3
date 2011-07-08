@@ -646,7 +646,6 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             sorted(branches.getBranches()))
 
 
-
 class TestExtendedBranchRevisionDetails(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
