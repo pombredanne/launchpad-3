@@ -219,9 +219,7 @@ class TestBuildViews(TestCaseWithFactory):
         self.assertEquals(view.errors[0].doc(), "Value is too small")
 
     def test_rescore(self):
-        spph = self.factory.makeSourcePackagePublishingHistory()
-        pending_build = self.factory.makeBinaryPackageBuild(
-            source_package_release=spph.sourcepackagerelease)
+        pending_build = self.factory.makeBinaryPackageBuild()
         pending_build.queueBuild()
         with person_logged_in(self.admin):
             view = create_initialized_view(

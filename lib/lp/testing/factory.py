@@ -3572,16 +3572,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             build uses as its source.
         :param sourcepackagename: when source_package_release is None, the
             sourcepackagename from which the build will come.
-        :param distroarchseries: The DistroArchSeries to use.
-        :param archive: The Archive to use.
+        :param distroarchseries: The DistroArchSeries to use. Defaults to the
+            one from the source_package_release, or a new one if not provided.
+        :param archive: The Archive to use. Defaults to the one from the
+            source_package_release, or the distro arch series main archive
+            otherwise.
         :param builder: An optional builder to assign.
         :param status: The BuildStatus for the build.
         """
-        if archive is None:
-            if source_package_release is None:
-                archive = self.makeArchive()
-            else:
-                archive = source_package_release.upload_archive
         if processor is None:
             processor = self.makeProcessor()
         if distroarchseries is None:
@@ -3592,6 +3590,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distroarchseries = self.makeDistroArchSeries(
                 distroseries=distroseries,
                 processorfamily=processor.family)
+        if archive is None:
+            if source_package_release is None:
+                archive = distroarchseries.main_archive
+            else:
+                archive = source_package_release.upload_archive
         if pocket is None:
             pocket = PackagePublishingPocket.RELEASE
         elif isinstance(pocket, basestring):
@@ -3658,16 +3661,16 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param **kwargs: All other parameters are passed through to the
             makeSourcePackageRelease call if needed.
         """
-        if sourcepackagerelease is not None:
-            distroseries = sourcepackagerelease.upload_distroseries
-            archive = distroseries.main_archive
-
         if distroseries is None:
-            if archive is None:
-                distribution = None
+            if sourcepackagerelease is not None:
+                distroseries = sourcepackagerelease.upload_distroseries
             else:
-                distribution = archive.distribution
-            distroseries = self.makeDistroRelease(distribution=distribution)
+                if archive is None:
+                    distribution = None
+                else:
+                    distribution = archive.distribution
+                distroseries = self.makeDistroRelease(
+                    distribution=distribution)
         if archive is None:
             archive = distroseries.main_archive
 
@@ -3683,7 +3686,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if sourcepackagerelease is None:
             sourcepackagerelease = self.makeSourcePackageRelease(
-                archive=archive, distroseries=distroseries, **kwargs)
+                archive=archive, distroseries=distroseries,
+                date_uploaded=date_uploaded, **kwargs)
 
         spph = getUtility(IPublishingSet).newSourcePublication(
             archive, sourcepackagerelease, distroseries,
