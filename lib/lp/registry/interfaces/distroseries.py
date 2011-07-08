@@ -360,9 +360,8 @@ class IDistroSeriesPublic(
             automatically upgrade within backports, but not into it.
             """))
 
-    # other properties
-    prior_series = Attribute(
-        "Prior series *by date* from the same distribution.")
+    def priorReleasedSeries():
+        """Prior series *by date* from the same distribution."""
 
     main_archive = exported(
         Reference(
@@ -903,6 +902,30 @@ class IDistroSeriesPublic(
     def isInitialized():
         """Has this series been initialized?"""
 
+    @operation_parameters(
+        since=Datetime(
+            title=_("Minimum creation timestamp"),
+            description=_(
+                "Ignore comments that are older than this."),
+            required=False),
+        source_package_name=TextLine(
+            title=_("Name of source package"),
+            description=_("Only return comments for this source package."),
+            required=False))
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getDifferenceComments(since=None, source_package_name=None):
+        """Get `IDistroSeriesDifferenceComment` items.
+
+        :param since: Ignore comments older than this timestamp.
+        :param source_package_name: Return only comments for a source package
+            with this name.
+        :return: A Storm result set of `IDistroSeriesDifferenceComment`
+            objects for this distroseries, ordered from oldest to newest
+            comment.
+        """
+
 
 class IDistroSeriesEditRestricted(Interface):
     """IDistroSeries properties which require launchpad.Edit."""
@@ -1044,6 +1067,18 @@ class IDistroSeriesSet(Interface):
         FROZEN.
 
         released == None will do no filtering on status.
+        """
+
+    def priorReleasedSeries(self, distribution, prior_to_date):
+        """Find distroseries for the supplied distro  released before a
+        certain date.
+
+        :param distribution: An `IDistribution` in which to search for its
+            series.
+        :param prior_to_date: A `datetime`
+
+        :return: `IResultSet` of `IDistroSeries` that were released before
+            prior_to_date, ordered in increasing order of age.
         """
 
 
