@@ -613,10 +613,11 @@ class GenericBranchCollection:
                       BranchMergeProposal.target_branch == Branch.id),
             symmetric=False)
 
-    def linkedToBug(self, bug):
+    def linkedToBugs(self, bugs):
         """See `IBranchCollection`."""
+        bug_ids = [bug.id for bug in bugs]
         return self._filterBy(
-            [BugBranch.bug == bug],
+            [In(BugBranch.bugID, bug_ids)],
             table=BugBranch,
             join=Join(BugBranch, BugBranch.branch == Branch.id),
             symmetric=False)
