@@ -192,7 +192,8 @@ rescored, which allows us to set an arbitrary value on it.
 
     >>> time6 = LOCAL_NOW
     >>> bq6 = setUpBuildQueueEntry(
-    ...      urgency=SourcePackageUrgency.LOW, date_created=time6, manual=True)
+    ...      urgency=SourcePackageUrgency.LOW, date_created=time6,
+    ...      manual=True)
 
     >>> bq6.lastscore = 5000
 
