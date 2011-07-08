@@ -142,3 +142,117 @@ permitted.
     200 Ok
 
 
+
+View the bug task listing page as an anonymous user. Note that the
+private bug just filed by Sample Person is not visible.
+
+  >>> print http(r"""
+  ... GET /firefox/+bugs HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... """)
+  HTTP/1.1 200 Ok
+  ...3 results...
+  ...5...
+  ...4...
+  ...1...
+  ...
+
+Trying to access a private upstream bug as an anonymous user results
+in a page not found error.
+
+  >>> print http(r"""
+  ... GET /firefox/+bug/6 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print http(r"""
+  ... GET /firefox/+bug/14 HTTP/1.1
+  ... """)
+  HTTP/1.1 404 Not Found
+  ...
+
+View the upstream Firefox bug listing as user Foo Bar. Note that Foo
+Bar cannot see in this listing the private bug that Sample Person
+submitted earlier.
+
+  >>> print http(r"""
+  ... GET /firefox/+bugs HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Mozilla Firefox...
+  ...5...Firefox install instructions should be complete...
+  ...4...Reflow problems with complex page layouts...
+  ...1...Firefox does not support SVG...
+  ...
+
+
+View bugs on Mozilla Firefox as the no-privs user:
+
+  >>> print http(r"""
+  ... GET /firefox/+bugs HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      Mozilla Firefox
+  ...
+
+Note that the no-privs user doesn't have the permissions to see bug #13.
+
+  >>> print http(r"""
+  ... GET /firefox/+bug/14 HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 404 Not Found
+  ...
+
+This is also true if no-privs tries to access the bug from another
+context.
+
+  >>> print http(r"""
+  ... GET /tomcat/+bug/14 HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 404 Not Found
+  ...
+
+Sample Person views a bug, which they're about to set private:
+
+  >>> print http(r"""
+  ... GET /firefox/+bug/4/+edit HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...Reflow problems with complex page layouts...
+  ...
+
+Sample Person sets the bug private and is made an explicit subscriber
+in the process.
+
+  ... POST /firefox/+bug/4/+secrecy HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 429
+  ... Content-Type: multipart/form-data; boundary=---------------------------10389799518848978361196772104
+  ... 
+  ... -----------------------------10389799518848978361196772104
+  ... Content-Disposition: form-data; name="field.private.used"
+  ... 
+  ... 
+  ... -----------------------------10389799518848978361196772104
+  ... Content-Disposition: form-data; name="field.private"
+  ... 
+  ... on
+  ... -----------------------------10389799518848978361196772104
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------10389799518848978361196772104--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...Cc:...
+  ...Sample Person...
+  ...
