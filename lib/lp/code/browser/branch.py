@@ -1053,7 +1053,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 vocab = UserTeamsParticipationPlusSelfVocabulary()
                 owner = self.context.owner
                 terms = [SimpleTerm(
-                    owner, owner.name, owner.displayname)]
+                    owner, owner.name, owner.unique_displayname)]
                 terms.extend([term for term in vocab])
                 owner_field = self.schema['owner']
                 owner_choice = Choice(

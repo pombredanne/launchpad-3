@@ -373,7 +373,7 @@ class UserTeamsParticipationVocabulary(SQLObjectVocabularyBase):
 
     def toTerm(self, obj):
         """See `IVocabulary`."""
-        return SimpleTerm(obj, obj.name, obj.displayname)
+        return SimpleTerm(obj, obj.name, obj.unique_displayname)
 
     def __iter__(self):
         kw = {}
@@ -1259,6 +1259,21 @@ class UserTeamsParticipationPlusSelfVocabulary(
             return self.getTerm(logged_in_user)
         super_class = super(UserTeamsParticipationPlusSelfVocabulary, self)
         return super_class.getTermByToken(token)
+
+
+class UserTeamsParticipationPlusSelfSimpleDisplayVocabulary(
+    UserTeamsParticipationPlusSelfVocabulary):
+    """Like UserTeamsParticipationPlusSelfVocabulary but the term title is
+    the person.displayname rather than unique_displayname.
+
+    This vocab is used for pickers which append the Launchpad id to the
+    displayname. If we use the original UserTeamsParticipationPlusSelf vocab,
+    the Launchpad id is displayed twice.
+    """
+
+    def toTerm(self, obj):
+        """See `IVocabulary`."""
+        return SimpleTerm(obj, obj.name, obj.displayname)
 
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):

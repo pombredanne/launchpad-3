@@ -337,7 +337,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
         # The options for the owner include the Good Chefs team.
         options = browser.getControl(name='field.owner.owner').displayOptions
         self.assertEquals(
-            ['Good Chefs', 'Master Chef'],
+            ['Good Chefs (good-chefs)', 'Master Chef (chef)'],
             sorted([str(option) for option in options]))
 
     def test_create_new_recipe_team_owner(self):
