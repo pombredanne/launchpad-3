@@ -175,7 +175,6 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscribers,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
-from lp.code.model.branch import Branch
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -199,7 +198,6 @@ from lp.registry.model.person import (
     )
 from lp.registry.model.pillar import pillar_sort_key
 from lp.registry.model.teammembership import TeamParticipation
-from lp.services.database.bulk import load_related
 from lp.services.database.stormbase import StormBase
 from lp.services.fields import DuplicateBug
 from lp.services.messages.interfaces.message import (
