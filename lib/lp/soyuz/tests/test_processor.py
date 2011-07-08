@@ -10,6 +10,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
+from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -23,7 +24,9 @@ from lp.soyuz.interfaces.processor import (
     ProcessorNotFound,
     )
 from lp.testing import (
+    api_url,
     ExpectedException,
+    logout,
     TestCaseWithFactory,
     )
 
@@ -84,3 +87,39 @@ class ProcessorSetTests(TestCaseWithFactory):
             sorted(
             processor.name for processor in processor_set.getAll()
             if not processor.name.startswith('sample_data_') ))
+
+
+class ProcessorSetWebServiceTests(TestCaseWithFactory):
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(ProcessorSetWebServiceTests, self).setUp()
+        self.webservice = LaunchpadWebServiceCaller()
+
+    def test_getByName(self):
+        self.factory.makeProcessorFamily(name='transmeta')
+        logout()
+
+        processor = self.webservice.named_get(
+            '/+processors', 'getByName', name='transmeta',
+            api_version='devel',
+            ).jsonBody()
+        self.assertEquals('transmeta', processor['name'])
+
+    def test_default_collection(self):
+        processor_set = getUtility(IProcessorSet)
+        # Make it easy to filter out sample data
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store.execute("UPDATE Processor SET name = 'sample_data_' || name")
+        self.factory.makeProcessorFamily(name='q1')
+        self.factory.makeProcessorFamily(name='i686')
+        self.factory.makeProcessorFamily(name='g4')
+
+        logout()
+
+        collection = self.webservice.get(
+            '/+processors?ws.size=10', api_version='devel').jsonBody()
+        self.assertEquals(
+            ['g4', 'i686', 'q1'],
+            sorted(
+            processor['name'] for processor in collection['entries'] if not processor['name'].startswith('sample_data_') ))

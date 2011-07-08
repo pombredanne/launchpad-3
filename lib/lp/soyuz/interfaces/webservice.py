@@ -96,6 +96,7 @@ from lp.soyuz.interfaces.processor import (
     IProcessor,
     IProcessorFamily,
     IProcessorFamilySet,
+    IProcessorSet,
     )
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
@@ -113,17 +114,11 @@ from canonical.launchpad.components.apihelpers import (
 # XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
 # import bugs.  Break this up into a per-package thing.
 from canonical.launchpad.interfaces import _schema_circular_imports
-_schema_circular_imports
-
-from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
-IProcessorFamilySet.queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['collection_entry_schema'] = IProcessorFamily
 
 # IProcessor
 patch_reference_property(
     IProcessor, 'family', IProcessorFamily)
 
-patch_entry_return_type(IProcessorFamilySet, 'getByName', IProcessorFamily)
 patch_collection_property(
     IArchive, 'enabled_restricted_families', IProcessorFamily)
 patch_plain_parameter_type(

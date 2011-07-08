@@ -57,7 +57,7 @@ class IProcessor(Interface):
     # the WADL generation work it must be back-dated to the earliest version.
     # Note that individual attributes and methods can and must truthfully set
     # 'devel' as their version.
-    export_as_webservice_entry(publish_web_link=True, as_of='beta')
+    export_as_webservice_entry(publish_web_link=False, as_of='beta')
     id = Attribute("The Processor ID")
     family = exported(
         Reference(
@@ -92,7 +92,7 @@ class IProcessorFamily(Interface):
     # 'devel' as their version.
     export_as_webservice_entry(
         plural_name='processor_families',
-        publish_web_link=True,
+        publish_web_link=False,
         as_of='beta')
 
     id = Attribute("The ProcessorFamily ID")
@@ -133,29 +133,34 @@ class IProcessorFamily(Interface):
 
 class IProcessorSet(Interface):
     """Operations related to Processor instances."""
+    export_as_webservice_collection(IProcessor)
 
+    @operation_parameters(
+        name=TextLine(required=True))
+    @operation_returns_entry(IProcessor)
+    @export_read_operation()
+    @operation_for_version('devel')
     def getByName(name):
         """Return the IProcessor instance with the matching name.
 
         :param name: The name to look for.
-
-        :raise ProcessorNotFound: if there is no processor with tha name.
-
-        :return: A `IProcessorFamily` instance if found
+        :raise ProcessorNotFound: if there is no processor with that name.
+        :return: A `IProcessor` instance if found
         """
 
+    @collection_default_content()
     def getAll():
-        """Return all the IProcessor known to Launchpad."""
+        """Return all the `IProcessor` known to Launchpad."""
 
 
 class IProcessorFamilySet(Interface):
     """Operations related to ProcessorFamily instances."""
 
-    export_as_webservice_collection(Interface)
+    export_as_webservice_collection(IProcessorFamily)
 
     @operation_parameters(
         name=TextLine(required=True))
-    @operation_returns_entry(Interface)
+    @operation_returns_entry(IProcessorFamily)
     @export_read_operation()
     @operation_for_version('devel')
     def getByName(name):
