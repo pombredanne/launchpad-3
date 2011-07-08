@@ -27,9 +27,13 @@ from lazr.restful.declarations import (
     exported,
     operation_parameters,
     operation_returns_entry,
+    operation_returns_collection_of,
     operation_for_version,
     )
-from lazr.restful.fields import ReferenceChoice
+from lazr.restful.fields import (
+    Reference,
+    ReferenceChoice,
+    )
 from zope.interface import (
     Attribute,
     Interface,
@@ -409,5 +413,13 @@ class IBuilderSet(Interface):
             as a timedelta or None for empty queues.
         """
 
+    @operation_parameters(
+        processor=Reference(
+            title=_("Processor"), required=True, schema=IProcessor),
+        virtualized=Bool(
+            title=_("Virtualized"), required=False, default=True))
+    @operation_returns_collection_of(IBuilder)
+    @export_read_operation()
+    @operation_for_version('devel')
     def getBuildersForQueue(processor, virtualized):
         """Return all builders for given processor/virtualization setting."""

@@ -20,14 +20,34 @@ class TestBuildersCollection(TestCaseWithFactory):
     def setUp(self):
         super(TestBuildersCollection, self).setUp()
         self.webservice = LaunchpadWebServiceCaller()
-        # webservice doesn't like dangling interactions.
-        logout()
 
     def test_getBuildQueueSizes(self):
+        logout()
         results = self.webservice.named_get(
             '/builders', 'getBuildQueueSizes', api_version='devel')
         self.assertEquals(
             ['nonvirt', 'virt'], sorted(results.jsonBody().keys()))
+
+    def test_getBuildersForQueue(self):
+        g1 = self.factory.makeProcessorFamily('g1').processors[0]
+        quantum = self.factory.makeProcessorFamily('quantum').processors[0]
+        self.factory.makeBuilder(
+            processor=quantum, name='quantum_builder1')
+        self.factory.makeBuilder(
+            processor=quantum, name='quantum_builder2')
+        self.factory.makeBuilder(
+            processor=quantum, name='quantum_builder3', virtualized=False)
+        self.factory.makeBuilder(
+            processor=g1, name='g1_builder', virtualized=False)
+
+        logout()
+        results = self.webservice.named_get(
+            '/builders', 'getBuildersForQueue',
+            processor=api_url(quantum), virtualized=True,
+            api_version='devel').jsonBody()
+        self.assertEquals(
+            ['quantum_builder1', 'quantum_builder2'],
+            sorted(builder['name'] for builder in results['entries']))
 
 
 class TestBuilderEntry(TestCaseWithFactory):
