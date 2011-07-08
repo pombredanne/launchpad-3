@@ -1871,7 +1871,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             IDistroSeriesDifferenceSource).getForDistroSeries(
                 self,
                 difference_type=difference_type,
-                source_package_name_filter=source_package_name_filter,
+                name_filter=source_package_name_filter,
                 status=status,
                 child_version_higher=child_version_higher)
 
