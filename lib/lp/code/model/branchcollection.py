@@ -73,7 +73,10 @@ from lp.registry.model.person import (
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
-from lp.services.database.bulk import load_related
+from lp.services.database.bulk import (
+    load_referencing,
+    load_related,
+    )
 from lp.services.propertycache import get_property_cache
 
 
@@ -148,7 +151,7 @@ class GenericBranchCollection:
     def _filterBy(self, expressions, table=None, join=None,
                   exclude_from_search=None, symmetric=True):
         """Return a subset of this collection, filtered by 'expressions'.
-        
+
         :param symmetric: If True this filter will apply to both sides of merge
             proposal lookups and any other lookups that join Branch back onto
             Branch.
@@ -201,7 +204,7 @@ class GenericBranchCollection:
 
     def _getCandidateBranchesWith(self):
         """Return WITH clauses defining candidate branches.
-        
+
         These are defined in terms of scope_branches which should be separately
         calculated.
         """
@@ -259,6 +262,7 @@ class GenericBranchCollection:
                 CodeImport, CodeImport.branchID.is_in(branch_ids)):
                 cache = caches[code_import.branchID]
                 cache.code_import = code_import
+            load_referencing(BugBranch, rows, ['branchID'])
         return DecoratedResultSet(resultset, pre_iter_hook=do_eager_load)
 
     def getMergeProposals(self, statuses=None, for_branches=None,
@@ -660,7 +664,7 @@ class AnonymousBranchCollection(GenericBranchCollection):
 
     def _getCandidateBranchesWith(self):
         """Return WITH clauses defining candidate branches.
-        
+
         These are defined in terms of scope_branches which should be separately
         calculated.
         """
@@ -688,7 +692,7 @@ class VisibleBranchCollection(GenericBranchCollection):
     def _filterBy(self, expressions, table=None, join=None,
                   exclude_from_search=None, symmetric=True):
         """Return a subset of this collection, filtered by 'expressions'.
-        
+
         :param symmetric: If True this filter will apply to both sides of merge
             proposal lookups and any other lookups that join Branch back onto
             Branch.
@@ -759,7 +763,7 @@ class VisibleBranchCollection(GenericBranchCollection):
 
     def _getBranchVisibilityExpression(self, branch_class=Branch):
         """Return the where clauses for visibility.
-        
+
         :param branch_class: The Branch class to use - permits using
             ClassAliases.
         """
@@ -775,7 +779,7 @@ class VisibleBranchCollection(GenericBranchCollection):
 
     def _getCandidateBranchesWith(self):
         """Return WITH clauses defining candidate branches.
-        
+
         These are defined in terms of scope_branches which should be separately
         calculated.
         """
