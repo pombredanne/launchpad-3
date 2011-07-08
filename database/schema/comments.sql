@@ -267,7 +267,6 @@ COMMENT ON COLUMN BugTask.sourcepackagename IS 'The name of the sourcepackage in
 COMMENT ON COLUMN BugTask.distribution IS 'The distro of the named sourcepackage.';
 COMMENT ON COLUMN BugTask.status IS 'The general health of the bug, e.g. Accepted, Rejected, etc.';
 COMMENT ON COLUMN BugTask.importance IS 'The importance of fixing the bug.';
-COMMENT ON COLUMN BugTask.priority IS 'Obsolete.';
 COMMENT ON COLUMN BugTask.binarypackagename IS 'The name of the binary package built from the source package. This column may only contain a value if this bug task is linked to a sourcepackage (not a product)';
 COMMENT ON COLUMN BugTask.assignee IS 'The person who has been assigned to fix this bug in this product or (sourcepackagename, distro)';
 COMMENT ON COLUMN BugTask.date_assigned IS 'The date on which the bug in this (sourcepackagename, distro) or product was assigned to someone to fix';
