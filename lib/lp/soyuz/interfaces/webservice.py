@@ -35,6 +35,7 @@ __all__ = [
     'IProcessor',
     'IProcessorFamily',
     'IProcessorFamilySet',
+    'IProcessorSet',
     'ISourcePackagePublishingHistory',
     'IncompatibleArguments',
     'InsufficientUploadRights',
@@ -106,7 +107,6 @@ from lp.soyuz.interfaces.queue import IPackageUpload
 
 from canonical.launchpad.components.apihelpers import (
     patch_collection_property,
-    patch_entry_return_type,
     patch_plain_parameter_type,
     patch_reference_property,
     )
@@ -114,6 +114,7 @@ from canonical.launchpad.components.apihelpers import (
 # XXX: JonathanLange 2010-11-09 bug=673083: Legacy work-around for circular
 # import bugs.  Break this up into a per-package thing.
 from canonical.launchpad.interfaces import _schema_circular_imports
+_schema_circular_imports
 
 # IProcessor
 patch_reference_property(

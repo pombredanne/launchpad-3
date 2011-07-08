@@ -24,7 +24,6 @@ from lp.soyuz.interfaces.processor import (
     ProcessorNotFound,
     )
 from lp.testing import (
-    api_url,
     ExpectedException,
     logout,
     TestCaseWithFactory,
@@ -107,7 +106,6 @@ class ProcessorSetWebServiceTests(TestCaseWithFactory):
         self.assertEquals('transmeta', processor['name'])
 
     def test_default_collection(self):
-        processor_set = getUtility(IProcessorSet)
         # Make it easy to filter out sample data
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         store.execute("UPDATE Processor SET name = 'sample_data_' || name")
