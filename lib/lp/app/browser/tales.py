@@ -925,7 +925,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
     def _hasBugBranch(self):
         """Return whether the bug has a branch linked to it."""
-        return len(self._context.bug.linked_branches) > 0
+        return self._context.bug.linked_branches.count() > 0
 
     def _hasSpecification(self):
         """Return whether the bug is linked to a specification."""
