@@ -36,7 +36,6 @@ from lp.testing.views import create_initialized_view
 
 
 class TestBuildViews(TestCaseWithFactory):
-    
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
@@ -65,7 +64,8 @@ class TestBuildViews(TestCaseWithFactory):
     def test_build_menu_ppa(self):
         # The 'PPA' action-menu item will be enabled if we target the build
         # to a PPA.
-        build = self.factory.makeBinaryPackageBuild()
+        ppa = self.factory.makeArchive(purpose='PPA')
+        build = self.factory.makeBinaryPackageBuild(archive=ppa)
         build_menu = BuildContextMenu(build)
         self.assertEquals(build_menu.links,
             ['ppa', 'records', 'retry', 'rescore'])
