@@ -52,7 +52,6 @@ class TranslationPackagingJob(PackagingJobDerived, BaseRunnableJob):
 
     @staticmethod
     def _register_subclass(cls):
-        # Why not a classmethod?  See RegisteredSubclass.__init__.
         PackagingJobDerived._register_subclass(cls)
         job_type = getattr(cls, 'class_job_type', None)
         if job_type is not None:

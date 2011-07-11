@@ -200,7 +200,7 @@
     <tal:revision repeat="rev_no revisions"
                   define="codebrowse view/codebrowse_url"
                   condition="revisions | nothing">
-        <metal:landing-target use-macro="branch/@@+macros/revision-text"/>
+      <metal:landing-target use-macro="branch/@@+macros/revision-text"/>
     </tal:revision>
     <tal:ajax-revision-diffs
         condition="request/features/code.ajax_revision_diffs.enabled">

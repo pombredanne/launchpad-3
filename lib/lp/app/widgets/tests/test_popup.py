@@ -12,7 +12,10 @@ from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.widgets.popup import VocabularyPickerWidget
+from lp.app.widgets.popup import (
+    PersonPickerWidget,
+    VocabularyPickerWidget,
+    )
 from lp.testing import TestCaseWithFactory
 
 
@@ -112,3 +115,20 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
             'Y.lp.app.picker.connect_select_menu\( '
             'select_menu, text_input\);',
             markup)
+
+    def test_widget_extra_buttons(self):
+        # The picker widgets define defaults for the display of extra buttons.
+        field = ITest['test_valid.item']
+        bound_field = field.bind(self.context)
+
+        # A vocabulary widget does not show the extra buttons by default.
+        picker_widget = VocabularyPickerWidget(
+            bound_field, self.vocabulary, self.request)
+        self.assertEqual('false', picker_widget.show_assign_me_button)
+        self.assertEqual('false', picker_widget.show_remove_button)
+
+        # A person picker widget does show them by default.
+        person_picker_widget = PersonPickerWidget(
+            bound_field, self.vocabulary, self.request)
+        self.assertEqual('true', person_picker_widget.show_assign_me_button)
+        self.assertEqual('true', person_picker_widget.show_remove_button)

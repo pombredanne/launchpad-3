@@ -19,6 +19,7 @@ from lp.testing.windmill import (
 
 
 class TestBugTagsEntry(WindmillTestCase):
+    """XXX: Move to YUI test."""
 
     layer = BugsWindmillLayer
     suite_name = 'Bug tags entry test'

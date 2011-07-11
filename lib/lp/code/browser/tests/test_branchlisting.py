@@ -8,7 +8,6 @@ __metaclass__ = type
 from datetime import timedelta
 from pprint import pformat
 import re
-import unittest
 
 from lazr.uri import URI
 from storm.expr import (
@@ -341,6 +340,17 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
         expected = official[:3] + branches
         self.assertGroupBranchesEqual(expected, series)
 
+    def test_distributionsourcepackage_branch(self):
+        source_package = self.factory.makeSourcePackage()
+        dsp = source_package.distribution.getSourcePackage(
+            source_package.sourcepackagename)
+        branch = self.factory.makeBranch(sourcepackage=source_package)
+        view = create_initialized_view(
+            dsp, name='+code-index', rootsite='code')
+        html = view()
+        self.assertIn(branch.name, html)
+        self.assertIn('a moment ago</span>\n', html)
+
 
 class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):
     """Make sure that the bzr_identity of the branches are correct."""
@@ -422,6 +432,12 @@ class TestPersonBranchesPage(BrowserTestCase):
         # portlet isn't shown.
         self.assertIs(None, branches)
 
+    def test_branch_listing_last_modified(self):
+        branch = self.factory.makeProductBranch()
+        view = create_initialized_view(
+            branch.product, name="+branches", rootsite='code')
+        self.assertIn('a moment ago', view())
+
 
 class TestProjectGroupBranches(TestCaseWithFactory):
     """Test for the project group branches page."""
@@ -429,7 +445,7 @@ class TestProjectGroupBranches(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestProjectGroupBranches, self).setUp()
         self.project = self.factory.makeProject()
 
     def test_project_with_no_branch_visibility_rule(self):
@@ -509,7 +525,3 @@ class TestProjectGroupBranches(TestCaseWithFactory):
             self.project, name='+branches', rootsite='code')
         table = find_tag_by_id(view(), "branchtable")
         self.assertIsNot(None, table)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
