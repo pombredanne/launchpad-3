@@ -25,9 +25,12 @@ else
 JS_BUILD := min
 endif
 
+JS_SOURCE_PATHS = -path './lib/lp/*/javascript/*' ! -path '*/tests/*' \
+    ! -path '*/testing/*' ! -path './lib/lp/services/*' \
+    ! -path './lib/lp/contrib/*'
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
 JS_OTHER := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
-JS_LP := $(shell find lib/lp/*/javascript ! -path '*/tests/*' -name '*.js' ! -name '.*.js' )
+JS_LP := $(shell find $(JS_SOURCE_PATHS) -name '*.js' ! -name '.*.js' )
 JS_ALL := $(JS_YUI) $(JS_OTHER) $(JS_LP)
 JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 
