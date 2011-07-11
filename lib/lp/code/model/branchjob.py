@@ -796,7 +796,8 @@ class RevisionsAddedJob(BranchJobDerived):
 class BranchMailJobSource(BaseRunnableJobSource):
     """Source of jobs that send mail about branches."""
 
-    memory_limit = 2 * (1024 ** 3)
+    # This is the same limit used in the wrapper script.
+    memory_limit = 1843200
 
     @staticmethod
     def contextManager():
