@@ -60,7 +60,7 @@
                     }
                 });
             }
-            picker.plug(Y.lazr.TextFieldPickerPlugin,
+            picker.plug(Y.lazr.picker.TextFieldPickerPlugin,
                         {input_element: '[id=\x22${view/input_id}\x22]'});
             return picker;
         }
