@@ -108,7 +108,6 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.lazrjs import (
     EnumChoiceWidget,
-    vocabulary_to_choice_edit_items,
     )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -118,7 +117,6 @@ from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch,
     )
@@ -126,7 +124,6 @@ from lp.code.browser.branchref import BranchRef
 from lp.code.browser.decorations import DecoratedBranch
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.enums import (
-    BranchLifecycleStatus,
     BranchType,
     CodeImportResultStatus,
     CodeImportReviewStatus,
@@ -1039,7 +1036,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             owner_field = self.schema['owner']
             any_owner_choice = Choice(
                 __name__='owner', title=owner_field.title,
-                description = _("As an administrator you are able to reassign"
+                description=_("As an administrator you are able to reassign"
                                 " this branch to any person or team."),
                 required=True, vocabulary='ValidPersonOrTeam')
             any_owner_field = form.Fields(
@@ -1061,7 +1058,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 owner_field = self.schema['owner']
                 owner_choice = Choice(
                     __name__='owner', title=owner_field.title,
-                    description = owner_field.description,
+                    description=owner_field.description,
                     required=True, vocabulary=SimpleVocabulary(terms))
                 new_owner_field = form.Fields(
                     owner_choice, render_context=self.render_context)
@@ -1480,7 +1477,8 @@ class BranchSparkView(LaunchpadView):
     def _commitCounts(self):
         """Return a dict of commit counts for rendering."""
         epoch = (
-            datetime.now(tz=pytz.UTC) - timedelta(days=(self.COMMIT_DAYS-1)))
+            datetime.now(
+                tz=pytz.UTC) - timedelta(days=(self.COMMIT_DAYS - 1)))
         # Make a datetime for that date, but midnight.
         epoch = epoch.replace(hour=0, minute=0, second=0, microsecond=0)
         commits = dict(self.context.commitsForDays(epoch))
