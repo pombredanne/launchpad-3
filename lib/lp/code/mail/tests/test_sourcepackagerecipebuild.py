@@ -26,7 +26,7 @@ expected_body = u"""\
  * Recipe: person/recipe
  * Archive: archiveowner/ppa
  * Distroseries: distroseries
- * Duration: five minutes
+ * Duration: 5 minutes
  * Build Log: %s
  * Upload Log: 
  * Builder: http://launchpad.dev/builders/bob

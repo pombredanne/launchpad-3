@@ -18,7 +18,6 @@ LPCONFIG?=development
 
 ICING=lib/canonical/launchpad/icing
 LP_BUILT_JS_ROOT=${ICING}/build
-LAZR_BUILT_JS_ROOT=lazr-js/build
 
 ifeq ($(LPCONFIG), development)
 JS_BUILD := raw
@@ -26,11 +25,12 @@ else
 JS_BUILD := min
 endif
 
+JS_SOURCE_PATHS = -path './lib/lp/*/javascript/*' ! -path '*/tests/*' \
+    ! -path '*/testing/*' ! -path './lib/lp/services/*'
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
-JS_LAZR := $(LAZR_BUILT_JS_ROOT)/lazr.js
 JS_OTHER := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
-JS_LP := $(shell find lib/lp/*/javascript ! -path '*/tests/*' -name '*.js' ! -name '.*.js' )
-JS_ALL := $(JS_YUI) $(JS_LAZR) $(JS_OTHER) $(JS_LP)
+JS_LP := $(shell find $(JS_SOURCE_PATHS) -name '*.js' ! -name '.*.js' )
+JS_ALL := $(JS_YUI) $(JS_OTHER) $(JS_LP)
 JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 
 MINS_TO_SHUTDOWN=15
@@ -40,7 +40,7 @@ CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 BZR_VERSION_INFO = bzr-version-info.py
 
 APIDOC_DIR = lib/canonical/launchpad/apidoc
-WADL_TEMPLATE = $(APIDOC_DIR).tmp/wadl-$(LPCONFIG)-%(version)s.xml
+APIDOC_TMPDIR = $(APIDOC_DIR).tmp/
 API_INDEX = $(APIDOC_DIR)/index.html
 
 # Do not add bin/buildout to this list.
@@ -78,8 +78,8 @@ $(API_INDEX): $(BZR_VERSION_INFO) $(PY)
 	rm -rf $(APIDOC_DIR) $(APIDOC_DIR).tmp
 	mkdir -p $(APIDOC_DIR).tmp
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py \
-	    --force "$(WADL_TEMPLATE)"
-	mv $(APIDOC_DIR).tmp $(APIDOC_DIR)
+	    --force "$(APIDOC_TMPDIR)"
+	mv $(APIDOC_TMPDIR) $(APIDOC_DIR)
 
 apidoc: compile $(API_INDEX)
 
@@ -151,6 +151,18 @@ inplace: build logs clean_logs
 
 build: compile apidoc jsbuild css_combine sprite_image
 
+# LP_SOURCEDEPS_PATH should point to the sourcecode directory, but we
+# want the parent directory where the download-cache and eggs directory
+# are. We re-use the variable that is using for the rocketfuel-get script.
+download-cache:
+ifdef LP_SOURCEDEPS_PATH
+	utilities/link-external-sourcecode $(LP_SOURCEDEPS_PATH)/..
+else
+	@echo "Missing ./download-cache."
+	@echo "Developers: please run utilities/link-external-sourcecode."
+	@exit 1
+endif
+
 css_combine: sprite_css bin/combine-css
 	${SHHH} bin/combine-css
 
@@ -166,43 +178,27 @@ ${ICING}/icon-sprites.positioning ${ICING}/icon-sprites: bin/sprite-util \
 		${ICING}/sprite.css.in
 	${SHHH} bin/sprite-util create-image
 
-# We absolutely do not want to include the lazr.testing module and
-# its jsTestDriver test harness modifications in the lazr.js and
-# launchpad.js roll-up files.  They fiddle with built-in functions!
-# See Bug 482340.
-jsbuild_lazr: bin/jsbuild
+jsbuild_widget_css: bin/jsbuild
 	${SHHH} bin/jsbuild \
-	    --builddir $(LAZR_BUILT_JS_ROOT) \
-	    --exclude testing/ --filetype $(JS_BUILD) \
-	    --copy-yui-to $(LAZR_BUILT_JS_ROOT)/yui
+ 	    --srcdir lib/lp/app/javascript \
+	    --builddir $(LP_BUILT_JS_ROOT)
 
-$(JS_YUI) $(JS_LAZR): jsbuild_lazr
+$(JS_LP): jsbuild_widget_css
 
 $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
-	cat $^ | $(PY) -m jsmin > $@
+	cat $^ | $(PY) -m lp.scripts.utilities.js.jsmin > $@
 else
 	cat $^ > $@
 endif
 
-jsbuild: $(JS_OUT)
+jsbuild: $(PY) $(JS_OUT)
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
 	# deployment we create this ourselves.
 	mkdir eggs
-
-# LP_SOURCEDEPS_PATH should point to the sourcecode directory, but we
-# want the parent directory where the download-cache and eggs directory
-# are. We re-use the variable that is using for the rocketfuel-get script.
-download-cache:
-ifdef LP_SOURCEDEPS_PATH
-	utilities/link-external-sourcecode $(LP_SOURCEDEPS_PATH)/..
-else
-	@echo "Missing ./download-cache."
-	@echo "Developers: please run utilities/link-external-sourcecode."
-	@exit 1
-endif
+	mkdir yui
 
 buildonce_eggs: $(PY)
 	find eggs -name '*.pyc' -exec rm {} \;
@@ -372,6 +368,7 @@ clean_buildout:
 	$(RM) .installed.cfg
 	$(RM) -r build
 	$(RM) _pythonpath.py
+	$(RM) -r yui/*
 
 clean_logs:
 	$(RM) logs/thread*.request
@@ -483,6 +480,6 @@ pydoctor:
 	test_build test_inplace pagetests check schema default \
 	launchpad.pot pull_branches scan_branches sync_branches	\
 	reload-apache hosted_branches check_mailman check_config \
-	jsbuild jsbuild_lazr clean_js clean_buildout buildonce_eggs \
+	jsbuild jsbuild_widget_css clean_js clean_buildout buildonce_eggs \
 	build_eggs sprite_css sprite_image css_combine compile \
-	check_schema pydoctor clean_logs 
+	check_schema pydoctor clean_logs

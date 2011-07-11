@@ -128,6 +128,21 @@ class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
     usedfor = IDistributionSourcePackage
     enable_only = ['overview', 'bugs', 'answers', 'branches']
 
+    def overview(self):
+        text = 'Overview'
+        summary = 'General information about {0}'.format(self.context.displayname)
+        return Link('', text, summary)
+
+    def bugs(self):
+        text = 'Bugs'
+        summary = 'Bugs reported about {0}'.format(self.context.displayname)
+        return Link('', text, summary)
+
+    def branches(self):
+        text = 'Code'
+        summary = 'Branches for {0}'.format(self.context.displayname)
+        return Link('', text, summary)
+
 
 class DistributionSourcePackageLinksMixin:
 

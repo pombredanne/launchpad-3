@@ -15,7 +15,6 @@ are not a member of, their message gets held for moderator approval.
     ...     IPersonSet,
     ...     PersonalStanding,
     ...     )
-    >>> from canonical.launchpad.ftests import sync
 
     >>> person_set = getUtility(IPersonSet)
     >>> lifeless = person_set.getByName('lifeless')
@@ -83,7 +82,6 @@ After one approval, Robert's standing does not change.
     >>> message = lifeless_post('test-one')
     >>> message.approve(foobar)
     >>> script.main()
-    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
@@ -93,14 +91,12 @@ Robert's personal standing does not change.
     >>> message = lifeless_post('test-one')
     >>> message.approve(foobar)
     >>> script.main()
-    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
     >>> message = lifeless_post('test-one')
     >>> message.approve(foobar)
     >>> script.main()
-    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
@@ -114,7 +110,6 @@ his personal standing can be updated.
     >>> message = lifeless_post('test-two')
     >>> message.approve(foobar)
     >>> script.main()
-    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
@@ -123,14 +118,12 @@ Rejected and discarded messages don't count.
     >>> message = lifeless_post('test-three')
     >>> message.reject(foobar)
     >>> script.main()
-    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
     >>> message = lifeless_post('test-three')
     >>> message.discard(foobar)
     >>> script.main()
-    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
@@ -143,7 +136,6 @@ Neither do approved messages from someone else.
     >>> message.approve(foobar)
 
     >>> script.main()
-    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
@@ -157,7 +149,6 @@ approved.  As a result, his personal standing gets updated.
     >>> message = lifeless_post('test-three')
     >>> message.approve(foobar)
     >>> script.main()
-    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.GOOD...>
 
@@ -177,14 +168,12 @@ personal standing gets updated to Good also.
     >>> message = post_message('mark@example.com', 'test-two')
     >>> message.approve(foobar)
     >>> script.main()
-    >>> sync(mark)
     >>> mark.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
 
     >>> message = post_message('mark@example.com', 'test-three')
     >>> message.approve(foobar)
     >>> script.main()
-    >>> sync(mark)
     >>> mark.personal_standing
     <DBItem PersonalStanding.GOOD...>
 
@@ -200,19 +189,16 @@ standing.
 
     >>> lifeless.personal_standing = PersonalStanding.POOR
     >>> script.main()
-    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.POOR...>
 
     >>> lifeless.personal_standing = PersonalStanding.GOOD
     >>> script.main()
-    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.GOOD...>
 
     >>> lifeless.personal_standing = PersonalStanding.EXCELLENT
     >>> script.main()
-    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.EXCELLENT...>
 
@@ -221,7 +207,6 @@ messages will count toward his good standing again.
 
     >>> lifeless.personal_standing = PersonalStanding.UNKNOWN
     >>> script.main()
-    >>> sync(lifeless)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.GOOD...>
 
@@ -240,9 +225,6 @@ standing untouched.
     >>> lifeless.personal_standing = PersonalStanding.UNKNOWN
     >>> mark.personal_standing = PersonalStanding.UNKNOWN
     >>> LaunchpadZopelessLayer.txn.commit()
-    >>> sync(lifeless)
-    >>> sync(carlos)
-    >>> sync(mark)
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.UNKNOWN...>
     >>> carlos.personal_standing
@@ -265,9 +247,6 @@ standing untouched.
     <BLANKLINE>
 
     >>> flush_database_caches()
-    >>> sync(lifeless)
-    >>> sync(carlos)
-    >>> sync(mark)
 
     >>> lifeless.personal_standing
     <DBItem PersonalStanding.GOOD...>
@@ -299,6 +278,5 @@ update-standing script bumps his standing to Good too.
     <BLANKLINE>
 
     >>> flush_database_caches()
-    >>> sync(carlos)
     >>> carlos.personal_standing
     <DBItem PersonalStanding.GOOD...>

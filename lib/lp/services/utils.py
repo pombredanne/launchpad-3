@@ -22,9 +22,11 @@ __all__ = [
     'synchronize',
     'text_delta',
     'traceback_info',
+    'utc_now',
     'value_string',
     ]
 
+from datetime import datetime
 from itertools import tee
 import os
 from StringIO import StringIO
@@ -38,6 +40,7 @@ from fixtures import (
     MonkeyPatch,
     )
 from lazr.enum import BaseItem
+import pytz
 from twisted.python.util import mergeFunctionMetadata
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -285,3 +288,8 @@ def traceback_info(info):
     variables, and helps to avoid typos.
     """
     sys._getframe(1).f_locals["__traceback_info__"] = info
+
+
+def utc_now():
+    """Return a timezone-aware timestamp for the current time."""
+    return datetime.now(tz=pytz.UTC)

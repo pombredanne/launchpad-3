@@ -337,21 +337,17 @@ class LibrarianLayerTest(testtools.TestCase, TestWithFixtures):
             self.assertFalse(os.path.exists(active_root))
 
 
-class LibrarianNoResetTestCase(testtools.TestCase):
+class LibrarianResetTestCase(testtools.TestCase):
     """Our page tests need to run multple tests without destroying
     the librarian database in between.
     """
-    layer = LaunchpadLayer
+    layer = LibrarianLayer
 
     sample_data = 'This is a test'
 
-    def testNoReset1(self):
-        # Inform the librarian not to reset the library until we say
-        # otherwise
-        LibrarianLayer._reset_between_tests = False
-
-        # Add a file for testNoReset2. We use remoteAddFile because
-        # it does not need the CA loaded to work.
+    def test_librarian_is_reset(self):
+        # Add a file. We use remoteAddFile because it does not need the CA
+        # loaded to work.
         client = LibrarianClient()
         LibrarianTestCase.url = client.remoteAddFile(
                 self.sample_data, len(self.sample_data),
@@ -360,20 +356,10 @@ class LibrarianNoResetTestCase(testtools.TestCase):
         self.failUnlessEqual(
                 urlopen(LibrarianTestCase.url).read(), self.sample_data
                 )
-
-    def testNoReset2(self):
-        # The file added by testNoReset1 should be there
-        self.failUnlessEqual(
-                urlopen(LibrarianTestCase.url).read(), self.sample_data
-                )
-        # Restore this - keeping state is our responsibility
-        LibrarianLayer._reset_between_tests = True
-        # The database was committed to, but not by this process, so we need
-        # to ensure that it is fully torn down and recreated.
-        DatabaseLayer.force_dirty_database()
-
-    def testNoReset3(self):
-        # The file added by testNoReset1 should be gone
+        # Perform the librarian specific between-test code:
+        LibrarianLayer.testTearDown()
+        LibrarianLayer.testSetUp()
+        # Which should have nuked the old file.
         # XXX: StuartBishop 2006-06-30 Bug=51370:
         # We should get a DownloadFailed exception here.
         data = urlopen(LibrarianTestCase.url).read()
@@ -423,36 +409,18 @@ class DatabaseTestCase(BaseTestCase):
         num = cur.fetchone()[0]
         return num
 
-    # XXX: Parallel-fail: because layers are not cleanly integrated with
-    # unittest, what should be one test is expressed as three distinct
-    # tests here. We need to either write enough glue to push/pop the
-    # global state of zope.testing.runner or we need to stop using layers,
-    # before these tests will pass in a parallel run. Robert Collins
-    # 2010-11-01
-    def testNoReset1(self):
-        # Ensure that we can switch off database resets between tests
-        # if necessary, such as used by the page tests
-        DatabaseLayer._reset_between_tests = False
+    def test_db_is_reset(self):
         con = DatabaseLayer.connect()
         cur = con.cursor()
         cur.execute("DELETE FROM Wikiname")
         self.failUnlessEqual(self.getWikinameCount(con), 0)
         con.commit()
-
-    def testNoReset2(self):
-        # Wikiname table was emptied by testNoReset1 and should still
-        # contain nothing.
+        # Run the per-test code for the Database layer.
+        DatabaseLayer.testTearDown()
+        DatabaseLayer.testSetUp()
+        # Wikiname table should have been restored.
         con = DatabaseLayer.connect()
-        self.failUnlessEqual(self.getWikinameCount(con), 0)
-        # Note we don't need to commit, but we do need to force
-        # a reset!
-        DatabaseLayer._reset_between_tests = True
-        DatabaseLayer.force_dirty_database()
-
-    def testNoReset3(self):
-        # Wikiname table should contain data again
-        con = DatabaseLayer.connect()
-        self.failIfEqual(self.getWikinameCount(con), 0)
+        self.assertNotEqual(0, self.getWikinameCount(con))
 
 
 class LaunchpadTestCase(BaseTestCase):
