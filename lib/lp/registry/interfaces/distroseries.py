@@ -363,7 +363,8 @@ class IDistroSeriesPublic(
     split_long_descriptions = exported(
         Bool(
             title=_(
-                "Split long descriptions out of Packages into Translations-en"),
+                "Split long descriptions out of Packages into "
+                "Translations-en"),
             required=True,
             description=_("""
                 Write long descriptions to a Translations-en file common
