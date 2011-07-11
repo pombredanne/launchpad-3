@@ -37,6 +37,7 @@ from lp.answers.model.question import (
     QuestionTargetMixin,
     QuestionTargetSearch,
     )
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import get_bug_tags_open_count
@@ -196,7 +197,7 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
     """
 
     implements(
-        ISourcePackage, IHasBugHeat, IHasBuildRecords)
+        IBugSummaryDimension, ISourcePackage, IHasBugHeat, IHasBuildRecords)
 
     classProvides(ISourcePackageFactory)
 
@@ -528,11 +529,13 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
             "future. For now, you probably meant to file the bug on the "
             "distro-wide (i.e. not series-specific) source package.")
 
-    def _getBugTaskContextClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
-        return (
-            'BugTask.distroseries = %s AND BugTask.sourcepackagename = %s' %
-                sqlvalues(self.distroseries, self.sourcepackagename))
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return And(
+                BugSummary.distroseries == self.distroseries,
+                BugSummary.sourcepackagename == self.sourcepackagename)
 
     def setPackaging(self, productseries, owner):
         """See `ISourcePackage`."""
