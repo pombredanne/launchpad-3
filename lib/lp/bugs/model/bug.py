@@ -266,8 +266,9 @@ def get_bug_tags_open_count(context_condition, user, tag_limit=0,
     The only change is that this function takes a SQL expression for limiting
     the found tags.
     :param context_condition: A Storm SQL expression, limiting the
-        used tags to a specific context. Only the BugTask table may be
-        used to choose the context.
+        used tags to a specific context. Only the BugSummary table may be
+        used to choose the context. If False then no query will be performed
+        (and {} returned).
     """
     # Circular fail.
     from lp.bugs.model.bugsummary import BugSummary

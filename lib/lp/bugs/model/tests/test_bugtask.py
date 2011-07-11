@@ -1,10 +1,9 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from datetime import timedelta
-from doctest import DocTestSuite
 import unittest
 
 from lazr.lifecycle.snapshot import Snapshot
@@ -39,7 +38,6 @@ from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.model.bugtask import build_tag_search_clause
 from lp.bugs.tests.bug import (
     create_old_bug,
-    sync_bugtasks,
     )
 from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
@@ -1255,7 +1253,6 @@ class BugTaskSetFindExpirableBugTasksTest(unittest.TestCase):
             self.bugtaskset.createTask(
                 bug=bugtasks[-1].bug, owner=self.user,
                 productseries=self.productseries))
-        sync_bugtasks(bugtasks)
 
     def tearDown(self):
         logout()

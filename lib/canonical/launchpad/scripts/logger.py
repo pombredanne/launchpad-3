@@ -34,7 +34,6 @@ __all__ = [
 from contextlib import contextmanager
 from cStringIO import StringIO
 from datetime import (
-    datetime,
     timedelta,
     )
 import hashlib
@@ -47,7 +46,6 @@ import sys
 import time
 from traceback import format_exception_only
 
-from pytz import utc
 from zope.component import getUtility
 from zope.exceptions.log import Formatter
 
@@ -61,7 +59,10 @@ from canonical.librarian.interfaces import (
     UploadFailed,
     )
 from lp.services.log import loglevels
-from lp.services.utils import compress_hash
+from lp.services.utils import (
+    compress_hash,
+    utc_now,
+    )
 
 # Reexport our custom loglevels for old callsites. These callsites
 # should be importing the symbols from lp.services.log.loglevels
@@ -148,7 +149,7 @@ class LibrarianFormatter(LaunchpadFormatter):
         if not exception_string:
             exception_string = ei[0].__name__
 
-        expiry = datetime.now().replace(tzinfo=utc) + timedelta(days=90)
+        expiry = utc_now() + timedelta(days=90)
         try:
             filename = compress_hash(hashlib.sha1(traceback)) + '.txt'
             url = librarian.remoteAddFile(

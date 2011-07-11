@@ -446,7 +446,7 @@ the other team admins.
     To: colin.watson@ubuntulinux.com
     Subject: Your membership in ubuntu-team is about to expire
     <BLANKLINE>
-    On ..., nine days from now, your membership
+    On ..., 9 days from now, your membership
     in the Ubuntu Team (ubuntu-team) Launchpad team
     is due to expire.
     <http://launchpad.dev/~ubuntu-team>
@@ -483,7 +483,7 @@ ubuntu-team's admins.
     To: beta-admin@launchpad.net
     Subject: launchpad-beta-testers will expire soon from ubuntu-team
     <BLANKLINE>
-    On ..., nine days from now, the membership
+    On ..., 9 days from now, the membership
     of Launchpad Beta Testers (launchpad-beta-testers) (which you are
     the owner of) in the Ubuntu Team (ubuntu-team) Launchpad team
     is due to expire.
@@ -517,7 +517,7 @@ renew his own membership.
     To: colin.watson@ubuntulinux.com
     Subject: Your membership in ubuntu-team is about to expire
     <BLANKLINE>
-    On ..., nine days from now, your membership
+    On ..., 9 days from now, your membership
     in the Ubuntu Team (ubuntu-team) Launchpad team
     is due to expire.
     <http://launchpad.dev/~ubuntu-team>
@@ -539,7 +539,7 @@ renew his own membership.
     To: beta-admin@launchpad.net
     Subject: launchpad-beta-testers will expire soon from ubuntu-team
     <BLANKLINE>
-    On ..., nine days from now, the membership
+    On ..., 9 days from now, the membership
     of Launchpad Beta Testers (launchpad-beta-testers) (which you are
     the owner of) in the Ubuntu Team (ubuntu-team) Launchpad team
     is due to expire.
@@ -575,7 +575,7 @@ where he can extend it.
     To: test@canonical.com
     Subject: Your membership in landscape-developers is about to expire
     <BLANKLINE>
-    On ..., nine days from now, your membership
+    On ..., 9 days from now, your membership
     in the Landscape Developers (landscape-developers) Launchpad team
     is due to expire.
     <http://launchpad.dev/~landscape-developers>

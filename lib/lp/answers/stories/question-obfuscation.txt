@@ -66,7 +66,7 @@ description. He can then see the email address in the tooltip in the
 'Latest questions asked' portlet for Answers front page.
 
     >>> user_browser.getLink('#9 mailto: problem in webpage').click()
-    >>> user_browser.getLink('ask your own question separately').click()
+    >>> user_browser.getLink('Ask a question').click()
     >>> user_browser.title
     'Ask a question about...
 

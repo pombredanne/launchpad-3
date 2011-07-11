@@ -40,12 +40,10 @@ class TeamMembershipBreadcrumb(Breadcrumb):
         return "%s's membership" % self.context.person.displayname
 
 
-class TeamMembershipEditView:
+class TeamMembershipEditView(LaunchpadView):
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
+        super(TeamMembershipEditView, self).__init__(context, request)
         self.errormessage = ""
         self.prefix = 'membership'
         self.max_year = 2050

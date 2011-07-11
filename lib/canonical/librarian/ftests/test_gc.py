@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 from cStringIO import StringIO
-from datetime import datetime, timedelta
+from datetime import timedelta
 import os
 import shutil
 from subprocess import Popen, PIPE, STDOUT
@@ -14,7 +14,6 @@ import sys
 import tempfile
 from unittest import TestLoader
 
-from pytz import utc
 from sqlobject import SQLObjectNotFound
 import transaction
 
@@ -32,6 +31,7 @@ from canonical.librarian import librariangc
 from canonical.librarian.client import LibrarianClient
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.log.logger import BufferLogger
+from lp.services.utils import utc_now
 from lp.testing import TestCase
 
 
@@ -52,12 +52,9 @@ class TestLibrarianGarbageCollection(TestCase):
         # far enough so that how long it takes the test to run
         # is not an issue. 'stay_of_excution - 1 hour' fits these
         # criteria.
-        self.recent_past = (
-            datetime.utcnow().replace(tzinfo=utc)
-            - timedelta(days=6, hours=23))
+        self.recent_past = utc_now() - timedelta(days=6, hours=23)
         # A time beyond the stay of execution.
-        self.ancient_past = (
-            datetime.utcnow().replace(tzinfo=utc) - timedelta(days=30))
+        self.ancient_past = utc_now() - timedelta(days=30)
 
         self.f1_id, self.f2_id = self._makeDupes()
 

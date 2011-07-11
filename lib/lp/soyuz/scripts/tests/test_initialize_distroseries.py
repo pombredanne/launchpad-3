@@ -42,12 +42,14 @@ from lp.soyuz.scripts.initialize_distroseries import (
 from lp.testing import TestCaseWithFactory
 
 
-class TestInitializeDistroSeries(TestCaseWithFactory):
+class InitializationHelperTestCase(TestCaseWithFactory):
+    # Helper class to:
+    # - setup/populate parents with packages;
+    # - initialize a child from parents.
 
-    layer = LaunchpadZopelessLayer
-
-    def setupParent(self, packages=None, format_selection=None):
-        parent = self.factory.makeDistroSeries()
+    def setupParent(self, packages=None, format_selection=None,
+                    distribution=None):
+        parent = self.factory.makeDistroSeries(distribution)
         pf = getUtility(IProcessorFamilySet).getByName('x86')
         parent_das = self.factory.makeDistroArchSeries(
             distroseries=parent, processorfamily=pf,
@@ -93,6 +95,26 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
                     distroarchseries=parent_das,
                     pocket=PackagePublishingPocket.RELEASE,
                     status=PackagePublishingStatus.PUBLISHED)
+                self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
+
+    def _fullInitialize(self, parents, child=None, previous_series=None,
+                        arches=(), packagesets=(), rebuild=False,
+                        distribution=None, overlays=(),
+                        overlay_pockets=(), overlay_components=()):
+        if child is None:
+            child = self.factory.makeDistroSeries(
+                distribution=distribution, previous_series=previous_series)
+        ids = InitializeDistroSeries(
+            child, [parent.id for parent in parents], arches, packagesets,
+            rebuild, overlays, overlay_pockets, overlay_components)
+        ids.check()
+        ids.initialize()
+        return child
+
+
+class TestInitializeDistroSeries(InitializationHelperTestCase):
+
+    layer = LaunchpadZopelessLayer
 
     def test_failure_for_already_released_distroseries(self):
         # Initializing a distro series that has already been used will
@@ -105,6 +127,25 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
             InitializationError,
             "Can not copy distroarchseries from parent, there are already "
             "distroarchseries(s) initialized for this series.", ids.check)
+
+    def test_failure_when_previous_series_none(self):
+        # Initialising a distroseries with no previous_series if the
+        # distribution already has initialized series will error.
+        self.parent, self.parent_das = self.setupParent()
+        child = self.factory.makeDistroSeries(
+            previous_series=None, name='series')
+        another_distroseries = self.factory.makeDistroSeries(
+            distribution=child.distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+             distroseries=another_distroseries)
+        self.factory.makeDistroArchSeries(distroseries=child)
+        ids = InitializeDistroSeries(child, [self.parent.id])
+        self.assertRaisesWithContent(
+            InitializationError,
+            ("DistroSeries series has no previous series and "
+             "the distribution already has initialized series"
+             ".").format(child=child),
+             ids.check)
 
     def test_failure_with_pending_builds(self):
         # If the parent series has pending builds, and the child is a series
@@ -188,20 +229,6 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         # Other configuration bits are copied too.
         self.assertTrue(child.backports_not_automatic)
 
-    def _fullInitialize(self, parents, child=None, previous_series=None,
-                        arches=(), packagesets=(), rebuild=False,
-                        distribution=None, overlays=(),
-                        overlay_pockets=(), overlay_components=()):
-        if child is None:
-            child = self.factory.makeDistroSeries(
-                distribution=distribution, previous_series=previous_series)
-        ids = InitializeDistroSeries(
-            child, [parent.id for parent in parents], arches, packagesets,
-            rebuild, overlays, overlay_pockets, overlay_components)
-        ids.check()
-        ids.initialize()
-        return child
-
     def test_initialize(self):
         # Test a full initialize with no errors.
         self.parent, self.parent_das = self.setupParent()
@@ -266,12 +293,55 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
             direct_inclusion=True)
         parent_srcs = test1.getSourcesIncluded(direct_inclusion=True)
         self.assertEqual(parent_srcs, child_srcs)
-        # The uploader can also upload to the new distroseries.
+
+    def test_copying_packagesets_multiple_parents(self):
+        # When a packageset id is passed to the initialisation method,
+        # only the packages in this packageset (and in the corresponding
+        # distroseries) are copied.
+        self.parent1, not_used = self.setupParent(
+            packages={'udev': '0.1-1', 'firefox': '2.1'})
+        self.parent2, not_used = self.setupParent(
+            packages={'firefox': '3.1'})
+        uploader = self.factory.makePerson()
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent1.owner,
+            distroseries=self.parent1)
+        test1.addSources('udev')
+        test1.addSources('firefox')
+        getUtility(IArchivePermissionSet).newPackagesetUploader(
+            self.parent1.main_archive, uploader, test1)
+        child = self._fullInitialize(
+            [self.parent1, self.parent2], packagesets=(str(test1.id),))
+        # Only the packages from the packageset test1 (from
+        # self.parent1) are copied.
+        published_sources = child.main_archive.getPublishedSources(
+            distroseries=child)
+        pub_sources = sorted(
+            [(s.sourcepackagerelease.sourcepackagename.name,
+              s.sourcepackagerelease.version)
+                for s in published_sources])
+        self.assertContentEqual(
+            [(u'udev', u'0.1-1'), (u'firefox', u'2.1')],
+            pub_sources)
+
+    def test_no_cross_distro_perm_copying(self):
+        # No cross-distro archivepermissions copying should happen.
+        self.parent, self.parent_das = self.setupParent()
+        uploader = self.factory.makePerson()
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', self.parent.owner,
+            distroseries=self.parent)
+        test1.addSources('udev')
+        getUtility(IArchivePermissionSet).newPackagesetUploader(
+            self.parent.main_archive, uploader, test1)
+        child = self._fullInitialize([self.parent])
+
+        # The uploader cannot upload to the new distroseries.
         self.assertTrue(
             getUtility(IArchivePermissionSet).isSourceUploadAllowed(
                 self.parent.main_archive, 'udev', uploader,
                 distroseries=self.parent))
-        self.assertTrue(
+        self.assertFalse(
             getUtility(IArchivePermissionSet).isSourceUploadAllowed(
                 child.main_archive, 'udev', uploader,
                 distroseries=child))
@@ -542,23 +612,6 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         self.assertContentEqual(
             set(parent1_srcs).union(set(parent2_srcs)),
             child_srcs)
-        # The uploaders can also upload to the new distroseries.
-        self.assertTrue(
-            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
-                self.parent1.main_archive, 'udev', uploader1,
-                distroseries=self.parent1))
-        self.assertTrue(
-            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
-                child.main_archive, 'udev', uploader1,
-                distroseries=child))
-        self.assertTrue(
-            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
-                self.parent2.main_archive, 'libc6', uploader2,
-                distroseries=self.parent2))
-        self.assertTrue(
-            getUtility(IArchivePermissionSet).isSourceUploadAllowed(
-                child.main_archive, 'libc6', uploader2,
-                distroseries=child))
 
     def test_multiple_parents_format_selection_union(self):
         # The format selection for the derived series is the union of
@@ -707,7 +760,7 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
              "and no parent was passed to the initilization method"
              ".").format(child=child),
              ids.check)
-             
+
     def test_copy_method_diff_archive_empty_target(self):
         # If the archives are different and the target archive is
         # empty: use the cloner.

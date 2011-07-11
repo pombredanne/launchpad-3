@@ -49,11 +49,14 @@ class TestURLNamespace(TestCase):
         # and 'view'.
         namespace_info = self.sm.adapters.lookupAll(
             (Interface, IBrowserRequest), ITraversable)
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
         for name, factory in namespace_info:
             try:
                 not_the_namespace_factory = self.sm.adapters.lookup(
                     (Interface, IBrowserRequest), Interface, name)
-            except LookupError:
+            except LookupError,e:
+                import pdb; pdb.set_trace(); # DO NOT COMMIT
+                print e
                 pass
             else:
                 self.assertNotEqual(factory, not_the_namespace_factory)

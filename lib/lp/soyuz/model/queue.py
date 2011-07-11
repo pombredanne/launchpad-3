@@ -720,6 +720,14 @@ class PackageUpload(SQLBase):
 
     def realiseUpload(self, logger=None):
         """See `IPackageUpload`."""
+        if self.package_copy_job is not None:
+            # PCJs are "realised" in the job runner,
+            # which creates publishing records using the packagecopier.
+            # Because the process-accepted script calls realiseUpload for
+            # any outstanding uploads in the ACCEPTED state we need to skip
+            # them here.  The runner is also responsible for calling
+            # setDone().
+            return
         # Circular imports.
         from lp.soyuz.scripts.packagecopier import update_files_privacy
         assert self.status == PackageUploadStatus.ACCEPTED, (
@@ -929,7 +937,7 @@ class PackageUpload(SQLBase):
             # Nothing needs overriding, bail out.
             return False
 
-        if new_component not in allowed_components:
+        if new_component not in list(allowed_components) + [None]:
             raise QueueInconsistentStateError(
                 "No rights to override to %s" % new_component.name)
 
@@ -1502,10 +1510,12 @@ class PackageUploadSet:
         if name is not None and name != '':
             spn_join = LeftJoin(
                 SourcePackageName,
-                match_column(SourcePackageName.name, name))
+                SourcePackageName.id ==
+                    SourcePackageRelease.sourcepackagenameID)
             bpn_join = LeftJoin(
                 BinaryPackageName,
-                match_column(BinaryPackageName.name, name))
+                BinaryPackageName.id ==
+                    BinaryPackageRelease.binarypackagenameID)
             custom_join = LeftJoin(
                 PackageUploadCustom,
                 PackageUploadCustom.packageuploadID == PackageUpload.id)
@@ -1516,12 +1526,12 @@ class PackageUploadSet:
 
             joins += [
                 package_copy_job_join,
-                spn_join,
                 source_join,
                 spr_join,
-                bpn_join,
+                spn_join,
                 build_join,
                 bpr_join,
+                bpn_join,
                 custom_join,
                 file_join,
                 ]
@@ -1529,10 +1539,8 @@ class PackageUploadSet:
             # One of these attached items must have a matching name.
             conditions.append(Or(
                 match_column(PackageCopyJob.package_name, name),
-                SourcePackageRelease.sourcepackagenameID ==
-                    SourcePackageName.id,
-                BinaryPackageRelease.binarypackagenameID ==
-                    BinaryPackageName.id,
+                match_column(SourcePackageName.name, name),
+                match_column(BinaryPackageName.name, name),
                 match_column(LibraryFileAlias.filename, name)))
 
         if version is not None and version != '':
