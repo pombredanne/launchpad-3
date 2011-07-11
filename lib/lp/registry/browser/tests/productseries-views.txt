@@ -239,15 +239,6 @@ There is a cancel_url property too.
     >>> print view.cancel_url
     http://launchpad.dev/app/simple
 
-Bazaar experts can change the branch links.
-
-    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-    >>> celebrities = getUtility(ILaunchpadCelebrities)
-    >>> login_person(celebrities.bazaar_experts.teamowner)
-    >>> check_permission('launchpad.Edit', view)
-    True
-
-
 Delete ProductSeries
 --------------------
 

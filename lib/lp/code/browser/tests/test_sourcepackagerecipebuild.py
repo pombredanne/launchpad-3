@@ -85,7 +85,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_cancel_build(self):
         """An admin can cancel a build."""
-        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        experts = getUtility(ILaunchpadCelebrities).admins.teamowner
         queue = self.factory.makeSourcePackageRecipeBuildJob()
         build = queue.specific_job.build
         transaction.commit()
@@ -129,7 +129,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_cancel_build_wrong_state(self):
         """If the build isn't queued, you can't cancel it."""
-        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        experts = getUtility(ILaunchpadCelebrities).admins.teamowner
         build = self.makeRecipeBuild()
         build.cancelBuild()
         transaction.commit()
@@ -143,7 +143,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_rescore_build(self):
         """An admin can rescore a build."""
-        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        experts = getUtility(ILaunchpadCelebrities).admins.teamowner
         queue = self.factory.makeSourcePackageRecipeBuildJob()
         build = queue.specific_job.build
         transaction.commit()
@@ -172,7 +172,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_rescore_build_invalid_score(self):
         """Build scores can only take numbers."""
-        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        experts = getUtility(ILaunchpadCelebrities).admins.teamowner
         queue = self.factory.makeSourcePackageRecipeBuildJob()
         build = queue.specific_job.build
         transaction.commit()
@@ -213,7 +213,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_rescore_build_wrong_state(self):
         """If the build isn't queued, you can't rescore it."""
-        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        experts = getUtility(ILaunchpadCelebrities).admins.teamowner
         build = self.makeRecipeBuild()
         build.cancelBuild()
         transaction.commit()
@@ -232,7 +232,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         """
         build = self.factory.makeSourcePackageRecipeBuild()
         build.cancelBuild()
-        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        experts = getUtility(ILaunchpadCelebrities).admins.teamowner
         index_url = canonical_url(build)
         browser = self.getViewBrowser(build, '+rescore', user=experts)
         self.assertEqual(index_url, browser.url)
@@ -246,7 +246,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
         This is the case where the user is on the rescore page and submits.
         """
         build = self.factory.makeSourcePackageRecipeBuild()
-        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
+        experts = getUtility(ILaunchpadCelebrities).admins.teamowner
         index_url = canonical_url(build)
         browser = self.getViewBrowser(build, '+rescore', user=experts)
         with person_logged_in(experts):
