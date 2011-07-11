@@ -23,9 +23,11 @@ __all__ = [
     'synchronize',
     'text_delta',
     'traceback_info',
+    'utc_now',
     'value_string',
     ]
 
+from datetime import datetime
 from itertools import tee
 import os
 from StringIO import StringIO
@@ -39,6 +41,7 @@ from fixtures import (
     MonkeyPatch,
     )
 from lazr.enum import BaseItem
+import pytz
 from twisted.python.util import mergeFunctionMetadata
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -303,3 +306,8 @@ class RegisteredSubclass(type):
         # provide its class as first parameter (i.e. "cls").  Therefore, we
         # must use a static method.
         cls._register_subclass(cls)
+
+
+def utc_now():
+    """Return a timezone-aware timestamp for the current time."""
+    return datetime.now(tz=pytz.UTC)

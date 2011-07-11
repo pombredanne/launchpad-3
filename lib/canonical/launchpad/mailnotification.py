@@ -14,6 +14,7 @@ from email.MIMEMessage import MIMEMessage
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 import re
+from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
@@ -27,6 +28,7 @@ from canonical.launchpad.mail import (
     simple_sendmail,
     simple_sendmail_from_person,
     )
+from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.mail.bugnotificationbuilder import get_bugmail_error_address
@@ -290,8 +292,9 @@ def notify_new_ppa_subscription(subscription, event):
             continue
 
         to_address = [person.preferredemail.email]
-        recipient_subscriptions_url = "%s/+archivesubscriptions" % (
-            canonical_url(person))
+        root = getUtility(ILaunchpadRoot)
+        recipient_subscriptions_url = "%s~/+archivesubscriptions" % (
+            canonical_url(root))
         description_blurb = '.'
         if ppa_description is not None and ppa_description != '':
             description_blurb = (

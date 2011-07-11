@@ -105,27 +105,16 @@ including the latest release if it is a distribution package.
     Assigned: 2005-01-17
     ...
 
-The bug page ends with links to report another bug, and to list open
-bugs.
+The bug page includes a link to report another bug.
 
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-    >>> related = find_tags_by_class(user_browser.contents, 'related')[0]
-    >>> print extract_text(related)
-    What next?...
-    >>> print user_browser.getLink('Report another bug').url
+    >>> print user_browser.getLink('Report a bug').url
     http://bugs.launchpad.dev/firefox/+filebug
-    >>> print user_browser.getLink('List open bugs').url
-    http://bugs.launchpad.dev/firefox/+bugs
 
     >>> user_browser.open(
     ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/1')
-    >>> related = find_tags_by_class(user_browser.contents, 'related')[0]
-    >>> print extract_text(related)
-    What next?...
-    >>> print user_browser.getLink('Report another bug').url
+    >>> print user_browser.getLink('Report a bug').url
     http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug
-    >>> print user_browser.getLink('List open bugs').url
-    http://launchpad.dev/ubuntu/+source/mozilla-firefox/+bugs
 
 There's also a link on the page that will take the user to the "Add
 attachment or patch" page, for use when JavaScript isn't available.

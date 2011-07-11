@@ -90,8 +90,8 @@ recognized web service versions are automatically removed from the
 cache.
 
     >>> person.homepage_content = "Whatever"
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(person)
+    >>> from storm.store import Store
+    >>> Store.of(person).flush()
 
     >>> print cache.get(person, json_type, "beta", default="missing")
     missing

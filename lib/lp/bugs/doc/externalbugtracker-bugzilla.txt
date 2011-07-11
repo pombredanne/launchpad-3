@@ -477,9 +477,6 @@ Let's add a handful of watches:
     ...         'RESOLVED', 'FIXED', 'HIGH', 'ENHANCEMENT')
     ...     expected_remote_statuses[remote_bug_id] = 'RESOLVED FIXED'
     ...     expected_remote_importances[remote_bug_id] = 'HIGH ENHANCEMENT'
-    >>> from canonical.launchpad.ftests import sync
-    >>> for bug_watch in gnome_bugzilla.watches:
-    ...     sync(bug_watch)
 
 Set the batch threshold higher than the number of bug watches.
 
@@ -531,8 +528,6 @@ Let's add a few more watches:
     ...         'ASSIGNED', '', 'MEDIUM', 'URGENT')
     ...     expected_remote_statuses[remote_bug_id] = 'ASSIGNED'
     ...     expected_remote_importances[remote_bug_id] = 'MEDIUM URGENT'
-    >>> for bug_watch in gnome_bugzilla.watches:
-    ...     sync(bug_watch)
 
 
 Set the batch threshold very low and remove the batch size limit:

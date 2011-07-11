@@ -176,10 +176,11 @@ We'll set the bug's heat to 0 first to demonstrate this.
 
     >>> from datetime import datetime, timedelta
     >>> from pytz import timezone
+    >>> from lp.services.utils import utc_now
 
     >>> from lp.bugs.adapters.bugchange import BugDescriptionChange
     >>> change = BugDescriptionChange(
-    ...     when=datetime.now().replace(tzinfo=timezone('UTC')),
+    ...     when=utc_now(),
     ...     person=bug.owner, what_changed='description',
     ...     old_value=bug.description, new_value='Some text')
     >>> bug.addChange(change)
