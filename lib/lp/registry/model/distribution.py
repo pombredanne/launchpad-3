@@ -10,7 +10,8 @@ __all__ = [
     'DistributionSet',
     ]
 
-from operator import attrgetter
+from operator import attrgetter, itemgetter
+import itertools
 
 from sqlobject import (
     BoolCol,
@@ -668,19 +669,28 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def getBranchTips(self, since=None):
         """See `IDistribution`."""
         query = """
-            SELECT unique_name, last_scanned_id FROM Branch JOIN DistroSeries
-            ON Branch.distroseries = DistroSeries.id JOIN Distribution ON
-            DistroSeries.distribution = Distribution.id WHERE
-            Distribution.name = %s""" % sqlvalues(self.name)
-        if since is None:
-            query += ';'
-        else:
-            query += (
-                'AND branch.last_scanned > %s;' % sqlvalues(since))
+            SELECT unique_name, last_scanned_id,
+                SeriesSourcePackageBranch.distroseries FROM Branch
+            JOIN DistroSeries ON Branch.distroseries = DistroSeries.id
+            JOIN Distribution ON DistroSeries.distribution = Distribution.id
+            JOIN SeriesSourcePackageBranch ON
+                Branch.id = SeriesSourcePackageBranch.branch
+            WHERE Distribution.name = %s""" % sqlvalues(self.name)
 
-        results = Store.of(self).execute(query)
-        # Returning the result set leads to a ForbiddenAttribute error.
-        return list(results)
+        if since is not None:
+            query += (
+                ' AND branch.last_scanned > %s' % sqlvalues(since))
+
+        query += ' ORDER BY unique_name, last_scanned_id;'
+
+        data = list(Store.of(self).execute(query))
+
+        # Group on location (unique_name) and revision (last_scanned_id).
+        results = []
+        for key, group in itertools.groupby(data, itemgetter(0, 1)):
+            results.append(list(key))
+            results[-1].append([x[-1] for x in group])
+        return results
 
     def getMirrorByName(self, name):
         """See `IDistribution`."""
