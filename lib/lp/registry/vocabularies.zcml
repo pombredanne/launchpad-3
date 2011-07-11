@@ -266,6 +266,17 @@
     <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
+  <securedutility
+    name="UserTeamsParticipationPlusSelfSimpleDisplay"
+    component="lp.registry.vocabularies.UserTeamsParticipationPlusSelfSimpleDisplayVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="lp.registry.vocabularies.UserTeamsParticipationPlusSelfSimpleDisplayVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
   <securedutility
     name="AllUserTeamsParticipation"
