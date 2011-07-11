@@ -96,6 +96,7 @@ tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
     Packages::Extensions "%(EXTENSIONS)s";
     BinCacheDB "packages-%(CACHEINSERT)s$(ARCH).db";
     Contents " ";
+    LongDescription "%(LONGDESCRIPTION)s";
 }
 
 """
@@ -802,7 +803,11 @@ class FTPArchiveHandler:
                          "EXTENSIONS": ".deb",
                          "CACHEINSERT": "",
                          "DISTS": os.path.basename(self._config.distsroot),
-                         "HIDEEXTRA": ""})
+                         "HIDEEXTRA": "",
+                         "LONGDESCRIPTION":
+                             "true" if distroseries.split_long_descriptions
+                                    else "false",
+                         })
 
         if archs and suite in self._di_release_components:
             for component in self._di_release_components[suite]:
@@ -817,6 +822,7 @@ class FTPArchiveHandler:
                     "CACHEINSERT": "debian-installer-",
                     "DISTS": os.path.basename(self._config.distsroot),
                     "HIDEEXTRA": "// ",
+                    "LONGDESCRIPTION": "false",
                     })
 
         # XXX: 2006-08-24 kiko: Why do we do this directory creation here?
