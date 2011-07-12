@@ -306,7 +306,7 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         script = self.makeScript(distro, run_setup=False)
         content_archive = self.makeLegacyContentArchive()
         script.content_archive = os.path.join(
-            self.makeTemporaryDirectory(), "contents_generation")
+            self.makeTemporaryDirectory(), "contents-generation")
         old_contents_dir = os.path.join(
             content_archive, "%s-contents" % distro.name)
 
