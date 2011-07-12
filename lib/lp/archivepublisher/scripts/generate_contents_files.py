@@ -292,6 +292,23 @@ class GenerateContentsFiles(LaunchpadScript):
             for arch in archs:
                 self.updateContentsFile(suite, arch)
 
+    def updateLegacyContentArchiveRoot(self):
+        """Replace content archive root with new contents location.
+
+        This is a temporary migration tool for the fix to bug 809211.
+        After this has run at least once on each system that needs it, for
+        each distribution archive, this method can go away.
+        """
+        content_archive_root = getattr(
+            config.archivepublisher, 'content_archive_root', None)
+        if content_archive_root is None:
+            return
+        old_content_dir = os.path.join(
+            content_archive_root, self.distribution.name + "-contents")
+        if not file_exists(old_content_dir):
+            return
+        # XXX: Implement.
+
     def setUp(self):
         """Prepare configuration and filesystem state for the script's work.
 
@@ -301,9 +318,8 @@ class GenerateContentsFiles(LaunchpadScript):
         """
         self.processOptions()
         self.config = getPubConfig(self.distribution.main_archive)
-        self.content_archive = os.path.join(
-            config.archivepublisher.content_archive_root,
-            self.distribution.name + "-contents")
+        self.content_archive = os.path.join(self.config.distsroot, "local")
+        self.updateLegacyContentArchiveRoot()
         self.setUpContentArchive()
 
     def main(self):

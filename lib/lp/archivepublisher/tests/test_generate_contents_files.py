@@ -6,7 +6,8 @@
 __metaclass__ = type
 
 from optparse import OptionValueError
-import os.path
+import os
+from testtools.matchers import StartsWith
 from textwrap import dedent
 
 from canonical.config import config
@@ -127,8 +128,8 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def makeContentArchive(self):
-        """Prepare a "content archive" directory for script tests."""
+    def makeLegacyContentArchive(self):
+        """Prepare a legacy "content archive" directory."""
         content_archive = self.makeTemporaryDirectory()
         config.push("content-archive", dedent("""\
             [archivepublisher]
@@ -136,6 +137,11 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
             """ % content_archive))
         self.addCleanup(config.pop, "content-archive")
         return content_archive
+
+    def makeContentArchive(self):
+        # XXX JeroenVermeulen 2011-07-12 bug=809211: This will become a
+        # no-op.
+        return self.makeLegacyContentArchive()
 
     def makeDistro(self):
         """Create a distribution for testing.
@@ -277,6 +283,50 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
             % (content_archive, distro.name, distro.name)).read()
         self.assertIn("This file maps", contents_top)
         self.assertIn(distro.title, contents_top)
+
+    def writeMarkerFile(self, file_path):
+        marker_contents = self.factory.getUniqueString()
+        marker_file = file(file_path, 'w')
+        marker_file.write(marker_contents)
+        marker_file.flush()
+        return marker_contents
+
+    def test_updateLegacyContentArchiveRoot_moves_legacy_contents(self):
+        content_archive = self.makeLegacyContentArchive()
+        script = self.makeScript()
+        marker_path = "%s/%s-misc/Contents.top" % (
+            content_archive, script.distribution.name)
+        marker_contents = self.writeMarkerFile(marker_path)
+
+        script.updateLegacyContentArchiveRoot()
+
+        self.assertFalse(file_exists(content_archive))
+        new_path = "%s/local/contents-misc/Contents.top" % ()
+        self.assertEqual(marker_contents, file(new_path).read())
+
+    def test_updateLegacyContentArchiveRoot_is_harmless_without_config(self):
+        script = self.makeScript()
+        script.updateLegacyContentArchiveRoot()
+        self.assertTrue(file_exists(script.content_archive))
+        self.assertThat(
+            script.content_archive, StartsWith(script.config.distsroot))
+
+    def test_updateLegacyContentArchiveRoot_is_harmless_without_legacy(self):
+        content_archive = self.makeLegacyContentArchive()
+        os.removedirs(content_archive)
+        script = self.makeScript()
+        script.updateLegacyContentArchiveRoot()
+        self.assertTrue(file_exists(script.content_archive))
+        self.assertThat(
+            script.content_archive, StartsWith(script.config.distsroot))
+
+    def test_setUp_moves_legacy_content_archive(self):
+        content_archive = self.makeLegacyContentArchive()
+        script = self.makeScript()
+        marker_path = "%s/%s-misc/Contents.top" % (
+            content_archive, script.distribution.name)
+        marker_contents = self.writeMarkerFile(marker_path)
+        self.assertFalse(file_exists(content_archive))
 
     def test_main(self):
         # If run end-to-end, the script generates Contents.gz files.
