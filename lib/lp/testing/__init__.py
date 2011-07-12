@@ -15,6 +15,7 @@ __all__ = [
     'build_yui_unittest_suite',
     'celebrity_logged_in',
     'ExpectedException',
+    'extract_lp_cache',
     'FakeTime',
     'get_lsb_information',
     'is_logged_in',
@@ -1296,3 +1297,8 @@ class ExpectedException(TTExpectedException):
         self.caught_exc = exc_value
         return super(ExpectedException, self).__exit__(
             exc_type, exc_value, traceback)
+
+
+def extract_lp_cache(text):
+    match = re.search(r'<script>LP.cache = (\{.*\});</script>', text)
+    return simplejson.loads(match.group(1))
