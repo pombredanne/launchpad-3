@@ -24,7 +24,7 @@ class BranchSubscriptionEdit(AuthorizationBase):
         Launchpad Admins can also edit any branch subscription.
         The owner of the subscribed branch can edit the subscription. If the
         branch owner is a team, then the owner of the team (but not arbitrary
-        team members)can edit the subscription.
+        team members) can edit the subscription.
         """
         branch_owner = self.obj.branch.owner
         if branch_owner.is_team:
