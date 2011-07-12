@@ -38,8 +38,10 @@ from zope.interface import (
     providedBy,
     )
 from zope.interface.advice import addClassAdvisor
-from zope.traversing.interfaces import ITraversable, TraversalError
-
+from zope.traversing.interfaces import (
+    ITraversable,
+    TraversalError,
+    )
 
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget,
@@ -189,6 +191,13 @@ class LaunchpadFormView(LaunchpadView):
             self.form_fields, self.prefix, context, self.request,
             data=self.initial_values, adapters=self.adapters,
             ignore_request=False)
+        for field_name, help_link in self.help_links.iteritems():
+            self.widgets[field_name].help_link = help_link
+
+    @property
+    def help_links(self):
+        """Dictionary mapping field names to help links."""
+        return {}
 
     @property
     def adapters(self):

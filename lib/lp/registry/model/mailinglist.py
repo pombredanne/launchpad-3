@@ -71,7 +71,7 @@ from canonical.launchpad.components.decoratedresultset import (
     )
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.message import Message
+from lp.services.messages.model.message import Message
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
@@ -588,6 +588,9 @@ class MailingList(SQLBase):
         # a bit tortured, so just do it here.
         if self.status in PURGE_STATES:
             self.status = MailingListStatus.PURGED
+            email = getUtility(IEmailAddressSet).getByEmail(self.address)
+            if email is not None:
+                removeSecurityProxy(email).destroySelf()
         else:
             assert self.status != MailingListStatus.PURGED, 'Already purged'
             raise UnsafeToPurge(self)

@@ -2,7 +2,7 @@
 # NOTE: The first line above must stay first; do not move the copyright
 # notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
 #
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
@@ -19,10 +19,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.testing.fakepackager import FakePackager
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase,
     )
@@ -191,9 +191,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             self.uploadprocessor.last_processed_upload.queue_root.status,
             PackageUploadStatus.DONE)
 
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.DONE, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.DONE, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
         [queue_item] = queue_items
@@ -360,9 +360,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
                          "Unexpected email generated on binary upload.")
 
         # Publish the binary.
-        [queue_item] = self.breezy.getQueueItems(
-            status=PackageUploadStatus.ACCEPTED, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        [queue_item] = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.ACCEPTED, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=self.name16.archive)
         queue_item.realiseUpload()
 
         for binary_package in build.binarypackages:
@@ -404,9 +404,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             self.build_uploadprocessor, upload_dir, build=build)
 
         # The binary upload was accepted and it's waiting in the queue.
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.ACCEPTED, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.ACCEPTED, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
         # All the files associated with this binary upload must be in the
@@ -458,9 +458,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             self.build_uploadprocessor, upload_dir, build=build_bar_i386)
 
         # The binary upload was accepted and it's waiting in the queue.
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.ACCEPTED, name="bar",
-            version="1.0-1", exact_match=True, archive=cprov.archive)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.ACCEPTED, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=cprov.archive)
         self.assertEqual(queue_items.count(), 1)
 
     def testUploadDoesNotEmailMaintainerOrChangedBy(self):
@@ -533,9 +533,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             self.uploadprocessor.last_processed_upload.queue_root.status,
             PackageUploadStatus.DONE)
 
-        queue_items = hoary.getQueueItems(
-            status=PackageUploadStatus.DONE, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        queue_items = hoary.getPackageUploads(
+            status=PackageUploadStatus.DONE, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
         [queue_item] = queue_items
@@ -565,9 +565,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             self.uploadprocessor.last_processed_upload.queue_root.status,
             PackageUploadStatus.DONE)
 
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.DONE, name="bar",
-            version="1.0-1", exact_match=True, archive=ubuntu_team.archive)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.DONE, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=ubuntu_team.archive)
         self.assertEqual(queue_items.count(), 1)
 
         pending_ppas = self.ubuntu.getPendingPublicationPPAs()
@@ -670,8 +670,8 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             test_files_dir=test_files_dir)
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        queue_items = self.breezy.getQueueItems(
-            name="debian-installer",
+        queue_items = self.breezy.getPackageUploads(
+            name=u"debian-installer",
             status=PackageUploadStatus.ACCEPTED,
             archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
@@ -709,9 +709,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.DONE, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.DONE, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
         [queue_item] = queue_items
@@ -726,9 +726,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             self.build_uploadprocessor, upload_dir, build=build)
 
         # The binary upload was accepted and it's waiting in the queue.
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.ACCEPTED, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.ACCEPTED, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
         # All the files associated with this binary upload must be in the
@@ -750,9 +750,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload(
             "bar_1.0-1_contrib_component", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.DONE, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.DONE, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=self.name16.archive)
 
         # The upload was accepted despite the fact that it does
         # not have a valid component:
@@ -769,9 +769,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
             "bar_1.0-1_contrib_binary", "~name16/ubuntu")
         self.processUpload(
             self.build_uploadprocessor, upload_dir, build=build)
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.ACCEPTED, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.ACCEPTED, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=self.name16.archive)
 
         # The binary is accepted despite the fact that it does not have
         # a valid component:
@@ -880,9 +880,9 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             self.uploadprocessor.last_processed_upload.queue_root.status,
             PackageUploadStatus.NEW)
 
-        [queue_item] = self.breezy.getQueueItems(
-            status=PackageUploadStatus.NEW, name="bar",
-            version="1.0-1", exact_match=True)
+        [queue_item] = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.NEW, name=u"bar",
+            version=u"1.0-1", exact_match=True)
         queue_item.setAccepted()
         queue_item.realiseUpload()
         self.layer.commit()
@@ -1159,9 +1159,9 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             self.uploadprocessor.last_processed_upload.queue_root.status,
             PackageUploadStatus.NEW)
 
-        [queue_item] = self.breezy.getQueueItems(
-            status=PackageUploadStatus.NEW, name="bar",
-            version="1.0-1", exact_match=True)
+        [queue_item] = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.NEW, name=u"bar",
+            version=u"1.0-1", exact_match=True)
         queue_item.setAccepted()
         queue_item.realiseUpload()
         self.layer.commit()
@@ -1301,9 +1301,9 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
             self.build_uploadprocessor, upload_dir, build=build)
 
         # The binary upload was accepted, and it's waiting in the queue.
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.ACCEPTED, name="bar",
-            version="1.0-1", exact_match=True, archive=self.name16.archive)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.ACCEPTED, name=u"bar",
+            version=u"1.0-1", exact_match=True, archive=self.name16.archive)
         self.assertEqual(queue_items.count(), 1)
 
     def testArchiveBinarySize(self):

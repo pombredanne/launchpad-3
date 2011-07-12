@@ -7,8 +7,8 @@ __metaclass__ = type
 __all__ = []
 
 from canonical.launchpad.interfaces.launchpad import IHasBug
-from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.security import (
+from lp.services.messages.interfaces.message import IMessage
+from lp.app.security import (
     AnonymousAuthorization,
     AuthorizationBase,
     )
@@ -161,18 +161,13 @@ class ViewBugMessage(AnonymousAuthorization):
     usedfor = IMessage
 
 
-class SetMessageVisibility(AuthorizationBase):
+class SetBugCommentVisibility(AuthorizationBase):
     permission = 'launchpad.Admin'
-    usedfor = IBugMessage
+    usedfor = IBug
 
     def checkAuthenticated(self, user):
         """Admins and registry admins can set bug comment visibility."""
         return (user.in_admin or user.in_registry_experts)
-
-
-class SetBugCommentVisibility(SetMessageVisibility):
-
-    usedfor = IBug
 
 
 class ViewBugTracker(AnonymousAuthorization):

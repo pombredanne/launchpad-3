@@ -19,14 +19,24 @@ from devscripts.autoland import (
     MergeProposal)
 
 
+class FakeBugTask:
+
+    def __init__(self, target_name, status):
+        self.bug_target_name = target_name
+        self.status = status
+
+
 class FakeBug:
     """Fake launchpadlib Bug object.
 
     Only used for the purposes of testing.
     """
 
-    def __init__(self, id):
+    def __init__(self, id, bug_tasks=None):
         self.id = id
+        if bug_tasks is None:
+            bug_tasks = [FakeBugTask('launchpad', 'Triaged')]
+        self.bug_tasks = bug_tasks
 
 
 class FakePerson:
@@ -113,7 +123,7 @@ class TestPQMRegexAcceptance(unittest.TestCase):
         self._test_commit_message_match(incr=True, no_qa=False, testfix=False)
 
 
-class TestBugsClaused(unittest.TestCase):
+class TestBugsClause(unittest.TestCase):
     """Tests for `get_bugs_clause`."""
 
     def test_no_bugs(self):
@@ -133,6 +143,36 @@ class TestBugsClaused(unittest.TestCase):
         bug2 = FakeBug(45)
         bugs_clause = get_bugs_clause([bug1, bug2])
         self.assertEqual('[bug=20,45]', bugs_clause)
+
+    def test_fixed_bugs_are_excluded(self):
+        # If a bug is fixed then it is excluded from the bugs clause.
+        bug1 = FakeBug(20)
+        bug2 = FakeBug(45, bug_tasks=[
+            FakeBugTask('fake-project', 'Fix Released')])
+        bug3 = FakeBug(67, bug_tasks=[
+            FakeBugTask('fake-project', 'Fix Committed')])
+        bugs_clause = get_bugs_clause([bug1, bug2, bug3])
+        self.assertEqual('[bug=20]', bugs_clause)
+
+    def test_bugs_open_on_launchpad_are_included(self):
+        # If a bug has been fixed on one target but not in launchpad, then it
+        # is included in the bugs clause, because it's relevant to launchpad
+        # QA.
+        bug = FakeBug(20, bug_tasks=[
+            FakeBugTask('fake-project', 'Fix Released'),
+            FakeBugTask('launchpad', 'Triaged')])
+        bugs_clause = get_bugs_clause([bug])
+        self.assertEqual('[bug=20]', bugs_clause)
+
+    def test_bugs_fixed_on_launchpad_but_open_in_others_are_excluded(self):
+        # If a bug has been fixed in Launchpad but not fixed on a different
+        # target, then it is excluded from the bugs clause, since we don't
+        # want to QA it.
+        bug = FakeBug(20, bug_tasks=[
+            FakeBugTask('fake-project', 'Triaged'),
+            FakeBugTask('launchpad', 'Fix Released')])
+        bugs_clause = get_bugs_clause([bug])
+        self.assertEqual('', bugs_clause)
 
 
 class TestGetCommitMessage(unittest.TestCase):
@@ -229,7 +269,7 @@ class TestGetCommitMessage(unittest.TestCase):
 
         self.assertEqual(
             "[r=foo][bug=20][no-qa][incr] Foobaring the sbrubble.",
-            self.mp.build_commit_message("Foobaring the sbrubble.", 
+            self.mp.build_commit_message("Foobaring the sbrubble.",
                 testfix, no_qa, incr))
 
     def test_commit_with_rollback(self):
@@ -334,10 +374,7 @@ class TestGetQaClause(unittest.TestCase):
 
     def test_rollback_and_noqa_and_incr_given(self):
         bugs = None
-        no_qa = True
-        incr = True
-        self.assertEqual('[rollback=123]',
-            get_qa_clause(bugs, rollback=123))
+        self.assertEqual('[rollback=123]', get_qa_clause(bugs, rollback=123))
 
 
 class TestGetReviewerHandle(unittest.TestCase):

@@ -22,7 +22,6 @@ from zope.interface import implements
 from canonical.launchpad.browser.librarian import (
     FileNavigationMixin,
     ProxiedLibraryFileAlias,
-    SafeStreamOrRedirectLibraryFileAliasView,
     )
 from canonical.launchpad.interfaces.librarian import (
     ILibraryFileAliasWithParent,
@@ -93,6 +92,9 @@ class BugAttachmentSetNavigation(GetitemNavigation):
     usedfor = IBugAttachmentSet
 
 
+# Despite declaring compliance with ICanonicalUrlData, the LaunchBag
+# dependency means this tends towards the "not canonical at all" end of
+# the canonicalness scale. Beware.
 class BugAttachmentURL:
     """Bug URL creation rules."""
     implements(ICanonicalUrlData)
@@ -237,5 +239,3 @@ class BugAttachmentFileNavigation(Navigation, FileNavigationMixin):
     """Traversal to +files/${filename}."""
 
     usedfor = IBugAttachment
-
-    view_class = SafeStreamOrRedirectLibraryFileAliasView

@@ -20,6 +20,7 @@ __all__ = [
     'IOfficialBugTagTargetRestricted',
     ]
 
+
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     call_with,
@@ -28,6 +29,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     LAZR_WEBSERVICE_EXPORTED,
+    operation_for_version,
     operation_parameters,
     operation_removed_in_version,
     operation_returns_collection_of,
@@ -229,7 +231,7 @@ class IHasBugs(Interface):
     @operation_parameters(**search_tasks_params_for_api_default)
     @operation_returns_collection_of(IBugTask)
     @export_read_operation()
-
+    @operation_for_version('beta')
     def searchTasks(search_params, user=None,
                     order_by=None, search_text=None,
                     status=None, importance=None,
@@ -269,13 +271,14 @@ class IHasBugs(Interface):
         hardware_is_linked_to_bug to True.
         """
 
-    def getBugCounts(user, statuses=None):
-        """Return a dict with the number of bugs in each possible status.
+    def getBugTaskWeightFunction():
+        """Return a function that is used to weight the bug tasks.
 
-            :user: Only bugs the user has permission to view will be
-                   counted.
-            :statuses: Only bugs with these statuses will be counted. If
-                       None, all statuses will be included.
+        The function should take a bug task as a parameter and return
+        an OrderedBugTask.
+
+        The ordered bug tasks are used to choose the most relevant bug task
+        for any particular context.
         """
 
 
@@ -391,13 +394,17 @@ class IHasOfficialBugTags(Interface):
     def getUsedBugTags():
         """Return the tags used by the context as a sorted list of strings."""
 
-    def getUsedBugTagsWithOpenCounts(user):
+    def getUsedBugTagsWithOpenCounts(user, tag_limit=0, include_tags=None):
         """Return name and bug count of tags having open bugs.
 
-        It returns a list of tuples contining the tag name, and the
-        number of open bugs having that tag. Only the bugs that the user
-        has permission to see are counted, and only tags having open
-        bugs will be returned.
+        :param user: The user who wants the report.
+        :param tag_limit: The number of tags to return (excludes those found by
+            matching include_tags). If 0 then all tags are returned. If
+            non-zero then the most frequently used tags are returned.
+        :param include_tags: A list of string tags to return irrespective of
+            usage. Tags in this list that have no open bugs are returned with a
+            count of 0. May be None if there are tags to require inclusion of.
+        :return: A dict from tag -> count.
         """
 
     def _getOfficialTagClause():
@@ -417,12 +424,14 @@ class IOfficialBugTagTargetRestricted(Interface):
     @operation_parameters(
         tag=Tag(title=u'The official bug tag', required=True))
     @export_write_operation()
+    @operation_for_version('beta')
     def addOfficialBugTag(tag):
         """Add tag to the official bug tags of this target."""
 
     @operation_parameters(
         tag=Tag(title=u'The official bug tag', required=True))
     @export_write_operation()
+    @operation_for_version('beta')
     def removeOfficialBugTag(tag):
         """Remove tag from the official bug tags of this target."""
 

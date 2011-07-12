@@ -9,8 +9,7 @@ Test Setup
 
 Here are some imports we need to get this test running.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.translations.enums import RosettaImportStatus
     >>> from lp.translations.interfaces.translationimportqueue import (
@@ -209,7 +208,7 @@ Now let's get a PO file to import.
 By default, we got a safe path to prevent collisions with other IPOFile.
 
     >>> print pofile.path
-    generic-string...-cy.po
+    unique-...-cy.po
 
 Let's override the default good path with one we know is the right one.
 

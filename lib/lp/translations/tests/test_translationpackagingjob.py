@@ -21,6 +21,7 @@ from lp.services.job.interfaces.job import (
     )
 from lp.testing import (
     EventRecorder,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.translations.interfaces.side import TranslationSide
@@ -264,8 +265,9 @@ class TestTranslationSplitJob(TestCaseWithFactory):
             packaging.productseries, packaging.sourcepackage,
             TranslationSplitJob)
         self.assertEqual([], finder.find())
-        getUtility(IPackagingUtil).deletePackaging(
-            packaging.productseries, packaging.sourcepackagename,
-            packaging.distroseries)
+        with person_logged_in(packaging.owner):
+            getUtility(IPackagingUtil).deletePackaging(
+                packaging.productseries, packaging.sourcepackagename,
+                packaging.distroseries)
         (job,) = finder.find()
         self.assertIsInstance(job, TranslationSplitJob)

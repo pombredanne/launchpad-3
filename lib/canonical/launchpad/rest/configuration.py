@@ -27,6 +27,7 @@ class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
     last_version_with_mutator_named_operations = "beta"
     first_version_with_total_size_link = "devel"
     view_permission = "launchpad.View"
+    require_explicit_versions = True
     compensate_for_mod_compress_etag_modification = True
 
     service_description = """The Launchpad web service allows automated
@@ -59,6 +60,10 @@ class LaunchpadWebServiceConfiguration(BaseWebServiceConfiguration):
 
     def createRequest(self, body_instream, environ):
         """See `IWebServiceConfiguration`."""
+        # The request is going to try to decode the 'PATH_INFO' using utf-8,
+        # so if it is currently unicode, encode it.
+        if isinstance(environ.get('PATH_INFO'), unicode):
+            environ['PATH_INFO'] = environ['PATH_INFO'].encode('utf-8')
         request = WebServiceClientRequest(body_instream, environ)
         request.setPublication(WebServicePublication(None))
         return request

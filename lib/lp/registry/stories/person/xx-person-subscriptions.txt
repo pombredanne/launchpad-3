@@ -69,7 +69,7 @@ He chooses to view the bug about Scofflaw.
     >>> unsub_link.click()
     >>> page_text = extract_text(find_tag_by_id(
     ...     subscriber_browser.contents, 'nonportlets'))
-    >>> "Unsubscribe me from this bug" in page_text
+    >>> "unsubscribe me from this bug" in page_text
     True
 
 After viewing the +subscribe page Webster decides that he still wants to be
@@ -86,7 +86,7 @@ He chooses to unsubscribe from the bug about Affluenza.
     >>> subscriber_browser.getLink(url='/affluenza/+bug/%s/+subscribe'
     ...     % bugB.id).click()
     >>> subscriber_browser.getControl(
-    ...     "Unsubscribe me from this bug").selected = True
+    ...     "unsubscribe me from this bug").selected = True
     >>> subscriber_browser.getControl("Continue").click()
     >>> print subscriber_browser.title
     Subscriptions : Webster
@@ -136,11 +136,11 @@ Webster now chooses to unsubscribe team America from the bug about Scofflaw.
     ...     team.id).click()
     >>> print extract_text(find_tags_by_class(
     ...     subscriber_browser.contents, 'value')[0])
-    Subscribe me to this bug
-    Unsubscribe America from this bug
+    subscribe me to this bug, or
+    unsubscribe America from this bug.
 
     >>> subscriber_browser.getControl(
-    ...     'Unsubscribe America from this bug').selected = True
+    ...     'unsubscribe America from this bug').selected = True
     >>> subscriber_browser.getControl('Continue').click()
 
     >>> subscriber_browser.open(

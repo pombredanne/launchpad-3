@@ -75,7 +75,7 @@ this bug tracker as selected.
     [ ] In Launchpad
     [ ] In a registered bug tracker:
     [ ] By emailing an upstream bug contact:
-    [X] In the the Mozilla Project bug tracker (GnomeGBug GTracker)
+    [X] In the The Mozilla Project bug tracker (GnomeGBug GTracker)
 
 On second thought, Firefox has no specified bug tracker.
 

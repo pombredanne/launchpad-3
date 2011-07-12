@@ -15,7 +15,7 @@ __all__ = [
     'IObjectReassignment',
     'IPerson',
     'IPersonClaim',
-    'IPersonPublic', # Required for a monkey patch in interfaces/archive.py
+    'IPersonPublic',  # Required for a monkey patch in interfaces/archive.py
     'IPersonSet',
     'IPersonSettings',
     'ISoftwareCenterAgentAPI',
@@ -58,6 +58,7 @@ from lazr.restful.declarations import (
     export_write_operation,
     exported,
     LAZR_WEBSERVICE_EXPORTED,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -104,6 +105,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.validators import LaunchpadValidationError
@@ -632,7 +634,7 @@ class IPersonSettings(Interface):
     """
 
     selfgenerated_bugnotifications = Bool(
-        title=_("Send me bug notifications for changes I make."),
+        title=_("Send me bug notifications for changes I make"),
         required=False, default=False)
 
 
@@ -640,7 +642,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
                     IPrivacy, IHasBugs, IHasRecipes, IHasTranslationImports,
-                    IPersonSettings):
+                    IPersonSettings, IQuestionsPerson):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -730,7 +732,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
     sshkeys = exported(
              CollectionField(
-                title= _('List of SSH keys'),
+                title=_('List of SSH keys'),
                 readonly=False, required=False,
                 value_type=Reference(schema=ISSHKey)))
 
@@ -964,7 +966,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     hardware_submissions = exported(CollectionField(
             title=_("Hardware submissions"),
             readonly=True, required=False,
-            value_type=Reference(schema=Interface))) # HWSubmission
+            value_type=Reference(schema=Interface)))  # HWSubmission
 
     # This is redefined from IPrivacy.private because the attribute is
     # read-only. It is a summary of the team's visibility.
@@ -977,6 +979,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     is_merge_pending = exported(Bool(
         title=_("Is this person due to be merged with another?"),
         required=False, default=False))
+
+    administrated_teams = Attribute(
+        u"the teams that this person/team is an administrator of.")
 
     @invariant
     def personCannotHaveIcon(person):
@@ -1010,6 +1015,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         build_daily=Bool(),
         )
     @export_factory_operation(Interface, [])
+    @operation_for_version("beta")
     def createRecipe(name, description, recipe_text, distroseries,
                      registrant, daily_build_archive=None, build_daily=False):
         """Create a SourcePackageRecipe owned by this person.
@@ -1025,8 +1031,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         """
 
     @operation_parameters(name=TextLine(required=True))
-    @operation_returns_entry(Interface) # Really ISourcePackageRecipe.
+    @operation_returns_entry(Interface)  # Really ISourcePackageRecipe.
     @export_read_operation()
+    @operation_for_version("beta")
     def getRecipe(name):
         """Return the person's recipe with the given name."""
 
@@ -1035,6 +1042,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
     @call_with(requester=REQUEST_USER)
     @export_read_operation()
+    @operation_for_version("beta")
     def getArchiveSubscriptionURLs(requester):
         """Return private archive URLs that this person can see.
 
@@ -1045,8 +1053,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
     @call_with(requester=REQUEST_USER)
     @operation_parameters(
-        archive=Reference(schema=Interface)) # Really IArchive
+        archive=Reference(schema=Interface))  # Really IArchive
     @export_write_operation()
+    @operation_for_version("beta")
     def getArchiveSubscriptionURL(requester, archive):
         """Get a text line that is suitable to be used for a sources.list
         entry.
@@ -1076,6 +1085,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
     @operation_returns_collection_of(Interface)
     @export_read_operation()
+    @operation_for_version("beta")
     def getBugSubscriberPackages():
         """Return the packages for which this person is a bug subscriber.
 
@@ -1204,7 +1214,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     # @operation_parameters(team=copy_field(ITeamMembership['team']))
     # @export_read_operation()
     def inTeam(team):
-        """Is this person is a member or the owner of `team`?
+        """Is this person is a member of `team`?
 
         Returns `True` when you ask if an `IPerson` (or an `ITeam`,
         since it inherits from `IPerson`) is a member of himself
@@ -1293,6 +1303,10 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     def getPathsToTeams():
         """Return the paths to all teams related to this person."""
 
+    @operation_parameters(
+        language=Reference(schema=ILanguage))
+    @export_write_operation()
+    @operation_for_version("devel")
     def addLanguage(language):
         """Add a language to this person's preferences.
 
@@ -1302,6 +1316,10 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         already, nothing will happen.
         """
 
+    @operation_parameters(
+        language=Reference(schema=ILanguage))
+    @export_write_operation()
+    @operation_for_version("devel")
     def removeLanguage(language):
         """Remove a language from this person's preferences.
 
@@ -1367,8 +1385,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
 
     @operation_parameters(
         name=TextLine(required=True, constraint=name_validator))
-    @operation_returns_entry(Interface) # Really IArchive.
+    @operation_returns_entry(Interface)  # Really IArchive.
     @export_read_operation()
+    @operation_for_version("beta")
     def getPPAByName(name):
         """Return a PPA with the given name if it exists.
 
@@ -1382,7 +1401,8 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         name=TextLine(required=True, constraint=name_validator),
         displayname=TextLine(required=False),
         description=TextLine(required=False))
-    @export_factory_operation(Interface, []) # Really IArchive.
+    @export_factory_operation(Interface, [])  # Really IArchive.
+    @operation_for_version("beta")
     def createPPA(name=None, displayname=None, description=None):
         """Create a PPA.
 
@@ -1420,10 +1440,14 @@ class IPersonViewRestricted(Interface):
         "The number of real people who are members of this team.")
     # activemembers.value_type.schema will be set to IPerson once
     # IPerson is defined.
-    activemembers = exported(
+    activemembers = Attribute(
+        'List of direct members with ADMIN or APPROVED status')
+    # For the API we need eager loading
+    api_activemembers = exported(
         doNotSnapshot(
             CollectionField(
-                title=_("List of members with ADMIN or APPROVED status"),
+                title=_(
+                    "List of direct members with ADMIN or APPROVED status"),
                 value_type=Reference(schema=Interface))),
         exported_as='members')
     adminmembers = exported(
@@ -1549,8 +1573,9 @@ class IPersonViewRestricted(Interface):
         """
 
     @operation_parameters(status=copy_field(ITeamMembership['status']))
-    @operation_returns_collection_of(Interface) # Really IPerson
+    @operation_returns_collection_of(Interface)  # Really IPerson
     @export_read_operation()
+    @operation_for_version("beta")
     def getMembersByStatus(status, orderby=None):
         """Return the people whose membership on this team match :status:.
 
@@ -1564,6 +1589,7 @@ class IPersonEditRestricted(Interface):
     @call_with(requester=REQUEST_USER)
     @operation_parameters(team=copy_field(ITeamMembership['team']))
     @export_write_operation()
+    @operation_for_version("beta")
     def join(team, requester=None, may_subscribe_to_list=True):
         """Join the given team if its subscriptionpolicy is not RESTRICTED.
 
@@ -1590,6 +1616,7 @@ class IPersonEditRestricted(Interface):
 
     @operation_parameters(team=copy_field(ITeamMembership['team']))
     @export_write_operation()
+    @operation_for_version("beta")
     def leave(team):
         """Leave the given team.
 
@@ -1603,6 +1630,7 @@ class IPersonEditRestricted(Interface):
     @operation_parameters(
         visible=copy_field(ILocationRecord['visible'], required=True))
     @export_write_operation()
+    @operation_for_version("beta")
     def setLocationVisibility(visible):
         """Specify the visibility of a person's location and time zone."""
 
@@ -1626,6 +1654,7 @@ class IPersonEditRestricted(Interface):
         status=copy_field(ITeamMembership['status']),
         comment=Text(required=False))
     @export_write_operation()
+    @operation_for_version("beta")
     def addMember(person, reviewer, status=TeamMembershipStatus.APPROVED,
                   comment=None, force_team_add=False,
                   may_subscribe_to_list=True):
@@ -1666,6 +1695,7 @@ class IPersonEditRestricted(Interface):
         team=copy_field(ITeamMembership['team']),
         comment=Text())
     @export_write_operation()
+    @operation_for_version("beta")
     def acceptInvitationToBeMemberOf(team, comment):
         """Accept an invitation to become a member of the given team.
 
@@ -1678,6 +1708,7 @@ class IPersonEditRestricted(Interface):
         team=copy_field(ITeamMembership['team']),
         comment=Text())
     @export_write_operation()
+    @operation_for_version("beta")
     def declineInvitationToBeMemberOf(team, comment):
         """Decline an invitation to become a member of the given team.
 
@@ -1691,6 +1722,7 @@ class IPersonEditRestricted(Interface):
         team=copy_field(ITeamMembership['team']),
         comment=Text(required=False))
     @export_write_operation()
+    @operation_for_version("beta")
     def retractTeamMembership(team, user, comment=None):
         """Retract this team's membership in the given team.
 
@@ -1759,6 +1791,33 @@ class IPersonSpecialRestricted(Interface):
         :param password: The user's password.
         :param preferred_email: The `EmailAddress` to set as the account's
             preferred email address. It cannot be None.
+        """
+
+    # XXX 2011-04-20, Abel Deuring, Bug=767293: The methods canAccess()
+    # and canWrite() are defined in this interface for two reasons:
+    # 1. The functions zope.security.checker.canWrite() and
+    #    zope.security.checker.canAccess() can at present check only
+    #    permissions for the current user, and this interface is
+    #    protected by the permission launchpad.Special, which
+    #    allows users only access to theirs own object.
+    # 2. Allowing users access to check permissions for other persons
+    #    than themselves might leak information.
+    def canAccess(obj, attribute):
+        """True if this person can access the given attribute of the object.
+
+        :param obj: The object to be checked.
+        :param attributes: The name of an attribute to check.
+        :return: True if the person can access the attribute of the given
+            object, else False.
+        """
+
+    def canWrite(obj, attribute):
+        """True if this person can write the given attribute of the object.
+
+        :param obj: The object to be checked.
+        :param attribute: The name an attribute to check.
+        :return: True if the person can change the attribute of the given
+            object, else False.
         """
 
 
@@ -2034,6 +2093,7 @@ class IPersonSet(Interface):
     @export_factory_operation(
         ITeam, ['name', 'displayname', 'teamdescription',
                 'defaultmembershipperiod', 'defaultrenewalperiod'])
+    @operation_for_version("beta")
     def newTeam(teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
                 defaultmembershipperiod=None, defaultrenewalperiod=None):
@@ -2046,6 +2106,7 @@ class IPersonSet(Interface):
         email=TextLine(required=True, constraint=email_validator))
     @operation_returns_entry(IPerson)
     @export_read_operation()
+    @operation_for_version("beta")
     def getByEmail(email):
         """Return the person with the given email address.
 
@@ -2079,6 +2140,7 @@ class IPersonSet(Interface):
         text=TextLine(title=_("Search text"), default=u""))
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
+    @operation_for_version("beta")
     def find(text=""):
         """Return all non-merged Persons and Teams whose name, displayname or
         email address match <text>.
@@ -2101,6 +2163,7 @@ class IPersonSet(Interface):
         )
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
+    @operation_for_version("beta")
     def findPerson(text="", exclude_inactive_accounts=True,
                    must_have_email=False,
                    created_after=None, created_before=None):
@@ -2132,6 +2195,7 @@ class IPersonSet(Interface):
         text=TextLine(title=_("Search text"), default=u""))
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
+    @operation_for_version("beta")
     def findTeam(text=""):
         """Return all Teams whose name, displayname or email address
         match <text>.
@@ -2147,7 +2211,7 @@ class IPersonSet(Interface):
     def latest_teams(limit=5):
         """Return the latest teams registered, up to the limit specified."""
 
-    def mergeAsync(from_person, to_person):
+    def mergeAsync(from_person, to_person, reviewer=None):
         """Merge a person/team into another asynchronously.
 
         This schedules a call to `merge()` to happen outside of the current
@@ -2156,10 +2220,13 @@ class IPersonSet(Interface):
         guaranteed to succeed. If either user is in a pending person merge
         job, None is returned.
 
+        :param from_person: An IPerson or ITeam that is a duplicate.
+        :param to_person: An IPerson or ITeam that is a master.
+        :param reviewer: An IPerson who approved the ITeam merger.
         :return: A `PersonMergeJob` or None.
         """
 
-    def merge(from_person, to_person):
+    def merge(from_person, to_person, reviewer=None):
         """Merge a person/team into another.
 
         The old person/team (from_person) will be left as an atavism.
@@ -2173,9 +2240,9 @@ class IPersonSet(Interface):
         passing deactivate_members=True. In that case the user who's
         performing the merge must be provided as well.
 
-        We are not yet game to delete the `from_person` entry from the
-        database yet. We will let it roll for a while and see what cruft
-        develops. -- StuartBishop 20050812
+        :param from_person: An IPerson or ITeam that is a duplicate.
+        :param to_person: An IPerson or ITeam that is a master.
+        :param reviewer: An IPerson who approved the ITeam merger.
         """
 
     def getValidPersons(persons):
@@ -2375,7 +2442,7 @@ class NoSuchPerson(NameLookupFailed):
 # Fix value_type.schema of IPersonViewRestricted attributes.
 for name in [
     'all_members_prepopulated',
-    'activemembers',
+    'api_activemembers',
     'adminmembers',
     'proposedmembers',
     'invited_members',

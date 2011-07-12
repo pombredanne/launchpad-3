@@ -5,7 +5,6 @@
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.testing import (
-    celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -22,8 +21,8 @@ class TestPublicBugVisibility(TestCaseWithFactory):
         self.bug = self.factory.makeBug(owner=owner)
 
     def test_publicBugAnonUser(self):
-        # userCanView does not get called for anonymous users.
-        self.assertRaises(AssertionError, self.bug.userCanView, None)
+        # Since the bug is public, the anonymous user can see it.
+        self.assertTrue(self.bug.userCanView(None))
 
     def test_publicBugRegularUser(self):
         # A regular (non-privileged) user can view a public bug.
@@ -79,3 +78,7 @@ class TestPrivateBugVisibility(TestCaseWithFactory):
         with person_logged_in(self.product.owner):
             self.bug.default_bugtask.transitionToAssignee(bug_assignee)
         self.assertTrue(self.bug.userCanView(bug_assignee))
+
+    def test_publicBugAnonUser(self):
+        # Since the bug is private, the anonymous user cannot see it.
+        self.assertFalse(self.bug.userCanView(None))

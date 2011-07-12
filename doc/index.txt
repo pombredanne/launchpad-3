@@ -17,7 +17,8 @@ Overview
    :maxdepth: 1
 
    readme
-   vision
+   strategy
+   scope
    values
 
 Technical

@@ -17,8 +17,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.ftests import sync
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
@@ -26,6 +24,7 @@ from canonical.launchpad.testing.pages import (
     find_tags_by_class,
     print_table,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
@@ -43,35 +42,38 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 
 def print_direct_subscribers(bug_page):
     """Print the direct subscribers listed in a portlet."""
-    print_subscribers(bug_page, 'subscribers-direct')
+    print_subscribers(bug_page, 'Maybe', reverse=True)
 
 
 def print_also_notified(bug_page):
-    """Print the structural subscribers listed in a portlet."""
+    """Print the structural and duplicate subscribers listed in a portlet."""
     print 'Also notified:'
-    print_subscribers(bug_page, 'subscribers-indirect')
+    print_subscribers(bug_page, 'Maybe')
 
 
-def print_subscribers_from_duplicates(bug_page):
-    """Print the subscribers from duplicates listed in a portlet."""
-    print 'From duplicates:'
-    print_subscribers(bug_page, 'subscribers-from-duplicates')
+def print_subscribers(bug_page, subscription_level=None, reverse=False):
+    """Print the subscribers listed in the subscribers JSON portlet."""
+    from simplejson import loads
+    details = loads(bug_page)
 
-
-def print_subscribers(bug_page, subscriber_list_id):
-    """Print the subscribers listed in the subscriber portlet."""
-    subscriber_list = find_tag_by_id(bug_page, subscriber_list_id)
-    if subscriber_list is None:
-        # No list with this ID (as can happen if there are
-        # no indirect subscribers), so just print an empty string.
+    if details is None:
+        # No subscribers at all.
         print ""
     else:
-        anchors = subscriber_list.findAll('a')
-        for anchor in anchors:
-            sub_display = extract_text(anchor)
-            if anchor.has_key('title'):
-                sub_display += (' (%s)' % anchor['title'])
-            print sub_display
+        lines = []
+        for subscription in details:
+            level_matches = (
+                (not reverse and
+                 subscription['subscription_level'] == subscription_level) or
+                (reverse and
+                 subscription['subscription_level'] != subscription_level))
+            if subscription_level is None or level_matches:
+                subscriber = subscription['subscriber']
+                line = subscriber['display_name']
+                if subscriber['can_edit']:
+                    line += " (Unsubscribe)"
+                lines.append(line)
+        print "\n".join(sorted(lines))
 
 
 def print_bug_affects_table(content, highlighted_only=False):
@@ -224,7 +226,6 @@ def create_old_bug(
             bugtracker=external_bugtracker, remotebug='1234')
     date = datetime.now(UTC) - timedelta(days=days_old)
     removeSecurityProxy(bug).date_last_updated = date
-    sync_bugtasks([bugtask])
     return bugtask
 
 
@@ -248,15 +249,6 @@ def summarize_bugtasks(bugtasks):
             bugtask.bug.duplicateof is not None,
             bugtask.milestone is not None,
             bugtask.bug.messages.count() == 1)
-
-
-def sync_bugtasks(bugtasks):
-    """Sync the bugtask and its bug to the database."""
-    if not isinstance(bugtasks, list):
-        bugtasks = [bugtasks]
-    for bugtask in bugtasks:
-        sync(bugtask)
-        sync(bugtask.bug)
 
 
 def print_upstream_linking_form(browser):

@@ -55,16 +55,17 @@ class ITranslationGroup(IHasOwner):
     id = Int(
             title=_('Translation Group ID'), required=True, readonly=True,
             )
-    name = exported(TextLine(
+    name = exported(
+        TextLine(
             title=_('Name'), required=True,
             description=_("""Keep this name very short, unique, and
             descriptive, because it will be used in URLs. Examples:
             gnome-translation-project, ubuntu-translators."""),
             constraint=name_validator),
-            ('devel', {'exported': True}),
-            exported=False,
-            )
-    title = exported(Title(
+        as_of="devel"
+        )
+    title = exported(
+        Title(
             title=_('Title'), required=True,
             description=_("""Title of this Translation Group.
             This title is displayed at the top of the Translation Group
@@ -72,9 +73,8 @@ class ITranslationGroup(IHasOwner):
             add "translation group" to this title, or it will be shown
             double.
             """),),
-            ('devel', {'exported': True}),
-            exported=False,
-            )
+        as_of="devel"
+        )
     summary = Summary(
             title=_('Summary'), required=True,
             description=_("""A single-paragraph description of the

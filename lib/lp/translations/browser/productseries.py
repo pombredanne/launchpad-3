@@ -65,10 +65,6 @@ from lp.translations.interfaces.translationimportqueue import (
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
-from lp.translations.utilities.translationsharinginfo import (
-    has_ubuntu_template,
-    get_ubuntu_sharing_info,
-    )
 
 
 class ProductSeriesTranslationsMenuMixIn:
@@ -267,9 +263,8 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                     'should be imported, it will be reviewed manually by an '
                     'administrator in the coming few days.  You can track '
                     'your upload\'s status in the '
-                    '<a href="%s/+imports">Translation Import Queue</a>' %(
-                        canonical_url(self.context,
-                        rootsite='translations'))))
+                    '<a href="%s/+imports">Translation Import Queue</a>',
+                        canonical_url(self.context, rootsite='translations')))
 
         elif is_tar_filename(filename):
             # Add the whole tarball to the import queue.
@@ -287,43 +282,42 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                     itthey = 'they'
                 self.request.response.addInfoNotification(
                     structured(
-                    'Thank you for your upload. %d file%s from the tarball '
+                    'Thank you for your upload. %s file%s from the tarball '
                     'will be automatically '
                     'reviewed in the next few hours.  If that is not enough '
                     'to determine whether and where your file%s should '
                     'be imported, %s will be reviewed manually by an '
                     'administrator in the coming few days.  You can track '
                     'your upload\'s status in the '
-                    '<a href="%s/+imports">Translation Import Queue</a>' %(
+                    '<a href="%s/+imports">Translation Import Queue</a>',
                         num, plural_s, plural_s, itthey,
-                        canonical_url(self.context,
-                        rootsite='translations'))))
+                        canonical_url(self.context, rootsite='translations')))
                 if len(conflicts) > 0:
                     if len(conflicts) == 1:
                         warning = (
                             "A file could not be uploaded because its "
                             "name matched multiple existing uploads, for "
                             "different templates.")
-                        ul_conflicts = (
+                        ul_conflicts = structured(
                             "The conflicting file name was:<br /> "
-                            "<ul><li>%s</li></ul>" % cgi.escape(conflicts[0]))
+                            "<ul><li>%s</li></ul>", conflicts[0])
                     else:
-                        warning = (
-                            "%d files could not be uploaded because their "
+                        warning = structured(
+                            "%s files could not be uploaded because their "
                             "names matched multiple existing uploads, for "
-                            "different templates." % len(conflicts))
-                        ul_conflicts = (
+                            "different templates.", len(conflicts))
+                        ul_conflicts = structured(
                             "The conflicting file names were:<br /> "
                             "<ul><li>%s</li></ul>" % (
                             "</li><li>".join(map(cgi.escape, conflicts))))
                     self.request.response.addWarningNotification(
                         structured(
-                        warning + "  This makes it "
+                        "%s  This makes it "
                         "impossible to determine which template the new "
                         "upload was for.  Try uploading to a specific "
                         "template: visit the page for the template that you "
                         "want to upload to, and select the upload option "
-                        "from there.<br />"+ ul_conflicts))
+                        "from there.<br />%s", warning, ul_conflicts))
             else:
                 if len(conflicts) == 0:
                     self.request.response.addWarningNotification(
@@ -460,21 +454,15 @@ class ProductSeriesView(LaunchpadView,
         return check_permission("launchpad.TranslationsAdmin", self.context)
 
     def is_sharing(self):
-        return has_ubuntu_template(productseries=self.context)
+        return self.sharing_sourcepackage is not None
 
     @property
     def sharing_sourcepackage(self):
-        infos = get_ubuntu_sharing_info(productseries=self.context)
-        if len(infos) == 0:
-            return None
-        sourcepackage, template = infos[0]
-        return sourcepackage
+        return self.context.getUbuntuTranslationFocusPackage()
 
-    def getTranslationTarget(self):
+    def getTranslationSourcePackage(self):
         """See `TranslationSharingDetailsMixin`."""
-        return self.context
-
-    can_edit_sharing_details = can_configure_translations
+        return self.sharing_sourcepackage
 
 
 class SettingsRadioWidget(LaunchpadRadioWidgetWithDescription):

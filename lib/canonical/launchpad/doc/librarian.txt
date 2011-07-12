@@ -314,17 +314,45 @@ attribute set.
     >>> file_alias.restricted
     True
 
+    >>> transaction.commit()
+    >>> file_alias.open()
+    >>> print file_alias.read()
+    This is private data.
+    >>> file_alias.close()
+
+Restricted files are accessible with HTTP on a private domain.
+
     >>> print file_alias.http_url
     http://.../private.txt
     >>> file_alias.http_url.startswith(
     ...     config.librarian.restricted_download_url)
     True
 
-    >>> transaction.commit()
-    >>> file_alias.open()
-    >>> print file_alias.read()
-    This is private data.
-    >>> file_alias.close()
+They can also be accessed externally using a time-limited token appended
+to their private_url. Possession of a token is sufficient to grant access
+to a file, regardless of who is logged in. getURL can be asked to provide
+such a token.
+
+    >>> token_url = file_alias.getURL(include_token=True)
+    >>> print token_url
+    https://i...restricted.../private.txt?token=...
+    >>> token_url.startswith('https://i%d.restricted.' % file_alias.id)
+    True
+    >>> private_path = TimeLimitedToken.url_to_token_path(
+    ...     file_alias.private_url)
+    >>> token_url.endswith(session_store().find(TimeLimitedToken,
+    ...     path=private_path).any().token)
+    True
+
+LibraryFileAliasView doesn't work on restricted files. This is a temporary
+measure until we're sure no restricted files leak into the traversal
+hierarchy.
+
+    >>> view = getMultiAdapter((file_alias, request), name='+index')
+    >>> view.initialize()
+    Traceback (most recent call last):
+    ...
+    AssertionError
 
 If you try to retrieve this file through the standard ILibrarianClient,
 you'll get a DownloadFailed error.
@@ -513,11 +541,9 @@ A librarian file has a default view that should redirect to the download URL.
     ...     'text2.txt', len(data), StringIO(data), 'text/plain',
     ...     NEVER_EXPIRES)
     >>> transaction.commit()
-    >>> lfa_view = getMultiAdapter((alias,req), name='+index')
+    >>> lfa_view = getMultiAdapter((alias, req), name='+index')
     >>> lfa_view.initialize()
-    >>> lfa_url = lfa_view.context.getURL()
-    >>> url = alias.getURL()
-    >>> lfa_url == url
+    >>> req.response.getHeader("Location") == alias.getURL()
     True
 
 
@@ -561,226 +587,6 @@ Commit the just-created files.
 Clear out existing tokens.
 
     >>> _ = session_store().find(TimeLimitedToken).remove()
-
-== RedirectPerhapsWithTokenLibraryFileAliasView ==
-
-This is the eventual name of StreamOrRedirectLibraryFileAliasView once we have
-migrated over to the token based approach. For now the code for the two things
-is interleaved: zope's registration system is too static to permit doing it
-cleanly with separate classes.
-
-To enable the behaviour we want to test while its controlled by a feature
-flag, we must enable a feature flag for it:
-
-    >>> from lp.services.features.model import FeatureFlag, getFeatureStore
-    >>> ignore = getFeatureStore().add(FeatureFlag(
-    ...     scope=u'default', flag=u'publicrestrictedlibrarian', value=u'on',
-    ...     priority=1))
-    >>> transaction.commit()
-
-This special view allows granting access to restricted `LibraryFileAlias`
-objects on the launchpadlibrarian. All requests get redirected, restricted
-files have an access token allocated.
-
-This view implements `IBrowserPublisher` which allows us to use it in
-traversals.
-
-    >>> from canonical.launchpad.browser.librarian import (
-    ...     RedirectPerhapsWithTokenLibraryFileAliasView)
-
-    >>> empty_request = LaunchpadTestRequest()
-
-XXX bug=631884 we have to establish the flags object manually for testing.
-
-    >>> from lp.services.features import install_feature_controller
-    >>> from lp.services.features.flags import FeatureController
-    >>> from lp.services.features.webapp import ScopesFromRequest
-    >>> install_feature_controller(FeatureController(
-    ...     ScopesFromRequest(empty_request).lookup))
-
-    >>> restricted_view = RedirectPerhapsWithTokenLibraryFileAliasView(
-    ...     restricted_file, empty_request)
-
-    >>> from zope.publisher.interfaces.browser import IBrowserPublisher
-    >>> verifyObject(IBrowserPublisher, restricted_view)
-    True
-
-When the context file is a restricted `LibraryFileAlias`, traversal causes an
-access token to be allocated and a redirection to https on a unique domain to
-be issued.
-
-    >>> view, extra = restricted_view.browserDefault(empty_request)
-    >>> print view
-    <...RedirectionView...>
-    >>> view.target
-    'https://...restricted.txt?token=...'
-    >>> private_path = TimeLimitedToken.url_to_token_path(
-    ...     restricted_file.private_url)
-    >>> view.target.endswith(session_store().find(TimeLimitedToken,
-    ...     path=private_path).any().token)
-    True
-
-The domain for the target starts with the id of the LibraryFileAlias.
-
-    >>> view.target.startswith('https://i%d.restricted.' % restricted_file.id)
-    True
-
-Otherwise, no token is allocated and a redirection is issued to the http url.
-
-    >>> public_view = RedirectPerhapsWithTokenLibraryFileAliasView(
-    ...     public_file, empty_request)
-    >>> verifyObject(IBrowserPublisher, public_view)
-    True
-    >>> view, extra = public_view.browserDefault(empty_request)
-    >>> print view
-    <...RedirectionView ...>
-    >>> view.target == public_file.http_url
-    True
-    >>> view.target
-    'http://.../public.txt'
-
-Deleted files cannot be handled by the view and it raises an appropriate
-AssertionError when it gets traversed.
-
-    >>> deleted_view = RedirectPerhapsWithTokenLibraryFileAliasView(
-    ...     deleted_file, empty_request)
-
-    >>> view, extra = deleted_view.browserDefault(empty_request)
-    Traceback (most recent call last):
-    ...
-    AssertionError: MixedFileAliasView can not operate on deleted librarian
-    files, since their URL is undefined.
-
-
-As RedirectPerhapsWithTokenLibraryFileAliasView is
-StreamOrRedirectLibraryFileAliasView influence by a feature flag, until the
-proxy code is removed, we must remove the feature to test the old behaviour.
-
-    >>> ignore = getFeatureStore().find(FeatureFlag,
-    ...     FeatureFlag.flag==u'publicrestrictedlibrarian').remove()
-    >>> transaction.commit()
-
-Because the flags code aggressively caches, we have to do a small dance to
-convince it a new request has started too.
-
-    >>> empty_request = LaunchpadTestRequest()
-    >>> install_feature_controller(FeatureController(
-    ...     ScopesFromRequest(empty_request).lookup))
-
-== StreamOrRedirectLibraryFileAliasView ==
-
-This special view allows call sites to stream restricted `LibraryFileAlias`
-contents directly from launchpad instances.
-
-This view  implements `IBrowserPublisher` which allows us to use it in
-traversals.
-
-    >>> from canonical.launchpad.browser.librarian import (
-    ...     StreamOrRedirectLibraryFileAliasView)
-
-    >>> empty_request = LaunchpadTestRequest()
-    >>> restricted_view = StreamOrRedirectLibraryFileAliasView(
-    ...     restricted_file, empty_request)
-
-    >>> from zope.publisher.interfaces.browser import IBrowserPublisher
-    >>> verifyObject(IBrowserPublisher, restricted_view)
-    True
-
-When the context file is a restricted `LibraryFileAlias`, the
-traversal chain is finished with the view object itself.
-
-    >>> view, extra = restricted_view.browserDefault(empty_request)
-    >>> if view != restricted_view:
-    ...     print view
-    >>> view == restricted_view
-    True
-
-The zope publishing system will then call that view and receive an open
-file containig the content to be streamed, as documented in
-lib/zope/publisher/httpresults.txt. This approach minimises the memory
-usage when streaming huge files.
-
-    >>> result = view()
-    >>> print result
-    <open file '<fdopen>', mode 'w+b' ...>
-
-    >>> result.seek(0)
-    >>> print result.read()
-    RESTRICTED
-
-`StreamOrRedirectLibraryFileAliasView` ignores the system http_proxy
-configuration and is still able to access the restricted file even if
-a invalid proxy address is set.
-
-This approach was adopted because all launchpad machines are
-configured to use the same proxy, originally for external
-access. Openning the restricted librarian for the proxy host would be
-too permissive and that's why we only allow direct access from the
-app-servers.
-
-Let's configure a broken proxy and refresh the default urllib2 opener
-to follow it.
-
-    >>> import os
-    >>> import urllib2
-    >>> os.environ['http_proxy'] = 'http://foo.bar:1234'
-    >>> urllib2.install_opener(urllib2.build_opener())
-
-The file can be reached by `StreamOrRedirectLibraryFileAliasView`.
-
-    >>> result = view()
-    >>> result.seek(0)
-    >>> print result.read()
-    RESTRICTED
-
-But is unreachable in the test scope, due to the broken proxy
-settings.
-
-    >>> print os.environ['http_proxy']
-    http://foo.bar:1234
-
-    # AaronBentley 2009-02-13 bug=329140
-    # This causes a spurious test failure on systems that use wildcard DNS.
-    #>>> print restricted_file.read()
-    Traceback (most recent call last):
-    ...
-    URLError: <urlopen error (-2, 'Name or service not known')>
-
-Let's remove the broken proxy settings to avoid compromising other
-tests.
-
-    >>> del os.environ['http_proxy']
-    >>> urllib2.install_opener(urllib2.build_opener())
-
-When the context given to `StreamOrRedirectLibraryFileAliasView` is a
-public `LibraryFileAlias` the traversal chain is extended with a
-`RedirectionView` pointing to its public librarian url.
-
-    >>> public_view = StreamOrRedirectLibraryFileAliasView(
-    ...     public_file, empty_request)
-
-    >>> verifyObject(IBrowserPublisher, public_view)
-    True
-
-    >>> view, extra = public_view.browserDefault(empty_request)
-
-    >>> print view
-    <...RedirectionView ...>
-
-    >>> view.target == public_file.http_url
-    True
-
-Files in this condition cannot be handled by the view and it raises an
-appropriate AssertionError when it gets traversed.
-
-    >>> deleted_view = StreamOrRedirectLibraryFileAliasView(
-    ...     deleted_file, empty_request)
-
-    >>> view, extra = deleted_view.browserDefault(empty_request)
-    Traceback (most recent call last):
-    ...
-    AssertionError: MixedFileAliasView can not operate on deleted librarian
-    files, since their URL is undefined.
 
 
 == LibraryFileAliasMD5View ==

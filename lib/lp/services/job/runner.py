@@ -1,14 +1,13 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Facilities for running Jobs."""
 
-
 __metaclass__ = type
-
 
 __all__ = [
     'BaseRunnableJob',
+    'BaseRunnableJobSource',
     'JobCronScript',
     'JobRunner',
     'JobRunnerProcess',
@@ -21,13 +20,17 @@ from collections import defaultdict
 import contextlib
 import logging
 import os
+from resource import (
+    getrlimit,
+    RLIMIT_AS,
+    setrlimit,
+    )
 from signal import (
-    getsignal,
-    SIGCHLD,
     SIGHUP,
     signal,
     )
 import sys
+from textwrap import dedent
 
 from ampoule import (
     child,
@@ -41,6 +44,7 @@ from twisted.internet import (
     reactor,
     )
 from twisted.protocols import amp
+from twisted.python import log
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -52,16 +56,29 @@ from lp.services.job.interfaces.job import (
     IJob,
     IRunnableJob,
     LeaseHeld,
+    SuspendJobException,
     )
 from lp.services.mail.sendmail import MailController
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.twistedsupport import run_reactor
 from lp.services.twistedsupport.task import (
     ParallelLimitedTaskConsumer,
     PollingTaskSource,
     )
 
 
-class BaseRunnableJob:
+class BaseRunnableJobSource:
+    """Base class for job sources for the job runner."""
+
+    memory_limit = None
+
+    @staticmethod
+    @contextlib.contextmanager
+    def contextManager():
+        yield
+
+
+class BaseRunnableJob(BaseRunnableJobSource):
     """Base class for jobs to be run via JobRunner.
 
     Derived classes should implement IRunnableJob, which requires implementing
@@ -73,6 +90,8 @@ class BaseRunnableJob:
     delegates(IJob, 'job')
 
     user_error_types = ()
+
+    retry_error_types = ()
 
     # We redefine __eq__ and __ne__ here to prevent the security proxy
     # from mucking up our comparisons in tests and elsewhere.
@@ -144,11 +163,6 @@ class BaseRunnableJob:
             return
         ctrl.send()
 
-    @staticmethod
-    @contextlib.contextmanager
-    def contextManager():
-        yield
-
 
 class BaseJobRunner(object):
     """Runner of Jobs."""
@@ -160,6 +174,7 @@ class BaseJobRunner(object):
             logger = logging.getLogger()
         self.logger = logger
         self.error_utility = error_utility
+        self.oops_ids = []
         if self.error_utility is None:
             self.error_utility = errorlog.globalErrorUtility
 
@@ -171,9 +186,20 @@ class BaseJobRunner(object):
             'Running job in status %s' % (job.status.title,))
         job.start()
         transaction.commit()
-
+        do_retry = False
         try:
-            job.run()
+            try:
+                job.run()
+            except job.retry_error_types, e:
+                if job.attempt_count > job.max_retries:
+                    raise
+                self.logger.exception(
+                    "Scheduling retry due to %s.", e.__class__.__name__)
+                do_retry = True
+        except SuspendJobException:
+            self.logger.debug("Job suspended itself")
+            job.suspend()
+            self.incomplete_jobs.append(job)
         except Exception:
             self.logger.exception("Job execution raised an exception.")
             transaction.abort()
@@ -185,8 +211,12 @@ class BaseJobRunner(object):
         else:
             # Commit transaction to update the DB time.
             transaction.commit()
-            job.complete()
-            self.completed_jobs.append(job)
+            if do_retry:
+                job.queue()
+                self.incomplete_jobs.append(job)
+            else:
+                job.complete()
+                self.completed_jobs.append(job)
         # Commit transaction to update job status.
         transaction.commit()
 
@@ -233,6 +263,7 @@ class BaseJobRunner(object):
         """Report oopses by id to the log."""
         if self.logger is not None:
             self.logger.info('Job resulted in OOPS: %s' % oops_id)
+        self.oops_ids.append(oops_id)
 
 
 class JobRunner(BaseJobRunner):
@@ -303,8 +334,23 @@ class JobRunnerProcess(child.AMPChild):
 
     @classmethod
     def __enter__(cls):
-
         def handler(signum, frame):
+            # We raise an exception **and** schedule a call to exit the
+            # process hard.  This is because we cannot rely on the exception
+            # being raised during useful code.  Sometimes, it will be raised
+            # while the reactor is looping, which means that it will be
+            # ignored.
+            #
+            # If the exception is raised during the actual job, then we'll get
+            # a nice traceback indicating what timed out, and that will be
+            # logged as an OOPS.
+            #
+            # Regardless of where the exception is raised, we'll hard exit the
+            # process and have a TimeoutError OOPS logged, although that will
+            # have a crappy traceback. See the job_raised callback in
+            # TwistedJobRunner.runJobInSubprocess for the other half of that.
+            reactor.callFromThread(
+                reactor.callLater, 0, os._exit, TwistedJobRunner.TIMEOUT_CODE)
             raise TimeoutError
         scripts.execute_zcml_for_scripts(use_web_security=False)
         signal(SIGHUP, handler)
@@ -329,6 +375,11 @@ class JobRunnerProcess(child.AMPChild):
         """Run a job from this job_source according to its job id."""
         runner = BaseJobRunner()
         job = self.job_source.get(job_id)
+        if self.job_source.memory_limit is not None:
+            soft_limit, hard_limit = getrlimit(RLIMIT_AS)
+            if soft_limit != self.job_source.memory_limit:
+                limits = (self.job_source.memory_limit, hard_limit)
+                setrlimit(RLIMIT_AS, limits)
         oops = runner.runJobHandleError(job)
         if oops is None:
             oops_id = ''
@@ -339,6 +390,8 @@ class JobRunnerProcess(child.AMPChild):
 
 class TwistedJobRunner(BaseJobRunner):
     """Run Jobs via twisted."""
+
+    TIMEOUT_CODE = 42
 
     def __init__(self, job_source, dbuser, logger=None, error_utility=None):
         env = {'PATH': os.environ['PATH']}
@@ -373,7 +426,7 @@ class TwistedJobRunner(BaseJobRunner):
         self.logger.debug(
             'Running %r, lease expires %s', job, job.lease_expires)
         deferred = self.pool.doWork(
-            RunJobCommand, job_id = job_id, _deadline=deadline)
+            RunJobCommand, job_id=job_id, _deadline=deadline)
 
         def update(response):
             if response['success']:
@@ -382,22 +435,44 @@ class TwistedJobRunner(BaseJobRunner):
             else:
                 self.incomplete_jobs.append(job)
                 self.logger.debug('Incomplete %r', job)
+                # Kill the worker that experienced a failure; this only
+                # works because there's a single worker.
+                self.pool.stopAWorker()
             if response['oops_id'] != '':
                 self._logOopsId(response['oops_id'])
 
         def job_raised(failure):
             self.incomplete_jobs.append(job)
-            info = (failure.type, failure.value, failure.tb)
-            oops = self._doOops(job, info)
-            self._logOopsId(oops.id)
+            exit_code = getattr(failure.value, 'exitCode', None)
+            if exit_code == self.TIMEOUT_CODE:
+                # The process ended with the error code that we have
+                # arbitrarily chosen to indicate a timeout. Rather than log
+                # that error (ProcessDone), we log a TimeoutError instead.
+                self._logTimeout(job)
+            else:
+                info = (failure.type, failure.value, failure.tb)
+                oops = self._doOops(job, info)
+                self._logOopsId(oops.id)
         deferred.addCallbacks(update, job_raised)
         return deferred
+
+    def _logTimeout(self, job):
+        try:
+            raise TimeoutError
+        except TimeoutError:
+            oops = self._doOops(job, sys.exc_info())
+            self._logOopsId(oops.id)
 
     def getTaskSource(self):
         """Return a task source for all jobs in job_source."""
 
         def producer():
             while True:
+                # XXX: JonathanLange bug=741204: If we're getting all of the
+                # jobs at the start anyway, we can use a DeferredSemaphore,
+                # instead of the more complex PollingTaskSource, which is
+                # better suited to cases where we don't know how much work
+                # there will be.
                 jobs = list(self.job_source.iterReady())
                 if len(jobs) == 0:
                     yield None
@@ -407,9 +482,9 @@ class TwistedJobRunner(BaseJobRunner):
 
     def doConsumer(self):
         """Create a ParallelLimitedTaskConsumer for this job type."""
-        logger = logging.getLogger('gloop')
-        logger.addHandler(logging.StreamHandler(sys.stdout))
-        logger.setLevel(logging.DEBUG)
+        # 1 is hard-coded for now until we're sure we'd get gains by running
+        # more than one at a time.  Note that several tests, including
+        # test_timeout, rely on this being 1.
         consumer = ParallelLimitedTaskConsumer(1, logger=None)
         return consumer.consume(self.getTaskSource())
 
@@ -430,29 +505,72 @@ class TwistedJobRunner(BaseJobRunner):
         self.terminated()
 
     @classmethod
-    def runFromSource(cls, job_source, dbuser, logger):
+    def runFromSource(cls, job_source, dbuser, logger, _log_twisted=False):
         """Run all ready jobs provided by the specified source.
 
         The dbuser parameter is not ignored.
+        :param _log_twisted: For debugging: If True, emit verbose Twisted
+            messages to stderr.
         """
         logger.info("Running through Twisted.")
+        if _log_twisted:
+            logging.getLogger().setLevel(0)
+            logger_object = logging.getLogger('twistedjobrunner')
+            handler = logging.StreamHandler(sys.stderr)
+            logger_object.addHandler(handler)
+            observer = log.PythonLoggingObserver(
+                loggerName='twistedjobrunner')
+            log.startLoggingWithObserver(observer.emit)
         runner = cls(job_source, dbuser, logger)
         reactor.callWhenRunning(runner.runAll)
-        handler = getsignal(SIGCHLD)
-        try:
-            reactor.run()
-        finally:
-            signal(SIGCHLD, handler)
+        run_reactor()
         return runner
 
 
 class JobCronScript(LaunchpadCronScript):
-    """Base class for scripts that run jobs."""
+    """Generic job runner.
+
+    :ivar config_name: Optional name of a configuration section that specifies
+        the jobs to run.  Alternatively, may be taken from the command line.
+    :ivar source_interface: `IJobSource`-derived utility to iterate pending
+        jobs of the type that is to be run.
+    """
 
     config_name = None
 
+    usage = dedent("""\
+        run_jobs.py [options] [lazr-configuration-section]
+
+        Run Launchpad Jobs of one particular type.
+
+        The lazr configuration section specifies what jobs to run, and how.
+        It should provide at least:
+
+         * source_interface, the name of the IJobSource-derived utility
+           interface for the job type that you want to run.
+
+         * dbuser, the name of the database role to run the job under.
+        """).rstrip()
+
+    description = (
+        "Takes pending jobs of the given type off the queue and runs them.")
+
     def __init__(self, runner_class=JobRunner, test_args=None, name=None,
                  commandline_config=False):
+        """Initialize a `JobCronScript`.
+
+        :param runner_class: The runner class to use.  Defaults to
+            `JobRunner`, which runs synchronously, but could also be
+            `TwistedJobRunner` which is asynchronous.
+        :param test_args: For tests: pretend that this list of arguments has
+            been passed on the command line.
+        :param name: Identifying name for this type of job.  Is also used to
+            compose a lock file name.
+        :param commandline_config: If True, take configuration from the
+            command line (in the form of a config section name).  Otherwise,
+            rely on the subclass providing `config_name` and
+            `source_interface`.
+        """
         super(JobCronScript, self).__init__(
             name=name, dbuser=None, test_args=test_args)
         self._runner_class = runner_class

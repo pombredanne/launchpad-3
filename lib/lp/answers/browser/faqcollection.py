@@ -25,10 +25,10 @@ from lp.answers.interfaces.faqcollection import (
     IFAQCollection,
     ISearchFAQsForm,
     )
-from lp.answers.interfaces.questioncollection import (
+from lp.answers.enums import (
+    QuestionSort,
     QUESTION_STATUS_DEFAULT_SEARCH,
     )
-from lp.answers.interfaces.questionenums import QuestionSort
 from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
@@ -147,5 +147,5 @@ class SearchFAQsView(LaunchpadFormView):
                 status.title for status in QUESTION_STATUS_DEFAULT_SEARCH],
              'field.search_text': self.search_text,
              'field.actions.search': 'Search',
-             'field.sort' : QuestionSort.RELEVANCY.title,
+             'field.sort': QuestionSort.RELEVANCY.title,
              'field.language-empty-marker': 1}, doseq=True)

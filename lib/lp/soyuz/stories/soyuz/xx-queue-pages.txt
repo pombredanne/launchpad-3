@@ -112,8 +112,8 @@ custom-upload filename.
   >>> anon_browser.getControl("Update").click()
   >>> print_queue(anon_browser.contents)
   Package             Version   Component Section  Priority Sets Pocket   When
-  netapplet...(raw-translations) -                               Updates  2006-...
   netapplet...ddtp... -                                          Backp... 2006-...
+  netapplet...(raw-translations) -                               Updates  2006-...
 
   >>> anon_browser.getControl(
   ...     name="queue_state", index=0).displayValue = ['New']
@@ -530,7 +530,7 @@ One rejection email is generated:
 
   >>> [rejection] = pop_notifications()
   >>> rejection['Subject']
-  'netapplet-1.0.0.tar.gz rejected'
+  '[ubuntu/breezy-autotest] alsa-utils 1.0.9a-4ubuntu1 (Rejected)'
 
 Please note that in this case the rejection reason is not available
 and how that's stated in the notification email body.

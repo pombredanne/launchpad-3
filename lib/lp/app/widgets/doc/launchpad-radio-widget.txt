@@ -30,6 +30,8 @@ buttons inside.
     <input class="radioType" id="field.branch_type.1" name="field.branch_type"
            type="radio" value="MIRRORED" />&nbsp;Mirrored
     <input class="radioType" id="field.branch_type.2" name="field.branch_type"
+           type="radio" value="IMPORTED" />&nbsp;Imported
+    <input class="radioType" id="field.branch_type.3" name="field.branch_type"
            type="radio" value="REMOTE" />&nbsp;Remote
 
 
@@ -69,8 +71,18 @@ to associate the label with the radio button input.
     </tr>
     <tr>
       <td rowspan="2"><input class="radioType" id="field.branch_type.2"
+          name="field.branch_type" type="radio" value="IMPORTED" /></td>
+      <td><label for="field.branch_type.2">Imported</label></td>
+    </tr>
+    <tr>
+      <td class="formHelp">Branches that have been converted from some
+      other revision control system into bzr and are made available through
+      Launchpad. </td>
+    </tr>
+    <tr>
+      <td rowspan="2"><input class="radioType" id="field.branch_type.3"
           name="field.branch_type" type="radio" value="REMOTE" /></td>
-      <td><label for="field.branch_type.2">Remote</label></td>
+      <td><label for="field.branch_type.3">Remote</label></td>
     </tr>
     <tr>
       <td class="formHelp">Registered in Launchpad with an external location,

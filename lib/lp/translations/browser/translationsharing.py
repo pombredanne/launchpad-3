@@ -11,6 +11,7 @@ __all__ = [
 
 
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.authorization import check_permission
 
 
 class TranslationSharingDetailsMixin:
@@ -24,34 +25,34 @@ class TranslationSharingDetailsMixin:
         """Whether this object is sharing translations or not."""
         raise NotImplementedError
 
-    def can_edit_sharing_details(self):
-        """If the current user can edit sharing details."""
-        raise NotImplementedError
-
-    def getTranslationTarget(self):
-        """Return either a productseries or a sourcepackage."""
+    def getTranslationSourcePackage(self):
+        """Return the sourcepackage or None."""
         raise NotImplementedError
 
     def sharing_details(self):
         """Construct the link to the sharing details page."""
         tag_template = (
             '<a class="sprite %(icon)s" id="sharing-details"'
-            ' href="%(href)s/+sharing-details">%(text)s</a>')
+            ' href="%(href)s">%(text)s</a>')
 
-        if self.can_edit_sharing_details():
+        sourcepackage = self.getTranslationSourcePackage()
+        if sourcepackage is None:
+            return ""
+        productseries = sourcepackage.productseries
+        can_edit_upstream = (
+            productseries is None or
+            check_permission('launchpad.Edit', productseries))
+        if can_edit_upstream:
             icon = 'edit'
             if self.is_sharing():
                 text = "Edit sharing details"
             else:
                 text = "Set up sharing"
         else:
-            if self.is_sharing():
-                icon = 'info'
-                text = "View sharing details"
-            else:
-                return ""
+            icon = 'info'
+            text = "View sharing details"
         href = canonical_url(
-            self.getTranslationTarget(),
+            sourcepackage,
             rootsite='translations',
-            )
+            view_name='+sharing-details')
         return tag_template % dict(icon=icon, text=text, href=href)

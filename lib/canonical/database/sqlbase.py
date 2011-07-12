@@ -24,7 +24,6 @@ __all__ = [
     'quote_like',
     'quoteIdentifier',
     'quote_identifier',
-    'RandomiseOrderDescriptor',
     'reset_store',
     'rollback',
     'session_store',
@@ -184,8 +183,9 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         correct master Store.
         """
         from canonical.launchpad.interfaces.lpstorm import IMasterStore
-        # Make it simple to write dumb-invalidators - initialised
-        # _cached_properties to a valid list rather than just-in-time creation.
+        # Make it simple to write dumb-invalidators - initialized
+        # _cached_properties to a valid list rather than just-in-time
+        # creation.
         self._cached_properties = []
         store = IMasterStore(self.__class__)
 
@@ -342,7 +342,10 @@ class ZopelessTransactionManager(object):
             [database]
             rw_main_master: %(main_connection_string)s
             isolation_level: %(isolation_level)s
-            """ % vars())
+            """ % {
+                'isolation_level': isolation_level,
+                'main_connection_string': main_connection_string,
+                })
 
         if dbuser:
             # XXX 2009-05-07 stub bug=373252: Scripts should not be connecting
@@ -351,7 +354,7 @@ class ZopelessTransactionManager(object):
                 [launchpad]
                 dbuser: %(dbuser)s
                 auth_dbuser: launchpad_auth
-                """ % vars())
+                """ % {'dbuser': dbuser})
 
         if cls._installed is not None:
             if cls._config_overlay != overlay:
@@ -643,7 +646,7 @@ def quote_identifier(identifier):
     >>> print quoteIdentifier('\\"')
     "\"""
     '''
-    return '"%s"' % identifier.replace('"','""')
+    return '"%s"' % identifier.replace('"', '""')
 
 
 quoteIdentifier = quote_identifier # Backwards compatibility for now.
@@ -743,6 +746,7 @@ def flush_database_caches():
 
 def block_implicit_flushes(func):
     """A decorator that blocks implicit flushes on the main store."""
+
     def block_implicit_flushes_decorator(*args, **kwargs):
         from canonical.launchpad.webapp.interfaces import DisallowedStore
         try:
@@ -759,6 +763,7 @@ def block_implicit_flushes(func):
 
 def reset_store(func):
     """Function decorator that resets the main store."""
+
     def reset_store_decorator(*args, **kwargs):
         try:
             return func(*args, **kwargs)
@@ -851,6 +856,10 @@ class cursor:
     @property
     def rowcount(self):
         return self._result._raw_cursor.rowcount
+
+    @property
+    def description(self):
+        return self._result._raw_cursor.description
 
     def fetchone(self):
         assert self._result is not None, "No results to fetch"

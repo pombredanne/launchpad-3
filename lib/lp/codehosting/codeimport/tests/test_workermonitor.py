@@ -74,16 +74,12 @@ from lp.services.twistedsupport.tests.test_processmonitor import (
     makeFailure,
     ProcessTestsMixin,
     )
-from lp.services.twistedsupport.xmlrpc import fix_bug_2518
 from lp.testing import (
     login,
     logout,
     TestCase,
     )
 from lp.testing.factory import LaunchpadObjectFactory
-
-
-fix_bug_2518()
 
 
 class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
@@ -425,6 +421,38 @@ class TestWorkerMonitorUnit(TestCase):
                 error.ProcessTerminated,
                 exitCode=CodeImportWorkerExitCode.SUCCESS_PARTIAL))
         self.assertEqual(calls, [CodeImportResultStatus.SUCCESS_PARTIAL])
+        self.assertOopsesLogged([])
+        # We return the deferred that callFinishJob returns -- if
+        # callFinishJob did not swallow the error, this will fail the test.
+        return ret
+
+    def test_callFinishJobCallsFinishJobInvalid(self):
+        # If the argument to callFinishJob indicates that the subprocess
+        # exited with a code of CodeImportWorkerExitCode.FAILURE_INVALID, it
+        # calls finishJob with a status of FAILURE_INVALID.
+        worker_monitor = self.makeWorkerMonitorWithJob()
+        calls = self.patchOutFinishJob(worker_monitor)
+        ret = worker_monitor.callFinishJob(
+            makeFailure(
+                error.ProcessTerminated,
+                exitCode=CodeImportWorkerExitCode.FAILURE_INVALID))
+        self.assertEqual(calls, [CodeImportResultStatus.FAILURE_INVALID])
+        self.assertOopsesLogged([])
+        # We return the deferred that callFinishJob returns -- if
+        # callFinishJob did not swallow the error, this will fail the test.
+        return ret
+
+    def test_callFinishJobCallsFinishJobUnsupportedFeature(self):
+        # If the argument to callFinishJob indicates that the subprocess
+        # exited with a code of FAILURE_UNSUPPORTED_FEATURE, it
+        # calls finishJob with a status of FAILURE_UNSUPPORTED_FEATURE.
+        worker_monitor = self.makeWorkerMonitorWithJob()
+        calls = self.patchOutFinishJob(worker_monitor)
+        ret = worker_monitor.callFinishJob(
+            makeFailure(
+                error.ProcessTerminated,
+                exitCode=CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE))
+        self.assertEqual(calls, [CodeImportResultStatus.FAILURE_UNSUPPORTED_FEATURE])
         self.assertOopsesLogged([])
         # We return the deferred that callFinishJob returns -- if
         # callFinishJob did not swallow the error, this will fail the test.

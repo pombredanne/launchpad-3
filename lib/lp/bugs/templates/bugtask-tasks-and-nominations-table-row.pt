@@ -49,7 +49,7 @@
         <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
           Edit
         </button>
-        <div class="yui3-activator-message-box yui3-activator-hidden" />
+        <div class="yui3-activator-message-box yui3-activator-hidden"></div>
       </span>
     </td>
 
@@ -143,7 +143,7 @@
           <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
             Edit
           </button>
-          <div class="yui3-activator-message-box yui3-activator-hidden" />
+          <div class="yui3-activator-message-box yui3-activator-hidden"></div>
         </span>
       </tal:has_no_watch>
     </td>

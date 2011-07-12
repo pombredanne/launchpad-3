@@ -31,10 +31,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import (
-    DEFAULT,
-    UTC_NOW,
-    )
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
@@ -50,8 +47,8 @@ from canonical.launchpad.database.librarian import (
     LibraryFileContent,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import validate_public_person
@@ -467,66 +464,19 @@ class SourcePackageRelease(SQLBase):
         queries = [
             "BinaryPackageBuild.package_build = PackageBuild.id AND "
             "PackageBuild.build_farm_job = BuildFarmJob.id AND "
+            "DistroArchSeries.id = BinaryPackageBuild.distro_arch_series AND "
+            "PackageBuild.archive = %s AND "
+            "DistroArchSeries.architecturetag = %s AND "
             "BinaryPackageBuild.source_package_release = %s" % (
-            sqlvalues(self))]
-
-        # Find out all the possible parent DistroArchSeries
-        # a build could be issued (then inherited).
-        parent_architectures = []
-        archtag = distroarchseries.architecturetag
-
-        if archive.purpose in MAIN_ARCHIVE_PURPOSES:
-            # XXX cprov 20070720: this code belongs to IDistroSeries content
-            # class as 'parent_series' property. Other parts of the system
-            # can benefit of this, like SP.packagings, for instance.
-            parent_series = []
-            candidate = distroarchseries.distroseries
-            while candidate is not None:
-                parent_series.append(candidate)
-                candidate = candidate.parent_series
-
-            for series in parent_series:
-                try:
-                    candidate = series[archtag]
-                except NotFoundError:
-                    pass
-                else:
-                    parent_architectures.append(candidate)
-            # end-of-XXX.
-        else:
-            parent_architectures.append(distroarchseries)
-
-        architectures = [
-            architecture.id for architecture in parent_architectures]
-        queries.append(
-            "BinaryPackageBuild.distro_arch_series IN %s" % (
-                sqlvalues(architectures)))
-
-        # Follow archive inheritance across distribution offical archives,
-        # for example:
-        # guadalinex/foobar/PRIMARY was initialised from ubuntu/dapper/PRIMARY
-        # guadalinex/foobar/PARTNER was initialised from ubuntu/dapper/PARTNER
-        # and so on
-        if archive.purpose in MAIN_ARCHIVE_PURPOSES:
-            parent_archives = set()
-            archive_set = getUtility(IArchiveSet)
-            for series in parent_series:
-                target_archive = archive_set.getByDistroPurpose(
-                    series.distribution, archive.purpose)
-                parent_archives.add(target_archive)
-            archives = [archive.id for archive in parent_archives]
-        else:
-            archives = [archive.id, ]
-
-        queries.append(
-            "PackageBuild.archive IN %s" % sqlvalues(archives))
+            sqlvalues(archive.id, distroarchseries.architecturetag, self))]
 
         # Query only the last build record for this sourcerelease
         # across all possible locations.
         query = " AND ".join(queries)
 
         return BinaryPackageBuild.selectFirst(
-            query, clauseTables=['BuildFarmJob', 'PackageBuild'],
+            query, clauseTables=[
+                'BuildFarmJob', 'PackageBuild', 'DistroArchSeries'],
             orderBy=['-BuildFarmJob.date_created'])
 
     def override(self, component=None, section=None, urgency=None):
@@ -624,11 +574,13 @@ class SourcePackageRelease(SQLBase):
 
         queue = getUtility(ITranslationImportQueue)
 
+        only_templates=self.sourcepackage.has_sharing_translation_templates
         queue.addOrUpdateEntriesFromTarball(
             tarball, by_maintainer, importer,
             sourcepackagename=self.sourcepackagename,
             distroseries=self.upload_distroseries,
-            filename_filter=_filter_ubuntu_translation_file)
+            filename_filter=_filter_ubuntu_translation_file,
+            only_templates=only_templates)
 
     def getDiffTo(self, to_sourcepackagerelease):
         """See ISourcePackageRelease."""

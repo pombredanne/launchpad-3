@@ -20,8 +20,8 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.mail import format_address
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 
 
 def format_rfc2822_date(date):
@@ -195,6 +195,6 @@ class BugNotificationBuilder:
         if filters is not None:
             for filter in filters:
                 message.add_header(
-                    'X-Launchpad-Subscription-Filter', filter)
+                    'X-Launchpad-Subscription', filter)
 
         return message

@@ -39,8 +39,7 @@ from storm.store import Store
 
 from canonical.lp import initZopeless
 
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities)
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.scripts.logger import logger, logger_options
 from canonical.launchpad.webapp.interfaces import (
@@ -59,7 +58,7 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     )
 from lp.soyuz.model.section import SectionSelection
 from lp.soyuz.model.component import ComponentSelection
-from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries
+from lp.soyuz.scripts.initialize_distroseries import InitializeDistroSeries
 from lp.testing.factory import LaunchpadObjectFactory
 
 
@@ -218,19 +217,20 @@ def create_components(distroseries, uploader):
 def create_series(parent, full_name, version, status):
     """Set up a `DistroSeries`."""
     distribution = parent.distribution
-    owner = parent.owner
+    registrant = parent.owner
     name = full_name.split()[0].lower()
     title = "The " + full_name
     displayname = full_name.split()[0]
     new_series = distribution.newSeries(name=name, title=title,
         displayname=displayname, summary='Ubuntu %s is good.' % version,
         description='%s is awesome.' % version, version=version,
-        parent_series=parent, owner=owner)
+        previous_series=None, registrant=registrant)
     new_series.status = status
     notify(ObjectCreatedEvent(new_series))
 
-    ids = InitialiseDistroSeries(new_series)
-    ids.initialise()
+    new_series.previous_series = parent
+    ids = InitializeDistroSeries(new_series, [parent.id])
+    ids.initialize()
     return new_series
 
 
@@ -306,21 +306,21 @@ def set_source_package_format(distroseries):
         utility.add(distroseries, format)
 
 
-def populate(distribution, parent_series_name, uploader_name, options, log):
+def populate(distribution, previous_series_name, uploader_name, options, log):
     """Set up sample data on `distribution`."""
-    parent_series = distribution.getSeries(parent_series_name)
+    previous_series = distribution.getSeries(previous_series_name)
 
     log.info("Configuring sections...")
-    create_sections(parent_series)
-    add_architecture(parent_series, 'amd64')
+    create_sections(previous_series)
+    add_architecture(previous_series, 'amd64')
 
     log.info("Configuring components and permissions...")
     uploader = get_person_set().getByName(uploader_name)
-    create_components(parent_series, uploader)
+    create_components(previous_series, uploader)
 
-    set_source_package_format(parent_series)
+    set_source_package_format(previous_series)
 
-    create_sample_series(parent_series, log)
+    create_sample_series(previous_series, log)
 
 
 def sign_code_of_conduct(person, log):
@@ -345,10 +345,7 @@ def create_ppa_user(username, options, approver, log):
     if person is None:
         have_email = (options.email != default_email)
         command_line = [
-            'utilities/make-lp-user',
-            username,
-            'ubuntu-team'
-            ]
+            'utilities/make-lp-user', username, 'ubuntu-team']
         if have_email:
             command_line += ['--email', options.email]
 

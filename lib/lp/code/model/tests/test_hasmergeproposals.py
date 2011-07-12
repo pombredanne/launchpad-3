@@ -7,8 +7,10 @@ __metaclass__ = type
 
 import unittest
 
+from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.hasbranches import IHasMergeProposals
+from lp.registry.model.personproduct import PersonProduct
 from lp.testing import TestCaseWithFactory
 
 
@@ -32,7 +34,12 @@ class TestIHasMergeProposals(TestCaseWithFactory):
         project = self.factory.makeProject()
         self.assertProvides(project, IHasMergeProposals)
 
+    def test_PersonProduct_implements_hasmergeproposals(self):
+        # PersonProducts should implement IHasMergeProposals.
+        product = self.factory.makeProduct()
+        person_product = PersonProduct(product.owner, product)
+        verifyObject(IHasMergeProposals, person_product)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

@@ -15,6 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
+    person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
@@ -816,7 +817,8 @@ class TestFindMergablePackagings(TestCaseWithFactory):
         """Remove sample data to simplify tests."""
         super(TestFindMergablePackagings, self).setUp()
         for packaging in set(TranslationMerger.findMergeablePackagings()):
-            packaging.destroySelf()
+            with person_logged_in(packaging.owner):
+                packaging.destroySelf()
 
     def makePackagingLink(self, non_ubuntu=False):
         if non_ubuntu:

@@ -1,7 +1,12 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Connect Feature flags into webapp requests."""
+"""Connect feature flags into scopes where they can be used.
+
+The most common is flags scoped by some attribute of a web request, such as
+the page ID or the server name.  But other types of scope can also match code
+run from cron scripts and potentially also other places.
+"""
 
 __all__ = [
     'HANDLERS',
@@ -31,12 +36,9 @@ class BaseScope():
     documentation, so write them accordingly.
     """
 
-    # The regex pattern used to decide if a handler can evalute a particular
+    # The regex pattern used to decide if a handler can evaluate a particular
     # scope.  Also used on +feature-info.
     pattern = None
-
-    def __init__(self, request):
-        self.request = request
 
     @cachedproperty
     def compiled_pattern(self):
@@ -58,7 +60,14 @@ class DefaultScope(BaseScope):
         return True
 
 
-class PageScope(BaseScope):
+class BaseWebRequestScope(BaseScope):
+    """Base class for scopes that key off web request attributes."""
+
+    def __init__(self, request):
+        self.request = request
+
+
+class PageScope(BaseWebRequestScope):
     """The current page ID.
 
     Pageid scopes are written as 'pageid:' + the pageid to match.  Pageids
@@ -153,7 +162,6 @@ class ScriptScope(BaseScope):
     pattern = r'script:'
 
     def __init__(self, script_name):
-        super(ScriptScope, self).__init__(None)
         self.script_scope = self.pattern + script_name
 
     def lookup(self, scope_name):
@@ -161,25 +169,21 @@ class ScriptScope(BaseScope):
         return scope_name == self.script_scope
 
 
-# Handlers for the scopes that may occur in the webapp.
-WEBAPP_SCOPE_HANDLERS = [DefaultScope, PageScope, TeamScope, ServerScope]
-
-
-# Handlers for the scopes that may occur in scripts.
-SCRIPT_SCOPE_HANDLERS = [DefaultScope, ScriptScope]
-
-
-# These are the handlers for all of the allowable scopes.  Any new scope will
+# These are the handlers for all of the allowable scopes, listed here so that
+# we can for example show all of them in an admin page.  Any new scope will
 # need a scope handler and that scope handler has to be added to this list.
 # See BaseScope for hints as to what a scope handler should look like.
-HANDLERS = set(WEBAPP_SCOPE_HANDLERS + SCRIPT_SCOPE_HANDLERS)
+HANDLERS = set([DefaultScope, PageScope, TeamScope, ServerScope, ScriptScope])
 
 
 class MultiScopeHandler():
-    """A scope handler that combines multiple `BaseScope`s."""
+    """A scope handler that combines multiple `BaseScope`s.
 
-    def __init__(self, request, scopes):
-        self.request = request
+    The ordering in which they're added is arbitrary, because precedence is
+    determined by the ordering of rules.
+    """
+
+    def __init__(self, scopes):
         self.handlers = scopes
 
     def _findMatchingHandlers(self, scope_name):
@@ -190,11 +194,11 @@ class MultiScopeHandler():
                 if handler.compiled_pattern.match(scope_name)]
 
     def lookup(self, scope_name):
-        """Determine if scope_name applies to this request.
+        """Determine if scope_name applies.
 
-        This method iterates over the configured scope hanlders until it
-        either finds one that claims the requested scope name is a match for
-        the current request or the handlers are exhuasted, in which case the
+        This method iterates over the configured scope handlers until it
+        either finds one that claims the requested scope name matches,
+        or the handlers are exhausted, in which case the
         scope name is not a match.
         """
         matching_handlers = self._findMatchingHandlers(scope_name)
@@ -213,13 +217,17 @@ class ScopesFromRequest(MultiScopeHandler):
     """Identify feature scopes based on request state."""
 
     def __init__(self, request):
-        super(ScopesFromRequest, self).__init__(
-            request, [f(request) for f in WEBAPP_SCOPE_HANDLERS])
+        super(ScopesFromRequest, self).__init__([
+            DefaultScope(),
+            PageScope(request),
+            TeamScope(),
+            ServerScope()])
 
 
 class ScopesForScript(MultiScopeHandler):
     """Identify feature scopes for a given script."""
 
     def __init__(self, script_name):
-        super(ScopesForScript, self).__init__(
-            None, [DefaultScope(None), ScriptScope(script_name)])
+        super(ScopesForScript, self).__init__([
+            DefaultScope(),
+            ScriptScope(script_name)])

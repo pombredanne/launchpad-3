@@ -15,6 +15,7 @@ __all__ = [
     ]
 
 import doctest
+from functools import partial
 import logging
 import os
 import pdb
@@ -88,7 +89,7 @@ class StdoutHandler(Handler):
             record.levelname, record.name, self.format(record))
 
 
-def LayeredDocFileSuite(*args, **kw):
+def LayeredDocFileSuite(*paths, **kw):
     """Create a DocFileSuite, optionally applying a layer to it.
 
     In addition to the standard DocFileSuite arguments, the following
@@ -133,9 +134,19 @@ def LayeredDocFileSuite(*args, **kw):
         kw['tearDown'] = tearDown
 
     layer = kw.pop('layer', None)
-    suite = doctest.DocFileSuite(*args, **kw)
+    suite = doctest.DocFileSuite(*paths, **kw)
     if layer is not None:
         suite.layer = layer
+
+    for test in suite:
+        # doctest._module_relative_path() does not normalize paths. To make
+        # test selection simpler and reporting easier to read, normalize here.
+        test._dt_test.filename = os.path.normpath(test._dt_test.filename)
+        # doctest.DocFileTest insists on using the basename of the file as the
+        # test ID. This causes conflicts when two doctests have the same
+        # filename, so we patch the id() method on the test cases.
+        test.id = partial(lambda test: test._dt_test.filename, test)
+
     return suite
 
 

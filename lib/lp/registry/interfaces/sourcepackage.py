@@ -9,6 +9,8 @@ __metaclass__ = type
 
 __all__ = [
     'ISourcePackage',
+    'ISourcePackagePublic',
+    'ISourcePackageEdit',
     'ISourcePackageFactory',
     'SourcePackageFileType',
     'SourcePackageType',
@@ -29,7 +31,6 @@ from lazr.restful.declarations import (
     operation_for_version,
     operation_parameters,
     operation_returns_entry,
-    operation_removed_in_version,
     REQUEST_USER,
     )
 from lazr.restful.fields import (
@@ -66,26 +67,21 @@ from lp.translations.interfaces.hastranslationimports import (
     )
 
 
-class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
-                     IHasOfficialBugTags, IHasCodeImports,
-                     IHasTranslationImports, IHasTranslationTemplates):
-    """A SourcePackage. See the MagicSourcePackage specification. This
-    interface preserves as much as possible of the old SourcePackage
-    interface from the SourcePackage table, with the new table-less
-    implementation."""
-
-    export_as_webservice_entry()
+class ISourcePackagePublic(IBugTarget, IHasBranches, IHasMergeProposals,
+                           IHasOfficialBugTags, IHasCodeImports,
+                           IHasTranslationImports, IHasTranslationTemplates):
+    """Public attributes for SourcePackage."""
 
     id = Attribute("ID")
 
     name = exported(
         TextLine(
-            title=_("Name"), required=True,
+            title=_("Name"), required=True, readonly=True,
             description=_("The text name of this source package.")))
 
     displayname = exported(
         TextLine(
-            title=_("Display name"), required=True,
+            title=_("Display name"), required=True, readonly=True,
             description=_("A displayname, constructed, for this package")))
 
     path = Attribute("A path to this package, <distro>/<series>/<package>")
@@ -108,7 +104,7 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
             Interface,
             # Really IDistribution, circular import fixed in
             # _schema_circular_imports.
-            title=_("Distribution"), required=True,
+            title=_("Distribution"), required=True, readonly=True,
             description=_("The distribution for this source package.")))
 
     # The interface for this is really IDistroSeries, but importing that would
@@ -116,6 +112,7 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
     distroseries = exported(
         Reference(
             Interface, title=_("Distribution Series"), required=True,
+            readonly=True,
             description=_("The DistroSeries for this SourcePackage")))
 
     sourcepackagename = Attribute("SourcePackageName")
@@ -131,7 +128,7 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
     productseries = exported(
         ReferenceChoice(
             title=_("Project series"), required=False,
-            vocabulary="ProductSeries",
+            vocabulary="ProductSeries", readonly=True,
             schema=Interface,
             description=_(
                 "The registered project series that this source package "
@@ -208,10 +205,31 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
         and record that it was done by the owner.
         """
 
+    @operation_parameters(productseries=Reference(schema=IProductSeries))
+    @call_with(owner=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def setPackagingReturnSharingDetailPermissions(productseries, owner):
+        """Like setPackaging(), but returns getSharingDetailPermissions().
+
+        This method is intended for AJAX usage on the +sharing-details
+        page.
+        """
+
     @export_write_operation()
     @operation_for_version('devel')
     def deletePackaging():
         """Delete the packaging for this sourcepackage."""
+
+    def getSharingDetailPermissions(self):
+        """Return a dictionary of user permissions for +sharing-details page.
+
+        This shows whether the user can change
+        - The project series
+        - The project series target branch
+        - The project series autoimport mode
+        - The project translation usage setting
+        """
 
     def getSuiteSourcePackage(pocket):
         """Return the `ISuiteSourcePackage` for this package in 'pocket'.
@@ -243,25 +261,6 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
 
         :param pocket: A `PackagePublishingPocket`.
         :return: An `IBranch`.
-        """
-
-    # 'pocket' should actually be a PackagePublishingPocket, and 'branch'
-    # should be IBranch, but we use the base classes to avoid circular
-    # imports. Correct interface specific in _schema_circular_imports.
-    @operation_parameters(
-        pocket=Choice(
-            title=_("Pocket"), required=True,
-            vocabulary=DBEnumeratedType),
-        branch=Reference(Interface, title=_("Branch"), required=False))
-    @call_with(registrant=REQUEST_USER)
-    @export_write_operation()
-    def setBranch(pocket, branch, registrant):
-        """Set the official branch for the given pocket of this package.
-
-        :param pocket: A `PackagePublishingPocket`.
-        :param branch: The branch to set as the official branch.
-        :param registrant: The individual who created this link.
-        :return: None
         """
 
     shouldimport = Attribute("""Whether we should import this or not.
@@ -307,6 +306,34 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals,
 
         :return: A {`Pocket`-name : `IBranch`} dict.
         """
+
+
+class ISourcePackageEdit(Interface):
+    """SourcePackage attributes requiring launchpad.Edit."""
+
+    # 'pocket' should actually be a PackagePublishingPocket, and 'branch'
+    # should be IBranch, but we use the base classes to avoid circular
+    # imports. Correct interface specific in _schema_circular_imports.
+    @operation_parameters(
+        pocket=Choice(
+            title=_("Pocket"), required=True,
+            vocabulary=DBEnumeratedType),
+        branch=Reference(Interface, title=_("Branch"), required=False))
+    @call_with(registrant=REQUEST_USER)
+    @export_write_operation()
+    def setBranch(pocket, branch, registrant):
+        """Set the official branch for the given pocket of this package.
+
+        :param pocket: A `PackagePublishingPocket`.
+        :param branch: The branch to set as the official branch.
+        :param registrant: The individual who created this link.
+        :return: None
+        """
+
+
+class ISourcePackage(ISourcePackagePublic, ISourcePackageEdit):
+    """A source package associated to a particular distribution series."""
+    export_as_webservice_entry()
 
 
 class ISourcePackageFactory(Interface):

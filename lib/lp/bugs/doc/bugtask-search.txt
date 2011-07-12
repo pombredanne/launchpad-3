@@ -98,9 +98,7 @@ If No Privileges is specified as Firefox's bug supervisor, searching for his
 bugs return all of Firefox's bugs.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> firefox.setBugSupervisor(no_priv, no_priv)
-    >>> syncUpdate(firefox)
 
     >>> found_bugtasks = bugtask_set.search(no_priv_bug_supervisor)
     >>> found_bugtasks.count() == firefox_bugs.count()
@@ -126,7 +124,6 @@ twice.
     True
 
     >>> ubuntu.setBugSupervisor(no_priv, no_priv)
-    >>> syncUpdate(ubuntu)
     >>> found_bugtasks = bugtask_set.search(no_priv_bug_supervisor)
     >>> found_bugtasks.count() == firefox_bugs.count() + ubuntu_bugs.count()
     True
@@ -213,7 +210,6 @@ But if we put that word in the bug #4 description, it will be found.
     >>> bug_four.description += (
     ...     '\nThat happens pretty often with the Fnord Highlighter '
     ...     'extension installed.')
-    >>> syncUpdate(bug_four)
 
     >>> found_bugtasks = firefox.searchTasks(text_search)
     >>> for bugtask in found_bugtasks:
@@ -494,7 +490,6 @@ for bugs of this milestone.
     >>> print bugTaskInfo(bugtask)
     2 1 Mozilla Firefox Firefox does not support SVG
     >>> bugtask.milestone = product_milestone
-    >>> syncUpdate(bugtask)
     >>> params = BugTaskSearchParams(milestone=product_milestone, user=None)
     >>> milestone_tasks = bugtask_set.search(params)
     >>> for bugtask in milestone_tasks:
@@ -517,7 +512,6 @@ same milestone...
     >>> productseries_task = bugtask_set.createTask(
     ...     owner=no_priv, bug=bug_one, productseries=firefox_1_0)
     >>> productseries_task.milestone = product_milestone
-    >>> syncUpdate(productseries_task)
     >>> print bugTaskInfo(productseries_task)
     40 1 Mozilla Firefox 1.0 Firefox does not support SVG
 
@@ -741,7 +735,7 @@ It's possible to search for bugs with an attachment of a certain type.
 
     >>> from StringIO import StringIO
     >>> from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> from lp.bugs.interfaces.bugattachment import (
     ...     BugAttachmentType,
     ...     IBugAttachmentSet,

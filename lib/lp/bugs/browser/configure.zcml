@@ -1,4 +1,4 @@
-<!-- Copyright 2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -107,6 +107,12 @@
             template="../templates/bugtarget-filebug-inline-form.pt"
             facet="bugs"
             permission="launchpad.AnyPerson"/>
+        <browser:page
+            for="lp.bugs.interfaces.bugtarget.IHasBugs"
+            class="lp.bugs.browser.bugtarget.FileBugReportingGuidelines"
+            template="../templates/bugtarget-filebug-guidelines.pt"
+            permission="launchpad.AnyPerson"
+            name="+filebug-reporting-guidelines"/>
         <browser:page
             name="+manage-official-tags"
             for="lp.bugs.interfaces.bugtarget.IOfficialBugTagTargetRestricted"
@@ -526,6 +532,18 @@
                 template="../templates/bugtarget-portlet-search.pt"/>
         </browser:pages>
         <browser:page
+            for="lp.bugs.interfaces.bug.IBug"
+            class="lp.bugs.browser.bug.BugSubscriptionPortletView"
+            permission="launchpad.View"
+            name="+portlet-subscription"
+            template="../templates/bug-portlet-subscription.pt"/>
+        <browser:page
+            for="lp.bugs.interfaces.bug.IBug"
+            class="lp.bugs.browser.bug.BugView"
+            permission="launchpad.View"
+            name="+portlet-subscribers"
+            template="../templates/bug-portlet-subscribers.pt"/>
+        <browser:page
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bug.BugView"
             permission="launchpad.View"
@@ -801,6 +819,12 @@
             path_expression="name"
             attribute_to_parent="component_group"
             rootsite="bugs"/>
+        <browser:page
+            name="+edit"
+            for="lp.bugs.interfaces.bugtracker.IBugTrackerComponent"
+            class="lp.bugs.browser.bugtracker.BugTrackerEditComponentView"
+            permission="launchpad.AnyPerson"
+            template="../../app/templates/generic-edit.pt"/>
         <browser:pages
             for="lp.bugs.interfaces.bugtracker.IBugTracker"
             class="lp.bugs.browser.bugtracker.BugTrackerView"
@@ -811,6 +835,9 @@
             <browser:page
                 name="+portlet-details"
                 template="../templates/bugtracker-portlet-details.pt"/>
+            <browser:page
+                name="+portlet-components"
+                template="../templates/bugtracker-portlet-components.pt"/>
             <browser:page
                 name="+portlet-projects"
                 template="../templates/bugtracker-portlet-projects.pt"/>
@@ -1050,9 +1077,6 @@
                 name="+portlet-attachments"
                 template="../templates/bug-portlet-attachments.pt"/>
             <browser:page
-                name="+portlet-subscribers"
-                template="../templates/bug-portlet-subscribers.pt"/>
-            <browser:page
                 name="+portlet-notified"
                 template="../templates/bug-portlet-notified.pt"/>
             <browser:page
@@ -1061,20 +1085,15 @@
         </browser:pages>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
-            name="+bug-portlet-subscribers-content"
-            class="lp.bugs.browser.bugsubscription.BugPortletSubcribersContents"
-            template="../templates/bug-portlet-subscribers-content.pt"
+            name="+bug-portlet-subscribers-details"
+            class="
+              lp.bugs.browser.bugsubscription.BugPortletSubscribersWithDetails"
             permission="zope.Public"/>
         <browser:page
-            for="lp.bugs.interfaces.bug.IBug"
-            name="+bug-portlet-dupe-subscribers-content"
-            class="lp.bugs.browser.bugsubscription.BugPortletDuplicateSubcribersContents"
-            template="../templates/bug-portlet-dupe-subscribers-content.pt"
-            permission="zope.Public"/>
-        <browser:page
-            for="lp.bugs.interfaces.bug.IBug"
-            name="+bug-portlet-subscribers-ids"
-            class="lp.bugs.browser.bugsubscription.BugPortletSubcribersIds"
+            for="lp.bugs.interfaces.bugtask.IBugTask"
+            name="+bug-portlet-subscribers-details"
+            class="
+              lp.bugs.browser.bugsubscription.BugPortletSubscribersWithDetails"
             permission="zope.Public"/>
         <browser:navigation
             module="lp.bugs.browser.bug"
@@ -1229,5 +1248,25 @@
 
     <!-- Widgets -->
     <include package=".widgets"/>
+
+    <!-- batching -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ITableBatchNavigator"
+        name="+table-view"
+        template="../templates/bugs-listing-table.pt"
+        permission="zope.Public" />
+
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ITableBatchNavigator"
+        name="+table-view-without-navlinks"
+        template="../templates/bugs-listing-table-without-navlinks.pt"
+        permission="zope.Public" />
+
+    <browser:page
+        for="lp.bugs.interfaces.bugtask.INominationsReviewTableBatchNavigator"
+        class="lp.bugs.browser.bugtask.NominationsReviewTableBatchNavigatorView"
+        name="+table-view-without-navlinks"
+        template="../templates/bugs-listing-nominations-table-without-navlinks.pt"
+        permission="zope.Public" />
 
 </configure>

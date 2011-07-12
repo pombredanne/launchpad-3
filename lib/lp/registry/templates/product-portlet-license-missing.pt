@@ -13,7 +13,7 @@
       src="/@@/expiration-large" />
     This project needs to have its licensing information entered.
     <br />Select the appropriate license checkboxes from
-    <a tal:content="structure context/menu:overview/edit/fmt:link-icon" />.
+    <a tal:replace="structure context/menu:overview/edit/fmt:link-icon" />.
   </div>
 </div>
 </tal:root>

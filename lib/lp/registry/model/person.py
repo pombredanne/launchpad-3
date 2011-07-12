@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'get_recipients',
     'generate_nick',
     'IrcID',
     'IrcIDSet',
@@ -57,6 +58,7 @@ from storm.expr import (
     And,
     Desc,
     Exists,
+    In,
     Join,
     LeftJoin,
     Min,
@@ -89,6 +91,10 @@ from zope.interface import (
     )
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.publisher.interfaces import Unauthorized
+from zope.security.checker import (
+    canAccess,
+    canWrite,
+    )
 from zope.security.proxy import (
     ProxyFactory,
     removeSecurityProxy,
@@ -123,10 +129,6 @@ from canonical.launchpad.database.oauth import (
     OAuthAccessToken,
     OAuthRequestToken,
     )
-from canonical.launchpad.event.interfaces import (
-    IJoinTeamEvent,
-    ITeamInvitationEvent,
-    )
 from canonical.launchpad.helpers import (
     ensure_unicode,
     get_contact_email_addresses,
@@ -152,7 +154,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
     IHasMugshot,
-    ILaunchpadCelebrities,
     )
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
@@ -166,6 +167,8 @@ from canonical.launchpad.interfaces.lpstorm import (
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.lazr.utils import get_current_browser_request
+from lp.answers.model.questionsperson import QuestionsPersonMixin
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.email import valid_email
 from lp.app.validators.name import (
     sanitize_name,
@@ -185,7 +188,6 @@ from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     IBugTaskSet,
-    IllegalRelatedBugTasksParams,
     )
 from lp.bugs.model.bugtarget import HasBugsBase
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
@@ -216,6 +218,7 @@ from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
     PostedMessageStatus,
+    PURGE_STATES,
     )
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy,
@@ -246,7 +249,12 @@ from lp.registry.interfaces.ssh import (
     SSHKeyCompromisedError,
     SSHKeyType,
     )
-from lp.registry.interfaces.teammembership import TeamMembershipStatus
+from lp.registry.interfaces.teammembership import (
+    IJoinTeamEvent,
+    ITeamInvitationEvent,
+    ITeamMembershipSet,
+    TeamMembershipStatus,
+    )
 from lp.registry.interfaces.wikiname import (
     IWikiName,
     IWikiNameSet,
@@ -262,6 +270,7 @@ from lp.registry.model.karma import (
     )
 from lp.registry.model.personlocation import PersonLocation
 from lp.registry.model.pillar import PillarName
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import (
     TeamMembership,
     TeamMembershipSet,
@@ -421,7 +430,8 @@ _readonly_person_settings = readonly_settings(
 
 class Person(
     SQLBase, HasBugsBase, HasSpecificationsMixin, HasTranslationImportsMixin,
-    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin):
+    HasBranchesMixin, HasMergeProposalsMixin, HasRequestedReviewsMixin,
+    QuestionsPersonMixin):
     """A Person."""
 
     implements(IPerson, IHasIcon, IHasLogo, IHasMugshot)
@@ -587,7 +597,7 @@ class Person(
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
-    ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
+    _ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
 
     entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
@@ -601,6 +611,10 @@ class Person(
         notNull=True)
 
     personal_standing_reason = StringCol(default=None)
+
+    @cachedproperty
+    def ircnicknames(self):
+        return list(self._ircnicknames)
 
     @cachedproperty
     def languages(self):
@@ -929,11 +943,30 @@ class Person(
     # rather than package bug supervisors.
     def getBugSubscriberPackages(self):
         """See `IPerson`."""
-        packages = [sub.target for sub in self.structural_subscriptions
-                    if (sub.distribution is not None and
-                        sub.sourcepackagename is not None)]
-        packages.sort(key=lambda x: x.name)
-        return packages
+        # Avoid circular imports.
+        from lp.registry.model.distributionsourcepackage import (
+            DistributionSourcePackage,
+            )
+        from lp.registry.model.distribution import Distribution
+        origin = (
+            StructuralSubscription,
+            Join(
+                Distribution,
+                StructuralSubscription.distributionID == Distribution.id),
+            Join(
+                SourcePackageName,
+                StructuralSubscription.sourcepackagenameID ==
+                    SourcePackageName.id)
+            )
+        result = Store.of(self).using(*origin).find(
+            (Distribution, SourcePackageName),
+            StructuralSubscription.subscriberID == self.id)
+        result.order_by(SourcePackageName.name)
+
+        def decorator(row):
+            return DistributionSourcePackage(*row)
+
+        return DecoratedResultSet(result, decorator)
 
     def findPathToTeam(self, team):
         """See `IPerson`."""
@@ -1000,15 +1033,8 @@ class Person(
             # calling this method on a Person object directly via the
             # webservice API means searching for user related tasks
             user = kwargs.pop('user')
-            try:
-                search_params = get_related_bugtasks_search_params(
-                    user, self, **kwargs)
-            except IllegalRelatedBugTasksParams, e:
-                # dirty hack, marking an exception with a HTTP error
-                # only works if the exception is raised in the exported
-                # method, see docstring of
-                # `lazr.restful.declarations.webservice_error()`
-                raise e
+            search_params = get_related_bugtasks_search_params(
+                user, self, **kwargs)
             return getUtility(IBugTaskSet).search(
                 *search_params, prejoins=prejoins)
         if len(kwargs) > 0:
@@ -1212,7 +1238,7 @@ class Person(
     @cachedproperty
     def karma(self):
         """See `IPerson`."""
-        # May also be loaded from _all_members
+        # May also be loaded from _members
         cache = KarmaTotalCache.selectOneBy(person=self)
         if cache is None:
             # Newly created accounts may not be in the cache yet, meaning the
@@ -1326,18 +1352,7 @@ class Person(
                 pass
 
         tp = TeamParticipation.selectOneBy(team=team, person=self)
-        if tp is not None or self.id == team.teamownerID:
-            in_team = True
-        elif not team.teamowner.inTeam(team):
-            # The owner is not a member but must retain his rights over
-            # this team. This person may be a member of the owner, and in this
-            # case it'll also have rights over this team.
-            # Note that this query and the tp query above can be consolidated
-            # when we get to a finer grained level of optimisations.
-            in_team = self.inTeam(team.teamowner)
-        else:
-            in_team = False
-
+        in_team = tp is not None
         self._inTeam_cache[team.id] = in_team
         return in_team
 
@@ -1417,8 +1432,8 @@ class Person(
         """See `IPerson`."""
         assert self.is_team
         to_addrs = set()
-        for person in self.getDirectAdministrators():
-            to_addrs.update(get_contact_email_addresses(person))
+        for admin in self.adminmembers:
+            to_addrs.update(get_contact_email_addresses(admin))
         return sorted(to_addrs)
 
     def addMember(self, person, reviewer, comment=None, force_team_add=False,
@@ -1552,6 +1567,10 @@ class Person(
         tm.setExpirationDate(expires, reviewer)
         tm.setStatus(status, reviewer, comment=comment)
 
+    @cachedproperty
+    def administrated_teams(self):
+        return list(self.getAdministratedTeams())
+
     def getAdministratedTeams(self):
         """See `IPerson`."""
         owner_of_teams = Person.select('''
@@ -1608,14 +1627,14 @@ class Person(
     @property
     def allmembers(self):
         """See `IPerson`."""
-        return self._all_members()
+        return self._members(direct=False)
 
     @property
     def all_members_prepopulated(self):
         """See `IPerson`."""
-        return self._all_members(need_karma=True, need_ubuntu_coc=True,
-            need_location=True, need_archive=True, need_preferred_email=True,
-            need_validity=True)
+        return self._members(direct=False, need_karma=True,
+            need_ubuntu_coc=True, need_location=True, need_archive=True,
+            need_preferred_email=True, need_validity=True)
 
     @staticmethod
     def _validity_queries(person_table=None):
@@ -1681,11 +1700,12 @@ class Person(
             tables=columns,
             decorators=decorators)
 
-    def _all_members(self, need_karma=False, need_ubuntu_coc=False,
+    def _members(self, direct, need_karma=False, need_ubuntu_coc=False,
         need_location=False, need_archive=False, need_preferred_email=False,
         need_validity=False):
         """Lookup all members of the team with optional precaching.
 
+        :param direct: If True only direct members are returned.
         :param need_karma: The karma attribute will be cached.
         :param need_ubuntu_coc: The is_ubuntu_coc_signer attribute will be
             cached.
@@ -1699,15 +1719,25 @@ class Person(
         #       The difference between the two is that
         #       getMembersWithPreferredEmails includes self, which is arguably
         #       wrong, but perhaps deliberate.
-        origin = [
-            Person,
-            Join(TeamParticipation, TeamParticipation.person == Person.id),
-            ]
-        conditions = And(
-            # Members of this team,
-            TeamParticipation.team == self.id,
-            # But not the team itself.
-            TeamParticipation.person != self.id)
+        origin = [Person]
+        if not direct:
+            origin.append(Join(
+                TeamParticipation, TeamParticipation.person == Person.id))
+            conditions = And(
+                # Members of this team,
+                TeamParticipation.team == self.id,
+                # But not the team itself.
+                TeamParticipation.person != self.id)
+        else:
+            origin.append(Join(
+                TeamMembership, TeamMembership.personID == Person.id))
+            conditions = And(
+                # Membership in this team,
+                TeamMembership.team == self.id,
+                # And approved or admin status
+                TeamMembership.status.is_in([
+                    TeamMembershipStatus.APPROVED,
+                    TeamMembershipStatus.ADMIN]))
         # Use a PersonSet object that is not security proxied to allow
         # manipulation of the object.
         person_set = PersonSet()
@@ -1812,6 +1842,13 @@ class Person(
         """See `IPerson`."""
         return self.approvedmembers.union(
             self.adminmembers, orderBy=self._sortingColumnsForSetOperations)
+
+    @property
+    def api_activemembers(self):
+        """See `IPerson`."""
+        return self._members(direct=True, need_karma=True,
+            need_ubuntu_coc=True, need_location=True, need_archive=True,
+            need_preferred_email=True, need_validity=True)
 
     @property
     def active_member_count(self):
@@ -2052,8 +2089,7 @@ class Person(
     def is_merge_pending(self):
         """See `IPublicPerson`."""
         return not getUtility(
-            IPersonMergeJobSource).find(
-                from_person=self, to_person=self, any_person=True).is_empty()
+            IPersonMergeJobSource).find(from_person=self).is_empty()
 
     def visibilityConsistencyWarning(self, new_value):
         """Warning used when changing the team's visibility.
@@ -2396,7 +2432,8 @@ class Person(
             self._setPreferredEmail(email)
         # A team can have up to two addresses, the preferred one and one used
         # by the team mailing list.
-        if self.mailing_list is not None:
+        if (self.mailing_list is not None
+            and self.mailing_list.status != MailingListStatus.PURGED):
             mailing_list_email = getUtility(IEmailAddressSet).getByEmail(
                 self.mailing_list.address)
             if mailing_list_email is not None:
@@ -2634,7 +2671,7 @@ class Person(
     @cachedproperty
     def is_ubuntu_coc_signer(self):
         """See `IPerson`."""
-        # Also assigned to by self._all_members.
+        # Also assigned to by self._members.
         store = Store.of(self)
         query = And(SignedCodeOfConduct.ownerID == self.id,
             Person._is_ubuntu_coc_signer_condition())
@@ -2734,7 +2771,7 @@ class Person(
         """See `IPerson`."""
         return IStore(self).find(
             StructuralSubscription,
-            StructuralSubscription.subscriberID==self.id).order_by(
+            StructuralSubscription.subscriberID == self.id).order_by(
                 Desc(StructuralSubscription.date_created))
 
     def autoSubscribeToMailingList(self, mailinglist, requester=None):
@@ -2781,6 +2818,14 @@ class Person(
         return store.find(
             SourcePackageRecipe,
             SourcePackageRecipe.owner == self)
+
+    def canAccess(self, obj, attribute):
+        """See `IPerson.`"""
+        return canAccess(obj, attribute)
+
+    def canWrite(self, obj, attribute):
+        """See `IPerson.`"""
+        return canWrite(obj, attribute)
 
 
 class PersonSet:
@@ -2907,7 +2952,7 @@ class PersonSet:
 
             elif account.status in [AccountStatus.DEACTIVATED,
                                     AccountStatus.NOACCOUNT]:
-                password = '' # Needed just to please reactivate() below.
+                password = ''  # Needed just to please reactivate() below.
                 removeSecurityProxy(account).reactivate(
                     comment, password, removeSecurityProxy(email))
                 db_updated = True
@@ -3050,28 +3095,27 @@ class PersonSet:
             account = IMasterStore(Account).get(
                 Account, email_address.accountID)
             account_person = self.getByAccount(account)
-            # There is a `Person` linked to the `Account`, link the
+            if account_person is None:
+                # There is no associated `Person` to the email `Account`.
+                # This is probably because the account was created externally
+                # to Launchpad. Create just the `Person`, associate it with
+                # the `EmailAddress` and return it.
+                name = generate_nick(email)
+                account_person = self._newPerson(
+                    name, displayname, hide_email_addresses=True,
+                    rationale=rationale, comment=comment,
+                    registrant=registrant, account=email_address.account)
+            # There is (now) a `Person` linked to the `Account`, link the
             # `EmailAddress` to this `Person` and return it.
-            if account_person is not None:
-                master_email = IMasterStore(EmailAddress).get(
-                    EmailAddress, email_address.id)
-                master_email.personID = account_person.id
-                # Populate the previously empty 'preferredemail' cached
-                # property, so the Person record is up-to-date.
-                if master_email.status == EmailAddressStatus.PREFERRED:
-                    cache = get_property_cache(account_person)
-                    cache.preferredemail = master_email
-                return account_person
-            # There is no associated `Person` to the email `Account`.
-            # This is probably because the account was created externally
-            # to Launchpad. Create just the `Person`, associate it with
-            # the `EmailAddress` and return it.
-            name = generate_nick(email)
-            person = self._newPerson(
-                name, displayname, hide_email_addresses=True,
-                rationale=rationale, comment=comment, registrant=registrant,
-                account=email_address.account)
-            return person
+            master_email = IMasterStore(EmailAddress).get(
+                EmailAddress, email_address.id)
+            master_email.personID = account_person.id
+            # Populate the previously empty 'preferredemail' cached
+            # property, so the Person record is up-to-date.
+            if master_email.status == EmailAddressStatus.PREFERRED:
+                cache = get_property_cache(account_person)
+                cache.preferredemail = master_email
+            return account_person
 
         # Easy, return the `Person` associated with the existing
         # `EmailAddress`.
@@ -3081,7 +3125,7 @@ class PersonSet:
         """See `IPersonSet`."""
         query = (Person.q.name == name)
         if ignore_merged:
-            query = AND(query, Person.q.mergedID==None)
+            query = AND(query, Person.q.mergedID == None)
         return Person.selectOne(query)
 
     def getByAccount(self, account):
@@ -3092,11 +3136,13 @@ class PersonSet:
         """See `IPersonSet`."""
         stats = getUtility(ILaunchpadStatisticSet)
         people_count = Person.select(
-            AND(Person.q.teamownerID==None, Person.q.mergedID==None)).count()
+            AND(Person.q.teamownerID == None,
+                Person.q.mergedID == None)).count()
         stats.update('people_count', people_count)
         ztm.commit()
         teams_count = Person.select(
-            AND(Person.q.teamownerID!=None, Person.q.mergedID==None)).count()
+            AND(Person.q.teamownerID != None,
+                Person.q.mergedID == None)).count()
         stats.update('teams_count', teams_count)
         ztm.commit()
 
@@ -3522,6 +3568,60 @@ class PersonSet:
             WHERE bug_supervisor=%(from_id)d
             ''' % vars())
 
+    def _mergeStructuralSubscriptions(self, cur, from_id, to_id):
+        # Update StructuralSubscription entries that will not conflict.
+        # We separate this out from the parent query primarily to help
+        # keep within our line length constraints, though it might make
+        # things more readable otherwise as well.
+        exists_query = '''
+            SELECT StructuralSubscription.id
+            FROM StructuralSubscription
+            WHERE StructuralSubscription.subscriber=%(to_id)d AND (
+                StructuralSubscription.product=SSub.product
+                OR
+                StructuralSubscription.project=SSub.project
+                OR
+                StructuralSubscription.distroseries=SSub.distroseries
+                OR
+                StructuralSubscription.milestone=SSub.milestone
+                OR
+                StructuralSubscription.productseries=SSub.productseries
+                OR
+                (StructuralSubscription.distribution=SSub.distribution
+                 AND StructuralSubscription.sourcepackagename IS NULL
+                 AND SSub.sourcepackagename IS NULL)
+                OR
+                (StructuralSubscription.sourcepackagename=
+                    SSub.sourcepackagename
+                 AND StructuralSubscription.sourcepackagename=
+                    SSub.sourcepackagename)
+                )
+            '''
+        cur.execute(('''
+            UPDATE StructuralSubscription
+            SET subscriber=%(to_id)d
+            WHERE subscriber=%(from_id)d AND id NOT IN (
+                SELECT SSub.id
+                FROM StructuralSubscription AS SSub
+                WHERE
+                    SSub.subscriber=%(from_id)d
+                    AND EXISTS (''' + exists_query + ''')
+            )
+            ''') % vars())
+        # Delete the rest.  We have to explicitly delete the bug subscription
+        # filters first because there is not a cascade delete set up in the
+        # db.
+        cur.execute('''
+            DELETE FROM BugSubscriptionFilter
+            WHERE structuralsubscription IN (
+                SELECT id
+                FROM StructuralSubscription
+                WHERE subscriber=%(from_id)d)
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM StructuralSubscription WHERE subscriber=%(from_id)d
+            ''' % vars())
+
     def _mergeSpecificationFeedback(self, cur, from_id, to_id):
         # Update the SpecificationFeedback entries that will not conflict
         # and trash the rest.
@@ -3746,32 +3846,33 @@ class PersonSet:
     def _mergeKarmaCache(self, cur, from_id, to_id, from_karma):
         # Merge the karma total cache so the user does not think the karma
         # was lost.
+        params = dict(from_id=from_id, to_id=to_id)
         if from_karma > 0:
             cur.execute('''
                 SELECT karma_total FROM KarmaTotalCache
                 WHERE person = %(to_id)d
-                ''' % vars())
+                ''' % params)
             result = cur.fetchone()
             if result is not None:
                 # Add the karma to the remaining user.
-                karma_total = from_karma + result[0]
+                params['karma_total'] = from_karma + result[0]
                 cur.execute('''
                     UPDATE KarmaTotalCache SET karma_total = %(karma_total)d
                     WHERE person = %(to_id)d
-                    ''' % vars())
+                    ''' % params)
             else:
                 # Make the existing karma belong to the remaining user.
                 cur.execute('''
                     UPDATE KarmaTotalCache SET person = %(to_id)d
                     WHERE person = %(from_id)d
-                    ''' % vars())
+                    ''' % params)
         # Delete the old caches; the daily job will build them later.
         cur.execute('''
             DELETE FROM KarmaTotalCache WHERE person = %(from_id)d
-            ''' % vars())
+            ''' % params)
         cur.execute('''
             DELETE FROM KarmaCache WHERE person = %(from_id)d
-            ''' % vars())
+            ''' % params)
 
     def _mergeDateCreated(self, cur, from_id, to_id):
         cur.execute('''
@@ -3782,44 +3883,63 @@ class PersonSet:
             WHERE id = %(to_id)d
             ''' % vars())
 
-    def mergeAsync(self, from_person, to_person):
+    def _purgeUnmergableTeamArtifacts(self, from_team, to_team, reviewer):
+        """Purge team artifacts that cannot be merged, but can be removed."""
+        # A team cannot have more than one mailing list.
+        mailing_list = getUtility(IMailingListSet).get(from_team.name)
+        if mailing_list is not None:
+            if mailing_list.status in PURGE_STATES:
+                from_team.mailing_list.purge()
+            elif mailing_list.status != MailingListStatus.PURGED:
+                raise AssertionError(
+                    "Teams with active mailing lists cannot be merged.")
+        # Team email addresses are not transferable.
+        from_team.setContactAddress(None)
+        # Memberships in the team are not transferable because there
+        # is a high probablity there will be a CyclicTeamMembershipError.
+        comment = (
+            'Deactivating all members as this team is being merged into %s.'
+            % to_team.name)
+        membershipset = getUtility(ITeamMembershipSet)
+        membershipset.deactivateActiveMemberships(
+            from_team, comment, reviewer)
+        # Memberships in other teams are not transferable because there
+        # is a high probablity there will be a CyclicTeamMembershipError.
+        all_super_teams = set(from_team.teams_participated_in)
+        indirect_super_teams = set(
+            from_team.teams_indirectly_participated_in)
+        super_teams = all_super_teams - indirect_super_teams
+        naked_from_team = removeSecurityProxy(from_team)
+        for team in super_teams:
+            naked_from_team.retractTeamMembership(team, reviewer)
+        IStore(from_team).flush()
+
+    def mergeAsync(self, from_person, to_person, reviewer=None):
         """See `IPersonSet`."""
         return getUtility(IPersonMergeJobSource).create(
-            from_person=from_person, to_person=to_person)
+            from_person=from_person, to_person=to_person, reviewer=reviewer)
 
-    def merge(self, from_person, to_person):
+    def merge(self, from_person, to_person, reviewer=None):
         """See `IPersonSet`."""
-        # Sanity checks
-        if not IPerson.providedBy(from_person):
-            raise TypeError('from_person is not a person.')
-        if not IPerson.providedBy(to_person):
-            raise TypeError('to_person is not a person.')
-        # If the team has a mailing list, the mailing list better be in the
-        # purged state, otherwise the team can't be merged.
-        mailing_list = getUtility(IMailingListSet).get(from_person.name)
-        assert (mailing_list is None or
-                mailing_list.status == MailingListStatus.PURGED), (
-            "Can't merge teams which have mailing lists into other teams.")
-
-        if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
-            raise AssertionError('from_person still has email addresses.')
-
+        # since we are doing direct SQL manipulation, make sure all
+        # changes have been flushed to the database
+        store = Store.of(from_person)
+        store.flush()
+        if (from_person.is_team and not to_person.is_team
+            or not from_person.is_team and to_person.is_team):
+            raise AssertionError("Users cannot be merged with teams.")
+        if from_person.is_team and reviewer is None:
+            raise AssertionError("Team merged require a reviewer.")
         if getUtility(IArchiveSet).getPPAOwnedByPerson(
             from_person, statuses=[ArchiveStatus.ACTIVE,
                                    ArchiveStatus.DELETING]) is not None:
             raise AssertionError(
                 'from_person has a ppa in ACTIVE or DELETING status')
-
-        if from_person.is_team and from_person.allmembers.count() > 0:
-            raise AssertionError(
-                "Only teams without active members can be merged")
-
-        if from_person.is_team and from_person.super_teams.count() > 0:
-            raise AssertionError(
-                "Only teams without super teams can be merged.")
-        # since we are doing direct SQL manipulation, make sure all
-        # changes have been flushed to the database
-        store = Store.of(from_person)
+        if from_person.is_team:
+            self._purgeUnmergableTeamArtifacts(
+                from_person, to_person, reviewer)
+        if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
+            raise AssertionError('from_person still has email addresses.')
 
         # Get a database cursor.
         cur = cursor()
@@ -3850,6 +3970,9 @@ class PersonSet:
             ('votecast', 'person'),
             ('vote', 'person'),
             ('translationrelicensingagreement', 'person'),
+            # These are ON DELETE CASCADE and maintained by triggers.
+            ('bugsummary', 'viewed_by'),
+            ('bugsummaryjournal', 'viewed_by'),
             ]
 
         references = list(postgresql.listReferences(cur, 'person', 'id'))
@@ -3923,8 +4046,17 @@ class PersonSet:
         self._mergeBugNotificationRecipient(cur, from_id, to_id)
         skip.append(('bugnotificationrecipient', 'person'))
 
+        # We ignore BugSubscriptionFilterMutes.
+        skip.append(('bugsubscriptionfiltermute', 'person'))
+
+        # We ignore BugMutes.
+        skip.append(('bugmute', 'person'))
+
         self._mergePackageBugSupervisor(cur, from_id, to_id)
         skip.append(('packagebugsupervisor', 'bug_supervisor'))
+
+        self._mergeStructuralSubscriptions(cur, from_id, to_id)
+        skip.append(('structuralsubscription', 'subscriber'))
 
         self._mergeSpecificationFeedback(cur, from_id, to_id)
         skip.append(('specificationfeedback', 'reviewer'))
@@ -4023,16 +4155,20 @@ class PersonSet:
                 """ % sqlvalues(to_person.accountID, from_person.accountID))
 
         # Inform the user of the merge changes.
-        if not to_person.isTeam():
+        if to_person.isTeam():
+            mail_text = get_email_template(
+                'team-merged.txt', app='registry')
+            subject = 'Launchpad teams merged'
+        else:
             mail_text = get_email_template(
                 'person-merged.txt', app='registry')
-            mail_text = mail_text % {
-                'dupename': from_person.name,
-                'person': to_person.name,
-                }
             subject = 'Launchpad accounts merged'
-            getUtility(IPersonNotificationSet).addNotification(
-                to_person, subject, mail_text)
+        mail_text = mail_text % {
+            'dupename': from_person.name,
+            'person': to_person.name,
+            }
+        getUtility(IPersonNotificationSet).addNotification(
+            to_person, subject, mail_text)
 
     def getValidPersons(self, persons):
         """See `IPersonSet.`"""
@@ -4414,9 +4550,8 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
         raise NicknameGenerationError("%s is not a valid email address"
                                       % email_addr)
 
-    user, domain = re.match("^(\S+)@(\S+)$", email_addr).groups()
+    user = re.match("^(\S+)@(?:\S+)$", email_addr).groups()[0]
     user = user.replace(".", "-").replace("_", "-")
-    domain_parts = domain.split(".")
 
     person_set = PersonSet()
 
@@ -4433,11 +4568,6 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
     generated_nick = sanitize_name(user)
     if _valid_nick(generated_nick):
         return generated_nick
-
-    for domain_part in domain_parts:
-        generated_nick = sanitize_name(generated_nick + "-" + domain_part)
-        if _valid_nick(generated_nick):
-            return generated_nick
 
     # We seed the random number generator so we get consistent results,
     # making the algorithm repeatable and thus testable.
@@ -4463,7 +4593,7 @@ def generate_nick(email_addr, is_registered=_is_nick_registered):
                 return prefix + '-' + generated_nick
 
             # Or a mutated character
-            index = random.randint(0, len(mutated_nick)-1)
+            index = random.randint(0, len(mutated_nick) - 1)
             mutated_nick[index] = random.choice(chars)
             if _valid_nick(''.join(mutated_nick)):
                 return ''.join(mutated_nick)
@@ -4521,3 +4651,70 @@ def person_from_account(account):
     if person is None:
         raise ComponentLookupError()
     return person
+
+
+@ProxyFactory
+def get_recipients(person):
+    """Return a set of people who receive email for this Person (person/team).
+
+    If <person> has a preferred email, the set will contain only that
+    person.  If <person> doesn't have a preferred email but is a team,
+    the set will contain the preferred email address of each member of
+    <person>, including indirect members.
+
+    Finally, if <person> doesn't have a preferred email and is not a team,
+    the set will be empty.
+    """
+    if person.preferredemail:
+        return [person]
+    elif person.is_team:
+        # Get transitive members of team without a preferred email.
+        return _get_recipients_for_team(person)
+    else:
+        return []
+
+
+def _get_recipients_for_team(team):
+    """Given a team without a preferred email, return recipients.
+
+    Helper for get_recipients, divided out simply to make get_recipients
+    easier to understand in broad brush."""
+    store = IStore(Person)
+    source = store.using(TeamMembership,
+                         Join(Person,
+                              TeamMembership.personID == Person.id),
+                         LeftJoin(EmailAddress,
+                                  And(
+                                      EmailAddress.person == Person.id,
+                                      EmailAddress.status ==
+                                        EmailAddressStatus.PREFERRED)))
+    pending_team_ids = [team.id]
+    recipient_ids = set()
+    seen = set()
+    while pending_team_ids:
+        # Find Persons that have a preferred email address, or are a
+        # team, or both.
+        intermediate_transitive_results = source.find(
+            (TeamMembership.personID, EmailAddress.personID),
+            In(TeamMembership.status,
+               [TeamMembershipStatus.ADMIN.value,
+                TeamMembershipStatus.APPROVED.value]),
+            In(TeamMembership.teamID, pending_team_ids),
+            Or(
+                EmailAddress.personID != None,
+                Person.teamownerID != None)).config(distinct=True)
+        next_ids = []
+        for (person_id,
+             preferred_email_marker) in intermediate_transitive_results:
+            if preferred_email_marker is None:
+                # This is a team without a preferred email address.
+                if person_id not in seen:
+                    next_ids.append(person_id)
+                    seen.add(person_id)
+            else:
+                recipient_ids.add(person_id)
+        pending_team_ids = next_ids
+    return getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+        recipient_ids,
+        need_validity=True,
+        need_preferred_email=True)

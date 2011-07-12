@@ -131,7 +131,6 @@ class POTMsgSetBatchNavigator(BatchNavigator):
         """
         schema, netloc, path, parameters, query, fragment = (
             urlparse(str(request.URL)))
-
         # For safety, delete the start and batch variables, if they
         # appear in the URL. The situation in which 'start' appears
         # today is when the alternative language form is posted back and
@@ -322,7 +321,7 @@ class BaseTranslationView(LaunchpadView):
             This only needs to be done once per language. Thanks for helping
             Launchpad Translations.
             </p>
-            """ % self.pofile.language.englishname))
+            """, self.pofile.language.englishname))
             return
 
         self._initializeAltLanguage()
@@ -335,7 +334,6 @@ class BaseTranslationView(LaunchpadView):
             # It's not a POST, so we should generate lock_timestamp.
             UTC = pytz.timezone('UTC')
             self.lock_timestamp = datetime.datetime.now(UTC)
-
 
         # The batch navigator needs to be initialized early, before
         # _submitTranslations is called; the reason for this is that
@@ -665,11 +663,10 @@ class BaseTranslationView(LaunchpadView):
                         "language %(alternative)s.  If you wish to see "
                         "suggestions from this language, "
                         '<a href="%(editlanguages_url)s">'
-                        "add it to your preferred languages</a> first."
-                        % dict(
+                        "add it to your preferred languages</a> first.",
                             alternative=alternative_language.displayname,
                             editlanguages_url=editlanguages_url,
-                            )))
+                            ))
                     alternative_language = None
                     second_lang_code = None
 
@@ -747,6 +744,16 @@ class BaseTranslationView(LaunchpadView):
         msgset_ID_LANGCODE_translation_ = 'msgset_%d_%s_translation_' % (
             potmsgset_ID, language_code)
 
+        msgset_ID_LANGCODE_translation_GREATER_PLURALFORM_new = '%s%d_new' % (
+            msgset_ID_LANGCODE_translation_,
+            TranslationConstants.MAX_PLURAL_FORMS)
+        if msgset_ID_LANGCODE_translation_GREATER_PLURALFORM_new in form:
+            # The plural form translation generation rules created too many
+            # fields, or the form was hacked.
+            raise AssertionError(
+                'More than %d plural forms were submitted!'
+                % TranslationConstants.MAX_PLURAL_FORMS)
+
         # Extract the translations from the form, and store them in
         # self.form_posted_translations. We try plural forms in turn,
         # starting at 0.
@@ -823,9 +830,6 @@ class BaseTranslationView(LaunchpadView):
             if store:
                 self.form_posted_translations_has_store_flag[
                     potmsgset].append(pluralform)
-        else:
-            raise AssertionError('More than %d plural forms were submitted!'
-                                 % TranslationConstants.MAX_PLURAL_FORMS)
 
     def _observeTranslationUpdate(self, potmsgset):
         """Observe that a translation was updated for the potmsgset.
@@ -1102,7 +1106,7 @@ class CurrentTranslationMessageView(LaunchpadView):
                     self.current_series.distribution.displayname,
                     self.current_series.name)
 
-        # Initialise the translation dictionaries used from the
+        # Initialize the translation dictionaries used from the
         # translation form.
         self.translation_dictionaries = []
         for index in self.pluralform_indices:
@@ -1110,12 +1114,6 @@ class CurrentTranslationMessageView(LaunchpadView):
             other_translation = self.getOtherTranslation(index)
             shared_translation = self.getSharedTranslation(index)
             submitted_translation = self.getSubmittedTranslation(index)
-            if (submitted_translation is None and
-                self.user_is_official_translator):
-                # We don't have anything to show as the submitted translation
-                # and the user is the official one. We prefill the 'New
-                # translation' field with the current translation.
-                translation = current_translation
             is_multi_line = (count_lines(current_translation) > 1 or
                              count_lines(submitted_translation) > 1 or
                              count_lines(self.singular_text) > 1 or
@@ -1305,8 +1303,10 @@ class CurrentTranslationMessageView(LaunchpadView):
             used_languages = [language]
             if self.sec_lang is not None:
                 used_languages.append(self.sec_lang)
-            translations = potmsgset.getExternallySuggestedOrUsedTranslationMessages(
-                suggested_languages=[language], used_languages=used_languages)
+            translations = (
+                potmsgset.getExternallySuggestedOrUsedTranslationMessages(
+                    suggested_languages=[language],
+                    used_languages=used_languages))
             alt_external = translations[self.sec_lang].used
             externally_used = self._setOnePOFile(sorted(
                 translations[language].used,

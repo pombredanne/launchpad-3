@@ -540,7 +540,9 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
         [body, attachment] = email.get_payload()
         self.assertIsInstance(body, MIMEText)
         self.assertEqual('inline', body['Content-Disposition'])
-        self.assertEqual('text/plain; charset="utf-8"', body['Content-Type'])
+        self.assertIn(
+            body['Content-Type'],
+            ['text/plain; charset="utf-8"', 'text/plain; charset="utf8"'])
         self.assertEqual("foo", body.get_payload(decode=True))
 
     def test_report_email_attachment(self):
@@ -820,7 +822,9 @@ class TestWebTestLogger(TestCaseWithTransport, RequestHelpers):
         [body, attachment] = email.get_payload()
         self.assertIsInstance(body, MIMEText)
         self.assertEqual('inline', body['Content-Disposition'])
-        self.assertEqual('text/plain; charset="utf-8"', body['Content-Type'])
+        self.assertIn(
+            body['Content-Type'],
+            ['text/plain; charset="utf-8"', 'text/plain; charset="utf8"'])
         self.assertEqual(
             logger.get_summary_contents(), body.get_payload(decode=True))
         self.assertIsInstance(attachment, MIMEApplication)

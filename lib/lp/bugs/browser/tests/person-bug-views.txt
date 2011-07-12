@@ -516,7 +516,7 @@ list of relevant milestones remains empty.
     >>> transaction.commit()
 
     >>> print pretty(list(related_bugs_view.searchUnbatched()))
-    [<BugTask at ...>]
+    [<BugTask ...>]
     >>> print pretty(related_bugs_view.getMilestoneWidgetValues())
     []
 

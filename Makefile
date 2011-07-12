@@ -18,7 +18,6 @@ LPCONFIG?=development
 
 ICING=lib/canonical/launchpad/icing
 LP_BUILT_JS_ROOT=${ICING}/build
-LAZR_BUILT_JS_ROOT=lazr-js/build
 
 ifeq ($(LPCONFIG), development)
 JS_BUILD := raw
@@ -26,11 +25,12 @@ else
 JS_BUILD := min
 endif
 
+JS_SOURCE_PATHS = -path './lib/lp/*/javascript/*' ! -path '*/tests/*' \
+    ! -path '*/testing/*' ! -path './lib/lp/services/*'
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
-JS_LAZR := $(LAZR_BUILT_JS_ROOT)/lazr.js
 JS_OTHER := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
-JS_LP := $(shell find lib/lp/*/javascript ! -path '*/tests/*' -name '*.js')
-JS_ALL := $(JS_YUI) $(JS_LAZR) $(JS_OTHER) $(JS_LP)
+JS_LP := $(shell find $(JS_SOURCE_PATHS) -name '*.js' ! -name '.*.js' )
+JS_ALL := $(JS_YUI) $(JS_OTHER) $(JS_LP)
 JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 
 MINS_TO_SHUTDOWN=15
@@ -40,7 +40,7 @@ CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 BZR_VERSION_INFO = bzr-version-info.py
 
 APIDOC_DIR = lib/canonical/launchpad/apidoc
-WADL_TEMPLATE = $(APIDOC_DIR).tmp/wadl-$(LPCONFIG)-%(version)s.xml
+APIDOC_TMPDIR = $(APIDOC_DIR).tmp/
 API_INDEX = $(APIDOC_DIR)/index.html
 
 # Do not add bin/buildout to this list.
@@ -55,10 +55,9 @@ BUILDOUT_BIN = \
     bin/fl-record bin/fl-run-bench bin/fl-run-test bin/googletestservice \
     bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
     bin/harness bin/iharness bin/ipy bin/jsbuild bin/jslint bin/jssize \
-    bin/jstest bin/killservice bin/kill-test-services bin/lint.sh \
-    bin/lp-windmill bin/retest bin/run bin/sprite-util \
-    bin/start_librarian bin/stxdocs bin/tags bin/test bin/tracereport \
-    bin/twistd bin/update-download-cache bin/windmill
+    bin/jstest bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
+    bin/run bin/sprite-util bin/start_librarian bin/stxdocs bin/tags \
+    bin/test bin/tracereport bin/twistd bin/update-download-cache
 
 BUILDOUT_TEMPLATES = buildout-templates/_pythonpath.py.in
 
@@ -78,8 +77,9 @@ hosted_branches: $(PY)
 $(API_INDEX): $(BZR_VERSION_INFO) $(PY)
 	rm -rf $(APIDOC_DIR) $(APIDOC_DIR).tmp
 	mkdir -p $(APIDOC_DIR).tmp
-	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py --force "$(WADL_TEMPLATE)"
-	mv $(APIDOC_DIR).tmp $(APIDOC_DIR)
+	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py \
+	    --force "$(APIDOC_TMPDIR)"
+	mv $(APIDOC_TMPDIR) $(APIDOC_DIR)
 
 apidoc: compile $(API_INDEX)
 
@@ -149,44 +149,7 @@ inplace: build logs clean_logs
 	chmod 777 $(CODEHOSTING_ROOT)/rewrite.log
 	touch $(CODEHOSTING_ROOT)/config/launchpad-lookup.txt
 
-build: compile apidoc jsbuild css_combine
-
-css_combine: sprite_css bin/combine-css
-	${SHHH} bin/combine-css
-
-sprite_css: ${LP_BUILT_JS_ROOT}/style-3-0.css
-
-${LP_BUILT_JS_ROOT}/style-3-0.css: bin/sprite-util ${ICING}/style-3-0.css.in ${ICING}/icon-sprites.positioning
-	${SHHH} bin/sprite-util create-css
-
-sprite_image:
-	${SHHH} bin/sprite-util create-image
-
-# We absolutely do not want to include the lazr.testing module and
-# its jsTestDriver test harness modifications in the lazr.js and
-# launchpad.js roll-up files.  They fiddle with built-in functions!
-# See Bug 482340.
-jsbuild_lazr: bin/jsbuild
-	${SHHH} bin/jsbuild \
-	    --builddir $(LAZR_BUILT_JS_ROOT) \
-	    --exclude testing/ --filetype $(JS_BUILD) \
-	    --copy-yui-to $(LAZR_BUILT_JS_ROOT)/yui
-
-$(JS_YUI) $(JS_LAZR): jsbuild_lazr
-
-$(JS_OUT): $(JS_ALL)
-ifeq ($(JS_BUILD), min)
-	cat $^ | $(PY) -m jsmin > $@
-else
-	cat $^ > $@
-endif
-
-jsbuild: $(JS_OUT)
-
-eggs:
-	# Usually this is linked via link-external-sourcecode, but in
-	# deployment we create this ourselves.
-	mkdir eggs
+build: compile apidoc jsbuild css_combine sprite_image
 
 # LP_SOURCEDEPS_PATH should point to the sourcecode directory, but we
 # want the parent directory where the download-cache and eggs directory
@@ -199,6 +162,43 @@ else
 	@echo "Developers: please run utilities/link-external-sourcecode."
 	@exit 1
 endif
+
+css_combine: sprite_css bin/combine-css
+	${SHHH} bin/combine-css
+
+sprite_css: ${LP_BUILT_JS_ROOT}/sprite.css
+
+${LP_BUILT_JS_ROOT}/sprite.css: bin/sprite-util ${ICING}/sprite.css.in \
+		${ICING}/icon-sprites.positioning
+	${SHHH} bin/sprite-util create-css
+
+sprite_image: ${ICING}/icon-sprites ${ICING}/icon-sprites.positioning
+
+${ICING}/icon-sprites.positioning ${ICING}/icon-sprites: bin/sprite-util \
+		${ICING}/sprite.css.in
+	${SHHH} bin/sprite-util create-image
+
+jsbuild_widget_css: bin/jsbuild
+	${SHHH} bin/jsbuild \
+ 	    --srcdir lib/lp/app/javascript \
+	    --builddir $(LP_BUILT_JS_ROOT)
+
+$(JS_LP): jsbuild_widget_css
+
+$(JS_OUT): $(JS_ALL)
+ifeq ($(JS_BUILD), min)
+	cat $^ | $(PY) -m lp.scripts.utilities.js.jsmin > $@
+else
+	cat $^ > $@
+endif
+
+jsbuild: $(PY) $(JS_OUT)
+
+eggs:
+	# Usually this is linked via link-external-sourcecode, but in
+	# deployment we create this ourselves.
+	mkdir eggs
+	mkdir yui
 
 buildonce_eggs: $(PY)
 	find eggs -name '*.pyc' -exec rm {} \;
@@ -368,6 +368,7 @@ clean_buildout:
 	$(RM) .installed.cfg
 	$(RM) -r build
 	$(RM) _pythonpath.py
+	$(RM) -r yui/*
 
 clean_logs:
 	$(RM) logs/thread*.request
@@ -408,7 +409,9 @@ clean: clean_js clean_buildout clean_logs
 			  /var/tmp/testkeyserver
 	# /var/tmp/launchpad_mailqueue is created read-only on ec2test
 	# instances.
-	if [ -w /var/tmp/launchpad_mailqueue ]; then $(RM) -rf /var/tmp/launchpad_mailqueue; fi
+	if [ -w /var/tmp/launchpad_mailqueue ]; then \
+		$(RM) -rf /var/tmp/launchpad_mailqueue; \
+	fi
 
 
 realclean: clean
@@ -472,10 +475,11 @@ pydoctor:
 		--docformat restructuredtext --verbose-about epytext-summary \
 		$(PYDOCTOR_OPTIONS)
 
-.PHONY: apidoc buildout_bin check doc tags TAGS zcmldocs realclean clean debug \
-	stop start run ftest_build ftest_inplace test_build test_inplace \
-	pagetests check schema default launchpad.pot pull_branches \
-	scan_branches sync_branches reload-apache hosted_branches \
-	check_mailman check_config jsbuild jsbuild_lazr clean_js \
-	clean_buildout buildonce_eggs build_eggs sprite_css sprite_image \
-	css_combine compile check_schema pydoctor clean_logs \
+.PHONY: apidoc buildout_bin check doc tags TAGS zcmldocs realclean \
+	clean debug stop start run ftest_build ftest_inplace \
+	test_build test_inplace pagetests check schema default \
+	launchpad.pot pull_branches scan_branches sync_branches	\
+	reload-apache hosted_branches check_mailman check_config \
+	jsbuild jsbuild_widget_css clean_js clean_buildout buildonce_eggs \
+	build_eggs sprite_css sprite_image css_combine compile \
+	check_schema pydoctor clean_logs

@@ -34,6 +34,8 @@ VALID_AMI_OWNERS = {
     '441991801793': 'gmb',
     '005470753809': 'bigjools',
     '967591634984': 'jtv',
+    '507541322704': 'sinzui',
+    '424228475252': 'wallyworld',
     # ...anyone else want in on the fun?
     }
 

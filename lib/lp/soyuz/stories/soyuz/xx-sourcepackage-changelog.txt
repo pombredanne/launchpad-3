@@ -12,7 +12,7 @@ Browse the changelog of a sourcepackage..
   * Bugs - http://bugs.launchpad.dev/ubuntu/hoary/+source/pmount
   * Blueprints - not linked
   * Translations - http://translations.launchpad.dev/ubuntu/hoary/+source/pmount
-  * Answers - http://answers.launchpad.dev/ubuntu/hoary/+source/pmount
+  * Answers - not linked
   Main heading: Change logs for ...pmount... in Hoary
 
 

@@ -146,9 +146,9 @@ buttons for a user with release management privileges.
     >>> hoary_nomination_edit_form = getMultiAdapter(
     ...     (hoary_nomination, request), name="+edit-form")
 
-    >>> hoary_nomination_edit_form.shouldShowApproveButton()
+    >>> hoary_nomination_edit_form.shouldShowApproveButton(None)
     True
-    >>> hoary_nomination_edit_form.shouldShowDeclineButton()
+    >>> hoary_nomination_edit_form.shouldShowDeclineButton(None)
     True
 
 If the nomination is declined, the only possible status change is
@@ -158,9 +158,9 @@ approval.
     >>> print hoary_nomination.status.title
     Declined
 
-    >>> hoary_nomination_edit_form.shouldShowApproveButton()
+    >>> hoary_nomination_edit_form.shouldShowApproveButton(None)
     True
-    >>> hoary_nomination_edit_form.shouldShowDeclineButton()
+    >>> hoary_nomination_edit_form.shouldShowDeclineButton(None)
     False
 
 

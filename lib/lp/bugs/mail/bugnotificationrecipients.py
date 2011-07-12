@@ -58,6 +58,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
         """
         NotificationRecipientSet.__init__(self)
         self.duplicateof = duplicateof
+        self.subscription_filters = set()
 
     def _addReason(self, person, reason, header):
         """Adds a reason (text and header) for a person.
@@ -75,11 +76,11 @@ class BugNotificationRecipients(NotificationRecipientSet):
         """Registers a subscriber of a duplicate of this bug."""
         reason = "Subscriber of Duplicate"
         if person.isTeam():
-            text = ("are a member of %s, which is a subscriber "
-                    "of a duplicate bug" % person.displayname)
+            text = ("are a member of %s, which is subscribed "
+                    "to a duplicate bug report" % person.displayname)
             reason += " @%s" % person.name
         else:
-            text = "are a direct subscriber of a duplicate bug"
+            text = "are subscribed to a\nduplicate bug report"
         if duplicate_bug is not None:
             text += " (%s)" % duplicate_bug.id
         self._addReason(person, text, reason)
@@ -88,11 +89,11 @@ class BugNotificationRecipients(NotificationRecipientSet):
         """Registers a direct subscriber of this bug."""
         reason = "Subscriber"
         if person.isTeam():
-            text = ("are a member of %s, which is a direct subscriber"
-                    % person.displayname)
+            text = ("are a member of %s, which is subscribed "
+                    "to the bug report" % person.displayname)
             reason += " @%s" % person.name
         else:
-            text = "are a direct subscriber of the bug"
+            text = "are subscribed to the bug report"
         self._addReason(person, text, reason)
 
     def addAssignee(self, person):
@@ -127,3 +128,13 @@ class BugNotificationRecipients(NotificationRecipientSet):
         else:
             text = "are the registrant for %s" % upstream.displayname
         self._addReason(person, text, reason)
+
+    def update(self, recipient_set):
+        """See `INotificationRecipientSet`."""
+        super(BugNotificationRecipients, self).update(recipient_set)
+        self.subscription_filters.update(
+            recipient_set.subscription_filters)
+
+    def addFilter(self, subscription_filter):
+        if subscription_filter is not None:
+            self.subscription_filters.add(subscription_filter)

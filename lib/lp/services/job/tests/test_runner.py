@@ -7,23 +7,23 @@ import logging
 import sys
 from textwrap import dedent
 from time import sleep
-from unittest import TestLoader
 
+from testtools.matchers import MatchesRegex
+from testtools.testcase import ExpectedException
 import transaction
-from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
     )
-from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.interfaces.branchmergeproposal import IUpdatePreviewDiffJobSource
 from lp.services.job.interfaces.job import (
     IRunnableJob,
     JobStatus,
+    SuspendJobException,
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import (
@@ -40,6 +40,7 @@ from lp.testing import (
     TestCaseWithFactory,
     ZopeTestInSubProcess,
     )
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -119,6 +120,20 @@ class RaisingJobRaisingNotifyUserError(NullJob):
         raise RaisingJobException('oops notifying users')
 
 
+class RetryError(Exception):
+    pass
+
+
+class RaisingRetryJob(NullJob):
+
+    retry_error_types = (RetryError,)
+
+    max_retries = 1
+
+    def run(self):
+        raise RetryError()
+
+
 class TestJobRunner(TestCaseWithFactory):
     """Ensure JobRunner behaves as expected."""
 
@@ -164,6 +179,7 @@ class TestJobRunner(TestCaseWithFactory):
     def test_runAll_reports_oopses(self):
         """When an error is encountered, report an oops and continue."""
         job_1, job_2 = self.makeTwoJobs()
+
         def raiseError():
             # Ensure that jobs which call transaction.abort work, too.
             transaction.abort()
@@ -184,6 +200,7 @@ class TestJobRunner(TestCaseWithFactory):
     def test_oops_messages_used_when_handling(self):
         """Oops messages should appear even when exceptions are handled."""
         job_1, job_2 = self.makeTwoJobs()
+
         def handleError():
             reporter = errorlog.globalErrorUtility
             try:
@@ -219,6 +236,7 @@ class TestJobRunner(TestCaseWithFactory):
     def test_runAll_mails_oopses(self):
         """Email interested parties about OOPses."""
         job_1, job_2 = self.makeTwoJobs()
+
         def raiseError():
             # Ensure that jobs which call transaction.abort work, too.
             transaction.abort()
@@ -246,8 +264,10 @@ class TestJobRunner(TestCaseWithFactory):
         error messages are mailed to interested parties verbatim.
         """
         job_1, job_2 = self.makeTwoJobs()
+
         class ExampleError(Exception):
             pass
+
         def raiseError():
             raise ExampleError('Fake exception.  Foobar, I say!')
         job_1.run = raiseError
@@ -275,6 +295,7 @@ class TestJobRunner(TestCaseWithFactory):
         """
         runner = JobRunner([object()])
         self.assertRaises(TypeError, runner.runAll)
+
         class Runnable:
             implements(IRunnableJob)
         runner = JobRunner([Runnable()])
@@ -304,6 +325,29 @@ class TestJobRunner(TestCaseWithFactory):
         runner.runJobHandleError(job)
         self.assertEqual(0, len(self.oopses))
 
+    def test_runJob_raising_retry_error(self):
+        """If a job raises a retry_error, it should be re-queued."""
+        job = RaisingRetryJob('completion')
+        runner = JobRunner([job])
+        with self.expectedLog('Scheduling retry due to RetryError'):
+            runner.runJob(job)
+        self.assertEqual(JobStatus.WAITING, job.status)
+        self.assertNotIn(job, runner.completed_jobs)
+        self.assertIn(job, runner.incomplete_jobs)
+
+    def test_runJob_exceeding_max_retries(self):
+        """If a job exceeds maximum retries, it should raise normally."""
+        job = RaisingRetryJob('completion')
+        JobRunner([job]).runJob(job)
+        self.assertEqual(JobStatus.WAITING, job.status)
+        runner = JobRunner([job])
+        with self.expectedLog('Job execution raised an exception.'):
+            with ExpectedException(RetryError, ''):
+                runner.runJob(job)
+        self.assertEqual(JobStatus.FAILED, job.status)
+        self.assertNotIn(job, runner.completed_jobs)
+        self.assertIn(job, runner.incomplete_jobs)
+
     def test_runJobHandleErrors_oops_generated_notify_fails(self):
         """A second oops is logged if the notification of the oops fails."""
         job = RaisingJobRaisingNotifyOops('boom')
@@ -322,49 +366,158 @@ class TestJobRunner(TestCaseWithFactory):
         runner.runJobHandleError(job)
         self.assertEqual(1, len(self.oopses))
 
+    def test_runJob_with_SuspendJobException(self):
+        # A job that raises SuspendJobError should end up suspended.
+        job = NullJob('suspended')
+        job.run = FakeMethod(failure=SuspendJobException())
+        runner = JobRunner([job])
+        runner.runJob(job)
 
-class StuckJob(BaseRunnableJob):
+        self.assertEqual(JobStatus.SUSPENDED, job.status)
+        self.assertNotIn(job, runner.completed_jobs)
+        self.assertIn(job, runner.incomplete_jobs)
+
+
+class StaticJobSource(BaseRunnableJob):
+
+    @classmethod
+    def iterReady(cls):
+        if not cls.done:
+            for index, args in enumerate(cls.jobs):
+                yield cls.get(index)
+        cls.done = True
+
+    @classmethod
+    def get(cls, index):
+        args = cls.jobs[index]
+        return cls(index, *args)
+
+
+class StuckJob(StaticJobSource):
     """Simulation of a job that stalls."""
     implements(IRunnableJob)
 
     done = False
 
-    @classmethod
-    def iterReady(cls):
-        if not cls.done:
-            yield StuckJob(1)
-            yield StuckJob(2)
-        cls.done = True
+    # A list of jobs to run: id, lease_length, delay.
+    #
+    # For the first job, have a very long lease, so that it
+    # doesn't expire and so we soak up the ZCML loading time.  For the
+    # second job, have a short lease so we hit the timeout.
+    jobs = [
+        (10000, 0),
+        (5, 30),
+        ]
 
-    @staticmethod
-    def get(id):
-        return StuckJob(id)
-
-    def __init__(self, id):
+    def __init__(self, id, lease_length, delay):
         self.id = id
+        self.lease_length = lease_length
+        self.delay = delay
         self.job = Job()
 
+    def __repr__(self):
+        return '<StuckJob(%r, lease_length=%s, delay=%s)>' % (
+            self.id, self.lease_length, self.delay)
+
     def acquireLease(self):
-        if self.id == 2:
-            lease_length = 1
-        else:
-            lease_length = 10000
-        return self.job.acquireLease(lease_length)
+        return self.job.acquireLease(self.lease_length)
 
     def run(self):
-        if self.id == 2:
-            sleep(30)
+        sleep(self.delay)
+
+
+class ShorterStuckJob(StuckJob):
+    """Simulation of a job that stalls."""
+
+    jobs = [
+        (10000, 0),
+        (0.05, 30),
+        ]
+
+
+class InitialFailureJob(StaticJobSource):
+
+    implements(IRunnableJob)
+
+    jobs = [(True,), (False,)]
+
+    has_failed = False
+
+    done = False
+
+    def __init__(self, id, fail):
+        self.id = id
+        self.job = Job()
+        self.fail = fail
+
+    def run(self):
+        if self.fail:
+            InitialFailureJob.has_failed = True
+            raise ValueError('I failed.')
         else:
-            store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-            assert (
-                'user=branchscanner' in store._connection._raw_connection.dsn)
+            if InitialFailureJob.has_failed:
+                raise ValueError('Previous failure.')
+
+
+class ProcessSharingJob(StaticJobSource):
+
+    implements(IRunnableJob)
+
+    jobs = [(True,), (False,)]
+
+    initial_job_was_here = False
+
+    done = False
+
+    def __init__(self, id, first):
+        self.id = id
+        self.job = Job()
+        self.first = first
+
+    def run(self):
+        if self.first:
+            ProcessSharingJob.initial_job_was_here = True
+        else:
+            if not ProcessSharingJob.initial_job_was_here:
+                raise ValueError('Different process.')
+
+
+class MemoryHogJob(StaticJobSource):
+
+    implements(IRunnableJob)
+
+    jobs = [()]
+
+    done = False
+
+    memory_limit = 0
+
+    def __init__(self, id):
+        self.job = Job()
+        self.id = id
+
+    def run(self):
+        self.x = '*' * (10 ** 6)
 
 
 class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
 
-    layer = LaunchpadZopelessLayer
+    layer = ZopelessDatabaseLayer
 
-    def test_timeout(self):
+    def setUp(self):
+        super(TestTwistedJobRunner, self).setUp()
+        # The test relies on _pythonpath being importable. Thus we need to add
+        # a directory that contains _pythonpath to the sys.path. We can rely
+        # on the root directory of the checkout containing _pythonpath.
+        if config.root not in sys.path:
+            sys.path.append(config.root)
+            self.addCleanup(sys.path.remove, config.root)
+
+    @staticmethod
+    def getOopsReport(runner, index):
+        return runner.error_utility.getOopsReportById(runner.oops_ids[index])
+
+    def test_timeout_long(self):
         """When a job exceeds its lease, an exception is raised.
 
         Unfortunately, timeouts include the time it takes for the zope
@@ -373,18 +526,82 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         """
         logger = BufferLogger()
         logger.setLevel(logging.INFO)
+        # StuckJob is actually a source of two jobs. The first is fast, the
+        # second slow.
         runner = TwistedJobRunner.runFromSource(
             StuckJob, 'branchscanner', logger)
 
-        self.assertEqual(1, len(runner.completed_jobs))
-        self.assertEqual(1, len(runner.incomplete_jobs))
-        oops = errorlog.globalErrorUtility.getLastOopsReport()
-        self.assertEqual(dedent("""\
+        self.assertEqual(
+            (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
+        oops = self.getOopsReport(runner, 0)
+        self.assertEqual(
+            ('TimeoutError', 'Job ran too long.'), (oops.type, oops.value))
+        self.assertThat(logger.getLogBuffer(), MatchesRegex(
+            dedent("""\
+            INFO Running through Twisted.
+            INFO Job resulted in OOPS: .*
+            """)))
+
+    def test_timeout_short(self):
+        """When a job exceeds its lease, an exception is raised.
+
+        Unfortunately, timeouts include the time it takes for the zope
+        machinery to start up, so we run a job that will not time out first,
+        followed by a job that is sure to time out.
+        """
+        logger = BufferLogger()
+        logger.setLevel(logging.INFO)
+        # StuckJob is actually a source of two jobs. The first is fast, the
+        # second slow.
+        runner = TwistedJobRunner.runFromSource(
+            ShorterStuckJob, 'branchscanner', logger)
+
+        oops = self.getOopsReport(runner, 0)
+        self.assertEqual(
+            (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
+        self.assertEqual(
+            (dedent("""\
              INFO Running through Twisted.
              INFO Job resulted in OOPS: %s
-             """) % oops.id, logger.getLogBuffer())
-        self.assertEqual('TimeoutError', oops.type)
-        self.assertIn('Job ran too long.', oops.value)
+             """) % oops.id,
+             'TimeoutError', 'Job ran too long.'),
+            (logger.getLogBuffer(), oops.type, oops.value))
+
+    def test_previous_failure_gives_new_process(self):
+        """Failed jobs cause their worker to be terminated.
+
+        When a job fails, it's not clear whether its process can be safely
+        reused for a new job, so we kill the worker.
+        """
+        logger = BufferLogger()
+        runner = TwistedJobRunner.runFromSource(
+            InitialFailureJob, 'branchscanner', logger)
+        self.assertEqual(
+            (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
+
+    def test_successful_jobs_share_process(self):
+        """Successful jobs allow process reuse.
+
+        When a job succeeds, we assume that its process can be safely reused
+        for a new job, so we reuse the worker.
+        """
+        logger = BufferLogger()
+        runner = TwistedJobRunner.runFromSource(
+            ProcessSharingJob, 'branchscanner', logger)
+        self.assertEqual(
+            (2, 0), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
+
+    def test_memory_hog_job(self):
+        """A job with a memory limit will trigger MemoryError on excess."""
+        logger = BufferLogger()
+        logger.setLevel(logging.INFO)
+        runner = TwistedJobRunner.runFromSource(
+            MemoryHogJob, 'branchscanner', logger)
+        self.assertEqual(
+            (0, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
+        self.assertIn('Job resulted in OOPS', logger.getLogBuffer())
+        oops = self.getOopsReport(runner, 0)
+        self.assertEqual('MemoryError', oops.type)
 
 
 class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
@@ -425,7 +642,3 @@ class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
             cronscript.main()
         finally:
             errorlog.globalErrorUtility = old_errorlog
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -75,15 +75,15 @@ from zope.traversing.interfaces import IPathAdapter
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad import _
+from canonical.launchpad import (
+    _,
+    searchbuilder,
+    )
 from canonical.launchpad.browser.feeds import (
     BranchFeedLink,
     FeedsMixin,
     )
-from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad import searchbuilder
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -99,15 +99,18 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
+from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
+from lp.app.browser.lazrjs import (
+    EnumChoiceWidget,
+    )
 from lp.app.errors import NotFoundError
-from lp.app.browser.lazrjs import EnumChoiceWidget
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.suggestion import TargetBranchWidget
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
@@ -121,7 +124,6 @@ from lp.code.browser.branchref import BranchRef
 from lp.code.browser.decorations import DecoratedBranch
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.enums import (
-    BranchLifecycleStatus,
     BranchType,
     CodeImportResultStatus,
     CodeImportReviewStatus,
@@ -251,11 +253,11 @@ class BranchNavigation(Navigation):
     def traverse_translation_templates_build(self, id_string):
         """Traverses to a `TranslationTemplatesBuild`."""
         try:
-            buildfarmjob_id = int(id_string)
+            ttbj_id = int(id_string)
         except ValueError:
             raise NotFoundError(id_string)
         source = getUtility(ITranslationTemplatesBuildSource)
-        return source.getByBuildFarmJob(buildfarmjob_id)
+        return source.getByID(ttbj_id)
 
 
 class BranchEditMenu(NavigationMenu):
@@ -360,7 +362,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
 
     def source(self):
         """Return a link to the branch's file listing on codebrowse."""
-        text = 'View the branch content'
+        text = 'Browse the code'
         enabled = self.context.code_is_browseable
         url = self.context.codebrowse_url('files')
         return Link(url, text, icon='info', enabled=enabled)
@@ -408,12 +410,11 @@ class BranchMirrorMixin:
         if branch.url is None or check_permission('launchpad.Edit', branch):
             return branch.url
 
-        # XXX: Tim Penhey, 2008-05-30
+        # XXX: Tim Penhey, 2008-05-30, bug 235916
         # Instead of a configuration hack we should support the users
         # specifying whether or not they want the mirror location
         # hidden or not.  Given that this is a database patch,
         # it isn't going to happen today.
-        # See bug 235916
         hosts = config.codehosting.private_mirror_hosts.split(',')
         private_mirror_hosts = [name.strip() for name in hosts]
 
@@ -1035,7 +1036,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             owner_field = self.schema['owner']
             any_owner_choice = Choice(
                 __name__='owner', title=owner_field.title,
-                description = _("As an administrator you are able to reassign"
+                description=_("As an administrator you are able to reassign"
                                 " this branch to any person or team."),
                 required=True, vocabulary='ValidPersonOrTeam')
             any_owner_field = form.Fields(
@@ -1057,7 +1058,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 owner_field = self.schema['owner']
                 owner_choice = Choice(
                     __name__='owner', title=owner_field.title,
-                    description = owner_field.description,
+                    description=owner_field.description,
                     required=True, vocabulary=SimpleVocabulary(terms))
                 new_owner_field = form.Fields(
                     owner_choice, render_context=self.render_context)
@@ -1078,6 +1079,10 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 try:
                     namespace.validateMove(
                         self.context, self.user, name=data['name'])
+                except BranchCreationForbidden:
+                    self.addError(
+                        "%s is not allowed to own branches in %s." % (
+                        owner.displayname, self.context.target.displayname))
                 except BranchExists, e:
                     self._setBranchExists(e.existing_branch)
 
@@ -1112,7 +1117,12 @@ class BranchReviewerEditView(BranchEditFormView):
 
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
-    schema = IBranch
+    class schema(Interface):
+        use_template(
+            IBranch, include=['owner', 'name', 'url', 'lifecycle_status'])
+        branch_type = copy_field(
+            IBranch['branch_type'], vocabulary=UICreatableBranchType)
+
     for_input = True
     field_names = ['owner', 'name', 'branch_type', 'url', 'lifecycle_status']
 
@@ -1467,7 +1477,8 @@ class BranchSparkView(LaunchpadView):
     def _commitCounts(self):
         """Return a dict of commit counts for rendering."""
         epoch = (
-            datetime.now(tz=pytz.UTC) - timedelta(days=(self.COMMIT_DAYS-1)))
+            datetime.now(
+                tz=pytz.UTC) - timedelta(days=(self.COMMIT_DAYS - 1)))
         # Make a datetime for that date, but midnight.
         epoch = epoch.replace(hour=0, minute=0, second=0, microsecond=0)
         commits = dict(self.context.commitsForDays(epoch))

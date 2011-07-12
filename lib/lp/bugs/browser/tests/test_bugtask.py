@@ -5,10 +5,17 @@ __metaclass__ = type
 
 from datetime import datetime
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from pytz import UTC
 from storm.store import Store
 from testtools.matchers import LessThan
-from zope.component import getUtility
+from zope.component import (
+    getMultiAdapter,
+    getUtility,
+    )
+from zope.event import notify
+from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import (
@@ -17,24 +24,37 @@ from canonical.launchpad.ftests import (
     login_person,
     )
 from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.browser.bugtask import (
+    BugActivityItem,
     BugTaskEditView,
     BugTasksAndNominationsView,
     )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
-from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugnomination import IBugNomination
+from lp.bugs.interfaces.bugtask import (
+    BugTaskStatus,
+    IBugTask,
+    IBugTaskSet,
+    )
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.testing import (
+    celebrity_logged_in,
     person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing._webservice import QueryCollector
-from lp.testing.matchers import HasQueryCount
+from lp.testing.matchers import (
+    BrowsesWithQueryLimit,
+    HasQueryCount,
+    )
 from lp.testing.sampledata import (
     ADMIN_EMAIL,
     NO_PRIVILEGE_EMAIL,
@@ -45,7 +65,7 @@ from lp.testing.views import create_initialized_view
 
 class TestBugTaskView(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def invalidate_caches(self, obj):
         store = Store.of(obj)
@@ -71,7 +91,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        self.assertThat(recorder, HasQueryCount(LessThan(67)))
+        self.assertThat(recorder, HasQueryCount(LessThan(74)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -83,6 +103,24 @@ class TestBugTaskView(TestCaseWithFactory):
         self.assertThat(recorder, HasQueryCount(
             LessThan(count_with_no_teams + 3),
             ))
+
+    def test_rendered_query_counts_constant_with_attachments(self):
+        with celebrity_logged_in('admin'):
+            browses_under_limit = BrowsesWithQueryLimit(
+                78, self.factory.makePerson())
+
+            # First test with a single attachment.
+            task = self.factory.makeBugTask()
+            self.factory.makeBugAttachment(bug=task.bug)
+        self.assertThat(task, browses_under_limit)
+
+        with celebrity_logged_in('admin'):
+            # And now with 10.
+            task = self.factory.makeBugTask()
+            self.factory.makeBugTask(bug=task.bug)
+            for i in range(10):
+                self.factory.makeBugAttachment(bug=task.bug)
+        self.assertThat(task, browses_under_limit)
 
     def test_interesting_activity(self):
         # The interesting_activity property returns a tuple of interesting
@@ -408,6 +446,59 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             '2008-07-18 10:20:30+00:00 by Tim (tim), maintained by Jim (jim)',
             self.view.getTargetLinkTitle(bug_task.target))
 
+    def _get_object_type(self, task_or_nomination):
+        if IBugTask.providedBy(task_or_nomination):
+            return "bugtask"
+        elif IBugNomination.providedBy(task_or_nomination):
+            return "nomination"
+        else:
+            return "unknown"
+
+    def test_bugtask_listing_for_inactive_projects(self):
+        # Bugtasks should only be listed for active projects.
+
+        product_foo = self.factory.makeProduct(name="foo")
+        product_bar = self.factory.makeProduct(name="bar")
+        foo_bug = self.factory.makeBug(product=product_foo)
+        bugtask_set = getUtility(IBugTaskSet)
+        bugtask_set.createTask(
+            bug=foo_bug, owner=foo_bug.owner, product=product_bar)
+
+        removeSecurityProxy(product_bar).active = False
+
+        request = LaunchpadTestRequest()
+        foo_bugtasks_and_nominations_view = getMultiAdapter(
+            (foo_bug, request), name="+bugtasks-and-nominations-table")
+        foo_bugtasks_and_nominations_view.initialize()
+
+        task_and_nomination_views = (
+            foo_bugtasks_and_nominations_view.getBugTaskAndNominationViews())
+        actual_results = []
+        for task_or_nomination_view in task_and_nomination_views:
+            task_or_nomination = task_or_nomination_view.context
+            actual_results.append((
+                self._get_object_type(task_or_nomination),
+                task_or_nomination.status.title,
+                task_or_nomination.target.bugtargetdisplayname))
+        # Only the one active project's task should be listed.
+        self.assertEqual([("bugtask", "New", "Foo")], actual_results)
+
+    def test_listing_with_no_bugtasks(self):
+        # Test the situation when there are no bugtasks to show.
+
+        product_foo = self.factory.makeProduct(name="foo")
+        foo_bug = self.factory.makeBug(product=product_foo)
+        removeSecurityProxy(product_foo).active = False
+
+        request = LaunchpadTestRequest()
+        foo_bugtasks_and_nominations_view = getMultiAdapter(
+            (foo_bug, request), name="+bugtasks-and-nominations-table")
+        foo_bugtasks_and_nominations_view.initialize()
+
+        task_and_nomination_views = (
+            foo_bugtasks_and_nominations_view.getBugTaskAndNominationViews())
+        self.assertEqual([], task_and_nomination_views)
+
 
 class TestBugTaskEditViewStatusField(TestCaseWithFactory):
     """We show only those options as possible value in the status
@@ -546,7 +637,7 @@ class TestBugTaskEditViewAssigneeField(TestCaseWithFactory):
 
 
 class TestBugTaskEditView(TestCaseWithFactory):
-    """Test the bugs overview page for Project Groups."""
+    """Test the bug task edit form."""
 
     layer = DatabaseFunctionalLayer
 
@@ -556,13 +647,13 @@ class TestBugTaskEditView(TestCaseWithFactory):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         dsp_1 = self.factory.makeDistributionSourcePackage(
             distribution=ubuntu, sourcepackagename='mouse')
-        ignore = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             distroseries=ubuntu.currentseries,
             sourcepackagename=dsp_1.sourcepackagename)
         bug_task_1 = self.factory.makeBugTask(target=dsp_1)
         dsp_2 = self.factory.makeDistributionSourcePackage(
             distribution=ubuntu, sourcepackagename='rabbit')
-        ignore = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             distroseries=ubuntu.currentseries,
             sourcepackagename=dsp_2.sourcepackagename)
         bug_task_2 = self.factory.makeBugTask(
@@ -581,6 +672,65 @@ class TestBugTaskEditView(TestCaseWithFactory):
         self.assertEqual(
             'This bug has already been reported on mouse (ubuntu).',
             view.errors[0])
+
+    def setUpRetargetMilestone(self):
+        """Setup a bugtask with a milestone and a product to retarget to."""
+        first_product = self.factory.makeProduct(name='bunny')
+        with person_logged_in(first_product.owner):
+            first_product.official_malone = True
+            bug = self.factory.makeBug(product=first_product)
+            bug_task = bug.bugtasks[0]
+            milestone = self.factory.makeMilestone(
+                productseries=first_product.development_focus, name='1.0')
+            bug_task.transitionToMilestone(milestone, first_product.owner)
+        second_product = self.factory.makeProduct(name='duck')
+        with person_logged_in(second_product.owner):
+            second_product.official_malone = True
+        return bug_task, second_product
+
+    def test_retarget_product_with_milestone(self):
+        # Milestones are always cleared when retargeting a product bug task.
+        bug_task, second_product = self.setUpRetargetMilestone()
+        user = self.factory.makePerson()
+        login_person(user)
+        form = {
+            'bunny.status': 'In Progress',
+            'bunny.assignee.option': 'bunny.assignee.assign_to_nobody',
+            'bunny.product': 'duck',
+            'bunny.actions.save': 'Save Changes',
+            }
+        view = create_initialized_view(
+            bug_task, name='+editstatus', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(second_product, bug_task.target)
+        self.assertEqual(None, bug_task.milestone)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected = ('The Bunny 1.0 milestone setting has been removed')
+        self.assertTrue(notifications.pop().message.startswith(expected))
+
+    def test_retarget_product_and_assign_milestone(self):
+        # Milestones are always cleared when retargeting a product bug task.
+        bug_task, second_product = self.setUpRetargetMilestone()
+        login_person(bug_task.target.owner)
+        milestone_id = bug_task.milestone.id
+        bug_task.transitionToMilestone(None, bug_task.target.owner)
+        form = {
+            'bunny.status': 'In Progress',
+            'bunny.assignee.option': 'bunny.assignee.assign_to_nobody',
+            'bunny.product': 'duck',
+            'bunny.milestone': milestone_id,
+            'bunny.actions.save': 'Save Changes',
+            }
+        view = create_initialized_view(
+            bug_task, name='+editstatus', form=form)
+        self.assertEqual([], view.errors)
+        self.assertEqual(second_product, bug_task.target)
+        self.assertEqual(None, bug_task.milestone)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected = ('The milestone setting was ignored')
+        self.assertTrue(notifications.pop().message.startswith(expected))
 
 
 class TestProjectGroupBugs(TestCaseWithFactory):
@@ -680,3 +830,33 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         contents = view.render()
         help_link = find_tag_by_id(contents, 'getting-started-help')
         self.assertIs(None, help_link)
+
+
+class TestBugActivityItem(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setAttribute(self, obj, attribute, value):
+        obj_before_modification = Snapshot(obj, providing=providedBy(obj))
+        setattr(removeSecurityProxy(obj), attribute, value)
+        notify(ObjectModifiedEvent(
+            obj, obj_before_modification, [attribute],
+            self.factory.makePerson()))
+
+    def test_escapes_assignee(self):
+        with celebrity_logged_in('admin'):
+            task = self.factory.makeBugTask()
+            self.setAttribute(
+                task, 'assignee',
+                self.factory.makePerson(displayname="Foo &<>", name='foo'))
+        self.assertEquals(
+            "nobody &#8594; Foo &amp;&lt;&gt; (foo)",
+            BugActivityItem(task.bug.activity[-1]).change_details)
+
+    def test_escapes_title(self):
+        with celebrity_logged_in('admin'):
+            bug = self.factory.makeBug(title="foo")
+            self.setAttribute(bug, 'title', "bar &<>")
+        self.assertEquals(
+            "- foo<br />+ bar &amp;&lt;&gt;",
+            BugActivityItem(bug.activity[-1]).change_details)

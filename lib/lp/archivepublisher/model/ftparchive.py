@@ -20,7 +20,6 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from lp.archivepublisher.utils import process_in_batches
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.command_spawner import (
@@ -436,17 +435,13 @@ class FTPArchiveHandler:
         # See `PublishingTunableLoop`.
         self.log.debug("Calculating source overrides")
 
-        def update_source_override(pub_details):
-            updateOverride(*pub_details)
-        process_in_batches(
-            source_publications, update_source_override, self.log)
+        for pub in source_publications:
+            updateOverride(*pub)
 
         self.log.debug("Calculating binary overrides")
 
-        def update_binary_override(pub_details):
-            updateOverride(*pub_details)
-        process_in_batches(
-            binary_publications, update_binary_override, self.log)
+        for pub in binary_publications:
+            updateOverride(*pub)
 
         # Now generate the files on disk...
         for distroseries in overrides:
@@ -673,17 +668,13 @@ class FTPArchiveHandler:
         # See `PublishingTunableLoop`.
         self.log.debug("Calculating source filelist.")
 
-        def update_source_filelist(file_details):
+        for file_details in sourcefiles:
             updateFileList(*file_details)
-        process_in_batches(
-            sourcefiles, update_source_filelist, self.log)
 
         self.log.debug("Calculating binary filelist.")
 
-        def update_binary_filelist(file_details):
+        for file_details in binaryfiles:
             updateFileList(*file_details)
-        process_in_batches(
-            binaryfiles, update_binary_filelist, self.log)
 
         for suite, components in filelist.iteritems():
             self.log.debug("Writing file lists for %s" % suite)

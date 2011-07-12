@@ -20,10 +20,10 @@ __all__ = [
     'CannotUploadToArchive',
     'CannotUploadToPPA',
     'CannotUploadToPocket',
-    'DistroSeriesNotFound',
     'FULL_COMPONENT_SUPPORT',
     'IArchive',
     'IArchiveAppend',
+    'IArchiveCommercial',
     'IArchiveEdit',
     'IArchiveView',
     'IArchiveEditDependenciesForm',
@@ -32,6 +32,7 @@ __all__ = [
     'IDistributionArchive',
     'InsufficientUploadRights',
     'InvalidComponent',
+    'InvalidExternalDependencies',
     'InvalidPocketForPartnerArchive',
     'InvalidPocketForPPA',
     'IPPA',
@@ -43,23 +44,28 @@ __all__ = [
     'PocketNotFound',
     'VersionRequiresName',
     'default_name_by_purpose',
+    'validate_external_dependencies',
     ]
+
+import httplib
+from urlparse import urlparse
 
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     call_with,
+    error_status,
     export_as_webservice_entry,
     export_factory_operation,
     export_operation_as,
     export_read_operation,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
     rename_parameters_as,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -95,9 +101,9 @@ from lp.services.fields import (
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponent
-from lp.soyuz.interfaces.processor import IProcessorFamily
 
 
+@error_status(httplib.BAD_REQUEST)
 class ArchiveDependencyError(Exception):
     """Raised when an `IArchiveDependency` does not fit the context archive.
 
@@ -111,71 +117,64 @@ class ArchiveDependencyError(Exception):
 
 # Exceptions used in the webservice that need to be in this file to get
 # picked up therein.
-
+@error_status(httplib.BAD_REQUEST)
 class CannotCopy(Exception):
     """Exception raised when a copy cannot be performed."""
-    webservice_error(400) #Bad request.
 
 
+@error_status(httplib.BAD_REQUEST)
 class CannotSwitchPrivacy(Exception):
     """Raised when switching the privacy of an archive that has
     publishing records."""
-    webservice_error(400) # Bad request.
 
 
-class PocketNotFound(Exception):
+class PocketNotFound(NameLookupFailed):
     """Invalid pocket."""
-    webservice_error(400) #Bad request.
+    _message_prefix = "No such pocket"
 
 
-class DistroSeriesNotFound(Exception):
-    """Invalid distroseries."""
-    webservice_error(400) #Bad request.
-
-
+@error_status(httplib.BAD_REQUEST)
 class AlreadySubscribed(Exception):
     """Raised when creating a subscription for a subscribed person."""
-    webservice_error(400) # Bad request.
 
 
+@error_status(httplib.BAD_REQUEST)
 class ArchiveNotPrivate(Exception):
     """Raised when creating an archive subscription for a public archive."""
-    webservice_error(400) # Bad request.
 
 
+@error_status(httplib.BAD_REQUEST)
 class NoTokensForTeams(Exception):
     """Raised when creating a token for a team, rather than a person."""
-    webservice_error(400) # Bad request.
 
 
-class ComponentNotFound(Exception):
+class ComponentNotFound(NameLookupFailed):
     """Invalid source name."""
-    webservice_error(400) #Bad request.
+    _message_prefix = 'No such component'
 
 
+@error_status(httplib.BAD_REQUEST)
 class InvalidComponent(Exception):
     """Invalid component name."""
-    webservice_error(400) #Bad request.
 
 
 class NoSuchPPA(NameLookupFailed):
     """Raised when we try to look up an PPA that doesn't exist."""
-    webservice_error(400) #Bad request.
     _message_prefix = "No such ppa"
 
 
+@error_status(httplib.BAD_REQUEST)
 class VersionRequiresName(Exception):
     """Raised on some queries when version is specified but name is not."""
-    webservice_error(400) # Bad request.
 
 
 class CannotRestrictArchitectures(Exception):
     """The architectures for this archive can not be restricted."""
 
 
+@error_status(httplib.FORBIDDEN)
 class CannotUploadToArchive(Exception):
     """A reason for not being able to upload to an archive."""
-    webservice_error(403) # Forbidden.
 
     _fmt = '%(person)s has no upload rights to %(archive)s.'
 
@@ -190,9 +189,9 @@ class InvalidPocketForPartnerArchive(CannotUploadToArchive):
     _fmt = "Partner uploads must be for the RELEASE or PROPOSED pocket."
 
 
+@error_status(httplib.FORBIDDEN)
 class CannotUploadToPocket(Exception):
     """Returned when a pocket is closed for uploads."""
-    webservice_error(403) # Forbidden.
 
     def __init__(self, distroseries, pocket):
         Exception.__init__(self,
@@ -246,6 +245,16 @@ class ArchiveDisabled(CannotUploadToArchive):
 
     def __init__(self, archive_name):
         CannotUploadToArchive.__init__(self, archive_name=archive_name)
+
+
+@error_status(httplib.BAD_REQUEST)
+class InvalidExternalDependencies(Exception):
+    """Tried to set external dependencies to an invalid value."""
+
+    def __init__(self, errors):
+        error_msg = 'Invalid external dependencies:\n%s\n' % '\n'.join(errors)
+        super(Exception, self).__init__(self, error_msg)
+        self.errors = errors
 
 
 class IArchivePublic(IHasOwner, IPrivacy):
@@ -332,7 +341,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     distribution = exported(
         Reference(
-            Interface, # Redefined to IDistribution later.
+            Interface,  # Redefined to IDistribution later.
             title=_("The distribution that uses or is used by this "
                     "archive.")))
 
@@ -412,9 +421,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
             "A delta to apply to all build scores for the archive. Builds "
             "with a higher score will build sooner."))
 
-    external_dependencies = Text(
-        title=_("External dependencies"), required=False, readonly=False,
-        description=_(
+    external_dependencies = exported(
+        Text(title=_("External dependencies"), required=False,
+        readonly=False, description=_(
             "Newline-separated list of repositories to be used to retrieve "
             "any external build dependencies when building packages in the "
             "archive, in the format:\n"
@@ -422,15 +431,18 @@ class IArchivePublic(IHasOwner, IPrivacy):
                 "[components]\n"
             "The series variable is replaced with the series name of the "
             "context build.\n"
-            "NOTE: This is for migration of OEM PPAs only!"))
+            "NOTE: This is for migration of OEM PPAs only!")))
 
-    enabled_restricted_families = CollectionField(
+    enabled_restricted_families = exported(
+        CollectionField(
             title=_("Enabled restricted families"),
             description=_(
                 "The restricted architecture families on which the archive "
                 "can build."),
-            value_type=Reference(schema=IProcessorFamily),
-            readonly=False)
+            value_type=Reference(schema=Interface),
+            # Really IProcessorFamily.
+            readonly=True),
+        as_of='devel')
 
     commercial = exported(
         Bool(
@@ -520,27 +532,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
             records.
         """
 
-    def removeArchiveDependency(dependency):
-        """Remove the `IArchiveDependency` record for the given dependency.
-
-        :param dependency: is an `IArchive` object.
-        """
-
-    def addArchiveDependency(dependency, pocket, component=None):
-        """Record an archive dependency record for the context archive.
-
-        :param dependency: is an `IArchive` object.
-        :param pocket: is an `PackagePublishingPocket` enum.
-        :param component: is an optional `IComponent` object, if not given
-            the archive dependency will be tied to the component used
-            for a corresponding source in primary archive.
-
-        :raise: `ArchiveDependencyError` if given 'dependency' does not fit
-            the context archive.
-        :return: a `IArchiveDependency` object targeted to the context
-            `IArchive` requiring 'dependency' `IArchive`.
-        """
-
     def getPermissions(person, item, perm_type):
         """Get the `IArchivePermission` record with the supplied details.
 
@@ -616,6 +607,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :param component: The `Component` being uploaded to.
         :param pocket: The `PackagePublishingPocket` of 'distroseries' being
             uploaded to.
+        :param strict_component: True if access to the specific component for
+            the package is needed to upload to it. If False, then access to
+            any component will do.
         :return: The reason for not being able to upload, None otherwise.
         """
 
@@ -632,7 +626,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :param distroseries: The upload's target distro series.
         :param strict_component: True if access to the specific component for
             the package is needed to upload to it. If False, then access to
-            any package will do.
+            any component will do.
         :return: CannotUploadToArchive if 'person' cannot upload to the
             archive,
             None otherwise.
@@ -889,7 +883,8 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return: True if the person is allowed to upload the source package.
         """
 
-    num_pkgs_building = Attribute("Tuple of packages building and waiting to build")
+    num_pkgs_building = Attribute(
+        "Tuple of packages building and waiting to build")
 
     def getSourcePackageReleases(build_status=None):
         """Return the releases for this archive.
@@ -926,6 +921,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
     def getPockets():
         """Return iterable containing valid pocket names for this archive."""
 
+    def getOverridePolicy():
+        """Returns an instantiated `IOverridePolicy` for the archive."""
+
 
 class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""
@@ -938,7 +936,8 @@ class IArchiveView(IHasBuildRecords):
     dependencies = exported(
         CollectionField(
             title=_("Archive dependencies recorded for this archive."),
-            value_type=Reference(schema=Interface), #Really IArchiveDependency
+            value_type=Reference(schema=Interface),
+            # Really IArchiveDependency
             readonly=True))
 
     description = exported(
@@ -987,15 +986,18 @@ class IArchiveView(IHasBuildRecords):
             required=False))
     # Really returns ISourcePackagePublishingHistory, see below for
     # patch to avoid circular import.
+    @call_with(eager_load=True)
     @operation_returns_collection_of(Interface)
     @export_read_operation()
     def getPublishedSources(name=None, version=None, status=None,
                             distroseries=None, pocket=None,
-                            exact_match=False, created_since_date=None):
+                            exact_match=False, created_since_date=None,
+                            eager_load=False):
         """All `ISourcePackagePublishingHistory` target to this archive.
 
         :param name: source name filter (exact match or SQL LIKE controlled
                      by 'exact_match' argument).
+                     Name can be a single string or a list of strings.
         :param version: source version filter (always exact match).
         :param status: `PackagePublishingStatus` filter, can be a sequence.
         :param distroseries: `IDistroSeries` filter.
@@ -1103,8 +1105,8 @@ class IArchiveView(IHasBuildRecords):
         """
 
     @operation_parameters(
-        dependency=Reference(schema=Interface)) #Really IArchive. See below.
-    @operation_returns_entry(schema=Interface) #Really IArchiveDependency.
+        dependency=Reference(schema=Interface))  # Really IArchive. See below.
+    @operation_returns_entry(schema=Interface)  # Really IArchiveDependency.
     @export_read_operation()
     def getArchiveDependency(dependency):
         """Return the `IArchiveDependency` object for the given dependency.
@@ -1171,10 +1173,20 @@ class IArchiveView(IHasBuildRecords):
     @operation_returns_collection_of(Interface)
     @export_read_operation()
     def getComponentsForQueueAdmin(person):
-        """Return `IArchivePermission` for the person's queue admin components
+        """Return `IArchivePermission` for the person's queue admin
+        components.
 
-        :param person: An `IPerson`
+        :param person: An `IPerson`.
         :return: A list of `IArchivePermission` records.
+        """
+
+    def hasAnyPermission(person):
+        """Whether or not this person has any permission at all on this
+        archive.
+
+        :param person: The `IPerson` for whom the check is performed.
+        :return: A boolean indicating if the person has any permission on this
+            archive at all.
         """
 
     def getPackageDownloadCount(bpr, day, country):
@@ -1210,11 +1222,13 @@ class IArchiveView(IHasBuildRecords):
 class IArchiveAppend(Interface):
     """Archive interface for operations restricted by append privilege."""
 
+    @call_with(person=REQUEST_USER)
     @operation_parameters(
         source_names=List(
             title=_("Source package names"),
             value_type=TextLine()),
-        from_archive=Reference(schema=Interface), #Really IArchive, see below
+        from_archive=Reference(schema=Interface),
+        #Really IArchive, see below
         to_pocket=TextLine(title=_("Pocket name")),
         to_series=TextLine(title=_("Distroseries name"), required=False),
         include_binaries=Bool(
@@ -1225,8 +1239,8 @@ class IArchiveAppend(Interface):
     @export_write_operation()
     # Source_names is a string because exporting a SourcePackageName is
     # rather nonsensical as it only has id and name columns.
-    def syncSources(source_names, from_archive, to_pocket,
-                    to_series=None, include_binaries=False):
+    def syncSources(source_names, from_archive, to_pocket, to_series=None,
+                    include_binaries=False, person=None):
         """Synchronise (copy) named sources into this archive from another.
 
         It will copy the most recent PUBLISHED versions of the named
@@ -1244,17 +1258,20 @@ class IArchiveAppend(Interface):
         :param include_binaries: optional boolean, controls whether or not
             the published binaries for each given source should also be
             copied along with the source.
+        :param person: the `IPerson` who requests the sync.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
-        :raises DistroSeriesNotFound: if the distro series name is invalid
+        :raises NoSuchDistroSeries: if the distro series name is invalid
         :raises CannotCopy: if there is a problem copying.
         """
 
+    @call_with(person=REQUEST_USER)
     @operation_parameters(
         source_name=TextLine(title=_("Source package name")),
         version=TextLine(title=_("Version")),
-        from_archive=Reference(schema=Interface), #Really IArchive, see below
+        from_archive=Reference(schema=Interface),
+        # Really IArchive, see below
         to_pocket=TextLine(title=_("Pocket name")),
         to_series=TextLine(title=_("Distroseries name"), required=False),
         include_binaries=Bool(
@@ -1269,7 +1286,7 @@ class IArchiveAppend(Interface):
     # we should consider either changing this method or adding a new one
     # that takes that object instead.
     def syncSource(source_name, version, from_archive, to_pocket,
-                   to_series=None, include_binaries=False):
+                   to_series=None, include_binaries=False, person=None):
         """Synchronise (copy) a single named source into this archive.
 
         Copy a specific version of a named source to the destination
@@ -1283,16 +1300,17 @@ class IArchiveAppend(Interface):
         :param include_binaries: optional boolean, controls whether or not
             the published binaries for each given source should also be
             copied along with the source.
+        :param person: the `IPerson` who requests the sync.
 
         :raises NoSuchSourcePackageName: if the source name is invalid
         :raises PocketNotFound: if the pocket name is invalid
-        :raises DistroSeriesNotFound: if the distro series name is invalid
+        :raises NoSuchDistroSeries: if the distro series name is invalid
         :raises CannotCopy: if there is a problem copying.
         """
 
     @call_with(registrant=REQUEST_USER)
     @operation_parameters(
-        subscriber = PublicPersonChoice(
+        subscriber=PublicPersonChoice(
             title=_("Subscriber"),
             required=True,
             vocabulary='ValidPersonOrTeam',
@@ -1436,8 +1454,80 @@ class IArchiveEdit(Interface):
         processed.
         """
 
+    def addArchiveDependency(dependency, pocket, component=None):
+        """Record an archive dependency record for the context archive.
 
-class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):
+        :param dependency: is an `IArchive` object.
+        :param pocket: is an `PackagePublishingPocket` enum.
+        :param component: is an optional `IComponent` object, if not given
+            the archive dependency will be tied to the component used
+            for a corresponding source in primary archive.
+
+        :raise: `ArchiveDependencyError` if given 'dependency' does not fit
+            the context archive.
+        :return: a `IArchiveDependency` object targeted to the context
+            `IArchive` requiring 'dependency' `IArchive`.
+        """
+
+    @operation_parameters(
+        dependency=Reference(schema=Interface, required=True),
+        #  Really IArchive
+        pocket=Choice(
+            title=_("Pocket"),
+            description=_("The pocket into which this entry is published"),
+            # Really PackagePublishingPocket.
+            vocabulary=DBEnumeratedType,
+            required=True),
+        component=TextLine(title=_("Component"), required=False),
+        )
+    @export_operation_as('addArchiveDependency')
+    @export_factory_operation(Interface, [])  # Really IArchiveDependency
+    @operation_for_version('devel')
+    def _addArchiveDependency(dependency, pocket, component=None):
+        """Record an archive dependency record for the context archive.
+
+        :param dependency: is an `IArchive` object.
+        :param pocket: is an `PackagePublishingPocket` enum.
+        :param component: is the name of a component.  If not given,
+            the archive dependency will be tied to the component used
+            for a corresponding source in primary archive.
+
+        :raise: `ArchiveDependencyError` if given 'dependency' does not fit
+            the context archive.
+        :return: a `IArchiveDependency` object targeted to the context
+            `IArchive` requiring 'dependency' `IArchive`.
+        """
+    @operation_parameters(
+        dependency=Reference(schema=Interface, required=True),
+        # Really IArchive
+    )
+    @export_write_operation()
+    @operation_for_version('devel')
+    def removeArchiveDependency(dependency):
+        """Remove the `IArchiveDependency` record for the given dependency.
+
+        :param dependency: is an `IArchive` object.
+        """
+
+
+class IArchiveCommercial(Interface):
+    """Archive interface for operations restricted by commercial."""
+
+    @operation_parameters(
+        family=Reference(schema=Interface, required=True),
+        # Really IProcessorFamily.
+    )
+    @export_write_operation()
+    @operation_for_version('devel')
+    def enableRestrictedFamily(family):
+        """Add the processor family to the set of enabled restricted families.
+
+        :param family: is an `IProcessorFamily` object.
+        """
+
+
+class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView,
+               IArchiveCommercial):
     """Main Archive interface."""
     export_as_webservice_entry()
 
@@ -1668,3 +1758,29 @@ FULL_COMPONENT_SUPPORT = (
     )
 
 # Circular dependency issues fixed in _schema_circular_imports.py
+
+
+def validate_external_dependencies(ext_deps):
+    """Validate the external_dependencies field.
+
+    :param ext_deps: The dependencies form field to check.
+    """
+    errors = []
+    # The field can consist of multiple entries separated by
+    # newlines, so process each in turn.
+    for dep in ext_deps.splitlines():
+        try:
+            deb, url, suite, components = dep.split(" ", 3)
+        except ValueError:
+            errors.append(
+                "'%s' is not a complete and valid sources.list entry"
+                    % dep)
+            continue
+
+        if deb != "deb":
+            errors.append("%s: Must start with 'deb'" % dep)
+        url_components = urlparse(url)
+        if not url_components[0] or not url_components[1]:
+            errors.append("%s: Invalid URL" % dep)
+
+    return errors

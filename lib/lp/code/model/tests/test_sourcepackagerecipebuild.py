@@ -120,6 +120,15 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             bq.processor)
         self.assertEqual(bq, spb.buildqueue_record)
 
+    def test_getBuildCookie(self):
+        # A build cookie is made up of the job type and record id.
+        # The uploadprocessor relies on this format.
+        sprb = self.makeSourcePackageRecipeBuild()
+        Store.of(sprb).flush()
+        cookie = sprb.getBuildCookie()
+        expected_cookie = "RECIPEBRANCHBUILD-%d" % sprb.id
+        self.assertEquals(expected_cookie, cookie)
+
     def test_title(self):
         # A recipe build's title currently consists of the base
         # branch's unique name.
@@ -287,6 +296,68 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         daily_builds = SourcePackageRecipeBuild.makeDailyBuilds()
         self.assertEqual([], daily_builds)
 
+    def test_makeDailyBuilds_skips_builds_already_queued(self):
+        # If the recipe already has an identical build pending,
+        # makeDailyBuilds() won't create a build.
+        owner = self.factory.makePerson(name='eric')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=owner, name=u'funky-recipe', build_daily=True,
+            is_stale=True)
+        series = list(recipe.distroseries)[0]
+        existing_build = recipe.requestBuild(
+            recipe.daily_build_archive, recipe.owner, series,
+            PackagePublishingPocket.RELEASE)
+        removeSecurityProxy(existing_build).date_created = (
+            datetime.now(utc) - timedelta(hours=24, seconds=1))
+        removeSecurityProxy(recipe).is_stale = True
+
+        logger = BufferLogger()
+        daily_builds = SourcePackageRecipeBuild.makeDailyBuilds(logger)
+        self.assertEqual([], daily_builds)
+        self.assertEqual(
+            'DEBUG Recipe eric/funky-recipe is stale\n'
+            'DEBUG  - build already pending for Warty (4.10)\n',
+            logger.getLogBuffer())
+
+    def test_makeDailyBuilds_skips_disabled_archive(self):
+        # If the recipe's daily build archive is disabled, makeDailyBuilds()
+        # won't create a build.
+        owner = self.factory.makePerson(name='eric')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=owner, name=u'funky-recipe', build_daily=True,
+            is_stale=True)
+        archive = self.factory.makeArchive(owner=recipe.owner, name="ppa")
+        removeSecurityProxy(recipe).daily_build_archive = archive
+        removeSecurityProxy(archive).disable()
+
+        logger = BufferLogger()
+        daily_builds = SourcePackageRecipeBuild.makeDailyBuilds(logger)
+        self.assertEqual([], daily_builds)
+        self.assertEqual(
+            'DEBUG Recipe eric/funky-recipe is stale\n'
+            'DEBUG  - daily build failed for Warty (4.10): ' +
+            'PPA for Eric is disabled.\n',
+            logger.getLogBuffer())
+
+    def test_makeDailyBuilds_skips_archive_with_no_permission(self):
+        # If the recipe's daily build archive cannot be uploaded to due to
+        # insufficient permissions, makeDailyBuilds() won't create a build.
+        owner = self.factory.makePerson(name='eric')
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=owner, name=u'funky-recipe', build_daily=True,
+            is_stale=True)
+        archive = self.factory.makeArchive(name="ppa")
+        removeSecurityProxy(recipe).daily_build_archive = archive
+
+        logger = BufferLogger()
+        daily_builds = SourcePackageRecipeBuild.makeDailyBuilds(logger)
+        self.assertEqual([], daily_builds)
+        self.assertEqual(
+            'DEBUG Recipe eric/funky-recipe is stale\n'
+            'DEBUG  - daily build failed for Warty (4.10): ' +
+            'Signer has no upload rights to this PPA.\n',
+            logger.getLogBuffer())
+
     def test_makeDailyBuilds_with_an_older_build(self):
         # If a previous build is more than 24 hours old, and the recipe is
         # stale, we'll fire another off.
@@ -432,7 +503,10 @@ class TestAsBuildmaster(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_notify(self):
-        """Notify sends email."""
+        """We do not send mail on completion of source package recipe builds.
+
+        See bug 778437.
+        """
         person = self.factory.makePerson(name='person')
         cake = self.factory.makeSourcePackageRecipe(
             name=u'recipe', owner=person)
@@ -443,7 +517,11 @@ class TestAsBuildmaster(TestCaseWithFactory):
         removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
         IStore(build).flush()
         build.notify()
-        (message, ) = pop_notifications()
+        self.assertEquals(0, len(pop_notifications()))
+
+    def assertBuildMessageValid(self, build, message):
+        # Not currently used; can be used if we do want to check about any
+        # notifications sent in other cases.
         requester = build.requester
         requester_address = format_address(
             requester.displayname, requester.preferredemail.email)
@@ -473,29 +551,56 @@ class TestAsBuildmaster(TestCaseWithFactory):
         notifications = pop_notifications()
         self.assertEquals(0, len(notifications))
 
-    def test_handleStatusNotifies(self):
-        """"handleStatus causes notification, even if OK."""
 
-        def prepare_build():
-            queue_record = self.factory.makeSourcePackageRecipeBuildJob()
-            build = queue_record.specific_job.build
-            naked_build = removeSecurityProxy(build)
-            naked_build.status = BuildStatus.FULLYBUILT
-            naked_build.date_started = self.factory.getUniqueDate()
-            queue_record.builder = self.factory.makeBuilder()
-            slave = WaitingSlave('BuildStatus.OK')
-            queue_record.builder.setSlaveForTesting(slave)
-            return build
+class TestBuildNotifications(TrialTestCase):
 
-        def assertNotifyCount(status, build, count):
-            build.handleStatus(status, None, {'filemap': {}})
-            self.assertEqual(count, len(pop_notifications()))
-        assertNotifyCount("PACKAGEFAIL", prepare_build(), 1)
-        assertNotifyCount("OK", prepare_build(), 0)
-        build = prepare_build()
-        removeSecurityProxy(build).verifySuccessfulUpload = FakeMethod(
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestBuildNotifications, self).setUp()
+        from lp.testing.factory import LaunchpadObjectFactory
+        self.factory = LaunchpadObjectFactory()
+
+    def prepare_build(self, fake_successful_upload=False):
+        queue_record = self.factory.makeSourcePackageRecipeBuildJob()
+        build = queue_record.specific_job.build
+        naked_build = removeSecurityProxy(build)
+        naked_build.status = BuildStatus.FULLYBUILT
+        naked_build.date_started = self.factory.getUniqueDate()
+        if fake_successful_upload:
+            naked_build.verifySuccessfulUpload = FakeMethod(
                 result=True)
-        assertNotifyCount("OK", prepare_build(), 0)
+        queue_record.builder = self.factory.makeBuilder()
+        slave = WaitingSlave('BuildStatus.OK')
+        queue_record.builder.setSlaveForTesting(slave)
+        return build
+
+    def assertDeferredNotifyCount(self, status, build, expected_count):
+        d = build.handleStatus(status, None, {'filemap': {}})
+        def cb(result):
+            self.assertEqual(expected_count, len(pop_notifications()))
+        d.addCallback(cb)
+        return d
+
+    def test_handleStatus_PACKAGEFAIL(self):
+        """Failing to build the package immediately sends a notification."""
+        return self.assertDeferredNotifyCount(
+            "PACKAGEFAIL", self.prepare_build(), 1)
+
+    def test_handleStatus_OK(self):
+        """Building the source package does _not_ immediately send mail.
+        
+        (The archive uploader mail send one later.
+        """
+        return self.assertDeferredNotifyCount(
+            "OK", self.prepare_build(), 0)
+
+#XXX 2011-05-20 gmb bug=785679
+#    This test has been disabled since it broke intermittently in
+#    buildbot (but does not fail in isolation locally).
+##    def test_handleStatus_OK_successful_upload(self):
+##        return self.assertDeferredNotifyCount(
+##            "OK", self.prepare_build(True), 0)
 
 
 class MakeSPRecipeBuildMixin:

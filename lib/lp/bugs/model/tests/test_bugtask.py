@@ -1,10 +1,9 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from datetime import timedelta
-from doctest import DocTestSuite
 import unittest
 
 from lazr.lifecycle.snapshot import Snapshot
@@ -13,7 +12,6 @@ from zope.component import getUtility
 from zope.interface import providedBy
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import (
     all,
     any,
@@ -24,6 +22,7 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
@@ -39,7 +38,6 @@ from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.model.bugtask import build_tag_search_clause
 from lp.bugs.tests.bug import (
     create_old_bug,
-    sync_bugtasks,
     )
 from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
@@ -58,6 +56,7 @@ from lp.testing import (
     login_person,
     logout,
     normalize_whitespace,
+    person_logged_in,
     StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
@@ -1010,6 +1009,28 @@ class TestBugTaskSearch(TestCaseWithFactory):
         self.assertEqual([task2], list(result))
 
 
+class BugTaskSetSearchTest(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_explicit_blueprint_specified(self):
+        # If the linked_blueprints is an integer id, then only bugtasks for
+        # bugs that are linked to that blueprint are returned.
+        bug1 = self.factory.makeBug()
+        blueprint1 = self.factory.makeBlueprint()
+        with person_logged_in(blueprint1.owner):
+            blueprint1.linkBug(bug1)
+        bug2 = self.factory.makeBug()
+        blueprint2 = self.factory.makeBlueprint()
+        with person_logged_in(blueprint2.owner):
+            blueprint2.linkBug(bug2)
+        self.factory.makeBug()
+        params = BugTaskSearchParams(
+            user=None, linked_blueprints=blueprint1.id)
+        tasks = set(getUtility(IBugTaskSet).search(params))
+        self.assertThat(set(bug1.bugtasks), Equals(tasks))
+
+
 class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
     """Tests for searching bugs filtering on related bug tasks.
 
@@ -1232,7 +1253,6 @@ class BugTaskSetFindExpirableBugTasksTest(unittest.TestCase):
             self.bugtaskset.createTask(
                 bug=bugtasks[-1].bug, owner=self.user,
                 productseries=self.productseries))
-        sync_bugtasks(bugtasks)
 
     def tearDown(self):
         logout()
@@ -1333,8 +1353,95 @@ class TestBugTaskStatuses(TestCase):
         self.assertNotIn(BugTaskStatus.UNKNOWN, UNRESOLVED_BUGTASK_STATUSES)
 
 
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-    suite.addTest(DocTestSuite('lp.bugs.model.bugtask'))
-    return suite
+class TestBugTaskContributor(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_non_contributor(self):
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=owner)
+        # Create a person who has not contributed
+        person = self.factory.makePerson()
+        result = bug.default_bugtask.getContributorInfo(owner, person)
+        self.assertFalse(result['is_contributor'])
+        self.assertEqual(person.displayname, result['person_name'])
+        self.assertEqual(
+            bug.default_bugtask.pillar.displayname, result['pillar_name'])
+
+    def test_contributor(self):
+        owner = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product, owner=owner)
+        bug1 = self.factory.makeBug(product=product, owner=owner)
+        # Create a person who has contributed
+        person = self.factory.makePerson()
+        login('foo.bar@canonical.com')
+        bug1.default_bugtask.transitionToAssignee(person)
+        result = bug.default_bugtask.getContributorInfo(owner, person)
+        self.assertTrue(result['is_contributor'])
+        self.assertEqual(person.displayname, result['person_name'])
+        self.assertEqual(
+            bug.default_bugtask.pillar.displayname, result['pillar_name'])
+
+
+class TestConjoinedBugTasks(TestCaseWithFactory):
+    """Tests for conjoined bug task functionality."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestConjoinedBugTasks, self).setUp()
+        self.owner = self.factory.makePerson()
+        self.distro = self.factory.makeDistribution(
+            name="eggs", owner=self.owner, bug_supervisor=self.owner)
+        distro_release = self.factory.makeDistroRelease(
+            distribution=self.distro, registrant=self.owner)
+        source_package = self.factory.makeSourcePackage(
+            sourcepackagename="spam", distroseries=distro_release)
+        bug = self.factory.makeBug(
+            distribution=self.distro,
+            sourcepackagename=source_package.sourcepackagename,
+            owner=self.owner)
+        with person_logged_in(self.owner):
+            nomination = bug.addNomination(self.owner, distro_release)
+            nomination.approve(self.owner)
+            self.generic_task, self.series_task = bug.bugtasks
+
+    def test_editing_generic_status_reflects_upon_conjoined_master(self):
+        # If a change is made to the status of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        with person_logged_in(self.owner):
+            self.generic_task.transitionToStatus(
+                BugTaskStatus.CONFIRMED, self.owner)
+            self.assertEqual(
+                BugTaskStatus.CONFIRMED, self.series_task.status)
+
+    def test_editing_generic_importance_reflects_upon_conjoined_master(self):
+        # If a change is made to the importance of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        with person_logged_in(self.owner):
+            self.generic_task.transitionToImportance(
+                BugTaskImportance.HIGH, self.owner)
+            self.assertEqual(
+                BugTaskImportance.HIGH, self.series_task.importance)
+
+    def test_editing_generic_assignee_reflects_upon_conjoined_master(self):
+        # If a change is made to the assignee of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        with person_logged_in(self.owner):
+            self.generic_task.transitionToAssignee(self.owner)
+            self.assertEqual(
+                self.owner, self.series_task.assignee)
+
+    def test_editing_generic_package_reflects_upon_conjoined_master(self):
+        # If a change is made to the source package of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        source_package_name = self.factory.makeSourcePackageName("ham")
+        with person_logged_in(self.owner):
+            self.generic_task.sourcepackagename = source_package_name
+            self.assertEqual(
+                source_package_name, self.series_task.sourcepackagename)

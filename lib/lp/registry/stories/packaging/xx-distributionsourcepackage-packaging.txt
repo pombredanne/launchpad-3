@@ -21,7 +21,6 @@ source package in each series of this distribution.
     The Hoary Hedgehog Release (active development)     Set upstream link
       1.0.9a-4ubuntu1 release (main) ... weeks ago
     The Warty Warthog Release (current stable release)  alsa-utils trunk series
-    ...
       1.0.8-1ubuntu1  release (main) ... weeks ago
       1.0.9a-4        release (main) ... weeks ago
 

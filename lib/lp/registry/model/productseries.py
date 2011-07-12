@@ -40,14 +40,17 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
-from lp.app.enums import (
-    ServiceUsage,
-    service_uses_launchpad)
-from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    IServiceUsage,
+    )
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
@@ -59,10 +62,11 @@ from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
     )
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     get_bug_tags,
-    get_bug_tags_open_count,
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -74,6 +78,7 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.person import validate_person
+from lp.registry.interfaces.productrelease import IProductReleaseSet
 from lp.registry.interfaces.productseries import (
     IProductSeries,
     IProductSeriesSet,
@@ -123,7 +128,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-    implements(IHasBugHeat, IProductSeries, IServiceUsage)
+    implements(IBugSummaryDimension, IHasBugHeat, IProductSeries, IServiceUsage)
 
     _table = 'ProductSeries'
 
@@ -172,17 +177,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     @property
     def translations_usage(self):
         """See `IServiceUsage.`"""
-        # If translations_usage is set for the Product, respect it.
-        usage = self.product.translations_usage
-        if usage != ServiceUsage.UNKNOWN:
-            return usage
-
-        # If not, usage is based on the presence of current translation
-        # templates for the series.
-        if self.potemplate_count > 0:
-            return ServiceUsage.LAUNCHPAD
-        else:
-            return ServiceUsage.UNKNOWN
+        return self.product.translations_usage
 
     @property
     def codehosting_usage(self):
@@ -212,11 +207,19 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def releases(self):
         """See `IProductSeries`."""
         store = Store.of(self)
+
+        # The Milestone is cached too because most uses of a ProductRelease
+        # need it. The decorated resultset returns just the ProductRelease.
+        def decorate(row):
+            product_release, milestone = row
+            return product_release
+
         result = store.find(
-            ProductRelease,
-            And(Milestone.productseries == self,
-                ProductRelease.milestone == Milestone.id))
-        return result.order_by(Desc('datereleased'))
+            (ProductRelease, Milestone),
+            Milestone.productseries == self,
+            ProductRelease.milestone == Milestone.id)
+        result = result.order_by(Desc('datereleased'))
+        return DecoratedResultSet(result, decorate)
 
     @property
     def release_files(self):
@@ -443,17 +446,15 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         """See IBugTarget."""
         return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user):
-        """See IBugTarget."""
-        return get_bug_tags_open_count(BugTask.productseries == self, user)
-
     def createBug(self, bug_params):
         """See IBugTarget."""
         raise NotImplementedError('Cannot file a bug against a productseries')
 
-    def _getBugTaskContextClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
-        return 'BugTask.productseries = %s' % sqlvalues(self)
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return BugSummary.productseries_id == self.id
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
@@ -467,10 +468,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
             return None
 
     def getRelease(self, version):
-        for release in self.releases:
-            if release.version == version:
-                return release
-        return None
+        return getUtility(IProductReleaseSet).getBySeriesAndVersion(
+            self, version)
 
     def getPackage(self, distroseries):
         """See IProductSeries."""
@@ -481,6 +480,22 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         # the distroseries to try to find a relevant packaging record
         raise NotFoundError(distroseries)
 
+    def getUbuntuTranslationFocusPackage(self):
+        """See `IProductSeries`."""
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        translation_focus = ubuntu.translation_focus
+        current_series = ubuntu.currentseries
+        candidate = None
+        for package in self.sourcepackages:
+            if package.distroseries == translation_focus:
+                return package
+            if package.distroseries == current_series:
+                candidate = package
+            elif package.distroseries.distribution == ubuntu:
+                if candidate is None:
+                    candidate = package
+        return candidate
+
     def setPackaging(self, distroseries, sourcepackagename, owner):
         """See IProductSeries."""
         if distroseries.distribution.full_functionality:
@@ -490,16 +505,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
                     "The source package is not published in %s." %
                     distroseries.displayname)
         for pkg in self.packagings:
-            if pkg.distroseries == distroseries:
+            if (pkg.distroseries == distroseries and
+                pkg.sourcepackagename == sourcepackagename):
                 # we have found a matching Packaging record
-                if pkg.sourcepackagename == sourcepackagename:
-                    # and it has the same source package name
-                    return pkg
-                # ok, we need to update this pkging record
-                pkg.sourcepackagename = sourcepackagename
-                pkg.owner = owner
-                pkg.datecreated = UTC_NOW
-                pkg.sync()  # convert UTC_NOW to actual datetime
+                # and it has the same source package name
                 return pkg
 
         # ok, we didn't find a packaging record that matches, let's go ahead
@@ -531,6 +540,10 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def getTemplatesCollection(self):
         """See `IHasTranslationTemplates`."""
         return TranslationTemplatesCollection().restrictProductSeries(self)
+
+    def getSharingPartner(self):
+        """See `IHasTranslationTemplates`."""
+        return self.getUbuntuTranslationFocusPackage()
 
     @property
     def potemplate_count(self):
@@ -651,6 +664,25 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
             uri=canonical_url(self, path_only_if_possible=True),
             landmarks=landmarks,
             product=self.product)
+
+    def getBugTaskWeightFunction(self):
+        """Provide a weight function to determine optimal bug task.
+
+        Full weight is given to tasks for this product series.
+
+        If the series isn't found, the product task is better than others.
+        """
+        seriesID = self.id
+        productID = self.productID
+
+        def weight_function(bugtask):
+            if bugtask.productseriesID == seriesID:
+                return OrderedBugTask(1, bugtask.id, bugtask)
+            elif bugtask.productID == productID:
+                return OrderedBugTask(2, bugtask.id, bugtask)
+            else:
+                return OrderedBugTask(3, bugtask.id, bugtask)
+        return weight_function
 
 
 class TimelineProductSeries:

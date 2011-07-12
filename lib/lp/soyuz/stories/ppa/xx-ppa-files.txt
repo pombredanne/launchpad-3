@@ -1,10 +1,13 @@
-= Personal Package Archives Files =
+Personal Package Archives Files
+===============================
 
 PPA files are proxied via +archive/+files or +builds/+files in a way
 we can decide between redirecting to the public librarian URL or
 stream the restricted content in inline.
 
-== Setup ==
+
+Setup
+-----
 
 Creating a complete source and binary publication on No Priv's private
 PPA.
@@ -25,7 +28,7 @@ Create a private PPA for no-priv.
     ...     owner=no_priv, private=True, name='p3a',
     ...     distribution=ubuntu)
 
-Initialise SoyuzTestPublisher.
+Initialize SoyuzTestPublisher.
 
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()
@@ -91,7 +94,8 @@ Commit everything.
     >>> commit()
 
 
-== PPA file links ==
+PPA file links
+--------------
 
 Links to files accessible via +files/ proxy in the PPA page.
 
@@ -181,7 +185,7 @@ builds list is presented.
     >>> no_priv_browser.getControl("Filter").click()
 
     >>> check_urls(no_priv_browser, builds_links,
-    ...            'http://launchpad.dev/~no-priv/+archive/p3a/+buildjob/31')
+    ...            'http://launchpad.dev/~no-priv/+archive/p3a/+build/31')
     buildlog_ubuntu-breezy-autotest-i386.test-pkg_1.0_FULLYBUILT.txt.gz: OK
 
     >>> no_priv_browser.open(
@@ -205,10 +209,11 @@ Buildlog, upload_log and binary changesfile are served via the Build
 
     >>> no_priv_browser.getLink('i386').click()
     >>> print no_priv_browser.title
-    i386 build of test-pkg 1.0 : PPA named p3a for No Privileges Person : No Privileges Person
+    i386 build of test-pkg 1.0 : PPA named p3a for No Privileges Person :
+    No Privileges Person
 
     >>> check_urls(no_priv_browser, build_links,
-    ...            'http://launchpad.dev/~no-priv/+archive/p3a/+buildjob/31')
+    ...            'http://launchpad.dev/~no-priv/+archive/p3a/+build/31')
     test-bin_1.0_i386.changes:    OK
     buildlog_...txt.gz:           OK
     upload_..._log.txt:           OK
@@ -248,83 +253,14 @@ Sample Person can't access the file.
 
 The 'No Privileges' user, the PPA owner, can download the DSC file.
 
-    >>> no_priv_browser.open(file_lp_url)
-
-And its informations match the library file.
-
-    >>> print file_content
-    I do not care about sources.
-    >>> print file_size
-    28
-    >>> print file_mimetype
-    application/text
-
-    >>> print no_priv_browser.contents
-    I do not care about sources.
-    >>> print no_priv_browser.headers['content-length']
-    28
-    >>> print no_priv_browser.headers['content-type']
-    application/text
-
-Gzipped package diffs ('.diff.gz') and buildlogs ('.txt.gz') are
-treated differently from the other files. Since we want their contents
-to be rendered inline by the browsers we override their 'content-encoding'
-and 'content-type' to 'gzip' and 'text/plain', respectively.
-
-    >>> login('foo.bar@canonical.com')
-
-    >>> buildlog_content = buildlog.read()
-    >>> buildlog_size = str(buildlog.content.filesize)
-    >>> buildlog_lp_url = str(
-    ...     'http://launchpad.dev/~no-priv/+archive/p3a/+buildjob/%d/+files/%s' %
-    ...     (build.id, buildlog.filename))
-
-    >>> diff_content = package_diff.diff_content.read()
-    >>> diff_size = str(package_diff.diff_content.content.filesize)
-    >>> diff_lp_url = str(
-    ...     'http://launchpad.dev/~no-priv/+archive/p3a/+files/%s' %
-    ...     package_diff.diff_content.filename)
-
-    >>> logout()
-
-Restricted buildlogs are served with the pristine content and size,
-but 'content-type' and 'content-encoding' are modified.
-
-    >>> no_priv_browser.open(buildlog_lp_url)
-
-    >>> print buildlog_content
-    bogus buildlog
-    >>> print buildlog_size
-    14
-
-    >>> print no_priv_browser.contents
-    bogus buildlog
-    >>> print no_priv_browser.headers['content-length']
-    14
-
-    >>> print no_priv_browser.headers['content-type']
-    text/plain
-    >>> print no_priv_browser.headers['content-encoding']
-    gzip
-
-The same happens for package diffs.
-
-    >>> no_priv_browser.open(diff_lp_url)
-
-    >>> print diff_content
-    bogus diff
-    >>> print diff_size
-    10
-
-    >>> print no_priv_browser.contents
-    bogus diff
-    >>> print no_priv_browser.headers['content-length']
-    10
-
-    >>> print no_priv_browser.headers['content-type']
-    text/plain
-    >>> print no_priv_browser.headers['content-encoding']
-    gzip
+    >>> print http(r"""
+    ... GET %s HTTP/1.1
+    ... Authorization: Basic no-priv@canonical.com:test
+    ... """ % (file_lp_url.replace('http://launchpad.dev', '')))
+    HTTP/1.1 303 See Other
+    ...
+    Location: https://...restricted.../test-pkg_1.0.dsc?token=...
+    ...
 
 If the associated PPA and the `LibraryFileAlias` are public, the +files/
 proxy redirects to the public http url. We'll copy the test sources and
@@ -337,7 +273,8 @@ binaries across to no-priv's public ppa.
     ...     no_priv_private_ppa.getPublishedSources(name='test-pkg'),
     ...     no_priv.archive, series=ubuntu['warty'],
     ...     pocket=PackagePublishingPocket.RELEASE,
-    ...     include_binaries=True, allow_delayed_copies=False)
+    ...     include_binaries=True, allow_delayed_copies=False,
+    ...     person=no_priv)
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(dsc_file).restricted = False
@@ -360,8 +297,16 @@ binaries across to no-priv's public ppa.
     Location: http://.../test-pkg_1.0.dsc
     ...
 
+The filename must be at the end of the URL. No further segments are permitted.
 
-== Compatibility URL Redirection ==
+    >>> browser.open(file_lp_url + '/foo')
+    Traceback (most recent call last):
+    ...
+    NotFound: ...
+
+
+Compatibility URL Redirection
+-----------------------------
 
 If a script or otherwise is trying to access +archive/+files, we make
 sure that '+files' isn't understood as the PPA name, but instead
@@ -380,24 +325,22 @@ redirect to the files for the default named PPA.
     Location: http://localhost/~no-priv/+archive/ppa/+files/test-pkg_1.0.dsc
     ...
 
-The same redirection happens for +archive/+buildjob/blah urls:
+The same redirection happens for +archive/+build/blah urls:
 
-    >>> buildlog_lp_url_without_ppa_name = buildlog_lp_url.replace(
-    ...     '/p3a', '')
-    >>> print buildlog_lp_url_without_ppa_name
-    http://.../~no-priv/+archive/+buildjob/31/+files/...
-
+    >>> buildlog_lp_url_without_ppa_name = (
+    ...     'http://launchpad.dev/~no-priv/+archive/+build/1/+files/foo')
     >>> print http(r"""
     ... GET %s HTTP/1.1
     ... """ % buildlog_lp_url_without_ppa_name.replace(
     ...     'http://launchpad.dev', ''))
     HTTP/1.1 301 Moved Permanently
     ...
-    Location: http://.../~no-priv/+archive/ppa/+buildjob/31/+files/...
+    Location: http://.../~no-priv/+archive/ppa/+build/1/+files/...
     ...
 
 
-== Deleted library files ==
+Deleted library files
+---------------------
 
 Unused PPA files get expired and deleted after a configurable period,
 so Launchpad doesn't have to host them forever. They are also
@@ -448,22 +391,18 @@ LP proxy URL a proper NotFound error is raised.
     ... GET %s HTTP/1.1
     ... """ % file_lp_url.replace('http://launchpad.dev', ''))
 
-It results in a 404 response with a page pointing to a OOPS report and
-users instructions about the problem.
+It results in a 404 response.
 
     >>> print not_found_file
     HTTP/1.1 404 Not Found
     ...
 
-The OOPS itself, will contain the correct filename and the context
-archive in which the error occurred based on the traceback included in
-the page.
+Launchpad staff can see the correct filename and the context archive in which
+the error occurred based on the traceback included in the page.
 
     >>> main_content = find_main_content(str(not_found_file))
     >>> print extract_text(main_content)
     Lost something?
-    ...
-    Include the error ID OOPS-...
     ...
     NotFound:
     Object: &lt;Archive at ...&gt;, name: u'test-pkg_1.0.dsc'...

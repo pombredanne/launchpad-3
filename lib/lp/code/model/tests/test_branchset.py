@@ -57,4 +57,4 @@ class TestBranchSet(TestCaseWithFactory):
         self.assertEqual(response.status, 200,
             "Got %d for url %r with response %r" % (
             response.status, url, response.body))
-        self.assertThat(collector, HasQueryCount(LessThan(13)))
+        self.assertThat(collector, HasQueryCount(LessThan(17)))

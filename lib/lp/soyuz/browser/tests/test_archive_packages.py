@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -11,21 +11,19 @@ __all__ = [
     'TestPPAPackages',
     ]
 
-from zope.component import getUtility
-
 from testtools.matchers import (
     Equals,
     LessThan,
-    MatchesAny,
     )
+from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.testing.pages import get_feedback_messages
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.testing.layers import LaunchpadFunctionalLayer
-from canonical.launchpad.utilities.celebrities import ILaunchpadCelebrities
+from lp.app.utilities.celebrities import ILaunchpadCelebrities
 from lp.soyuz.browser.archive import ArchiveNavigationMenu
 from lp.testing import (
     login,
@@ -33,10 +31,10 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
-from lp.testing._webservice import QueryCollector
 
 
 class TestP3APackages(TestCaseWithFactory):
@@ -187,7 +185,7 @@ class TestPPAPackages(TestCaseWithFactory):
         self.assertIs(None, view.specified_name_filter)
 
     def test_source_query_counts(self):
-        query_baseline = 47
+        query_baseline = 43
         # Assess the baseline.
         collector = QueryCollector()
         collector.register()
@@ -228,7 +226,7 @@ class TestPPAPackages(TestCaseWithFactory):
         self.assertThat(collector, HasQueryCount(LessThan(expected_count)))
 
     def test_binary_query_counts(self):
-        query_baseline = 43
+        query_baseline = 40
         # Assess the baseline.
         collector = QueryCollector()
         collector.register()
@@ -245,8 +243,7 @@ class TestPPAPackages(TestCaseWithFactory):
                 archive=ppa)
             url = canonical_url(ppa) + "/+packages"
         browser.open(url)
-        self.assertThat(collector, HasQueryCount(
-            MatchesAny(LessThan(query_baseline), Equals(query_baseline))))
+        self.assertThat(collector, HasQueryCount(LessThan(query_baseline)))
         expected_count = collector.count
         # Use all new objects - avoids caching issues invalidating the
         # gathered metrics.
@@ -260,5 +257,4 @@ class TestPPAPackages(TestCaseWithFactory):
                     archive=ppa, distroarchseries=pkg.distroarchseries)
             url = canonical_url(ppa) + "/+packages"
         browser.open(url)
-        self.assertThat(collector, HasQueryCount(
-            MatchesAny(Equals(expected_count), LessThan(expected_count))))
+        self.assertThat(collector, HasQueryCount(Equals(expected_count)))

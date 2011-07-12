@@ -14,6 +14,7 @@ __all__ = [
     'IBugAddForm',
     'IBugBecameQuestionEvent',
     'IBugDelta',
+    'IBugMute',
     'IBugSet',
     'IFileBugData',
     'IFrontPageBugAddForm',
@@ -64,7 +65,7 @@ from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import IPrivacy
-from canonical.launchpad.interfaces.message import IMessage
+from lp.services.messages.interfaces.message import IMessage
 from lp.app.validators.attachment import attachment_size_constraint
 from lp.app.validators.name import bug_name_validator
 from lp.app.errors import NotFoundError
@@ -85,6 +86,7 @@ from lp.services.fields import (
     ContentNameField,
     Description,
     DuplicateBug,
+    PersonChoice,
     PublicPersonChoice,
     Tag,
     Title,
@@ -96,8 +98,9 @@ class CreateBugParams:
 
     def __init__(self, owner, title, comment=None, description=None, msg=None,
                  status=None, datecreated=None, security_related=False,
-                 private=False, subscribers=(), binarypackagename=None,
-                 tags=None, subscribe_owner=True, filed_by=None):
+                 private=False, subscribers=(),
+                 tags=None, subscribe_owner=True, filed_by=None,
+                 importance=None, milestone=None, assignee=None):
         self.owner = owner
         self.title = title
         self.comment = comment
@@ -111,10 +114,12 @@ class CreateBugParams:
         self.product = None
         self.distribution = None
         self.sourcepackagename = None
-        self.binarypackagename = binarypackagename
         self.tags = tags
         self.subscribe_owner = subscribe_owner
         self.filed_by = filed_by
+        self.importance = importance
+        self.milestone = milestone
+        self.assignee = assignee
 
     def setBugTarget(self, product=None, distribution=None,
                      sourcepackagename=None):
@@ -244,10 +249,10 @@ class IBug(IPrivacy, IHasLinkedBranches):
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
     activity = exported(
-        CollectionField(
+        doNotSnapshot(CollectionField(
             title=_('Log of activity that has occurred on this bug.'),
             value_type=Reference(schema=IBugActivity),
-            readonly=True))
+            readonly=True)))
     initial_message = Attribute(
         "The message that was specified when creating the bug")
     bugtasks = exported(
@@ -294,11 +299,11 @@ class IBug(IPrivacy, IHasLinkedBranches):
             title=_("List of bug attachments."),
             value_type=Reference(schema=IBugAttachment),
             readonly=True)
-    attachments = exported(
+    attachments = doNotSnapshot(exported(
         CollectionField(
             title=_("List of bug attachments."),
             value_type=Reference(schema=IBugAttachment),
-            readonly=True))
+            readonly=True)))
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
     linked_branches = exported(
@@ -382,7 +387,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
         title=_('Heat Last Updated'), required=False, readonly=True)
 
     # Adding related BugMessages provides a hook for getting at
-    # BugMessage.visible when building bug comments.
+    # BugMessage.message.visible when building bug comments.
     bug_messages = Attribute('The bug messages related to this object.')
     comment_count = Attribute(
         "The number of comments on this bug, not including the initial "
@@ -394,13 +399,13 @@ class IBug(IPrivacy, IHasLinkedBranches):
             readonly=True,
             value_type=Reference(schema=IMessage)))
 
-    indexed_messages = exported(
+    indexed_messages = doNotSnapshot(exported(
         CollectionField(
             title=_("The messages related to this object, in reverse "
                     "order of creation (so newest first)."),
             readonly=True,
             value_type=Reference(schema=IMessage)),
-        exported_as='messages')
+        exported_as='messages'))
 
     def _indexed_messages(include_content=False, include_parents=False):
         """Low level query for getting bug messages.
@@ -433,11 +438,11 @@ class IBug(IPrivacy, IHasLinkedBranches):
     def newMessage(owner, subject, content):
         """Create a new message, and link it to this object."""
 
+    # The level actually uses BugNotificationLevel as its vocabulary,
+    # but due to circular import problems we fix that in
+    # _schema_circular_imports.py rather than here.
     @operation_parameters(
         person=Reference(IPerson, title=_('Person'), required=True),
-        # level actually uses BugNotificationLevel as its vocabulary,
-        # but due to circular import problems we fix that in
-        # _schema_circular_imports.py rather than here.
         level=Choice(
             vocabulary=DBEnumeratedType, required=False,
             title=_('Level')))
@@ -486,8 +491,7 @@ class IBug(IPrivacy, IHasLinkedBranches):
     def isMuted(person):
         """Does person have a muted subscription on this bug?
 
-        :returns: True if the user has a direct subscription to this bug
-            with a BugNotificationLevel of NOTHING.
+        :returns: True if the user has muted all email from this bug.
         """
 
     @operation_parameters(
@@ -504,7 +508,9 @@ class IBug(IPrivacy, IHasLinkedBranches):
     @export_write_operation()
     @operation_for_version('devel')
     def unmute(person, unmuted_by):
-        """Remove a muted subscription for `person`."""
+        """Remove a muted subscription for `person`.
+
+        Returns previously muted direct subscription, if any."""
 
     def getDirectSubscriptions():
         """A sequence of IBugSubscriptions directly linked to this bug."""
@@ -513,6 +519,15 @@ class IBug(IPrivacy, IHasLinkedBranches):
         """A list of IPersons that are directly subscribed to this bug.
 
         Direct subscribers have an entry in the BugSubscription table.
+        """
+
+    def getDirectSubscribersWithDetails():
+        """Get direct subscribers and their subscriptions for the bug.
+
+        Those with muted bug subscriptions are excluded from results.
+
+        :returns: A ResultSet of tuples (Person, BugSubscription)
+            representing a subscriber and their bug subscription.
         """
 
     def getIndirectSubscribers(recipients=None, level=None):
@@ -548,12 +563,6 @@ class IBug(IPrivacy, IHasLinkedBranches):
         """Return the `BugSubscription` for a `Person` to this `Bug`.
 
         If no such `BugSubscription` exists, return None.
-        """
-
-    def getStructuralSubscriptionsForPerson(person):
-        """Return the `StructuralSubscription`s for a `Person` to this `Bug`.
-
-        This disregards filters.
         """
 
     def getSubscriptionInfo(level):
@@ -780,9 +789,9 @@ class IBug(IPrivacy, IHasLinkedBranches):
             schema=Interface, title=_('Target'), required=False),
         nominations=List(
             title=_("Nominations to search through."),
-            value_type=Reference(schema=Interface), # IBugNomination
+            value_type=Reference(schema=Interface),  # IBugNomination
             required=False))
-    @operation_returns_collection_of(Interface) # IBugNomination
+    @operation_returns_collection_of(Interface)  # IBugNomination
     @export_read_operation()
     def getNominations(target=None, nominations=None):
         """Return a list of all IBugNominations for this bug.
@@ -928,10 +937,10 @@ class IBug(IPrivacy, IHasLinkedBranches):
         if the user is the owner or an admin.
         """
 
-    def setHeat(heat, timestamp=None):
+    def setHeat(heat, timestamp=None, affected_targets=None):
         """Set the heat for the bug."""
 
-    def updateHeat():
+    def updateHeat(affected_targets=None):
         """Update the heat for the bug."""
 
     @operation_parameters(
@@ -1128,9 +1137,6 @@ class IBugSet(Interface):
 
           * if either product or distribution is specified, an appropiate
             bug task will be created
-
-          * binarypackagename, if not None, will be added to the bug's
-            description
         """
 
     def createBugWithoutTarget(bug_params):
@@ -1212,3 +1218,18 @@ class IFileBugData(Interface):
     comments = Attribute("Comments to add to the bug.")
     attachments = Attribute("Attachments to add to the bug.")
     hwdb_submission_keys = Attribute("HWDB submission keys for the bug.")
+
+
+class IBugMute(Interface):
+    """A mute on an IBug."""
+
+    person = PersonChoice(
+        title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
+        readonly=True, description=_("The person subscribed."))
+    bug = Reference(
+        IBug, title=_("Bug"),
+        required=True, readonly=True,
+        description=_("The bug to be muted."))
+    date_created = Datetime(
+        title=_("The date on which the mute was created."), required=False,
+        readonly=True)

@@ -3,9 +3,12 @@
 
 __metaclass__ = type
 
+from zope.component import getUtility
+
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.person import TeamOverviewMenu
+from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -149,3 +152,17 @@ class TestTeamIndexView(TestCaseWithFactory):
     def test_add_member_step_title(self):
         view = create_initialized_view(self.team, '+index')
         self.assertEqual('Search', view.add_member_step_title)
+
+    def test_is_merge_pending(self):
+        target_team = self.factory.makeTeam()
+        job_source = getUtility(IPersonMergeJobSource)
+        job_source.create(
+            from_person=self.team, to_person=target_team,
+            reviewer=target_team.teamowner)
+        view = create_initialized_view(self.team, name="+index")
+        notifications = view.request.response.notifications
+        message = (
+            'Test Team is queued to be be merged or deleted '
+            'in a few minutes.')
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(message, notifications[0].message)

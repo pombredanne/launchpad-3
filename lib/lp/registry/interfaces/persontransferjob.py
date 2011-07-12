@@ -95,15 +95,23 @@ class IPersonMergeJob(IPersonTransferJob):
         vocabulary='ValidPersonOrTeam',
         required=True)
 
+    def getErrorRecipients(self):
+        """See `BaseRunnableJob`."""
+
 
 class IPersonMergeJobSource(IJobSource):
-    """An interface for acquiring IMembershipNotificationJobs."""
+    """An interface for acquiring IPersonMergeJobs."""
 
-    def create(from_person, to_person):
-        """Create a new IMembershipNotificationJob.
+    def create(from_person, to_person, reviewer=None):
+        """Create a new IPersonMergeJob.
 
         None is returned if either the from_person or to_person are already
-        in a pending merge.
+        in a pending merge. The review keyword argument is required if
+        the from_person and to_person are teams.
+
+        :param from_person: An IPerson or ITeam that is a duplicate.
+        :param to_person: An IPerson or ITeam that is a master.
+        :param reviewer: An IPerson who approved ITeam merger.
         """
 
     def find(from_person=None, to_person=None, any_person=False):

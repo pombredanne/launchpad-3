@@ -51,16 +51,13 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities,
-    IPersonRoles,
-    )
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     ISlaveStore,
     )
 from canonical.librarian.interfaces import ILibrarianClient
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
@@ -69,6 +66,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -1009,7 +1007,7 @@ class TranslationImportQueue:
             path = path_filter(path)
         return path
 
-    def _isTranslationFile(self, path):
+    def _isTranslationFile(self, path, only_templates):
         """Is this a translation file that should be uploaded?"""
         if path is None or path == '':
             return False
@@ -1024,11 +1022,15 @@ class TranslationImportQueue:
             # Doesn't look like a supported translation file type.
             return False
 
+        if only_templates and not translation_importer.isTemplateName(path):
+            return False
+
         return True
 
     def addOrUpdateEntriesFromTarball(self, content, by_maintainer, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None, filename_filter=None, approver_factory=None):
+        potemplate=None, filename_filter=None, approver_factory=None,
+        only_templates=False):
         """See ITranslationImportQueue."""
         num_files = 0
         conflict_files = []
@@ -1045,7 +1047,7 @@ class TranslationImportQueue:
         upload_files = {}
         for name in self._iterTarballFiles(tarball):
             path = self._makePath(name, filename_filter)
-            if self._isTranslationFile(path):
+            if self._isTranslationFile(path, only_templates):
                 upload_files[name] = path
         tarball.close()
 

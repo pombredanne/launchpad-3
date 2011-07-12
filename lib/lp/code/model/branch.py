@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
-    'filter_one_task_per_bug',
     ]
 
 from datetime import datetime
@@ -64,17 +63,16 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities,
-    IPrivacy,
-    )
+from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp import urlappend
 from lp.app.errors import UserCannotUnsubscribePerson
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     IBugTaskSet,
     )
+from lp.bugs.interfaces.bugtaskfilter import filter_bugtasks_by_context
 from lp.buildmaster.model.buildqueue import BuildQueue
 from lp.code.bzr import (
     BranchFormat,
@@ -109,6 +107,7 @@ from lp.code.interfaces.branch import (
     IBranchNavigationMenu,
     IBranchSet,
     user_has_special_branch_access,
+    WrongNumberOfReviewTypeArguments,
     )
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchlookup import IBranchLookup
@@ -118,7 +117,10 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.codehosting import compose_public_url
+from lp.code.interfaces.codehosting import (
+    BRANCH_ID_ALIAS_PREFIX,
+    compose_public_url,
+    )
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks,
     )
@@ -139,6 +141,7 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
+from lp.services.database.bulk import load_related
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
@@ -313,9 +316,9 @@ class Branch(SQLBase, BzrIdentityMixin):
         params = BugTaskSearchParams(user=user, linked_branches=self.id,
             status=status_filter)
         tasks = shortlist(getUtility(IBugTaskSet).search(params), 1000)
-        # Post process to discard irrelevant tasks: we only return one task per
-        # bug, and cannot easily express this in sql (yet).
-        return filter_one_task_per_bug(self, tasks)
+        # Post process to discard irrelevant tasks: we only return one task
+        # per bug, and cannot easily express this in sql (yet).
+        return filter_bugtasks_by_context(self.target.context, tasks)
 
     def linkBug(self, bug, registrant):
         """See `IBranch`."""
@@ -418,11 +421,8 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         target = BranchMergeProposalGetter.activeProposalsForBranches(
             self, target_branch)
-        if target.count() > 0:
-            raise BranchMergeProposalExists(
-                'There is already a branch merge proposal registered for '
-                'branch %s to land on %s that is still active.'
-                % (self.displayname, target_branch.displayname))
+        for existing_proposal in target:
+            raise BranchMergeProposalExists(existing_proposal)
 
         if date_created is None:
             date_created = UTC_NOW
@@ -471,7 +471,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         if review_types is None:
             review_types = []
         if len(reviewers) != len(review_types):
-            raise ValueError(
+            raise WrongNumberOfReviewTypeArguments(
                 'reviewers and review_types must be equal length.')
         review_requests = zip(reviewers, review_types)
         return self.addLandingTarget(
@@ -579,17 +579,20 @@ class Branch(SQLBase, BzrIdentityMixin):
         if end_date is not None:
             date_clause = And(date_clause, Revision.revision_date <= end_date)
         result = Store.of(self).find(
-            (BranchRevision, Revision, RevisionAuthor),
+            (BranchRevision, Revision),
             BranchRevision.branch == self,
             BranchRevision.sequence != None,
             BranchRevision.revision == Revision.id,
-            Revision.revision_author == RevisionAuthor.id,
             date_clause)
         if oldest_first:
             result = result.order_by(BranchRevision.sequence)
         else:
             result = result.order_by(Desc(BranchRevision.sequence))
-        return result
+
+        def eager_load(rows):
+            revisions = map(operator.itemgetter(1), rows)
+            load_related(RevisionAuthor, revisions, ['revision_author_id'])
+        return DecoratedResultSet(result, pre_iter_hook=eager_load)
 
     def getRevisionsSince(self, timestamp):
         """See `IBranch`."""
@@ -612,7 +615,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         else:
             return True
 
-    @property
+    @cachedproperty
     def code_import(self):
         from lp.code.model.codeimport import CodeImportSet
         return CodeImportSet().getByBranch(self)
@@ -735,8 +738,8 @@ class Branch(SQLBase, BzrIdentityMixin):
         """Helper for associatedSuiteSourcePackages."""
         # This is eager loaded by BranchCollection.getBranches.
         series_set = getUtility(IFindOfficialBranchLinks)
-        # Order by the pocket to get the release one first. If changing this be
-        # sure to also change BranchCollection.getBranches.
+        # Order by the pocket to get the release one first. If changing this
+        # be sure to also change BranchCollection.getBranches.
         links = series_set.findForBranch(self).order_by(
             SeriesSourcePackageBranch.pocket)
         return [link.suite_sourcepackage for link in links]
@@ -994,18 +997,28 @@ class Branch(SQLBase, BzrIdentityMixin):
         self.last_mirror_attempt = UTC_NOW
         self.next_mirror_time = None
 
-    def branchChanged(self, stacked_on_location, last_revision_id,
+    def _findStackedBranch(self, stacked_on_location):
+        location = stacked_on_location.strip('/')
+        if location.startswith(BRANCH_ID_ALIAS_PREFIX + '/'):
+            try:
+                branch_id = int(location.split('/', 1)[1])
+            except (ValueError, IndexError):
+                return None
+            return getUtility(IBranchLookup).get(branch_id)
+        else:
+            return getUtility(IBranchLookup).getByUniqueName(location)
+
+    def branchChanged(self, stacked_on_url, last_revision_id,
                       control_format, branch_format, repository_format):
         """See `IBranch`."""
         self.mirror_status_message = None
-        if stacked_on_location == '' or stacked_on_location is None:
+        if stacked_on_url == '' or stacked_on_url is None:
             stacked_on_branch = None
         else:
-            stacked_on_branch = getUtility(IBranchLookup).getByUniqueName(
-                stacked_on_location.strip('/'))
+            stacked_on_branch = self._findStackedBranch(stacked_on_url)
             if stacked_on_branch is None:
                 self.mirror_status_message = (
-                    'Invalid stacked on location: ' + stacked_on_location)
+                    'Invalid stacked on location: ' + stacked_on_url)
         self.stacked_on = stacked_on_branch
         if self.branch_type == BranchType.HOSTED:
             self.last_mirrored = UTC_NOW
@@ -1043,12 +1056,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def destroySelfBreakReferences(self):
         """See `IBranch`."""
-        try:
-            return self.destroySelf(break_references=True)
-        except CannotDeleteBranch, e:
-            # Reraise and expose exception here so that the webservice_error
-            # is propogated.
-            raise CannotDeleteBranch(e.message)
+        return self.destroySelf(break_references=True)
 
     def _deleteBranchSubscriptions(self):
         """Delete subscriptions for this branch prior to deleting branch."""
@@ -1198,7 +1206,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         try:
             simplejson.loads(config)
             self.merge_queue_config = config
-        except ValueError: # The json string is invalid
+        except ValueError:  # The json string is invalid
             raise InvalidMergeQueueConfig
 
 
@@ -1273,13 +1281,15 @@ class ClearOfficialPackageBranch(DeletionOperation):
     """Deletion operation that clears an official package branch."""
 
     def __init__(self, sspb):
+        # The affected object is really the sourcepackage.
         DeletionOperation.__init__(
-            self, sspb, _('Branch is officially linked to a source package.'))
+            self, sspb.sourcepackage,
+            _('Branch is officially linked to a source package.'))
+        # But we'll need the pocket info.
+        self.pocket = sspb.pocket
 
     def __call__(self):
-        package = self.affected_object.sourcepackage
-        pocket = self.affected_object.pocket
-        package.setBranch(pocket, None, None)
+        self.affected_object.setBranch(self.pocket, None, None)
 
 
 class DeleteCodeImport(DeletionOperation):
@@ -1387,27 +1397,3 @@ def branch_modified_subscriber(branch, event):
     """
     update_trigger_modified_fields(branch)
     send_branch_modified_notifications(branch, event)
-
-
-def filter_one_task_per_bug(branch, tasks):
-    """Given bug tasks for a branch, discard irrelevant ones.
-
-    Cannot easily be expressed in SQL yet, so we need this helper method.
-    """
-    order = {}
-    bugtarget = branch.target.context
-    # First pass calculates the order and selects the bugtasks that match
-    # our target.
-    # Second pass selects the earliest bugtask where the bug has no task on
-    # our target.
-    for pos, task in enumerate(tasks):
-        bug = task.bug
-        if bug not in order:
-            order[bug] = [pos, None]
-        if task.target == bugtarget:
-            order[bug][1] = task
-    for task in tasks:
-        index = order[task.bug]
-        if index[1] is None:
-            index[1] = task
-    return [task for pos, task in sorted(order.values())]

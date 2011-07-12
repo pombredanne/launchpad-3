@@ -11,7 +11,6 @@ __metaclass__ = type
 __all__ = [
     'get_bzr_path',
     'get_BZR_PLUGIN_PATH_for_subprocess',
-    'iter_list_chunks',
     'load_optional_plugin',
     ]
 
@@ -23,15 +22,6 @@ from bzrlib import hooks
 from bzrlib.plugin import load_plugins
 
 from canonical.config import config
-
-
-def iter_list_chunks(a_list, size):
-    """Iterate over `a_list` in chunks of size `size`.
-
-    I'm amazed this isn't in itertools (mwhudson).
-    """
-    for i in range(0, len(a_list), size):
-        yield a_list[i:i+size]
 
 
 def get_bzr_path():
@@ -88,6 +78,7 @@ def remove_hook(self, hook):
             del self._callback_names[name]
 
 
-# Monkeypatch: Branch.hooks is a list in bzr 1.13, so it supports remove.
-# It is a HookPoint in bzr 1.14, so add HookPoint.remove.
+# XXX: JonathanLange 2011-03-30 bug=301472: Monkeypatch: Branch.hooks is a
+# list in bzr 1.13, so it supports remove.  It is a HookPoint in bzr 1.14, so
+# add HookPoint.remove.
 hooks.HookPoint.remove = remove_hook

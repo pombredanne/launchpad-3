@@ -111,7 +111,8 @@ information.
     >>> print extract_text(sharing_details)
     Edit sharing details
     >>> print sharing_details['href']
-    http://.../evolution/trunk/+sharing-details
+    http://.../ubuntu/hoary/+source/evolution/+sharing-details
+
 
 
 Finding related templates
@@ -142,8 +143,7 @@ they are all displayed on the template page.
 A source package with five templates is created.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 
     >>> login('admin@canonical.com')
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu

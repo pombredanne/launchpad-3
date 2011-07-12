@@ -5,14 +5,13 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.features import getFeatureFlag
 from lp.testing import (
     feature_flags,
     set_feature_flag,
     TestCase,
+    YUIUnitTestCase,
     )
 
 
@@ -37,5 +36,9 @@ class TestFeatureFlags(TestCase):
         self.assertIs(None, getFeatureFlag('name'))
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestYUIUnitTestCase(TestCase):
+
+    def test_id(self):
+        test = YUIUnitTestCase()
+        test.initialize("foo/bar/baz.html")
+        self.assertEqual(test.test_path, test.id())

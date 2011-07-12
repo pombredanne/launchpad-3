@@ -364,8 +364,7 @@ DebBugs implements all of these.
 
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     TestDebBugs, TestDebianBug)
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')

@@ -16,6 +16,7 @@ from bzrlib.transport.memory import MemoryTransport
 from bzrlib.urlutils import escape
 
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.codehosting import branch_id_alias
 from lp.codehosting.inmemory import (
     InMemoryFrontend,
     XMLRPCWrapper,
@@ -139,9 +140,9 @@ class TestFilesystem(TestCaseWithTransport):
         control_file = transport.get_bytes(
             '~%s/%s/.bzr/control.conf'
             % (self.requester.name, product.name))
+        stacked_on = IBranchTarget(product).default_stacked_on_branch
         self.assertEqual(
-            'default_stack_on = /%s'
-            % IBranchTarget(product).default_stacked_on_branch.unique_name,
+            'default_stack_on = %s' % branch_id_alias(stacked_on),
             control_file.strip())
 
     def test_can_open_product_control_dir(self):

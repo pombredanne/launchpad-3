@@ -538,7 +538,33 @@ div#sub-unsub-spinner, div#mute-unmute-spinner {
   text-align: left;
 }
 
+/* Intended to be used as temporary replacement for a sprite class when the
+   associated link's action is in-progress. */
+.spinner {
+  background: url(/@@/spinner) center left no-repeat;
+}
 
+/* Intended to be used as temporary replacement for a button class like
+   lazr-pos when the associated button's action is in-progress. */
+button.spinner {
+  background-image: url(/@@/spinner) !important;
+}
+
+/* This lets us have a help link sprite and a normal link sprite on the same
+   row, which the .vertical .sprite rule in the 3.0 file does not allow. */
+div#mute-link-container a.sprite {
+  width: auto;
+}
+
+/* Gives us some room after the description of the user's subscription. */
+div#current_user_subscription {
+    padding-bottom: 8px;
+}
+
+/* This lets us have a link that spans lines. */
+div#current_user_subscription a.sprite {
+  display: inline;
+}
 
 /* === Translations === */
 

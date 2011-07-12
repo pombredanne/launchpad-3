@@ -9,7 +9,7 @@ __all__ = [
     'BranchSubscriptionView',
     ]
 
-from canonical.launchpad.security import AuthorizationBase
+from lp.app.security import AuthorizationBase
 from lp.code.interfaces.branchsubscription import IBranchSubscription
 
 

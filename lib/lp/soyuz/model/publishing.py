@@ -35,7 +35,9 @@ from storm.expr import (
     Or,
     Sum,
     )
+from storm.zope.interfaces import ISQLObjectResultSet
 from storm.store import Store
+from storm.zope import IResultSet
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
@@ -85,7 +87,7 @@ from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
     IBinaryPackageBuildSet,
     )
-from lp.soyuz.interfaces.distroseriesdifferencejob import (
+from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
     )
 from lp.soyuz.interfaces.publishing import (
@@ -336,6 +338,12 @@ class ArchivePublisherBase:
         self.datesuperseded = UTC_NOW
         self.removed_by = removed_by
         self.removal_comment = removal_comment
+        if ISourcePackagePublishingHistory.providedBy(self):
+            if self.archive == self.distroseries.main_archive:
+                dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
+                dsd_job_source.createForPackagePublication(
+                    self.distroseries,
+                    self.sourcepackagerelease.sourcepackagename, self.pocket)
 
     def requestObsolescence(self):
         """See `IArchivePublisher`."""
@@ -794,14 +802,21 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             section=new_section,
             archive=current.archive)
 
-    def copyTo(self, distroseries, pocket, archive):
+    def copyTo(self, distroseries, pocket, archive, override=None):
         """See `ISourcePackagePublishingHistory`."""
+        component = self.component
+        section = self.section
+        if override is not None:
+            if override.component is not None:
+                component = override.component
+            if override.section is not None:
+                section = override.section
         return getUtility(IPublishingSet).newSourcePublication(
             archive,
             self.sourcepackagerelease,
             distroseries,
-            self.component,
-            self.section,
+            component,
+            section,
             pocket)
 
     def getStatusSummaryForBuilds(self):
@@ -947,6 +962,11 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return self.binarypackagerelease.version
 
     @property
+    def architecture_specific(self):
+        """See `IBinaryPackagePublishingHistory`"""
+        return self.binarypackagerelease.architecturespecific
+
+    @property
     def priority_name(self):
         """See `IBinaryPackagePublishingHistory`"""
         return self.priority.name
@@ -1001,9 +1021,15 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         if bpr.essential:
             essential = 'yes'
 
+        source = None
+        if bpr.version != spr.version:
+            source = '%s (%s)' % (spr.name, spr.version)
+        elif bpr.name != spr.name:
+            source = spr.name
+
         fields = IndexStanzaFields()
         fields.append('Package', bpr.name)
-        fields.append('Source', spr.name)
+        fields.append('Source', source)
         fields.append('Priority', self.priority.title.lower())
         fields.append('Section', self.section.name)
         fields.append('Installed-Size', bpr.installedsize)
@@ -1309,13 +1335,46 @@ class PublishingSet:
 
     implements(IPublishingSet)
 
-    def copyBinariesTo(self, binaries, distroseries, pocket, archive):
+    def copyBinariesTo(self, binaries, distroseries, pocket, archive,
+                       policy=None):
         """See `IPublishingSet`."""
-        return self.publishBinaries(
-            archive, distroseries, pocket,
-            dict(
+        if binaries is None:
+            return
+
+        if type(removeSecurityProxy(binaries)) == list:
+            if len(binaries) == 0:
+                return
+        else:
+            if ISQLObjectResultSet.providedBy(binaries):
+                # Adapt to ResultSet
+                binaries = IResultSet(binaries)
+            if binaries.is_empty():
+                return
+
+        if policy is not None:
+            bpn_archtag = {}
+            for bpph in binaries:
+                bpn_archtag[(
+                    bpph.binarypackagerelease.binarypackagename,
+                    bpph.distroarchseries.architecturetag)] = bpph
+            with_overrides = {}
+            overrides = policy.calculateBinaryOverrides(
+                archive, distroseries, pocket, bpn_archtag.keys())
+            for override in overrides:
+                bpph = bpn_archtag[
+                    (override.binary_package_name,
+                     override.distro_arch_series.architecturetag)]
+                new_component = override.component or bpph.component
+                new_section = override.section or bpph.section
+                new_priority = override.priority or bpph.priority
+                calculated = (new_component, new_section, new_priority)
+                with_overrides[bpph.binarypackagerelease] = calculated
+        else:
+            with_overrides = dict(
                 (bpph.binarypackagerelease, (bpph.component, bpph.section,
-                 bpph.priority)) for bpph in binaries))
+                 bpph.priority)) for bpph in binaries)
+        return self.publishBinaries(
+            archive, distroseries, pocket, with_overrides)
 
     def publishBinaries(self, archive, distroseries, pocket,
                         binaries):
@@ -1426,9 +1485,10 @@ class PublishingSet:
             ancestor=ancestor)
         DistributionSourcePackage.ensure(pub)
 
-        dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
-        dsd_job_source.createForPackagePublication(
-            distroseries, sourcepackagerelease.sourcepackagename)
+        if archive == distroseries.main_archive:
+            dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
+            dsd_job_source.createForPackagePublication(
+                distroseries, sourcepackagerelease.sourcepackagename, pocket)
         return pub
 
     def getBuildsForSourceIds(

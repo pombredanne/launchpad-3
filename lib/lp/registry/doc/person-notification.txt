@@ -50,7 +50,9 @@ We can also retrieve notifications that are older than a certain date.
 A notification has a send() method which creates an email message and
 sends it to the recipient.
 
-    >>> notification.send()
+    >>> from lp.services.log.logger import FakeLogger
+    >>> notification.send(logger=FakeLogger())
+    INFO Sending notification to ['Mark Shuttleworth <mark@example.com>'].
     >>> from lp.testing.mail_helpers import print_emails
     >>> print_emails()
     From: bounces@canonical.com

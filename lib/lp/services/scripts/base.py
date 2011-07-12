@@ -1,15 +1,18 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
+    'disable_oops_handler',
     'LaunchpadCronScript',
     'LaunchpadScript',
     'LaunchpadScriptFailure',
+    'LOCK_PATH',
     'SilentLaunchpadScriptFailure',
     ]
 
 from ConfigParser import SafeConfigParser
+from contextlib import contextmanager
 from cProfile import Profile
 import datetime
 import logging
@@ -40,7 +43,6 @@ from canonical.launchpad.webapp.interaction import (
     )
 from canonical.lp import initZopeless
 from lp.services.features import (
-    getFeatureFlag,
     get_relevant_feature_controller,
     install_feature_controller,
     make_script_feature_controller,
@@ -228,7 +230,7 @@ class LaunchpadScript:
     # Convenience or death
     #
     @log_unhandled_exception_and_exit
-    def login(self, user):
+    def login(self, user=ANONYMOUS):
         """Super-convenience method that avoids the import."""
         setupInteractionByEmail(user)
 
@@ -401,6 +403,18 @@ class LaunchpadCronScript(LaunchpadScript):
             date_started=date_started,
             date_completed=date_completed)
         self.txn.commit()
+
+
+@contextmanager
+def disable_oops_handler(logger):
+    oops_handlers = []
+    for handler in logger.handlers:
+        if isinstance(handler, OopsHandler):
+            oops_handlers.append(handler)
+            logger.removeHandler(handler)
+    yield
+    for handler in oops_handlers:
+        logger.addHandler(handler)
 
 
 def cronscript_enabled(control_url, name, log):

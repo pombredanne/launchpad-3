@@ -16,16 +16,18 @@ __all__ = [
     'UnparsableDependencies',
     ]
 
+import httplib
+
 from lazr.enum import (
     EnumeratedType,
     Item,
     )
 from lazr.restful.declarations import (
+    error_status,
     export_as_webservice_entry,
     export_write_operation,
     exported,
     operation_parameters,
-    webservice_error,
     )
 from lazr.restful.fields import Reference
 from zope.interface import (
@@ -41,15 +43,16 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.soyuz.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
+@error_status(httplib.BAD_REQUEST)
 class CannotBeRescored(Exception):
     """Raised when rescoring a build that cannot be rescored."""
-    webservice_error(400) # Bad request.
     _message_prefix = "Cannot rescore build"
 
 
@@ -250,7 +253,7 @@ class BuildSetStatus(EnumeratedType):
     # currently the title) to be used programatically (for example, as a
     # css class name).
     NEEDSBUILD = Item(
-        title='NEEDSBUILD',# "Need building",
+        title='NEEDSBUILD',  # "Need building",
         description='There are some builds waiting to be built.')
 
     FULLYBUILT_PENDING = Item(
@@ -258,17 +261,17 @@ class BuildSetStatus(EnumeratedType):
         description="All builds were built successfully but have not yet "
                     "been published.")
 
-    FULLYBUILT = Item(title='FULLYBUILT', # "Successfully built",
+    FULLYBUILT = Item(title='FULLYBUILT',  # "Successfully built",
                       description="All builds were built successfully.")
 
-    FAILEDTOBUILD = Item(title='FAILEDTOBUILD', # "Failed to build",
+    FAILEDTOBUILD = Item(title='FAILEDTOBUILD',  # "Failed to build",
                          description="There were build failures.")
 
-    BUILDING = Item(title='BUILDING', # "Currently building",
+    BUILDING = Item(title='BUILDING',  # "Currently building",
                     description="There are some builds currently building.")
 
 
-class IBinaryPackageBuildSet(Interface):
+class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
     """Interface for BinaryPackageBuildSet"""
 
     def new(distro_arch_series, source_package_release, processor,
@@ -288,13 +291,6 @@ class IBinaryPackageBuildSet(Interface):
 
     def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
         """Return a build for a SourcePackageRelease and an ArchTag"""
-
-    def getByBuildID(id):
-        """Return the exact build specified.
-
-        id is the numeric ID of the build record in the database.
-        I.E. getUtility(IBuildSet).getByBuildID(foo).id == foo
-        """
 
     def getPendingBuildsForArchSet(archseries):
         """Return all pending build records within a group of ArchSeries

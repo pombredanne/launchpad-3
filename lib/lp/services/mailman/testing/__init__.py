@@ -58,14 +58,17 @@ class MailmanTestCase(TestCaseWithFactory):
         self.cleanMailmanList(self.mm_list)
 
     def makeMailmanList(self, lp_mailing_list):
-        # This utility is based on mailman/tests/TestBase.py.
-        mlist = MailList.MailList()
         team = lp_mailing_list.team
-        self.cleanMailmanList(None, team.name)
         owner_email = removeSecurityProxy(team.teamowner).preferredemail.email
-        mlist.Create(team.name, owner_email, 'password')
-        mlist.host_name = 'lists.launchpad.dev'
-        mlist.web_page_url = 'http://lists.launchpad.dev/mailman/'
+        return self.makeMailmanListWithoutTeam(team.name, owner_email)
+
+    def makeMailmanListWithoutTeam(self, list_name, owner_email):
+        # This utility is based on mailman/tests/TestBase.py.
+        self.cleanMailmanList(None, list_name)
+        mlist = MailList.MailList()
+        mlist.Create(list_name, owner_email, 'password')
+        mlist.host_name = mm_cfg.DEFAULT_URL_HOST
+        mlist.web_page_url = 'http://%s/mailman/' % mm_cfg.DEFAULT_URL_HOST
         mlist.personalize = 1
         mlist.include_rfc2369_headers = False
         mlist.use_dollar_strings = True
@@ -84,13 +87,14 @@ class MailmanTestCase(TestCaseWithFactory):
             'archives/private/%s.mbox',
             'archives/public/%s',
             'archives/public/%s.mbox',
+            'mhonarc/%s',
             ]
         for dirtmpl in paths:
             list_dir = os.path.join(mm_cfg.VAR_PREFIX, dirtmpl % list_name)
             if os.path.islink(list_dir):
                 os.unlink(list_dir)
             elif os.path.isdir(list_dir):
-                shutil.rmtree(list_dir)
+                shutil.rmtree(list_dir, ignore_errors=True)
 
     def makeMailmanMessage(self, mm_list, sender, subject, content,
                            mime_type='plain', attachment=None):

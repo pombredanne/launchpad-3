@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
@@ -24,11 +24,24 @@ value_domain_info = sorted([
      'Any non-empty value is true; an empty value is false.'),
     ('float',
      'The flag value is set to the given floating point number.'),
+    ('int',
+     "An integer."),
     ])
 
-# This table of flag name, value domain, and prose documentation is used to
-# generate the web-visible feature flag documentation.
+# Data for generating web-visible feature flag documentation.
+#
+# Entries for each flag are:
+# flag name, value domain, prose documentation, default behaviour.
+#
+# Value domain as in value_domain_info above.
+#
+# NOTE: "default behaviour" does not specify a default value.  It
+# merely documents the code's behaviour if no value is specified.
 flag_info = sorted([
+    ('bugs.bugtracker_components.enabled',
+     'boolean',
+     ('Enables the display of bugtracker components.'),
+     ''),
     ('code.branchmergequeue',
      'boolean',
      'Enables merge queue pages and lists them on branch pages.',
@@ -37,21 +50,13 @@ flag_info = sorted([
      'boolean',
      'Shows incremental diffs on merge proposals.',
      ''),
-    ('code.recipes_enabled',
-     'boolean',
-     'Enables source package recipes in the API and UI.',
-     ''),
-    ('code.recipes.beta',
-     'boolean',
-     'True if recipes are still in beta',
-     ''),
     ('hard_timeout',
      'float',
      'Sets the hard request timeout in milliseconds.',
      ''),
-    ('malone.advanced-subscriptions.enabled',
+    ('mail.dkim_authentication.disabled',
      'boolean',
-     'Enables advanced bug subscription features.',
+     'Disable DKIM authentication checks on incoming mail.',
      ''),
     ('malone.disable_targetnamesearch',
      'boolean',
@@ -65,13 +70,17 @@ flag_info = sorted([
      'boolean',
      'Overrides config.profiling.profiling_allowed to permit profiling.',
      ''),
-    ('publicrestrictedlibrarian',
-     'boolean',
-     'Redirects to private librarian files instead of proxying them.',
-     ''),
-    ('soyuz.derived-series-ui.enabled',
+    ('soyuz.derived_series.max_synchronous_syncs',
+     'int',
+     "How many package syncs may be done directly in a web request.",
+     '100'),
+    ('soyuz.derived_series_ui.enabled',
      'boolean',
      'Enables derivative distributions pages.',
+     ''),
+    ('soyuz.derived_series_sync.enabled',
+     'boolean',
+     'Enables syncing of packages on derivative distributions pages.',
      ''),
     ('soyuz.derived_series_jobs.enabled',
      'boolean',
@@ -84,6 +93,18 @@ flag_info = sorted([
     ('visible_render_time',
      'boolean',
      'Shows the server-side page render time in the login widget.',
+     ''),
+    ('bugs.private_notification.enabled',
+     'boolean',
+     'Changes the appearance of notifications on private bugs.',
+     ''),
+    ('disclosure.picker_enhancements.enabled',
+     'boolean',
+     ('Enables the display of extra details in the person picker.'),
+     ''),
+    ('disclosure.person_affiliation_rank.enabled',
+     'boolean',
+     ('Enables ranking by pillar affiliation in the person picker.'),
      ''),
     ])
 

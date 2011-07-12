@@ -167,10 +167,8 @@ class MailingListSyncScript(LaunchpadScript):
             mlist_addresses = email_address_set.getByPerson(team)
             if mlist_addresses.count() == 0:
                 self.logger.error('No LP email address for: %s', list_name)
-            elif mlist_addresses.count() > 1:
-                # This team has both a mailing list and a contact address.  We
-                # only want to change the former, but we need some heuristics
-                # to figure out which is which.
+            else:
+                # Teams can have both a mailing list and a contact address.
                 old_address = '%s@%s' % (list_name, self.options.hostname)
                 for email_address in mlist_addresses:
                     if email_address.email == old_address:
@@ -181,12 +179,6 @@ class MailingListSyncScript(LaunchpadScript):
                 else:
                     self.logger.error('No change to LP email address for: %s',
                                       list_name)
-            else:
-                email_address = removeSecurityProxy(mlist_addresses[0])
-                old_address = email_address.email
-                email_address.email = lp_mailing_list.address
-                self.logger.info('%s -> %s',
-                                 old_address, lp_mailing_list.address)
 
     def deleteMailmanList(self, list_name):
         """Delete all Mailman data structures for `list_name`."""

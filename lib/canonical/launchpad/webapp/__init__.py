@@ -43,8 +43,6 @@ __all__ = [
     'Utf8PreferredCharsets',
     ]
 
-from zope.component import getUtility
-
 from canonical.launchpad.webapp.launchpadform import (
     action,
     custom_widget,

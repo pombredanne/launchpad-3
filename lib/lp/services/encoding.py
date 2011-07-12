@@ -8,6 +8,7 @@ __all__ = [
     'ascii_smash',
     'escape_nonascii_uniquely',
     'guess',
+    'is_ascii_only',
     ]
 
 import re
@@ -387,3 +388,23 @@ def escape_nonascii_uniquely(bogus_string):
     def quote(match):
         return '\\x%x' % ord(match.group(0))
     return nonascii_regex.sub(quote, bogus_string)
+
+
+def is_ascii_only(string):
+    """Ensure that the string contains only ASCII characters.
+
+        >>> is_ascii_only(u'ascii only')
+        True
+        >>> is_ascii_only('ascii only')
+        True
+        >>> is_ascii_only('\xf4')
+        False
+        >>> is_ascii_only(u'\xf4')
+        False
+    """
+    try:
+        string.encode('ascii')
+    except UnicodeError:
+        return False
+    else:
+        return True

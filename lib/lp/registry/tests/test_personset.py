@@ -102,6 +102,9 @@ class TestPersonSetEnsurePerson(TestCaseWithFactory):
         ensured_person = self.person_set.ensurePerson(
             self.email_address, self.displayname, self.rationale)
         self.assertEquals(test_account.id, ensured_person.account.id)
+        self.assertEquals(
+            test_account.preferredemail, ensured_person.preferredemail)
+        self.assertEquals(ensured_person, test_account.preferredemail.person)
         self.assertTrue(ensured_person.hide_email_addresses)
 
     def test_ensurePerson_for_existing_account_with_person(self):

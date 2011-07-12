@@ -26,6 +26,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.code.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe,
@@ -83,7 +84,7 @@ class ISourcePackageRecipeBuild(IPackageBuild):
         """Delete the build itself."""
 
 
-class ISourcePackageRecipeBuildSource(Interface):
+class ISourcePackageRecipeBuildSource(ISpecificBuildFarmJobSource):
     """A utility of this interface be used to create source package builds."""
 
     def new(distroseries, recipe, requester, archive, date_created=None):
@@ -102,13 +103,6 @@ class ISourcePackageRecipeBuildSource(Interface):
         """Create and return builds for stale ISourcePackageRecipes.
 
         :param logger: An optional logger to write debug info to.
-        """
-
-    def getById(build_id):
-        """Return the `ISourcePackageRecipeBuild` for the given build id.
-
-        :param build_id: The id of the build to return.
-        :return: `ISourcePackageRecipeBuild`
         """
 
 

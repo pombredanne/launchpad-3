@@ -11,7 +11,7 @@ __all__ = [
     'ArchiveSubscriptionError',
     'IArchiveSubscriber',
     'IArchiveSubscriberSet',
-    'IPersonalArchiveSubscription'
+    'IPersonalArchiveSubscription',
     ]
 
 from lazr.restful.declarations import (
@@ -19,7 +19,10 @@ from lazr.restful.declarations import (
     exported,
     )
 from lazr.restful.fields import Reference
-from zope.interface import Interface
+from zope.interface import (
+    Attribute,
+    Interface,
+    )
 from zope.schema import (
     Choice,
     Datetime,
@@ -61,6 +64,7 @@ class IArchiveSubscriberView(Interface):
         title=_("Subscriber"), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam',
         description=_("The person who is subscribed.")))
+    subscriber_id = Attribute('database ID of the subscriber.')
 
     date_expires = exported(Datetime(
         title=_("Date of Expiration"), required=False,
@@ -95,6 +99,7 @@ class IArchiveSubscriberView(Interface):
         :rtype: `storm.store.ResultSet`
         """
 
+
 class IArchiveSubscriberEdit(Interface):
     """An interface for launchpad.Edit ops on archive subscribers."""
 
@@ -125,9 +130,6 @@ class IArchiveSubscriberSet(Interface):
             the results to that particular archive.
         :param current_only: Whether the result should only include current
             subscriptions (which is the default).
-        :param return_tokens: Indicates whether the tokens for the given
-            subscribers subscriptions should be included in the resultset.
-            By default the tokens are not included in the resultset.
         """
 
     def getBySubscriberWithActiveToken(subscriber, archive=None):

@@ -20,4 +20,10 @@
         permission="zope.Public"
         />
 
+    <browser:page
+        for="*"
+        name="form-picker-macros"
+        permission="zope.Public"
+        template="templates/form-picker-macros.pt"/>
+
 </configure>

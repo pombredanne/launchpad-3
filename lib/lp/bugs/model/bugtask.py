@@ -25,13 +25,11 @@ import datetime
 from itertools import chain
 from operator import attrgetter
 
-from lazr.enum import (
-    DBItem,
-    Item,
-    )
+from lazr.enum import BaseItem
 import pytz
 from sqlobject import (
     ForeignKey,
+    IntCol,
     SQLObjectNotFound,
     StringCol,
     )
@@ -47,6 +45,7 @@ from storm.expr import (
     Or,
     Select,
     SQL,
+    Sum,
     )
 from storm.info import ClassAlias
 from storm.store import (
@@ -82,11 +81,10 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.validation import (
-    validate_new_distrotask,
     valid_upstreamtask,
+    validate_new_distrotask,
     )
 from canonical.launchpad.searchbuilder import (
     all,
@@ -103,6 +101,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
@@ -114,7 +113,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
     BugTaskStatusSearch,
-    ConjoinedBugTaskEditError,
     IBugTask,
     IBugTaskDelta,
     IBugTaskSet,
@@ -170,8 +168,6 @@ from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services import features
 from lp.services.propertycache import get_property_cache
 from lp.soyuz.enums import PackagePublishingStatus
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 debbugsseveritymap = {
@@ -435,10 +431,16 @@ def validate_conjoined_attribute(self, attr, value):
     if self.bug is None:
         return value
 
-    if self._isConjoinedBugTask():
-        raise ConjoinedBugTaskEditError(
-            "This task cannot be edited directly, it should be"
-            " edited through its conjoined_master.")
+    # If this is a conjoined slave then call setattr on the master.
+    # Effectively this means that making a change to the slave will
+    # actually make the change to the master (which will then be passed
+    # down to the slave, of course). This helps to prevent OOPSes when
+    # people try to update the conjoined slave via the API.
+    conjoined_master = self.conjoined_master
+    if conjoined_master is not None:
+        setattr(self.conjoined_master, attr, value)
+        return value
+
     # The conjoined slave is updated before the master one because,
     # for distro tasks, conjoined_slave does a comparison on
     # sourcepackagename, and the sourcepackagenames will not match
@@ -549,6 +551,7 @@ class BugTask(SQLBase, BugTaskMixin):
         storm_validator=validate_conjoined_attribute)
     date_left_closed = UtcDateTimeCol(notNull=False, default=None,
         storm_validator=validate_conjoined_attribute)
+    heat = IntCol(notNull=True, default=0)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
@@ -661,6 +664,15 @@ class BugTask(SQLBase, BugTaskMixin):
                     bugtask.sourcepackagenameID == self.sourcepackagenameID):
                     bugtask.sourcepackagenameID = PassthroughValue(new_spnid)
 
+    def getContributorInfo(self, user, person):
+        """See `IBugTask`."""
+        result = {}
+        result['is_contributor'] = person.isBugContributorInTarget(
+            user, self.pillar)
+        result['person_name'] = person.displayname
+        result['pillar_name'] = self.pillar.displayname
+        return result
+
     def getConjoinedMaster(self, bugtasks, bugtasks_by_package=None):
         """See `IBugTask`."""
         conjoined_master = None
@@ -732,10 +744,6 @@ class BugTask(SQLBase, BugTaskMixin):
             self.status in self._NON_CONJOINED_STATUSES):
             conjoined_slave = None
         return conjoined_slave
-
-    def _isConjoinedBugTask(self):
-        """Return True when conjoined_master is not None, otherwise False."""
-        return self.conjoined_master is not None
 
     def _syncFromConjoinedSlave(self):
         """Ensure the conjoined master is synched from its slave.
@@ -1015,8 +1023,11 @@ class BugTask(SQLBase, BugTaskMixin):
             # value.
             self.date_assigned = None
             # The bugtask is unassigned, so clear the _known_viewer cached
-            # property for the bug.
-            get_property_cache(self.bug)._known_viewers = set()
+            # property for the bug. Retain the current assignee as a viewer so
+            # that they are able to unassign themselves and get confirmation
+            # that that worked.
+            get_property_cache(self.bug)._known_viewers = set(
+                [self.assignee.id])
         if not self.assignee and assignee:
             # The task is going from not having an assignee to having
             # one, so record when this happened
@@ -1226,6 +1237,9 @@ class BugTask(SQLBase, BugTaskMixin):
         return (self._userIsPillarEditor(user) or
                 user == celebs.bug_watch_updater or
                 user == celebs.bug_importer)
+
+    def __repr__(self):
+        return "<BugTask for bug %s on %r>" % (self.bugID, self.target)
 
 
 def search_value_to_where_condition(search_value):
@@ -1588,7 +1602,7 @@ class BugTaskSet:
                 in status.query_values) + ')'
         elif zope_isinstance(status, not_equals):
             return '(NOT %s)' % self._buildStatusClause(status.value)
-        elif zope_isinstance(status, DBItem):
+        elif zope_isinstance(status, BaseItem):
             with_response = (
                 status == BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)
             without_response = (
@@ -1983,7 +1997,9 @@ class BugTaskSet:
             extra_clauses.append(bug_reporter_clause)
 
         if params.bug_commenter:
-            bug_commenter_clause = """
+            bugmessage_owner = bool(features.getFeatureFlag(
+                'malone.bugmessage_owner'))
+            bug_commenter_old_clause = """
             BugTask.id IN (
                 SELECT DISTINCT BugTask.id FROM BugTask, BugMessage, Message
                 WHERE Message.owner = %(bug_commenter)s
@@ -1992,6 +2008,14 @@ class BugTaskSet:
                     AND BugMessage.index > 0
             )
             """ % sqlvalues(bug_commenter=params.bug_commenter)
+            bug_commenter_new_clause = """
+            Bug.id IN (SELECT DISTINCT bug FROM Bugmessage WHERE
+            BugMessage.index > 0 AND BugMessage.owner = %(bug_commenter)s)
+            """ % sqlvalues(bug_commenter=params.bug_commenter)
+            if bugmessage_owner:
+                bug_commenter_clause = bug_commenter_new_clause
+            else:
+                bug_commenter_clause = bug_commenter_old_clause
             extra_clauses.append(bug_commenter_clause)
 
         if params.affects_me:
@@ -2035,7 +2059,7 @@ class BugTaskSet:
         if hw_clause is not None:
             extra_clauses.append(hw_clause)
 
-        if zope_isinstance(params.linked_branches, Item):
+        if zope_isinstance(params.linked_branches, BaseItem):
             if params.linked_branches == BugBranchSearch.BUGS_WITH_BRANCHES:
                 extra_clauses.append(
                     """EXISTS (
@@ -2322,16 +2346,25 @@ class BugTaskSet:
     def _buildBlueprintRelatedClause(self, params):
         """Find bugs related to Blueprints, or not."""
         linked_blueprints = params.linked_blueprints
-        if linked_blueprints == BugBlueprintSearch.BUGS_WITH_BLUEPRINTS:
-            return "EXISTS (%s)" % (
-                "SELECT 1 FROM SpecificationBug"
-                " WHERE SpecificationBug.bug = Bug.id")
-        elif linked_blueprints == BugBlueprintSearch.BUGS_WITHOUT_BLUEPRINTS:
-            return "NOT EXISTS (%s)" % (
-                "SELECT 1 FROM SpecificationBug"
-                " WHERE SpecificationBug.bug = Bug.id")
-        else:
+        if linked_blueprints is None:
             return None
+        elif zope_isinstance(linked_blueprints, BaseItem):
+            if linked_blueprints == BugBlueprintSearch.BUGS_WITH_BLUEPRINTS:
+                return "EXISTS (%s)" % (
+                    "SELECT 1 FROM SpecificationBug"
+                    " WHERE SpecificationBug.bug = Bug.id")
+            elif (linked_blueprints ==
+                  BugBlueprintSearch.BUGS_WITHOUT_BLUEPRINTS):
+                return "NOT EXISTS (%s)" % (
+                    "SELECT 1 FROM SpecificationBug"
+                    " WHERE SpecificationBug.bug = Bug.id")
+        else:
+            # A specific search term has been supplied.
+            return """EXISTS (
+                    SELECT TRUE FROM SpecificationBug
+                    WHERE SpecificationBug.bug=Bug.id AND
+                    SpecificationBug.specification %s)
+                """ % search_value_to_where_condition(linked_blueprints)
 
     def buildOrigin(self, join_tables, prejoin_tables, clauseTables):
         """Build the parameter list for Store.using().
@@ -2493,13 +2526,60 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         return self._search(BugTask.bugID, [], None, params).result_set
 
-    def countBugs(self, params, group_on):
+    def countBugs(self, user, contexts, group_on):
         """See `IBugTaskSet`."""
-        resultset = self._search(
-            group_on + (SQL("COUNT(Distinct BugTask.bug)"),),
-            [], None, params).result_set
-        # We group on the related field:
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        conditions = []
+        # Open bug statuses
+        conditions.append(BugSummary.status.is_in(UNRESOLVED_BUGTASK_STATUSES))
+        # BugSummary does not include duplicates so no need to exclude.
+        context_conditions = []
+        for context in contexts:
+            condition = removeSecurityProxy(
+                context.getBugSummaryContextWhereClause())
+            if condition is not False:
+                context_conditions.append(condition)
+        if not context_conditions:
+            return {}
+        conditions.append(Or(*context_conditions))
+        # bugsummary by design requires either grouping by tag or excluding
+        # non-null tags.
+        # This is an awkward way of saying
+        # if BugSummary.tag not in group_on:
+        # - see bug 799602
+        group_on_tag = False
+        for column in group_on:
+            if column is BugSummary.tag:
+                group_on_tag = True
+        if not group_on_tag:
+            conditions.append(BugSummary.tag == None)
+        else:
+            conditions.append(BugSummary.tag != None)
+        store = IStore(BugSummary)
+        admin_team = getUtility(ILaunchpadCelebrities).admin
+        if user is not None and not user.inTeam(admin_team):
+            # admins get to see every bug, everyone else only sees bugs
+            # viewable by them-or-their-teams.
+            store = store.with_(SQL(
+                "teams AS ("
+                "SELECT team from TeamParticipation WHERE person=?)",
+                (user.id,)))
+        # Note that because admins can see every bug regardless of subscription
+        # they will see rather inflated counts. Admins get to deal.
+        if user is None:
+            conditions.append(BugSummary.viewed_by_id == None)
+        elif not user.inTeam(admin_team):
+            conditions.append(
+                Or(
+                    BugSummary.viewed_by_id == None,
+                    BugSummary.viewed_by_id.is_in(SQL("SELECT team FROM teams"))
+                    ))
+        sum_count = Sum(BugSummary.count)
+        resultset = store.find(group_on + (sum_count,), *conditions)
         resultset.group_by(*group_on)
+        resultset.having(sum_count != 0)
+        # Ensure we have no order clauses.
         resultset.order_by()
         result = {}
         for row in resultset:
@@ -2907,6 +2987,7 @@ class BugTaskSet:
             # Local import of Bug to avoid import loop.
             from lp.bugs.model.bug import Bug
             BugTaskSet._ORDERBY_COLUMN = {
+                "task": BugTask.id,
                 "id": BugTask.bugID,
                 "importance": BugTask.importance,
                 # TODO: sort by their name?
@@ -2922,7 +3003,7 @@ class BugTaskSet:
                 "number_of_duplicates": Bug.number_of_duplicates,
                 "message_count": Bug.message_count,
                 "users_affected_count": Bug.users_affected_count,
-                "heat": Bug.heat,
+                "heat": BugTask.heat,
                 "latest_patch_uploaded": Bug.latest_patch_uploaded,
                 }
         return BugTaskSet._ORDERBY_COLUMN[col_name]
@@ -2947,14 +3028,18 @@ class BugTaskSet:
         # This set contains columns which are, in practical terms,
         # unique. When these columns are used as sort keys, they ensure
         # the sort will be consistent. These columns will be used to
-        # decide whether we need to add the BugTask.bug and BugTask.id
+        # decide whether we need to add the BugTask.bug or BugTask.id
         # columns to make the sort consistent over runs -- which is good
         # for the user and essential for the test suite.
         unambiguous_cols = set([
+            Bug.date_last_updated,
+            Bug.datecreated,
+            Bug.id,
+            BugTask.bugID,
             BugTask.date_assigned,
             BugTask.datecreated,
-            Bug.datecreated,
-            Bug.date_last_updated])
+            BugTask.id,
+            ])
         # Bug ID is unique within bugs on a product or source package.
         if (params.product or
             (params.distribution and params.sourcepackagename) or

@@ -12,7 +12,6 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.factory import is_security_proxied_or_harmless
 
 
 class TestBug(TestCaseWithFactory):
@@ -138,6 +137,20 @@ class TestBug(TestCaseWithFactory):
                     subscriber, subscriber, level=level)
             self.assertEqual(level, subscription.bug_notification_level)
 
+    def test_resubscribe_with_level(self):
+        # If you pass a new level to subscribe with an existing subscription,
+        # the level is set on the existing subscription.
+        bug = self.factory.makeBug()
+        subscriber = self.factory.makePerson()
+        levels = list(BugNotificationLevel.items)
+        with person_logged_in(subscriber):
+            subscription = bug.subscribe(
+                subscriber, subscriber, level=levels[-1])
+        for level in levels:
+            with person_logged_in(subscriber):
+                bug.subscribe(subscriber, subscriber, level=level)
+            self.assertEqual(level, subscription.bug_notification_level)
+
     def test_get_direct_subscribers_with_level(self):
         # It's possible to pass a level parameter to
         # getDirectSubscribers() to filter the subscribers returned.
@@ -168,7 +181,7 @@ class TestBug(TestCaseWithFactory):
 
     def test_get_direct_subscribers_default_level(self):
         # If no `level` parameter is passed to getDirectSubscribers(),
-        # the assumed `level` is BugNotification.NOTHING.
+        # the assumed `level` is BugNotification.LIFECYCLE.
         bug = self.factory.makeBug()
         # We unsubscribe the bug's owner because if we don't there will
         # be two COMMENTS-level subscribers.
@@ -183,11 +196,42 @@ class TestBug(TestCaseWithFactory):
 
         # All the subscribers should be returned by
         # getDirectSubscribers() because it defaults to returning
-        # subscribers at level NOTHING, which everything is higher than.
+        # subscribers at level LIFECYCLE, which everything is higher than.
         direct_subscribers = bug.getDirectSubscribers()
         self.assertEqual(
             set(subscribers), set(direct_subscribers),
             "Subscribers did not match expected value.")
+
+    def test_get_direct_subscribers_with_details(self):
+        # getDirectSubscribersWithDetails() returns both
+        # Person and BugSubscription records in one go.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            # Unsubscribe bug owner so it doesn't taint the result.
+            bug.unsubscribe(bug.owner, bug.owner)
+        subscriber = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            subscription = bug.subscribe(
+                subscriber, subscriber, level=BugNotificationLevel.LIFECYCLE)
+
+        self.assertContentEqual(
+            [(subscriber, subscription)],
+            bug.getDirectSubscribersWithDetails())
+
+    def test_get_direct_subscribers_with_details_mute_excludes(self):
+        # getDirectSubscribersWithDetails excludes muted subscriptions.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            # Unsubscribe bug owner so it doesn't taint the result.
+            bug.unsubscribe(bug.owner, bug.owner)
+        subscriber = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            bug.subscribe(
+                subscriber, subscriber, level=BugNotificationLevel.LIFECYCLE)
+            bug.mute(subscriber, subscriber)
+
+        self.assertContentEqual(
+            [], bug.getDirectSubscribersWithDetails())
 
     def test_subscribers_from_dupes_uses_level(self):
         # When getSubscribersFromDuplicates() is passed a `level`
@@ -228,7 +272,7 @@ class TestBug(TestCaseWithFactory):
         subscriber = self.factory.makePerson()
         with person_logged_in(subscriber):
             bug.subscribe(
-                subscriber, subscriber, level=BugNotificationLevel.NOTHING)
+                subscriber, subscriber, level=BugNotificationLevel.LIFECYCLE)
             duplicate_bug.subscribe(
                 subscriber, subscriber, level=BugNotificationLevel.METADATA)
         duplicate_subscribers = bug.getSubscribersFromDuplicates()
@@ -243,41 +287,29 @@ class TestBug(TestCaseWithFactory):
             info = bug.getSubscriptionInfo()
         self.assertIsInstance(info, BugSubscriptionInfo)
         self.assertEqual(bug, info.bug)
-        self.assertEqual(BugNotificationLevel.NOTHING, info.level)
+        self.assertEqual(BugNotificationLevel.LIFECYCLE, info.level)
         # A level can also be specified.
         with person_logged_in(bug.owner):
             info = bug.getSubscriptionInfo(BugNotificationLevel.METADATA)
         self.assertEqual(BugNotificationLevel.METADATA, info.level)
 
+    def test_setPrivate_subscribes_person_who_makes_bug_private(self):
+        # When setPrivate(True) is called on a bug, the person who is
+        # marking the bug private is subscribed to the bug.
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            bug.setPrivate(True, person)
+            self.assertTrue(bug.personIsDirectSubscriber(person))
 
-class TestGetStructuralSubscriptionsForPerson(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def getStructuralSubscriptionsForPerson(self, bug, recipient):
-        # Call bug.getStructuralSubscriptionsForPerson() and check that the
-        # result is security proxied.
-        result = bug.getStructuralSubscriptionsForPerson(recipient)
-        self.assertTrue(is_security_proxied_or_harmless(result))
-        return result
-
-    def setUp(self):
-        super(TestGetStructuralSubscriptionsForPerson, self).setUp()
-        self.subscriber = self.factory.makePerson()
-        login_person(self.subscriber)
-        self.product = self.factory.makeProduct()
-        self.milestone = self.factory.makeMilestone(product=self.product)
-        self.bug = self.factory.makeBug(
-            product=self.product, milestone=self.milestone)
-
-    def test_no_subscriptions(self):
-        subscriptions = self.getStructuralSubscriptionsForPerson(
-            self.bug, self.subscriber)
-        self.assertEqual([], list(subscriptions))
-
-    def test_one_subscription(self):
-        sub = self.product.addBugSubscription(
-            self.subscriber, self.subscriber)
-        subscriptions = self.getStructuralSubscriptionsForPerson(
-            self.bug, self.subscriber)
-        self.assertEqual([sub], list(subscriptions))
+    def test_setPrivate_does_not_subscribe_member_of_subscribed_team(self):
+        # When setPrivate(True) is called on a bug, the person who is
+        # marking the bug private will not be subscribed if they're
+        # already a member of a team which is a direct subscriber.
+        bug = self.factory.makeBug()
+        team = self.factory.makeTeam()
+        person = team.teamowner
+        with person_logged_in(person):
+            bug.subscribe(team, person)
+            bug.setPrivate(True, person)
+            self.assertFalse(bug.personIsDirectSubscriber(person))

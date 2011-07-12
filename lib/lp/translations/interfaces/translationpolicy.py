@@ -46,20 +46,14 @@ class ITranslationPolicy(Interface):
             " role depends on the permissions policy selected below."),
         required=False,
         vocabulary='TranslationGroup',
-        schema=ITranslationGroup),
-        ('devel', {'exported': True}),
-        exported=False,
-        )
+        schema=ITranslationGroup), as_of="devel")
 
     translationpermission = exported(Choice(
         title=_("Translation permissions policy"),
         description=_("The policy this project or distribution uses to "
             " balance openness and control for their translations."),
         required=True,
-        vocabulary=TranslationPermission),
-        ('devel', {'exported': True}),
-        exported=False,
-        )
+        vocabulary=TranslationPermission), as_of="devel")
 
     def getTranslationGroups():
         """List all applicable translation groups.

@@ -6,6 +6,23 @@
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
+
+  <head>
+    <tal:head-epilogue metal:fill-slot="head_epilogue">
+      <tal:uses_launchpad_bugtracker
+         condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
+        <script type="text/javascript">
+            LPS.use('lp.registry.structural_subscription', function(Y) {
+                var module = Y.lp.registry.structural_subscription;
+                Y.on('domready', function() {
+                  module.setup({content_box: "#structural-subscription-content-box"});
+                });
+            });
+        </script>
+      </tal:uses_launchpad_bugtracker>
+    </tal:head-epilogue>
+  </head>
+
   <body>
     <tal:registering metal:fill-slot="registering">
       Registered
@@ -126,6 +143,9 @@
 
           <tal:sprints content="structure context/@@+portlet-coming-sprints" />
         </tal:has-few-project>
+      </div>
+      <div class="yui-u">
+        <div id="structural-subscription-content-box"></div>
       </div>
     </div>
     </tal:main>

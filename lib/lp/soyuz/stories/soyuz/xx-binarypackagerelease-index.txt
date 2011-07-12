@@ -14,7 +14,7 @@ Let's find a build that produced some binaries:
   ...     'i386 build of mozilla-firefox 0.9 in ubuntu '
   ...     'warty RELEASE')
   >>> build_link.url
-  'http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+buildjob/2'
+  'http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/2'
 
 Next, we'll manually create a suitable package upload record for our
 build:
@@ -28,10 +28,10 @@ XXX: noodles 2009-01-16 bug 317863: move this into the STP.
   >>> from zope.component import getUtility
 
   >>> login('foo.bar@canonical.com')
-  >>> build = getUtility(IBinaryPackageBuildSet).getByBuildID(2)
+  >>> build = getUtility(IBinaryPackageBuildSet).getByID(2)
   >>> package_upload = build.distro_series.createQueueEntry(
-  ...     PackagePublishingPocket.UPDATES, 'changes.txt', 'my changes',
-  ...     build.archive)
+  ...     PackagePublishingPocket.UPDATES, build.archive,
+  ...    'changes.txt', 'my changes')
   >>> package_upload_build = PackageUploadBuild(
   ...     packageupload =package_upload,
   ...     build=build)
@@ -40,7 +40,7 @@ XXX: noodles 2009-01-16 bug 317863: move this into the STP.
 
   >>> build_link.click()
   >>> browser.url
-  'http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+buildjob/2'
+  'http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/2'
 
 This build produced one BinaryPackage, called 'mozilla-firefox 0.9',
 which is presented in the right portlet, called 'Resulting Binaries'.

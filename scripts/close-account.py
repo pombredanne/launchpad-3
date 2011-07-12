@@ -15,7 +15,7 @@ import sys
 
 from canonical.database.sqlbase import connect, sqlvalues
 from canonical.launchpad.scripts import db_options, logger_options, logger
-from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.enums import QuestionStatus
 from lp.registry.interfaces.person import PersonCreationRationale
 
 

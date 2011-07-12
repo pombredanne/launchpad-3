@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from storm.expr import SQL
 from storm.store import (
     EmptyResultSet,
     ResultSet,
@@ -23,18 +24,25 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     )
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
-from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilter
+from lp.bugs.model.bugnotification import BugNotification
+from lp.bugs.model.bugsubscriptionfilter import (
+    BugSubscriptionFilter,
+    BugSubscriptionFilterMute,
+    MuteNotAllowed,
+    )
 from lp.bugs.model.structuralsubscription import (
-    get_all_structural_subscriptions,
+    get_structural_subscriptions_for_bug,
     get_structural_subscribers,
     get_structural_subscription_targets,
     )
+from lp.bugs.scripts.bugnotification import get_email_notifications
 from lp.testing import (
     anonymous_logged_in,
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.factory import is_security_proxied_or_harmless
 
 
 class TestStructuralSubscription(TestCaseWithFactory):
@@ -149,7 +157,7 @@ class FilteredStructuralSubscriptionTestBase:
         self.initial_filter = self.subscription.bug_filters[0]
 
     def assertSubscribers(
-        self, expected_subscribers, level=BugNotificationLevel.NOTHING):
+        self, expected_subscribers, level=BugNotificationLevel.LIFECYCLE):
         observed_subscribers = list(
             get_structural_subscribers(self.bugtask, None, level))
         self.assertEqual(expected_subscribers, observed_subscribers)
@@ -203,9 +211,9 @@ class FilteredStructuralSubscriptionTestBase:
         self.initial_filter.bug_notification_level = (
             BugNotificationLevel.METADATA)
 
-        # The subscription is found when looking for NOTHING or above.
+        # The subscription is found when looking for LIFECYCLE or above.
         self.assertSubscribers(
-            [self.ordinary_subscriber], BugNotificationLevel.NOTHING)
+            [self.ordinary_subscriber], BugNotificationLevel.LIFECYCLE)
         # The subscription is found when looking for METADATA or above.
         self.assertSubscribers(
             [self.ordinary_subscriber], BugNotificationLevel.METADATA)
@@ -511,30 +519,50 @@ class TestGetStructuralSubscriptionTargets(TestCaseWithFactory):
              (dist_sourcepackage_bugtask, dist_sourcepackage),
              (dist_sourcepackage_bugtask, distribution))))
 
+    def test_product_with_project_group(self):
+        # get_structural_subscription_targets() will yield both a
+        # product and its parent project group if it has one.
+        project = self.factory.makeProject()
+        product = self.factory.makeProduct(
+            project=project, owner=project.owner)
+        subscriber = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            self_sub = project.addBugSubscription(subscriber, subscriber)
+        # This is a sanity check.
+        self.assertEqual(project, product.parent_subscription_target)
+        bug = self.factory.makeBug(product=product)
+        result = get_structural_subscription_targets(bug.bugtasks)
+        self.assertEqual(
+            set([(bug.bugtasks[0], product), (bug.bugtasks[0], project)]),
+            set(result))
 
-class TestGetAllStructuralSubscriptions(TestCaseWithFactory):
+class TestGetStructuralSubscriptionsForBug(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestGetAllStructuralSubscriptions, self).setUp()
+        super(TestGetStructuralSubscriptionsForBug, self).setUp()
         self.subscriber = self.factory.makePerson()
+        self.team = self.factory.makeTeam(members=[self.subscriber])
         login_person(self.subscriber)
         self.product = self.factory.makeProduct()
         self.milestone = self.factory.makeMilestone(product=self.product)
         self.bug = self.factory.makeBug(
             product=self.product, milestone=self.milestone)
 
+    def getSubscriptions(self, person=None):
+        result = get_structural_subscriptions_for_bug(self.bug, person)
+        self.assertTrue(is_security_proxied_or_harmless(result))
+        return result
+
     def test_no_subscriptions(self):
-        subscriptions = get_all_structural_subscriptions(
-            self.bug.bugtasks, self.subscriber)
+        subscriptions = self.getSubscriptions(self.subscriber)
         self.assertEqual([], list(subscriptions))
 
     def test_one_subscription(self):
         sub = self.product.addBugSubscription(
             self.subscriber, self.subscriber)
-        subscriptions = get_all_structural_subscriptions(
-            self.bug.bugtasks, self.subscriber)
+        subscriptions = self.getSubscriptions(self.subscriber)
         self.assertEqual([sub], list(subscriptions))
 
     def test_two_subscriptions(self):
@@ -542,8 +570,7 @@ class TestGetAllStructuralSubscriptions(TestCaseWithFactory):
             self.subscriber, self.subscriber)
         sub2 = self.milestone.addBugSubscription(
             self.subscriber, self.subscriber)
-        subscriptions = get_all_structural_subscriptions(
-            self.bug.bugtasks, self.subscriber)
+        subscriptions = self.getSubscriptions(self.subscriber)
         self.assertEqual(set([sub1, sub2]), set(subscriptions))
 
     def test_two_bugtasks_one_subscription(self):
@@ -551,8 +578,7 @@ class TestGetAllStructuralSubscriptions(TestCaseWithFactory):
             self.subscriber, self.subscriber)
         product2 = self.factory.makeProduct()
         self.bug.addTask(self.subscriber, product2)
-        subscriptions = get_all_structural_subscriptions(
-            self.bug.bugtasks, self.subscriber)
+        subscriptions = self.getSubscriptions(self.subscriber)
         self.assertEqual([sub], list(subscriptions))
 
     def test_two_bugtasks_two_subscriptions(self):
@@ -562,8 +588,7 @@ class TestGetAllStructuralSubscriptions(TestCaseWithFactory):
         self.bug.addTask(self.subscriber, product2)
         sub2 = product2.addBugSubscription(
             self.subscriber, self.subscriber)
-        subscriptions = get_all_structural_subscriptions(
-            self.bug.bugtasks, self.subscriber)
+        subscriptions = self.getSubscriptions(self.subscriber)
         self.assertEqual(set([sub1, sub2]), set(subscriptions))
 
     def test_ignore_other_subscriptions(self):
@@ -573,12 +598,42 @@ class TestGetAllStructuralSubscriptions(TestCaseWithFactory):
         login_person(another_subscriber)
         sub2 = self.product.addBugSubscription(
             another_subscriber, another_subscriber)
-        subscriptions = get_all_structural_subscriptions(
-            self.bug.bugtasks, self.subscriber)
+        subscriptions = self.getSubscriptions(self.subscriber)
         self.assertEqual([sub1], list(subscriptions))
-        subscriptions = get_all_structural_subscriptions(
-            self.bug.bugtasks, another_subscriber)
+        subscriptions = self.getSubscriptions(another_subscriber)
         self.assertEqual([sub2], list(subscriptions))
+
+    def test_team_subscription(self):
+        with person_logged_in(self.team.teamowner):
+            sub = self.product.addBugSubscription(
+                self.team, self.team.teamowner)
+        subscriptions = self.getSubscriptions(self.subscriber)
+        self.assertEqual([sub], list(subscriptions))
+
+    def test_both_subscriptions(self):
+        self_sub = self.product.addBugSubscription(
+            self.subscriber, self.subscriber)
+        with person_logged_in(self.team.teamowner):
+            team_sub = self.product.addBugSubscription(
+                self.team, self.team.teamowner)
+        subscriptions = self.getSubscriptions(self.subscriber)
+        self.assertEqual(set([self_sub, team_sub]), set(subscriptions))
+
+    def test_subscriptions_from_parent(self):
+        # get_structural_subscriptions_for_bug() will return any
+        # structural subscriptions from the parents of the targets of
+        # that bug.
+        project = self.factory.makeProject()
+        product = self.factory.makeProduct(
+            project=project, owner=project.owner)
+        subscriber = self.factory.makePerson()
+        self_sub = project.addBugSubscription(subscriber, subscriber)
+        # This is a sanity check.
+        self.assertEqual(project, product.parent_subscription_target)
+        bug = self.factory.makeBug(product=product)
+        subscriptions = get_structural_subscriptions_for_bug(
+            bug, subscriber)
+        self.assertEqual(set([self_sub]), set(subscriptions))
 
 
 class TestGetStructuralSubscribers(TestCaseWithFactory):
@@ -664,3 +719,113 @@ class TestGetStructuralSubscribers(TestCaseWithFactory):
             [], list(
                 get_structural_subscribers(
                     bug, None, BugNotificationLevel.COMMENTS, None)))
+
+
+class TestBugSubscriptionFilterMute(TestCaseWithFactory):
+    """Tests for the BugSubscriptionFilterMute class."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugSubscriptionFilterMute, self).setUp()
+        self.target = self.factory.makeProduct()
+        self.team = self.factory.makeTeam()
+        self.team_member = self.factory.makePerson()
+        with person_logged_in(self.team.teamowner):
+            self.team.addMember(self.team_member, self.team.teamowner)
+            self.team_subscription = self.target.addBugSubscription(
+                self.team, self.team.teamowner)
+            self.filter = self.team_subscription.bug_filters.one()
+
+    def test_isMuteAllowed_returns_true_for_team_subscriptions(self):
+        # BugSubscriptionFilter.isMuteAllowed() will return True for
+        # subscriptions where the owner of the subscription is a team.
+        self.assertTrue(self.filter.isMuteAllowed(self.team_member))
+
+    def test_isMuteAllowed_returns_false_for_non_team_subscriptions(self):
+        # BugSubscriptionFilter.isMuteAllowed() will return False for
+        # subscriptions where the owner of the subscription is not a team.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            non_team_subscription = self.target.addBugSubscription(
+                person, person)
+        filter = non_team_subscription.bug_filters.one()
+        self.assertFalse(filter.isMuteAllowed(person))
+
+    def test_isMuteAllowed_returns_false_for_non_team_members(self):
+        # BugSubscriptionFilter.isMuteAllowed() will return False if the
+        # user passed to it is not a member of the subscribing team.
+        non_team_person = self.factory.makePerson()
+        self.assertFalse(self.filter.isMuteAllowed(non_team_person))
+
+    def test_mute_adds_mute(self):
+        # BugSubscriptionFilter.mute() adds a mute for the filter.
+        filter_id = self.filter.id
+        person_id = self.team_member.id
+        store = Store.of(self.filter)
+        mutes = store.find(
+            BugSubscriptionFilterMute,
+            BugSubscriptionFilterMute.filter == filter_id,
+            BugSubscriptionFilterMute.person == person_id)
+        self.assertTrue(mutes.is_empty())
+        self.assertFalse(self.filter.muted(self.team_member))
+        self.filter.mute(self.team_member)
+        self.assertTrue(self.filter.muted(self.team_member))
+        store.flush()
+        self.assertFalse(mutes.is_empty())
+
+    def test_unmute_removes_mute(self):
+        # BugSubscriptionFilter.unmute() removes any mute for a given
+        # person on that filter.
+        filter_id = self.filter.id
+        person_id = self.team_member.id
+        store = Store.of(self.filter)
+        self.filter.mute(self.team_member)
+        store.flush()
+        mutes = store.find(
+            BugSubscriptionFilterMute,
+            BugSubscriptionFilterMute.filter == filter_id,
+            BugSubscriptionFilterMute.person == person_id)
+        self.assertFalse(mutes.is_empty())
+        self.assertTrue(self.filter.muted(self.team_member))
+        self.filter.unmute(self.team_member)
+        self.assertFalse(self.filter.muted(self.team_member))
+        store.flush()
+        self.assertTrue(mutes.is_empty())
+
+    def test_mute_is_idempotent(self):
+        # Muting works even if the user is already muted.
+        store = Store.of(self.filter)
+        mute = self.filter.mute(self.team_member)
+        store.flush()
+        second_mute = self.filter.mute(self.team_member)
+        self.assertEqual(mute, second_mute)
+
+    def test_unmute_is_idempotent(self):
+        # Unmuting works even if the user is not muted
+        store = Store.of(self.filter)
+        mutes = store.find(
+            BugSubscriptionFilterMute,
+            BugSubscriptionFilterMute.filter == self.filter.id,
+            BugSubscriptionFilterMute.person == self.team_member.id)
+        self.assertTrue(mutes.is_empty())
+        self.filter.unmute(self.team_member)
+        self.assertTrue(mutes.is_empty())
+
+    def test_mute_raises_error_for_non_team_subscriptions(self):
+        # BugSubscriptionFilter.mute() will raise an error if called on
+        # a non-team subscription.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            non_team_subscription = self.target.addBugSubscription(
+                person, person)
+        filter = non_team_subscription.bug_filters.one()
+        self.assertFalse(filter.isMuteAllowed(person))
+        self.assertRaises(MuteNotAllowed, filter.mute, person)
+
+    def test_mute_raises_error_for_non_team_members(self):
+        # BugSubscriptionFilter.mute() will raise an error if called on
+        # a subscription of which the calling person is not a member.
+        non_team_person = self.factory.makePerson()
+        self.assertFalse(self.filter.isMuteAllowed(non_team_person))
+        self.assertRaises(MuteNotAllowed, self.filter.mute, non_team_person)

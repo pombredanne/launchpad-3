@@ -22,9 +22,9 @@ First, we'll create the un-decorated result set of all distributions:
     >>> from lp.registry.model.distribution import Distribution
     >>> result_set = store.find(Distribution)
 
-== Creating the decorator method ==
+== Creating the decorator function ==
 
-We create a decorator method that we want to be applied to any
+We create a decorator function that we want to be applied to any
 results obtained from our undecorated result set. For instance,
 we can turn a model object into a string:
 
@@ -80,7 +80,7 @@ config option (https://bugs.launchpad.net/storm/+bug/217644):
     >>> from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
     >>> from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
     >>> results = store.find(BinaryPackageRelease,
-    ...     BinaryPackageRelease.id == 
+    ...     BinaryPackageRelease.id ==
     ...         BinaryPackagePublishingHistory.binarypackagereleaseID)
     >>> results = results.config(distinct=True)
     >>> len(list(results))

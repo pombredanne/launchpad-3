@@ -14,7 +14,6 @@ from operator import attrgetter
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.launchpad.helpers import emailPeople
 from canonical.launchpad.interfaces.launchpad import (
     INotificationRecipientSet,
     UnknownRecipientError,
@@ -45,7 +44,7 @@ class NotificationRecipientSet:
     def getRecipients(self):
         """See `INotificationRecipientSet`."""
         return sorted(
-            self._personToRationale.keys(),  key=attrgetter('displayname'))
+            self._personToRationale.keys(), key=attrgetter('displayname'))
 
     def getRecipientPersons(self):
         """See `INotificationRecipientSet`."""
@@ -88,6 +87,7 @@ class NotificationRecipientSet:
     def add(self, persons, reason, header):
         """See `INotificationRecipientSet`."""
         from zope.security.proxy import removeSecurityProxy
+        from lp.registry.model.person import get_recipients
         if IPerson.providedBy(persons):
             persons = [persons]
 
@@ -98,7 +98,7 @@ class NotificationRecipientSet:
             if person in self._personToRationale:
                 continue
             self._personToRationale[person] = reason, header
-            for receiving_person in emailPeople(person):
+            for receiving_person in get_recipients(person):
                 # Bypass zope's security because IEmailAddress.email is not
                 # public.
                 preferred_email = removeSecurityProxy(
@@ -116,6 +116,7 @@ class NotificationRecipientSet:
     def remove(self, persons):
         """See `INotificationRecipientSet`."""
         from zope.security.proxy import removeSecurityProxy
+        from lp.registry.model.person import get_recipients
         if IPerson.providedBy(persons):
             persons = [persons]
         for person in persons:
@@ -123,13 +124,14 @@ class NotificationRecipientSet:
                 'You can only remove() an IPerson: %r' % person)
             if person in self._personToRationale:
                 del self._personToRationale[person]
-            for removed_person in emailPeople(person):
+            for removed_person in get_recipients(person):
                 # Bypass zope's security because IEmailAddress.email is
                 # not public.
                 preferred_email = removeSecurityProxy(
                     removed_person.preferredemail)
                 email = str(preferred_email.email)
                 self._receiving_people.discard((email, removed_person))
+                del self._emailToPerson[email]
 
     def update(self, recipient_set):
         """See `INotificationRecipientSet`."""

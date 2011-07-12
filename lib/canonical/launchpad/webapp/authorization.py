@@ -32,13 +32,13 @@ from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel,
-    IAuthorization,
     ILaunchpadContainer,
     ILaunchpadPrincipal,
     )
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.lazr.canonicalurl import nearest_adapter
 from canonical.lazr.interfaces import IObjectPrivacy
+from lp.app.interfaces.security import IAuthorization
 
 
 steveIsFixingThis = False

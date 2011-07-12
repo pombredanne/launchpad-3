@@ -17,7 +17,6 @@ __all__ = [
     'BugTaskStatus',
     'BugTaskStatusSearch',
     'BugTaskStatusSearchDisplay',
-    'ConjoinedBugTaskEditError',
     'DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY',
     'IAddBugTaskForm',
     'IAddBugTaskWithProductCreationForm',
@@ -57,16 +56,17 @@ from lazr.enum import (
     )
 from lazr.restful.declarations import (
     call_with,
+    error_status,
     export_as_webservice_entry,
     export_read_operation,
     export_write_operation,
     exported,
     mutator_for,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     rename_parameters_as,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -401,56 +401,51 @@ DEFAULT_SEARCH_BUGTASK_STATUSES_FOR_DISPLAY = [
     for item in DEFAULT_SEARCH_BUGTASK_STATUSES]
 
 
-class ConjoinedBugTaskEditError(Exception):
-    """An error raised when trying to modify a conjoined bugtask."""
-    webservice_error(httplib.BAD_REQUEST)
-
-
+@error_status(httplib.UNAUTHORIZED)
 class UserCannotEditBugTaskStatus(Unauthorized):
     """User not permitted to change status.
 
     Raised when a user tries to transition to a new status who doesn't
     have the necessary permissions.
     """
-    webservice_error(httplib.UNAUTHORIZED)
 
 
+@error_status(httplib.UNAUTHORIZED)
 class UserCannotEditBugTaskImportance(Unauthorized):
     """User not permitted to change importance.
 
     Raised when a user tries to transition to a new importance who
     doesn't have the necessary permissions.
     """
-    webservice_error(httplib.UNAUTHORIZED)
 
 
+@error_status(httplib.UNAUTHORIZED)
 class UserCannotEditBugTaskMilestone(Unauthorized):
     """User not permitted to change milestone.
 
     Raised when a user tries to transition to a milestone who doesn't have
     the necessary permissions.
     """
-    webservice_error(httplib.UNAUTHORIZED)
 
 
+@error_status(httplib.UNAUTHORIZED)
 class UserCannotEditBugTaskAssignee(Unauthorized):
     """User not permitted to change bugtask assignees.
 
     Raised when a user with insufficient prilieges tries to set
     the assignee of a bug task.
     """
-    webservice_error(httplib.UNAUTHORIZED)
 
 
+@error_status(httplib.BAD_REQUEST)
 class IllegalTarget(Exception):
     """Exception raised when trying to set an illegal bug task target."""
-    webservice_error(httplib.BAD_REQUEST)
 
 
+@error_status(httplib.BAD_REQUEST)
 class IllegalRelatedBugTasksParams(Exception):
     """Exception raised when trying to overwrite all relevant parameters
     in a search for related bug tasks"""
-    webservice_error(httplib.BAD_REQUEST)
 
 
 class IBugTask(IHasDateCreated, IHasBug):
@@ -462,26 +457,29 @@ class IBugTask(IHasDateCreated, IHasBug):
         BugField(title=_("Bug"), readonly=True))
     product = Choice(
         title=_('Project'), required=False, vocabulary='Product')
+    productID = Attribute('The product ID')
     productseries = Choice(
         title=_('Series'), required=False, vocabulary='ProductSeries')
     productseriesID = Attribute('The product series ID')
     sourcepackagename = Choice(
         title=_("Package"), required=False,
         vocabulary='SourcePackageName')
+    sourcepackagenameID = Attribute('The sourcepackagename ID')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
+    distributionID = Attribute('The distribution ID')
     distroseries = Choice(
         title=_("Series"), required=False,
         vocabulary='DistroSeries')
+    distroseriesID = Attribute('The distroseries ID')
     milestone = exported(ReferenceChoice(
         title=_('Milestone'),
         required=False,
         readonly=True,
         vocabulary='Milestone',
-        schema=Interface)) # IMilestone
+        schema=Interface))  # IMilestone
     milestoneID = Attribute('The id of the milestone.')
 
-    # XXX kiko 2006-03-23:
     # The status and importance's vocabularies do not
     # contain an UNKNOWN item in bugtasks that aren't linked to a remote
     # bugwatch; this would be better described in a separate interface,
@@ -598,7 +596,7 @@ class IBugTask(IHasDateCreated, IHasBug):
     owner = exported(
         Reference(title=_("The owner"), schema=Interface, readonly=True))
     target = exported(Reference(
-        title=_('Target'), required=True, schema=Interface, # IBugTarget
+        title=_('Target'), required=True, schema=Interface,  # IBugTarget
         readonly=True,
         description=_("The software in which this bug should be fixed.")))
     target_uses_malone = Bool(
@@ -611,7 +609,7 @@ class IBugTask(IHasDateCreated, IHasBug):
             description=_(
                 "IBugTasks related to this one, namely other "
                 "IBugTasks on the same IBug."),
-            value_type=Reference(schema=Interface), # Will be specified later.
+            value_type=Reference(schema=Interface),  # Will be specified later
             readonly=True))
     pillar = Choice(
         title=_('Pillar'),
@@ -644,11 +642,33 @@ class IBugTask(IHasDateCreated, IHasBug):
                 "work required on this bug task."),
              readonly=True))
 
-    @operation_returns_collection_of(Interface) # Actually IBug.
+    @operation_returns_collection_of(Interface)  # Actually IBug.
     @call_with(user=REQUEST_USER, limit=10)
     @export_read_operation()
     def findSimilarBugs(user, limit=10):
         """Return the list of possible duplicates for this BugTask."""
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(person=copy_field(assignee))
+    @export_read_operation()
+    @operation_for_version("devel")
+    def getContributorInfo(user, person):
+        """Is the person a contributor to bugs in this task's pillar?
+
+        :param user: The user doing the search. Private bugs that this
+            user doesn't have access to won't be included in the search.
+        :param person: The person to check to see if they are a contributor.
+
+        Return a dict with the following values:
+        is_contributor: True if the user has any bugs assigned to him in the
+        context of this bug task's pillar, either directly or by team
+        participation.
+        person_name: the displayname of the person
+        pillar_name: the displayname of the bug task's pillar
+
+        This API call is provided for use by the client Javascript where the
+        calling context does not have access to the person or pillar names.
+        """
 
     def getConjoinedMaster(bugtasks, bugtasks_by_package=None):
         """Return the conjoined master in the given bugtasks, if any.
@@ -1155,7 +1175,7 @@ class BugTaskSearchParams:
                  hardware_is_linked_to_bug=False,
                  linked_branches=None, linked_blueprints=None,
                  structural_subscriber=None, modified_since=None,
-                 created_since=None, exclude_conjoined_tasks=False):
+                 created_since=None, exclude_conjoined_tasks=False, cve=None):
 
         self.bug = bug
         self.searchtext = searchtext
@@ -1203,6 +1223,7 @@ class BugTaskSearchParams:
         self.modified_since = modified_since
         self.created_since = created_since
         self.exclude_conjoined_tasks = exclude_conjoined_tasks
+        self.cve = cve
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -1377,7 +1398,7 @@ class BugTaskSearchParams:
         elif zope_isinstance(tags, str):
             search_params.tag = tags
         elif tags is None:
-            pass # tags not supplied
+            pass  # tags not supplied
         else:
             raise AssertionError(
                 'Tags can only be supplied as a list or a string.')
@@ -1498,12 +1519,17 @@ class IBugTaskSet(Interface):
         :param params: the BugTaskSearchParams to search on.
         """
 
-    def countBugs(params, group_on):
-        """Count bugs that match params, grouping by group_on.
+    def countBugs(user, contexts, group_on):
+        """Count open bugs that match params, grouping by group_on.
 
-        :param param: A BugTaskSearchParams object.
+        This serves results from the bugsummary fact table: it is fast but not
+        completely precise. See the bug summary documentation for more detail.
+
+        :param user: The user to query on behalf of.
+        :param contexts: A list of contexts to search. Contexts must support
+            the IBugSummaryDimension interface.
         :param group_on: The column(s) group on - .e.g (
-            Bugtask.distroseriesID, BugTask.milestoneID) will cause
+            BugSummary.distroseries_id, BugSummary.milestone_id) will cause
             grouping by distro series and then milestone.
         :return: A dict {group_instance: count, ...}
         """
@@ -1618,10 +1644,9 @@ class IBugTaskSet(Interface):
 
     def buildUpstreamClause(params):
         """Create a SQL clause to do upstream checks in a bug search.
-        
+
         :return: A string SQL expression.
         """
-
 
 
 def valid_remote_bug_url(value):
