@@ -11,7 +11,6 @@ from testtools.matchers import (
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import (
-    ForbiddenAttribute,
     Unauthorized,
     )
 from zope.security.proxy import removeSecurityProxy
