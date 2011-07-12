@@ -42,7 +42,7 @@ flag_info = sorted([
      'boolean',
      ('Enables the display of bugtracker components.'),
      ''),
-    ('code.ajax_revision_diffs',
+    ('code.ajax_revision_diffs.enabled',
      'boolean',
      ("Offer expandable inline diffs for branch revisions."),
      ''),
