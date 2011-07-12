@@ -9,7 +9,6 @@ import pytz
 from launchpadlib.errors import Unauthorized
 
 from zope.security.management import endInteraction
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.model.seriessourcepackagebranch import (
@@ -28,7 +27,7 @@ class TestDistribution(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_attempt_to_write_data_without_permission_gives_Unauthorized(self):
+    def test_write_without_permission_gives_Unauthorized(self):
         distro = self.factory.makeDistribution()
         endInteraction()
         lp = launchpadlib_for("anonymous-access")
@@ -51,17 +50,16 @@ class TestGetBranchTips(TestCaseWithFactory):
         self.branch = self.factory.makeBranch(sourcepackage=source_package)
         registrant = self.factory.makePerson()
         now = datetime.now(pytz.UTC)
-        sourcepackagename_1 = self.factory.makeSourcePackageName()
-        sourcepackagename_2 = self.factory.makeSourcePackageName()
-        sspb_1 = SeriesSourcePackageBranchSet.new(
-            series_1, PackagePublishingPocket.RELEASE, sourcepackagename_1,
+        sourcepackagename = self.factory.makeSourcePackageName()
+        SeriesSourcePackageBranchSet.new(
+            series_1, PackagePublishingPocket.RELEASE, sourcepackagename,
             self.branch, registrant, now)
-        sspb_2 = SeriesSourcePackageBranchSet.new(
-            series_2, PackagePublishingPocket.RELEASE, sourcepackagename_1,
+        SeriesSourcePackageBranchSet.new(
+            series_2, PackagePublishingPocket.RELEASE, sourcepackagename,
             self.branch, registrant, now)
-
         self.factory.makeRevisionsForBranch(self.branch)
         endInteraction()
+
         self.lp = launchpadlib_for("anonymous-access")
         self.lp_distro = [d for d in self.lp.distributions
             if d.name == self.distro.name][0]

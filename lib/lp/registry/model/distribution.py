@@ -69,11 +69,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasMugshot,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR,
-    IStoreSelector,
-    MAIN_STORE,
-    )
 from canonical.launchpad.webapp.url import urlparse
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -1454,7 +1449,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # the sourcepackagename from that.
             bpph = IStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
-                # See comment above for rationale for using an extra query 
+                # See comment above for rationale for using an extra query
                 # instead of an inner join. (Bottom line, it would time out
                 # otherwise.)
                 BinaryPackagePublishingHistory.archiveID.is_in(
