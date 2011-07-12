@@ -1424,7 +1424,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Failed to upload bar source:\n%s" % raw_msg)
         self.publishPackage("bar", "1.0-1")
         # Clear out emails generated during upload.
-        ignore = pop_notifications()
+        pop_notifications()
 
         # Upload a binary xz-compressed package.
         upload_dir = self.queueUpload("bar_1.0-1_xz_binary")
