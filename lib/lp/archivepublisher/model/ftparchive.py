@@ -837,5 +837,7 @@ class FTPArchiveHandler:
             for base_path in base_paths:
                 if "debian-installer" not in base_path:
                     safe_mkdir(os.path.join(base_path, "source"))
+                    if not distroseries.include_long_descriptions:
+                        safe_mkdir(os.path.join(base_path, "i18n"))
                 for arch in archs:
                     safe_mkdir(os.path.join(base_path, "binary-"+arch))
