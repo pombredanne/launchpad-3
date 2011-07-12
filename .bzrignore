@@ -82,4 +82,5 @@ doc/_build
 run.gdb
 lib/canonical/launchpad/icing/icon-sprites
 lib/canonical/launchpad/icing/icon-sprites.positioning
+lib/canonical/launchpad/icing/yui
 .emacs.desktop

@@ -42,9 +42,10 @@ from lp.soyuz.scripts.initialize_distroseries import (
 from lp.testing import TestCaseWithFactory
 
 
-class TestInitializeDistroSeries(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
+class InitializationHelperTestCase(TestCaseWithFactory):
+    # Helper class to:
+    # - setup/populate parents with packages;
+    # - initialize a child from parents.
 
     def setupParent(self, packages=None, format_selection=None,
                     distribution=None):
@@ -94,6 +95,26 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
                     distroarchseries=parent_das,
                     pocket=PackagePublishingPocket.RELEASE,
                     status=PackagePublishingStatus.PUBLISHED)
+                self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
+
+    def _fullInitialize(self, parents, child=None, previous_series=None,
+                        arches=(), packagesets=(), rebuild=False,
+                        distribution=None, overlays=(),
+                        overlay_pockets=(), overlay_components=()):
+        if child is None:
+            child = self.factory.makeDistroSeries(
+                distribution=distribution, previous_series=previous_series)
+        ids = InitializeDistroSeries(
+            child, [parent.id for parent in parents], arches, packagesets,
+            rebuild, overlays, overlay_pockets, overlay_components)
+        ids.check()
+        ids.initialize()
+        return child
+
+
+class TestInitializeDistroSeries(InitializationHelperTestCase):
+
+    layer = LaunchpadZopelessLayer
 
     def test_failure_for_already_released_distroseries(self):
         # Initializing a distro series that has already been used will
@@ -106,6 +127,25 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
             InitializationError,
             "Can not copy distroarchseries from parent, there are already "
             "distroarchseries(s) initialized for this series.", ids.check)
+
+    def test_failure_when_previous_series_none(self):
+        # Initialising a distroseries with no previous_series if the
+        # distribution already has initialized series will error.
+        self.parent, self.parent_das = self.setupParent()
+        child = self.factory.makeDistroSeries(
+            previous_series=None, name='series')
+        another_distroseries = self.factory.makeDistroSeries(
+            distribution=child.distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+             distroseries=another_distroseries)
+        self.factory.makeDistroArchSeries(distroseries=child)
+        ids = InitializeDistroSeries(child, [self.parent.id])
+        self.assertRaisesWithContent(
+            InitializationError,
+            ("DistroSeries series has no previous series and "
+             "the distribution already has initialized series"
+             ".").format(child=child),
+             ids.check)
 
     def test_failure_with_pending_builds(self):
         # If the parent series has pending builds, and the child is a series
@@ -188,20 +228,6 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
             SourcePackageFormat.FORMAT_1_0))
         # Other configuration bits are copied too.
         self.assertTrue(child.backports_not_automatic)
-
-    def _fullInitialize(self, parents, child=None, previous_series=None,
-                        arches=(), packagesets=(), rebuild=False,
-                        distribution=None, overlays=(),
-                        overlay_pockets=(), overlay_components=()):
-        if child is None:
-            child = self.factory.makeDistroSeries(
-                distribution=distribution, previous_series=previous_series)
-        ids = InitializeDistroSeries(
-            child, [parent.id for parent in parents], arches, packagesets,
-            rebuild, overlays, overlay_pockets, overlay_components)
-        ids.check()
-        ids.initialize()
-        return child
 
     def test_initialize(self):
         # Test a full initialize with no errors.

@@ -518,6 +518,8 @@ patch_choice_parameter_type(
     DistroSeriesDifferenceType)
 patch_collection_return_type(
     IDistroSeries, 'getDifferencesTo', IDistroSeriesDifference)
+patch_collection_return_type(
+    IDistroSeries, 'getDifferenceComments', IDistroSeriesDifferenceComment)
 
 
 # IDistroSeriesDifference
@@ -901,7 +903,7 @@ patch_entry_explicit_version(IHWDBApplication, 'beta')
 patch_operations_explicit_version(
     IHWDBApplication, 'beta', "deviceDriverOwnersAffectedByBugs", "devices",
     "drivers", "hwInfoByBugRelatedUsers", "numDevicesInSubmissions",
-    "numOwnersOfDevice", "numSubmissionsWithDevice", "vendorIDs")
+    "numOwnersOfDevice", "numSubmissionsWithDevice", "search", "vendorIDs")
 
 # IHWDevice
 patch_entry_explicit_version(IHWDevice, 'beta')
