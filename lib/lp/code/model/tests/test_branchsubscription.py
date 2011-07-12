@@ -133,7 +133,6 @@ class TestBranchSubscriptionCanBeUnsubscribedbyUser(TestCaseWithFactory):
         If the owner of a branch is a team, then the team owner can
         unsubscribe someone, but an arbitrary team member cannot.
         """
-
         team_owner = self.factory.makePerson()
         team_member = self.factory.makePerson()
         branch_owner = self.factory.makeTeam(
