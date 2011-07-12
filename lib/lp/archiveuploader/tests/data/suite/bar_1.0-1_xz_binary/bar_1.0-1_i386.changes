@@ -18,17 +18,17 @@ Changes:
  .
    * Initial version
 Checksums-Sha1: 
- 29ac64be44f4cd6e8135662bd241e324ab243fdb 728 bar_1.0-1_i386.deb
+ d951408c834e72bb81590de134423bb88eabb5e0 716 bar_1.0-1_i386.deb
 Checksums-Sha256: 
- 73476463c92e5c6a22e3eec997199af6e80dd0275db667f1c9fe7049fee46cf0 728 bar_1.0-1_i386.deb
+ f0e36b68d56d068663730c8f58944b4b8f70d38a4f6baefa072b87bb3d0ebfb0 716 bar_1.0-1_i386.deb
 Files: 
- 9bc1955145a3fa3ff41e4a404cb1e21a 728 devel optional bar_1.0-1_i386.deb
+ 4aa8d7b4f4be9f6cc7c237ab611a20bb 716 devel optional bar_1.0-1_i386.deb
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Version: GnuPG v1.4.11 (GNU/Linux)
 Comment: Colin Watson <cjwatson@debian.org> -- Debian developer
 
-iD8DBQFManA0jn63CGxkqMURAlQ+AJ9GOOYLf7f8MpsUB9OWKAhfwSk96ACeJNh+
-2yGkbNYlEFDavze9JjHt+VY=
-=3ZiC
+iD8DBQFOHESujn63CGxkqMURApiSAJ9LbXh58wNXeX0lNftuXuC0mCZc1ACfX3zu
+NR4glHqh2jE1P3YeB+7NyO8=
+=WBnS
 -----END PGP SIGNATURE-----
