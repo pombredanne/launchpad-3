@@ -26,6 +26,7 @@ from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     BrowserTestCase,
     EventRecorder,
+    extract_lp_cache,
     person_logged_in,
     TestCaseWithFactory,
     )
@@ -938,10 +939,12 @@ class TestSourcePackageSharingDetailsPage(BrowserTestCase,
         sourcepackage = self.makeFullyConfiguredSharing()[0]
         anon_browser = self._getSharingDetailsViewBrowser(sourcepackage)
         # Anonymous users don't get cached objects due to bug #740208
-        self.assertNotIn("LP.cache['productseries'] =", anon_browser.contents)
+        self.assertNotIn(
+            'productseries', extract_lp_cache(anon_browser.contents))
         browser = self._getSharingDetailsViewBrowser(
             sourcepackage, user=self.user)
-        self.assertIn("LP.cache['productseries'] =", browser.contents)
+        self.assertIn(
+            'productseries', extract_lp_cache(browser.contents))
 
     def test_potlist_only_ubuntu(self):
         # Without a packaging link, only Ubuntu templates are listed.
