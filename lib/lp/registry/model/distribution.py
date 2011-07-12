@@ -678,7 +678,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         results = []
         for key, group in itertools.groupby(data, itemgetter(0, 1)):
             results.append(list(key))
-            results[-1].append([x[-1] for x in group])
+            # Pull out all the official series IDs and append them as a list
+            # to the end of the current record.
+            results[-1].append(map(itemgetter(-1), group))
         return results
 
     def getMirrorByName(self, name):

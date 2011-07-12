@@ -392,22 +392,6 @@ class IDistributionPublic(
             `IDistroSeries.version`.
         """
 
-#    @operation_parameters(
-#        since=Datetime(
-#            title=_("Time of last change"),
-#            description=_(
-#                "Return branches that have new tips since this timestamp."),
-#            required=False))
-##    @operation_returns_entry(ISourcePackage)
-##    @operation_returns_collection_of(Interface)
-#    @export_operation_as(name="getBranchTips")
-#    @export_read_operation()
-##    @operation_for_version('devel')
-##    @operation_for_version("beta")
-#    def getBranchTips(since):
-#        """Return a collection of branches which have new tips since a date.
-#        """
-
     @operation_parameters(
         since=Datetime(
             title=_("Time of last change"),
