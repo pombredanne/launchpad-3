@@ -23,7 +23,10 @@ from bzrlib.plugins.builder.recipe import (
     )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful.interface import use_template
+from lazr.restful.interface import (
+    copy_field,
+    use_template,
+    )
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
     IWebServiceClientRequest,
@@ -106,6 +109,8 @@ from lp.code.interfaces.sourcepackagerecipe import (
 from lp.code.model.branchtarget import PersonBranchTarget
 from lp.code.model.sourcepackagerecipe import get_buildable_distroseries_set
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features import getFeatureFlag
+from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.model.archive import Archive
 
@@ -250,8 +255,20 @@ class SourcePackageRecipeView(LaunchpadView):
 
     @property
     def person_picker(self):
+        # If we are using the enhanced picker, we need to ensure the vocab
+        # gives us terms showing just the displyname rather than displayname
+        # plus Luanchpad id since the enhanced picker provides this extra
+        # information itself.
+        enhanced_picker_enabled = bool(
+                    getFeatureFlag('disclosure.picker_enhancements.enabled'))
+        if enhanced_picker_enabled:
+            vocabulary='UserTeamsParticipationPlusSelfSimpleDisplay'
+        else:
+            vocabulary='UserTeamsParticipationPlusSelf'
+        field = copy_field(
+            ISourcePackageRecipe['owner'], vocabularyName=vocabulary)
         return InlineEditPickerWidget(
-            self.context, ISourcePackageRecipe['owner'],
+            self.context, field,
             format_link(self.context.owner),
             header='Change owner',
             step_title='Select a new owner')
@@ -840,7 +857,7 @@ class SourcePackageRecipeEditView(RecipeRelatedBranchesMixin,
             self.form_fields = self.form_fields.omit('daily_build_archive')
 
             owner_field = self.schema['owner']
-            any_owner_choice = Choice(
+            any_owner_choice = PersonChoice(
                 __name__='owner', title=owner_field.title,
                 description=(u"As an administrator you are able to reassign"
                              u" this branch to any person or team."),
