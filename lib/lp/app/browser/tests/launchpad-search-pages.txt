@@ -444,6 +444,8 @@ batches of pages that match the search text 'bugs'. The navigator
 provides a link to the next batch, which also happens to be the last
 batch.
 
+    >>> len(search_view.pages.getBatches())
+    2
     >>> search_view.pages.nextBatchURL()
     '...start=20'
     >>> search_view.pages.lastBatchURL()
