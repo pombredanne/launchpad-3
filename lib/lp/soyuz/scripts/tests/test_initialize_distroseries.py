@@ -64,7 +64,7 @@ class InitializationHelperTestCase(TestCaseWithFactory):
         getUtility(ISourcePackageFormatSelectionSet).add(
             parent, format_selection)
         parent.backports_not_automatic = True
-        parent.split_long_descriptions = True
+        parent.include_long_descriptions = False
         self._populate_parent(parent, parent_das, packages)
         return parent, parent_das
 
@@ -229,7 +229,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             SourcePackageFormat.FORMAT_1_0))
         # Other configuration bits are copied too.
         self.assertTrue(child.backports_not_automatic)
-        self.assertTrue(child.split_long_descriptions)
+        self.assertFalse(child.include_long_descriptions)
 
     def test_initialize(self):
         # Test a full initialize with no errors.

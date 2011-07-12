@@ -805,7 +805,7 @@ class FTPArchiveHandler:
                          "DISTS": os.path.basename(self._config.distsroot),
                          "HIDEEXTRA": "",
                          "LONGDESCRIPTION":
-                             "true" if distroseries.split_long_descriptions
+                             "true" if distroseries.include_long_descriptions
                                     else "false",
                          })
 
@@ -822,7 +822,7 @@ class FTPArchiveHandler:
                     "CACHEINSERT": "debian-installer-",
                     "DISTS": os.path.basename(self._config.distsroot),
                     "HIDEEXTRA": "// ",
-                    "LONGDESCRIPTION": "false",
+                    "LONGDESCRIPTION": "true",
                     })
 
         # XXX: 2006-08-24 kiko: Why do we do this directory creation here?

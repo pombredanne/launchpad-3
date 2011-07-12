@@ -244,8 +244,8 @@ class InitializeDistroSeries:
         self.distroseries.backports_not_automatic = any(
             parent.backports_not_automatic
                 for parent in self.derivation_parents)
-        self.distroseries.split_long_descriptions = any(
-            parent.split_long_descriptions
+        self.distroseries.include_long_descriptions = any(
+            parent.include_long_descriptions
                 for parent in self.derivation_parents)
 
     def _copy_architectures(self):

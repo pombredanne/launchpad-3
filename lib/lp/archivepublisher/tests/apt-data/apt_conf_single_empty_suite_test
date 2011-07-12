@@ -34,6 +34,6 @@ tree "dists/hoary-test-updates"
     Packages::Extensions ".deb";
     BinCacheDB "packages-$(ARCH).db";
     Contents " ";
-    LongDescription "false";
+    LongDescription "true";
 }
 

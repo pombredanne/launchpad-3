@@ -360,18 +360,20 @@ class IDistroSeriesPublic(
             automatically upgrade within backports, but not into it.
             """))
 
-    split_long_descriptions = exported(
+    include_long_descriptions = exported(
         Bool(
             title=_(
-                "Split long descriptions out of Packages into "
-                "Translations-en"),
+                "Include long descriptions in Packages rather than in "
+                "Translation-en"),
+            default=True,
             required=True,
             description=_("""
-                Write long descriptions to a Translations-en file common
-                across architectures rather than to the per-architecture
-                Packages files. This reduces the bandwidth footprint of
-                enabling multiarch on clients, which requires downloading
-                Packages files for multiple architectures.""")))
+                If True, write long descriptions to the per-architecture
+                Packages files; if False, write them to a Translation-en
+                file common across architectures instead. Using a common
+                file reduces the bandwidth footprint of enabling multiarch
+                on clients, which requires downloading Packages files for
+                multiple architectures.""")))
 
     def priorReleasedSeries():
         """Prior series *by date* from the same distribution."""
