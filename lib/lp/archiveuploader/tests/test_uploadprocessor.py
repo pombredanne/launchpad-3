@@ -1438,9 +1438,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Expected no emails!  Actually got:\n%s" % raw_msg)
 
         # Check in the queue to see if it really made it:
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.NEW, name="bar",
-            version="1.0-1", exact_match=True)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.NEW, name=u"bar",
+            version=u"1.0-1", exact_match=True)
         self.assertEqual(
             queue_items.count(), 1,
             "Expected one 'bar' item in the queue, actually got %d."
