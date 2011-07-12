@@ -138,11 +138,6 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         self.addCleanup(config.pop, "content-archive")
         return content_archive
 
-    def makeContentArchive(self):
-        # XXX JeroenVermeulen 2011-07-12 bug=809211: This will become a
-        # no-op.
-        return self.makeLegacyContentArchive()
-
     def makeDistro(self):
         """Create a distribution for testing.
 
@@ -152,14 +147,34 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         return self.factory.makeDistribution(
             publish_root_dir=unicode(self.makeTemporaryDirectory()))
 
-    def makeScript(self, distribution=None):
+    def makeScript(self, distribution=None, run_setup=True):
         """Create a script for testing."""
         if distribution is None:
             distribution = self.makeDistro()
         script = GenerateContentsFiles(test_args=['-d', distribution.name])
         script.logger = DevNullLogger()
-        script.setUp()
+        if run_setup:
+            script.setUp()
+        else:
+            script.distribution = distribution
         return script
+
+    def writeMarkerFile(self, file_path):
+        """Create a marker file at location `file_path`.
+
+        An arbitrary string is written to the file, and flushed to the
+        filesystem.  Any surrounding directories are created as needed.
+
+        :param file_path: Full path to a file: optional directory prefix
+            followed by required file name.
+        :return: The arbitrary string that is also in the file.
+        """
+        marker_contents = self.factory.getUniqueString()
+        dir_name = os.path.dirname(file_path)
+        if not file_exists(dir_name):
+            os.makedirs(dir_name)
+        write_file(file_path, marker_contents)
+        return marker_contents
 
     def test_name_is_consistent(self):
         # Script instances for the same distro get the same name.
@@ -241,7 +256,6 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         # writeAptContentsConf writes apt-contents.conf.  At a minimum
         # this will include a header based on apt_conf_header.template,
         # with the right distribution name interpolated.
-        self.makeContentArchive()
         distro = self.makeDistro()
         script = self.makeScript(distro)
         script.writeAptContentsConf([], [])
@@ -255,9 +269,9 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         # writeAptContentsConf adds sections based on
         # apt_conf_dist.template for every suite, with certain
         # parameters interpolated.
-        content_archive = self.makeContentArchive()
         distro = self.makeDistro()
         script = self.makeScript(distro)
+        content_archive = script.content_archive
         suite = self.factory.getUniqueString('suite')
         arch = self.factory.getUniqueString('arch')
         script.writeAptContentsConf([suite], [arch])
@@ -266,71 +280,85 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
             % (script.content_archive, distro.name)).read()
         self.assertIn('tree "dists/%s"\n' % suite, apt_contents_conf)
         overrides_path = os.path.join(
-            content_archive, distro.name + "-contents",
-            distro.name + "-overrides")
+            content_archive, distro.name + "-overrides")
         self.assertIn('FileList "%s' % overrides_path, apt_contents_conf)
         self.assertIn('Architectures "%s source";' % arch, apt_contents_conf)
 
     def test_writeContentsTop(self):
         # writeContentsTop writes a Contents.top file based on a
         # standard template, with the distribution's title interpolated.
-        content_archive = self.makeContentArchive()
         distro = self.makeDistro()
         script = self.makeScript(distro)
+        content_archive = script.content_archive
         script.writeContentsTop()
+
         contents_top = file(
-            "%s/%s-contents/%s-misc/Contents.top"
-            % (content_archive, distro.name, distro.name)).read()
+            "%s/%s-misc/Contents.top" % (content_archive, distro.name)).read()
+
         self.assertIn("This file maps", contents_top)
         self.assertIn(distro.title, contents_top)
 
-    def writeMarkerFile(self, file_path):
-        marker_contents = self.factory.getUniqueString()
-        marker_file = file(file_path, 'w')
-        marker_file.write(marker_contents)
-        marker_file.flush()
-        return marker_contents
-
     def test_updateLegacyContentArchiveRoot_moves_legacy_contents(self):
+        # If updateLegacyContentArchiveRoot finds entries in the legacy
+        # content-archive directory, it moves them into their new
+        # location inside distroroot.
+        distro = self.makeDistro()
+        script = self.makeScript(distro, run_setup=False)
         content_archive = self.makeLegacyContentArchive()
-        script = self.makeScript()
-        marker_path = "%s/%s-misc/Contents.top" % (
-            content_archive, script.distribution.name)
-        marker_contents = self.writeMarkerFile(marker_path)
+        script.content_archive = os.path.join(
+            self.makeTemporaryDirectory(), "contents_generation")
+        old_contents_dir = os.path.join(
+            content_archive, "%s-contents" % distro.name)
+
+        marker_contents = self.writeMarkerFile(os.path.join(
+            old_contents_dir, "%s-misc" % distro.name, "Contents.top"))
 
         script.updateLegacyContentArchiveRoot()
 
-        self.assertFalse(file_exists(content_archive))
-        new_path = "%s/local/contents-misc/Contents.top" % ()
+        self.assertFalse(file_exists(old_contents_dir))
+        new_path = os.path.join(
+            script.content_archive, "%s-misc" % distro.name, "Contents.top")
         self.assertEqual(marker_contents, file(new_path).read())
 
     def test_updateLegacyContentArchiveRoot_is_harmless_without_config(self):
+        # If no legacy content-archive root directory is configured,
+        # that's fine.  It means that updateLegacyContentArchiveRoot has
+        # nothing to do.
         script = self.makeScript()
         script.updateLegacyContentArchiveRoot()
         self.assertTrue(file_exists(script.content_archive))
         self.assertThat(
-            script.content_archive, StartsWith(script.config.distsroot))
+            script.content_archive, StartsWith(script.config.distroroot))
 
     def test_updateLegacyContentArchiveRoot_is_harmless_without_legacy(self):
-        content_archive = self.makeLegacyContentArchive()
-        os.removedirs(content_archive)
+        # If a legacy content-archive root directory is configured but
+        # it does not actually exist, updateLegacyContentArchiveRoot
+        # does nothing.
+        self.makeLegacyContentArchive()
         script = self.makeScript()
         script.updateLegacyContentArchiveRoot()
         self.assertTrue(file_exists(script.content_archive))
-        self.assertThat(
-            script.content_archive, StartsWith(script.config.distsroot))
 
     def test_setUp_moves_legacy_content_archive(self):
+        # setUp calls updateLegacyContentArchiveRoot, which moves any
+        # legacy content-archive contents to their new location.
         content_archive = self.makeLegacyContentArchive()
+        distro = self.makeDistro()
+        marker_dir = os.path.join(
+            content_archive, "%s-contents" % distro.name,
+            "%s-misc" % distro.name)
+        self.writeMarkerFile(os.path.join(marker_dir, "Contents.top"))
+        self.makeScript(distro, run_setup=True)
+        self.assertFalse(file_exists(marker_dir))
+
+    def test_setUp_places_content_archive_in_distroroot(self):
+        # The contents files are kept in subdirectories of distroroot.
         script = self.makeScript()
-        marker_path = "%s/%s-misc/Contents.top" % (
-            content_archive, script.distribution.name)
-        marker_contents = self.writeMarkerFile(marker_path)
-        self.assertFalse(file_exists(content_archive))
+        self.assertThat(
+            script.content_archive, StartsWith(script.config.distroroot))
 
     def test_main(self):
         # If run end-to-end, the script generates Contents.gz files.
-        self.makeContentArchive()
         distro = self.makeDistro()
         distroseries = self.factory.makeDistroSeries(distribution=distro)
         processor = self.factory.makeProcessor()
