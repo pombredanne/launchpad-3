@@ -185,7 +185,11 @@ class BugzillaRemoteComponentFinder:
                     else:
                         # Component is now missing from Bugzilla,
                         # so drop it here too
-                        component.remove()
+                        store = IStore(BugTrackerComponent)
+                        store.find(
+                            BugTrackerComponent,
+                            BugTrackerComponent.id == component.id,
+                            ).remove()
 
             # The remaining components in the collection will need to be
             # added to launchpad.  Record them for now.
