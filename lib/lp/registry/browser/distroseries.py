@@ -827,6 +827,8 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         super(DistroSeriesDifferenceBaseView, self).initialize()
 
     def initialize_sync_label(self, label):
+        # XXX: GavinPanella 2011-07-13 bug=809985: Good thing the app servers
+        # are running single threaded...
         self.__class__.actions.byname['actions.sync'].label = label
 
     @property
@@ -861,6 +863,8 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             SimpleTerm(diff, diff.id)
                     for diff in self.cached_differences.batch]
         diffs_vocabulary = SimpleVocabulary(terms)
+        # XXX: GavinPanella 2011-07-13 bug=809985: Good thing the app servers
+        # are running single threaded...
         choice = self.form_fields['selected_differences'].field.value_type
         choice.vocabulary = diffs_vocabulary
 
