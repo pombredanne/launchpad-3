@@ -658,12 +658,15 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def getBranchTips(self, since=None):
         """See `IDistribution`."""
         query = """
-            SELECT unique_name, last_scanned_id,
-                SeriesSourcePackageBranch.distroseries FROM Branch
-            JOIN DistroSeries ON Branch.distroseries = DistroSeries.id
-            JOIN Distribution ON DistroSeries.distribution = Distribution.id
-            JOIN SeriesSourcePackageBranch ON
-                Branch.id = SeriesSourcePackageBranch.branch
+            SELECT unique_name, last_scanned_id, SPBDS.name FROM Branch
+            LEFT OUTER JOIN DistroSeries
+                ON Branch.distroseries = DistroSeries.id
+            LEFT OUTER JOIN SeriesSourcePackageBranch
+                ON Branch.id = SeriesSourcePackageBranch.branch
+            JOIN Distribution
+                ON DistroSeries.distribution = Distribution.id
+            JOIN DistroSeries SPBDS -- (SourcePackageBranchDistroSeries)
+                ON SeriesSourcePackageBranch.distroseries = SPBDS.id
             WHERE Distribution.name = %s""" % sqlvalues(self.name)
 
         if since is not None:
@@ -672,7 +675,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         query += ' ORDER BY unique_name, last_scanned_id;'
 
-        data = list(Store.of(self).execute(query))
+        data = Store.of(self).execute(query)
 
         # Group on location (unique_name) and revision (last_scanned_id).
         results = []

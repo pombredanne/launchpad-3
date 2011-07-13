@@ -8,7 +8,10 @@ from datetime import datetime
 import pytz
 from launchpadlib.errors import Unauthorized
 
-from zope.security.management import endInteraction
+from zope.security.management import (
+    endInteraction,
+    newInteraction,
+    )
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.model.seriessourcepackagebranch import (
@@ -47,31 +50,32 @@ class TestGetBranchTips(TestCaseWithFactory):
         series_1 = self.series_1 = self.factory.makeDistroRelease(self.distro)
         series_2 = self.series_2 = self.factory.makeDistroRelease(self.distro)
         source_package = self.factory.makeSourcePackage(distroseries=series_1)
-        self.branch = self.factory.makeBranch(sourcepackage=source_package)
+        branch = self.factory.makeBranch(sourcepackage=source_package)
         registrant = self.factory.makePerson()
         now = datetime.now(pytz.UTC)
         sourcepackagename = self.factory.makeSourcePackageName()
         SeriesSourcePackageBranchSet.new(
             series_1, PackagePublishingPocket.RELEASE, sourcepackagename,
-            self.branch, registrant, now)
+            branch, registrant, now)
         SeriesSourcePackageBranchSet.new(
             series_2, PackagePublishingPocket.RELEASE, sourcepackagename,
-            self.branch, registrant, now)
-        self.factory.makeRevisionsForBranch(self.branch)
+            branch, registrant, now)
+        self.factory.makeRevisionsForBranch(branch)
+        self.branch_name = branch.unique_name
         endInteraction()
-
         self.lp = launchpadlib_for("anonymous-access")
-        self.lp_distro = [d for d in self.lp.distributions
-            if d.name == self.distro.name][0]
+        self.lp_distro = self.lp.distributions[self.distro.name]
 
     def test_structure(self):
         """The structure of the results is what we expect."""
         # The results should be structured as a list of
         # (location, tip revision ID, [official series, official series, ...])
         item = self.lp_distro.getBranchTips()[0]
-        self.assertTrue(item[0].startswith('~person-name-'))
+        self.assertEqual(item[0], self.branch_name)
         self.assertTrue(item[1].startswith('revision-id-'))
-        self.assertEqual(sorted(item[2]), [14, 15])
+        self.assertEqual(
+            [self.series_1.name, self.series_2.name],
+            sorted(item[2]))
 
     def test_same_results(self):
         """Calling getBranchTips directly matches calling it via the API."""
@@ -96,6 +100,6 @@ class TestGetBranchTips(TestCaseWithFactory):
 
     def test_series(self):
         """The official series are included in the data."""
-        series_ids = sorted([self.series_1.id, self.series_2.id])
-        returned_series_ids = sorted(self.lp_distro.getBranchTips()[0][-1])
-        self.assertEqual(series_ids, returned_series_ids)
+        actual_series_names = sorted([self.series_1.name, self.series_2.name])
+        returned_series_names = sorted(self.lp_distro.getBranchTips()[0][-1])
+        self.assertEqual(actual_series_names, returned_series_names)

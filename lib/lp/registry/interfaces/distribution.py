@@ -402,7 +402,17 @@ class IDistributionPublic(
     @export_read_operation()
     @operation_for_version('devel')
     def getBranchTips(since):
-        """Return a collection of branches which have new tips since a date.
+        """Return a list of branches which have new tips since a date.
+
+        Each branch information is a tuple of (branch_unique_name,
+        tip_revision, (official_series*)).
+
+        So for each branch in the distribution, you'll get the branch unique
+        name, the revision id of tip, and if the branch is official for some
+        series, the list of series name.
+
+        :param since: If specified, limits results to branches modified since
+            that date and time.
         """
 
     @operation_parameters(
