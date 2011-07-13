@@ -453,9 +453,9 @@ class BugTrackerNavigation(Navigation):
             return RemoteBug(self.context, remotebug, bugs)
 
     @stepthrough("+components")
-    def component_groups(self, id):
-        # Navigate by id (component group name should work too)
-        return self.context.getRemoteComponentGroup(id)
+    def component_groups(self, name_or_id):
+        """Navigate by id (component group name should work too)"""
+        return self.context.getRemoteComponentGroup(name_or_id)
 
 
 class BugTrackerEditComponentView(LaunchpadEditFormView):
