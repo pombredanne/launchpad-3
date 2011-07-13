@@ -2016,8 +2016,21 @@ class TestSyncSource(TestCaseWithFactory):
         (source, source_archive, source_name, target_archive, to_pocket,
          to_series, version) = self._setup_copy_data()
         person = self.factory.makePerson()
+        self.assertTrue(target_archive.is_ppa)
         self.assertRaises(
             CannotCopy,
             target_archive.copyPackage, source_name, version, source_archive,
             to_pocket, to_series=to_series, include_binaries=False,
             person=person)
+
+    def test_copyPackage_disallows_non_release_target_pocket_for_PPA(self):
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+        to_pocket = PackagePublishingPocket.UPDATES
+        self.assertTrue(target_archive.is_ppa)
+        self.assertRaises(
+            CannotCopy,
+            target_archive.copyPackage, source_name, version, source_archive,
+            to_pocket, to_series=to_series, include_binaries=False,
+            person=target_archive.owner)
+

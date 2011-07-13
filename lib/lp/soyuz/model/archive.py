@@ -1539,11 +1539,6 @@ class Archive(SQLBase):
         check_copy_permissions(
             person, self, to_series, to_pocket, [source_name])
 
-        # Only the release pocket is valid for PPAs.
-        if self.is_ppa and to_pocket != PackagePublishingPocket.RELEASE:
-            raise CannotCopy(
-                "Destination pocket must be 'release' for a PPA.")
-
         self._validateAndFindSource(from_archive, source_name, version)
         job_source = getUtility(IPlainPackageCopyJobSource)
         job_source.create(
