@@ -1222,8 +1222,10 @@ class IArchiveView(IHasBuildRecords):
                     to_series=None, include_binaries=False):
         """Copy a single named source into this archive.
 
-        Copy a specific version of a named source to the destination
-        archive if necessary.
+        Asynchronously copy a specific version of a named source to the
+        destination archive if necessary.  Calls to this method will return
+        immediately if the copy passes basic security checks and the copy
+        will happen sometime later with full checking.
 
         :param source_name: a string name of the package to copy.
         :param version: the version of the package to copy.
