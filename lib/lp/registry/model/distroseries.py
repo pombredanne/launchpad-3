@@ -1874,14 +1874,17 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def isInitializing(self):
         """See `IDistroSeries`."""
-        job_source = getUtility(IInitializeDistroSeriesJobSource)
-        pending_jobs = job_source.getPendingJobsForDistroseries(self)
-        return not pending_jobs.is_empty()
+        job = self.getInitializationJob()
+        return job is not None and job.is_pending
 
     def isInitialized(self):
         """See `IDistroSeries`."""
         published = self.main_archive.getPublishedSources(distroseries=self)
         return not published.is_empty()
+
+    def getInitializationJob(self):
+        """See `IDistroSeries`."""
+        return getUtility(IInitializeDistroSeriesJobSource).get(self)
 
     def getDifferenceComments(self, since=None, source_package_name=None):
         """See `IDistroSeries`."""

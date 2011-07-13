@@ -76,14 +76,13 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
         return cls(distribution_job)
 
     @classmethod
-    def getPendingJobsForDistroseries(cls, distroseries):
+    def get(cls, distroseries):
         """See `IInitializeDistroSeriesJob`."""
-        return IStore(DistributionJob).find(
-            DistributionJob,
-            DistributionJob.job_id == Job.id,
+        distribution_job = IStore(DistributionJob).find(
+            DistributionJob, DistributionJob.job_id == Job.id,
             DistributionJob.job_type == cls.class_job_type,
-            DistributionJob.distroseries_id == distroseries.id,
-            Job._status.is_in(Job.PENDING_STATUSES))
+            DistributionJob.distroseries_id == distroseries.id).one()
+        return None if distribution_job is None else cls(distribution_job)
 
     @property
     def parents(self):
