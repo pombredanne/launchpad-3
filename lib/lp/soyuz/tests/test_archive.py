@@ -54,6 +54,7 @@ from lp.soyuz.enums import (
 from lp.soyuz.interfaces.archive import (
     ArchiveDependencyError,
     ArchiveDisabled,
+    CannotCopy,
     CannotRestrictArchitectures,
     CannotUploadToPocket,
     CannotUploadToPPA,
@@ -1967,23 +1968,29 @@ class TestSyncSource(TestCaseWithFactory):
             ubuntu.main_archive.getPublishedSources(
                 name=source.source_package_name).count())
 
-    def test_copyPackage_creates_packagecopyjob(self):
-        # The copyPackage method should create a PCJ with the appropriate
-        # parameters.
+    def _setup_copy_data(self):
         source_archive = self.factory.makeArchive()
         target_archive = self.factory.makeArchive()
         source = self.factory.makeSourcePackagePublishingHistory(
             archive=source_archive)
-
         source_name = source.source_package_name
         version = source.source_package_version
         to_pocket = PackagePublishingPocket.RELEASE
         to_series = self.factory.makeDistroSeries(
             distribution=target_archive.distribution)
+        return (source, source_archive, source_name, target_archive,
+                to_pocket, to_series, version)
+
+    def test_copyPackage_creates_packagecopyjob(self):
+        # The copyPackage method should create a PCJ with the appropriate
+        # parameters.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
         with person_logged_in(target_archive.owner):
             target_archive.copyPackage(
                 source_name, version, source_archive, to_pocket,
-                to_series=to_series, include_binaries=False)
+                to_series=to_series, include_binaries=False,
+                person=target_archive.owner)
 
         # The source should not be published yet in the target_archive.
         published = target_archive.getPublishedSources(
@@ -2003,3 +2010,14 @@ class TestSyncSource(TestCaseWithFactory):
         self.assertEqual(to_pocket, copy_job.target_pocket)
         self.assertFalse(copy_job.include_binaries)
         self.assertEquals(PackageCopyPolicy.INSECURE, copy_job.copy_policy)
+
+    def test_copyPackage_disallows_non_PPA_owners(self):
+        # Only people with launchpad.Append are allowed to call copyPackage.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+        person = self.factory.makePerson()
+        self.assertRaises(
+            CannotCopy,
+            target_archive.copyPackage, source_name, version, source_archive,
+            to_pocket, to_series=to_series, include_binaries=False,
+            person=person)

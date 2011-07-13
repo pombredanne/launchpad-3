@@ -4,8 +4,6 @@
 # pylint: disable-msg=E0611,W0212
 
 """Database class for table Archive."""
-from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
-
 
 __metaclass__ = type
 
@@ -168,6 +166,7 @@ from lp.soyuz.interfaces.component import (
     IComponent,
     IComponentSet,
     )
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
@@ -203,6 +202,7 @@ from lp.soyuz.model.queue import (
     )
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.soyuz.scripts.packagecopier import check_copy_permissions
 
 
 def storm_validate_external_dependencies(archive, attr, value):
@@ -1530,20 +1530,22 @@ class Archive(SQLBase):
             person=person)
 
     def copyPackage(self, source_name, version, from_archive, to_pocket,
-                    to_series=None, include_binaries=False):
+                    person, to_series=None, include_binaries=False):
         """See `IArchive`."""
         # Asynchronously copy a package using the job system.
+
+        # Upload permission checks first, this will raise CannotCopy as
+        # necessary.
+        check_copy_permissions(
+            person, self, to_series, to_pocket, [source_name])
+
+        # Only the release pocket is valid for PPAs.
         if self.is_ppa and to_pocket != PackagePublishingPocket.RELEASE:
             raise CannotCopy(
                 "Destination pocket must be 'release' for a PPA.")
 
         self._validateAndFindSource(from_archive, source_name, version)
         job_source = getUtility(IPlainPackageCopyJobSource)
-        # We're not passing a person argument to the job for
-        # permission checks because:
-        #   a) it doesn't store who requested it
-        #   b) we're relying on this method requiring launchpad.Append
-        # privilege to invoke in the first place.
         job_source.create(
             package_name=source_name, source_archive=from_archive,
             target_archive=self, target_distroseries=to_series,
