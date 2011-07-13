@@ -62,6 +62,7 @@ class TestGetBranchTips(TestCaseWithFactory):
             branch, registrant, now)
         self.factory.makeRevisionsForBranch(branch)
         self.branch_name = branch.unique_name
+        self.branch_last_scanned_id = branch.last_scanned_id
         endInteraction()
         self.lp = launchpadlib_for("anonymous-access")
         self.lp_distro = self.lp.distributions[self.distro.name]
@@ -72,10 +73,10 @@ class TestGetBranchTips(TestCaseWithFactory):
         # (location, tip revision ID, [official series, official series, ...])
         item = self.lp_distro.getBranchTips()[0]
         self.assertEqual(item[0], self.branch_name)
-        self.assertTrue(item[1].startswith('revision-id-'))
+        self.assertTrue(item[1], self.branch_last_scanned_id)
         self.assertEqual(
-            [self.series_1.name, self.series_2.name],
-            sorted(item[2]))
+            sorted(item[2]),
+            [self.series_1.name, self.series_2.name])
 
     def test_same_results(self):
         """Calling getBranchTips directly matches calling it via the API."""
