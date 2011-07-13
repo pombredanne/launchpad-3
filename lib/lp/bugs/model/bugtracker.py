@@ -425,6 +425,10 @@ class BugTracker(SQLBase):
             # quote() doesn't blow up later on.
             remote_product = ''
 
+        if remote_component is None:
+            # Ditto for remote component.
+            remote_component = ''
+
         if self in self._custom_filing_url_patterns:
             # Some bugtrackers are customised to accept different
             # querystring parameters from the default. We special-case
@@ -487,6 +491,7 @@ class BugTracker(SQLBase):
             url_components = {
                 'base_url': base_url,
                 'remote_product': quote(remote_product),
+                'remote_component': quote(remote_component),
                 'summary': quote(summary),
                 'description': quote(description),
                 }
