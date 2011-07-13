@@ -1317,13 +1317,11 @@ BugMessage""" % sqlvalues(self.id))
             notify(ObjectDeletedEvent(bug_branch, user=user))
             bug_branch.destroySelf()
 
-    @property
-    def linked_branches(self):
-        """See `IBug`."""
-        current_user = getUtility(ILaunchBag).user
+    def getVisibleLinkedBranches(self, user):
+        """Return all the branches linked to the bug that `user` can see."""
         all_branches = getUtility(IAllBranches)
         linked_branches = list(all_branches.visibleByUser(
-            current_user).linkedToBugs([self]).getBranches())
+            user).linkedToBugs([self]).getBranches())
         if len(linked_branches) == 0:
             return EmptyResultSet()
         else:
@@ -1333,6 +1331,9 @@ BugMessage""" % sqlvalues(self.id))
                 BugBranch,
                 BugBranch.bug == self,
                 In(BugBranch.branchID, branch_ids))
+
+    linked_branches = SQLMultipleJoin(
+        'BugBranch', joinColumn='bug', orderBy='id')
 
     @cachedproperty
     def has_cves(self):

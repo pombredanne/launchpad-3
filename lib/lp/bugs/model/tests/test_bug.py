@@ -319,7 +319,7 @@ class TestBug(TestCaseWithFactory):
             bug.setPrivate(True, person)
             self.assertFalse(bug.personIsDirectSubscriber(person))
 
-    def test_linked_branches_doesnt_return_inaccessible_branches(self):
+    def test_getVisibleLinkedBranches_doesnt_return_inaccessible_branches(self):
         # If a Bug has branches linked to it that the current user
         # cannot access, those branches will not be returned in its
         # linked_branches property.
@@ -335,14 +335,15 @@ class TestBug(TestCaseWithFactory):
         with person_logged_in(public_branch_owner):
             for public_branch in public_branches:
                 bug.linkBranch(public_branch, public_branch.registrant)
-            with StormStatementRecorder() as recorder:
-                linked_branches = [
-                    bug_branch.branch for bug_branch in bug.linked_branches]
-                self.assertContentEqual(public_branches, linked_branches)
-                self.assertNotIn(private_branch, linked_branches)
-                # We check that the query count is low, since that's
-                # part of the point of the way that linked_branches is
-                # implemented. If we try eager-loading all the linked
-                # branches the query count jumps to 10, which is not
-                # what we want.
-                self.assertThat(recorder, HasQueryCount(Equals(4)))
+        with StormStatementRecorder() as recorder:
+            linked_branches = [
+                bug_branch.branch for bug_branch in
+                bug.getVisibleLinkedBranches(user=public_branch_owner)]
+            # We check that the query count is low, since that's
+            # part of the point of the way that linked_branches is
+            # implemented. If we try eager-loading all the linked
+            # branches the query count jumps to 10, which is not
+            # what we want.
+            self.assertThat(recorder, HasQueryCount(Equals(6)))
+        self.assertContentEqual(public_branches, linked_branches)
+        self.assertNotIn(private_branch, linked_branches)

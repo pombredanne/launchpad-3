@@ -306,12 +306,11 @@ class IBug(IPrivacy, IHasLinkedBranches):
             readonly=True)))
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
-    linked_branches = exported(
-        CollectionField(
+    linked_branches = CollectionField(
             title=_("Branches associated with this bug, usually "
             "branches on which this bug is being fixed."),
             value_type=Reference(schema=IBugBranch),
-            readonly=True))
+            readonly=True)
     tags = exported(List(
         title=_("Tags"),
         description=_("Space-separated keywords for classifying "
@@ -429,6 +428,13 @@ class IBug(IPrivacy, IHasLinkedBranches):
     latest_patch = Attribute("The most recent patch of this bug.")
 
     official_tags = Attribute("The official bug tags relevant to this bug.")
+
+    @call_with(user=REQUEST_USER)
+    @export_operation_as('linked_branches')
+    @export_read_operation()
+    @operation_for_version('beta')
+    def getVisibleLinkedBranches(user):
+        """Rertun the linked to this bug that are visible by `user`."""
 
     @operation_parameters(
         subject=optional_message_subject_field(),
