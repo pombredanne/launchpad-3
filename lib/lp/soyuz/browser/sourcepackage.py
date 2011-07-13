@@ -12,7 +12,10 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import Navigation
+from canonical.launchpad.webapp import (
+    LaunchpadView,
+    Navigation,
+    )
 from canonical.lazr.utils import smartquote
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
@@ -21,7 +24,7 @@ from lp.registry.interfaces.distroseriesdifference import (
     )
 
 
-class SourcePackageChangelogView:
+class SourcePackageChangelogView(LaunchpadView):
     """View class for source package change logs."""
 
     page_title = "Change log"
@@ -32,7 +35,7 @@ class SourcePackageChangelogView:
         return smartquote("Change logs for " + self.context.title)
 
 
-class SourcePackageCopyrightView:
+class SourcePackageCopyrightView(LaunchpadView):
     """A view to display a source package's copyright information."""
 
     page_title = "Copyright"

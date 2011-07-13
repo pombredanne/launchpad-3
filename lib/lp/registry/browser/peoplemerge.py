@@ -342,19 +342,18 @@ class FinishedPeopleMergeRequestView(LaunchpadView):
             return ''
 
 
-class RequestPeopleMergeMultipleEmailsView:
+class RequestPeopleMergeMultipleEmailsView(LaunchpadView):
     """Merge request view when dupe account has multiple email addresses."""
 
     label = 'Merge Launchpad accounts'
     page_title = label
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        super(RequestPeopleMergeMultipleEmailsView, self).__init__(
+            context, request)
         self.form_processed = False
         self.dupe = None
         self.notified_addresses = []
-        self.user = getUtility(ILaunchBag).user
 
     def processForm(self):
         dupe = self.request.form.get('dupe')

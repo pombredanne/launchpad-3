@@ -11,6 +11,7 @@ __all__ = [
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     GetitemNavigation,
+    LaunchpadView,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.lazr.utils import smartquote
@@ -31,11 +32,7 @@ class DistroArchSeriesBinaryPackageNavigation(GetitemNavigation):
     usedfor = IDistroArchSeriesBinaryPackage
 
 
-class DistroArchSeriesBinaryPackageView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+class DistroArchSeriesBinaryPackageView(LaunchpadView):
 
     @property
     def page_title(self):
