@@ -50,7 +50,7 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
     PackagePublishingStatus,
-    )
+    PackageCopyPolicy)
 from lp.soyuz.interfaces.archive import (
     ArchiveDependencyError,
     ArchiveDisabled,
@@ -69,6 +69,7 @@ from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.archivepermission import ArchivePermission
@@ -1965,3 +1966,39 @@ class TestSyncSource(TestCaseWithFactory):
             1,
             ubuntu.main_archive.getPublishedSources(
                 name=source.source_package_name).count())
+
+    def test_copyPackage_creates_packagecopyjob(self):
+        # The copyPackage method should create a PCJ with the appropriate
+        # parameters.
+        source_archive = self.factory.makeArchive()
+        target_archive = self.factory.makeArchive()
+        source = self.factory.makeSourcePackagePublishingHistory(
+            archive=source_archive)
+
+        source_name = source.source_package_name
+        version = source.version
+        to_pocket = self.factory.getAnyPocket()
+        to_series = self.factory.makeDistroSeries(
+            distribution=target_archive.distribution)
+        target_archive.copyPackages(
+            source_name, version, from_archive, to_pocket,
+            to_series=to_series, include_binaries=False)
+
+        # The source should not be published yet in the target_archive.
+        published = target_archive.getPublishedSources(
+            name=source.source_package_name).any()
+        self.assertIs(None, published)
+
+        # There should be one copy job.
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_job = job_source.getActiveJobs(target_archive).one()
+
+        # Its data should reflect the requested copy.
+        self.assertEqual(source_name, copy_job.package_name)
+        self.assertEqual(version, copy_job.package_version)
+        self.assertEqual(target_archive, copy_job.target_archive)
+        self.assertEqual(source_archive, copy_job.source_archive)
+        self.assertEqual(to_series, copy_job.target_distroseries)
+        self.assertEqual(to_pocket, copy_job.target_pocket)
+        self.assertFalse(copy_job.include_binaries)
+        self.assertEquals(PackageCopyPolicy.INSECURE, copy_job.copy_policy)
