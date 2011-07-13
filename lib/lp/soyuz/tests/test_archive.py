@@ -2026,6 +2026,23 @@ class TestSyncSource(TestCaseWithFactory):
             to_pocket, to_series=to_series, include_binaries=False,
             person=person)
 
+    def test_copyPackage_allows_primary_archive_uploaders(self):
+        # Copying to a primary archive if you're already an uploader is OK.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data(
+            target_purpose=ArchivePurpose.PRIMARY)
+        person = self.factory.makePerson()
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(person, "universe")
+        target_archive.copyPackage(
+            source_name, version, source_archive, to_pocket,
+            to_series=to_series, include_binaries=False,
+            person=person)
+
+        # There should be one copy job.
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_job = job_source.getActiveJobs(target_archive).one()
+        self.assertEqual(target_archive, copy_job.target_archive)
 
     def test_copyPackage_disallows_non_PPA_owners(self):
         # Only people with launchpad.Append are allowed to call copyPackage.
