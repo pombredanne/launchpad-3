@@ -294,7 +294,9 @@ class HWSubmissionSet:
         return result_set
 
     def search(self, user=None, device=None, driver=None, distribution=None,
-               distroseries=None, architecture=None, owner=None):
+               distroseries=None, architecture=None, owner=None,
+               created_before=None, created_after=None,
+               submitted_before=None, submitted_after=None):
         """See `IHWSubmissionSet`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         args = []
@@ -330,6 +332,14 @@ class HWSubmissionSet:
                 args.append(DistroArchSeries.distroseries == distroseries.id)
         if owner is not None:
             args.append(HWSubmission.owner == owner.id)
+        if created_before is not None:
+            args.append(HWSubmission.date_created <= created_before)
+        if created_after is not None:
+            args.append(HWSubmission.date_created > created_after)
+        if submitted_before is not None:
+            args.append(HWSubmission.date_submitted <= submitted_before)
+        if submitted_after is not None:
+            args.append(HWSubmission.date_submitted > submitted_after)
 
         result_set = store.find(
             HWSubmission,

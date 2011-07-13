@@ -43,12 +43,13 @@ from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
-from lp.bugs.browser.bug import BugViewMixin
 from lp.bugs.browser.structuralsubscription import (
     expose_structural_subscription_data_to_js,
     )
 from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
+from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
@@ -532,10 +533,14 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
     def subscriber_data_js(self):
         """Return subscriber_ids in a form suitable for JavaScript use."""
         data = []
-        details = list(self.context.getDirectSubscribersWithDetails())
+        if IBug.providedBy(self.context):
+            bug = self.context
+        elif IBugTask.providedBy(self.context):
+            bug = self.context.bug
+        details = list(bug.getDirectSubscribersWithDetails())
         api_request = IWebServiceClientRequest(self.request)
         for person, subscription in details:
-            can_edit = self.user is not None and self.user.inTeam(person)
+            can_edit = subscription.canBeUnsubscribedByUser(self.user)
             if person == self.user or (person.private and not can_edit):
                 # Skip the current user viewing the page,
                 # and private teams user is not a member of.
@@ -556,7 +561,7 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
                 }
             data.append(record)
 
-        others = list(self.context.getIndirectSubscribers())
+        others = list(bug.getIndirectSubscribers())
         for person in others:
             if person == self.user:
                 # Skip the current user viewing the page.

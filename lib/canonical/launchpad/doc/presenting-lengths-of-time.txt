@@ -3,7 +3,7 @@ Presenting Lengths of Time
 
 First, let's bring in some dependencies:
 
-   >>> from canonical.launchpad.ftests import test_tales
+   >>> from lp.testing import test_tales
    >>> from datetime import timedelta
 
 Exact Duration
@@ -113,31 +113,31 @@ fmt:approximateduration:
 
    >>> td = timedelta(seconds=55)
    >>> test_tales('td/fmt:approximateduration', td=td)
-   'a minute'
+   '1 minute'
    >>> td = timedelta(seconds=88.123)
    >>> test_tales('td/fmt:approximateduration', td=td)
-   'a minute'
+   '1 minute'
 
    >>> td = timedelta(seconds=90)
    >>> test_tales('td/fmt:approximateduration', td=td)
-   'two minutes'
+   '2 minutes'
    >>> td = timedelta(seconds=149.9181)
    >>> test_tales('td/fmt:approximateduration', td=td)
-   'two minutes'
+   '2 minutes'
 
    >>> td = timedelta(seconds=150)
    >>> test_tales('td/fmt:approximateduration', td=td)
-   'three minutes'
+   '3 minutes'
    >>> td = timedelta(seconds=199)
    >>> test_tales('td/fmt:approximateduration', td=td)
-   'three minutes'
+   '3 minutes'
 
    >>> td = timedelta(seconds=330)
    >>> test_tales('td/fmt:approximateduration', td=td)
-   'six minutes'
+   '6 minutes'
    >>> td = timedelta(seconds=375.1)
    >>> test_tales('td/fmt:approximateduration', td=td)
-   'six minutes'
+   '6 minutes'
 
    >>> td = timedelta(seconds=645)
    >>> test_tales('td/fmt:approximateduration', td=td)
@@ -156,11 +156,11 @@ fmt:approximateduration:
 
    >>> td = timedelta(seconds=3570)
    >>> test_tales('td/fmt:approximateduration', td=td)
-   'an hour'
+   '1 hour'
 
    >>> td = timedelta(seconds=3899.99999)
    >>> test_tales('td/fmt:approximateduration', td=td)
-   'an hour'
+   '1 hour'
 
    >>> td = timedelta(seconds=5100.181)
    >>> test_tales('td/fmt:approximateduration', td=td)
@@ -176,7 +176,7 @@ fmt:approximateduration:
 
    >>> td = timedelta(seconds=35850.2828)
    >>> test_tales('td/fmt:approximateduration', td=td)
-   'ten hours'
+   '10 hours'
 
    >>> td = timedelta(seconds=38000)
    >>> test_tales('td/fmt:approximateduration', td=td)
@@ -188,11 +188,11 @@ fmt:approximateduration:
 
    >>> td = timedelta(seconds=171000)
    >>> test_tales('td/fmt:approximateduration', td=td)
-   'two days'
+   '2 days'
 
    >>> td = timedelta(seconds=900000)
    >>> test_tales('td/fmt:approximateduration', td=td)
-   'ten days'
+   '10 days'
 
    >>> td = timedelta(seconds=1160000)
    >>> test_tales('td/fmt:approximateduration', td=td)
@@ -200,11 +200,11 @@ fmt:approximateduration:
 
    >>> td = timedelta(seconds=1500000)
    >>> test_tales('td/fmt:approximateduration', td=td)
-   'two weeks'
+   '2 weeks'
 
    >>> td = timedelta(seconds=6000000)
    >>> test_tales('td/fmt:approximateduration', td=td)
-   'ten weeks'
+   '10 weeks'
 
    >>> td = timedelta(seconds=6350400)
    >>> test_tales('td/fmt:approximateduration', td=td)

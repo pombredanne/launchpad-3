@@ -98,7 +98,7 @@ class CreateBugParams:
 
     def __init__(self, owner, title, comment=None, description=None, msg=None,
                  status=None, datecreated=None, security_related=False,
-                 private=False, subscribers=(), binarypackagename=None,
+                 private=False, subscribers=(),
                  tags=None, subscribe_owner=True, filed_by=None,
                  importance=None, milestone=None, assignee=None):
         self.owner = owner
@@ -114,7 +114,6 @@ class CreateBugParams:
         self.product = None
         self.distribution = None
         self.sourcepackagename = None
-        self.binarypackagename = binarypackagename
         self.tags = tags
         self.subscribe_owner = subscribe_owner
         self.filed_by = filed_by
@@ -1138,9 +1137,6 @@ class IBugSet(Interface):
 
           * if either product or distribution is specified, an appropiate
             bug task will be created
-
-          * binarypackagename, if not None, will be added to the bug's
-            description
         """
 
     def createBugWithoutTarget(bug_params):

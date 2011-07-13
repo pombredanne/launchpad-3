@@ -11,9 +11,6 @@ __all__ = [
     'MakesAnnouncements',
     ]
 
-import datetime
-
-import pytz
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -36,6 +33,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.services.utils import utc_now
 
 
 class Announcement(SQLBase):
@@ -125,8 +123,7 @@ class Announcement(SQLBase):
         """See `IAnnouncement`."""
         if self.date_announced is None:
             return True
-        return self.date_announced > \
-               datetime.datetime.utcnow().replace(tzinfo=pytz.utc)
+        return self.date_announced > utc_now()
 
     @property
     def published(self):

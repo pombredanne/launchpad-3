@@ -128,11 +128,6 @@ Make the uploaded orig file available to librarian lookups
     >>> import transaction
     >>> transaction.commit()
 
-Ensure the previous transaction is *really* in the database before the next
-test:
-
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(bar_src.queue_root)
 
 Uploading the same package again will result in a rejection email:
 
@@ -643,7 +638,7 @@ PackageUpload.notify() directly.  One of the arguments it can specify is
 dry_run, which when True will not send any emails.  It will also log at
 the INFO level what it /would/ have sent.
 
-    >>> random_package_upload = hoary.getQueueItems()[0]
+    >>> random_package_upload = hoary.getPackageUploads()[0]
     >>> random_package_upload.notify(dry_run=True, logger=FakeLogger())
     DEBUG Building recipients list.
     ...

@@ -11,17 +11,23 @@ __all__ = [
     'gatherResults',
     'no_traceback_failures',
     'suppress_stderr',
+    'run_reactor',
     ]
 
 
 import functools
+from signal import (
+    getsignal,
+    SIGCHLD,
+    signal,
+    )
 import StringIO
 import sys
 
 from twisted.internet import (
     defer,
-    threads,
     reactor as default_reactor,
+    threads,
     )
 from twisted.python.failure import Failure
 
@@ -112,6 +118,7 @@ def cancel_on_timeout(d, timeout, reactor=None):
     if reactor is None:
         reactor = default_reactor
     delayed_call = reactor.callLater(timeout, d.cancel)
+
     def cancel_timeout(passthrough):
         if not delayed_call.called:
             delayed_call.cancel()
@@ -121,7 +128,7 @@ def cancel_on_timeout(d, timeout, reactor=None):
 
 def no_traceback_failures(func):
     """Decorator to return traceback-less Failures instead of raising errors.
-    
+
     This is useful for functions used as callbacks or errbacks for a Deferred.
     Traceback-less failures are much faster than the automatic Failures
     Deferred constructs internally.
@@ -134,3 +141,12 @@ def no_traceback_failures(func):
             return Failure(e)
 
     return wrapped
+
+
+def run_reactor():
+    """Run the reactor and return with the SIGCHLD handler unchanged."""
+    handler = getsignal(SIGCHLD)
+    try:
+        default_reactor.run()
+    finally:
+        signal(SIGCHLD, handler)

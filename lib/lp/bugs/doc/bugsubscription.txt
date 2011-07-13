@@ -611,8 +611,8 @@ As user can't unsubscribe just anyone from a bug. To check whether
 someone can be unusubscribed, the canBeUnsubscribedByUser() method on
 the BugSubscription object is used.
 
-The user can of course unsubscribe himself, even if someone else
-subscribed him.
+The user can of course unsubscribe themselves, even if someone else
+subscribed them.
 
     >>> bug = factory.makeBug()
     >>> subscriber = factory.makePerson()
@@ -621,13 +621,18 @@ subscribed him.
     >>> subscription.canBeUnsubscribedByUser(subscriber)
     True
 
-The one who subscribed the subscriber doesn't have permission to
-unsubscribe him.
+The one who subscribed the subscriber does have permission to
+unsubscribe them.
 
     >>> subscription.canBeUnsubscribedByUser(subscribed_by)
-    False
+    True
 
-The anonymous user (represented by None) also can't unsubscribe him.
+Launchpad administrators can also unsubscribe them.
+
+    >>> subscription.canBeUnsubscribedByUser(foobar)
+    True
+
+The anonymous user (represented by None) also can't unsubscribe them.
 
     >>> subscription.canBeUnsubscribedByUser(None)
     False

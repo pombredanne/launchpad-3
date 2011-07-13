@@ -140,6 +140,11 @@ class IPackageUpload(Interface):
     package_copy_job = Reference(
         schema=IPackageCopyJob,
         description=_("The PackageCopyJob for this upload, if it has one."),
+        title=_("Raw Package Copy Job"), required=False, readonly=True)
+
+    concrete_package_copy_job = Reference(
+        schema=IPackageCopyJob,
+        description=_("Concrete IPackageCopyJob implementation, if any."),
         title=_("Package Copy Job"), required=False, readonly=True)
 
     archive = exported(
@@ -614,9 +619,10 @@ class IPackageUploadSet(Interface):
                name=None, version=None, exact_match=False):
         """Get package upload records for a series with optional filtering.
 
+        :param status: Filter results by this `PackageUploadStatus`, or list
+            of statuses.
         :param created_since_date: If specified, only returns items uploaded
             since the timestamp supplied.
-        :param status: Filter results by this `PackageUploadStatus`
         :param archive: Filter results for this `IArchive`
         :param pocket: Filter results by this `PackagePublishingPocket`
         :param custom_type: Filter results by this `PackageUploadCustomFormat`
@@ -659,28 +665,3 @@ class IHasQueueItems(Interface):
 
     def getPackageUploadQueue(state):
         """Return an IPackageUploadeQueue occording the given state."""
-
-    def getQueueItems(status=None, name=None, version=None,
-                      exact_match=False, pocket=None, archive=None):
-        """Get the union of builds, sources and custom queue items.
-
-        Returns builds, sources and custom queue items in a given state,
-        matching a give name and version terms.
-
-        If 'status' is not supplied, return all items in the queues,
-        it supports multiple statuses as a list.
-
-        If 'name' and 'version' are supplied only items which match (SQL LIKE)
-        the sourcepackage name, binarypackage name or the filename will be
-        returned.  'name' can be supplied without supplying 'version'.
-        'version' has no effect on custom queue items.
-
-        If 'pocket' is specified return only queue items inside it, otherwise
-        return all pockets.  It supports multiple pockets as a list.
-
-        If 'archive' is specified return only queue items targeted to this
-        archive, if not restrict the results to the
-        IDistribution.main_archive.
-
-        Use 'exact_match' argument for precise results.
-        """

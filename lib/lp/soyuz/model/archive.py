@@ -59,6 +59,7 @@ from canonical.launchpad.components.decoratedresultset import (
     )
 from canonical.launchpad.components.tokens import (
     create_unique_token_for_table,
+    create_token,
     )
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
@@ -88,6 +89,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -128,7 +130,6 @@ from lp.soyuz.interfaces.archive import (
     CannotUploadToPPA,
     ComponentNotFound,
     default_name_by_purpose,
-    DistroSeriesNotFound,
     FULL_COMPONENT_SUPPORT,
     IArchive,
     IArchiveSet,
@@ -271,7 +272,7 @@ class Archive(SQLBase):
 
     publish = BoolCol(dbName='publish', notNull=True, default=True)
 
-    private = BoolCol(dbName='private', notNull=True, default=False,
+    _private = BoolCol(dbName='private', notNull=True, default=False,
                       storm_validator=_validate_archive_privacy)
 
     require_virtualized = BoolCol(
@@ -335,6 +336,22 @@ class Archive(SQLBase):
             alsoProvides(self, IPPA)
         else:
             alsoProvides(self, IDistributionArchive)
+
+    # Note: You may safely ignore lint when it complains about this
+    # declaration.  As of Python 2.6, this is a perfectly valid way
+    # of adding a setter
+    @property
+    def private(self):
+        return self._private
+
+    @private.setter
+    def private(self, private):
+        self._private = private
+        if private:
+            if not self.buildd_secret:
+                self.buildd_secret = create_token(20)
+        else:
+            self.buildd_secret = None
 
     @property
     def title(self):
@@ -495,12 +512,17 @@ class Archive(SQLBase):
             ]
 
         if name is not None:
-            if exact_match:
-                storm_clauses.append(SourcePackageName.name == name)
-            else:
+            if type(name) in (str, unicode):
+                if exact_match:
+                    storm_clauses.append(SourcePackageName.name == name)
+                else:
+                    clauses.append(
+                        "SourcePackageName.name LIKE '%%%%' || %s || '%%%%'"
+                        % quote_like(name))
+            elif len(name) != 0:
                 clauses.append(
-                    "SourcePackageName.name LIKE '%%%%' || %s || '%%%%'"
-                    % quote_like(name))
+                    "SourcePackageName.name IN %s"
+                    % sqlvalues(name))
 
         if version is not None:
             if name is None:
@@ -1534,8 +1556,8 @@ class Archive(SQLBase):
         # Convert the to_pocket string to its enum.
         try:
             pocket = PackagePublishingPocket.items[to_pocket.upper()]
-        except KeyError, error:
-            raise PocketNotFound(error)
+        except KeyError:
+            raise PocketNotFound(to_pocket.upper())
 
         # Fail immediately if the destination pocket is not Release and
         # this archive is a PPA.
@@ -1548,7 +1570,7 @@ class Archive(SQLBase):
             result = getUtility(IDistroSeriesSet).queryByName(
                 self.distribution, to_series)
             if result is None:
-                raise DistroSeriesNotFound(to_series)
+                raise NoSuchDistroSeries(to_series)
             series = result
         else:
             series = None
@@ -1810,6 +1832,12 @@ class Archive(SQLBase):
 
     enabled_restricted_families = property(_getEnabledRestrictedFamilies,
                                            _setEnabledRestrictedFamilies)
+
+    def enableRestrictedFamily(self, family):
+        """See `IArchive`."""
+        restricted = set(self.enabled_restricted_families)
+        restricted.add(family)
+        self.enabled_restricted_families = restricted
 
     @classmethod
     def validatePPA(self, person, proposed_name):
@@ -2205,7 +2233,7 @@ class ArchiveSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(
             Archive,
-            Archive.private == True,
+            Archive._private == True,
             Archive.purpose == ArchivePurpose.PPA)
 
     def getCommercialPPAs(self):
@@ -2233,7 +2261,7 @@ class ArchiveSet:
         if name is not None:
             extra_exprs.append(Archive.name == name)
 
-        public_archive = And(Archive.private == False,
+        public_archive = And(Archive._private == False,
                              Archive._enabled == True)
 
         if user is not None:

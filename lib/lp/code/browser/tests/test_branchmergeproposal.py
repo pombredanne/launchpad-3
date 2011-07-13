@@ -18,14 +18,20 @@ import unittest
 
 import pytz
 from soupmatchers import HTMLContains, Tag
-from testtools.matchers import Not
+from testtools.matchers import (
+    MatchesRegex,
+    Not,
+    )
 import transaction
 from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from lp.services.messages.model.message import MessageSet
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
+from canonical.launchpad.webapp.interfaces import (
+    BrowserNotificationLevel,
+    IPrimaryContext,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
@@ -585,15 +591,32 @@ class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
     def test_resubmit_action_break_link(self):
         """Enabling break_link prevents linking the old and new proposals."""
         view = self.createView()
+        new_proposal = self.resubmitDefault(view, break_link=True)
+        self.assertIs(None, new_proposal.supersedes)
+
+    @staticmethod
+    def resubmitDefault(view, break_link=False):
         context = view.context
-        new_proposal = view.resubmit_action.success(
+        return view.resubmit_action.success(
             {'source_branch': context.source_branch,
              'target_branch': context.target_branch,
              'prerequisite_branch': context.prerequisite_branch,
              'description': None,
-             'break_link': True,
+             'break_link': break_link,
             })
-        self.assertIs(None, new_proposal.supersedes)
+
+    def test_resubmit_existing(self):
+        """Resubmitting a proposal when another is active is a user error."""
+        view = self.createView()
+        first_bmp = view.context
+        with person_logged_in(first_bmp.target_branch.owner):
+            first_bmp.resubmit(first_bmp.registrant)
+        self.resubmitDefault(view)
+        (notification,) = view.request.response.notifications
+        self.assertThat(
+            notification.message, MatchesRegex('Cannot resubmit because'
+            ' <a href=.*>a similar merge proposal</a> is already active.'))
+        self.assertEqual(BrowserNotificationLevel.ERROR, notification.level)
 
 
 class TestResubmitBrowser(BrowserTestCase):
@@ -1004,7 +1027,7 @@ class TestBranchMergeProposal(BrowserTestCase):
         parent = add_revision_to_branch(self.factory, source_branch,
             self.factory.getUniqueDate()).revision
         bmp = self.factory.makeBranchMergeProposal(registrant=self.user,
-            date_created = self.factory.getUniqueDate(),
+            date_created=self.factory.getUniqueDate(),
             source_branch=source_branch)
         revision = add_revision_to_branch(self.factory, bmp.source_branch,
             self.factory.getUniqueDate()).revision
@@ -1051,7 +1074,7 @@ class TestLatestProposalsForEachBranch(TestCaseWithFactory):
             date_created=(
                 datetime(year=2008, month=9, day=10, tzinfo=pytz.UTC)))
         bmp2 = self.factory.makeBranchMergeProposal(
-            target_branch = bmp1.target_branch,
+            target_branch=bmp1.target_branch,
             date_created=(
                 datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
         self.assertEqual(

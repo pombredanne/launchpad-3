@@ -149,7 +149,7 @@ We'll get back to that uploaded file later.
 An upload to the RELEASE pocket will add items to the import queue:
 
     >>> from lp.soyuz.enums import PackageUploadStatus
-    >>> queue_item = dapper.getQueueItems(
+    >>> queue_item = dapper.getPackageUploads(
     ...     status=PackageUploadStatus.NEW)[0]
     >>> queue_item.customfiles[0].publish()
 
@@ -183,7 +183,7 @@ An upload to the BACKPORTS pocket will not add items to the import queue:
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> dapper = distro_series_set.queryByName(ubuntu, 'dapper')
-    >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
+    >>> queue_item = dapper.getPackageUploads(PackageUploadStatus.NEW)[0]
     >>> queue_item.pocket = PackagePublishingPocket.BACKPORTS
     >>> queue_item.customfiles[0].publish()
 
@@ -199,7 +199,7 @@ But an upload to the UPDATE pocket will add items to the import queue:
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> dapper = distro_series_set.queryByName(ubuntu, 'dapper')
-    >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
+    >>> queue_item = dapper.getPackageUploads(PackageUploadStatus.NEW)[0]
     >>> queue_item.pocket = PackagePublishingPocket.UPDATES
     >>> queue_item.customfiles[0].publish()
 
@@ -229,7 +229,7 @@ Uploads to restricted component are accepted too.
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> dapper = distro_series_set.queryByName(ubuntu, 'dapper')
     >>> restricted_component = getUtility(IComponentSet)['restricted']
-    >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
+    >>> queue_item = dapper.getPackageUploads(PackageUploadStatus.NEW)[0]
 
 # Change the component where this package was attached.
     >>> queue_item.builds[0].build.source_package_release.override(
@@ -262,7 +262,7 @@ But the ones into universe are not accepted.
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> dapper = distro_series_set.queryByName(ubuntu, 'dapper')
     >>> universe_component = getUtility(IComponentSet)['universe']
-    >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
+    >>> queue_item = dapper.getPackageUploads(PackageUploadStatus.NEW)[0]
 
 # Change the component where this package was attached.
     >>> queue_item.builds[0].build.source_package_release.override(
@@ -294,7 +294,7 @@ Distribution archives (i.e. PPAs).
     ...     owner=getUtility(IPersonSet).getByName('name16'))
 
     >>> dapper = getUtility(IDistributionSet)['ubuntu']['dapper']
-    >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
+    >>> queue_item = dapper.getPackageUploads(PackageUploadStatus.NEW)[0]
     >>> queue_item.archive = foobar_archive
 
     >>> queue_item.customfiles[0].publish(FakeLogger())
@@ -323,7 +323,7 @@ Translations coming from rebuilt packages are also ignored.
     ...     name='rebuilds')
 
     >>> dapper = getUtility(IDistributionSet)['ubuntu']['dapper']
-    >>> queue_item = dapper.getQueueItems(status=PackageUploadStatus.NEW)[0]
+    >>> queue_item = dapper.getPackageUploads(PackageUploadStatus.NEW)[0]
     >>> queue_item.archive = foobar_archive
 
     >>> queue_item.customfiles[0].publish(FakeLogger())

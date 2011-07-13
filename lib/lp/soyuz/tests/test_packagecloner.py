@@ -68,7 +68,8 @@ class PackageClonerTests(TestCaseWithFactory):
         """Create a DistroSeries suitable for copying.
 
         Creates a distroseries with a DistroArchSeries and nominatedarchindep,
-        which makes it suitable for copying because it will create some builds.
+        which makes it suitable for copying because it will create some
+        builds.
         """
         distro_name = "foobuntu"
         distro = self.factory.makeDistribution(name=distro_name)

@@ -23,6 +23,7 @@ __all__ = [
 
 import apt_pkg
 from lazr.restful.interface import copy_field
+from lazr.restful.interfaces import IJSONRequestCache
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
@@ -92,7 +93,9 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
-from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseries import (
+    IDistroSeries,
+    )
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
@@ -276,7 +279,7 @@ class DistroSeriesOverviewMenu(
         text = 'Show uploads'
         return Link('+queue', text, icon='info')
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Edit')
     def initseries(self):
         enabled = (
              getFeatureFlag('soyuz.derived_series_ui.enabled') is not None and
@@ -619,6 +622,12 @@ class DistroSeriesAddView(LaunchpadFormView):
     @action(_('Add Series'), name='create')
     def createAndAdd(self, action, data):
         """Create and add a new Distribution Series"""
+        # 'series' is a cached property so this won't issue 2 queries.
+        if self.context.series:
+            previous_series = self.context.series[0]
+        else:
+            previous_series = None
+        # previous_series will be None if there isn't one.
         distroseries = self.context.newSeries(
             name=data['name'],
             displayname=data['displayname'],
@@ -626,7 +635,7 @@ class DistroSeriesAddView(LaunchpadFormView):
             summary=data['summary'],
             description=u"",
             version=data['version'],
-            previous_series=None,
+            previous_series=previous_series,
             registrant=self.user)
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)
@@ -635,6 +644,17 @@ class DistroSeriesAddView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+
+def seriesToVocab(series):
+    # Simple helper function to format series data into a dict:
+    # {'value':series_id, 'api_uri': api_uri, 'title': series_title}.
+    return {
+        'value': series.id,
+        'title': '%s: %s'
+            % (series.distribution.displayname, series.title),
+        'api_uri': canonical_url(
+            series, path_only_if_possible=True)}
 
 
 class EmptySchema(Interface):
@@ -647,6 +667,20 @@ class DistroSeriesInitializeView(LaunchpadFormView):
     schema = EmptySchema
     label = 'Initialize series'
     page_title = label
+
+    def initialize(self):
+        super(DistroSeriesInitializeView, self).initialize()
+        cache = IJSONRequestCache(self.request).objects
+        distribution = self.context.distribution
+        is_first_derivation = not distribution.has_published_sources
+        cache['is_first_derivation'] = is_first_derivation
+        if (not is_first_derivation and
+            self.context.previous_series is not None):
+            cache['previous_series'] = seriesToVocab(
+                self.context.previous_series)
+            previous_parents = self.context.previous_series.getParentSeries()
+            cache['previous_parents'] = [
+                seriesToVocab(series) for series in previous_parents]
 
     @action(u"Initialize Series", name='initialize')
     def submit(self, action, data):
@@ -664,8 +698,19 @@ class DistroSeriesInitializeView(LaunchpadFormView):
     def show_derivation_form(self):
         return (
             self.is_derived_series_feature_enabled and
+            not self.show_previous_series_empty_message and
             not self.context.isInitializing() and
             not self.context.isInitialized())
+
+    @property
+    def show_previous_series_empty_message(self):
+        # There is a problem here:
+        # The distribution already has initialized series and this
+        # distroseries has no previous_series.
+        return (
+            self.is_derived_series_feature_enabled and
+            self.context.distribution.has_published_sources and
+            self.context.previous_series is None)
 
     @property
     def show_already_initialized_message(self):
@@ -678,13 +723,6 @@ class DistroSeriesInitializeView(LaunchpadFormView):
         return (
             self.is_derived_series_feature_enabled and
             self.context.isInitializing())
-
-    @property
-    def rebuilding_allowed(self):
-        """If the distribution has got any initialized series already,
-        rebuilding is not allowed.
-        """
-        return not self.context.distribution.has_published_sources
 
     @property
     def next_url(self):
@@ -860,6 +898,13 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             # The copy worked so we can redirect back to the page to
             # show the results.
             self.next_url = self.request.URL
+
+    @property
+    def action_url(self):
+        """The forms should post to themselves, including GET params to
+        account for batch parameters.
+        """
+        return "%s?%s" % (self.request.getURL(), self.request['QUERY_STRING'])
 
     def validate_sync(self, action, data):
         """Validate selected differences."""

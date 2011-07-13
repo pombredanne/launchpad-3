@@ -51,18 +51,14 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
-    Count,
     Desc,
-    Exists,
     In,
-    Join,
     LeftJoin,
     Max,
     Not,
     Or,
     Select,
     SQL,
-    SQLRaw,
     Sum,
     Union,
     )
@@ -171,7 +167,6 @@ from lp.bugs.model.bugtarget import OfficialBugTag
 from lp.bugs.model.bugtask import (
     BugTask,
     bugtask_sort_key,
-    get_bug_privacy_filter,
     )
 from lp.bugs.model.bugwatch import BugWatch
 from lp.bugs.model.structuralsubscription import (
@@ -230,7 +225,7 @@ def snapshot_bug_params(bug_params):
         bug_params, names=[
             "owner", "title", "comment", "description", "msg",
             "datecreated", "security_related", "private",
-            "distribution", "sourcepackagename", "binarypackagename",
+            "distribution", "sourcepackagename",
             "product", "status", "subscribers", "tags",
             "subscribe_owner", "filed_by", "importance",
             "milestone", "assignee"])
@@ -271,8 +266,9 @@ def get_bug_tags_open_count(context_condition, user, tag_limit=0,
     The only change is that this function takes a SQL expression for limiting
     the found tags.
     :param context_condition: A Storm SQL expression, limiting the
-        used tags to a specific context. Only the BugTask table may be
-        used to choose the context.
+        used tags to a specific context. Only the BugSummary table may be
+        used to choose the context. If False then no query will be performed
+        (and {} returned).
     """
     # Circular fail.
     from lp.bugs.model.bugsummary import BugSummary
@@ -300,6 +296,7 @@ def get_bug_tags_open_count(context_condition, user, tag_limit=0,
                 ))
     sum_count = Sum(BugSummary.count)
     tag_count_columns = (BugSummary.tag, sum_count)
+
     # Always query for used
     def _query(*args):
         return store.find(tag_count_columns, *(where_conditions + list(args))
@@ -2537,13 +2534,6 @@ class BugSet:
         assert params.comment is None or params.msg is None, (
             "Expected either a comment or a msg, but got both.")
 
-        # Store binary package name in the description, because
-        # storing it as a separate field was a maintenance burden to
-        # developers.
-        if params.binarypackagename:
-            params.comment = "Binary package hint: %s\n\n%s" % (
-                params.binarypackagename.name, params.comment)
-
         # Create the bug comment if one was given.
         if params.comment:
             rfc822msgid = make_msgid('malonedeb')
@@ -2612,7 +2602,7 @@ class BugSet:
         # one source package, it will be returned more than one time. 4
         # is an arbitrary number that should be large enough.
         bugs = []
-        for bug_task in bug_tasks[:4*limit]:
+        for bug_task in bug_tasks[:4 * limit]:
             bug = bug_task.bug
             duplicateof = bug.duplicateof
             if duplicateof is not None:

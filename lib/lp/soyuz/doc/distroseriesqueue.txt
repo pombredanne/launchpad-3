@@ -84,7 +84,7 @@ convert it to an ACCEPTED item.
     >>> from lp.soyuz.enums import PackageUploadStatus
     >>> from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 
-    >>> new_queue = hoary.getQueueItems(PackageUploadStatus.NEW)
+    >>> new_queue = hoary.getPackageUploads(PackageUploadStatus.NEW)
 
 Use state-machine method provided by PackageUpload to ACCEPT an
 upload. If some designed check according the request state do not
@@ -100,7 +100,7 @@ XXX cprov 20051209: need to build a broken upload to test it properly
     ...     except QueueInconsistentStateError, info:
     ...         print info
 
-    >>> accepted_queue = hoary.getQueueItems(PackageUploadStatus.ACCEPTED)
+    >>> accepted_queue = hoary.getPackageUploads(PackageUploadStatus.ACCEPTED)
 
     >>> from lp.services.log.logger import FakeLogger
     >>> for item in accepted_queue:
@@ -300,163 +300,11 @@ and sponsored by 'Foo Bar'.
 IHasQueueItems
 --------------
 
-Explore the queue features of a DistroSeries instance, let's check
-some usages of IHasQueueItems.getQueueItems, which returns a list
-of IPackageUpload entries.
-
-    >>> new_items = breezy_autotest.getQueueItems(
-    ...    PackageUploadStatus.NEW)
-    >>> new_items.count()
-    6
-
-Invetigate the queue entries type:
-
-    >>> for n in new_items:
-    ...     n.builds.count(), n.sources.count()
-    (0, 0)
-    (0, 0)
-    (0, 1)
-    (0, 1)
-    (1, 0)
-    (1, 0)
-
-Exercises build side of getQueueItems, Retrieve queue entry for a
-name like 'moz':
-
-    >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
-    ...                                            name='moz')
-    >>> items.count()
-    1
-
-    >>> items[0].builds[0].build.binarypackages[0].name
-    u'mozilla-firefox'
-    >>> items[0].builds[0].build.binarypackages[0].version
-    u'0.9'
-
-Got a distroseries build queue entry for 'mozilla-firefox_0.9'
-
-Try with version:
-
-    >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
-    ...                                            name='moz', version='0.9')
-    >>> items.count()
-    1
-
-    >>> items[0].builds[0].build.binarypackages[0].name
-    u'mozilla-firefox'
-    >>> items[0].builds[0].build.binarypackages[0].version
-    u'0.9'
-
-Got the same queue entry.
-
-Let's try another entry where binary package name is LIKE 'pmount'
-
-    >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
-    ...                                            name='pmount')
-    >>> items.count()
-    1
-
-    >>> items[0].builds[0].build.binarypackages[0].name
-    u'pmount'
-    >>> items[0].builds[0].build.binarypackages[0].version
-    u'0.1-1'
-
-Got 'pmount_0.1-1'.
-
-Look for every queue entry which package name is like 'mo'
-
-    >>> items = breezy_autotest.getQueueItems(
-    ...     PackageUploadStatus.NEW, name='mo')
-    >>> items.count()
-    2
-
-XXX bug 537335, getQueueItems() fails to order properly so do it here
-to avoid spurious test failures:
-
-    >>> from operator import attrgetter
-    >>> for item in sorted(list(items), key=attrgetter('displayname')):
-    ...     a_binary = item.builds[0].build.binarypackages[0]
-    ...     print item.displayname
-    mozilla-firefox
-    pmount
-
-Got both sampledata results 'p_mo_unt' & '_mo_zilla-firefox'
-
-Try 'exact_match' for 'mozil_0.0.1'
-
-    >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW,
-    ...                 name='mozil', version='0.0.1', exact_match=True)
-    >>> items.count()
-    0
-
-There is no match on queue entries.
-
-Try to match custom uploads by filename, there is one sampledata
-custom upload in UNAPPROVED queue.
-
-    >>> items = breezy_autotest.getQueueItems(
-    ...      PackageUploadStatus.UNAPPROVED)
-    >>> items.count()
-    5
-
-We can't retrieve it with a 'what' substring:
-
-    >>> items = breezy_autotest.getQueueItems(
-    ...      PackageUploadStatus.UNAPPROVED, name='what')
-    >>> items.count()
-    0
-
-But it works with the right substring 'net' from 'netapplet.tar.gz'
-
-    >>> items = breezy_autotest.getQueueItems(
-    ...      PackageUploadStatus.UNAPPROVED, name='net')
-    >>> items.count()
-    2
-
-
-Also check the optional argument pocket:
-
-    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-
-    >>> breezy_autotest.getQueueItems(
-    ...      pocket=PackagePublishingPocket.RELEASE).count()
-    10
-
-    >>> breezy_autotest.getQueueItems(
-    ...      pocket=PackagePublishingPocket.UPDATES).count()
-    1
-
-Ensure list of pockets is also valid:
-
-    >>> breezy_autotest.getQueueItems(
-    ...      pocket=[PackagePublishingPocket.UPDATES,
-    ...              PackagePublishingPocket.RELEASE]).count()
-    11
-
-
-Check if association of status and pocket arguments works well:
-
-    >>> breezy_autotest.getQueueItems(
-    ...      PackageUploadStatus.UNAPPROVED,
-    ...      pocket=PackagePublishingPocket.UPDATES).count()
-    1
-
-    >>> breezy_autotest.getQueueItems(
-    ...      PackageUploadStatus.NEW,
-    ...      pocket=PackagePublishingPocket.UPDATES).count()
-    0
-
-    >>> breezy_autotest.getQueueItems(
-    ...      [PackageUploadStatus.NEW, PackageUploadStatus.UNAPPROVED],
-    ...      pocket=PackagePublishingPocket.UPDATES).count()
-    1
-
 Check State Machine over PackageUploadBuilds:
 
 Performing full acceptance:
 
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW)
+    >>> items = breezy_autotest.getPackageUploads(PackageUploadStatus.NEW)
     >>> for item in items:
     ...      try:
     ...          item.setAccepted()
@@ -464,7 +312,6 @@ Performing full acceptance:
     ...          print item.displayname, e
     ...      else:
     ...          print item.displayname, item.status.name
-    ...      syncUpdate(item)
     netapplet-1.0.0.tar.gz ACCEPTED
     netapplet-1.0.0.tar.gz ACCEPTED
     alsa-utils ACCEPTED
@@ -474,11 +321,11 @@ Performing full acceptance:
 
 Move the ACCEPTED items back to NEW.
 
-    >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.ACCEPTED)
+    >>> items = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.ACCEPTED)
     >>> for item in items:
     ...     item.setNew()
     ...     print item.displayname, item.status.name
-    ...     syncUpdate(item)
     netapplet-1.0.0.tar.gz NEW
     netapplet-1.0.0.tar.gz NEW
     alsa-utils NEW
@@ -488,7 +335,7 @@ Move the ACCEPTED items back to NEW.
 
 Check if the state machine methods raise when trying to set the same state:
 
-    >>> items = breezy_autotest.getQueueItems(PackageUploadStatus.NEW)
+    >>> items = breezy_autotest.getPackageUploads(PackageUploadStatus.NEW)
     >>> for item in items:
     ...      try:
     ...          item.setNew()
@@ -521,8 +368,8 @@ Check forbidden approval of not selected Section:
 
 Retrieve mozilla-firefox Upload:
 
-    >>> item = breezy_autotest.getQueueItems(
-    ...     PackageUploadStatus.NEW, name='mozilla')[0]
+    >>> item = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.NEW, name=u'mozilla')[0]
 
 Override the mozilla-firefox component to fresh created 'hell' component.
 
@@ -542,8 +389,8 @@ XXX cprov 20060118: remove proxy magic is required for BPR instances.
 Check how we treat source upload duplications in UNAPPROVED queue (NEW
 has a similar behaviour):
 
-    >>> dups = breezy_autotest.getQueueItems(
-    ...     PackageUploadStatus.UNAPPROVED, name='cnews')
+    >>> dups = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.UNAPPROVED, name=u'cnews')
     >>> dups.count()
     2
     >>> dup_one, dup_two = list(dups)
@@ -616,8 +463,8 @@ for such a unimportant issue.
 Retrieve the 'pmount' NEW queue entry and override it with a
 just-created, thus unofficial, section named 'boing'.
 
-    >>> item = breezy_autotest.getQueueItems(
-    ...     PackageUploadStatus.NEW, name='pmount')[0]
+    >>> item = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.NEW, name=u'pmount')[0]
 
     >>> pmount_binary = item.builds[0].build.binarypackages[0]
     >>> removeSecurityProxy(
@@ -691,30 +538,26 @@ Clear existing mail stack:
     >>> from lp.testing.mail_helpers import pop_notifications
     >>> rubbish = pop_notifications()
 
-As mentioned above, values returned by 'getQueueItems' matching a given
+As mentioned above, values returned by getPackageUploads matching a given
 'name' and 'version' may contain different types of uploads.
 
 Sampledata contains only a i386 binary exactly matching 'pmount 0.1-1'.
 
+    >>> from operator import attrgetter
     >>> def print_queue_items(queue_items):
-    ...     # XXX StuartBishop 20100311 bug=537335
-    ...     # Sort items here as getQueueItems fails to do this.
-    ...     queue_items = sorted(list(queue_items),
-    ...         key=attrgetter(
-    ...             'displayarchs', 'displayname', 'displayversion'))
     ...     for queue_item in queue_items:
     ...         print "%s  %s  %s" % (
     ...             queue_item.displayname, queue_item.displayversion,
     ...             queue_item.displayarchs)
 
-    >>> queue_items = breezy_autotest.getQueueItems(
-    ...     PackageUploadStatus.NEW, name='pmount', version='0.1-1',
+    >>> queue_items = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.NEW, name=u'pmount', version=u'0.1-1',
     ...     exact_match=True)
     >>> print_queue_items(queue_items)
     pmount  0.1-1  i386
 
-We will setup a very peculiar environment to test this aspect of
-`getQueueItems`. First we will include another a non-matching source
+We will set up a very peculiar environment to test this aspect of
+`getPackageUploads`. First we will include another a non-matching source
 version of pmount (0.1-2) into the binary pmount upload we already
 have in the sampledata.
 
@@ -727,8 +570,8 @@ have in the sampledata.
 'pmount 0.1-1' binary upload continues to be returned when we query
 the queue for 'pmount 0.1-1', via the existing binary path.
 
-    >>> queue_items = breezy_autotest.getQueueItems(
-    ...     PackageUploadStatus.NEW, name='pmount', version='0.1-1',
+    >>> queue_items = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.NEW, name=u'pmount', version=u'0.1-1',
     ...     exact_match=True)
     >>> print_queue_items(queue_items)
     pmount  0.1-1  i386
@@ -736,6 +579,7 @@ the queue for 'pmount 0.1-1', via the existing binary path.
 Also, when we can create a source 'pmount 0.1-1' upload in the
 breezy-autotest context. It also becomes part of the lookup results.
 
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> candidate_queue = breezy_autotest.createQueueEntry(
     ...     PackagePublishingPocket.RELEASE,
     ...     breezy_autotest.main_archive,
@@ -744,12 +588,12 @@ breezy-autotest context. It also becomes part of the lookup results.
     >>> unused = candidate_queue.addSource(
     ...     matching_pmount.sourcepackagerelease)
 
-    >>> queue_items = breezy_autotest.getQueueItems(
-    ...     PackageUploadStatus.NEW, name='pmount', version='0.1-1',
+    >>> queue_items = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.NEW, name=u'pmount', version=u'0.1-1',
     ...     exact_match=True)
     >>> print_queue_items(queue_items)
-    pmount  0.1-1  i386
     pmount  0.1-1  source
+    pmount  0.1-1  i386
 
 It means that call sites querying the upload queue should be aware of
 this aspect and filter the results appropriately.
@@ -766,9 +610,9 @@ is a 'pmount 0.1-1' binary upload already accepted in its context.
     >>> [binary_item, source_item] = queue_items
     >>> binary_item.setAccepted()
 
-    >>> queue_items = breezy_autotest.getQueueItems(
-    ...     PackageUploadStatus.ACCEPTED, name='pmount', version='0.1-1',
-    ...     exact_match=True)
+    >>> queue_items = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.ACCEPTED, name=u'pmount',
+    ...     version=u'0.1-1', exact_match=True)
     >>> print_queue_items(queue_items)
     pmount  0.1-1  i386
 
@@ -778,12 +622,12 @@ Binary accepted, let's accept the source.
 
 Both uploads are waiting to be published.
 
-    >>> queue_items = breezy_autotest.getQueueItems(
-    ...     PackageUploadStatus.ACCEPTED, name='pmount', version='0.1-1',
-    ...     exact_match=True)
+    >>> queue_items = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.ACCEPTED, name=u'pmount',
+    ...     version='0.1-1', exact_match=True)
     >>> print_queue_items(queue_items)
-    pmount  0.1-1  i386
     pmount  0.1-1  source
+    pmount  0.1-1  i386
 
 Let's publish them.
 
@@ -809,8 +653,8 @@ QueueInconsistentStateError is raised.
 The alsa-utils source is already in the queue with component "main"
 and section "base".
 
-    >>> [item] = breezy_autotest.getQueueItems(
-    ...     PackageUploadStatus.NEW, name='alsa-utils')
+    >>> [item] = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.NEW, name=u'alsa-utils')
     >>> [source] = item.sources
     >>> print "%s/%s" % (
     ...     source.sourcepackagerelease.component.name,
@@ -829,7 +673,7 @@ an error:
     ...     allowed_components=(universe,))
     Traceback (most recent call last):
     ...
-    QueueInconsistentStateError: No rights to override from main to restricted
+    QueueInconsistentStateError: No rights to override to restricted
 
 Allowing "restricted" still won't work because the original component
 is "main":
@@ -839,7 +683,7 @@ is "main":
     ...     allowed_components=(restricted,))
     Traceback (most recent call last):
     ...
-    QueueInconsistentStateError: No rights to override from main to restricted
+    QueueInconsistentStateError: No rights to override from main
 
 Specifying both main and restricted allows the override to restricted/web.
 overrideSource() returns True if it completed the task.
@@ -855,8 +699,8 @@ overrideSource() returns True if it completed the task.
 
 Similarly for binaries:
 
-    >>> [item] = breezy_autotest.getQueueItems(
-    ...     PackageUploadStatus.NEW, name='pmount')
+    >>> [item] = breezy_autotest.getPackageUploads(
+    ...     PackageUploadStatus.NEW, name=u'pmount')
     >>> [build] = item.builds
     >>> [binary_package] = build.build.binarypackages
     >>> print "%s/%s/%s" % (
@@ -873,7 +717,7 @@ Similarly for binaries:
     ...     allowed_components=(universe,))
     Traceback (most recent call last):
     ...
-    QueueInconsistentStateError: No rights to override from main to restricted
+    QueueInconsistentStateError: No rights to override to restricted
 
     >>> print item.overrideBinaries(
     ...     new_component=restricted,
@@ -882,7 +726,7 @@ Similarly for binaries:
     ...     allowed_components=(restricted,))
     Traceback (most recent call last):
     ...
-    QueueInconsistentStateError: No rights to override from main to restricted
+    QueueInconsistentStateError: No rights to override from main
 
     >>> print item.overrideBinaries(
     ...     new_component=restricted,
