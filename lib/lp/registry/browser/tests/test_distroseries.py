@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from datetime import timedelta
 import difflib
 import re
 from textwrap import TextWrapper
@@ -28,9 +29,13 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.testing.pages import find_tag_by_id
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interaction import get_current_principal
@@ -50,7 +55,6 @@ from lp.registry.browser.distroseries import (
     RESOLVED,
     seriesToVocab,
     )
-from canonical.config import config
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
@@ -62,6 +66,7 @@ from lp.services.features import (
     getFeatureFlag,
     )
 from lp.services.features.testing import FeatureFixture
+from lp.services.utils import utc_now
 from lp.soyuz.enums import (
     ArchivePermissionType,
     PackagePublishingStatus,
@@ -93,6 +98,7 @@ from lp.testing import (
     )
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.matchers import (
+    DocTestMatches,
     EqualsIgnoringWhitespace,
     HasQueryCount,
     )
@@ -334,6 +340,28 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
         self.assertTrue(derived_series.isInitializing())
         self.assertThat(html_content, portlet_display)
 
+    def test_differences_portlet_initialization_failed(self):
+        # The difference portlet displays a failure message if initialization
+        # for the series has failed.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self.factory.makeDistroSeries()
+        parent_series = self.factory.makeDistroSeries()
+        self.simple_user = self.factory.makePerson()
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
+        job = job_source.create(derived_series, [parent_series.id])
+        job.start()
+        job.fail()
+        portlet_display = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Derived series', 'h2',
+                text='Series initialization has failed'),
+            )
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                derived_series, '+index', principal=self.simple_user)
+            html_content = view()
+        self.assertThat(html_content, portlet_display)
+
     def assertInitSeriesLinkPresent(self, series, person):
         self._assertInitSeriesLink(series, person, True)
 
@@ -422,6 +450,65 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
         self.assertInitSeriesLinkNotPresent(series, 'admin')
 
 
+class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    @property
+    def job_source(self):
+        return getUtility(IInitializeDistroSeriesJobSource)
+
+    def test_initialization_failed_can_retry(self):
+        # When initialization has failed and the user has the ability to retry
+        # it prompts the user to try again.
+        set_derived_series_ui_feature_flag(self)
+        series = self.factory.makeDistroSeries()
+        parent = self.factory.makeDistroSeries()
+        job = self.job_source.create(series, [parent.id])
+        job.start()
+        job.fail()
+        with person_logged_in(series.owner):
+            view = create_initialized_view(series, '+portlet-derivation')
+            html_content = view()
+        self.assertThat(
+            extract_text(html_content), DocTestMatches(
+                "Series initialization has failed\n"
+                "You can attempt initialization again."))
+
+    def test_initialization_failed_cannot_retry(self):
+        # When initialization has failed and the user does not have the
+        # ability to retry it suggests contacting someone who can.
+        set_derived_series_ui_feature_flag(self)
+        series = self.factory.makeDistroSeries()
+        parent = self.factory.makeDistroSeries()
+        job = self.job_source.create(series, [parent.id])
+        job.start()
+        job.fail()
+        with person_logged_in(series.distribution.owner):
+            series.distribution.owner.displayname = u"Bob Individual"
+        with anonymous_logged_in():
+            view = create_initialized_view(series, '+portlet-derivation')
+            html_content = view()
+        self.assertThat(
+            extract_text(html_content), DocTestMatches(
+                "Series initialization has failed\n"
+                "You cannot attempt initialization again, "
+                "but Bob Individual may be able to help."))
+        # When the owner is a team the message differs slightly from when the
+        # owner is an individual.
+        with person_logged_in(series.distribution.owner):
+            series.distribution.owner = self.factory.makeTeam(
+                displayname=u"Team Teamy Team Team")
+        with anonymous_logged_in():
+            view = create_initialized_view(series, '+portlet-derivation')
+            html_content = view()
+        self.assertThat(
+            extract_text(html_content), DocTestMatches(
+                "Series initialization has failed\n"
+                "You cannot attempt initialization again, but a "
+                "member of Team Teamy Team Team may be able to help."))
+
+
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
     """Test the series.milestone_batch_navigator attribute."""
 
@@ -469,13 +556,12 @@ class TestDistroSeriesAddView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_submit(self):
-        # When creating a new DistroSeries via DistroSeriesAddView, the title
-        # is set to the same as the displayname (title is, in any case,
-        # deprecated), the description is left empty, and previous_series is
-        # None (DistroSeriesInitializeView takes care of setting that).
-        user = self.factory.makePerson()
-        distribution = self.factory.makeDistribution(owner=user)
+    def setUp(self):
+        super(TestDistroSeriesAddView, self).setUp()
+        self.user = self.factory.makePerson()
+        self.distribution = self.factory.makeDistribution(owner=self.user)
+
+    def createNewDistroseries(self):
         form = {
             "field.name": u"polished",
             "field.version": u"12.04",
@@ -483,17 +569,41 @@ class TestDistroSeriesAddView(TestCaseWithFactory):
             "field.summary": u"Even The Register likes it.",
             "field.actions.create": u"Add Series",
             }
-        with person_logged_in(user):
-            create_initialized_view(distribution, "+addseries", form=form)
-        distroseries = distribution.getSeries(u"polished")
+        with person_logged_in(self.user):
+            create_initialized_view(self.distribution, "+addseries",
+                                    form=form)
+        distroseries = self.distribution.getSeries(u"polished")
+        return distroseries
+
+    def assertCreated(self, distroseries):
         self.assertEqual(u"polished", distroseries.name)
         self.assertEqual(u"12.04", distroseries.version)
         self.assertEqual(u"Polished Polecat", distroseries.displayname)
         self.assertEqual(u"Polished Polecat", distroseries.title)
         self.assertEqual(u"Even The Register likes it.", distroseries.summary)
         self.assertEqual(u"", distroseries.description)
+        self.assertEqual(self.user, distroseries.owner)
+
+    def test_plain_submit(self):
+        # When creating a new DistroSeries via DistroSeriesAddView, the title
+        # is set to the same as the displayname (title is, in any case,
+        # deprecated), the description is left empty, and previous_series is
+        # None (DistroSeriesInitializeView takes care of setting that).
+        distroseries = self.createNewDistroseries()
+        self.assertCreated(distroseries)
         self.assertIs(None, distroseries.previous_series)
-        self.assertEqual(user, distroseries.owner)
+
+    def test_submit_sets_previous_series(self):
+        # Creating a new series when one already exists should set the
+        # previous_series.
+        old_series = self.factory.makeDistroSeries(self.distribution,
+                                                   version='11.10')
+        older_series = self.factory.makeDistroSeries(self.distribution,
+                                                     version='11.04')
+        old_time = utc_now() - timedelta(days=5)
+        removeSecurityProxy(old_series).datereleased = old_time
+        distroseries = self.createNewDistroseries()
+        self.assertEqual(old_series, distroseries.previous_series)
 
 
 class TestDistroSeriesInitializeView(TestCaseWithFactory):
@@ -639,6 +749,30 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
             self.assertThat(
                 message.text, EqualsIgnoringWhitespace(
                     u"This series is already being initialized."))
+
+    def test_form_hidden_when_previous_series_none(self):
+        # If the distribution has an initialized series and the
+        # distroseries' previous_series is None: the form is hidden and
+        # the page contains an error message.
+        distroseries = self.factory.makeDistroSeries(
+            previous_series=None)
+        another_distroseries = self.factory.makeDistroSeries(
+            distribution=distroseries.distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=another_distroseries)
+        view = create_initialized_view(distroseries, "+initseries")
+        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
+        with FeatureFixture(flags):
+            root = html.fromstring(view())
+            self.assertEqual(
+                [], root.cssselect("#initseries-form-container"))
+            # Instead an explanatory message is shown.
+            [message] = root.cssselect("p.error.message")
+            self.assertThat(
+                message.text, EqualsIgnoringWhitespace(
+                    u'Unable to initialize series: the distribution '
+                    u'already has initialized series and this distroseries '
+                    u'has no previous series.'))
 
 
 class TestDistroSeriesInitializeViewAccess(TestCaseWithFactory):

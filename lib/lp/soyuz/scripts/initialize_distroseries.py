@@ -120,7 +120,7 @@ class InitializeDistroSeries:
             # Use-case #2.
             self.derivation_parents = [self.distroseries.previous_series]
             self.derivation_parent_ids = [
-                p.id for p in self.derivation_parents]
+                p.id for p in self.derivation_parents if p is not None]
             if self.parent_ids == []:
                 self.parents = (
                     self.distroseries.previous_series.getParentSeries())
@@ -129,6 +129,13 @@ class InitializeDistroSeries:
         if self.distroseries.isDerivedSeries():
             raise InitializationError(
                 ("DistroSeries {child.name} has already been initialized"
+                 ".").format(
+                    child=self.distroseries))
+        if (self.distroseries.distribution.has_published_sources and
+            self.distroseries.previous_series is None):
+            raise InitializationError(
+                ("DistroSeries {child.name} has no previous series and "
+                 "the distribution already has initialized series"
                  ".").format(
                     child=self.distroseries))
         self._checkParents()
@@ -315,15 +322,23 @@ class InitializeDistroSeries:
         """
         archive_set = getUtility(IArchiveSet)
 
-        spns = []
-        # The overhead from looking up each packageset is mitigated by
-        # this usually running from a job.
-        if self.packagesets:
-            for pkgsetid in self.packagesets:
-                pkgset = self._store.get(Packageset, int(pkgsetid))
-                spns += list(pkgset.getSourcesIncluded())
-
         for parent in self.derivation_parents:
+            spns = []
+            # The overhead from looking up each packageset is mitigated by
+            # this usually running from a job.
+            if self.packagesets:
+                for pkgsetid in self.packagesets:
+                    pkgset = self._store.get(Packageset, int(pkgsetid))
+                    if pkgset.distroseries == parent:
+                        spns += list(pkgset.getSourcesIncluded())
+
+                # Some packagesets where selected but not a single
+                # source from this parent: we skip the copy since
+                # calling copy with spns=[] would copy all the packagesets
+                # from this parent.
+                if len(spns) == 0:
+                    continue
+
             distroarchseries_list = distroarchseries_lists[parent]
             for archive in parent.distribution.all_distro_archives:
                 if archive.purpose not in (
@@ -457,7 +472,8 @@ class InitializeDistroSeries:
         packagesets = self._store.find(
             Packageset, DistroSeries.id.is_in(self.derivation_parent_ids))
         parent_to_child = {}
-        # Create the packagesets.
+        # Create the packagesets and any archivepermissions if we're not
+        # copying cross-distribution.
         parent_distro_ids = [
             parent.distribution.id for parent in self.derivation_parents]
         for parent_ps in packagesets:
@@ -479,8 +495,19 @@ class InitializeDistroSeries:
                     parent_ps.name, parent_ps.description,
                     new_owner, distroseries=self.distroseries,
                     related_set=parent_ps)
-
             parent_to_child[parent_ps] = child_ps
+            # Copy archivepermissions if we're not copying
+            # cross-distribution.
+            if (self.distroseries.distribution ==
+                    parent_ps.distroseries.distribution):
+                self._store.execute("""
+                    INSERT INTO Archivepermission
+                    (person, permission, archive, packageset, explicit)
+                    SELECT person, permission, %s, %s, explicit
+                    FROM Archivepermission WHERE packageset = %s
+                    """ % sqlvalues(
+                        self.distroseries.main_archive, child_ps.id,
+                        parent_ps.id))
         # Copy the relations between sets, and the contents.
         for old_series_ps, new_series_ps in parent_to_child.items():
             old_series_sets = old_series_ps.setsIncluded(

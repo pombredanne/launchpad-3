@@ -37,6 +37,7 @@ from lp.answers.model.question import (
     QuestionTargetMixin,
     QuestionTargetSearch,
     )
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import get_bug_tags_open_count
@@ -44,7 +45,6 @@ from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,
     )
-from lp.bugs.model.bugtask import BugTask
 from lp.buildmaster.enums import BuildStatus
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
@@ -197,7 +197,7 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
     """
 
     implements(
-        ISourcePackage, IHasBugHeat, IHasBuildRecords)
+        IBugSummaryDimension, ISourcePackage, IHasBugHeat, IHasBuildRecords)
 
     classProvides(ISourcePackageFactory)
 
@@ -428,9 +428,9 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         # if we are an ubuntu sourcepackage, try the previous series of
         # ubuntu
         if self.distribution == ubuntu:
-            ubuntuseries = self.distroseries.prior_series
-            if ubuntuseries:
-                previous_ubuntu_series = ubuntuseries[0]
+            ubuntuseries = self.distroseries.priorReleasedSeries()
+            previous_ubuntu_series = ubuntuseries.first()
+            if previous_ubuntu_series is not None:
                 sp = SourcePackage(sourcepackagename=self.sourcepackagename,
                                    distroseries=previous_ubuntu_series)
                 return sp.packaging
@@ -500,7 +500,8 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         """See `IBugTarget`."""
         return self.distroseries.getUsedBugTags()
 
-    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0, include_tags=None):
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
+                                     include_tags=None):
         """See IBugTarget."""
         # Circular fail.
         from lp.bugs.model.bugsummary import BugSummary
@@ -528,11 +529,13 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
             "future. For now, you probably meant to file the bug on the "
             "distro-wide (i.e. not series-specific) source package.")
 
-    def _getBugTaskContextClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
-        return (
-            'BugTask.distroseries = %s AND BugTask.sourcepackagename = %s' %
-                sqlvalues(self.distroseries, self.sourcepackagename))
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return And(
+                BugSummary.distroseries == self.distroseries,
+                BugSummary.sourcepackagename == self.sourcepackagename)
 
     def setPackaging(self, productseries, owner):
         """See `ISourcePackage`."""

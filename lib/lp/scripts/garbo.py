@@ -119,7 +119,7 @@ class BulkPruner(TunableLoop):
     target_table_key = 'id'
 
     # SQL type of the target_table_key. May be overridden.
-    target_table_key_type = 'integer'
+    target_table_key_type = 'id integer'
 
     # An SQL query returning a list of ids to remove from target_table.
     # The query must return a single column named 'id' and should not
@@ -164,9 +164,9 @@ class BulkPruner(TunableLoop):
         """See `ITunableLoop`."""
         result = self.store.execute("""
             DELETE FROM %s
-            WHERE %s IN (
-                SELECT id FROM
-                cursor_fetch('%s', %d) AS f(id %s))
+            WHERE (%s) IN (
+                SELECT * FROM
+                cursor_fetch('%s', %d) AS f(%s))
             """
             % (
                 self.target_table_name, self.target_table_key,
@@ -216,7 +216,7 @@ class SessionPruner(BulkPruner):
 
     target_table_class = SessionData
     target_table_key = 'client_id'
-    target_table_key_type = 'text'
+    target_table_key_type = 'id text'
 
 
 class AntiqueSessionPruner(SessionPruner):
@@ -278,9 +278,13 @@ class OAuthNoncePruner(BulkPruner):
 
     We remove all OAuthNonce records older than 1 day.
     """
+    target_table_key = 'access_token, request_timestamp, nonce'
+    target_table_key_type = (
+        'access_token integer, request_timestamp timestamp without time zone,'
+        ' nonce text')
     target_table_class = OAuthNonce
     ids_to_prune_query = """
-        SELECT id FROM OAuthNonce
+        SELECT access_token, request_timestamp, nonce FROM OAuthNonce
         WHERE request_timestamp
             < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - CAST('1 day' AS interval)
         """

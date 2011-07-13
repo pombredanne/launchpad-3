@@ -93,7 +93,9 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
-from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseries import (
+    IDistroSeries,
+    )
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
@@ -620,6 +622,12 @@ class DistroSeriesAddView(LaunchpadFormView):
     @action(_('Add Series'), name='create')
     def createAndAdd(self, action, data):
         """Create and add a new Distribution Series"""
+        # 'series' is a cached property so this won't issue 2 queries.
+        if self.context.series:
+            previous_series = self.context.series[0]
+        else:
+            previous_series = None
+        # previous_series will be None if there isn't one.
         distroseries = self.context.newSeries(
             name=data['name'],
             displayname=data['displayname'],
@@ -627,7 +635,7 @@ class DistroSeriesAddView(LaunchpadFormView):
             summary=data['summary'],
             description=u"",
             version=data['version'],
-            previous_series=None,
+            previous_series=previous_series,
             registrant=self.user)
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)
@@ -666,7 +674,8 @@ class DistroSeriesInitializeView(LaunchpadFormView):
         distribution = self.context.distribution
         is_first_derivation = not distribution.has_published_sources
         cache['is_first_derivation'] = is_first_derivation
-        if not is_first_derivation:
+        if (not is_first_derivation and
+            self.context.previous_series is not None):
             cache['previous_series'] = seriesToVocab(
                 self.context.previous_series)
             previous_parents = self.context.previous_series.getParentSeries()
@@ -689,8 +698,19 @@ class DistroSeriesInitializeView(LaunchpadFormView):
     def show_derivation_form(self):
         return (
             self.is_derived_series_feature_enabled and
+            not self.show_previous_series_empty_message and
             not self.context.isInitializing() and
             not self.context.isInitialized())
+
+    @property
+    def show_previous_series_empty_message(self):
+        # There is a problem here:
+        # The distribution already has initialized series and this
+        # distroseries has no previous_series.
+        return (
+            self.is_derived_series_feature_enabled and
+            self.context.distribution.has_published_sources and
+            self.context.previous_series is None)
 
     @property
     def show_already_initialized_message(self):
@@ -1034,7 +1054,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         differences = getUtility(
             IDistroSeriesDifferenceSource).getForDistroSeries(
                 self.context, difference_type=self.differences_type,
-                source_package_name_filter=self.specified_name_filter,
+                name_filter=self.specified_name_filter,
                 status=status, child_version_higher=child_version_higher)
         return BatchNavigator(differences, self.request)
 

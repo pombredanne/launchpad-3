@@ -720,6 +720,14 @@ class PackageUpload(SQLBase):
 
     def realiseUpload(self, logger=None):
         """See `IPackageUpload`."""
+        if self.package_copy_job is not None:
+            # PCJs are "realised" in the job runner,
+            # which creates publishing records using the packagecopier.
+            # Because the process-accepted script calls realiseUpload for
+            # any outstanding uploads in the ACCEPTED state we need to skip
+            # them here.  The runner is also responsible for calling
+            # setDone().
+            return
         # Circular imports.
         from lp.soyuz.scripts.packagecopier import update_files_privacy
         assert self.status == PackageUploadStatus.ACCEPTED, (
@@ -929,7 +937,7 @@ class PackageUpload(SQLBase):
             # Nothing needs overriding, bail out.
             return False
 
-        if new_component not in allowed_components:
+        if new_component not in list(allowed_components) + [None]:
             raise QueueInconsistentStateError(
                 "No rights to override to %s" % new_component.name)
 

@@ -1486,11 +1486,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBranchSubscription(self, branch=None, person=None,
                                subscribed_by=None):
-        """Create a BranchSubscription.
-
-        :param branch_title: The title to use for the created Branch
-        :param person_displayname: The displayname for the created Person
-        """
+        """Create a BranchSubscription."""
         if branch is None:
             branch = self.makeBranch()
         if person is None:
@@ -3430,7 +3426,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return upload
 
     def makeCopyJobPackageUpload(self, distroseries=None,
-                                 sourcepackagename=None):
+                                 sourcepackagename=None, target_pocket=None):
         """Make a `PackageUpload` with a `PackageCopyJob` attached."""
         if distroseries is None:
             distroseries = self.makeDistroSeries()
@@ -3441,6 +3437,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             package_name=spr.sourcepackagename.name,
             package_version=spr.version,
             source_archive=spph.archive,
+            target_pocket=target_pocket,
             target_archive=distroseries.main_archive,
             target_distroseries=distroseries)
         job.addSourceOverride(SourceOverride(

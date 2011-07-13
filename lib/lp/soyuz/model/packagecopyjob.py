@@ -371,16 +371,12 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     def addSourceOverride(self, override):
         """Add an `ISourceOverride` to the metadata."""
-        component = ""
-        section = ""
+        metadata_changes = {}
         if override.component is not None:
-            component = override.component.name
+            metadata_changes['component_override'] = override.component.name
         if override.section is not None:
-            section = override.section.name
-        metadata_dict = dict(
-            component_override=component,
-            section_override=section)
-        self.context.extendMetadata(metadata_dict)
+            metadata_changes['section_override'] = override.section.name
+        self.context.extendMetadata(metadata_changes)
 
     def getSourceOverride(self):
         """Fetch an `ISourceOverride` from the metadata."""
@@ -471,8 +467,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         # We don't need to check any policies, but the admin may have
         # set overrides which we will get from the job's metadata.
         pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
-            [self.context.id])
-        if not pu.any():
+            [self.context.id]).any()
+        if pu is None:
             self._checkPolicies(source_name)
 
         # The package is free to go right in, so just copy it now.
@@ -485,6 +481,12 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             include_binaries=self.include_binaries, check_permissions=False,
             overrides=[override], send_email=send_email)
 
+        if pu is not None:
+            # A PackageUpload will only exist if the copy job had to be
+            # held in the queue because of policy/ancestry checks.  If one
+            # does exist we need to make sure 
+            pu.setDone()
+
     def abort(self):
         """Abort work."""
         transaction.abort()
@@ -494,8 +496,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
         target_series = self.target_distroseries
         candidates = dsd_source.getForDistroSeries(
-            distro_series=target_series,
-            source_package_name_filter=self.package_name)
+            distro_series=target_series, name_filter=self.package_name)
 
         # The job doesn't know what distroseries a given package is
         # coming from, and the version number in the DSD may have
