@@ -51,6 +51,7 @@ class TestGetBranchTips(TestCaseWithFactory):
         series_2 = self.series_2 = self.factory.makeDistroRelease(self.distro)
         source_package = self.factory.makeSourcePackage(distroseries=series_1)
         branch = self.factory.makeBranch(sourcepackage=source_package)
+        unofficial_branch =  self.factory.makeBranch(sourcepackage=source_package)
         registrant = self.factory.makePerson()
         now = datetime.now(pytz.UTC)
         sourcepackagename = self.factory.makeSourcePackageName()
@@ -62,6 +63,7 @@ class TestGetBranchTips(TestCaseWithFactory):
             branch, registrant, now)
         self.factory.makeRevisionsForBranch(branch)
         self.branch_name = branch.unique_name
+        self.unofficial_branch_name = unofficial_branch.unique_name
         self.branch_last_scanned_id = branch.last_scanned_id
         endInteraction()
         self.lp = launchpadlib_for("anonymous-access")
@@ -104,3 +106,12 @@ class TestGetBranchTips(TestCaseWithFactory):
         actual_series_names = sorted([self.series_1.name, self.series_2.name])
         returned_series_names = sorted(self.lp_distro.getBranchTips()[0][-1])
         self.assertEqual(actual_series_names, returned_series_names)
+
+    def test_unofficial_branch(self):
+        """Not all branches are official."""
+        # If a branch isn't official, the last skanned ID will be None and the
+        # official distro series list will be empty.
+        tips = self.lp_distro.getBranchTips()[1]
+        self.assertEqual(tips[0], self.unofficial_branch_name)
+        self.assertEqual(tips[1], None)
+        self.assertEqual(tips[2], [])

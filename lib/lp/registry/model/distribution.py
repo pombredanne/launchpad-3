@@ -665,7 +665,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 ON Branch.id = SeriesSourcePackageBranch.branch
             JOIN Distribution
                 ON DistroSeries.distribution = Distribution.id
-            JOIN DistroSeries SPBDS -- (SourcePackageBranchDistroSeries)
+            LEFT OUTER JOIN DistroSeries SPBDS -- (SourcePackageBranchDistroSeries)
                 ON SeriesSourcePackageBranch.distroseries = SPBDS.id
             WHERE Distribution.name = %s""" % sqlvalues(self.name)
 
@@ -683,7 +683,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             results.append(list(key))
             # Pull out all the official series IDs and append them as a list
             # to the end of the current record.
-            results[-1].append(map(itemgetter(-1), group))
+            results[-1].append(filter(None, map(itemgetter(-1), group)))
         return results
 
     def getMirrorByName(self, name):
