@@ -379,3 +379,10 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         self.assertTrue(file_exists(os.path.join(
             script.config.distsroot, suite,
             "Contents-%s.gz" % das.architecturetag)))
+
+    def test_run_script(self):
+        # The script will run stand-alone.
+        from canonical.launchpad.scripts.tests import run_script
+        retval, out, err = run_script(
+            'cronscripts/generate-contents-files.py', ['-d', 'ubuntu', '-q'])
+        self.assertEqual(0, retval)
