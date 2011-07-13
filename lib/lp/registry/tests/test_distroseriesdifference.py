@@ -1023,6 +1023,47 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
 
         self.assertContentEqual(diffs['normal'] + diffs['ignored'], result)
 
+    def test_getForDistroSeries_matches_by_package_name(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        series = dsd.derived_series
+        package_name = dsd.source_package_name.name
+        source = getUtility(IDistroSeriesDifferenceSource)
+        self.assertContentEqual(
+            [dsd],
+            source.getForDistroSeries(series, name_filter=package_name))
+
+    def test_getForDistroSeries_matches_by_packageset_name(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        series = dsd.derived_series
+        packageset = self.factory.makePackageset(
+            distroseries=series, packages=[dsd.source_package_name])
+        packageset_name = packageset.name
+        source = getUtility(IDistroSeriesDifferenceSource)
+        self.assertContentEqual(
+            [dsd],
+            source.getForDistroSeries(series, name_filter=packageset_name))
+
+    def test_getForDistroSeries_filters_by_package_and_packageset_name(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        series = dsd.derived_series
+        other_name = self.factory.getUniqueUnicode()
+        source = getUtility(IDistroSeriesDifferenceSource)
+        self.assertContentEqual(
+            [],
+            source.getForDistroSeries(series, name_filter=other_name))
+
+    def test_getForDistroSeries_ignores_parent_packagesets(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        series = dsd.derived_series
+        packageset = self.factory.makePackageset(
+            distroseries=dsd.parent_series,
+            packages=[dsd.source_package_name])
+        packageset_name = packageset.name
+        source = getUtility(IDistroSeriesDifferenceSource)
+        self.assertContentEqual(
+            [],
+            source.getForDistroSeries(series, name_filter=packageset_name))
+
     def test_getForDistroSeries_sorted_by_package_name(self):
         # The differences are sorted by package name.
         derived_series = self.makeDerivedSeries()
