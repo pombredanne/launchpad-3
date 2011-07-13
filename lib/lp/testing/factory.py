@@ -1486,11 +1486,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBranchSubscription(self, branch=None, person=None,
                                subscribed_by=None):
-        """Create a BranchSubscription.
-
-        :param branch_title: The title to use for the created Branch
-        :param person_displayname: The displayname for the created Person
-        """
+        """Create a BranchSubscription."""
         if branch is None:
             branch = self.makeBranch()
         if person is None:
