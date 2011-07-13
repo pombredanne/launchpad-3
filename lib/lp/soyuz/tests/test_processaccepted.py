@@ -177,6 +177,7 @@ class TestProcessAccepted(TestCaseWithFactory):
                 distribution=self.distro))
         upload_id = upload.id
         self.getScript([]).main()
+        self.layer.txn.abort()
         self.assertEqual(
             upload, IStore(PackageUpload).get(PackageUpload, upload_id))
 
