@@ -1976,13 +1976,14 @@ class TestSyncSource(TestCaseWithFactory):
             archive=source_archive)
 
         source_name = source.source_package_name
-        version = source.version
-        to_pocket = self.factory.getAnyPocket()
+        version = source.source_package_version
+        to_pocket = PackagePublishingPocket.RELEASE
         to_series = self.factory.makeDistroSeries(
             distribution=target_archive.distribution)
-        target_archive.copyPackages(
-            source_name, version, from_archive, to_pocket,
-            to_series=to_series, include_binaries=False)
+        with person_logged_in(target_archive.owner):
+            target_archive.copyPackage(
+                source_name, version, source_archive, to_pocket,
+                to_series=to_series, include_binaries=False)
 
         # The source should not be published yet in the target_archive.
         published = target_archive.getPublishedSources(

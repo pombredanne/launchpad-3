@@ -4,6 +4,8 @@
 # pylint: disable-msg=E0611,W0212
 
 """Database class for table Archive."""
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
+
 
 __metaclass__ = type
 
@@ -115,6 +117,7 @@ from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
     ArchiveSubscriberStatus,
+    PackageCopyPolicy,
     PackagePublishingStatus,
     PackageUploadStatus,
     )
@@ -1507,19 +1510,46 @@ class Archive(SQLBase):
             sources, to_pocket, to_series, include_binaries,
             person=person)
 
-    def syncSource(self, source_name, version, from_archive, to_pocket,
-                   to_series=None, include_binaries=False, person=None):
-        """See `IArchive`."""
+    def _validateAndFindSource(self, from_archive, source_name, version):
         # Check to see if the source package exists, and raise a useful error
         # if it doesn't.
         getUtility(ISourcePackageNameSet)[source_name]
         # Find and validate the source package version required.
         source = from_archive.getPublishedSources(
             name=source_name, version=version, exact_match=True).first()
+        return source
+
+    def syncSource(self, source_name, version, from_archive, to_pocket,
+                   to_series=None, include_binaries=False, person=None):
+        """See `IArchive`."""
+        source = self._validateAndFindSource(
+            from_archive, source_name, version)
 
         self._copySources(
             [source], to_pocket, to_series, include_binaries,
             person=person)
+
+    def copyPackage(self, source_name, version, from_archive, to_pocket,
+                    to_series=None, include_binaries=False):
+        """See `IArchive`."""
+        # Asynchronously copy a package using the job system.
+        if self.is_ppa and to_pocket != PackagePublishingPocket.RELEASE:
+            raise CannotCopy(
+                "Destination pocket must be 'release' for a PPA.")
+
+        self._validateAndFindSource(from_archive, source_name, version)
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        # We're not passing a person argument to the job for
+        # permission checks because:
+        #   a) it doesn't store who requested it
+        #   b) we're relying on this method requiring launchpad.Append
+        # privilege to invoke in the first place.
+        job_source.create(
+            package_name=source_name, source_archive=from_archive,
+            target_archive=self, target_distroseries=to_series,
+            target_pocket=to_pocket,
+            package_version=version, include_binaries=include_binaries,
+            copy_policy=PackageCopyPolicy.INSECURE)
 
     def _collectLatestPublishedSources(self, from_archive, source_names):
         """Private helper to collect the latest published sources for an

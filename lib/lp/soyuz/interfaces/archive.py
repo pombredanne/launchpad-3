@@ -1308,6 +1308,29 @@ class IArchiveAppend(Interface):
         :raises CannotCopy: if there is a problem copying.
         """
 
+    def copyPackage(source_name, version, from_archive, to_pocket,
+                    to_series=None, include_binaries=False):
+        """Copy a single named source into this archive.
+
+        Copy a specific version of a named source to the destination
+        archive if necessary.
+
+        :param source_name: a string name of the package to copy.
+        :param version: the version of the package to copy.
+        :param from_archive: the source archive from which to copy.
+        :param to_pocket: the target pocket (as a string).
+        :param to_series: the target distroseries (as a string).
+        :param include_binaries: optional boolean, controls whether or not
+            the published binaries for each given source should also be
+            copied along with the source.
+        :param person: the `IPerson` who requests the sync.
+
+        :raises NoSuchSourcePackageName: if the source name is invalid
+        :raises PocketNotFound: if the pocket name is invalid
+        :raises NoSuchDistroSeries: if the distro series name is invalid
+        :raises CannotCopy: if there is a problem copying.
+        """
+
     @call_with(registrant=REQUEST_USER)
     @operation_parameters(
         subscriber=PublicPersonChoice(
