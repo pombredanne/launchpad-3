@@ -260,12 +260,23 @@ class TestDistroSeries(TestCaseWithFactory):
             distroseries=distroseries, archive=distroseries.main_archive)
         self.assertTrue(distroseries.isInitialized())
 
+    def test_getInitializationJob(self):
+        # getInitializationJob() returns the most recent
+        # `IInitializeDistroSeriesJob` for the given series.
+        distroseries = self.factory.makeDistroSeries()
+        parent_distroseries = self.factory.makeDistroSeries()
+        self.assertIs(None, distroseries.getInitializationJob())
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
+        job = job_source.create(distroseries, [parent_distroseries.id])
+        self.assertEqual(job, distroseries.getInitializationJob())
+
     def test_priorReleasedSeries(self):
         # Make sure that previousReleasedSeries returns all series with a
         # release date less than the contextual series,
         # ordered by descending date.
         distro = self.factory.makeDistribution()
-        unreleased = self.factory.makeDistroSeries(distribution=distro)
+        # Make an unreleased series.
+        self.factory.makeDistroSeries(distribution=distro)
         ds1 = self.factory.makeDistroSeries(distribution=distro)
         ds2 = self.factory.makeDistroSeries(distribution=distro)
         ds3 = self.factory.makeDistroSeries(distribution=distro)
