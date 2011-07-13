@@ -1218,8 +1218,22 @@ class IArchiveView(IHasBuildRecords):
         :return: A new IArchiveAuthToken
         """
 
+    @call_with(person=REQUEST_USER)
+    @operation_parameters(
+        source_name=TextLine(title=_("Source package name")),
+        version=TextLine(title=_("Version")),
+        from_archive=Reference(schema=Interface),
+        # Really IArchive, see below
+        to_pocket=TextLine(title=_("Pocket name")),
+        to_series=TextLine(title=_("Distroseries name"), required=False),
+        include_binaries=Bool(
+            title=_("Include Binaries"),
+            description=_("Whether or not to copy binaries already built for"
+                          " this source"),
+            required=False))
+    @export_write_operation()
     def copyPackage(source_name, version, from_archive, to_pocket,
-                    to_series=None, include_binaries=False):
+                    person, to_series=None, include_binaries=False):
         """Copy a single named source into this archive.
 
         Asynchronously copy a specific version of a named source to the
