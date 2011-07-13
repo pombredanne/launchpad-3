@@ -66,9 +66,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.app.widgets.textwidgets import DelimitedListWidget
-from lp.bugs.browser.widgets.bugtask import (
-    UbuntuSourcePackageNameWidget,
-    )
+from lp.bugs.browser.widgets.bugtask import UbuntuSourcePackageNameWidget
 from lp.bugs.interfaces.bugtracker import (
     BugTrackerType,
     IBugTracker,
