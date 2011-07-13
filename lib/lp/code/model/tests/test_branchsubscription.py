@@ -130,8 +130,8 @@ class TestBranchSubscriptionCanBeUnsubscribedbyUser(TestCaseWithFactory):
     def test_branch_team_owner_can_unsubscribe(self):
         """Branch team owner can unsubscribe someone from a branch.
 
-        If the owner of a branch is a team, then the team owner can
-        unsubscribe someone, but an arbitrary team member cannot.
+        If the owner of a branch is a team, then the team members can
+        unsubscribe someone.
         """
         team_owner = self.factory.makePerson()
         team_member = self.factory.makePerson()
@@ -143,4 +143,4 @@ class TestBranchSubscriptionCanBeUnsubscribedbyUser(TestCaseWithFactory):
         subscription = self.factory.makeBranchSubscription(
             branch=branch, person=subscriber, subscribed_by=subscribed_by)
         self.assertTrue(subscription.canBeUnsubscribedByUser(team_owner))
-        self.assertFalse(subscription.canBeUnsubscribedByUser(team_member))
+        self.assertTrue(subscription.canBeUnsubscribedByUser(team_member))
