@@ -51,7 +51,7 @@ class BugzillaRemoteComponentScraper:
         self.products = {}
 
     def getPage(self):
-        """Downloads and returns content from the Bugzilla page"""
+        """Download and return content from the Bugzilla page"""
         return urlopen(self.url).read()
 
     def parsePage(self, page_text):
