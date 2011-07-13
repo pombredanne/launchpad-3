@@ -677,14 +677,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
         data = Store.of(self).execute(query)
 
+        result = []
         # Group on location (unique_name) and revision (last_scanned_id).
-        results = []
         for key, group in itertools.groupby(data, itemgetter(0, 1)):
-            results.append(list(key))
+            result.append(list(key))
             # Pull out all the official series IDs and append them as a list
-            # to the end of the current record.
-            results[-1].append(filter(None, map(itemgetter(-1), group)))
-        return results
+            # to the end of the current record,kremoving Nones from the list.
+            result[-1].append(filter(None, map(itemgetter(-1), group)))
+        return result
 
     def getMirrorByName(self, name):
         """See `IDistribution`."""
