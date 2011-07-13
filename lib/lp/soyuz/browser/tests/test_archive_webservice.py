@@ -20,6 +20,7 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.testing import (
     celebrity_logged_in,
@@ -307,6 +308,36 @@ class TestProcessorFamilies(WebServiceTestCase):
         ws_arm = self.service.processor_families.getByName(name='arm')
         self.assertContentEqual(
             [ws_arm], self.service.processor_families)
+
+
+class TestCopyPackage(WebServiceTestCase):
+
+    def test_copyPackage(self):
+        self.ws_version = "devel"
+        source_archive = self.factory.makeArchive()
+        target_archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PRIMARY)
+        source = self.factory.makeSourcePackagePublishingHistory(
+            archive=source_archive)
+        source_name = source.source_package_name
+        version = source.source_package_version
+        to_pocket = PackagePublishingPocket.RELEASE
+        to_series = self.factory.makeDistroSeries(
+            distribution=target_archive.distribution)
+        transaction.commit()
+
+        ws_target_archive = self.wsObject(target_archive)
+        ws_source_archive = self.wsObject(source_archive)
+        ws_to_series = self.wsObject(to_series)
+
+        ws_target_archive.copyPackage(
+            source_name=source_name, version=version,
+            from_archive=ws_source_archive, to_pocket=to_pocket.name,
+            to_series=ws_to_series, include_binaries=False)
+
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_job = job_source.getActiveJobs(target_archive).one()
+        self.assertEqual(target_archive, copy_job.target_archive)
 
 
 def test_suite():

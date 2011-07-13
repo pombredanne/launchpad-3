@@ -1232,6 +1232,7 @@ class IArchiveView(IHasBuildRecords):
                           " this source"),
             required=False))
     @export_write_operation()
+    @operation_for_version('devel')
     def copyPackage(source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False):
         """Copy a single named source into this archive.
