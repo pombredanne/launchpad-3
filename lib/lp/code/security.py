@@ -29,8 +29,7 @@ class BranchSubscriptionEdit(AuthorizationBase):
         return (user.inTeam(self.obj.branch.owner) or
                 user.inTeam(self.obj.person) or
                 user.inTeam(self.obj.subscribed_by) or
-                user.in_admin or
-                user.in_bazaar_experts)
+                user.in_admin)
 
 
 class BranchSubscriptionView(BranchSubscriptionEdit):
