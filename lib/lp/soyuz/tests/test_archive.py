@@ -1968,9 +1968,11 @@ class TestSyncSource(TestCaseWithFactory):
             ubuntu.main_archive.getPublishedSources(
                 name=source.source_package_name).count())
 
-    def _setup_copy_data(self):
+    def _setup_copy_data(self, target_purpose=None):
+        if target_purpose is None:
+            target_purpose = ArchivePurpose.PPA
         source_archive = self.factory.makeArchive()
-        target_archive = self.factory.makeArchive()
+        target_archive = self.factory.makeArchive(purpose=target_purpose)
         source = self.factory.makeSourcePackagePublishingHistory(
             archive=source_archive)
         source_name = source.source_package_name
@@ -2010,6 +2012,20 @@ class TestSyncSource(TestCaseWithFactory):
         self.assertEqual(to_pocket, copy_job.target_pocket)
         self.assertFalse(copy_job.include_binaries)
         self.assertEquals(PackageCopyPolicy.INSECURE, copy_job.copy_policy)
+
+    def test_copyPackage_disallows_non_primary_archive_uploaders(self):
+        # If copying to a primary archive and you're not an uploader for
+        # the package then you can't copy.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data(
+            target_purpose=ArchivePurpose.PRIMARY)
+        person = self.factory.makePerson()
+        self.assertRaises(
+            CannotCopy,
+            target_archive.copyPackage, source_name, version, source_archive,
+            to_pocket, to_series=to_series, include_binaries=False,
+            person=person)
+
 
     def test_copyPackage_disallows_non_PPA_owners(self):
         # Only people with launchpad.Append are allowed to call copyPackage.

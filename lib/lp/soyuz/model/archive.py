@@ -1536,8 +1536,9 @@ class Archive(SQLBase):
 
         # Upload permission checks first, this will raise CannotCopy as
         # necessary.
+        sourcepackagename = getUtility(ISourcePackageNameSet)[source_name]
         check_copy_permissions(
-            person, self, to_series, to_pocket, [source_name])
+            person, self, to_series, to_pocket, [sourcepackagename])
 
         self._validateAndFindSource(from_archive, source_name, version)
         job_source = getUtility(IPlainPackageCopyJobSource)
