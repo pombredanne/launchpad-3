@@ -1,10 +1,11 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test process-accepted.py"""
 
 from cStringIO import StringIO
 
+from canonical.launchpad.interfaces.lpstorm import IStore
 from debian.deb822 import Changes
 from testtools.matchers import LessThan
 
@@ -18,6 +19,7 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     PackageUploadStatus,
     )
+from lp.soyuz.model.queue import PackageUpload
 from lp.soyuz.scripts.processaccepted import (
     get_bugs_from_changes_file,
     ProcessAccepted,
@@ -168,6 +170,24 @@ class TestProcessAccepted(TestCaseWithFactory):
         script.txn.registerSynch(synch)
         script.main()
         self.assertThat(len(uploads), LessThan(synch.commit_count))
+
+    def test_non_dry_run_commits_work(self):
+        upload = self.factory.makeSourcePackageUpload(
+            distroseries=self.factory.makeDistroSeries(
+                distribution=self.distro))
+        upload_id = upload.id
+        self.getScript([]).main()
+        self.assertEqual(
+            upload, IStore(PackageUpload).get(PackageUpload, upload_id))
+
+    def test_dry_run_aborts_work(self):
+        upload = self.factory.makeSourcePackageUpload(
+            distroseries=self.factory.makeDistroSeries(
+                distribution=self.distro))
+        upload_id = upload.id
+        self.getScript(['--dry-run']).main()
+        self.assertEqual(
+            None, IStore(PackageUpload).get(PackageUpload, upload_id))
 
 
 class TestBugsFromChangesFile(TestCaseWithFactory):
