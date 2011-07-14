@@ -285,18 +285,25 @@ class ProcessAccepted(LaunchpadCronScript):
         else:
             self.txn.commit()
 
+    def findDerivedDistros(self):
+# XXX: Implement!
+        return []
+
+    def findNamedDistro(self, distro_name):
+        """Find the `Distribution` called `distro_name`."""
+        self.logger.debug("Finding distribution %s.", distro_name)
+        distro = getUtility(IDistributionSet).getByName(distro_name)
+        if distro is None:
+            raise LaunchpadScriptFailure(
+                "Distribution '%s' not found." % distro_name)
+        return distro
+
     def findTargetDistros(self):
         """Find the distribution(s) to process, based on arguments."""
         if self.options.derived:
-            pass
+            return self.findDerivedDistros()
         else:
-            distro_name = self.args[0]
-            self.logger.debug("Finding distribution %s." % distro_name)
-            distribution = getUtility(IDistributionSet).getByName(distro_name)
-            if distribution is None:
-                raise LaunchpadScriptFailure(
-                    "Distribution '%s' not found." % distro_name)
-            return [distribution]
+            return [self.findNamedDistro(self.args[0])]
 
     def validateArguments(self):
         """Validate command-line arguments."""
