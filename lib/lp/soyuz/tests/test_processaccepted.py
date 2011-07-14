@@ -238,6 +238,9 @@ class TestProcessAccepted(TestCaseWithFactory):
         self.assertNotIn(ubuntu, script.findDerivedDistros())
 
     def test_findDerivedDistros_finds_each_distro_just_once(self):
+        # Derived distros are not duplicated in the output of
+        # findDerivedDistros, even if they have multiple parents and
+        # multiple derived series.
         dsp = self.factory.makeDistroSeriesParent()
         distro = dsp.derived_series.distribution
         other_series = self.factory.makeDistroSeries(distribution=distro)
