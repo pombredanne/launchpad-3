@@ -109,13 +109,13 @@ from lp.blueprints.model.specification import (
     Specification,
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     BugSet,
     get_bug_tags,
-    get_bug_tags_open_count,
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -307,9 +307,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     """A Product."""
 
     implements(
-        IFAQTarget, IHasBugHeat, IHasBugSupervisor, IHasCustomLanguageCodes,
-        IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage, IProduct,
-        IServiceUsage)
+        IBugSummaryDimension, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
+        IHasCustomLanguageCodes, IHasIcon, IHasLogo, IHasMugshot,
+        ILaunchpadUsage, IProduct, IServiceUsage)
 
     _table = 'Product'
 
@@ -800,15 +800,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.product = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
-                                     include_tags=None):
-        """See IBugTarget."""
-        # Circular fail.
-        from lp.bugs.model.bugsummary import BugSummary
-        return get_bug_tags_open_count(
-            BugSummary.product_id == self.id,
-            user, tag_limit=tag_limit, include_tags=include_tags)
-
     series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
 
@@ -959,9 +950,11 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         bug_params.setBugTarget(product=self)
         return BugSet().createBug(bug_params)
 
-    def _getBugTaskContextClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
-        return 'BugTask.product = %s' % sqlvalues(self)
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return BugSummary.product_id == self.id
 
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,

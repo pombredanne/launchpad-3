@@ -168,9 +168,6 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.distribution import Distribution
-from lp.registry.model.distributionsourcepackage import (
-    DistributionSourcePackage,
-    )
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesparent import DistroSeriesParent
 from lp.registry.model.featuredproject import FeaturedProject
@@ -200,7 +197,6 @@ from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.distroarchseries import DistroArchSeries
 from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
     )
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -1265,6 +1261,21 @@ class UserTeamsParticipationPlusSelfVocabulary(
         return super_class.getTermByToken(token)
 
 
+class UserTeamsParticipationPlusSelfSimpleDisplayVocabulary(
+    UserTeamsParticipationPlusSelfVocabulary):
+    """Like UserTeamsParticipationPlusSelfVocabulary but the term title is
+    the person.displayname rather than unique_displayname.
+
+    This vocab is used for pickers which append the Launchpad id to the
+    displayname. If we use the original UserTeamsParticipationPlusSelf vocab,
+    the Launchpad id is displayed twice.
+    """
+
+    def toTerm(self, obj):
+        """See `IVocabulary`."""
+        return SimpleTerm(obj, obj.name, obj.displayname)
+
+
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     """All `IProductRelease` objects vocabulary."""
     implements(IHugeVocabulary)
@@ -1826,8 +1837,7 @@ class DistroSeriesDerivationVocabulary:
         """See `IHugeVocabulary`."""
         parent = ClassAlias(DistroSeries, "parent")
         child = ClassAlias(DistroSeries, "child")
-        # Select only the series with architectures setup in LP.
-        where = [DistroSeries.id == DistroArchSeries.distroseriesID]
+        where = []
         if query is not None:
             term = '%' + query.lower() + '%'
             search = Or(
@@ -1846,6 +1856,9 @@ class DistroSeriesDerivationVocabulary:
                 DistroSeries.distributionID.is_in(parent_distributions))
             return self.find_terms(where)
         else:
+            # Select only the series with architectures setup in LP.
+            where.append(
+                DistroSeries.id == DistroArchSeries.distroseriesID)
             where.append(
                 DistroSeries.distribution != self.distribution)
             return self.find_terms(where)
@@ -1962,7 +1975,7 @@ class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
         # package names are always lowercase.
         return super(SourcePackageNameVocabulary, self).getTermByToken(
             token.lower())
- 
+
 
 class DistributionSourcePackageVocabulary:
 

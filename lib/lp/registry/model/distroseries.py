@@ -80,11 +80,11 @@ from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
     )
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     get_bug_tags,
-    get_bug_tags_open_count,
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -211,8 +211,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    StructuralSubscriptionTargetMixin, HasBugHeatMixin):
     """A particular series of a distribution."""
     implements(
-        ICanPublishPackages, IDistroSeries, IHasBugHeat, IHasBuildRecords,
-        IHasQueueItems, IServiceUsage)
+        ICanPublishPackages, IBugSummaryDimension, IDistroSeries, IHasBugHeat,
+        IHasBuildRecords, IHasQueueItems, IServiceUsage)
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']
@@ -835,18 +835,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getUsedBugTags(self):
         """See `IHasBugs`."""
         return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
-
-    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
-                                     include_tags=None):
-        """See IBugTarget."""
-        # Circular fail.
-        from lp.bugs.model.bugsummary import BugSummary
-        return get_bug_tags_open_count(
-            And(
-                BugSummary.distroseries_id == self.id,
-                BugSummary.sourcepackagename_id == None
-                ),
-            user, tag_limit=tag_limit, include_tags=include_tags)
 
     @property
     def has_any_specifications(self):
@@ -1659,9 +1647,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             "not-too-distant future. For now, you probably meant to file "
             "the bug on the distribution instead.")
 
-    def _getBugTaskContextClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
-        return 'BugTask.distroseries = %s' % sqlvalues(self)
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return And(
+                BugSummary.distroseries_id == self.id,
+                BugSummary.sourcepackagename_id == None
+                )
 
     def copyTranslationsFromParent(self, transaction, logger=None):
         """See `IDistroSeries`."""
@@ -1871,7 +1864,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             IDistroSeriesDifferenceSource).getForDistroSeries(
                 self,
                 difference_type=difference_type,
-                source_package_name_filter=source_package_name_filter,
+                name_filter=source_package_name_filter,
                 status=status,
                 child_version_higher=child_version_higher)
 
@@ -1881,14 +1874,17 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def isInitializing(self):
         """See `IDistroSeries`."""
-        job_source = getUtility(IInitializeDistroSeriesJobSource)
-        pending_jobs = job_source.getPendingJobsForDistroseries(self)
-        return not pending_jobs.is_empty()
+        job = self.getInitializationJob()
+        return job is not None and job.is_pending
 
     def isInitialized(self):
         """See `IDistroSeries`."""
         published = self.main_archive.getPublishedSources(distroseries=self)
         return not published.is_empty()
+
+    def getInitializationJob(self):
+        """See `IDistroSeries`."""
+        return getUtility(IInitializeDistroSeriesJobSource).get(self)
 
     def getDifferenceComments(self, since=None, source_package_name=None):
         """See `IDistroSeries`."""
