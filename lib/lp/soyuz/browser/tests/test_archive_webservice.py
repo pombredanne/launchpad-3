@@ -311,9 +311,12 @@ class TestProcessorFamilies(WebServiceTestCase):
 
 
 class TestCopyPackage(WebServiceTestCase):
+    """Webservice test cases for the copyPackage method"""
 
     def test_copyPackage(self):
+        """Basic smoke test"""
         self.ws_version = "devel"
+        uploader_dude = self.factory.makePerson()
         source_archive = self.factory.makeArchive()
         target_archive = self.factory.makeArchive(
             purpose=ArchivePurpose.PRIMARY)
@@ -324,16 +327,18 @@ class TestCopyPackage(WebServiceTestCase):
         to_pocket = PackagePublishingPocket.RELEASE
         to_series = self.factory.makeDistroSeries(
             distribution=target_archive.distribution)
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(uploader_dude, "universe")
         transaction.commit()
 
-        ws_target_archive = self.wsObject(target_archive)
+        ws_target_archive = self.wsObject(target_archive, user=uploader_dude)
         ws_source_archive = self.wsObject(source_archive)
-        ws_to_series = self.wsObject(to_series)
 
         ws_target_archive.copyPackage(
             source_name=source_name, version=version,
             from_archive=ws_source_archive, to_pocket=to_pocket.name,
-            to_series=ws_to_series, include_binaries=False)
+            to_series=to_series.name, include_binaries=False)
+        transaction.commit()
 
         job_source = getUtility(IPlainPackageCopyJobSource)
         copy_job = job_source.getActiveJobs(target_archive).one()
