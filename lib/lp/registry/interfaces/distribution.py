@@ -28,6 +28,7 @@ from lazr.restful.declarations import (
     export_operation_as,
     export_read_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -389,6 +390,29 @@ class IDistributionPublic(
 
         :param name_or_version: The `IDistroSeries.name` or
             `IDistroSeries.version`.
+        """
+
+    @operation_parameters(
+        since=Datetime(
+            title=_("Time of last change"),
+            description=_(
+                "Return branches that have new tips since this timestamp."),
+            required=False))
+    @export_operation_as(name="getBranchTips")
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getBranchTips(since):
+        """Return a list of branches which have new tips since a date.
+
+        Each branch information is a tuple of (branch_unique_name,
+        tip_revision, (official_series*)).
+
+        So for each branch in the distribution, you'll get the branch unique
+        name, the revision id of tip, and if the branch is official for some
+        series, the list of series name.
+
+        :param since: If specified, limits results to branches modified since
+            that date and time.
         """
 
     @operation_parameters(
