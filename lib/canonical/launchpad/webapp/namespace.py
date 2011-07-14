@@ -76,12 +76,12 @@ class JsonModelNamespaceView(view):
         # initialized.  This is a bit paranoid.
         # XXX register a <browser:pages> directive in the ZCML for
         # LaunchpadView to make the security settings work.
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
-        #naked_context = removeSecurityProxy(self.context)
-        #naked_context.initialize()
-        self.context.initialize()
+        naked_context = removeSecurityProxy(self.context)
+        naked_context.initialize()
+        #self.context.initialize()
         ## cache = IJSONRequestCache(self.request)
         ## #cache = {'name': 'brad'}
         ## return dumps(cache.objects)
-        cache = self.context.getCacheJSON()
+        cache = naked_context.getCacheJSON()
+        self.request.response.setHeader('content-type', 'application/json')
         return cache
