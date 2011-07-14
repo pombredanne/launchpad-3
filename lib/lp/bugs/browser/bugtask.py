@@ -3599,6 +3599,8 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             'bugtask_path': '/'.join(
                 [''] + canonical_url(self.context).split('/')[3:]),
             'prefix': get_prefix(self.context),
+            'assignee_is_team': self.context.assignee
+                and self.context.assignee.is_team,
             'assignee_vocabulary': assignee_vocabulary,
             'hide_assignee_team_selection': hide_assignee_team_selection,
             'user_can_unassign': self.context.userCanUnassign(user),
