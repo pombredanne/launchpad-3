@@ -833,8 +833,7 @@ class BranchMirrorStatusView(LaunchpadFormView):
         else:
             celebs = getUtility(ILaunchpadCelebrities)
             return (self.user.inTeam(self.context.owner) or
-                    self.user.inTeam(celebs.admin) or
-                    self.user.inTeam(celebs.bazaar_experts))
+                    self.user.inTeam(celebs.admin))
 
     @property
     def mirror_of_ssh(self):

@@ -142,16 +142,17 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         naked_job = removeSecurityProxy(job)
         self.assertEqual((parent.id, ), naked_job.parents)
 
-    def test_getPendingJobsForDistroseries(self):
-        # Pending initialization jobs can be retrieved per distroseries.
+    def test_get(self):
+        # InitializeDistroSeriesJob.get() returns the initialization job for
+        # the given distroseries. There should only ever be one.
         parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
         another_distroseries = self.factory.makeDistroSeries()
+        self.assertIs(None, self.job_source.get(distroseries))
         self.job_source.create(distroseries, [parent.id])
         self.job_source.create(another_distroseries, [parent.id])
-        initialize_utility = getUtility(IInitializeDistroSeriesJobSource)
-        [job] = list(initialize_utility.getPendingJobsForDistroseries(
-            distroseries))
+        job = self.job_source.get(distroseries)
+        self.assertIsInstance(job, InitializeDistroSeriesJob)
         self.assertEqual(job.distroseries, distroseries)
 
 

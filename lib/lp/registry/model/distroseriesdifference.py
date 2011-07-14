@@ -25,6 +25,7 @@ from storm.expr import (
     And,
     Column,
     Desc,
+    Or,
     Select,
     Table,
     )
@@ -88,7 +89,10 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
-from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.packageset import (
+    IPackagesetSet,
+    NoSuchPackageSet,
+    )
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
@@ -333,7 +337,7 @@ class DistroSeriesDifference(StormBase):
     def getForDistroSeries(
         distro_series,
         difference_type=None,
-        source_package_name_filter=None,
+        name_filter=None,
         status=None,
         child_version_higher=False,
         parent_series=None,
@@ -360,9 +364,20 @@ class DistroSeriesDifference(StormBase):
             conditions.extend([
                DistroSeriesDifference.parent_series == parent_series.id])
 
-        if source_package_name_filter:
-            conditions.extend([
-               SourcePackageName.name == source_package_name_filter])
+        if name_filter:
+            name_matches = [SourcePackageName.name == name_filter]
+            try:
+                packageset = getUtility(IPackagesetSet).getByName(
+                    name_filter, distroseries=distro_series)
+            except NoSuchPackageSet:
+                packageset = None
+            if packageset is not None:
+                name_matches.append(
+                    DistroSeriesDifference.source_package_name_id.is_in(
+                        Select(
+                            PackagesetSources.sourcepackagename_id,
+                            PackagesetSources.packageset == packageset)))
+            conditions.extend([Or(*name_matches)])
 
         if child_version_higher:
             conditions.extend([
