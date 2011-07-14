@@ -84,6 +84,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.lazrjs import (
     BooleanChoiceWidget,
     InlineEditPickerWidget,
+    InlinePersonEditPickerWidget,
     TextAreaEditorWidget,
     TextLineEditorWidget,
     )
@@ -267,7 +268,7 @@ class SourcePackageRecipeView(LaunchpadView):
             vocabulary='UserTeamsParticipationPlusSelf'
         field = copy_field(
             ISourcePackageRecipe['owner'], vocabularyName=vocabulary)
-        return InlineEditPickerWidget(
+        return InlinePersonEditPickerWidget(
             self.context, field,
             format_link(self.context.owner),
             header='Change owner',

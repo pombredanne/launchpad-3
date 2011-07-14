@@ -1,5 +1,6 @@
 # Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+from lp.services.fields import PersonChoice
 
 __metaclass__ = type
 
@@ -59,14 +60,15 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         picker_widget = VocabularyPickerWidget(
             bound_field, self.vocabulary, self.request)
 
+        widget_config = simplejson.loads(picker_widget.json_config)
         self.assertEqual(
             'ValidTeamOwner', picker_widget.vocabulary_name)
         self.assertEqual(
             simplejson.dumps(self.vocabulary.displayname),
-            picker_widget.header_text)
+            widget_config['header'])
         self.assertEqual(
             simplejson.dumps(self.vocabulary.step_title),
-            picker_widget.step_title_text)
+            widget_config['step_title'])
         self.assertEqual(
             'show-widget-field-test_valid-item', picker_widget.show_widget_id)
         self.assertEqual(
@@ -124,11 +126,35 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         # A vocabulary widget does not show the extra buttons by default.
         picker_widget = VocabularyPickerWidget(
             bound_field, self.vocabulary, self.request)
-        self.assertEqual('false', picker_widget.show_assign_me_button)
-        self.assertEqual('false', picker_widget.show_remove_button)
+        self.assertEqual('false',
+            picker_widget.config['show_assign_me_button'])
+        self.assertEqual('false',
+            picker_widget.config['show_assign_me_button'])
 
         # A person picker widget does show them by default.
         person_picker_widget = PersonPickerWidget(
             bound_field, self.vocabulary, self.request)
-        self.assertEqual('true', person_picker_widget.show_assign_me_button)
-        self.assertEqual('true', person_picker_widget.show_remove_button)
+        self.assertEqual('true',
+            person_picker_widget.config['show_assign_me_button'])
+        self.assertEqual('true',
+            person_picker_widget.config['show_assign_me_button'])
+
+    def test_widget_personvalue_meta(self):
+        # The person picker has the correct meta value for a person value.
+        person = self.factory.makePerson()
+        bound_field = ITest['test_valid.item'].bind(person)
+        person_picker_widget = PersonPickerWidget(
+            bound_field, self.vocabulary, self.request)
+        person_picker_widget.setRenderedValue(person)
+        self.assertEqual('person',
+            person_picker_widget.config['selected_value_meta'])
+
+    def test_widget_teamvalue_meta(self):
+        # The person picker has the correct meta value for a team value.
+        team = self.factory.makeTeam()
+        bound_field = ITest['test_valid.item'].bind(team)
+        person_picker_widget = PersonPickerWidget(
+            bound_field, self.vocabulary, self.request)
+        person_picker_widget.setRenderedValue(team)
+        self.assertEqual('team',
+            person_picker_widget.config['selected_value_meta'])
