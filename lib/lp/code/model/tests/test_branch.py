@@ -2494,20 +2494,6 @@ class TestBranchSetOwner(TestCaseWithFactory):
         branch.setOwner(person, admin)
         self.assertEqual(person, branch.owner)
 
-    def test_bazaar_experts_can_set_any_team_or_person(self):
-        # A bazaar expert can set the branch to be owned by any team or
-        # person.
-        branch = self.factory.makeAnyBranch()
-        team = self.factory.makeTeam()
-        # To get a random administrator, choose the admin team owner.
-        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
-        login_person(experts)
-        branch.setOwner(team, experts)
-        self.assertEqual(team, branch.owner)
-        person = self.factory.makePerson()
-        branch.setOwner(person, experts)
-        self.assertEqual(person, branch.owner)
-
 
 class TestBranchSetTarget(TestCaseWithFactory):
     """Tests for IBranch.setTarget."""
