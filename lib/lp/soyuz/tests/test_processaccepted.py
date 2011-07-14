@@ -4,6 +4,7 @@
 """Test process-accepted.py"""
 
 from cStringIO import StringIO
+from zope.component import getUtility
 
 from canonical.launchpad.interfaces.lpstorm import IStore
 from debian.deb822 import Changes
@@ -13,8 +14,10 @@ from testtools.matchers import LessThan
 from canonical.config import config
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import LaunchpadZopelessLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import BufferLogger
+from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -208,6 +211,39 @@ class TestProcessAccepted(TestCaseWithFactory):
         distro = self.factory.makeDistribution()
         script = ProcessAccepted(test_args=[distro.name])
         self.assertContentEqual([distro], script.findTargetDistros())
+
+    def test_findNamedDistro_raises_error_if_not_found(self):
+        nonexistent_distro = self.factory.getUniqueString()
+        script = ProcessAccepted(test_args=[nonexistent_distro])
+        self.assertRaises(
+            LaunchpadScriptFailure,
+            script.findNamedDistro, nonexistent_distro)
+
+    def test_findTargetDistros_for_derived_finds_derived_distro(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        script = ProcessAccepted(test_args=['--derived'])
+        self.assertIn(
+            dsp.derived_series.distribution, script.findDerivedDistros())
+
+    def test_findDerivedDistros_for_derived_ignores_non_derived_distros(self):
+        distro = self.factory.makeDistribution()
+        script = ProcessAccepted(test_args=['--derived'])
+        self.assertNotIn(distro, script.findDerivedDistros())
+
+    def test_findDerivedDistros_ignores_ubuntu(self):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        script = ProcessAccepted(test_args=['--derived'])
+        self.assertNotIn(ubuntu, script.findDerivedDistros())
+
+    def test_findDerivedDistros_finds_each_distro_once(self):
+        # Even if a distribution has multiple inheritance relationships,
+        # findDerivedDistros will find it only once.
+        dsp = self.factory.makeDistroSeriesParent()
+        self.factory.makeDistroSeriesParent(derived_series=dsp.derived_series)
+        script = ProcessAccepted(test_args=['--derived'])
+        derived_distros = list(script.findDerivedDistros())
+        self.assertEqual(
+            1, derived_distros.count(dsp.derived_series.distribution))
 
 
 class TestBugsFromChangesFile(TestCaseWithFactory):
