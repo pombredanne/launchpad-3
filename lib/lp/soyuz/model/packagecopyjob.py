@@ -484,7 +484,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         if pu is not None:
             # A PackageUpload will only exist if the copy job had to be
             # held in the queue because of policy/ancestry checks.  If one
-            # does exist we need to make sure 
+            # does exist we need to make sure it gets moved to DONE.
             pu.setDone()
 
     def abort(self):
