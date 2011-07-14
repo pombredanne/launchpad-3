@@ -29,9 +29,13 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.testing.pages import find_tag_by_id
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interaction import get_current_principal
@@ -51,7 +55,6 @@ from lp.registry.browser.distroseries import (
     RESOLVED,
     seriesToVocab,
     )
-from canonical.config import config
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
@@ -95,6 +98,7 @@ from lp.testing import (
     )
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.matchers import (
+    DocTestMatches,
     EqualsIgnoringWhitespace,
     HasQueryCount,
     )
@@ -336,6 +340,28 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
         self.assertTrue(derived_series.isInitializing())
         self.assertThat(html_content, portlet_display)
 
+    def test_differences_portlet_initialization_failed(self):
+        # The difference portlet displays a failure message if initialization
+        # for the series has failed.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self.factory.makeDistroSeries()
+        parent_series = self.factory.makeDistroSeries()
+        self.simple_user = self.factory.makePerson()
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
+        job = job_source.create(derived_series, [parent_series.id])
+        job.start()
+        job.fail()
+        portlet_display = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Derived series', 'h2',
+                text='Series initialization has failed'),
+            )
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                derived_series, '+index', principal=self.simple_user)
+            html_content = view()
+        self.assertThat(html_content, portlet_display)
+
     def assertInitSeriesLinkPresent(self, series, person):
         self._assertInitSeriesLink(series, person, True)
 
@@ -422,6 +448,65 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
         job_source.create(series, [parent_series.id])
 
         self.assertInitSeriesLinkNotPresent(series, 'admin')
+
+
+class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    @property
+    def job_source(self):
+        return getUtility(IInitializeDistroSeriesJobSource)
+
+    def test_initialization_failed_can_retry(self):
+        # When initialization has failed and the user has the ability to retry
+        # it prompts the user to try again.
+        set_derived_series_ui_feature_flag(self)
+        series = self.factory.makeDistroSeries()
+        parent = self.factory.makeDistroSeries()
+        job = self.job_source.create(series, [parent.id])
+        job.start()
+        job.fail()
+        with person_logged_in(series.owner):
+            view = create_initialized_view(series, '+portlet-derivation')
+            html_content = view()
+        self.assertThat(
+            extract_text(html_content), DocTestMatches(
+                "Series initialization has failed\n"
+                "You can attempt initialization again."))
+
+    def test_initialization_failed_cannot_retry(self):
+        # When initialization has failed and the user does not have the
+        # ability to retry it suggests contacting someone who can.
+        set_derived_series_ui_feature_flag(self)
+        series = self.factory.makeDistroSeries()
+        parent = self.factory.makeDistroSeries()
+        job = self.job_source.create(series, [parent.id])
+        job.start()
+        job.fail()
+        with person_logged_in(series.distribution.owner):
+            series.distribution.owner.displayname = u"Bob Individual"
+        with anonymous_logged_in():
+            view = create_initialized_view(series, '+portlet-derivation')
+            html_content = view()
+        self.assertThat(
+            extract_text(html_content), DocTestMatches(
+                "Series initialization has failed\n"
+                "You cannot attempt initialization again, "
+                "but Bob Individual may be able to help."))
+        # When the owner is a team the message differs slightly from when the
+        # owner is an individual.
+        with person_logged_in(series.distribution.owner):
+            series.distribution.owner = self.factory.makeTeam(
+                displayname=u"Team Teamy Team Team")
+        with anonymous_logged_in():
+            view = create_initialized_view(series, '+portlet-derivation')
+            html_content = view()
+        self.assertThat(
+            extract_text(html_content), DocTestMatches(
+                "Series initialization has failed\n"
+                "You cannot attempt initialization again, but a "
+                "member of Team Teamy Team Team may be able to help."))
 
 
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):

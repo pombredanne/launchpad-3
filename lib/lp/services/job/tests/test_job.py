@@ -218,6 +218,13 @@ class TestJob(TestCase):
         job = Job(_status=JobStatus.FAILED)
         self.assertRaises(InvalidTransition, job.resume)
 
+    def test_is_pending(self):
+        """is_pending is True when the job can possibly complete."""
+        for status in JobStatus.items:
+            job = Job(_status=status)
+            self.assertEqual(
+                status in Job.PENDING_STATUSES, job.is_pending)
+
 
 class TestReadiness(TestCase):
     """Test the implementation of readiness."""

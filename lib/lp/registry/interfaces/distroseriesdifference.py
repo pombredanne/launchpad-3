@@ -294,7 +294,7 @@ class IDistroSeriesDifferenceSource(Interface):
     def getForDistroSeries(
         distro_series,
         difference_type=None,
-        source_package_name_filter=None,
+        name_filter=None,
         status=None,
         child_version_higher=False,
         parent_series=None,
@@ -308,9 +308,10 @@ class IDistroSeriesDifferenceSource(Interface):
         :param difference_type: The type of difference to include in the
             results.
         :type difference_type: `DistroSeriesDifferenceType`.
-        :param source_package_name_filter: Name of a source package.  If
-            given, restricts the search to this package.
-        :type source_package_name_filter: unicode.
+        :param name_filter: Name of either a source package or a package set
+            to look for.  If given, return only packages whose name matches
+            this string, or that are in a `Packageset` those name matches it.
+        :type name_filter: unicode.
         :param status: Only differences matching the status(es) will be
             included.
         :type status: `DistroSeriesDifferenceStatus`.

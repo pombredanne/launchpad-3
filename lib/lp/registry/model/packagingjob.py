@@ -35,6 +35,7 @@ from lp.services.job.interfaces.job import (
     JobStatus,
     )
 from lp.services.job.model.job import Job
+from lp.services.utils import RegisteredSubclass
 
 
 class PackagingJobType(DBEnumeratedType):
@@ -96,13 +97,6 @@ class PackagingJob(StormBase):
         self.productseries = productseries
 
 
-class RegisteredSubclass(type):
-    """Metaclass for when subclasses should be registered."""
-
-    def __init__(cls, name, bases, dict_):
-        cls._register_subclass(cls)
-
-
 class PackagingJobDerived:
     """Base class for specialized Packaging Job types."""
 
@@ -120,10 +114,7 @@ class PackagingJobDerived:
     @staticmethod
     def _register_subclass(cls):
         """Register this class with its enumeration."""
-        # This would be a classmethod, except that subclasses (e.g.
-        # TranslationPackagingJob) need to be able to override it and call
-        # into it, and there's no syntax to call a base class's version of a
-        # classmethod with the subclass as the first parameter.
+        # Why not a classmethod?  See RegisteredSubclass.__init__.
         job_type = getattr(cls, 'class_job_type', None)
         if job_type is not None:
             value = cls._subclass.setdefault(job_type, cls)
