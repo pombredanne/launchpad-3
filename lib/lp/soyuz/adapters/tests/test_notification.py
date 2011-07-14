@@ -160,10 +160,9 @@ class TestNotification(TestCaseWithFactory):
         archive = self.factory.makeArchive()
         distroseries = self.factory.makeDistroSeries()
         pocket = self.factory.getAnyPocket()
-        logger = BufferLogger()
-        notify(
-            None, None, (), (), archive, distroseries, pocket, logger=logger)
-        self.assertEqual('', logger.getLogBuffer())
+        notify(None, None, (), (), archive, distroseries, pocket)
+        notifications = pop_notifications()
+        self.assertEqual(0, len(notifications))
 
     def _run_recipients_test(self, changes, blamer, maintainer, changer):
         distribution = self.factory.makeDistribution()
