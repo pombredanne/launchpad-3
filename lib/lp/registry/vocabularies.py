@@ -1837,8 +1837,7 @@ class DistroSeriesDerivationVocabulary:
         """See `IHugeVocabulary`."""
         parent = ClassAlias(DistroSeries, "parent")
         child = ClassAlias(DistroSeries, "child")
-        # Select only the series with architectures setup in LP.
-        where = [DistroSeries.id == DistroArchSeries.distroseriesID]
+        where = []
         if query is not None:
             term = '%' + query.lower() + '%'
             search = Or(
@@ -1857,6 +1856,9 @@ class DistroSeriesDerivationVocabulary:
                 DistroSeries.distributionID.is_in(parent_distributions))
             return self.find_terms(where)
         else:
+            # Select only the series with architectures setup in LP.
+            where.append(
+                DistroSeries.id == DistroArchSeries.distroseriesID)
             where.append(
                 DistroSeries.distribution != self.distribution)
             return self.find_terms(where)

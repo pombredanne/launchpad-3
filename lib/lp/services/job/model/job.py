@@ -102,6 +102,11 @@ class Job(SQLBase):
 
     status = property(lambda x: x._status)
 
+    @property
+    def is_pending(self):
+        """See `IJob`."""
+        return self.status in self.PENDING_STATUSES
+
     @classmethod
     def createMultiple(self, store, num_jobs):
         """Create multiple `Job`s at once.

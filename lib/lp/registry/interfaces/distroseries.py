@@ -902,6 +902,12 @@ class IDistroSeriesPublic(
     def isInitialized():
         """Has this series been initialized?"""
 
+    def getInitializationJob():
+        """Get the last `IInitializeDistroSeriesJob` for this series.
+
+        :return: `None` if no job is found or an `IInitializeDistroSeriesJob`.
+        """
+
     @operation_parameters(
         since=Datetime(
             title=_("Minimum creation timestamp"),
