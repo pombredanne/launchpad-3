@@ -230,16 +230,18 @@ class TestProcessAccepted(TestCaseWithFactory):
         script = ProcessAccepted(test_args=['--derived'])
         self.assertNotIn(distro, script.findDerivedDistros())
 
-    def test_findDerivedDistros_ignores_ubuntu(self):
+    def test_findDerivedDistros_ignores_ubuntu_even_if_derived(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.factory.makeDistroSeriesParent(
+            derived_series=ubuntu.currentseries)
         script = ProcessAccepted(test_args=['--derived'])
         self.assertNotIn(ubuntu, script.findDerivedDistros())
 
-    def test_findDerivedDistros_finds_each_distro_once(self):
-        # Even if a distribution has multiple inheritance relationships,
-        # findDerivedDistros will find it only once.
+    def test_findDerivedDistros_finds_each_distro_just_once(self):
         dsp = self.factory.makeDistroSeriesParent()
-        self.factory.makeDistroSeriesParent(derived_series=dsp.derived_series)
+        distro = dsp.derived_series.distribution
+        other_series = self.factory.makeDistroSeries(distribution=distro)
+        self.factory.makeDistroSeriesParent(derived_series=other_series)
         script = ProcessAccepted(test_args=['--derived'])
         derived_distros = list(script.findDerivedDistros())
         self.assertEqual(

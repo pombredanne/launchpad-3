@@ -19,6 +19,7 @@ from optparse import OptionValueError
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
@@ -30,6 +31,7 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.distroseriesparent import DistroSeriesParent
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
@@ -286,8 +288,16 @@ class ProcessAccepted(LaunchpadCronScript):
             self.txn.commit()
 
     def findDerivedDistros(self):
-# XXX: Implement!
-        return []
+        """Find Ubuntu-derived distributions."""
+        # Avoid circular imports.
+        from lp.registry.model.distribution import Distribution
+        from lp.registry.model.distroseries import DistroSeries
+
+        ubuntu_id = getUtility(ILaunchpadCelebrities).ubuntu.id
+        return IStore(DistroSeries).find(
+            Distribution,
+            Distribution.id == DistroSeries.distributionID,
+            DistroSeries.id == DistroSeriesParent.derived_series_id)
 
     def findNamedDistro(self, distro_name):
         """Find the `Distribution` called `distro_name`."""
