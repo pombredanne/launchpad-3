@@ -83,5 +83,5 @@ class JsonModelNamespaceView(view):
         ## cache = IJSONRequestCache(self.request)
         ## #cache = {'name': 'brad'}
         ## return dumps(cache.objects)
-        cache = self.context.getCacheJson()
+        cache = self.context.getCacheJSON()
         return cache
