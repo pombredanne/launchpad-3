@@ -659,15 +659,14 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IDistribution`."""
         query = """
             SELECT unique_name, last_scanned_id, SPBDS.name FROM Branch
-            LEFT OUTER JOIN DistroSeries
+            JOIN DistroSeries
                 ON Branch.distroseries = DistroSeries.id
             LEFT OUTER JOIN SeriesSourcePackageBranch
                 ON Branch.id = SeriesSourcePackageBranch.branch
-            JOIN Distribution
-                ON DistroSeries.distribution = Distribution.id
-            LEFT OUTER JOIN DistroSeries SPBDS -- (SourcePackageBranchDistroSeries)
+            LEFT OUTER JOIN DistroSeries SPBDS
+                -- (SPDBS stands for Source Package Branch Distro Series)
                 ON SeriesSourcePackageBranch.distroseries = SPBDS.id
-            WHERE Distribution.name = %s""" % sqlvalues(self.name)
+            WHERE DistroSeries.distribution = %s""" % sqlvalues(self.id)
 
         if since is not None:
             query += (
@@ -681,8 +680,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # Group on location (unique_name) and revision (last_scanned_id).
         for key, group in itertools.groupby(data, itemgetter(0, 1)):
             result.append(list(key))
-            # Pull out all the official series IDs and append them as a list
-            # to the end of the current record,kremoving Nones from the list.
+            # Pull out all the official series names and append them as a list
+            # to the end of the current record, removing Nones from the list.
             result[-1].append(filter(None, map(itemgetter(-1), group)))
         return result
 
