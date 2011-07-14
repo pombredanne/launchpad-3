@@ -47,6 +47,7 @@ from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
 from lp.registry.model.person import Person
 from lp.soyuz.enums import (
+    ArchivePurpose,
     ArchiveStatus,
     PackagePublishingStatus,
     )
@@ -595,6 +596,11 @@ class TestPersonUploadedPackagesView(TestCaseWithFactory):
     def setUp(self):
         super(TestPersonUploadedPackagesView, self).setUp()
         self.user = self.factory.makePerson()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        spr = self.factory.makeSourcePackageRelease(
+            creator=self.user, archive=archive)
+        self.spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=archive)
         self.view = create_initialized_view(self.user, '+uploaded-packages')
 
     def test_view_helper_attributes(self):
@@ -605,6 +611,15 @@ class TestPersonUploadedPackagesView(TestCaseWithFactory):
             config.launchpad.default_batch_size,
             self.view.max_results_to_display)
 
+    def test_verify_bugs_and_answers_links(self):
+        # Verify the links for bugs and answers point to locations that
+        # exist.
+        html = self.view()
+        expected_base = '/%s/+source/%s/' % (
+            self.spph.distroseries.distribution.name,
+            self.spph.source_package_name)
+        for suffix in ('+bugs', '+questions'):
+            self.assertIn('<a href="%s%s">' % (expected_base, suffix), html)
 
 class TestPersonPPAPackagesView(TestCaseWithFactory):
     """Test the maintained packages view."""
