@@ -63,6 +63,7 @@ setup(
         'pydkim',
         'python-openid',
         'pytz',
+        'rabbitfixture',
         # This appears to be a broken indirect dependency from zope.security:
         'RestrictedPython',
         'selenium',
@@ -134,7 +135,6 @@ setup(
         'Paste',
         'PasteDeploy',
         'SimpleTal',
-        'lazr.amqp',
     ],
     url='https://launchpad.net/',
     classifiers=[

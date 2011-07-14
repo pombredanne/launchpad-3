@@ -61,7 +61,7 @@ class IPackageCopyJobEdit(Interface):
         """Update the job's JSON metadata with items from `metadata_dict`."""
 
 
-class IPackageCopyJob(Interface):
+class IPackageCopyJobPublic(Interface):
     """The immutable data on an `IPackageCopyJob`, for normal use."""
 
     id = Int(
@@ -105,6 +105,10 @@ class IPackageCopyJob(Interface):
         title=_("Section override name"), required=False, readonly=True)
 
     metadata = Attribute(_("A dict of data about the job."))
+
+
+class IPackageCopyJob(IPackageCopyJobPublic, IPackageCopyJobEdit):
+    """An `IJob` representing a copy of packages between places."""
 
 
 class PackageCopyJobType(DBEnumeratedType):

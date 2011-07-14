@@ -128,7 +128,6 @@ class LaunchpadCelebrities:
     implements(ILaunchpadCelebrities)
 
     admin = PersonCelebrityDescriptor('admins')
-    bazaar_experts = PersonCelebrityDescriptor('bazaar-experts')
     software_center_agent = PersonCelebrityDescriptor(
         'software-center-agent')
     bug_importer = PersonCelebrityDescriptor('bug-importer')
