@@ -172,23 +172,6 @@ class BasePublishingRecordView(LaunchpadView):
         return self.context.dateremoved is not None
 
     @property
-    def js_connector(self):
-        """Return the javascript glue for expandable rows mechanism."""
-        return """
-        <script type="text/javascript">
-           registerLaunchpadFunction(function() {
-               // Set the style of the expander icon so that it appears
-               // clickable when js is enabled:
-               var view_icon = document.getElementById('pub%s-expander');
-               view_icon.style.cursor = 'pointer';
-               connect('pub%s-expander', 'onclick', function (e) {
-                   toggleExpandableTableRow('pub%s');
-                   });
-               });
-        </script>
-        """ % (self.context.id, self.context.id, self.context.id)
-
-    @property
     def removal_comment(self):
         """Return the removal comment or 'None provided'."""
         removal_comment = self.context.removal_comment
