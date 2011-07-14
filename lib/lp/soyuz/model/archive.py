@@ -1561,7 +1561,9 @@ class Archive(SQLBase):
                 "None of the supplied package names are published")
 
         # Bulk-load the sourcepackagereleases so that the list
-        # comprehension doesn't generate additional queries.
+        # comprehension doesn't generate additional queries. The
+        # sourcepackagenames themselves will already have been loaded when
+        # generating the list of source publications in "sources".
         load_related(
             SourcePackageRelease, sources, ["sourcepackagereleaseID"])
         sourcepackagenames = [source.sourcepackagerelease.sourcepackagename
