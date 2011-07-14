@@ -160,7 +160,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     if spr is None and not bprs and not customfiles:
         # We do not have enough context to do a normal notification, so
         # reject what we do have.
-        if not changesfile_object:
+        if changesfile_object is None:
             return
         reject_changes_file(
             blamer, changesfile_object.name, changes, archive, distroseries,
