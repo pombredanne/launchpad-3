@@ -30,7 +30,8 @@ class TestXHTMLRepresentations(TestCaseWithFactory):
         request = get_current_web_service_request()
         renderer = getMultiAdapter(
             (product, field, request), IFieldHTMLRenderer)
-        # The representation of a person is the same as a tales PersonFormatter.
+        # The representation of a person is the same as a tales
+        # PersonFormatter.
         self.assertEqual(format_link(eric), renderer(eric))
 
     def test_text(self):
