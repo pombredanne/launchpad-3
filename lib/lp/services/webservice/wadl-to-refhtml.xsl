@@ -864,6 +864,12 @@
                     <xsl:apply-templates select="wadl:doc"/>
                     <xsl:apply-templates select="wadl:request"/>
                     <xsl:apply-templates select="wadl:response"/>
+                    <xsl:if test="not(wadl:response)">
+                        <xsl:apply-templates select="wadl:doc//html:th[
+                            node() = 'return:'
+                            ]"/>
+                    </xsl:if>
+                    <xsl:call-template name="error-documentation"/>
                 </xsl:when>
                 <xsl:otherwise>
                     <p><em>Missing documentation.</em></p>
@@ -908,6 +914,39 @@
                     collection
                 </xsl:if>.
         </p>
+    </xsl:template>
+
+    <!-- Documentation of the custom method return type. -->
+    <xsl:template match="wadl:doc//html:th[node() = 'return:']">
+        <h6>Response (application/json)</h6>
+        <xsl:choose>
+            <xsl:when test="following-sibling::html:td/text()">
+                <p><xsl:apply-templates select="following-sibling::html:td"
+                      mode="copy"/></p>
+            </xsl:when>
+            <xsl:otherwise>
+                <xsl:apply-templates select="following-sibling::html:td"
+                      mode="copy"/>
+            </xsl:otherwise>
+        </xsl:choose>
+    </xsl:template>
+
+    <!-- Documentation of the error raised by the operation. -->
+    <xsl:template name="error-documentation">
+        <xsl:if test="wadl:doc//html:th[node() = 'raise:']">
+            <h6>Errors</h6>
+            <ul>
+                <xsl:apply-templates
+                    select="wadl:doc//html:th[node() = 'raise:']"/>
+            </ul>
+        </xsl:if>
+    </xsl:template>
+
+    <xsl:template match="wadl:doc//html:th[node() = 'raise:']">
+        <li>
+            <xsl:apply-templates select="following-sibling::html:td"
+                mode="copy"/>
+        </li>
     </xsl:template>
 
     <!-- Documentation for request parameter. -->
@@ -1032,11 +1071,15 @@
              mode="representation-type"/>
     </xsl:template>
 
-    <!-- Omit docutils parameter lists in methods since they are redundant
-    or misleading with the one we give. -->
+    <!-- Omit docutils parameter table in methods. The parameter names
+         description is either redundant or misleading with the one we
+         give.
+
+         We process the return and raise parameters separately.
+      -->
     <xsl:template match="wadl:method//html:table[
         contains(@class, 'field-list')]"
-        mode="copy"/>
+        mode="copy" />
 
     <!-- Output the mediaType attribute of a representation -->
     <xsl:template match="wadl:representation[@mediaType]"
