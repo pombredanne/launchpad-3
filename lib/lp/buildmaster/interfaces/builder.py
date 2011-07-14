@@ -136,7 +136,8 @@ class IBuilder(IHasOwner):
 
     title = exported(Title(
         title=_('Title'), required=True,
-        description=_('The builder slave title. Should be just a few words.')))
+        description=_(
+            'The builder slave title. Should be just a few words.')))
 
     description = exported(Description(
         title=_('Description'), required=False,
@@ -207,8 +208,8 @@ class IBuilder(IHasOwner):
         :param file_sha1: The file's sha1, which is how the file is addressed
             in the slave XMLRPC protocol. Specially, the file_sha1 'buildlog'
             will cause the build log to be retrieved and gzipped.
-        :param filename: The name of the file to be given to the librarian file
-            alias.
+        :param filename: The name of the file to be given to the librarian
+            file alias.
         :param private: True if the build is for a private archive.
         :return: A Deferred that calls back with a librarian file alias.
         """
@@ -246,14 +247,14 @@ class IBuilder(IHasOwner):
 
     def updateStatus(logger=None):
         """Update the builder's status by probing it.
-        
+
         :return: A Deferred that fires when the dialog with the slave is
             finished.  It does not have a return value.
         """
 
     def cleanSlave():
         """Clean any temporary files from the slave.
-        
+
         :return: A Deferred that fires when the dialog with the slave is
             finished.  It does not have a return value.
         """

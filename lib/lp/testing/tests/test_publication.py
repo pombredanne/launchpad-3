@@ -46,6 +46,7 @@ class TestTestTraverse(TestCaseWithFactory):
         """
         # This method is completely out of control.  Thanks, Zope.
         name = '+' + self.factory.getUniqueString()
+
         class new_class(simple):
             def __init__(self, context, request):
                 self.context = context
@@ -55,7 +56,7 @@ class TestTestTraverse(TestCaseWithFactory):
             required[n] = CheckerPublic
         defineChecker(new_class, Checker(required))
         getSiteManager().registerAdapter(
-            new_class, (ILaunchpadRoot, IDefaultBrowserLayer), Interface, 
+            new_class, (ILaunchpadRoot, IDefaultBrowserLayer), Interface,
             name)
         self.addCleanup(
             getSiteManager().unregisterAdapter, new_class,
@@ -76,6 +77,7 @@ class TestTestTraverse(TestCaseWithFactory):
         # traversal in the sense of get_current_browser_request.
         login(ANONYMOUS)
         requests = []
+
         def record_current_request():
             requests.append(get_current_browser_request())
         context, view, request = test_traverse(
@@ -98,6 +100,7 @@ class TestTestTraverse(TestCaseWithFactory):
         person = self.factory.makePerson()
         login_person(person)
         users = []
+
         def record_user():
             users.append(getUtility(ILaunchBag).user)
         context, view, request = test_traverse(

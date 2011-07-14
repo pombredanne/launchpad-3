@@ -84,6 +84,7 @@ class ProcessorFamily(SQLBase):
 
 class ProcessorFamilySet:
     implements(IProcessorFamilySet)
+
     def getByName(self, name):
         """Please see `IProcessorFamilySet`."""
         # Please note that ProcessorFamily.name is unique i.e. the database

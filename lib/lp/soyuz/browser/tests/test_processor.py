@@ -10,6 +10,7 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from lp.testing import TestCaseWithFactory
 from lp.testing.publication import test_traverse
 
+
 class TestProcessorNavigation(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
@@ -38,4 +39,3 @@ class TestProcessorNavigation(TestCaseWithFactory):
             'http://api.launchpad.dev/'
             'devel/+processors/quantum')
         self.assertEquals(family.processors[0], obj)
-

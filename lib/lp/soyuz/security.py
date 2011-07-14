@@ -15,9 +15,11 @@ from lp.soyuz.interfaces.processor import (
     IProcessorFamily,
     )
 
+
 class ViewProcessor(AnonymousAuthorization):
     """Anyone can view an `IProcessor`."""
     usedfor = IProcessor
+
 
 class ViewProcessorFamily(AnonymousAuthorization):
     """Anyone can view an `IProcessorFamily`."""

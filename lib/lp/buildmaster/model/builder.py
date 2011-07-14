@@ -171,7 +171,8 @@ class BuilderSlave(object):
 
         :param builder_url: The URL of the slave buildd machine,
             e.g. http://localhost:8221
-        :param vm_host: If the slave is virtual, specify its host machine here.
+        :param vm_host: If the slave is virtual, specify its host machine
+            here.
         :param reactor: Used by tests to override the Twisted reactor.
         :param proxy: Used By tests to override the xmlrpc.Proxy.
         """
@@ -216,7 +217,7 @@ class BuilderSlave(object):
     def getFile(self, sha_sum, file_to_write):
         """Fetch a file from the builder.
 
-        :param sha_sum: The sha of the file (which is also its name on the 
+        :param sha_sum: The sha of the file (which is also its name on the
             builder)
         :param file_to_write: A file name or file-like object to write
             the file to
@@ -258,7 +259,8 @@ class BuilderSlave(object):
         resume_command = config.builddmaster.vm_resume_command % {
             'vm_host': self._vm_host}
         # Twisted API requires string but the configuration provides unicode.
-        resume_argv = [term.encode('utf-8') for term in resume_command.split()]
+        resume_argv = [
+            term.encode('utf-8') for term in resume_command.split()]
         d = defer.Deferred()
         p = ProcessWithTimeout(
             d, config.builddmaster.socket_timeout, clock=clock)
@@ -281,6 +283,7 @@ class BuilderSlave(object):
     def sendFileToSlave(self, sha1, url, username="", password=""):
         """Helper to send the file at 'url' with 'sha1' to this builder."""
         d = self.ensurepresent(sha1, url, username, password)
+
         def check_present((present, info)):
             if not present:
                 raise CannotFetchFile(url, info)
@@ -299,6 +302,7 @@ class BuilderSlave(object):
         """
         d = self._with_timeout(self._server.callRemote(
             'build', buildid, builder_type, chroot_sha1, filemap, args))
+
         def got_fault(failure):
             failure.trap(xmlrpclib.Fault)
             raise BuildSlaveFailure(failure.value)
@@ -370,6 +374,7 @@ def rescueBuilderIfLost(builder, logger=None):
                 d = builder.cleanSlave()
             else:
                 d = builder.requestAbort()
+
             def log_rescue(ignored):
                 if logger:
                     logger.info(
@@ -514,8 +519,10 @@ class Builder(SQLBase):
         logger.info("Resuming %s (%s)" % (self.name, self.url))
 
         d = self.slave.resume()
+
         def got_resume_ok((stdout, stderr, returncode)):
             return stdout, stderr
+
         def got_resume_bad(failure):
             stdout, stderr, code = failure.value
             raise CannotResumeHost(
@@ -605,6 +612,7 @@ class Builder(SQLBase):
     def slaveStatus(self):
         """See IBuilder."""
         d = self.slave.status()
+
         def got_status(status_sentence):
             status = {'builder_status': status_sentence[0]}
 
@@ -680,9 +688,11 @@ class Builder(SQLBase):
         if not self.builderok:
             return defer.succeed(False)
         d = self.slaveStatusSentence()
+
         def catch_fault(failure):
             failure.trap(xmlrpclib.Fault, socket.error)
             return False
+
         def check_available(status):
             return status[0] == BuilderStatus.IDLE
         return d.addCallbacks(check_available, catch_fault)

@@ -45,17 +45,20 @@ class ProcessorFamilyTests(TestCaseWithFactory):
         """Test adding a new Processor to a ProcessorFamily."""
         family = getUtility(IProcessorFamilySet).new("avr", "Atmel AVR",
             "The Modified Harvard architecture 8-bit RISC processors.")
-        proc = family.addProcessor("avr2001", "The 2001 AVR", "Fast as light.")
+        proc = family.addProcessor(
+            "avr2001", "The 2001 AVR", "Fast as light.")
         self.assertProvides(proc, IProcessor)
         self.assertEquals(family, proc.family)
 
     def test_get_restricted(self):
         """Test retrieving all restricted processors."""
         family_set = getUtility(IProcessorFamilySet)
-        normal_family = getUtility(IProcessorFamilySet).new("avr", "Atmel AVR",
+        normal_family = getUtility(IProcessorFamilySet).new(
+            "avr", "Atmel AVR",
             "The Modified Harvard architecture 8-bit RISC processors.")
-        restricted_family = getUtility(IProcessorFamilySet).new("5051", "5051",
-            "Another small processor family", restricted=True)
+        restricted_family = getUtility(IProcessorFamilySet).new(
+            "5051", "5051", "Another small processor family",
+            restricted=True)
         self.assertFalse(normal_family in family_set.getRestricted())
         self.assertTrue(restricted_family in family_set.getRestricted())
 
@@ -85,7 +88,7 @@ class ProcessorSetTests(TestCaseWithFactory):
             ['g4', 'i686', 'q1'],
             sorted(
             processor.name for processor in processor_set.getAll()
-            if not processor.name.startswith('sample_data_') ))
+            if not processor.name.startswith('sample_data_')))
 
 
 class ProcessorSetWebServiceTests(TestCaseWithFactory):
@@ -120,4 +123,5 @@ class ProcessorSetWebServiceTests(TestCaseWithFactory):
         self.assertEquals(
             ['g4', 'i686', 'q1'],
             sorted(
-            processor['name'] for processor in collection['entries'] if not processor['name'].startswith('sample_data_') ))
+            processor['name'] for processor in collection['entries']
+            if not processor['name'].startswith('sample_data_')))
