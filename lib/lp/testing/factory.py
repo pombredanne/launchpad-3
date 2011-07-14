@@ -895,7 +895,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """Create a new processor family.
 
         A default processor for the family will be created with the
-        same name than the family.
+        same name as the family.
 
         :param name: Name of the family (e.g. x86)
         :param title: Optional title of the family

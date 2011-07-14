@@ -4,7 +4,9 @@
 """Additional JSON serializer for the web service."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'StrJSONSerializer',
+    ]
 
 
 from lazr.restful.interfaces import IJSONPublishable
