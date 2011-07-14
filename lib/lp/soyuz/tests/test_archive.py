@@ -49,8 +49,9 @@ from lp.soyuz.enums import (
     ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
+    PackageCopyPolicy,
     PackagePublishingStatus,
-    PackageCopyPolicy)
+    )
 from lp.soyuz.interfaces.archive import (
     ArchiveDependencyError,
     ArchiveDisabled,
