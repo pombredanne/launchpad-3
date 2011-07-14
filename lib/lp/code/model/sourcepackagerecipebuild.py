@@ -231,7 +231,7 @@ class SourcePackageRecipeBuild(PackageBuildDerived, Storm):
                         series_name, str(e))
                 except BuildNotAllowedForDistro:
                     logger.debug(
-                        ' - Can not build against %s.' % series_name)
+                        ' - cannot build against %s.' % series_name)
                 except ProgrammingError:
                     raise
                 except:

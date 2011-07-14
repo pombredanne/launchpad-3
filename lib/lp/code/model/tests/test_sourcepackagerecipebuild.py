@@ -422,7 +422,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         SourcePackageRecipeBuild.makeDailyBuilds(logger)
         self.assertEquals([], self.oopses)
         self.assertIn(
-            "DEBUG  - Can not build against Warty (4.10).",
+            "DEBUG  - cannot build against Warty (4.10).",
             logger.getLogBuffer())
 
     def test_getRecentBuilds(self):
