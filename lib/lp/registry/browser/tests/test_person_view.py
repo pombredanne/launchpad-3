@@ -615,11 +615,11 @@ class TestPersonUploadedPackagesView(TestCaseWithFactory):
         # Verify the links for bugs and answers point to locations that
         # exist.
         html = self.view()
-        expected_base = '/%s/+source/%s/' % (
+        expected_base = '/%s/+source/%s' % (
             self.spph.distroseries.distribution.name,
             self.spph.source_package_name)
-        for suffix in ('+bugs', '+questions'):
-            self.assertIn('<a href="%s%s">' % (expected_base, suffix), html)
+        self.assertIn('<a href="%s/+bugs">' % expected_base, html)
+        self.assertIn('<a href="%s/+questions">' % expected_base, html)
 
 class TestPersonPPAPackagesView(TestCaseWithFactory):
     """Test the maintained packages view."""
