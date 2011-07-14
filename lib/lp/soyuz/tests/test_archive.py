@@ -1990,8 +1990,8 @@ class TestSyncSource(TestCaseWithFactory):
          to_series, version) = self._setup_copy_data()
         with person_logged_in(target_archive.owner):
             target_archive.copyPackage(
-                source_name, version, source_archive, to_pocket,
-                to_series=to_series, include_binaries=False,
+                source_name, version, source_archive, to_pocket.name,
+                to_series=to_series.name, include_binaries=False,
                 person=target_archive.owner)
 
         # The source should not be published yet in the target_archive.
@@ -2023,7 +2023,7 @@ class TestSyncSource(TestCaseWithFactory):
         self.assertRaises(
             CannotCopy,
             target_archive.copyPackage, source_name, version, source_archive,
-            to_pocket, to_series=to_series, include_binaries=False,
+            to_pocket.name, to_series=to_series.name, include_binaries=False,
             person=person)
 
     def test_copyPackage_allows_primary_archive_uploaders(self):
@@ -2035,8 +2035,8 @@ class TestSyncSource(TestCaseWithFactory):
         with person_logged_in(target_archive.owner):
             target_archive.newComponentUploader(person, "universe")
         target_archive.copyPackage(
-            source_name, version, source_archive, to_pocket,
-            to_series=to_series, include_binaries=False,
+            source_name, version, source_archive, to_pocket.name,
+            to_series=to_series.name, include_binaries=False,
             person=person)
 
         # There should be one copy job.
@@ -2053,7 +2053,7 @@ class TestSyncSource(TestCaseWithFactory):
         self.assertRaises(
             CannotCopy,
             target_archive.copyPackage, source_name, version, source_archive,
-            to_pocket, to_series=to_series, include_binaries=False,
+            to_pocket.name, to_series=to_series.name, include_binaries=False,
             person=person)
 
     def test_copyPackage_disallows_non_release_target_pocket_for_PPA(self):
@@ -2064,6 +2064,6 @@ class TestSyncSource(TestCaseWithFactory):
         self.assertRaises(
             CannotCopy,
             target_archive.copyPackage, source_name, version, source_archive,
-            to_pocket, to_series=to_series, include_binaries=False,
+            to_pocket.name, to_series=to_series.name, include_binaries=False,
             person=target_archive.owner)
 

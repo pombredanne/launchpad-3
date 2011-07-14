@@ -1533,19 +1533,20 @@ class Archive(SQLBase):
                     person, to_series=None, include_binaries=False):
         """See `IArchive`."""
         # Asynchronously copy a package using the job system.
-
-        # Upload permission checks first, this will raise CannotCopy as
+        pocket = self._text_to_pocket(to_pocket)
+        series = self._text_to_series(to_series)
+        # Upload permission checks, this will raise CannotCopy as
         # necessary.
         sourcepackagename = getUtility(ISourcePackageNameSet)[source_name]
         check_copy_permissions(
-            person, self, to_series, to_pocket, [sourcepackagename])
+            person, self, series, pocket, [sourcepackagename])
 
         self._validateAndFindSource(from_archive, source_name, version)
         job_source = getUtility(IPlainPackageCopyJobSource)
         job_source.create(
             package_name=source_name, source_archive=from_archive,
-            target_archive=self, target_distroseries=to_series,
-            target_pocket=to_pocket,
+            target_archive=self, target_distroseries=series,
+            target_pocket=pocket,
             package_version=version, include_binaries=include_binaries,
             copy_policy=PackageCopyPolicy.INSECURE)
 
@@ -1572,6 +1573,27 @@ class Archive(SQLBase):
                 sources.append(first_source)
         return sources
 
+    def _text_to_series(self, to_series):
+        if to_series is not None:
+            result = getUtility(IDistroSeriesSet).queryByName(
+                self.distribution, to_series)
+            if result is None:
+                raise NoSuchDistroSeries(to_series)
+            series = result
+        else:
+            series = None
+
+        return series
+
+    def _text_to_pocket(self, to_pocket):
+        # Convert the to_pocket string to its enum.
+        try:
+            pocket = PackagePublishingPocket.items[to_pocket.upper()]
+        except KeyError:
+            raise PocketNotFound(to_pocket.upper())
+
+        return pocket
+
     def _copySources(self, sources, to_pocket, to_series=None,
                      include_binaries=False, person=None):
         """Private helper function to copy sources to this archive.
@@ -1581,12 +1603,8 @@ class Archive(SQLBase):
         """
         # Circular imports.
         from lp.soyuz.scripts.packagecopier import do_copy
-        # Convert the to_pocket string to its enum.
-        try:
-            pocket = PackagePublishingPocket.items[to_pocket.upper()]
-        except KeyError:
-            raise PocketNotFound(to_pocket.upper())
 
+        pocket = self._text_to_pocket(to_pocket)
         # Fail immediately if the destination pocket is not Release and
         # this archive is a PPA.
         if self.is_ppa and pocket != PackagePublishingPocket.RELEASE:
@@ -1594,14 +1612,7 @@ class Archive(SQLBase):
                 "Destination pocket must be 'release' for a PPA.")
 
         # Now convert the to_series string to a real distroseries.
-        if to_series is not None:
-            result = getUtility(IDistroSeriesSet).queryByName(
-                self.distribution, to_series)
-            if result is None:
-                raise NoSuchDistroSeries(to_series)
-            series = result
-        else:
-            series = None
+        series = self._text_to_series(to_series)
 
         # Perform the copy, may raise CannotCopy. Don't do any further
         # permission checking: this method is protected by
