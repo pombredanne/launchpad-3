@@ -102,6 +102,7 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.bulk import load_related
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import (
     cachedproperty,
@@ -1549,6 +1550,40 @@ class Archive(SQLBase):
             target_pocket=pocket,
             package_version=version, include_binaries=include_binaries,
             copy_policy=PackageCopyPolicy.INSECURE)
+
+    def copyPackages(self, source_names, from_archive, to_pocket,
+                     person, to_series=None, include_binaries=None):
+        """See `IArchive`."""
+        sources = self._collectLatestPublishedSources(
+            from_archive, source_names)
+        # Bulk-load the sourcepackagereleases so that the list
+        # comprehension doesn't generate additional queries.
+        load_related(SourcePackageRelease, sources, "sourcepackagerelease")
+        sourcepackagenames = [source.sourcepackagerelease.sourcepackagename
+                              for source in sources]
+
+        # Now do a mass check of permissions.
+        pocket = self._text_to_pocket(to_pocket)
+        series = self._text_to_series(to_series)
+        check_copy_permissions(
+            person, self, series, pocket, sourcepackagenames)
+
+        # If we get this far then we can create the PackageCopyJob.
+        copy_tasks = []
+        for source in sources:
+            task = (
+                source.sourcepackagerelease.sourcepackagename,
+                source.sourcepackagerelease.version,
+                from_archive,
+                self,
+                PackagePublishingPocket.RELEASE
+                )
+            tasks.append(task)
+
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        job_source.createMultiple(
+            series, copy_tasks, copy_policy=PackageCopyPolicy.INSECURE,
+            include_binaries=include_binaries)
 
     def _collectLatestPublishedSources(self, from_archive, source_names):
         """Private helper to collect the latest published sources for an
