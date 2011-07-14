@@ -1556,9 +1556,14 @@ class Archive(SQLBase):
         """See `IArchive`."""
         sources = self._collectLatestPublishedSources(
             from_archive, source_names)
+        if not sources:
+            raise CannotCopy(
+                "None of the supplied package names are published")
+
         # Bulk-load the sourcepackagereleases so that the list
         # comprehension doesn't generate additional queries.
-        load_related(SourcePackageRelease, sources, "sourcepackagerelease")
+        load_related(
+            SourcePackageRelease, sources, ["sourcepackagereleaseID"])
         sourcepackagenames = [source.sourcepackagerelease.sourcepackagename
                               for source in sources]
 
@@ -1578,7 +1583,7 @@ class Archive(SQLBase):
                 self,
                 PackagePublishingPocket.RELEASE
                 )
-            tasks.append(task)
+            copy_tasks.append(task)
 
         job_source = getUtility(IPlainPackageCopyJobSource)
         job_source.createMultiple(

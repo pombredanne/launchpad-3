@@ -1975,7 +1975,7 @@ class TestSyncSource(TestCaseWithFactory):
         source_archive = self.factory.makeArchive()
         target_archive = self.factory.makeArchive(purpose=target_purpose)
         source = self.factory.makeSourcePackagePublishingHistory(
-            archive=source_archive)
+            archive=source_archive, status=PackagePublishingStatus.PUBLISHED)
         source_name = source.source_package_name
         version = source.source_package_version
         to_pocket = PackagePublishingPocket.RELEASE
@@ -2067,4 +2067,24 @@ class TestSyncSource(TestCaseWithFactory):
             target_archive.copyPackage, source_name, version, source_archive,
             to_pocket.name, to_series=to_series.name, include_binaries=False,
             person=target_archive.owner)
+
+    def test_copyPackages_with_single_package(self):
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+
+        with person_logged_in(target_archive.owner):
+            target_archive.copyPackages(
+                [source_name], source_archive, to_pocket.name,
+                to_series=to_series.name, include_binaries=False,
+                person=target_archive.owner)
+
+        # The source should not be published yet in the target_archive.
+        published = target_archive.getPublishedSources(
+            name=source.source_package_name).any()
+        self.assertIs(None, published)
+
+        # There should be one copy job.
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_job = job_source.getActiveJobs(target_archive).one()
+        self.assertEqual(target_archive, copy_job.target_archive)
 
