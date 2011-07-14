@@ -496,8 +496,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
         target_series = self.target_distroseries
         candidates = dsd_source.getForDistroSeries(
-            distro_series=target_series,
-            source_package_name_filter=self.package_name)
+            distro_series=target_series, name_filter=self.package_name)
 
         # The job doesn't know what distroseries a given package is
         # coming from, and the version number in the DSD may have

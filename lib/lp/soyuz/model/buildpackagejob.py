@@ -22,14 +22,21 @@ from canonical.database.sqlbase import sqlvalues
 from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.model.buildfarmjob import BuildFarmJobOldDerived
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
-from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
+from lp.soyuz.interfaces.buildpackagejob import (
+    COPY_ARCHIVE_SCORE_PENALTY,
+    IBuildPackageJob,
+    PRIVATE_ARCHIVE_SCORE_BONUS,
+    SCORE_BY_COMPONENT,
+    SCORE_BY_POCKET,
+    SCORE_BY_URGENCY,
+    )
+
 from lp.soyuz.model.buildfarmbuildjob import BuildFarmBuildJob
 
 
@@ -58,29 +65,6 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
 
     def score(self):
         """See `IBuildPackageJob`."""
-        score_pocketname = {
-            PackagePublishingPocket.BACKPORTS: 0,
-            PackagePublishingPocket.RELEASE: 1500,
-            PackagePublishingPocket.PROPOSED: 3000,
-            PackagePublishingPocket.UPDATES: 3000,
-            PackagePublishingPocket.SECURITY: 4500,
-            }
-
-        score_componentname = {
-            'multiverse': 0,
-            'universe': 250,
-            'restricted': 750,
-            'main': 1000,
-            'partner': 1250,
-            }
-
-        score_urgency = {
-            SourcePackageUrgency.LOW: 5,
-            SourcePackageUrgency.MEDIUM: 10,
-            SourcePackageUrgency.HIGH: 15,
-            SourcePackageUrgency.EMERGENCY: 20,
-            }
-
         # Define a table we'll use to calculate the score based on the time
         # in the build queue.  The table is a sorted list of (upper time
         # limit in seconds, score) tuples.
@@ -93,52 +77,46 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
             (300, 5),
         ]
 
-        private_archive_increment = 10000
-
-        # For build jobs in rebuild archives a score value of -1
-        # was chosen because their priority is lower than build retries
-        # or language-packs. They should be built only when there is
-        # nothing else to build.
-        rebuild_archive_score = -10
-
-        score = 0
-
         # Please note: the score for language packs is to be zero because
         # they unduly delay the building of packages in the main component
         # otherwise.
         if self.build.source_package_release.section.name == 'translations':
-            pass
-        elif self.build.archive.is_copy:
-            score = rebuild_archive_score
-        else:
-            # Calculates the urgency-related part of the score.
-            urgency = score_urgency[self.build.source_package_release.urgency]
-            score += urgency
+            return 0
 
-            # Calculates the pocket-related part of the score.
-            score_pocket = score_pocketname[self.build.pocket]
-            score += score_pocket
+        score = 0
 
-            # Calculates the component-related part of the score.
-            score += score_componentname.get(
-                self.build.current_component.name, 0)
+        # Calculates the urgency-related part of the score.
+        urgency = SCORE_BY_URGENCY[
+            self.build.source_package_release.urgency]
+        score += urgency
 
-            # Calculates the build queue time component of the score.
-            right_now = datetime.now(pytz.timezone('UTC'))
-            eta = right_now - self.job.date_created
-            for limit, dep_score in queue_time_scores:
-                if eta.seconds > limit:
-                    score += dep_score
-                    break
+        # Calculates the pocket-related part of the score.
+        score_pocket = SCORE_BY_POCKET[self.build.pocket]
+        score += score_pocket
 
-            # Private builds get uber score.
-            if self.build.archive.private:
-                score += private_archive_increment
+        # Calculates the component-related part of the score.
+        score += SCORE_BY_COMPONENT.get(
+            self.build.current_component.name, 0)
 
-            # Lastly, apply the archive score delta.  This is to boost
-            # or retard build scores for any build in a particular
-            # archive.
-            score += self.build.archive.relative_build_score
+        # Calculates the build queue time component of the score.
+        right_now = datetime.now(pytz.timezone('UTC'))
+        eta = right_now - self.job.date_created
+        for limit, dep_score in queue_time_scores:
+            if eta.seconds > limit:
+                score += dep_score
+                break
+
+        # Private builds get uber score.
+        if self.build.archive.private:
+            score += PRIVATE_ARCHIVE_SCORE_BONUS
+
+        if self.build.archive.is_copy:
+            score -= COPY_ARCHIVE_SCORE_PENALTY
+
+        # Lastly, apply the archive score delta.  This is to boost
+        # or retard build scores for any build in a particular
+        # archive.
+        score += self.build.archive.relative_build_score
 
         return score
 
@@ -182,9 +160,6 @@ class BuildPackageJob(BuildFarmJobOldDerived, Storm):
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
         """See `IBuildFarmJob`."""
-        # Avoiding circular import.
-        from lp.buildmaster.model.builder import Builder
-
         private_statuses = (
             PackagePublishingStatus.PUBLISHED,
             PackagePublishingStatus.SUPERSEDED,

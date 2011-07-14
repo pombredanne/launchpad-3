@@ -12,6 +12,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.tests import datadir
@@ -815,3 +816,25 @@ class TestPackageUploadSet(TestCaseWithFactory):
             [upload],
             upload_set.getAll(
                 distroseries, name=spn.name, version=upload.displayversion))
+
+    def test_getAll_orders_in_reverse_historical_order(self):
+        # The results from getAll are returned in order of creation,
+        # newest to oldest, regardless of upload type.
+        series = self.factory.makeDistroSeries()
+        store = IStore(series)
+        ordered_uploads = []
+        ordered_uploads.append(self.factory.makeCopyJobPackageUpload(series))
+        store.flush()
+        ordered_uploads.append(self.factory.makeBuildPackageUpload(series))
+        store.flush()
+        ordered_uploads.append(self.factory.makeSourcePackageUpload(series))
+        store.flush()
+        ordered_uploads.append(self.factory.makeCustomPackageUpload(series))
+        store.flush()
+        ordered_uploads.append(self.factory.makeCopyJobPackageUpload(series))
+        store.flush()
+        ordered_uploads.append(self.factory.makeSourcePackageUpload(series))
+        store.flush()
+        self.assertEqual(
+            list(reversed(ordered_uploads)),
+            list(getUtility(IPackageUploadSet).getAll(series)))
