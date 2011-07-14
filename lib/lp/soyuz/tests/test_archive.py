@@ -2088,3 +2088,70 @@ class TestSyncSource(TestCaseWithFactory):
         copy_job = job_source.getActiveJobs(target_archive).one()
         self.assertEqual(target_archive, copy_job.target_archive)
 
+    def test_copyPackages_with_multiple_packages(self):
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+        sources = [source]
+        sources.append(self.factory.makeSourcePackagePublishingHistory(
+            archive=source_archive,
+            status=PackagePublishingStatus.PUBLISHED))
+        sources.append(self.factory.makeSourcePackagePublishingHistory(
+            archive=source_archive,
+            status=PackagePublishingStatus.PUBLISHED))
+        names = [source.sourcepackagerelease.sourcepackagename.name
+                 for source in sources]
+
+        with person_logged_in(target_archive.owner):
+            target_archive.copyPackages(
+                names, source_archive, to_pocket.name,
+                to_series=to_series.name, include_binaries=False,
+                person=target_archive.owner)
+
+        # Make sure three copy jobs exist.
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_jobs = job_source.getActiveJobs(target_archive)
+        self.assertEqual(3, copy_jobs.count())
+
+    def test_copyPackages_disallows_non_primary_archive_uploaders(self):
+        # If copying to a primary archive and you're not an uploader for
+        # the package then you can't copy.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data(
+            target_purpose=ArchivePurpose.PRIMARY)
+        person = self.factory.makePerson()
+        self.assertRaises(
+            CannotCopy,
+            target_archive.copyPackages, [source_name], source_archive,
+            to_pocket.name, to_series=to_series.name, include_binaries=False,
+            person=person)
+
+    def test_copyPackages_allows_primary_archive_uploaders(self):
+        # Copying to a primary archive if you're already an uploader is OK.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data(
+            target_purpose=ArchivePurpose.PRIMARY)
+        person = self.factory.makePerson()
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(person, "universe")
+        target_archive.copyPackages(
+            [source_name], source_archive, to_pocket.name,
+            to_series=to_series.name, include_binaries=False,
+            person=person)
+
+        # There should be one copy job.
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_job = job_source.getActiveJobs(target_archive).one()
+        self.assertEqual(target_archive, copy_job.target_archive)
+
+    def test_copyPackages_disallows_non_PPA_owners(self):
+        # Only people with launchpad.Append are allowed to call copyPackage.
+        (source, source_archive, source_name, target_archive, to_pocket,
+         to_series, version) = self._setup_copy_data()
+        person = self.factory.makePerson()
+        self.assertTrue(target_archive.is_ppa)
+        self.assertRaises(
+            CannotCopy,
+            target_archive.copyPackages, [source_name], source_archive,
+            to_pocket.name, to_series=to_series.name, include_binaries=False,
+            person=person)
+
