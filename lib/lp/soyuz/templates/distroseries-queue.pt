@@ -9,7 +9,7 @@
 
 <body>
 
-<div metal:fill-slot="heading">
+<div metal:fill-slot="head_epilogue">
   <script type="text/javascript">
     LPS.use('node', 'lp.app.widgets.expander', function(Y) {
         Y.on('domready', function() {
@@ -20,7 +20,7 @@
                 var content_rows = content.all('tr td *');
                 var expander = new Y.lp.app.widgets.expander.Expander(
                     link, content, { no_animation: true });
-                expander.setUp(true);
+                expander.setUp();
             });
         });
     });
@@ -86,9 +86,9 @@
            <th> When </th>
          </tr>
        </thead>
-       <tbody class="lesser">
-         <tal:batch repeat="packageupload batch">
-           <tal:block define="filelist_class string:queue-${packageupload/id}">
+       <tal:batch repeat="packageupload batch">
+         <tal:block define="filelist_class string:queue-${packageupload/id}">
+           <tbody class="lesser">
              <tr class="queue-row">
                 <tal:comment condition="nothing">
                   Every column is top-padded apart from the checkbox
@@ -142,11 +142,13 @@
                   </span>
                 </td>
              </tr>
-             <tbody tal:attributes="class filelist_class">
-               <metal:filelist use-macro="template/macros/package-filelist"/>
-             </tbody>
-           </tal:block>
-         </tal:batch>
+           </tbody>
+           <tbody tal:attributes="class string:${filelist_class} lesser">
+             <metal:filelist use-macro="template/macros/package-filelist"/>
+           </tbody>
+         </tal:block>
+       </tal:batch>
+       <tbody class="lesser">
          <tr tal:condition="view/availableActions">
            <td colspan="4" style="text-align: right;
                                   vertical-align: bottom;
