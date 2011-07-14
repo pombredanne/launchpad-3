@@ -1557,6 +1557,9 @@ class Archive(SQLBase):
         :raises NoSuchSourcePackageName: If any of the source_names do not
             exist.
         """
+        # XXX bigjools bug=810421
+        # This code is inefficient.  It should try to bulk load all the
+        # sourcepackagenames and publications instead of iterating.
         sources = []
         for name in source_names:
             # Check to see if the source package exists. This will raise
