@@ -52,6 +52,7 @@ from canonical.config import (
     DatabaseConfig,
     )
 from canonical.database.interfaces import IRequestExpired
+from canonical.database.postgresql import ConnectionString
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterObject,
     IMasterStore,
@@ -514,10 +515,18 @@ class LaunchpadSessionDatabase(Postgres):
     name = 'session'
 
     def raw_connect(self):
-        self._dsn = 'dbname=%s user=%s' % (config.launchpad_session.dbname,
-                                           config.launchpad_session.dbuser)
-        if config.launchpad_session.dbhost:
-            self._dsn += ' host=%s' % config.launchpad_session.dbhost
+        if config.launchpad_session.database is not None:
+            dsn = ConnectionString(config.launchpad_session.database)
+            dsn.user = config.launchpad_session.dbuser
+            self._dsn = str(dsn)
+        else:
+            # This is fallback code for old config files. It can be
+            # removed when all live configs have been updated to use the
+            # 'database' setting instead of 'dbname' + 'dbhost' settings.
+            self._dsn = 'dbname=%s user=%s' % (config.launchpad_session.dbname,
+                                            config.launchpad_session.dbuser)
+            if config.launchpad_session.dbhost:
+                self._dsn += ' host=%s' % config.launchpad_session.dbhost
 
         flags = _get_dirty_commit_flags()
         raw_connection = super(LaunchpadSessionDatabase, self).raw_connect()

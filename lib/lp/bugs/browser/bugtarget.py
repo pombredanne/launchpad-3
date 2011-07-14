@@ -24,6 +24,7 @@ __all__ = [
 import cgi
 from cStringIO import StringIO
 from datetime import datetime
+from functools import partial
 from operator import itemgetter
 import httplib
 import urllib
@@ -1196,7 +1197,7 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
         return url
 
 
-class BugTargetBugListingView:
+class BugTargetBugListingView(LaunchpadView):
     """Helper methods for rendering bug listings."""
 
     @property
@@ -1224,7 +1225,7 @@ class BugTargetBugListingView:
         elif IProductSeries(self.context, None):
             milestone_resultset = self.context.product.milestones
         else:
-            raise AssertionError("series_list called with illegal context")
+            raise AssertionError("milestones_list called with illegal context")
         return list(milestone_resultset)
 
     @property
@@ -1236,25 +1237,25 @@ class BugTargetBugListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         series_buglistings = []
         bug_task_set = getUtility(IBugTaskSet)
         series_list = self.series_list
         if not series_list:
             return series_buglistings
-        open_bugs = bug_task_set.open_bugtask_search
-        open_bugs.setTarget(any(*series_list))
         # This would be better as delegation not a case statement.
         if IDistribution(self.context, None):
-            backlink = BugTask.distroseriesID
+            backlink = BugSummary.distroseries_id
         elif IProduct(self.context, None):
-            backlink = BugTask.productseriesID
+            backlink = BugSummary.productseries_id
         elif IDistroSeries(self.context, None):
-            backlink = BugTask.distroseriesID
+            backlink = BugSummary.distroseries_id
         elif IProductSeries(self.context, None):
-            backlink = BugTask.productseriesID
+            backlink = BugSummary.productseries_id
         else:
             raise AssertionError("illegal context %r" % self.context)
-        counts = bug_task_set.countBugs(open_bugs, (backlink,))
+        counts = bug_task_set.countBugs(self.user, series_list, (backlink,))
         for series in series_list:
             series_bug_count = counts.get((series.id,), 0)
             if series_bug_count > 0:
@@ -1269,14 +1270,23 @@ class BugTargetBugListingView:
     @property
     def milestone_buglistings(self):
         """Return a buglisting for each milestone."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import (
+            BugSummary,
+            CombineBugSummaryConstraint,
+            )
         milestone_buglistings = []
         bug_task_set = getUtility(IBugTaskSet)
         milestones = self.milestones_list
         if not milestones:
             return milestone_buglistings
-        open_bugs = bug_task_set.open_bugtask_search
-        open_bugs.setTarget(any(*milestones))
-        counts = bug_task_set.countBugs(open_bugs, (BugTask.milestoneID,))
+        # Note: this isn't totally optimal as a query, but its the simplest to
+        # code; we can iterate if needed to provide one complex context to
+        # countBugs.
+        query_milestones = map(partial(
+            CombineBugSummaryConstraint, self.context), milestones)
+        counts = bug_task_set.countBugs(
+            self.user, query_milestones, (BugSummary.milestone_id,))
         for milestone in milestones:
             milestone_bug_count = counts.get((milestone.id,), 0)
             if milestone_bug_count > 0:

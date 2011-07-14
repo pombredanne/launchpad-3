@@ -10,7 +10,9 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
-from zope.security.interfaces import ForbiddenAttribute
+from zope.security.interfaces import (
+    Unauthorized,
+    )
 from zope.security.proxy import removeSecurityProxy
 
 from storm.store import Store
@@ -18,7 +20,8 @@ from storm.store import Store
 from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import (
+from canonical.testing import (\
+    LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
@@ -63,6 +66,7 @@ from lp.testing import (
     run_script,
     TestCaseWithFactory,
     )
+from lp.testing import person_logged_in
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import Provides
 from lp.testing.fakemethod import FakeMethod
@@ -862,10 +866,44 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             self.assertEqual(
                 policy, naked_job.getPolicyImplementation().enum_value)
 
-    def test_extendMetadata_is_privileged(self):
+
+class TestPlainPackageCopyJobPermissions(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_extendMetadata_edit_privilege_by_queue_admin(self):
+        # A person who has any queue admin rights can edit the copy job.
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        pcj = self.factory.makePlainPackageCopyJob(target_archive=archive)
+        queue_admin = self.factory.makePerson()
+        with person_logged_in(pcj.target_archive.owner):
+            pcj.target_archive.newQueueAdmin(queue_admin, "main")
+        with person_logged_in(queue_admin):
+            # This won't blow up.
+            pcj.extendMetadata({})
+
+    def test_extendMetadata_edit_privilege_by_other(self):
+        # Random people cannot edit the copy job.
         pcj = self.factory.makePlainPackageCopyJob()
         self.assertRaises(
-            ForbiddenAttribute, getattr, pcj, "extendMetadata")
+            Unauthorized, getattr, pcj, "extendMetadata")
+
+    def test_PPA_edit_privilege_by_owner(self):
+        # A PCJ for a PPA allows the PPA owner to edit it.
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        pcj = self.factory.makePlainPackageCopyJob(target_archive=ppa)
+        with person_logged_in(ppa.owner):
+            # This will not throw an exception.
+            pcj.extendMetadata({})
+
+    def test_PPA_edit_privilege_by_other(self):
+        # A PCJ for a PPA does not allow non-owners to edit it.
+        ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        pcj = self.factory.makePlainPackageCopyJob(target_archive=ppa)
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            self.assertRaises(
+                Unauthorized, getattr, pcj, "extendMetadata")
 
 
 class TestPlainPackageCopyJobDbPrivileges(TestCaseWithFactory,

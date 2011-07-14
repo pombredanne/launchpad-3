@@ -928,15 +928,21 @@
 
     <!-- PackageCopyJob -->
     <class class=".model.packagecopyjob.PackageCopyJob">
-      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
-      <allow interface=".interfaces.packagecopyjob.IPackageCopyJob"/>
-      <require permission="launchpad.Edit" set_schema=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobPublic"/>
+      <require
+          permission="launchpad.Edit"
+          set_schema=".interfaces.packagecopyjob.IPackageCopyJobPublic"
+          interface=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
     </class>
 
     <!-- PlainPackageCopyJob -->
     <class class=".model.packagecopyjob.PlainPackageCopyJob">
-      <allow interface=".interfaces.packagecopyjob.IPackageCopyJob" />
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobPublic" />
       <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJob" />
+      <require
+          permission="launchpad.Edit"
+          set_schema=".interfaces.packagecopyjob.IPackageCopyJobPublic"
+          interface=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
     </class>
 
     <!-- PackageCopyPolicy -->
@@ -990,6 +996,40 @@
    <class class="lp.soyuz.adapters.overrides.UbuntuOverridePolicy">
         <allow interface="lp.soyuz.adapters.overrides.IOverridePolicy" />
    </class>
+
+    <!-- BinaryPackagePath -->
+
+    <class
+        class="lp.soyuz.model.binarypackagepath.BinaryPackagePath">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePath"/>
+    </class>
+
+    <!-- BinaryPackagePathSet -->
+
+    <securedutility
+        class="lp.soyuz.model.binarypackagepath.BinaryPackagePath"
+        provides="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSet">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSet"/>
+    </securedutility>
+
+    <!-- BinaryPackageReleaseContents -->
+
+    <class
+        class="lp.soyuz.model.binarypackagereleasecontents.BinaryPackageReleaseContents">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContents"/>
+    </class>
+
+    <!-- BinaryPackageReleaseContentsSet -->
+
+    <securedutility
+        class="lp.soyuz.model.binarypackagereleasecontents.BinaryPackageReleaseContents"
+        provides="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContentsSet">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContentsSet"/>
+    </securedutility>
 
    <webservice:register module="lp.soyuz.interfaces.webservice" />
 
