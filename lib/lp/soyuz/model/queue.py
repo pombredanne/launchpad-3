@@ -562,7 +562,10 @@ class PackageUpload(SQLBase):
             # don't think we need them for sync rejections.
             return
 
-        changes_file_object = StringIO.StringIO(self.changesfile.read())
+        if self.changesfile:
+            changes_file_object = StringIO.StringIO(self.changesfile.read())
+        else:
+            changes_file_object = None
         # We allow unsigned uploads since they come from the librarian,
         # which are now stored unsigned.
         self.notify(
@@ -849,10 +852,13 @@ class PackageUpload(SQLBase):
             PackageUploadStatus.ACCEPTED: 'accepted',
             PackageUploadStatus.DONE: 'accepted',
             }
-        changes, changes_lines = self._getChangesDict(changes_file_object)
         if changes_file_object is not None:
+            changes, changes_lines = self._getChangesDict(
+                changes_file_object)
             changesfile_content = changes_file_object.read()
         else:
+            changes = {}
+            changes_lines = ''
             changesfile_content = 'No changes file content available.'
         if self.signing_key is not None:
             signer = self.signing_key.owner
