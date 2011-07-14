@@ -7,6 +7,7 @@ from cStringIO import StringIO
 
 from canonical.launchpad.interfaces.lpstorm import IStore
 from debian.deb822 import Changes
+from optparse import OptionValueError
 from testtools.matchers import LessThan
 
 from canonical.config import config
@@ -188,6 +189,25 @@ class TestProcessAccepted(TestCaseWithFactory):
         self.getScript(['--dry-run']).main()
         self.assertEqual(
             None, IStore(PackageUpload).get(PackageUpload, upload_id))
+
+    def test_validateArguments_requires_distro_by_default(self):
+        self.assertRaises(
+            OptionValueError, ProcessAccepted(test_args=[]).validateArguments)
+
+    def test_validateArguments_requires_no_distro_for_derived_run(self):
+        ProcessAccepted(test_args=['--derived']).validateArguments()
+        # The test is that this does not raise an exception.
+        pass
+
+    def test_validateArguments_does_not_accept_distro_for_derived_run(self):
+        distro = self.factory.makeDistribution()
+        script = ProcessAccepted(test_args=['--derived', distro.name])
+        self.assertRaises(OptionValueError, script.validateArguments)
+
+    def test_findTargetDistros_finds_named_distro(self):
+        distro = self.factory.makeDistribution()
+        script = ProcessAccepted(test_args=[distro.name])
+        self.assertContentEqual([distro], script.findTargetDistros())
 
 
 class TestBugsFromChangesFile(TestCaseWithFactory):

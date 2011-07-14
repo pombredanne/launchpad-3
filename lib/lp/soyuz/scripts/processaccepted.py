@@ -285,15 +285,18 @@ class ProcessAccepted(LaunchpadCronScript):
         else:
             self.txn.commit()
 
-    def findTargetDistribution(self):
-        """Find the distribution based on arguments."""
-        distro_name = self.args[0]
-        self.logger.debug("Finding distribution %s." % distro_name)
-        distribution = getUtility(IDistributionSet).getByName(distro_name)
-        if distribution is None:
-            raise LaunchpadScriptFailure(
-                "Distribution '%s' not found." % distro_name)
-        return distribution
+    def findTargetDistros(self):
+        """Find the distribution(s) to process, based on arguments."""
+        if self.options.derived:
+            pass
+        else:
+            distro_name = self.args[0]
+            self.logger.debug("Finding distribution %s." % distro_name)
+            distribution = getUtility(IDistributionSet).getByName(distro_name)
+            if distribution is None:
+                raise LaunchpadScriptFailure(
+                    "Distribution '%s' not found." % distro_name)
+            return [distribution]
 
     def validateArguments(self):
         """Validate command-line arguments."""
@@ -376,13 +379,12 @@ class ProcessAccepted(LaunchpadCronScript):
         """Entry point for a LaunchpadScript."""
         self.validateArguments()
         target_policy = self.makeTargetPolicy()
-        distribution = self.findTargetDistribution()
-
         try:
-            queue_ids = self.processForDistro(distribution, target_policy)
-            self._commit()
-            target_policy.postprocessSuccesses(queue_ids)
-            self._commit()
+            for distro in self.findTargetDistros():
+                queue_ids = self.processForDistro(distro, target_policy)
+                self._commit()
+                target_policy.postprocessSuccesses(queue_ids)
+                self._commit()
 
         finally:
             self.logger.debug("Rolling back any remaining transactions.")
