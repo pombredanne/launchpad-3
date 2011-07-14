@@ -399,14 +399,15 @@ class IBuilderSet(Interface):
         """Return the number of pending builds for each processor.
 
         :return: a dict of tuples with the queue size and duration for
-            each processor and virtualisation. For example:
-            {
-                'virt': {
-                            '386': (1, datetime.timedelta(0, 60)),
-                            'amd64': (2, datetime.timedelta(0, 30)),
-                        },
-                'nonvirt':...
-            }
+            each processor and virtualisation. For example::
+
+                {
+                    'virt': {
+                                '386': (1, datetime.timedelta(0, 60)),
+                                'amd64': (2, datetime.timedelta(0, 30)),
+                            },
+                    'nonvirt':...
+                }
 
             The tuple contains the size of the queue, as an integer,
             and the sum of the jobs 'estimated_duration' in queue,
