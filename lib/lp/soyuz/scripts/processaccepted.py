@@ -297,7 +297,8 @@ class ProcessAccepted(LaunchpadCronScript):
         return IStore(DistroSeries).find(
             Distribution,
             Distribution.id == DistroSeries.distributionID,
-            DistroSeries.id == DistroSeriesParent.derived_series_id)
+            DistroSeries.id == DistroSeriesParent.derived_series_id,
+            DistroSeries.distributionID != ubuntu_id)
 
     def findNamedDistro(self, distro_name):
         """Find the `Distribution` called `distro_name`."""
