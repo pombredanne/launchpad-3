@@ -38,6 +38,9 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
             "picker_type": 'default',
             "show_assign_me_button": 'false',
             "show_remove_button": 'false',
+            "extra_no_results_message": self.extra_no_results_message,
+            "step_title_text": self.step_title_text,
+            "vocabulary_name": self.vocabulary_name,
             }
 
     popup_name = 'popup-vocabulary-picker'
@@ -183,6 +186,9 @@ class PersonPickerWidget(VocabularyPickerWidget):
             "picker_type": picker_type,
             "show_assign_me_button": 'true',
             "show_remove_button": 'true',
+            "extra_no_results_message": self.extra_no_results_message,
+            "step_title_text": self.step_title_text,
+            "vocabulary_name": self.vocabulary_name,
             }
 
     include_create_team_link = False

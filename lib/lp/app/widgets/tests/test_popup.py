@@ -74,8 +74,7 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         self.assertEqual(
             simplejson.dumps(None), picker_widget.extra_no_results_message)
         markup = picker_widget()
-        self.assertIn(
-            "Y.lp.app.picker.create('ValidTeamOwner', config);", markup)
+        self.assertIn("ValidTeamOwner", markup)
 
     def test_widget_fieldname_with_invalid_html_chars(self):
         # Check the picker widget is correctly set up for a field which has a
