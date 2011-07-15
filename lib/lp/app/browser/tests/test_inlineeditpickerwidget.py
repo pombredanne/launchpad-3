@@ -2,11 +2,14 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the InlineEditPickerWidget."""
-from zope.interface.declarations import implements
 
 __metaclass__ = type
 
-from zope.interface import Interface
+from zope.interface import (
+    implements,
+    Interface,
+)
+
 from zope.schema import Choice
 
 from canonical.testing.layers import DatabaseFunctionalLayer
