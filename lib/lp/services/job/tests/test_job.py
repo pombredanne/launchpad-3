@@ -22,10 +22,10 @@ from lp.services.job.model.job import (
     Job,
     LeaseHeld,
     )
-from lp.testing import TestCase
+from lp.testing import TestCaseWithFactory
 
 
-class TestJob(TestCase):
+class TestJob(TestCaseWithFactory):
     """Ensure Job behaves as intended."""
 
     layer = ZopelessDatabaseLayer
@@ -38,6 +38,12 @@ class TestJob(TestCase):
         """The default status should be WAITING."""
         job = Job()
         self.assertEqual(job.status, JobStatus.WAITING)
+
+    def test_stores_requester(self):
+        job = Job()
+        random_joe = self.factory.makePerson()
+        job.requester = random_joe
+        self.assertEqual(random_joe, job.requester)
 
     def test_createMultiple_creates_requested_number_of_jobs(self):
         job_ids = list(Job.createMultiple(IStore(Job), 3))
