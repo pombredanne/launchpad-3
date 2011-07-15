@@ -17,6 +17,7 @@ from canonical.testing.layers import (
     )
 from lp.registry.interfaces.distroseries import DerivationError
 from lp.services.features.testing import FeatureFixture
+from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.distributionjob import (
     IInitializeDistroSeriesJobSource,
     )
@@ -121,6 +122,40 @@ class TestDeriveDistroSeriesMultipleParents(InitializationHelperTestCase):
 
         child = self._fullInitialize(
             [parent1, parent2], child=child)
+        self.assertBinPackagesAndVersions(
+            child,
+            [(u'p1', u'0.1-1'), (u'p2', u'2.1')])
+        # Switch back to launchpad_main to be able to cleanup the
+        # feature flags.
+        self.layer.switchDbUser('launchpad_main')
+
+    def test_multiple_parents_close_bugs(self):
+        # Even when bugs are present in the second parent, the initialization
+        # does not close the bugs on the copied publications (and thus
+        # does not try to access the bug table).
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
+        parent1, parent2 = self.setUpParents(
+            packages1={'p1': '0.1-1'}, packages2={'p2': '2.1'})
+        source = parent2.main_archive.getPublishedSources(
+            distroseries=parent2)[0]
+        # Setup a bug and populate
+        # source.sourcepackagerelease.upload_changesfile.
+        bug = self.factory.makeBug(series=parent2)
+        changes_file_content = (
+            "Format: 1.7\nLaunchpad-bugs-fixed: %s\n"
+            % bug.id)
+        pu = self.factory.makePackageUpload(
+            archive=parent2.main_archive, distroseries=parent2,
+            changes_file_content=changes_file_content,
+            status=PackageUploadStatus.DONE)
+        pu.addSource(source.sourcepackagerelease)
+        child = self.factory.makeDistroSeries()
+        transaction.commit()
+        self.layer.switchDbUser('initializedistroseries')
+
+        child = self._fullInitialize(
+            [parent1, parent2], child=child)
+        # Make sure the initialization was successful.
         self.assertBinPackagesAndVersions(
             child,
             [(u'p1', u'0.1-1'), (u'p2', u'2.1')])
