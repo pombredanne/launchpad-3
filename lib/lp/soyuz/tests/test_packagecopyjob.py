@@ -152,6 +152,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             derived_series=derived_series)
         mother_package = self.factory.makeSourcePackageName()
         father_package = self.factory.makeSourcePackageName()
+        requester = self.factory.makePerson()
         job_source = getUtility(IPlainPackageCopyJobSource)
         copy_tasks = [
             (
@@ -170,7 +171,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
                 ),
             ]
         job_ids = list(
-            job_source.createMultiple(mother.derived_series, copy_tasks))
+            job_source.createMultiple(mother.derived_series, copy_tasks,
+                                      requester))
         jobs = list(job_source.getActiveJobs(derived_series.main_archive))
         self.assertContentEqual(job_ids, [job.id for job in jobs])
         self.assertEqual(len(copy_tasks), len(set([job.job for job in jobs])))
@@ -188,6 +190,11 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
                 )
             for job in jobs]
         self.assertEqual(copy_tasks, requested_copies)
+
+        # The passed requester should be the same on all jobs.
+        actual_requester = set(job.requester for job in jobs)
+        self.assertEqual(1, len(actual_requester))
+        self.assertEqual(requester, jobs[0].requester)
 
     def test_getActiveJobs(self):
         # getActiveJobs() can retrieve all active jobs for an archive.

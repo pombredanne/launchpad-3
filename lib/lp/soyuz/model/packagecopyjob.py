@@ -296,12 +296,12 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         return format_string % sqlvalues(*data)
 
     @classmethod
-    def createMultiple(cls, target_distroseries, copy_tasks,
+    def createMultiple(cls, target_distroseries, copy_tasks, requester,
                        copy_policy=PackageCopyPolicy.INSECURE,
                        include_binaries=False):
         """See `IPlainPackageCopyJobSource`."""
         store = IMasterStore(Job)
-        job_ids = Job.createMultiple(store, len(copy_tasks))
+        job_ids = Job.createMultiple(store, len(copy_tasks), requester)
         job_contents = [
             cls._composeJobInsertionTuple(
                 target_distroseries, copy_policy, include_binaries, job_id,
