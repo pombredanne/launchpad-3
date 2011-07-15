@@ -346,7 +346,13 @@
       <table tal:define="bugtask python:view.getRelevantBugTask(bug)">
         <tbody>
           <tr>
-            <td class="bug-already-reported-expander">
+            <td>
+              <img width="14" height="14" src="/@@/treeCollapsed"
+                  class="bug-already-reported-expander"
+                  tal:attributes="id string:bug-details-expander-bug-${bug/id};"
+                />
+            </td>
+            <td>
               <label tal:attributes="for string:bug-already-reported-as-${bug/id};
                                      class bugtask/image:sprite_css"
                      tal:condition="bugtask"/>
