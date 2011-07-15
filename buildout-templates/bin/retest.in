@@ -50,9 +50,6 @@ def get_test_name(test):
     match = STORY_RE.match(test)
     if match:
         return match.group(1)
-    # Otherwise split the test and return the first portion.  The split will
-    # chop off windmill descriptions.
-    return test.split()[0]
 
 
 def gen_test_lines(lines):
