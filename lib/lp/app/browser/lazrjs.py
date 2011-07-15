@@ -376,7 +376,7 @@ class InlineMultiCheckboxWidget(WidgetBase):
         linkify_items = attribute_type == "reference"
 
         if header is None:
-            header = self.exported_field.title+":"
+            header = self.exported_field.title + ":"
         self.header = header,
         self.empty_display_value = empty_display_value
         self.label = label
@@ -384,7 +384,7 @@ class InlineMultiCheckboxWidget(WidgetBase):
         self.label_close_tag = "</%s>" % label_tag
         self.items = selected_items
         self.items_open_tag = ("<%s id='%s'>" %
-            (items_tag, self.content_box_id+"-items"))
+            (items_tag, self.content_box_id + "-items"))
         self.items_close_tag = "</%s>" % items_tag
         self.linkify_items = linkify_items
 
@@ -393,7 +393,6 @@ class InlineMultiCheckboxWidget(WidgetBase):
                 vocabulary = exported_field.value_type.vocabularyName
             else:
                 vocabulary = exported_field.vocabularyName
-
 
         if isinstance(vocabulary, basestring):
             vocabulary = getVocabularyRegistry().get(context, vocabulary)
@@ -540,7 +539,7 @@ class BooleanChoiceWidget(WidgetBase, DefinedTagMixin):
     @property
     def config(self):
         return dict(
-            contentBox='#'+self.content_box_id,
+            contentBox='#' + self.content_box_id,
             value=self.current_value,
             title=self.header,
             items=[
@@ -596,7 +595,7 @@ class EnumChoiceWidget(WidgetBase):
     @property
     def config(self):
         return dict(
-            contentBox='#'+self.content_box_id,
+            contentBox='#' + self.content_box_id,
             value=self.value,
             title=self.header,
             items=self.items)

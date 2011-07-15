@@ -37,8 +37,8 @@ class TestInlineEditPickerWidget(TestCaseWithFactory):
         self.assertTrue(widget.config['show_search_box'])
 
     def test_normal_vocabulary_is_not_searchable(self):
-        # Make sure that when given a field for a normal vocabulary, the picker
-        # is set to show the search box.
+        # Make sure that when given a field for a normal vocabulary, the
+        # picker is set to show the search box.
         widget = self.getWidget(vocabulary='UserTeamsParticipation')
         self.assertFalse(widget.config['show_search_box'])
 
@@ -72,6 +72,7 @@ class TestInlinePersonEditPickerWidget(TestCaseWithFactory):
 
         class Test:
             implements(ITest)
+
             def __init__(self):
                 self.test_field = widget_value
 
