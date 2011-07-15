@@ -64,6 +64,17 @@ class TestJob(TestCaseWithFactory):
         job = store.get(Job, Job.createMultiple(store, 1)[0])
         self.assertEqual(JobStatus.WAITING, job.status)
 
+    def test_createMultiple_sets_requester(self):
+        store = IStore(Job)
+        requester = self.factory.makePerson()
+        job = store.get(Job, Job.createMultiple(store, 1, requester)[0])
+        self.assertEqual(requester, job.requester)
+
+    def test_createMultiple_defaults_requester_to_None(self):
+        store = IStore(Job)
+        job = store.get(Job, Job.createMultiple(store, 1)[0])
+        self.assertEqual(None, job.requester)
+
     def test_start(self):
         """Job.start should update the object appropriately.
 

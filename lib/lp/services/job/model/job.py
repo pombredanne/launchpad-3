@@ -115,16 +115,19 @@ class Job(SQLBase):
         return self.status in self.PENDING_STATUSES
 
     @classmethod
-    def createMultiple(self, store, num_jobs):
+    def createMultiple(self, store, num_jobs, requester=None):
         """Create multiple `Job`s at once.
 
         :param store: `Store` to ceate the jobs in.
         :param num_jobs: Number of `Job`s to create.
+        :param request: The `IPerson` requesting the jobs.
         :return: An iterable of `Job.id` values for the new jobs.
         """
-        job_contents = ["(%s)" % quote(JobStatus.WAITING)] * num_jobs
+        job_contents = [
+            "(%s, %s)" % (
+                quote(JobStatus.WAITING), quote(requester))] * num_jobs
         result = store.execute("""
-            INSERT INTO Job (status)
+            INSERT INTO Job (status, requester)
             VALUES %s
             RETURNING id
             """ % ", ".join(job_contents))
