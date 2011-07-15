@@ -66,6 +66,7 @@ from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
 from lp.registry.browser.productseries import ProductSeriesFacets
 from lp.registry.browser.sourcepackage import SourcePackageFacets
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -894,6 +895,19 @@ class BaseSeriesTemplatesView(LaunchpadView):
             text += ' (inactive)'
         return text
 
+    def _renderSharing(self, template, url):
+        """Render a link to `template`.
+
+        :param template: The target `POTemplate`.
+        :param url: The cached URL for `template`.
+        :return: HTML for the "sharing" status of `template`.
+        """
+        if template.translationtarget.has_sharing_translation_templates:
+            series = template.translationtarget.getSharingPartner()
+            return ' '.join((series.product.name, series.name))
+        else:
+            return 'No'
+
     def _renderLastUpdateDate(self, template):
         """Render a template's "last updated" column."""
         formatter = DateTimeFormatterAPI(template.date_last_updated)
@@ -980,6 +994,7 @@ class BaseSeriesTemplatesView(LaunchpadView):
             actions_header = "Actions"
         else:
             actions_header = None
+
         columns = [
             ('priority_column', "Priority"),
             ('sourcepackage_column', sourcepackage_header),
@@ -988,6 +1003,10 @@ class BaseSeriesTemplatesView(LaunchpadView):
             ('lastupdate_column', "Updated"),
             ('actions_column', actions_header),
             ]
+
+        if IDistroSeries.providedBy(self.context):
+            columns[2:3] = [('sharing', "Sharing")]
+
         return '\n'.join([
             self._renderField(css, text, tag='th')
             for (css, text) in columns])
@@ -1008,6 +1027,10 @@ class BaseSeriesTemplatesView(LaunchpadView):
             ('lastupdate_column', self._renderLastUpdateDate(template)),
             ('actions_column', self._renderActionsColumn(template, base_url)),
         ]
+
+        if IDistroSeries.providedBy(self.context):
+            fields[2:3] = [
+                ('sharing', self._renderSharing(template, base_url))]
 
         tds = [self._renderField(*field) for field in fields]
 
