@@ -16,8 +16,12 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.registry.interfaces.distroseries import DerivationError
+from lp.services.features.testing import FeatureFixture
 from lp.soyuz.interfaces.distributionjob import (
     IInitializeDistroSeriesJobSource,
+    )
+from lp.soyuz.model.distroseriesdifferencejob import (
+    FEATURE_FLAG_ENABLE_MODULE,
     )
 from lp.soyuz.scripts.tests.test_initialize_distroseries import (
     InitializationHelperTestCase,
@@ -95,3 +99,28 @@ class TestDeriveDistroSeriesMultipleParents(InitializationHelperTestCase):
         self.assertEquals(
             [(u'p1', u'0.1-1'), (u'p2', u'2.1')],
             binaries)
+
+    def test_multiple_parents_dsd_flag_on(self):
+        # A initialization can happen if the flag for distroseries
+        # difference creation is on.
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
+        self.parent1, unused = self.setupParent(
+            packages={})
+        self.parent2, unused = self.setupParent(
+            packages={'p2': '2.1'})
+        child = self.factory.makeDistroSeries()
+        transaction.commit()
+        self.layer.switchDbUser('initializedistroseries')
+
+        child = self._fullInitialize(
+            [self.parent1, self.parent2], child=child)
+        pub_sources = child.main_archive.getPublishedSources(
+            distroseries=child)
+
+        self.assertEqual(1, len(list(pub_sources)))
+        publication = pub_sources[0].sourcepackagerelease
+        self.assertEqual(u'p2', publication.name)
+        self.assertEqual(u'2.1', publication.version)
+        # Switch back to launchpad_main to be able to cleanup the
+        # feature flags.
+        self.layer.switchDbUser('launchpad_main')

@@ -382,7 +382,8 @@ class InitializeDistroSeries:
                         sources_published = do_copy(
                             sources, target_archive, self.distroseries,
                             pocket, include_binaries=not self.rebuild,
-                            check_permissions=False, strict_binaries=False)
+                            check_permissions=False, strict_binaries=False,
+                            create_dsd_job=False)
                         if self.rebuild:
                             for pubrec in sources_published:
                                 pubrec.createMissingBuilds()
