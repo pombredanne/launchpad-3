@@ -251,7 +251,7 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         # If the packaging link is set and if an upstream series
         # uses Launchpad translations but if the other conditions
         # are not fulfilled, is_configuration_complete is False.
-        self.configureSharing(translations_usage=ServiceUsage.LAUNCHPAD)
+        self.configureSharing(translations_usage = ServiceUsage.LAUNCHPAD)
         self.assertFalse(self.view.is_configuration_complete)
 
     def test_is_configuration_complete__no_auto_sync(self):
@@ -262,8 +262,8 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         # but if the upstream series does not synchronize translations
         # then is_configuration_complete is False.
         self.configureSharing(
-            set_upstream_branch=True,
-            translations_usage=ServiceUsage.LAUNCHPAD)
+            set_upstream_branch = True,
+            translations_usage = ServiceUsage.LAUNCHPAD)
         self.assertFalse(self.view.is_configuration_complete)
 
     def test_is_configuration_complete__all_conditions_fulfilled(self):
@@ -274,9 +274,9 @@ class TestSourcePackageTranslationSharingDetailsView(TestCaseWithFactory,
         #   - the upstream series synchronizes translations
         # then is_configuration_complete is True.
         self.configureSharing(
-            set_upstream_branch=True,
-            translations_usage=ServiceUsage.LAUNCHPAD,
-            translation_import_mode=
+            set_upstream_branch = True,
+            translations_usage = ServiceUsage.LAUNCHPAD,
+            translation_import_mode =
                 TranslationsBranchImportMode.IMPORT_TRANSLATIONS)
         self.assertTrue(self.view.is_configuration_complete)
 

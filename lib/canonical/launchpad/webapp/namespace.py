@@ -11,15 +11,16 @@ __all__ = [
 
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.pagetemplate.viewpagetemplatefile import BoundPageTemplate
+from zope.app.publisher.browser import getDefaultViewName
+from zope.component import getMultiAdapter
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.interfaces import TraversalError
 from zope.traversing.namespace import view
 from zope.interface import implements
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from lazr.restful.interfaces import IJSONRequestCache
 
 from lp.app.browser.launchpadform import LaunchpadFormView
-from simplejson import dumps
+
 
 class FormNamespaceView(view):
     """A namespace view to handle traversals with ++form++."""
@@ -59,29 +60,22 @@ class JsonModelNamespaceView(view):
 
         This adapter allows any LaunchpadView to render its JSON cache.
         """
-        # XXX If the context is not a view then find and return the default
-        # view.
         return self
 
     def browserDefault(self, request):
-        # Tell traversal to stop, dammit.
+        # Tell traversal to stop, already.
         return self, None
 
-    @property
-    def display_breadcrumbs(self):
-        return False
-
     def __call__(self):
-        # This will render the parent view so that the object cache is
-        # initialized.  This is a bit paranoid.
-        # XXX register a <browser:pages> directive in the ZCML for
-        # LaunchpadView to make the security settings work.
-        naked_context = removeSecurityProxy(self.context)
-        naked_context.initialize()
-        #self.context.initialize()
-        ## cache = IJSONRequestCache(self.request)
-        ## #cache = {'name': 'brad'}
-        ## return dumps(cache.objects)
-        cache = naked_context.getCacheJSON()
-        self.request.response.setHeader('content-type', 'application/json')
+        """Return the JSON cache."""
+        if IBrowserPublisher.providedBy(self.context):
+            view = self.context
+        else:
+            defaultviewname = getDefaultViewName(
+                self.context, self.request)
+            view = getMultiAdapter(
+                (self.context, self.request), name=defaultviewname)
+        naked_view = removeSecurityProxy(view)
+        naked_view.initialize()
+        cache = naked_view.getCacheJSON()
         return cache
