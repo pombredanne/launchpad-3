@@ -151,9 +151,7 @@
           <a class="expander"
              tal:attributes="id string:pub${pubid}-expander;
                              href string:${archive/fmt:url}/+sourcepub/${pubid}/+listing-archive-extra">
-            <img style="padding-right:0.5em;" src="/@@/treeCollapsed"
-                 alt="Show details" title="Show details"
-                 tal:attributes="id string:pub${pubid}-arrow"/>
+            &nbsp;
           </a>
           <a tal:attributes="href row/version">
             <img src="/@@/package-source" />
@@ -174,7 +172,7 @@
                content="string:(not published)"/>
         </td>
       </tr>
-      <tr tal:attributes="id string:pub${pubid}" style="display: none">
+      <tr tal:attributes="id string:pub${pubid}">
         <td colspan="3">
           <div class="package-details"
                tal:attributes="id string:pub${pubid}-container"></div>
