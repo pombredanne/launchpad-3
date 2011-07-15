@@ -333,6 +333,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         source = getUtility(IPlainPackageCopyJobSource)
         requester = self.factory.makePerson()
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(requester, "main")
         job = source.create(
             package_name="libc",
             source_archive=breezy_archive, target_archive=target_archive,
@@ -406,6 +408,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             target_pocket=PackagePublishingPocket.RELEASE,
             package_version="2.8-1", include_binaries=False,
             requester=requester)
+        with person_logged_in(archive2.owner):
+            archive2.newComponentUploader(requester, "main")
         transaction.commit()
 
         out, err, exit_code = run_script(
@@ -545,6 +549,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         source = getUtility(IPlainPackageCopyJobSource)
         requester = self.factory.makePerson()
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(requester, "restricted")
         job = source.create(
             package_name="libc",
             package_version="2.8-1",
@@ -584,6 +590,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # there's no ancestry.
         source = getUtility(IPlainPackageCopyJobSource)
         requester = self.factory.makePerson()
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(requester, "main")
         job = source.create(
             package_name="copyme",
             package_version="2.8-1",
@@ -749,6 +757,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         source = getUtility(IPlainPackageCopyJobSource)
         requester = self.factory.makePerson()
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(requester, "main")
         job = source.create(
             package_name="copyme",
             package_version="2.8-1",
