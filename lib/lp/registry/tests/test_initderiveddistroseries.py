@@ -17,7 +17,6 @@ from canonical.testing.layers import (
     )
 from lp.registry.interfaces.distroseries import DerivationError
 from lp.services.features.testing import FeatureFixture
-from lp.soyuz.enums import PackageUploadStatus
 from lp.soyuz.interfaces.distributionjob import (
     IInitializeDistroSeriesJobSource,
     )
@@ -33,6 +32,7 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.fakemethod import FakeMethod
 
 
 class TestDeriveDistroSeries(TestCaseWithFactory):
@@ -130,29 +130,24 @@ class TestDeriveDistroSeriesMultipleParents(InitializationHelperTestCase):
         # feature flags.
         self.layer.switchDbUser('launchpad_main')
 
-    def test_multiple_parents_close_bugs(self):
-        # Even when bugs are present in the second parent, the initialization
-        # does not close the bugs on the copied publications (and thus
-        # does not try to access the bug table).
+    def test_multiple_parents_do_not_close_bugs(self):
+        # The initialization does not close the bugs on the copied
+        # publications (and thus does not try to access the bug table).
         self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
         parent1, parent2 = self.setUpParents(
             packages1={'p1': '0.1-1'}, packages2={'p2': '2.1'})
-        source = parent2.main_archive.getPublishedSources(
-            distroseries=parent2)[0]
-        # Setup a bug and populate
-        # source.sourcepackagerelease.upload_changesfile.
-        bug = self.factory.makeBug(series=parent2)
-        changes_file_content = (
-            "Format: 1.7\nLaunchpad-bugs-fixed: %s\n"
-            % bug.id)
-        pu = self.factory.makePackageUpload(
-            archive=parent2.main_archive, distroseries=parent2,
-            changes_file_content=changes_file_content,
-            status=PackageUploadStatus.DONE)
-        pu.addSource(source.sourcepackagerelease)
         child = self.factory.makeDistroSeries()
         transaction.commit()
         self.layer.switchDbUser('initializedistroseries')
+
+        # Patch close_bugs_for_sourcepublication to be able to record if
+        # the method has been called.
+        fakeCloseBugs = FakeMethod()
+        from lp.soyuz.scripts import packagecopier as packagecopier_module
+        self.patch(
+            packagecopier_module,
+            'close_bugs_for_sourcepublication',
+            fakeCloseBugs)
 
         child = self._fullInitialize(
             [parent1, parent2], child=child)
@@ -160,6 +155,11 @@ class TestDeriveDistroSeriesMultipleParents(InitializationHelperTestCase):
         self.assertBinPackagesAndVersions(
             child,
             [(u'p1', u'0.1-1'), (u'p2', u'2.1')])
+        # Assert that close_bugs_for_sourcepublication has not been
+        # called.
+        self.assertEqual(
+            0,
+            fakeCloseBugs.call_count)
         # Switch back to launchpad_main to be able to cleanup the
         # feature flags.
         self.layer.switchDbUser('launchpad_main')
