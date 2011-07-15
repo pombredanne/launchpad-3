@@ -608,7 +608,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                 override = overrides[overrides_index]
             sub_copies = _do_direct_copy(
                 source, archive, destination_series, pocket,
-                include_binaries, override, create_dsd_job)
+                include_binaries, override, create_dsd_job=create_dsd_job)
             if send_email:
                 notify(
                     person, source.sourcepackagerelease, [], [], archive,

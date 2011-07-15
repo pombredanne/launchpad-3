@@ -819,7 +819,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             component,
             section,
             pocket,
-            create_dsd_job)
+            ancestor=None,
+            create_dsd_job=create_dsd_job)
 
     def getStatusSummaryForBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
