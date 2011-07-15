@@ -116,7 +116,7 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
             'select_menu, text_input\);',
             markup)
 
-    def test_widget_extra_buttons(self):
+    def test_widget_javascript_config(self):
         # The picker widgets define defaults for the display of extra buttons.
         field = ITest['test_valid.item']
         bound_field = field.bind(self.context)
@@ -124,11 +124,11 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         # A vocabulary widget does not show the extra buttons by default.
         picker_widget = VocabularyPickerWidget(
             bound_field, self.vocabulary, self.request)
-        self.assertEqual('false', picker_widget.show_assign_me_button)
-        self.assertEqual('false', picker_widget.show_remove_button)
+        self.assertEqual('false', picker_widget.config['show_assign_me_button'])
+        self.assertEqual('false', picker_widget.config['show_remove_button'])
 
         # A person picker widget does show them by default.
         person_picker_widget = PersonPickerWidget(
             bound_field, self.vocabulary, self.request)
-        self.assertEqual('true', person_picker_widget.show_assign_me_button)
-        self.assertEqual('true', person_picker_widget.show_remove_button)
+        self.assertEqual('true', person_picker_widget.config['show_assign_me_button'])
+        self.assertEqual('true', person_picker_widget.config['show_remove_button'])

@@ -16,6 +16,8 @@ from zope.app.form.browser.itemswidgets import (
     )
 from zope.schema.interfaces import IChoice
 
+from lazr.restful.interfaces import IJSONRequestCache
+
 from canonical.launchpad.webapp import canonical_url
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.services.features import getFeatureFlag
@@ -27,12 +29,16 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
     __call__ = ViewPageTemplateFile('templates/form-picker.pt')
 
-    picker_type = 'default'
-    # Provide default values for the following properties in case someone
-    # creates a vocab picker for a person instead of using the derived
-    # PersonPicker.
-    show_assign_me_button = 'false'
-    show_remove_button = 'false'
+    @property
+    def config(self):
+        # Provide default values for the following properties in case someone
+        # creates a vocab picker for a person instead of using the derived
+        # PersonPicker.
+        return {
+            "picker_type": 'default',
+            "show_assign_me_button": 'false',
+            "show_remove_button": 'false',
+            }
 
     popup_name = 'popup-vocabulary-picker'
 
@@ -163,19 +169,23 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
 class PersonPickerWidget(VocabularyPickerWidget):
 
-    include_create_team_link = False
-    show_assign_me_button = 'true'
-    show_remove_button = 'true'
-
     @property
-    def picker_type(self):
-        # This is a method for now so we can block the use of the new
-        # person picker js behind our picker_enhancments feature flag.
+    def config(self):
+        # Provide default values for the following properties in case someone
+        # creates a vocab picker for a person instead of using the derived
+        # PersonPicker.
         if bool(getFeatureFlag('disclosure.picker_enhancements.enabled')):
             picker_type = 'person'
         else:
             picker_type = 'default'
-        return picker_type
+
+        return {
+            "picker_type": picker_type,
+            "show_assign_me_button": 'true',
+            "show_remove_button": 'true',
+            }
+
+    include_create_team_link = False
 
     def chooseLink(self):
         link = super(PersonPickerWidget, self).chooseLink()
