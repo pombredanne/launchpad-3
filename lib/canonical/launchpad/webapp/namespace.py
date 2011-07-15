@@ -11,6 +11,8 @@ __all__ = [
 
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.pagetemplate.viewpagetemplatefile import BoundPageTemplate
+from zope.app.publisher.browser import getDefaultViewName
+from zope.component import getMultiAdapter
 from zope.security.proxy import removeSecurityProxy
 from zope.traversing.interfaces import TraversalError
 from zope.traversing.namespace import view
@@ -69,8 +71,6 @@ class JsonModelNamespaceView(view):
         if IBrowserPublisher.providedBy(self.context):
             view = self.context
         else:
-            from zope.app.publisher.browser import getDefaultViewName
-            from zope.component import getMultiAdapter
             defaultviewname = getDefaultViewName(
                 self.context, self.request)
             view = getMultiAdapter(
