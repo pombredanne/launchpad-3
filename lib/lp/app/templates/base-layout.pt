@@ -43,6 +43,15 @@
       html, body {background-image: url(/@@/demo) !important;}
     </style>
 
+    <tal:comment condition="nothing">
+      Removing the below <noscript></noscript> snippet makes two tests fail
+      with redirection problems:
+        xx-ubuntu-filebug.txt
+        xx-bug-reporting-tools.txt
+      No time to look into it now, so keeping it in. XXX Danilo 20110715
+    </tal:comment>
+    <noscript></noscript>
+
     <metal:page-javascript
         use-macro="context/@@+base-layout-macros/page-javascript" />
     <metal:block define-slot="head_epilogue"></metal:block>
