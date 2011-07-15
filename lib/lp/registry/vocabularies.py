@@ -1983,7 +1983,7 @@ class DistributionSourcePackageVocabulary:
     displayname = 'Select a package'
     step_title = 'Search'
 
-    def __init__(self, context=None):
+    def __init__(self, context):
         self.context = context
 
     def __contains__(self, obj):

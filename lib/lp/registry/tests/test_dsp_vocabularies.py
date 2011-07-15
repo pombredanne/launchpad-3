@@ -17,7 +17,8 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_provides_ihugevocabulary(self):
-        vocabulary = DistributionSourcePackageVocabulary()
+        vocabulary = DistributionSourcePackageVocabulary(
+            self.factory.makeDistribution())
         self.assertProvides(vocabulary, IHugeVocabulary)
 
     def test_toTerm_unbuilt_dsp(self):
@@ -68,7 +69,8 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
 
     def test_searchForTerms_None(self):
         # Searching for nothing gets you that.
-        vocabulary = DistributionSourcePackageVocabulary()
+        vocabulary = DistributionSourcePackageVocabulary(
+            self.factory.makeDistribution())
         results = vocabulary.searchForTerms()
         self.assertIs(None, results)
 
