@@ -22,7 +22,10 @@ from lp.services.job.model.job import (
     Job,
     LeaseHeld,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
 class TestJob(TestCaseWithFactory):

@@ -21,6 +21,10 @@ from storm.expr import (
     Or,
     Select,
     )
+from storm.locals import (
+    Int,
+    Reference,
+    )
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
@@ -72,6 +76,9 @@ class Job(SQLBase):
     attempt_count = IntCol(default=0)
 
     max_retries = IntCol(default=0)
+
+    requester_id = Int(name='requester', allow_none=True)
+    requester = Reference(requester_id, 'Person.id')
 
     # Mapping of valid target states from a given state.
     _valid_transitions = {
