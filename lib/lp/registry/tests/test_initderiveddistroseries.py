@@ -110,7 +110,7 @@ class TestDeriveDistroSeriesMultipleParents(InitializationHelperTestCase):
             [(u'p1', u'0.1-1'), (u'p2', u'2.1')])
 
     def test_multiple_parents_dsd_flag_on(self):
-        # A initialization can happen if the flag for distroseries
+        # An initialization can happen if the flag for distroseries
         # difference creation is on.
         self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
         parent1, parent2 = self.setUpParents(
@@ -121,6 +121,7 @@ class TestDeriveDistroSeriesMultipleParents(InitializationHelperTestCase):
 
         child = self._fullInitialize(
             [parent1, parent2], child=child)
+        # Make sure the initialization was successful.
         self.assertBinPackagesAndVersions(
             child,
             [(u'p1', u'0.1-1'), (u'p2', u'2.1')])
