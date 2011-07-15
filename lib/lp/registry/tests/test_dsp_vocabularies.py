@@ -16,7 +16,6 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
     expected."""
     layer = DatabaseFunctionalLayer
 
-
     def test_provides_ihugevocabulary(self):
         vocabulary = DistributionSourcePackageVocabulary()
         self.assertProvides(vocabulary, IHugeVocabulary)
