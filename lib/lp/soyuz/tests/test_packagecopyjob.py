@@ -123,7 +123,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
-        requester  = self.factory.makePerson()
+        requester = self.factory.makePerson()
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
             package_name="foo", source_archive=archive1,
