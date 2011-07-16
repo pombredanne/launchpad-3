@@ -383,7 +383,7 @@ class InitializeDistroSeries:
                             sources, target_archive, self.distroseries,
                             pocket, include_binaries=not self.rebuild,
                             check_permissions=False, strict_binaries=False,
-                            create_dsd_job=False)
+                            create_dsd_job=False, close_bugs=False)
                         if self.rebuild:
                             for pubrec in sources_published:
                                 pubrec.createMissingBuilds()

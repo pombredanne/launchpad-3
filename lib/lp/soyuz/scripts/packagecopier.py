@@ -526,7 +526,7 @@ class CopyChecker:
 def do_copy(sources, archive, series, pocket, include_binaries=False,
             allow_delayed_copies=True, person=None, check_permissions=True,
             overrides=None, send_email=False, strict_binaries=True,
-            create_dsd_job=True):
+            create_dsd_job=True, close_bugs=True):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
@@ -562,6 +562,9 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         to True will make the copy fail if binaries cannot be also copied.
     :param create_dsd_job: A boolean indicating whether or not dsd jobs
         should be created for the copied source publications.
+    :param close_bugs: A boolean indicating whether or not bugs on the
+        copied publications should be closed.
+
 
     :raise CannotCopy when one or more copies were not allowed. The error
         will contain the reason why each copy was denied.
@@ -608,7 +611,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                 override = overrides[overrides_index]
             sub_copies = _do_direct_copy(
                 source, archive, destination_series, pocket,
-                include_binaries, override, create_dsd_job=create_dsd_job)
+                include_binaries, override, create_dsd_job=create_dsd_job,
+                close_bugs=close_bugs)
             if send_email:
                 notify(
                     person, source.sourcepackagerelease, [], [], archive,
@@ -622,7 +626,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
 
 
 def _do_direct_copy(source, archive, series, pocket, include_binaries,
-                    override=None, create_dsd_job=True):
+                    override=None, create_dsd_job=True, close_bugs=True):
     """Copy publishing records to another location.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
@@ -643,6 +647,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
     :param override: An `IOverride` as per do_copy().
     :param create_dsd_job: A boolean indicating whether or not a dsd job
         should be created for the copied source publication.
+    :param close_bugs: A boolean indicating whether or not bugs on the
+        copied publication should be closed.
 
     :return: a list of `ISourcePackagePublishingHistory` and
         `BinaryPackagePublishingHistory` corresponding to the copied
@@ -673,7 +679,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
             override = overrides[0]
         source_copy = source.copyTo(
             series, pocket, archive, override, create_dsd_job)
-        close_bugs_for_sourcepublication(source_copy)
+        if close_bugs:
+            close_bugs_for_sourcepublication(source_copy)
         copies.append(source_copy)
     else:
         source_copy = source_in_destination.first()
