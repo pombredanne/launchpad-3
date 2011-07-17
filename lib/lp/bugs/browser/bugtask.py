@@ -1444,7 +1444,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                         name,
                         "Only the Bug Supervisor for %s can set the bug's "
                         "status to %s" %
-                        (data['product'].displayname, data['status'].title))
+                        (new_product.displayname, new_status.title))
 
     def updateContextFromData(self, data, context=None):
         """Updates the context object using the submitted form data.
