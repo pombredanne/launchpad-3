@@ -252,8 +252,7 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.bugs.model.bug import Bug
-from lp.bugs.model.bugtask import BugTask
+from lp.bugs.utilities.bugtask import can_transition_to_status_on_target
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -1436,6 +1435,17 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             except WidgetsError, errors:
                 self.setFieldError('product', errors.args[0])
 
+        new_status = data.get('status')
+        if new_status != bugtask.status:
+            if not can_transition_to_status_on_target(
+                    bugtask, new_product, new_status, self.user):
+                for name in ('product', 'status'):
+                    self.setFieldError(
+                        name,
+                        "Only the Bug Supervisor for %s can set the bug's "
+                        "status to %s" %
+                        (data['product'].displayname, data['status'].title))
+
     def updateContextFromData(self, data, context=None):
         """Updates the context object using the submitted form data.
 
@@ -1528,7 +1538,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         # happen to be the only values that changed. We explicitly verify that
         # we got a new status and/or assignee, because the form is not always
         # guaranteed to pass all the values. For example: bugtasks linked to a
-        # bug watch don't allow editting the form, and the value is missing
+        # bug watch don't allow editing the form, and the value is missing
         # from the form.
         missing = object()
         new_status = new_values.pop("status", missing)
