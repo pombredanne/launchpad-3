@@ -208,14 +208,6 @@ class PublishDistro(LaunchpadCronScript):
         else:
             return [distribution.main_archive]
 
-    def isActiveArchive(self, archive):
-        """Is this an archive we're supposed to act on?
-
-        Considers only archives that have their "to be published" flag
-        turned on, or are pending deletion.
-        """
-        return archive.publish or (archive.status == ArchiveStatus.DELETING)
-
     def getPublisher(self, distribution, archive, allowed_suites):
         """Get a publisher for the given options."""
         if archive.purpose in MAIN_ARCHIVE_PURPOSES:
@@ -271,16 +263,17 @@ class PublishDistro(LaunchpadCronScript):
         self.logOptions()
         distribution = self.findDistro()
         allowed_suites = self.findAllowedSuites(distribution)
-        archives = filter(
-            self.isActiveArchive, self.getTargetArchives(distribution))
 
-        for archive in archives:
+        for archive in self.getTargetArchives(distribution):
             publisher = self.getPublisher(
                 distribution, archive, allowed_suites)
 
             if archive.status == ArchiveStatus.DELETING:
                 self.deleteArchive(archive, publisher)
-            else:
+            elif archive.publish:
                 self.publishArchive(archive, publisher)
+            else:
+                # Nothing to do with this archive.
+                pass
 
         self.logger.debug("Ciao")
