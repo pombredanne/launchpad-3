@@ -54,8 +54,8 @@ BUILDOUT_BIN = \
     bin/fl-credential-ctl bin/fl-install-demo bin/fl-monitor-ctl \
     bin/fl-record bin/fl-run-bench bin/fl-run-test bin/googletestservice \
     bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
-    bin/harness bin/iharness bin/ipy bin/jsbuild bin/jslint bin/jssize \
-    bin/jstest bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
+    bin/harness bin/iharness bin/ipy bin/jsbuild \
+    bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
     bin/run bin/sprite-util bin/start_librarian bin/stxdocs bin/tags \
     bin/test bin/tracereport bin/twistd bin/update-download-cache
 
@@ -100,22 +100,6 @@ check: clean build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS)
-
-jscheck: build
-	# Run all JavaScript integration tests.  The test runner takes care of
-	# setting up the test environment.
-	@echo
-	@echo "Running the JavaScript integration test suite"
-	@echo
-	bin/test $(VERBOSITY) $(TESTOPTS) --layer=WindmillLayer
-
-jscheck_functest: build
-    # Run the old functest Windmill integration tests.  The test runner
-    # takes care of setting up the test environment.
-	@echo
-	@echo "Running Windmill funtest integration test suite"
-	@echo
-	bin/jstest
 
 check_mailman: build
 	# Run all tests, including the Mailman integration
