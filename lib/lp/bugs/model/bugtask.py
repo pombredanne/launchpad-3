@@ -130,7 +130,6 @@ from lp.bugs.interfaces.bugtask import (
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.structuralsubscription import StructuralSubscription
-from lp.bugs.utilities.bugtask import can_transition_to_status_on_target
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -816,8 +815,20 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
-        return can_transition_to_status_on_target(
-            self, self.pillar, new_status, user)
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if (self.status == BugTaskStatus.FIXRELEASED and
+           (user.id == self.bug.ownerID or user.inTeam(self.bug.owner))):
+            return True
+        elif (user.inTeam(self.pillar.bug_supervisor) or
+              user.inTeam(self.pillar.owner) or
+              user.id == celebrities.bug_watch_updater.id or
+              user.id == celebrities.bug_importer.id or
+              user.id == celebrities.janitor.id):
+            return True
+        else:
+            return (self.status not in (
+                        BugTaskStatus.WONTFIX, BugTaskStatus.FIXRELEASED)
+                    and new_status not in BUG_SUPERVISOR_BUGTASK_STATUSES)
 
     def transitionToStatus(self, new_status, user, when=None):
         """See `IBugTask`."""
