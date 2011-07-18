@@ -180,8 +180,8 @@ class TestBugTaskView(TestCaseWithFactory):
                 form=form_data)
             # The bugtask's target won't have changed, since an error
             # happend. The error will be listed in the view.
+            self.assertEqual(1, len(view.errors))
             self.assertEqual(product, bug.default_bugtask.target)
-            self.assertEqual(2, len(view.errors))
 
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):

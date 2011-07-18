@@ -55,6 +55,7 @@ from math import (
     )
 from operator import attrgetter
 import re
+import transaction
 import urllib
 
 from lazr.delegates import delegates
@@ -246,12 +247,12 @@ from lp.bugs.interfaces.bugtask import (
     IUpstreamBugTask,
     IUpstreamProductBugTaskSearch,
     UNRESOLVED_BUGTASK_STATUSES,
+    UserCannotEditBugTaskStatus,
     )
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.bugs.utilities.bugtask import can_transition_to_status_on_target
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -1434,17 +1435,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             except WidgetsError, errors:
                 self.setFieldError('product', errors.args[0])
 
-        new_status = data.get('status')
-        if new_status != bugtask.status:
-            if not can_transition_to_status_on_target(
-                    bugtask, new_product, new_status, self.user):
-                for name in ('product', 'status'):
-                    self.setFieldError(
-                        name,
-                        "Only the Bug Supervisor for %s can set the bug's "
-                        "status to %s" %
-                        (new_product.displayname, new_status.title))
-
     def updateContextFromData(self, data, context=None):
         """Updates the context object using the submitted form data.
 
@@ -1544,7 +1534,18 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         new_assignee = new_values.pop("assignee", missing)
         if new_status is not missing and bugtask.status != new_status:
             changed = True
-            bugtask.transitionToStatus(new_status, self.user)
+            try:
+                bugtask.transitionToStatus(new_status, self.user)
+            except UserCannotEditBugTaskStatus:
+                # We need to roll back the transaction at this point,
+                # since other changes may have been made.
+                transaction.abort()
+                self.setFieldError(
+                    'status',
+                    "Only the Bug Supervisor for %s can set the bug's "
+                    "status to %s" %
+                    (bugtask.target.displayname, new_status.title))
+                return
 
         if new_assignee is not missing and bugtask.assignee != new_assignee:
             if new_assignee is not None and new_assignee != self.user:
@@ -1641,7 +1642,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     def save_action(self, action, data):
         """Update the bugtask with the form data."""
         self.updateContextFromData(data)
-
 
 class BugTaskStatusView(LaunchpadView):
     """Viewing the status of a bug task."""
