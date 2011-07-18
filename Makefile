@@ -33,7 +33,7 @@ endef
 
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
 JS_OTHER := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
-JS_LP := $(shell find $(JS_LP_PATHS) -name '*.js')
+JS_LP := $(shell find $(JS_LP_PATHS) -name '*.js' ! -name '.*.js')
 JS_ALL := $(JS_YUI) $(JS_OTHER) $(JS_LP)
 JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 
