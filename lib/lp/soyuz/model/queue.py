@@ -827,6 +827,8 @@ class PackageUpload(SQLBase):
     def _getChangesDict(self, changes_file_object=None):
         """Return a dictionary with changes file tags in it."""
         if changes_file_object is None:
+            if self.changesfile is None:
+                return {}, ''
             changes_file_object = self.changesfile
         changes_content = changes_file_object.read()
 
