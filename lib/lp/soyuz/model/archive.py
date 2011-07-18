@@ -1554,7 +1554,7 @@ class Archive(SQLBase):
             target_archive=self, target_distroseries=series,
             target_pocket=pocket,
             package_version=version, include_binaries=include_binaries,
-            copy_policy=PackageCopyPolicy.INSECURE)
+            copy_policy=PackageCopyPolicy.INSECURE, requester=person)
 
     def copyPackages(self, source_names, from_archive, to_pocket,
                      person, to_series=None, include_binaries=None):
@@ -1597,7 +1597,8 @@ class Archive(SQLBase):
 
         job_source = getUtility(IPlainPackageCopyJobSource)
         job_source.createMultiple(
-            series, copy_tasks, copy_policy=PackageCopyPolicy.INSECURE,
+            series, copy_tasks, person,
+            copy_policy=PackageCopyPolicy.INSECURE,
             include_binaries=include_binaries)
 
     def _collectLatestPublishedSources(self, from_archive, source_names):
