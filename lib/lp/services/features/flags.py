@@ -111,12 +111,14 @@ flag_info = sorted([
     ('bugs.bug777874.enabled_distribution_names',
      'space delimited',
      ('Enables auto-confirming bugtasks for distributions (and their '
-      'series and packages).  Specify a single asterisk ("*") to enable '
-      'for all distributions.'),
+      'series and packages).  Use the default domain.  Specify a single '
+      'asterisk ("*") to enable for all distributions.'),
      'None are enabled'),
     ('bugs.bug777874.enabled_product_names',
      'space delimited',
-     (''),
+     ('Enables auto-confirming bugtasks for products (and their '
+      'series).  Use the default domain.  Specify a single '
+      'asterisk ("*") to enable for all products.'),
      'None are enabled'),
     ])
 

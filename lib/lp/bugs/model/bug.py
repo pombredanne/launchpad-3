@@ -1804,7 +1804,8 @@ BugMessage""" % sqlvalues(self.id))
             if dupe._getAffectedUser(user) is not None:
                 dupe.markUserAffected(user, affected)
 
-        self.maybeConfirmBugtasks()
+        if affected:
+            self.maybeConfirmBugtasks()
 
         self.updateHeat()
 
