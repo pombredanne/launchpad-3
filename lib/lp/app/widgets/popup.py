@@ -123,7 +123,9 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
             remove_person_text=self.remove_person_text,
             remove_team_text=self.remove_team_text,
             show_remove_button=self.show_remove_button,
-            show_assign_me_button=self.show_assign_me_button)
+            show_assign_me_button=self.show_assign_me_button,
+            vocabulary_name=self.vocabulary_name,
+            input_element=self.input_id)
 
     @property
     def json_config(self):
