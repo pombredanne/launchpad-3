@@ -383,8 +383,8 @@ space-separated string for display.
 Addtions and removals are expressed separately in the notification.
 
     >>> print tags_change.getBugNotification()['text']
-    ** Tags added: zillionth-tag
     ** Tags removed: first-tag
+    ** Tags added: zillionth-tag
 
 
 === BugSecurityChange ===
