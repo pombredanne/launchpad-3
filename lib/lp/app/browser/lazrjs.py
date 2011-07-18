@@ -36,7 +36,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from lp.app.browser.stringformatter import FormattersAPI
-from lp.app.browser.vocabulary import get_person_picker_entry_meta
+from lp.app.browser.vocabulary import get_person_picker_entry_metadata
 from lp.services.propertycache import cachedproperty
 
 
@@ -283,14 +283,14 @@ class InlineEditPickerWidget(WidgetBase):
             self.exported_field.vocabularyName)
 
     @property
-    def selected_value_meta(self):
+    def selected_value_metadata(self):
         return None
 
     @property
     def config(self):
         return dict(
             header=self.header, step_title=self.step_title,
-            selected_value_meta=self.selected_value_meta,
+            selected_value_metadata=self.selected_value_metadata,
             assign_me_text=self.assign_me_text,
             remove_person_text=self.remove_person_text,
             remove_team_text=self.remove_team_text,
@@ -323,9 +323,9 @@ class InlineEditPickerWidget(WidgetBase):
 
 class InlinePersonEditPickerWidget(InlineEditPickerWidget):
     @property
-    def selected_value_meta(self):
+    def selected_value_metadata(self):
         val = getattr(self.context, self.exported_field.__name__)
-        return get_person_picker_entry_meta(val)
+        return get_person_picker_entry_metadata(val)
 
 
 class InlineMultiCheckboxWidget(WidgetBase):
