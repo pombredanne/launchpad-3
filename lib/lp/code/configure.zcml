@@ -291,7 +291,7 @@
   <!-- Branch Merge Proposal Jobs -->
 
   <class class="lp.code.model.branchmergeproposaljob.CreateMergeProposalJob">
-    <allow interface="canonical.launchpad.interfaces.message.IMessageJob"/>
+    <allow interface="lp.services.messages.interfaces.message.IMessageJob"/>
     <allow interface="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJob"/>
   </class>
   <securedutility
@@ -398,19 +398,8 @@
   <class
       class="lp.code.model.seriessourcepackagebranch.SeriesSourcePackageBranch">
     <allow interface="lp.code.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranch"/>
-    <require
-        permission="launchpad.Edit"
-        set_schema="lp.code.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranch"/>
   </class>
 
-  <securedutility
-     class="lp.code.model.seriessourcepackagebranch.SeriesSourcePackageBranchSet"
-     provides="lp.code.interfaces.seriessourcepackagebranch.IMakeOfficialBranchLinks">
-    <allow interface="lp.code.interfaces.seriessourcepackagebranch.IMakeOfficialBranchLinks"/>
-    <require
-       permission="launchpad.Edit"
-       interface="lp.code.interfaces.seriessourcepackagebranch.IMakeOfficialBranchLinks"/>
-  </securedutility>
   <securedutility
      class="lp.code.model.seriessourcepackagebranch.SeriesSourcePackageBranchSet"
      provides="lp.code.interfaces.seriessourcepackagebranch.IFindOfficialBranchLinks">
@@ -880,6 +869,7 @@
   </securedutility>
   <class class="lp.code.model.branchjob.BranchScanJob">
     <allow interface="lp.services.job.interfaces.job.IRunnableJob" />
+    <allow interface="lp.code.interfaces.branchjob.IBranchJob" />
   </class>
 
   <!-- Linked branches -->

@@ -31,9 +31,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import (
-    UTC_NOW,
-    )
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
@@ -49,8 +47,8 @@ from canonical.launchpad.database.librarian import (
     LibraryFileContent,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.person import validate_public_person
@@ -471,11 +469,6 @@ class SourcePackageRelease(SQLBase):
             "DistroArchSeries.architecturetag = %s AND "
             "BinaryPackageBuild.source_package_release = %s" % (
             sqlvalues(archive.id, distroarchseries.architecturetag, self))]
-
-        # XXX bigjools 2011-05-04 bug=777234
-        # We'll need exceptions in here for when we start initialising
-        # derived distros without rebuilding binaries.  The matched
-        # archives will need to traverse the DistroSeriesParent tree.
 
         # Query only the last build record for this sourcerelease
         # across all possible locations.

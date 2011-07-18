@@ -16,23 +16,31 @@ from cStringIO import StringIO
 import os
 import signal
 import smtplib
-from cStringIO import StringIO
 from urllib import urlopen
 
+from amqplib import client_0_8 as amqp
 from fixtures import (
-    Fixture,
     EnvironmentVariableFixture,
+    Fixture,
     TestWithFixtures,
     )
-import psycopg2
-import testtools
-from zope.component import getUtility, ComponentLookupError
-
-from canonical.config import config, dbconfig
 from lazr.config import as_host_port
-from canonical.librarian.client import LibrarianClient, UploadFailed
-from canonical.librarian.interfaces import ILibrarianClient
+import testtools
+from zope.component import (
+    ComponentLookupError,
+    getUtility,
+    )
+
+from canonical.config import (
+    config,
+    dbconfig,
+    )
 from canonical.lazr.pidfile import pidfile_path
+from canonical.librarian.client import (
+    LibrarianClient,
+    UploadFailed,
+    )
+from canonical.librarian.interfaces import ILibrarianClient
 from canonical.testing.layers import (
     AppServerLayer,
     BaseLayer,
@@ -48,6 +56,7 @@ from canonical.testing.layers import (
     LayerProcessController,
     LibrarianLayer,
     MemcachedLayer,
+    RabbitMQLayer,
     ZopelessLayer,
     )
 from lp.services.memcache.client import memcache_client_factory
@@ -56,7 +65,7 @@ from lp.services.memcache.client import memcache_client_factory
 class BaseLayerIsolator(Fixture):
     """A fixture for isolating BaseLayer.
 
-    This is useful to test interactions with LP_PERSISTENT_TEST_SERVICES 
+    This is useful to test interactions with LP_PERSISTENT_TEST_SERVICES
     which makes tests within layers unable to test that easily.
     """
 
@@ -162,6 +171,7 @@ class BaseTestCase(testtools.TestCase):
     want_functional_flag = False
     want_zopeless_flag = False
     want_memcached = False
+    want_rabbitmq = False
 
     def testBaseIsSetUpFlag(self):
         self.failUnlessEqual(BaseLayer.isSetUp, True)
@@ -218,7 +228,7 @@ class BaseTestCase(testtools.TestCase):
         client = LibrarianClient()
         data = 'Whatever'
         try:
-            file_alias_id = client.addFile(
+            client.addFile(
                     'foo.txt', len(data), StringIO(data), 'text/plain'
                     )
         except UploadFailed:
@@ -258,6 +268,20 @@ class BaseTestCase(testtools.TestCase):
         else:
             self.assertEqual(
                 is_live, False, "memcached is live but should not be.")
+
+    def testRabbitWorking(self):
+        rabbitmq = config.rabbitmq
+        if not self.want_rabbitmq:
+            self.assertEqual(None, rabbitmq.host)
+        else:
+            self.assertNotEqual(None, rabbitmq.host)
+            conn = amqp.Connection(
+                host=rabbitmq.host,
+                userid=rabbitmq.userid,
+                password=rabbitmq.password,
+                virtual_host=rabbitmq.virtual_host,
+                insist=False)
+            conn.close()
 
 
 class MemcachedTestCase(BaseTestCase):
@@ -313,21 +337,17 @@ class LibrarianLayerTest(testtools.TestCase, TestWithFixtures):
             self.assertFalse(os.path.exists(active_root))
 
 
-class LibrarianNoResetTestCase(testtools.TestCase):
+class LibrarianResetTestCase(testtools.TestCase):
     """Our page tests need to run multple tests without destroying
     the librarian database in between.
     """
-    layer = LaunchpadLayer
+    layer = LibrarianLayer
 
     sample_data = 'This is a test'
 
-    def testNoReset1(self):
-        # Inform the librarian not to reset the library until we say
-        # otherwise
-        LibrarianLayer._reset_between_tests = False
-
-        # Add a file for testNoReset2. We use remoteAddFile because
-        # it does not need the CA loaded to work.
+    def test_librarian_is_reset(self):
+        # Add a file. We use remoteAddFile because it does not need the CA
+        # loaded to work.
         client = LibrarianClient()
         LibrarianTestCase.url = client.remoteAddFile(
                 self.sample_data, len(self.sample_data),
@@ -336,20 +356,10 @@ class LibrarianNoResetTestCase(testtools.TestCase):
         self.failUnlessEqual(
                 urlopen(LibrarianTestCase.url).read(), self.sample_data
                 )
-
-    def testNoReset2(self):
-        # The file added by testNoReset1 should be there
-        self.failUnlessEqual(
-                urlopen(LibrarianTestCase.url).read(), self.sample_data
-                )
-        # Restore this - keeping state is our responsibility
-        LibrarianLayer._reset_between_tests = True
-        # The database was committed to, but not by this process, so we need
-        # to ensure that it is fully torn down and recreated.
-        DatabaseLayer.force_dirty_database()
-
-    def testNoReset3(self):
-        # The file added by testNoReset1 should be gone
+        # Perform the librarian specific between-test code:
+        LibrarianLayer.testTearDown()
+        LibrarianLayer.testSetUp()
+        # Which should have nuked the old file.
         # XXX: StuartBishop 2006-06-30 Bug=51370:
         # We should get a DownloadFailed exception here.
         data = urlopen(LibrarianTestCase.url).read()
@@ -380,6 +390,11 @@ class LibrarianHideTestCase(testtools.TestCase):
             'foo', len(data), StringIO(data), 'text/plain')
 
 
+class RabbitMQTestCase(BaseTestCase):
+    layer = RabbitMQLayer
+    want_rabbitmq = True
+
+
 class DatabaseTestCase(BaseTestCase):
     layer = DatabaseLayer
 
@@ -394,36 +409,18 @@ class DatabaseTestCase(BaseTestCase):
         num = cur.fetchone()[0]
         return num
 
-    # XXX: Parallel-fail: because layers are not cleanly integrated with
-    # unittest, what should be one test is expressed as three distinct
-    # tests here. We need to either write enough glue to push/pop the
-    # global state of zope.testing.runner or we need to stop using layers,
-    # before these tests will pass in a parallel run. Robert Collins
-    # 2010-11-01
-    def testNoReset1(self):
-        # Ensure that we can switch off database resets between tests
-        # if necessary, such as used by the page tests
-        DatabaseLayer._reset_between_tests = False
+    def test_db_is_reset(self):
         con = DatabaseLayer.connect()
         cur = con.cursor()
         cur.execute("DELETE FROM Wikiname")
         self.failUnlessEqual(self.getWikinameCount(con), 0)
         con.commit()
-
-    def testNoReset2(self):
-        # Wikiname table was emptied by testNoReset1 and should still
-        # contain nothing.
+        # Run the per-test code for the Database layer.
+        DatabaseLayer.testTearDown()
+        DatabaseLayer.testSetUp()
+        # Wikiname table should have been restored.
         con = DatabaseLayer.connect()
-        self.failUnlessEqual(self.getWikinameCount(con), 0)
-        # Note we don't need to commit, but we do need to force
-        # a reset!
-        DatabaseLayer._reset_between_tests = True
-        DatabaseLayer.force_dirty_database()
-
-    def testNoReset3(self):
-        # Wikiname table should contain data again
-        con = DatabaseLayer.connect()
-        self.failIfEqual(self.getWikinameCount(con), 0)
+        self.assertNotEqual(0, self.getWikinameCount(con))
 
 
 class LaunchpadTestCase(BaseTestCase):
@@ -432,6 +429,7 @@ class LaunchpadTestCase(BaseTestCase):
     want_launchpad_database = True
     want_librarian_running = True
     want_memcached = True
+    want_rabbitmq = True
 
 
 class FunctionalTestCase(BaseTestCase):
@@ -458,6 +456,7 @@ class LaunchpadFunctionalTestCase(BaseTestCase):
     want_librarian_running = True
     want_functional_flag = True
     want_memcached = True
+    want_rabbitmq = True
 
 
 class LaunchpadZopelessTestCase(BaseTestCase):
@@ -468,6 +467,7 @@ class LaunchpadZopelessTestCase(BaseTestCase):
     want_librarian_running = True
     want_zopeless_flag = True
     want_memcached = True
+    want_rabbitmq = True
 
 
 class LaunchpadScriptTestCase(BaseTestCase):
@@ -478,6 +478,7 @@ class LaunchpadScriptTestCase(BaseTestCase):
     want_librarian_running = True
     want_zopeless_flag = True
     want_memcached = True
+    want_rabbitmq = True
 
     def testSwitchDbConfig(self):
         # Test that we can switch database configurations, and that we
@@ -503,6 +504,7 @@ class LayerProcessControllerInvariantsTestCase(BaseTestCase):
     want_functional_flag = True
     want_zopeless_flag = False
     want_memcached = True
+    want_rabbitmq = True
 
     def testAppServerIsAvailable(self):
         # Test that the app server is up and running.
@@ -579,6 +581,7 @@ class LayerProcessControllerTestCase(testtools.TestCase):
 
 class TestNameTestCase(testtools.TestCase):
     layer = BaseLayer
+
     def testTestName(self):
         self.failUnlessEqual(
                 BaseLayer.test_name,

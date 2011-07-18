@@ -11,7 +11,6 @@ from lazr.lifecycle.snapshot import Snapshot
 import pytz
 import transaction
 
-from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.testing.pages import (
     find_main_content,
     get_feedback_messages,
@@ -250,7 +249,6 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
                          (License.ACADEMIC, License.AFFERO))
         product_license = ProductLicense(
             product=self.product, license=License.PYTHON)
-        syncUpdate(product_license)
         # Cache doesn't see new value.
         self.assertEqual(self.product.licenses,
                          (License.ACADEMIC, License.AFFERO))
@@ -262,7 +260,6 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
         transaction.abort()
         product_license = ProductLicense(
             product=self.product, license=License.MIT)
-        syncUpdate(product_license)
         self.assertEqual(self.product.licenses,
                          (License.ACADEMIC, License.AFFERO, License.MIT))
 
@@ -278,8 +275,6 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
             purchaser=self.product.owner,
             sales_system_id='foo',
             whiteboard='bar')
-        # Cache does not see the change to the database.
-        syncUpdate(subscription)
         self.assertEqual(self.product.commercial_subscription, None)
         self.product.redeemSubscriptionVoucher(
             'hello', self.product.owner, self.product.owner, 1)
@@ -299,7 +294,6 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
             purchaser=self.product.owner,
             sales_system_id='new',
             whiteboard='')
-        syncUpdate(subscription)
         # Cache is cleared and it sees database changes that occur
         # before the cache is populated.
         self.assertEqual(self.product.commercial_subscription.sales_system_id,

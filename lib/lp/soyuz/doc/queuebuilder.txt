@@ -274,9 +274,7 @@ exists but does not support any PPA archictecture the source
 publications in PPA context are ignored; they don't result in any
 build nor a misleading error in determineArchitectureToBuild.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> breezy_autotest_i386.supports_virtualized = False
-    >>> syncUpdate(breezy_autotest_i386)
 
     >>> pub_breezy_autotest_ppa = test_publisher.getPubSource(
     ...     sourcename='test-no-ppa-support', version='999',

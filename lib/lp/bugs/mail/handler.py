@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces.mail import (
     IBugTaskEmailCommand,
     IMailHandler,
     )
-from canonical.launchpad.interfaces.message import IMessageSet
+from lp.services.messages.interfaces.message import IMessageSet
 from canonical.launchpad.mail.commands import (
     BugEmailCommands,
     get_error_message,

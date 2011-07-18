@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for uploadprocessor.py."""
@@ -82,7 +82,7 @@ from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory,
     )
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-from lp.soyuz.scripts.initialise_distroseries import InitialiseDistroSeries
+from lp.soyuz.scripts.initialize_distroseries import InitializeDistroSeries
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
@@ -165,10 +165,12 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             self.options.nomails, builds, self.options.keep, getPolicy, txn,
             self.log)
 
-    def publishPackage(self, packagename, version, source=True,
-                        archive=None):
+    def publishPackage(self, packagename, version, source=True, archive=None):
         """Publish a single package that is currently NEW in the queue."""
-        queue_items = self.breezy.getQueueItems(
+        packagename = unicode(packagename)
+        if version is not None:
+            version = unicode(version)
+        queue_items = self.breezy.getPackageUploads(
             status=PackageUploadStatus.NEW, name=packagename,
             version=version, exact_match=True, archive=archive)
         self.assertEqual(queue_items.count(), 1)
@@ -209,7 +211,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
     def setupBreezy(self, name="breezy", permitted_formats=None):
         """Create a fresh distroseries in ubuntu.
 
-        Use *initialiseFromParent* procedure to create 'breezy'
+        Use *initializeFromParent* procedure to create 'breezy'
         on ubuntu based on the last 'breezy-autotest'.
 
         Also sets 'changeslist' and 'nominatedarchindep' properly and
@@ -227,9 +229,10 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             'The Breezy Badger', 'Black and White', 'Someone',
             '5.10', None, bat.owner)
 
+        self.breezy.previous_series = bat
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
-        ids = InitialiseDistroSeries(bat, self.breezy)
-        ids.initialise()
+        ids = InitializeDistroSeries(self.breezy, [bat.id])
+        ids.initialize()
 
         fake_chroot = self.addMockFile('fake_chroot.tar.gz')
         self.breezy['i386'].addOrUpdateChroot(fake_chroot)
@@ -389,7 +392,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
     def testInstantiate(self):
         """UploadProcessor should instantiate"""
-        up = self.getUploadProcessor(None)
+        self.getUploadProcessor(None)
 
     def testLocateDirectories(self):
         """Return a sorted list of subdirs in a directory.
@@ -496,7 +499,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         try:
             # Create an upload, a .distro and a target to move it to.
             upload, distro = self._makeUpload(testdir)
-            upload_name = os.path.basename(upload)
+            os.path.basename(upload)
 
             # Remove it
             self.options.base_fsroot = testdir
@@ -589,9 +592,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Accept and publish the upload.
         # This is required so that the next upload of a later version of
         # the same package will work correctly.
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.NEW, name="bar",
-            version="1.0-1", exact_match=True)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.NEW, name=u"bar",
+            version=u"1.0-1", exact_match=True)
         self.assertEqual(queue_items.count(), 1)
         queue_item = queue_items[0]
 
@@ -619,9 +622,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
                         "Got:\n%s" % raw_msg)
 
         # And verify that the queue item is in the unapproved state.
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.UNAPPROVED, name="bar",
-            version="1.0-2", exact_match=True)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.UNAPPROVED, name=u"bar",
+            version=u"1.0-2", exact_match=True)
         self.assertEqual(queue_items.count(), 1)
         queue_item = queue_items[0]
         self.assertEqual(
@@ -649,10 +652,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
         [bar_original_build] = bar_source_pub.createMissingBuilds()
 
         # Move the source from the accepted queue.
-        [queue_item] = self.breezy.getQueueItems(
+        [queue_item] = self.breezy.getPackageUploads(
             status=PackageUploadStatus.ACCEPTED,
-            version="1.0-1",
-            name="bar")
+            version=u"1.0-1",
+            name=u"bar")
         queue_item.setDone()
 
         # Upload and accept a binary for the primary archive source.
@@ -702,10 +705,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # The upload should also be auto-accepted even though there's no
         # ancestry.  This means items should go to ACCEPTED and not NEW.
-        queue_items = self.breezy.getQueueItems(
+        queue_items = self.breezy.getPackageUploads(
             status=PackageUploadStatus.ACCEPTED,
-            version="1.0-1",
-            name="bar",
+            version=u"1.0-1",
+            name=u"bar",
             archive=copy_archive)
         self.assertEqual(
             queue_items.count(), 1,
@@ -795,9 +798,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1_binary")
         self.processUpload(build_uploadprocessor, upload_dir,
             build=bar_copied_build)
-        [duplicated_binary_upload] = breezy_autotest.getQueueItems(
-            status=PackageUploadStatus.NEW, name='bar',
-            version='1.0-1', exact_match=True)
+        [duplicated_binary_upload] = breezy_autotest.getPackageUploads(
+            status=PackageUploadStatus.NEW, name=u'bar',
+            version=u'1.0-1', exact_match=True)
 
         # The just uploaded binary cannot be accepted because its
         # filename 'bar_1.0-1_i386.deb' is already published in the
@@ -927,9 +930,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
             uploadprocessor.last_processed_upload.queue_root.status,
             PackageUploadStatus.NEW)
 
-        [queue_item] = self.breezy.getQueueItems(
-            status=PackageUploadStatus.NEW, name="foocomm",
-            version="1.0-1", exact_match=True)
+        [queue_item] = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.NEW, name=u"foocomm",
+            version=u"1.0-1", exact_match=True)
         queue_item.setAccepted()
         queue_item.realiseUpload()
         self.layer.commit()
@@ -1091,10 +1094,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Check the upload is in the DONE queue since single source uploads
         # with ancestry (previously uploaded) will skip the ACCEPTED state.
-        queue_items = self.breezy.getQueueItems(
+        queue_items = self.breezy.getPackageUploads(
             status=PackageUploadStatus.DONE,
-            version="1.0-2",
-            name="foocomm")
+            version=u"1.0-2",
+            name=u"foocomm")
         self.assertEqual(queue_items.count(), 1)
 
         # Single source uploads also get their corrsponding builds created
@@ -1114,10 +1117,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.processUpload(uploadprocessor, upload_dir)
 
         # Check that the binary upload was accepted:
-        queue_items = self.breezy.getQueueItems(
+        queue_items = self.breezy.getPackageUploads(
             status=PackageUploadStatus.ACCEPTED,
-            version="1.0-2",
-            name="foocomm")
+            version=u"1.0-2",
+            name=u"foocomm")
         self.assertEqual(queue_items.count(), 1)
 
     def testPartnerUploadToProposedPocket(self):
@@ -1179,9 +1182,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         fp = StringIO()
         error_report.write(fp)
         error_text = fp.getvalue()
-        self.assertIn(
-            "Unable to find mandatory field 'Files' "
-            "in the changes file", error_text)
+        expected_explanation = (
+            "Verification failed 3 times: ['No data', 'No data', 'No data']")
+        self.assertIn(expected_explanation, error_text)
 
         # Housekeeping so the next test won't fail.
         shutil.rmtree(upload_dir)
@@ -1251,7 +1254,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Invalid upload path (1/ubuntu) for this policy (insecure)"]
         self.assertEmail(contents=contents, recipients=[])
 
-
     # Uploads that are new should have the component overridden
     # such that:
     #   'contrib' -> 'multiverse'
@@ -1262,7 +1264,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
     # the default action taken anyway.
     #
     # The following three tests check this.
-
     def checkComponentOverride(self, upload_dir_name,
                                expected_component_name):
         """Helper function to check overridden component names.
@@ -1278,9 +1279,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload(upload_dir_name)
         self.processUpload(uploadprocessor, upload_dir)
 
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.NEW, name="bar",
-            version="1.0-1", exact_match=True)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.NEW, name=u"bar",
+            version=u"1.0-1", exact_match=True)
         [queue_item] = queue_items
         self.assertEqual(
             queue_item.sourcepackagerelease.component.name,
@@ -1348,8 +1349,10 @@ class TestUploadProcessor(TestUploadProcessorBase):
             'Expected Exception type not found in OOPS report:\n%s'
             % error_text)
 
+        # The upload policy requires a signature but none is present, so
+        # we get gpg verification errors.
         expected_explanation = (
-            "Unable to find mandatory field 'Files' in the changes file.")
+            "Verification failed 3 times: ['No data', 'No data', 'No data']")
         self.failUnless(
             error_text.find(expected_explanation) >= 0,
             'Expected Exception text not found in OOPS report:\n%s'
@@ -1377,7 +1380,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Failed to upload bar source:\n%s" % raw_msg)
         self.publishPackage("bar", "1.0-1")
         # Clear out emails generated during upload.
-        ignore = pop_notifications()
+        pop_notifications()
 
         # Upload a binary lzma-compressed package.
         upload_dir = self.queueUpload("bar_1.0-1_lzma_binary")
@@ -1391,9 +1394,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Expected no emails!  Actually got:\n%s" % raw_msg)
 
         # Check in the queue to see if it really made it:
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.NEW, name="bar",
-            version="1.0-1", exact_match=True)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.NEW, name=u"bar",
+            version=u"1.0-1", exact_match=True)
         self.assertEqual(
             queue_items.count(), 1,
             "Expected one 'bar' item in the queue, actually got %d."
@@ -1436,7 +1439,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # just-uploaded changesfile from librarian.
         self.layer.txn.commit()
 
-        upload.queue_root.acceptFromQueue('announce@ubuntu.com')
+        upload.queue_root.acceptFromQueue()
 
         # 'biscuit_1.0-2' building on i386 get accepted and published.
         packager.buildVersion('1.0-2', suite=self.breezy.name, arch="i386")
@@ -1481,9 +1484,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # components that he does not have direct rights to.
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)
-        bar_source_pub = self.publishPackage('bar', '1.0-1')
+        self.publishPackage('bar', '1.0-1')
         # Clear out emails generated during upload.
-        ignore = pop_notifications()
+        pop_notifications()
 
         # Now upload the next version.
         upload_dir = self.queueUpload("bar_1.0-2")
@@ -1533,9 +1536,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # components that he does not have direct rights to.
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)
-        bar_source_pub = self.publishPackage('bar', '1.0-1')
+        self.publishPackage('bar', '1.0-1')
         # Clear out emails generated during upload.
-        ignore = pop_notifications()
+        pop_notifications()
 
         # Now upload the next version.
         upload_dir = self.queueUpload("bar_1.0-2")
@@ -1714,7 +1717,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertTrue(
             "rejected" not in raw_msg,
             "Failed to upload bar source:\n%s" % raw_msg)
-        spph = self.publishPackage("bar", "1.0-1")
+        self.publishPackage("bar", "1.0-1")
 
         # Upload another source sharing the same (component) orig.
         upload_dir = self.queueUpload("bar_1.0-2_3.0-quilt_without_orig")
@@ -1822,9 +1825,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1")
         self.processUpload(uploadprocessor, upload_dir)
         # ACCEPT the upload
-        queue_items = self.breezy.getQueueItems(
-            status=PackageUploadStatus.NEW, name="bar",
-            version="1.0-1", exact_match=True)
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.NEW, name=u"bar",
+            version=u"1.0-1", exact_match=True)
         self.assertEqual(queue_items.count(), 1)
         queue_item = queue_items[0]
         queue_item.setAccepted()
@@ -1882,9 +1885,9 @@ class TestUploadHandler(TestUploadProcessorBase):
         [build] = source_pub.createMissingBuilds()
 
         # Move the source from the accepted queue.
-        [queue_item] = self.breezy.getQueueItems(
+        [queue_item] = self.breezy.getPackageUploads(
             status=PackageUploadStatus.ACCEPTED,
-            version="1.0-1", name="bar")
+            version=u"1.0-1", name=u"bar")
         queue_item.setDone()
 
         builder = self.factory.makeBuilder()
@@ -1926,9 +1929,9 @@ class TestUploadHandler(TestUploadProcessorBase):
         [build] = source_pub.createMissingBuilds()
 
         # Move the source from the accepted queue.
-        [queue_item] = self.breezy.getQueueItems(
+        [queue_item] = self.breezy.getPackageUploads(
             status=PackageUploadStatus.ACCEPTED,
-            version="1.0-1", name="bar")
+            version=u"1.0-1", name=u"bar")
         queue_item.setDone()
 
         build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
@@ -1963,14 +1966,14 @@ class TestUploadHandler(TestUploadProcessorBase):
             distroseries=self.breezy, archive=archive,
             requester=archive.owner)
         self.assertEquals(archive.owner, build.requester)
-        bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
         leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
         relative_path = "~%s/%s/%s/%s" % (
             archive.owner.name, archive.name, self.breezy.distribution.name,
             self.breezy.name)
-        upload_dir = self.queueUpload(
+        self.queueUpload(
             "bar_1.0-1", queue_entry=leaf_name, relative_path=relative_path)
         self.options.context = 'buildd'
         self.options.builds = True
@@ -1996,12 +1999,12 @@ class TestUploadHandler(TestUploadProcessorBase):
         self.assertIs(None, build.upload_log)
 
     def testSourcePackageRecipeBuild_success_mail(self):
-        # When a source package recipe build succeeds, it sends a build-style
-        # email, not user-upload-style one.
+        """Source package recipe build success does not cause mail.
+
+        See bug 778437.
+        """
         self.doSuccessRecipeBuild()
-        (mail,) = pop_notifications()
-        subject = mail['Subject'].replace('\n\t', ' ')
-        self.assertIn('Successfully built', subject)
+        self.assertEquals(len(pop_notifications()), 0, pop_notifications)
 
     def doFailureRecipeBuild(self):
         # A source package recipe build will fail if no files are present.
@@ -2011,7 +2014,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         archive.require_virtualized = False
         build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
             distroseries=self.breezy, archive=archive)
-        bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         # Commit so the build cookie has the right ids.
         Store.of(build).flush()
         leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
@@ -2053,7 +2056,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         archive.require_virtualized = False
         build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
             distroseries=self.breezy, archive=archive)
-        bq = self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
+        self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
         # Commit so the build cookie has the right ids.
         Store.of(build).flush()
         leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
@@ -2088,9 +2091,9 @@ class TestUploadHandler(TestUploadProcessorBase):
         [build] = source_pub.createMissingBuilds()
 
         # Move the source from the accepted queue.
-        [queue_item] = self.breezy.getQueueItems(
+        [queue_item] = self.breezy.getPackageUploads(
             status=PackageUploadStatus.ACCEPTED,
-            version="1.0-1", name="bar")
+            version=u"1.0-1", name=u"bar")
         queue_item.setDone()
 
         build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
@@ -2105,7 +2108,7 @@ class TestUploadHandler(TestUploadProcessorBase):
             "bar_1.0-1_binary", queue_entry=leaf_name)
         self.options.context = 'buildd'
         self.options.builds = True
-        last_stub_mail_count = len(stub.test_emails)
+        len(stub.test_emails)
         BuildUploadHandler(self.uploadprocessor, self.incoming_folder,
             leaf_name).process()
         self.layer.txn.commit()

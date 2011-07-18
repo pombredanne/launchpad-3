@@ -485,7 +485,7 @@ the ID assigned to the comment by the remote bug tracker.
 
 To demonstrate this method, we'll create a comment to push.
 
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> with lp_dbuser():
     ...     message = getUtility(IMessageSet).fromText(
     ...         "A subject", "An example comment to push.", poster)

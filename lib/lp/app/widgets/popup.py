@@ -7,9 +7,7 @@
 
 __metaclass__ = type
 
-from base64 import urlsafe_b64encode
 import cgi
-
 import simplejson
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser.itemswidgets import (
@@ -19,6 +17,9 @@ from zope.app.form.browser.itemswidgets import (
 from zope.schema.interfaces import IChoice
 
 from canonical.launchpad.webapp import canonical_url
+from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.browser.vocabulary import get_person_picker_entry_metadata
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 
 
@@ -26,6 +27,16 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     """Wrapper for the lazr-js picker/picker.js widget."""
 
     __call__ = ViewPageTemplateFile('templates/form-picker.pt')
+
+    picker_type = 'default'
+    # Provide default values for the following properties in case someone
+    # creates a vocab picker for a person instead of using the derived
+    # PersonPicker.
+    show_assign_me_button = 'false'
+    show_remove_button = 'false'
+    assign_me_text = 'Pick me'
+    remove_person_text = 'Remove person'
+    remove_team_text = 'Remove team'
 
     popup_name = 'popup-vocabulary-picker'
 
@@ -80,7 +91,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     def inputField(self):
         d = {
             'formToken': cgi.escape(self.formToken, quote=True),
-            'name': self.name,
+            'name': self.input_id,
             'displayWidth': self.displayWidth,
             'displayMaxWidth': self.displayMaxWidth,
             'onKeyPress': self.onKeyPress,
@@ -94,19 +105,29 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
                          class="%(cssClass)s" />""" % d
 
     @property
-    def suffix(self):
-        """This is used to uniquify the widget ID to avoid ID collisions."""
-        # Since this will be used in an HTML ID, the allowable set of
-        # characters is smaller than the set that can appear in self.name.
-        # Therefore we use the URL-safe base 64 encoding of the name.  However
-        # we also have to strip off any padding characters ("=") because
-        # Python's URL-safe base 64 encoding includes those and they aren't
-        # allowed in IDs either.
-        return urlsafe_b64encode(self.name).replace('=', '')
+    def selected_value_metadata(self):
+        return None
 
     @property
     def show_widget_id(self):
-        return 'show-widget-%s' % self.suffix
+        return 'show-widget-%s' % self.input_id.replace('.', '-')
+
+    @property
+    def config(self):
+        return dict(
+            picker_type=self.picker_type,
+            selected_value_metadata=self.selected_value_metadata,
+            header=self.header_text, step_title=self.step_title_text,
+            extra_no_results_message=self.extra_no_results_message,
+            assign_me_text=self.assign_me_text,
+            remove_person_text=self.remove_person_text,
+            remove_team_text=self.remove_team_text,
+            show_remove_button=self.show_remove_button,
+            show_assign_me_button=self.show_assign_me_button)
+
+    @property
+    def json_config(self):
+        return simplejson.dumps(self.config)
 
     @property
     def extra_no_results_message(self):
@@ -144,7 +165,8 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
     @property
     def input_id(self):
-        return self.name
+        """This is used to ensure the widget id contains only valid chars."""
+        return FormattersAPI(self.name).zope_css_id()
 
     def chooseLink(self):
         if self.nonajax_uri is None:
@@ -165,7 +187,25 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
 
 class PersonPickerWidget(VocabularyPickerWidget):
+
     include_create_team_link = False
+    show_assign_me_button = 'true'
+    show_remove_button = 'true'
+
+    @property
+    def picker_type(self):
+        # This is a method for now so we can block the use of the new
+        # person picker js behind our picker_enhancments feature flag.
+        if bool(getFeatureFlag('disclosure.picker_enhancements.enabled')):
+            picker_type = 'person'
+        else:
+            picker_type = 'default'
+        return picker_type
+
+    @property
+    def selected_value_metadata(self):
+        val = self._getFormValue()
+        return get_person_picker_entry_metadata(val)
 
     def chooseLink(self):
         link = super(PersonPickerWidget, self).chooseLink()
@@ -182,7 +222,6 @@ class PersonPickerWidget(VocabularyPickerWidget):
 class BugTrackerPickerWidget(VocabularyPickerWidget):
 
     __call__ = ViewPageTemplateFile('templates/bugtracker-picker.pt')
-
     link_template = """
         or (<a id="create-bugtracker-link"
         href="/bugs/bugtrackers/+newbugtracker"

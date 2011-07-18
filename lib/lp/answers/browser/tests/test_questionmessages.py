@@ -8,67 +8,50 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.coop.answersbugs.visibility import (
+    TestHideMessageControlMixin,
+    TestMessageVisibilityMixin,
+    )
 from lp.testing import (
     BrowserTestCase,
     person_logged_in,
     )
 
 
-class TestQuestionCommentVisibility(BrowserTestCase):
+class TestQuestionMessageVisibility(
+        BrowserTestCase, TestMessageVisibilityMixin):
 
     layer = DatabaseFunctionalLayer
 
-    def makeQuestionWithHiddenComment(self, questionbody=None):
+    def makeHiddenMessage(self):
+        """Required by the mixin."""
         administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
         with person_logged_in(administrator):
             question = self.factory.makeQuestion()
-            comment = question.addComment(administrator, questionbody)
+            comment = question.addComment(administrator, self.comment_text)
             removeSecurityProxy(comment).message.visible = False
         return question
 
-    def test_admin_can_see_comments(self):
-        comment_text = "You can't see me."
-        question = self.makeQuestionWithHiddenComment(comment_text)
-        administrator = self.factory.makeAdministrator()
-        view = self.getViewBrowser(context=question, user=administrator)
-        self.assertTrue(
-           comment_text in view.contents,
-           "Administrator cannot see the hidden comment.")
-
-    def test_registry_can_see_comments(self):
-        comment_text = "You can't see me."
-        question = self.makeQuestionWithHiddenComment(comment_text)
-        registry_expert = self.factory.makeRegistryExpert()
-        view = self.getViewBrowser(context=question, user=registry_expert)
-        self.assertTrue(
-           comment_text in view.contents,
-           "Registy member cannot see the hidden comment.")
-
-    def test_anon_cannot_see_comments(self):
-        comment_text = "You can't see me."
-        question = self.makeQuestionWithHiddenComment(comment_text)
-        view = self.getViewBrowser(context=question, no_login=True)
-        self.assertFalse(
-           comment_text in view.contents,
-           "Anonymous person can see the hidden comment.")
-
-    def test_random_cannot_see_comments(self):
-        comment_text = "You can't see me."
-        question = self.makeQuestionWithHiddenComment(comment_text)
-        view = self.getViewBrowser(context=question)
-        self.assertFalse(
-           comment_text in view.contents,
-           "Random user can see the hidden comment.")
+    def getView(self, context, user=None, no_login=False):
+        """Required by the mixin."""
+        view = self.getViewBrowser(
+            context=context,
+            user=user,
+            no_login=no_login)
+        return view
 
 
-class TestQuestionSpamControls(BrowserTestCase):
+class TestHideQuestionMessageControls(
+        BrowserTestCase, TestHideMessageControlMixin):
 
     layer = DatabaseFunctionalLayer
 
-    def makeQuestionWithMessage(self):
+    control_text = 'mark-spam-0'
+
+    def getContext(self):
+        """Required by the mixin."""
         administrator = getUtility(ILaunchpadCelebrities).admin.teamowner
         question = self.factory.makeQuestion()
         body = self.factory.getUniqueString()
@@ -76,28 +59,10 @@ class TestQuestionSpamControls(BrowserTestCase):
             question.addComment(administrator, body)
         return question
 
-    def test_admin_sees_spam_control(self):
-        question = self.makeQuestionWithMessage()
-        administrator = self.factory.makeAdministrator()
-        view = self.getViewBrowser(context=question, user=administrator)
-        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
-        self.assertIsNot(None, spam_link)
-
-    def test_registry_sees_spam_control(self):
-        question = self.makeQuestionWithMessage()
-        registry_expert = self.factory.makeRegistryExpert()
-        view = self.getViewBrowser(context=question, user=registry_expert)
-        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
-        self.assertIsNot(None, spam_link)
-
-    def test_anon_doesnt_see_spam_control(self):
-        question = self.makeQuestionWithMessage()
-        view = self.getViewBrowser(context=question, no_login=True)
-        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
-        self.assertIs(None, spam_link)
-
-    def test_random_doesnt_see_spam_control(self):
-        question = self.makeQuestionWithMessage()
-        view = self.getViewBrowser(context=question)
-        spam_link = find_tag_by_id(view.contents, 'mark-spam-1')
-        self.assertIs(None, spam_link)
+    def getView(self, context, user=None, no_login=False):
+        """Required by the mixin."""
+        view = self.getViewBrowser(
+            context=context,
+            user=user,
+            no_login=no_login)
+        return view

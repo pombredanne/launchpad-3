@@ -208,7 +208,7 @@ class TestBugChanges(TestCaseWithFactory):
         # Unsubscribing someone from a bug adds an item to the activity
         # log, but doesn't send an e-mail notification.
         subscriber = self.factory.makePerson(displayname='Mom')
-        bug_subscription = self.bug.subscribe(self.user, subscriber)
+        self.bug.subscribe(self.user, subscriber)
         self.saveOldChanges()
         # Only the user can unsubscribe him or her self.
         self.bug.unsubscribe(self.user, self.user)
@@ -602,7 +602,7 @@ class TestBugChanges(TestCaseWithFactory):
     def test_tags_added(self):
         # Adding tags to a bug will add BugActivity and BugNotification
         # entries.
-        old_tags = self.changeAttribute(
+        self.changeAttribute(
             self.bug, 'tags', ['first-new-tag', 'second-new-tag'])
 
         tag_change_activity = {
@@ -626,7 +626,7 @@ class TestBugChanges(TestCaseWithFactory):
         # entries.
         self.bug.tags = ['first-new-tag', 'second-new-tag']
         self.saveOldChanges()
-        old_tags = self.changeAttribute(
+        self.changeAttribute(
             self.bug, 'tags', ['first-new-tag'])
 
         tag_change_activity = {
@@ -1017,7 +1017,7 @@ class TestBugChanges(TestCaseWithFactory):
         target = self.factory.makeDistributionSourcePackage()
         metadata_subscriber = self.newSubscriber(
             target, "dsp-metadata", BugNotificationLevel.METADATA)
-        lifecycle_subscriber = self.newSubscriber(
+        self.newSubscriber(
             target, "dsp-lifecycle", BugNotificationLevel.LIFECYCLE)
         new_target = self.factory.makeDistributionSourcePackage(
             distribution=target.distribution)
@@ -1418,17 +1418,8 @@ class TestBugChanges(TestCaseWithFactory):
 
         expected_notification = {
             'person': self.user,
-            'text': (
-                "** This bug has been marked a duplicate of bug "
-                "%(bug_id)d\n   %(bug_title)s\n"
-                " * You can subscribe to bug %(bug_id)d by following "
-                "this link: %(subscribe_link)s" % {
-                    'bug_id': self.bug.id,
-                    'bug_title': self.bug.title,
-                    'subscribe_link': canonical_url(
-                        self.bug.default_bugtask,
-                        view_name='+subscribe'),
-                    }),
+            'text': ("** This bug has been marked a duplicate of bug %d\n"
+                     "   %s" % (self.bug.id, self.bug.title)),
             'recipients': duplicate_bug_recipients,
             }
 
@@ -1506,21 +1497,11 @@ class TestBugChanges(TestCaseWithFactory):
 
         expected_notification = {
             'person': self.user,
-            'text': (
-                "** This bug is no longer a duplicate of bug "
-                "%(bug_one_id)d\n   %(bug_one_title)s\n"
-                "** This bug has been marked a duplicate of bug "
-                "%(bug_two_id)d\n   %(bug_two_title)s\n"
-                " * You can subscribe to bug %(bug_two_id)d by following "
-                "this link: %(subscribe_link)s" % {
-                    'bug_one_id': bug_one.id,
-                    'bug_one_title': bug_one.title,
-                    'bug_two_id': bug_two.id,
-                    'bug_two_title': bug_two.title,
-                    'subscribe_link': canonical_url(
-                        bug_two.default_bugtask,
-                        view_name='+subscribe'),
-                    }),
+            'text': ("** This bug is no longer a duplicate of bug %d\n"
+                     "   %s\n"
+                     "** This bug has been marked a duplicate of bug %d\n"
+                     "   %s" % (bug_one.id, bug_one.title,
+                                bug_two.id, bug_two.title)),
             'recipients': bug_recipients,
             }
 
@@ -1644,20 +1625,10 @@ class TestBugChanges(TestCaseWithFactory):
         expected_notification = {
             'person': self.user,
             'text': (
-                "** This bug is no longer a duplicate of private bug "
-                "%(private_bug_id)d\n"
-                "** This bug has been marked a duplicate of bug "
-                "%(public_bug_id)d\n   %(public_bug_title)s\n"
-                " * You can subscribe to bug %(public_bug_id)d by following "
-                "this link: %(subscribe_link)s" % {
-                    'private_bug_id': private_bug.id,
-                    'private_bug_title': private_bug.title,
-                    'public_bug_id': public_bug.id,
-                    'public_bug_title': public_bug.title,
-                    'subscribe_link': canonical_url(
-                        public_bug.default_bugtask,
-                        view_name='+subscribe'),
-                    }),
+                "** This bug is no longer a duplicate of private bug %d\n"
+                "** This bug has been marked a duplicate of bug %d\n"
+                "   %s" % (private_bug.id, public_bug.id,
+                           public_bug.title)),
             'recipients': bug_recipients,
             }
 
@@ -1739,7 +1710,7 @@ class TestBugChanges(TestCaseWithFactory):
         # do not get any bug email that they generated themselves.
         self.user.selfgenerated_bugnotifications = False
 
-        old_description = self.changeAttribute(
+        self.changeAttribute(
             self.bug, 'description', 'New description')
 
         # self.user is not included among the recipients.
@@ -1756,7 +1727,22 @@ class TestBugChanges(TestCaseWithFactory):
 
         self.user.selfgenerated_bugnotifications = False
 
-        old_description = self.changeAttribute(
+        self.changeAttribute(
+            self.bug, 'description', 'New description')
+
+        # self.user is not included among the recipients.
+        self.assertRecipients(
+            [self.product_metadata_subscriber, team.teamowner])
+
+    def test_description_changed_no_muted_email(self):
+        # Users who have muted a bug do not get any bug email for a bug,
+        # even if they are subscribed through a team membership.
+        team = self.factory.makeTeam()
+        team.addMember(self.user, team.teamowner)
+        self.bug.subscribe(team, self.user)
+        self.bug.mute(self.user, self.user)
+
+        self.changeAttribute(
             self.bug, 'description', 'New description')
 
         # self.user is not included among the recipients.
@@ -1770,7 +1756,7 @@ class TestBugChanges(TestCaseWithFactory):
         self.bug.subscribe(self.product_metadata_subscriber,
                            self.product_metadata_subscriber,
                            level=BugNotificationLevel.LIFECYCLE)
-        old_description = self.changeAttribute(
+        self.changeAttribute(
             self.bug, 'description', 'New description')
 
         # self.product_metadata_subscriber is not included among the

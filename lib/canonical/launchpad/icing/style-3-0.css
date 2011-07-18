@@ -518,6 +518,7 @@ th {
 th, td {
     vertical-align: baseline;
     }
+.head th,
 thead th, tr.thead th {
     text-align: left;
     vertical-align: bottom;
@@ -624,6 +625,7 @@ table.listing, table.listing tbody, table.listing td.end-of-section {
 table.listing th {
     font-weight: bold;
     }
+table.listing .head, table.listing .head th,
 table.listing thead, table.listing thead th, table.listing tfoot tr,
 table.listing tr.thead th {
     border: 1px solid #d2d2d2;
@@ -657,6 +659,12 @@ table.listing thead th, table.listing tr.thead th {
 table.listing td {
     border: 1px #d2d2d2;
     border-style: dotted none none none;
+    }
+table.listing .section-break td {
+    border-width: 1px 0 0 0;
+    border-style: solid;
+    border-color: #d2d2d2;
+    height: 1em;
     }
 table.listing .note td {
     border-style: none;
@@ -892,6 +900,10 @@ table.form table.extra-options td,
 table.form table.extra-options th {
     padding-bottom: 1em;
     }
+table.form table.listing th,
+table.form table.listing td {
+    padding-bottom: 0.25em;
+}
 table.form td td {
     padding-bottom: 0;
     }
@@ -909,11 +921,14 @@ table.form td td {
 fieldset.collapsible {
     /* Collapsible sections
        Some page sections are hidden by default, expanded by clicking a link.
-       see launchpad.js:activateCollapsibles() */
+       see lp.js:activate_collapsibles() */
     border: none;
     margin: 0;
     padding: 16px 0 0; /* "Add a comment/attachment" form in bug reports */
     }
+fieldset.collapsible h2 {
+    margin-top: 0;
+}
 fieldset .collapsed {
     display: none;
     }
@@ -955,6 +970,9 @@ h1 .edit {
 .yui3-ieditor {
     padding-right: 288px;
     }
+.yui3-skin-sam .yui3-ieditor-input {
+    margin-top: 0;
+}
 h1 .yui3-ieditor-errors {
     font-size: 12px;
     }
@@ -994,7 +1012,7 @@ h1 .yui3-ieditor-errors {
     border-width: 1px 2px 2px 1px;
     color: black;
     margin: 1em auto 1em auto;
-    padding: 0.3em 1em 1.6em 2em;
+    padding: 0 1em 1em 2em;
     width: 30em;
     }
 .error.message::before, .warning.message::before,
@@ -1017,23 +1035,6 @@ h1 .yui3-ieditor-errors {
 .warning.message::before {
     content: url(/@@/warning-large);
     }
-.error.message::after, .warning.message::after,
-.informational.message::after {
-    /* Add an affordance that suggests the ability to hide the message. */
-    /* The NBSP (\00A0) is needed because of the margin trick below. */
-    content: 'Hide\00A0\2715';
-    float: right;
-    display: block;
-    margin-left: 999em; /* Assure the message is always "bumped" down. */
-    }
-.error.message:hover::after, .warning.message:hover::after,
-.informational.message:hover::after {
-    text-decoration: underline;
-    }
-.error.message:hover, .warning.message:hover,
-.informational.message:hover {
-    cursor: pointer;
-}
 .informational {
     /* Informational messages are blue-to-grey, alerts have an info icon. */
 
@@ -1383,8 +1384,12 @@ div.watermark-apps-portlet span img {
     background: #fbfbfb;
     }
 .side h2 {
-    font-size: 16px; /* BAD: the markup should be h3? */
+    font-size: 16px;
     line-height: 20px;
+    }
+.side h3 {
+    font-size: 14px;
+    line-height: 18px;
     }
 .side ul {
     background: #fbfbfb;
@@ -1442,6 +1447,9 @@ div.watermark-apps-portlet span img {
     padding: 0;
     font-weight: bold;
     }
+.involvement li.single {
+    border-top: 0;
+}
 .involvement a {
     display: block;
     padding: 0.3em;
@@ -1469,6 +1477,10 @@ div.watermark-apps-portlet span img {
     }
 .announcements li {
     margin-bottom: 0.5em;
+    /* Some announcements have long strings of characters as section headers
+     * and such.  Since they don't have whitespace they can't wrap, so they
+     * would break out of their container if we didn't clip them here. */
+    overflow: hidden;
     }
 .announcements li strong,
 .announcements li a {
@@ -1948,16 +1960,24 @@ body.tab-bugs #duplicate-actions .sprite {
     /* Override sprite style for edit icon on "Mark as duplicate"
        to make the text not appear on a second line.
     */
-    display:inline;
-    }
-.yui-picker-results li.sprite {
-    /* XXX: EdwinGrubbs 2009-07-27 bug=405476
-     * Override the .yui-picker-results style, so that the next icon
-     * in the sprite file won't appear for tall list items.
-     */
-    padding:2px 0 0 18px;
+    display: inline;
     }
 
+/* Picker styles */
+.yui3-picker {
+    width: 40%;
+    }
+
+.yui3-picker-results div.badge {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    left: auto;
+    }
+.yui3-picker-results div.badge img {
+    position: relative;
+    padding-left: 3px;
+    }
 
 /* ====================
    Global notifications
@@ -2235,4 +2255,9 @@ div.translation-help-links a {
     }
 div.translation-help-links div {
     clear: both;
+    }
+/* Message boxes (especially error boxes) should be visible above other
+ * elments. */
+.yui3-activator-message-box {
+    z-index: 9999;
     }

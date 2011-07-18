@@ -5,6 +5,8 @@ __metaclass__ = type
 
 from datetime import datetime
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from pytz import UTC
 from storm.store import Store
 from testtools.matchers import LessThan
@@ -12,6 +14,8 @@ from zope.component import (
     getMultiAdapter,
     getUtility,
     )
+from zope.event import notify
+from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import (
@@ -20,14 +24,15 @@ from canonical.launchpad.ftests import (
     login_person,
     )
 from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.browser.bugtask import (
+    BugActivityItem,
     BugTaskEditView,
     BugTasksAndNominationsView,
     )
@@ -86,7 +91,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        self.assertThat(recorder, HasQueryCount(LessThan(69)))
+        self.assertThat(recorder, HasQueryCount(LessThan(74)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -102,7 +107,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                73, self.factory.makePerson())
+                78, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -642,13 +647,13 @@ class TestBugTaskEditView(TestCaseWithFactory):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         dsp_1 = self.factory.makeDistributionSourcePackage(
             distribution=ubuntu, sourcepackagename='mouse')
-        ignore = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             distroseries=ubuntu.currentseries,
             sourcepackagename=dsp_1.sourcepackagename)
         bug_task_1 = self.factory.makeBugTask(target=dsp_1)
         dsp_2 = self.factory.makeDistributionSourcePackage(
             distribution=ubuntu, sourcepackagename='rabbit')
-        ignore = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             distroseries=ubuntu.currentseries,
             sourcepackagename=dsp_2.sourcepackagename)
         bug_task_2 = self.factory.makeBugTask(
@@ -825,3 +830,33 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         contents = view.render()
         help_link = find_tag_by_id(contents, 'getting-started-help')
         self.assertIs(None, help_link)
+
+
+class TestBugActivityItem(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setAttribute(self, obj, attribute, value):
+        obj_before_modification = Snapshot(obj, providing=providedBy(obj))
+        setattr(removeSecurityProxy(obj), attribute, value)
+        notify(ObjectModifiedEvent(
+            obj, obj_before_modification, [attribute],
+            self.factory.makePerson()))
+
+    def test_escapes_assignee(self):
+        with celebrity_logged_in('admin'):
+            task = self.factory.makeBugTask()
+            self.setAttribute(
+                task, 'assignee',
+                self.factory.makePerson(displayname="Foo &<>", name='foo'))
+        self.assertEquals(
+            "nobody &#8594; Foo &amp;&lt;&gt; (foo)",
+            BugActivityItem(task.bug.activity[-1]).change_details)
+
+    def test_escapes_title(self):
+        with celebrity_logged_in('admin'):
+            bug = self.factory.makeBug(title="foo")
+            self.setAttribute(bug, 'title', "bar &<>")
+        self.assertEquals(
+            "- foo<br />+ bar &amp;&lt;&gt;",
+            BugActivityItem(bug.activity[-1]).change_details)

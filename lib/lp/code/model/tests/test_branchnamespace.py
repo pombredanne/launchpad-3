@@ -10,8 +10,8 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -1224,14 +1224,6 @@ class BaseValidateNewBranchMixin:
             BranchCreatorNotMemberOfOwnerTeam,
             namespace.validateRegistrant,
             self.factory.makePerson())
-
-    def test_registrant_special_access(self):
-        # If the registrant has special access to branches, then they are
-        # valid.
-        namespace = self._getNamespace(self.factory.makePerson())
-        bazaar_experts = getUtility(ILaunchpadCelebrities).bazaar_experts
-        special_person = bazaar_experts.teamowner
-        self.assertIs(None, namespace.validateRegistrant(special_person))
 
     def test_existing_branch(self):
         # If a branch exists with the same name, then BranchExists is raised.

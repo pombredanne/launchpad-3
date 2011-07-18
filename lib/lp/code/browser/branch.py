@@ -75,15 +75,15 @@ from zope.traversing.interfaces import IPathAdapter
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad import _
+from canonical.launchpad import (
+    _,
+    searchbuilder,
+    )
 from canonical.launchpad.browser.feeds import (
     BranchFeedLink,
     FeedsMixin,
     )
-from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad import searchbuilder
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -99,22 +99,24 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
+from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
-from lp.app.browser.lazrjs import vocabulary_to_choice_edit_items
+from lp.app.browser.lazrjs import (
+    EnumChoiceWidget,
+    )
 from lp.app.errors import NotFoundError
-from lp.app.browser.lazrjs import EnumChoiceWidget
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
 from lp.app.widgets.suggestion import TargetBranchWidget
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch,
     )
@@ -122,7 +124,6 @@ from lp.code.browser.branchref import BranchRef
 from lp.code.browser.decorations import DecoratedBranch
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.enums import (
-    BranchLifecycleStatus,
     BranchType,
     CodeImportResultStatus,
     CodeImportReviewStatus,
@@ -832,8 +833,7 @@ class BranchMirrorStatusView(LaunchpadFormView):
         else:
             celebs = getUtility(ILaunchpadCelebrities)
             return (self.user.inTeam(self.context.owner) or
-                    self.user.inTeam(celebs.admin) or
-                    self.user.inTeam(celebs.bazaar_experts))
+                    self.user.inTeam(celebs.admin))
 
     @property
     def mirror_of_ssh(self):
@@ -1035,7 +1035,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             owner_field = self.schema['owner']
             any_owner_choice = Choice(
                 __name__='owner', title=owner_field.title,
-                description = _("As an administrator you are able to reassign"
+                description=_("As an administrator you are able to reassign"
                                 " this branch to any person or team."),
                 required=True, vocabulary='ValidPersonOrTeam')
             any_owner_field = form.Fields(
@@ -1057,7 +1057,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 owner_field = self.schema['owner']
                 owner_choice = Choice(
                     __name__='owner', title=owner_field.title,
-                    description = owner_field.description,
+                    description=owner_field.description,
                     required=True, vocabulary=SimpleVocabulary(terms))
                 new_owner_field = form.Fields(
                     owner_choice, render_context=self.render_context)
@@ -1078,6 +1078,10 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 try:
                     namespace.validateMove(
                         self.context, self.user, name=data['name'])
+                except BranchCreationForbidden:
+                    self.addError(
+                        "%s is not allowed to own branches in %s." % (
+                        owner.displayname, self.context.target.displayname))
                 except BranchExists, e:
                     self._setBranchExists(e.existing_branch)
 
@@ -1472,7 +1476,8 @@ class BranchSparkView(LaunchpadView):
     def _commitCounts(self):
         """Return a dict of commit counts for rendering."""
         epoch = (
-            datetime.now(tz=pytz.UTC) - timedelta(days=(self.COMMIT_DAYS-1)))
+            datetime.now(
+                tz=pytz.UTC) - timedelta(days=(self.COMMIT_DAYS - 1)))
         # Make a datetime for that date, but midnight.
         epoch = epoch.replace(hour=0, minute=0, second=0, microsecond=0)
         commits = dict(self.context.commitsForDays(epoch))

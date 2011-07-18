@@ -105,6 +105,7 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.validation import validate_new_team_email
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.validators import LaunchpadValidationError
@@ -641,7 +642,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
                     IHasLocation, IHasRequestedReviews, IObjectWithLocation,
                     IPrivacy, IHasBugs, IHasRecipes, IHasTranslationImports,
-                    IPersonSettings):
+                    IPersonSettings, IQuestionsPerson):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -1213,7 +1214,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     # @operation_parameters(team=copy_field(ITeamMembership['team']))
     # @export_read_operation()
     def inTeam(team):
-        """Is this person is a member or the owner of `team`?
+        """Is this person is a member of `team`?
 
         Returns `True` when you ask if an `IPerson` (or an `ITeam`,
         since it inherits from `IPerson`) is a member of himself

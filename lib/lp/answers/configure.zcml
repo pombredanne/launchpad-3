@@ -139,16 +139,6 @@
     <allow interface=".interfaces.questionmessage.IQuestionMessage"/>
   </class>
 
-  <class class=".model.questionsperson.QuestionsPerson">
-    <allow interface=".interfaces.questionsperson.IQuestionsPerson"/>
-  </class>
-
-  <adapter
-    for="lp.registry.interfaces.person.IPerson"
-    provides=".interfaces.questionsperson.IQuestionsPerson"
-    factory=".model.questionsperson.QuestionsPerson"
-    trusted="yes"
-    />
   <adapter
     for=".interfaces.question.IQuestion"
     provides=".interfaces.questiontarget.IQuestionTarget"
@@ -178,6 +168,11 @@
     for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
     provides=".interfaces.questiontarget.IQuestionTarget"
     factory=".adapters.sourcepackagerelease_to_questiontarget"
+    />
+  <adapter
+    for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+    provides=".interfaces.questiontarget.IQuestionTarget"
+    factory=".adapters.sourcepackage_to_questiontarget"
     />
 
   <adapter

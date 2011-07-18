@@ -14,6 +14,7 @@ import math
 import os.path
 import rfc822
 import sys
+from textwrap import dedent
 import urllib
 
 ##import warnings
@@ -63,6 +64,9 @@ from lp.code.interfaces.branch import IBranch
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IPPA
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
+from lp.soyuz.interfaces.binarypackagename import (
+    IBinaryAndSourcePackageName,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -497,7 +501,7 @@ class NoneFormatter:
         # We are interested in the default value (param2).
         result = ''
         for nm in self.allowed_names:
-            if name.startswith(nm+":"):
+            if name.startswith(nm + ":"):
                 name_parts = name.split(":")
                 name = name_parts[0]
                 if len(name_parts) > 2:
@@ -740,6 +744,8 @@ class ObjectImageDisplayAPI:
             return 'sprite branch'
         elif ISpecification.providedBy(context):
             return 'sprite blueprint'
+        elif IBinaryAndSourcePackageName.providedBy(context):
+            return 'sprite package-source'
         return None
 
     def default_logo_resource(self, context):
@@ -1146,7 +1152,7 @@ class PersonFormatterAPI(ObjectFormatterAPI):
                          'icon': 'icon',
                          'displayname': 'displayname',
                          'unique_displayname': 'unique_displayname',
-                         'name_link': 'nameLink',
+                         'link-display-name-id': 'link_display_name_id',
                          }
 
     final_traversable_names = {'local-time': 'local_time'}
@@ -1208,9 +1214,26 @@ class PersonFormatterAPI(ObjectFormatterAPI):
         else:
             return '<img src="%s" width="14" height="14" />' % custom_icon
 
-    def nameLink(self, view_name):
-        """Return the Launchpad id of the person, linked to their profile."""
-        return self._makeLink(view_name, 'mainsite', self._context.name)
+    def link_display_name_id(self, view_name):
+        """Return a link to the user's profile page.
+
+        The link text uses both the display name and Launchpad id to clearly
+        indicate which user profile is linked.
+        """
+        from lp.services.features import getFeatureFlag
+        if bool(getFeatureFlag('disclosure.picker_enhancements.enabled')):
+            text = self.unique_displayname(None)
+            # XXX sinzui 2011-05-31: Remove this next line when the feature
+            # flag is removed.
+            view_name = None
+        elif view_name == 'id-only':
+            # XXX sinzui 2011-05-31: remove this block and /id-only from
+            # launchpad-loginstatus.pt whwn the feature flag is removed.
+            text = self._context.name
+            view_name = None
+        else:
+            text = self._context.displayname
+        return self._makeLink(view_name, 'mainsite', text)
 
 
 class TeamFormatterAPI(PersonFormatterAPI):
@@ -2051,7 +2074,7 @@ class DateTimeFormatterAPI:
         delta = abs(delta)
         days = delta.days
         hours = delta.seconds / 3600
-        minutes = (delta.seconds - (3600*hours)) / 60
+        minutes = (delta.seconds - (3600 * hours)) / 60
         seconds = delta.seconds % 60
         result = ''
         if future:
@@ -2066,8 +2089,14 @@ class DateTimeFormatterAPI:
             amount = minutes
             unit = 'minute'
         else:
-            amount = seconds
-            unit = 'second'
+            if seconds <= 10:
+                result += 'a moment'
+                if not future:
+                    result += ' ago'
+                return result
+            else:
+                amount = seconds
+                unit = 'second'
         if amount != 1:
             unit += 's'
         result += '%s %s' % (amount, unit)
@@ -2115,12 +2144,7 @@ class DurationFormatterAPI:
         if name == 'exactduration':
             return self.exactduration()
         elif name == 'approximateduration':
-            use_words = True
-            if len(furtherPath) == 1:
-                if 'use-digits' == furtherPath[0]:
-                    furtherPath.pop()
-                    use_words = False
-            return self.approximateduration(use_words)
+            return self.approximateduration()
         else:
             raise TraversalError(name)
 
@@ -2129,7 +2153,7 @@ class DurationFormatterAPI:
         parts = []
         minutes, seconds = divmod(self._duration.seconds, 60)
         hours, minutes = divmod(minutes, 60)
-        seconds = seconds + (float(self._duration.microseconds) / 10**6)
+        seconds = seconds + (float(self._duration.microseconds) / 10 ** 6)
         if self._duration.days > 0:
             if self._duration.days == 1:
                 parts.append('%d day' % self._duration.days)
@@ -2150,19 +2174,12 @@ class DurationFormatterAPI:
 
         return ', '.join(parts)
 
-    def approximateduration(self, use_words=True):
+    def approximateduration(self):
         """Return a nicely-formatted approximate duration.
 
-        E.g. 'an hour', 'three minutes', '1 hour 10 minutes' and so
-        forth.
+        E.g. '1 hour', '3 minutes', '1 hour 10 minutes' and so forth.
 
         See https://launchpad.canonical.com/PresentingLengthsOfTime.
-
-        :param use_words: Specificly determines whether or not to use
-            words for numbers less than or equal to ten.  Expanding
-            numbers to words makes sense when the number is used in
-            prose or a singualar item on a page, but when used in
-            a table, the words do not work as well.
         """
         # NOTE: There are quite a few "magic numbers" in this
         # implementation; they are generally just figures pulled
@@ -2175,7 +2192,7 @@ class DurationFormatterAPI:
         # including the decimal part.
         seconds = self._duration.days * (3600 * 24)
         seconds += self._duration.seconds
-        seconds += (float(self._duration.microseconds) / 10**6)
+        seconds += (float(self._duration.microseconds) / 10 ** 6)
 
         # First we'll try to calculate an approximate number of
         # seconds up to a minute. We'll start by defining a sorted
@@ -2195,10 +2212,8 @@ class DurationFormatterAPI:
             (35, '30 seconds'),
             (45, '40 seconds'),
             (55, '50 seconds'),
-            (90, 'a minute'),
+            (90, '1 minute'),
         ]
-        if not use_words:
-            representation_in_seconds[-1] = (90, '1 minute')
 
         # Break representation_in_seconds into two pieces, to simplify
         # finding the correct display value, through the use of the
@@ -2206,7 +2221,7 @@ class DurationFormatterAPI:
         second_boundaries, display_values = zip(*representation_in_seconds)
 
         # Is seconds small enough that we can produce a representation
-        # in seconds (up to 'a minute'?)
+        # in seconds (up to '1 minute'?)
         if seconds < second_boundaries[-1]:
             # Use the built-in bisection algorithm to locate the index
             # of the item which "seconds" sorts after.
@@ -2215,34 +2230,17 @@ class DurationFormatterAPI:
             # Return the corresponding display value.
             return display_values[matching_element_index]
 
-        # More than a minute, approximately; our calculation strategy
-        # changes. From this point forward, we may also need a
-        # "verbal" representation of the number. (We never need a
-        # verbal representation of "1", because we tend to special
-        # case the number 1 for various approximations, and we usually
-        # use a word like "an", instead of "one", e.g. "an hour")
-        if use_words:
-            number_name = {
-                2: 'two', 3: 'three', 4: 'four', 5: 'five',
-                6: 'six', 7: 'seven', 8: 'eight', 9: 'nine',
-                10: 'ten'}
-        else:
-            number_name = dict((number, number) for number in range(2, 11))
-
         # Convert seconds into minutes, and round it.
         minutes, remaining_seconds = divmod(seconds, 60)
         minutes += remaining_seconds / 60.0
         minutes = int(round(minutes))
 
         if minutes <= 59:
-            return "%s minutes" % number_name.get(minutes, str(minutes))
+            return "%d minutes" % minutes
 
         # Is the duration less than an hour and 5 minutes?
         if seconds < (60 + 5) * 60:
-            if use_words:
-                return "an hour"
-            else:
-                return "1 hour"
+            return "1 hour"
 
         # Next phase: try and calculate an approximate duration
         # greater than one hour, but fewer than ten hours, to a 10
@@ -2261,12 +2259,11 @@ class DurationFormatterAPI:
                 else:
                     return "%d hours %s minutes" % (hours, minutes)
             else:
-                number_as_text = number_name.get(hours, str(hours))
-                return "%s hours" % number_as_text
+                return "%d hours" % hours
 
         # Is the duration less than ten and a half hours?
         if seconds < (10.5 * 3600):
-            return '%s hours' % number_name[10]
+            return '10 hours'
 
         # Try to calculate the approximate number of hours, to a
         # maximum of 47.
@@ -2276,22 +2273,22 @@ class DurationFormatterAPI:
 
         # Is the duration fewer than two and a half days?
         if seconds < (2.5 * 24 * 3600):
-            return '%s days' % number_name[2]
+            return '2 days'
 
         # Try to approximate to day granularity, up to a maximum of 13
         # days.
         days = int(round(seconds / (24 * 3600)))
         if days <= 13:
-            return "%s days" % number_name.get(days, str(days))
+            return "%s days" % days
 
         # Is the duration fewer than two and a half weeks?
         if seconds < (2.5 * 7 * 24 * 3600):
-            return '%s weeks' % number_name[2]
+            return '2 weeks'
 
         # If we've made it this far, we'll calculate the duration to a
         # granularity of weeks, once and for all.
         weeks = int(round(seconds / (7 * 24 * 3600.0)))
-        return "%s weeks" % number_name.get(weeks, str(weeks))
+        return "%d weeks" % weeks
 
 
 class LinkFormatterAPI(ObjectFormatterAPI):
@@ -2655,3 +2652,24 @@ class CSSFormatter:
             return getattr(self, name)(furtherPath)
         except AttributeError:
             raise TraversalError(name)
+
+
+class IRCNicknameFormatterAPI(ObjectFormatterAPI):
+    """Adapter from IrcID objects to a formatted string."""
+
+    implements(ITraversable)
+
+    traversable_names = {
+        'displayname': 'displayname',
+        'formatted_displayname': 'formatted_displayname',
+    }
+
+    def displayname(self, view_name=None):
+        return "%s on %s" % (self._context.nickname, self._context.network)
+
+    def formatted_displayname(self, view_name=None):
+        return dedent("""\
+            <strong>%s</strong>
+            <span class="discreet"> on </span>
+            <strong>%s</strong>
+        """ % (escape(self._context.nickname), escape(self._context.network)))

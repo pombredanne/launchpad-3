@@ -243,6 +243,13 @@
     template="../../app/templates/generic-edit.pt"
     />
 
+  <browser:url
+    for="lp.answers.interfaces.question.IQuestionMessage"
+    path_expression="string:messages/${display_index}"
+    attribute_to_parent="question"
+    rootsite="answers"
+    />
+
   <browser:page
     name="+display"
     for="lp.answers.interfaces.questionmessage.IQuestionMessage"

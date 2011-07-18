@@ -71,7 +71,7 @@ from canonical.launchpad.components.decoratedresultset import (
     )
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.message import Message
+from lp.services.messages.model.message import Message
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,

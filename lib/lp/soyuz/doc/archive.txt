@@ -101,7 +101,7 @@ As a Launchpad admin, setting these properties will work.
 
     >>> login("admin@canonical.com")
     >>> cprov_archive.relative_build_score = 100
-    >>> cprov_archive.external_dependencies = "test"
+    >>> cprov_archive.external_dependencies = "deb http://foo hardy bar"
 
 The buildd_secret is used by the slave scanner when generating a
 sources.list entry for the builder to access a private archive.  It is
@@ -1043,6 +1043,7 @@ dependency is published in Mark's PPA.
     >>> print_dependencies(no_priv.archive)
     No dependencies recorded.
 
+    >>> login_person(no_priv)
     >>> archive_dependency = no_priv.archive.addArchiveDependency(
     ...     cprov.archive, release_pocket, main_component)
 
@@ -1058,8 +1059,7 @@ dependency is published in Mark's PPA.
     ...     cprov.archive, release_pocket, main_component)
     Traceback (most recent call last):
     ...
-    ArchiveDependencyError: Only one dependency record per archive is
-    supported.
+    ArchiveDependencyError: This dependency is already registered.
 
 'dependency' and target archive are the same.
 
@@ -1099,8 +1099,7 @@ Only one dependency per archive can be added.
     ...     getUtility(IComponentSet)['main'])
     Traceback (most recent call last):
     ...
-    ArchiveDependencyError: Only one dependency record per archive is
-    supported.
+    ArchiveDependencyError: This dependency is already registered.
 
 Thus archive dependency removal can be performed simply by passing the
 dependency target.
@@ -2334,14 +2333,14 @@ all result in a NotFound exception:
     ...     person=mark)
     Traceback (most recent call last):
     ...
-    PocketNotFound: 'BADPOCKET'
+    PocketNotFound: No such pocket: 'BADPOCKET'.
 
     >>> mark.archive.syncSources(
     ...     sources, cprov.archive, "release", to_series="badseries",
     ...     person=mark)
     Traceback (most recent call last):
     ...
-    DistroSeriesNotFound: badseries
+    NoSuchDistroSeries: No such distribution series: 'badseries'.
 
 We can also specify a single source to be copied with the `syncSource`
 call.  This allows a version to be specified so older versions can be

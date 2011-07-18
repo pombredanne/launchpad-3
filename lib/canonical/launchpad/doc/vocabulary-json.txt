@@ -10,10 +10,10 @@ entries until vocabularies are integrated into the REST API.
     >>> def print_json(json):
     ...     data = simplejson.loads(json)
     ...     print simplejson.dumps(data, sort_keys=True, indent=4)
-    >>> def create_vocabulary_view(form):
+    >>> def create_vocabulary_view(form, context=root):
     ...     # The BatchNavigator looks in the query string for GET requests.
     ...     query_string = urlencode(form)
-    ...     return create_view(root, '+huge-vocabulary',
+    ...     return create_view(context, '+huge-vocabulary',
     ...                        form=form, query_string=query_string)
 
 The view requires the name of the vocabulary.
@@ -42,6 +42,12 @@ The name must be a valid vocabulary.
     ...
     UnexpectedFormData: Unknown vocabulary 'invalid-vocabulary'
 
+To use the new disclosure functionality, we need to turn on the feature flag.
+    >>> from lp.services.features.testing import FeatureFixture
+    >>> feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
+    >>> flags = FeatureFixture(feature_flag)
+    >>> flags.setUp()
+
 A successful search.
 
     >>> form = dict(name='ValidPersonOrTeam', search_text='guadamen')
@@ -50,8 +56,12 @@ A successful search.
     {
         "entries": [
             {
+                "alt_title": "guadamen",
+                "alt_title_link": "http://launchpad.dev/~guadamen",
                 "api_uri": "/~guadamen",
                 "css": "sprite team",
+                "link_css": "js-action",
+                "metadata": "team",
                 "title": "GuadaMen",
                 "value": "guadamen"
             }
@@ -78,8 +88,12 @@ Size and offset parameters can be passed in to switch between batches.
     {
         "entries": [
             {
+                "alt_title": "commercial-admins",
+                "alt_title_link": "http://launchpad.dev/~commercial-admins",
                 "api_uri": "/~commercial-admins",
                 "css": "sprite team",
+                "link_css": "js-action",
+                "metadata": "team",
                 "title": "Commercial Subscription Admins",
                 "value": "commercial-admins"
             }
@@ -94,14 +108,51 @@ Size and offset parameters can be passed in to switch between batches.
     {
         "entries": [
             {
-                "api_uri": "/~name16",
-                "css": "sprite person",
-                "description": "<email address hidden>",
-                "title": "Foo Bar",
-                "value": "name16"
+                "alt_title": "launchpad-buildd-admins",
+                "alt_title_link":
+                    "http://launchpad.dev/~launchpad-buildd-admins",
+                "api_uri": "/~launchpad-buildd-admins",
+                "css": "sprite team",
+                "link_css": "js-action",
+                "metadata": "team",
+                "title": "Launchpad Buildd Admins",
+                "value": "launchpad-buildd-admins"
             }
         ],
         "total_size": 6
+    }
+
+If a person is affiliated with the view context, the relevant badge(s) will be
+included in the picker entry.
+
+    >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
+    >>> bugtask = getUtility(IBugTaskSet).get(2)
+    >>> form = dict(name='ValidPersonOrTeam', search_text='name12',
+    ...             start='0', batch='1')
+    >>> view = create_vocabulary_view(form, context=bugtask)
+    >>> print_json(view())
+    {
+        "entries": [
+            {
+                "alt_title": "name12",
+                "alt_title_link": "http://launchpad.dev/~name12",
+                "api_uri": "/~name12",
+                "badges": [
+                     {
+                         "alt": "Affiliated with Launchpad itself",
+                         "url": "/@@/product-badge"
+                     }
+                 ],
+                "css": "sprite person",
+                "description": "<email address hidden>",
+                "link_css": "js-action",
+                "metadata": "person",
+                "title": "Sample Person",
+                "value": "name12"
+            }
+        ],
+        "total_size": 1
     }
 
 Long descriptions will be truncated.
@@ -132,12 +183,42 @@ retrieved through vocabularies.
     {
         "entries": [
             {
+                "alt_title": "name12",
+                "alt_title_link": "http://launchpad.dev/~name12",
                 "api_uri": "/~name12",
                 "css": "sprite person",
                 "description": "<email address hidden>",
+                "link_css": "js-action",
+                "metadata": "person",
                 "title": "Sample Person",
                 "value": "name12"
             }
         ],
         "total_size": 1
     }
+
+IRC nicknames should be displayed after any email address.
+
+    >>> form = dict(name='ValidPersonOrTeam', search_text='mark',
+    ...             start='0', batch='1')
+    >>> view = create_vocabulary_view(form)
+    >>> print_json(view())
+    {
+        "entries": [
+            {
+                "alt_title": "mark",
+                "alt_title_link": "http://launchpad.dev/~mark",
+                "api_uri": "/~mark",
+                "css": "sprite person",
+                "description": "<email address hidden> (mark on irc.freenode.net)",
+                "link_css": "js-action",
+                "metadata": "person",
+                "title": "Mark Shuttleworth",
+                "value": "mark"
+            }
+        ],
+        "total_size": 1
+    }
+
+Clean up the feature flag.
+    >>> flags.cleanUp()

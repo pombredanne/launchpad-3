@@ -8,6 +8,7 @@ __all__ = [
     'BooleanChoiceWidget',
     'EnumChoiceWidget',
     'InlineEditPickerWidget',
+    'InlinePersonEditPickerWidget',
     'InlineMultiCheckboxWidget',
     'standard_text_html_representation',
     'TextAreaEditorWidget',
@@ -35,6 +36,7 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.browser.vocabulary import get_person_picker_entry_metadata
 from lp.services.propertycache import cachedproperty
 
 
@@ -176,8 +178,9 @@ class TextLineEditorWidget(TextWidgetBase, DefinedTagMixin):
     def value(self):
         text = getattr(self.context, self.attribute_name, self.default_text)
         if text is None:
-            text = self.default_text
-        return text
+            return self.default_text
+        else:
+            return FormattersAPI(text).obfuscate_email()
 
 
 class TextAreaEditorWidget(TextWidgetBase):
@@ -237,7 +240,9 @@ class InlineEditPickerWidget(WidgetBase):
 
     def __init__(self, context, exported_field, default_html,
                  content_box_id=None, header='Select an item',
-                 step_title='Search', remove_button_text='Remove',
+                 step_title='Search', assign_me_text='Pick me',
+                 remove_person_text='Remove person',
+                 remove_team_text='Remove team',
                  null_display_value='None',
                  edit_view="+edit", edit_url=None, edit_title=''):
         """Create a widget wrapper.
@@ -246,11 +251,13 @@ class InlineEditPickerWidget(WidgetBase):
         :param exported_field: The attribute being edited. This should be
             a field from an interface of the form ISomeInterface['fieldname']
         :param default_html: Default display of attribute.
-        :param content_box_id: The HTML id to use for this widget. Automatically
-            generated if this is not provided.
+        :param content_box_id: The HTML id to use for this widget.
+            Automatically generated if this is not provided.
         :param header: The large text at the top of the picker.
         :param step_title: Smaller line of text below the header.
-        :param remove_button_text: Override default button text: "Remove"
+        :param assign_me_text: Override default button text: "Pick me"
+        :param remove_person_text: Override default link text: "Remove person"
+        :param remove_team_text: Override default link text: "Remove team"
         :param null_display_value: This will be shown for a missing value
         :param edit_view: The view name to use to generate the edit_url if
             one is not specified.
@@ -264,7 +271,9 @@ class InlineEditPickerWidget(WidgetBase):
         self.default_html = default_html
         self.header = header
         self.step_title = step_title
-        self.remove_button_text = remove_button_text
+        self.assign_me_text = assign_me_text
+        self.remove_person_text = remove_person_text
+        self.remove_team_text = remove_team_text
         self.null_display_value = null_display_value
 
         # JSON encoded attributes.
@@ -274,10 +283,17 @@ class InlineEditPickerWidget(WidgetBase):
             self.exported_field.vocabularyName)
 
     @property
+    def selected_value_metadata(self):
+        return None
+
+    @property
     def config(self):
         return dict(
             header=self.header, step_title=self.step_title,
-            remove_button_text=self.remove_button_text,
+            selected_value_metadata=self.selected_value_metadata,
+            assign_me_text=self.assign_me_text,
+            remove_person_text=self.remove_person_text,
+            remove_team_text=self.remove_team_text,
             null_display_value=self.null_display_value,
             show_remove_button=self.optional_field,
             show_assign_me_button=self.show_assign_me_button,
@@ -303,6 +319,13 @@ class InlineEditPickerWidget(WidgetBase):
         vocabulary = self.vocabulary
         user = getUtility(ILaunchBag).user
         return user and user in vocabulary
+
+
+class InlinePersonEditPickerWidget(InlineEditPickerWidget):
+    @property
+    def selected_value_metadata(self):
+        val = getattr(self.context, self.exported_field.__name__)
+        return get_person_picker_entry_metadata(val)
 
 
 class InlineMultiCheckboxWidget(WidgetBase):
@@ -353,7 +376,7 @@ class InlineMultiCheckboxWidget(WidgetBase):
         linkify_items = attribute_type == "reference"
 
         if header is None:
-            header = self.exported_field.title+":"
+            header = self.exported_field.title + ":"
         self.header = header,
         self.empty_display_value = empty_display_value
         self.label = label
@@ -361,7 +384,7 @@ class InlineMultiCheckboxWidget(WidgetBase):
         self.label_close_tag = "</%s>" % label_tag
         self.items = selected_items
         self.items_open_tag = ("<%s id='%s'>" %
-            (items_tag, self.content_box_id+"-items"))
+            (items_tag, self.content_box_id + "-items"))
         self.items_close_tag = "</%s>" % items_tag
         self.linkify_items = linkify_items
 
@@ -370,7 +393,6 @@ class InlineMultiCheckboxWidget(WidgetBase):
                 vocabulary = exported_field.value_type.vocabularyName
             else:
                 vocabulary = exported_field.vocabularyName
-
 
         if isinstance(vocabulary, basestring):
             vocabulary = getVocabularyRegistry().get(context, vocabulary)
@@ -493,8 +515,8 @@ class BooleanChoiceWidget(WidgetBase, DefinedTagMixin):
         :param edit_url: The URL to use for editing when the user isn't logged
             in and when JS is off.  Defaults to the edit_view on the context.
         :param edit_title: Used to set the title attribute of the anchor.
-        :param content_box_id: The HTML id to use for this widget. Automatically
-            generated if this is not provided.
+        :param content_box_id: The HTML id to use for this widget.
+            Automatically generated if this is not provided.
         :param header: The large text at the top of the choice popup.
         """
         super(BooleanChoiceWidget, self).__init__(
@@ -517,7 +539,7 @@ class BooleanChoiceWidget(WidgetBase, DefinedTagMixin):
     @property
     def config(self):
         return dict(
-            contentBox='#'+self.content_box_id,
+            contentBox='#' + self.content_box_id,
             value=self.current_value,
             title=self.header,
             items=[
@@ -546,8 +568,8 @@ class EnumChoiceWidget(WidgetBase):
         :param exported_field: The attribute being edited. This should be
             a field from an interface of the form ISomeInterface['fieldname']
         :param header: The large text at the top of the picker.
-        :param content_box_id: The HTML id to use for this widget. Automatically
-            generated if this is not provided.
+        :param content_box_id: The HTML id to use for this widget.
+            Automatically generated if this is not provided.
         :param enum: The enumerated type used to generate the widget items.
         :param edit_view: The view name to use to generate the edit_url if
             one is not specified.
@@ -573,7 +595,7 @@ class EnumChoiceWidget(WidgetBase):
     @property
     def config(self):
         return dict(
-            contentBox='#'+self.content_box_id,
+            contentBox='#' + self.content_box_id,
             value=self.value,
             title=self.header,
             items=self.items)

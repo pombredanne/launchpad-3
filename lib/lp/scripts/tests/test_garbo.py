@@ -35,8 +35,11 @@ from canonical.database.constants import (
     UTC_NOW,
     )
 from canonical.launchpad.database.librarian import TimeLimitedToken
-from canonical.launchpad.database.message import Message
-from canonical.launchpad.database.oauth import OAuthNonce
+from lp.services.messages.model.message import Message
+from canonical.launchpad.database.oauth import (
+    OAuthAccessToken,
+    OAuthNonce,
+    )
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
@@ -394,10 +397,10 @@ class TestGarbo(TestCaseWithFactory):
         self.failUnlessEqual(store.find(OAuthNonce).count(), 0)
 
         for timestamp in timestamps:
-            OAuthNonce(
-                access_tokenID=1,
+            store.add(OAuthNonce(
+                access_token=OAuthAccessToken.get(1),
                 request_timestamp = timestamp,
-                nonce = str(timestamp))
+                nonce = str(timestamp)))
         transaction.commit()
 
         # Make sure we have 4 nonces now.

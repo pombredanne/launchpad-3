@@ -60,11 +60,9 @@ from canonical.launchpad.helpers import (
     is_english_variant,
     preferred_or_request_languages,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
     )
-from canonical.launchpad.utilities.personroles import PersonRoles
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -74,7 +72,6 @@ from canonical.launchpad.webapp import (
     Link,
     Navigation,
     NavigationMenu,
-    redirection,
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
@@ -82,6 +79,11 @@ from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import SearchQuestionsView
+from lp.answers.enums import (
+    QuestionAction,
+    QuestionSort,
+    QuestionStatus,
+    )
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import (
@@ -91,11 +93,6 @@ from lp.answers.interfaces.question import (
     IQuestionLinkFAQForm,
     )
 from lp.answers.interfaces.questioncollection import IQuestionSet
-from lp.answers.enums import (
-    QuestionAction,
-    QuestionSort,
-    QuestionStatus,
-    )
 from lp.answers.interfaces.questiontarget import (
     IAnswersFrontPageSearchForm,
     IQuestionTarget,
@@ -107,15 +104,18 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     safe_action,
     )
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.app.widgets.textwidgets import TokensTextWidget
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.model.personroles import PersonRoles
 from lp.services.propertycache import cachedproperty
 
 
@@ -244,7 +244,7 @@ class QuestionSetNavigation(Navigation):
         if hasattr(self.request, 'version'):
             return question
         else:
-            return redirection(
+            return self.redirectSubTree(
                 canonical_url(question, self.request), status=301)
 
 
@@ -832,7 +832,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
 
     @property
     def label(self):
-        return self.context.title
+        return FormattersAPI(self.context.title).obfuscate_email()
 
     @property
     def page_title(self):
@@ -925,7 +925,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
                 self.user != self.context.owner and
                 self.context.can_give_answer)
 
-    @action(_('Add Answer'), name='answer', condition=canAddAnswer)
+    @action(_('Propose Answer'), name='answer', condition=canAddAnswer)
     def answer_action(self, action, data):
         """Add an answer to the question."""
         self.context.giveAnswer(self.user, data['message'])

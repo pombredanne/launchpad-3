@@ -5,8 +5,7 @@
 
 This module runs the interface test against the Product, ProductSeries
 ProjectGroup, DistributionSourcePackage, and DistroSeries implementations
-IBugTarget. It runs the bugtarget-bugcount.txt, and
-bugtarget-questiontarget.txt tests.
+IBugTarget. It runs the bugtarget-questiontarget.txt test.
 """
 # pylint: disable-msg=C0103
 
@@ -178,16 +177,6 @@ def sourcePackageSetUp(test):
     test.globs['question_target'] = ubuntu.getSourcePackage('mozilla-firefox')
 
 
-def sourcePackageForQuestionSetUp(test):
-    """Setup the `ISourcePackage` test for QuestionTarget testing."""
-    setUp(test)
-    ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    warty = ubuntu.getSeries('warty')
-    test.globs['bugtarget'] = warty.getSourcePackage('mozilla-firefox')
-    test.globs['filebug'] = sourcepackage_filebug_for_question
-    test.globs['question_target'] = ubuntu.getSourcePackage('mozilla-firefox')
-
-
 class TestBugTargetSearchTasks(TestCaseWithFactory):
     """Tests of IHasBugs.searchTasks()."""
 
@@ -293,21 +282,10 @@ def test_suite():
         distributionSetUp,
         distributionSourcePackageSetUp,
         distributionSeriesSetUp,
-        sourcePackageForQuestionSetUp,
         ]
 
     for setUpMethod in setUpMethods:
         test = LayeredDocFileSuite('bugtarget-questiontarget.txt',
-            setUp=setUpMethod, tearDown=tearDown,
-            layer=DatabaseFunctionalLayer)
-        suite.addTest(test)
-
-    setUpMethods.remove(sourcePackageForQuestionSetUp)
-    setUpMethods.append(sourcePackageSetUp)
-    setUpMethods.append(projectSetUp)
-
-    for setUpMethod in setUpMethods:
-        test = LayeredDocFileSuite('bugtarget-bugcount.txt',
             setUp=setUpMethod, tearDown=tearDown,
             layer=DatabaseFunctionalLayer)
         suite.addTest(test)

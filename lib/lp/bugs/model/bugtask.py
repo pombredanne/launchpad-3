@@ -45,6 +45,7 @@ from storm.expr import (
     Or,
     Select,
     SQL,
+    Sum,
     )
 from storm.info import ClassAlias
 from storm.store import (
@@ -80,11 +81,10 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.validation import (
-    validate_new_distrotask,
     valid_upstreamtask,
+    validate_new_distrotask,
     )
 from canonical.launchpad.searchbuilder import (
     all,
@@ -101,6 +101,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
@@ -112,7 +113,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
     BugTaskStatusSearch,
-    ConjoinedBugTaskEditError,
     IBugTask,
     IBugTaskDelta,
     IBugTaskSet,
@@ -431,10 +431,16 @@ def validate_conjoined_attribute(self, attr, value):
     if self.bug is None:
         return value
 
-    if self._isConjoinedBugTask():
-        raise ConjoinedBugTaskEditError(
-            "This task cannot be edited directly, it should be"
-            " edited through its conjoined_master.")
+    # If this is a conjoined slave then call setattr on the master.
+    # Effectively this means that making a change to the slave will
+    # actually make the change to the master (which will then be passed
+    # down to the slave, of course). This helps to prevent OOPSes when
+    # people try to update the conjoined slave via the API.
+    conjoined_master = self.conjoined_master
+    if conjoined_master is not None:
+        setattr(self.conjoined_master, attr, value)
+        return value
+
     # The conjoined slave is updated before the master one because,
     # for distro tasks, conjoined_slave does a comparison on
     # sourcepackagename, and the sourcepackagenames will not match
@@ -738,10 +744,6 @@ class BugTask(SQLBase, BugTaskMixin):
             self.status in self._NON_CONJOINED_STATUSES):
             conjoined_slave = None
         return conjoined_slave
-
-    def _isConjoinedBugTask(self):
-        """Return True when conjoined_master is not None, otherwise False."""
-        return self.conjoined_master is not None
 
     def _syncFromConjoinedSlave(self):
         """Ensure the conjoined master is synched from its slave.
@@ -2524,13 +2526,60 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         return self._search(BugTask.bugID, [], None, params).result_set
 
-    def countBugs(self, params, group_on):
+    def countBugs(self, user, contexts, group_on):
         """See `IBugTaskSet`."""
-        resultset = self._search(
-            group_on + (SQL("COUNT(Distinct BugTask.bug)"),),
-            [], None, params).result_set
-        # We group on the related field:
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        conditions = []
+        # Open bug statuses
+        conditions.append(BugSummary.status.is_in(UNRESOLVED_BUGTASK_STATUSES))
+        # BugSummary does not include duplicates so no need to exclude.
+        context_conditions = []
+        for context in contexts:
+            condition = removeSecurityProxy(
+                context.getBugSummaryContextWhereClause())
+            if condition is not False:
+                context_conditions.append(condition)
+        if not context_conditions:
+            return {}
+        conditions.append(Or(*context_conditions))
+        # bugsummary by design requires either grouping by tag or excluding
+        # non-null tags.
+        # This is an awkward way of saying
+        # if BugSummary.tag not in group_on:
+        # - see bug 799602
+        group_on_tag = False
+        for column in group_on:
+            if column is BugSummary.tag:
+                group_on_tag = True
+        if not group_on_tag:
+            conditions.append(BugSummary.tag == None)
+        else:
+            conditions.append(BugSummary.tag != None)
+        store = IStore(BugSummary)
+        admin_team = getUtility(ILaunchpadCelebrities).admin
+        if user is not None and not user.inTeam(admin_team):
+            # admins get to see every bug, everyone else only sees bugs
+            # viewable by them-or-their-teams.
+            store = store.with_(SQL(
+                "teams AS ("
+                "SELECT team from TeamParticipation WHERE person=?)",
+                (user.id,)))
+        # Note that because admins can see every bug regardless of subscription
+        # they will see rather inflated counts. Admins get to deal.
+        if user is None:
+            conditions.append(BugSummary.viewed_by_id == None)
+        elif not user.inTeam(admin_team):
+            conditions.append(
+                Or(
+                    BugSummary.viewed_by_id == None,
+                    BugSummary.viewed_by_id.is_in(SQL("SELECT team FROM teams"))
+                    ))
+        sum_count = Sum(BugSummary.count)
+        resultset = store.find(group_on + (sum_count,), *conditions)
         resultset.group_by(*group_on)
+        resultset.having(sum_count != 0)
+        # Ensure we have no order clauses.
         resultset.order_by()
         result = {}
         for row in resultset:

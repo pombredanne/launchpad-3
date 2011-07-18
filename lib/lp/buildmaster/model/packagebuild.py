@@ -261,6 +261,12 @@ class PackageBuildDerived:
     """
     delegates(IPackageBuild, context="package_build")
 
+    # The list of build status values for which email notifications are
+    # allowed to be sent. It is up to each callback as to whether it will
+    # consider sending a notification but it won't do so if the status is not
+    # in this list.
+    ALLOWED_STATUS_NOTIFICATIONS = ['OK', 'PACKAGEFAIL', 'CHROOTFAIL']
+
     def getBuildCookie(self):
         """See `IPackageBuild`."""
         return '%s-%s' % (self.job_type.name, self.id)
@@ -286,21 +292,23 @@ class PackageBuildDerived:
         """See `IPackageBuild`."""
         from lp.buildmaster.manager import BUILDD_MANAGER_LOG_NAME
         logger = logging.getLogger(BUILDD_MANAGER_LOG_NAME)
+        send_notification = status in self.ALLOWED_STATUS_NOTIFICATIONS
         method = getattr(self, '_handleStatus_' + status, None)
         if method is None:
             logger.critical("Unknown BuildStatus '%s' for builder '%s'"
                             % (status, self.buildqueue_record.builder.url))
             return
-        d = method(librarian, slave_status, logger)
+        d = method(librarian, slave_status, logger, send_notification)
         return d
 
     def _release_builder_and_remove_queue_item(self):
         # Release the builder for another job.
         d = self.buildqueue_record.builder.cleanSlave()
         # Remove BuildQueue record.
-        return d.addCallback(lambda x:self.buildqueue_record.destroySelf())
+        return d.addCallback(lambda x: self.buildqueue_record.destroySelf())
 
-    def _handleStatus_OK(self, librarian, slave_status, logger):
+    def _handleStatus_OK(self, librarian, slave_status, logger,
+                         send_notification):
         """Handle a package that built successfully.
 
         Once built successfully, we pull the files, store them in a
@@ -367,15 +375,17 @@ class PackageBuildDerived:
             # files from the slave.
             if successful_copy_from_slave:
                 logger.info(
-                    "Gathered %s %d completely. Moving %s to uploader queue." % (
-                    self.__class__.__name__, self.id, upload_leaf))
+                    "Gathered %s %d completely. Moving %s to uploader queue."
+                    % (self.__class__.__name__, self.id, upload_leaf))
                 target_dir = os.path.join(root, "incoming")
                 self.status = BuildStatus.UPLOADING
             else:
                 logger.warning(
                     "Copy from slave for build %s was unsuccessful.", self.id)
                 self.status = BuildStatus.FAILEDTOUPLOAD
-                self.notify(extra_info='Copy from slave was unsuccessful.')
+                if send_notification:
+                    self.notify(
+                        extra_info='Copy from slave was unsuccessful.')
                 target_dir = os.path.join(root, "failed")
 
             if not os.path.exists(target_dir):
@@ -384,8 +394,8 @@ class PackageBuildDerived:
             # Release the builder for another job.
             d = self._release_builder_and_remove_queue_item()
 
-            # Commit so there are no race conditions with archiveuploader about
-            # self.status.
+            # Commit so there are no race conditions with archiveuploader
+            # about self.status.
             Store.of(self).commit()
 
             # Move the directory used to grab the binaries into
@@ -403,7 +413,8 @@ class PackageBuildDerived:
         d.addCallback(build_info_stored)
         return d
 
-    def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger):
+    def _handleStatus_PACKAGEFAIL(self, librarian, slave_status, logger,
+                                  send_notification):
         """Handle a package that had failed to build.
 
         Build has failed when trying the work with the target package,
@@ -411,16 +422,19 @@ class PackageBuildDerived:
         remove Buildqueue entry.
         """
         self.status = BuildStatus.FAILEDTOBUILD
+
         def build_info_stored(ignored):
-            self.notify()
+            if send_notification:
+                self.notify()
             d = self.buildqueue_record.builder.cleanSlave()
             return d.addCallback(
-                lambda x:self.buildqueue_record.destroySelf())
+                lambda x: self.buildqueue_record.destroySelf())
 
         d = self.storeBuildInfo(self, librarian, slave_status)
         return d.addCallback(build_info_stored)
 
-    def _handleStatus_DEPFAIL(self, librarian, slave_status, logger):
+    def _handleStatus_DEPFAIL(self, librarian, slave_status, logger,
+                              send_notification):
         """Handle a package that had missing dependencies.
 
         Build has failed by missing dependencies, set the job status as
@@ -428,17 +442,21 @@ class PackageBuildDerived:
         entry and release builder slave for another job.
         """
         self.status = BuildStatus.MANUALDEPWAIT
+
         def build_info_stored(ignored):
             logger.critical("***** %s is MANUALDEPWAIT *****"
                             % self.buildqueue_record.builder.name)
+            if send_notification:
+                self.notify()
             d = self.buildqueue_record.builder.cleanSlave()
             return d.addCallback(
-                lambda x:self.buildqueue_record.destroySelf())
+                lambda x: self.buildqueue_record.destroySelf())
 
         d = self.storeBuildInfo(self, librarian, slave_status)
         return d.addCallback(build_info_stored)
 
-    def _handleStatus_CHROOTFAIL(self, librarian, slave_status, logger):
+    def _handleStatus_CHROOTFAIL(self, librarian, slave_status, logger,
+                                 send_notification):
         """Handle a package that had failed when unpacking the CHROOT.
 
         Build has failed when installing the current CHROOT, mark the
@@ -446,18 +464,21 @@ class PackageBuildDerived:
         and release the builder.
         """
         self.status = BuildStatus.CHROOTWAIT
+
         def build_info_stored(ignored):
             logger.critical("***** %s is CHROOTWAIT *****" %
                             self.buildqueue_record.builder.name)
-            self.notify()
+            if send_notification:
+                self.notify()
             d = self.buildqueue_record.builder.cleanSlave()
             return d.addCallback(
-                lambda x:self.buildqueue_record.destroySelf())
+                lambda x: self.buildqueue_record.destroySelf())
 
         d = self.storeBuildInfo(self, librarian, slave_status)
         return d.addCallback(build_info_stored)
 
-    def _handleStatus_BUILDERFAIL(self, librarian, slave_status, logger):
+    def _handleStatus_BUILDERFAIL(self, librarian, slave_status, logger,
+                                  send_notification):
         """Handle builder failures.
 
         Build has been failed when trying to build the target package,
@@ -468,13 +489,15 @@ class PackageBuildDerived:
                        % self.buildqueue_record.builder.name)
         self.buildqueue_record.builder.failBuilder(
             "Builder returned BUILDERFAIL when asked for its status")
+
         def build_info_stored(ignored):
             # simply reset job
             self.buildqueue_record.reset()
         d = self.storeBuildInfo(self, librarian, slave_status)
         return d.addCallback(build_info_stored)
 
-    def _handleStatus_GIVENBACK(self, librarian, slave_status, logger):
+    def _handleStatus_GIVENBACK(self, librarian, slave_status, logger,
+                                send_notification):
         """Handle automatic retry requested by builder.
 
         GIVENBACK pseudo-state represents a request for automatic retry
@@ -484,6 +507,7 @@ class PackageBuildDerived:
         logger.warning("***** %s is GIVENBACK by %s *****"
                        % (self.buildqueue_record.specific_job.build.title,
                           self.buildqueue_record.builder.name))
+
         def build_info_stored(ignored):
             # XXX cprov 2006-05-30: Currently this information is not
             # properly presented in the Web UI. We will discuss it in

@@ -47,8 +47,8 @@ from zope.security.proxy import ProxyFactory
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import quote
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.interfaces.structuralsubscription import (
@@ -272,7 +272,13 @@ class ProductTargetHelper:
         self.target_parent = target.project
         self.target_arguments = {"product": target}
         self.pillar = target
-        self.join = (StructuralSubscription.product == target)
+        if target.project is not None:
+            self.join = Or(
+                StructuralSubscription.product == target,
+                StructuralSubscription.project == target.project)
+        else:
+            self.join = (
+                StructuralSubscription.product == target)
 
 
 class ProductSeriesTargetHelper:
@@ -554,9 +560,8 @@ def _get_structural_subscriptions(find, targets, *conditions):
     target_descriptions = [
         IStructuralSubscriptionTargetHelper(target).join
         for target in targets]
-    return list(
-        IStore(StructuralSubscription).find(
-            find, Or(*target_descriptions), *conditions))
+    return IStore(StructuralSubscription).find(
+        find, Or(*target_descriptions), *conditions)
 
 
 @ProxyFactory
@@ -705,8 +710,8 @@ def _get_structural_subscription_filter_id_query(
             Not(In(StructuralSubscription.subscriberID,
                    Select(BugSubscription.person_id,
                           BugSubscription.bug == bug))))
-    candidates = _get_structural_subscriptions(
-        StructuralSubscription.id, query_arguments, *filters)
+    candidates = list(_get_structural_subscriptions(
+        StructuralSubscription.id, query_arguments, *filters))
     if not candidates:
         # If there are no structural subscriptions for these targets,
         # then we don't need to look at the importance, status, and

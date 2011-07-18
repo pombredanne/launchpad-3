@@ -23,11 +23,11 @@ from fixtures import (
 import canonical
 from canonical.config import config
 from canonical.launchpad.daemons.tachandler import (
-    get_pid_from_file,
     TacException,
     TacTestSetup,
     )
 from canonical.librarian.storage import _relFileLocation
+from lp.services.osutils import get_pid_from_file
 
 
 class LibrarianServerFixture(TacTestSetup):
