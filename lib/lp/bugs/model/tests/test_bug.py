@@ -390,4 +390,28 @@ class TestBugAutoConfirmation(TestCaseWithFactory):
             with person_logged_in(person):
                 bug.markUserAffected(person)
             self.assertEqual(BugTaskStatus.NEW, bug.bugtasks[0].status)
+
+    def test_markAsDuplicate_autoconfirms(self):
+        # markAsDuplicate will auto confirm if appropriate.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.bug777874.enabled_product_names', u'*')
+            bug = self.factory.makeBug()
+            duplicate_bug = self.factory.makeBug()
+            with person_logged_in(duplicate_bug.owner):
+                duplicate_bug.markAsDuplicate(bug)
+            self.assertEqual(BugTaskStatus.CONFIRMED, bug.bugtasks[0].status)
+
+    def test_markAsDuplicate_does_not_autoconfirm_wrongly(self):
+        # markAsDuplicate will not auto confirm if incorrect.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.bug777874.enabled_product_names', u'*')
+            bug = self.factory.makeBug()
+            with person_logged_in(bug.owner):
+                duplicate_bug = self.factory.makeBug(owner=bug.owner)
+                duplicate_bug.markAsDuplicate(bug)
+            self.assertEqual(BugTaskStatus.NEW, bug.bugtasks[0].status)
         

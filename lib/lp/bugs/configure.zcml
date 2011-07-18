@@ -749,6 +749,7 @@
                     getDirectSubscriptions
                     getIndirectSubscribers
                     is_complete
+                    maybeConfirmBugtasks
                     official_tags
                     who_made_private
                     date_made_private

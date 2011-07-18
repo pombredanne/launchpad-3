@@ -1782,7 +1782,7 @@ BugMessage""" % sqlvalues(self.id))
         # step, but we will make some unnecessary comparisons.
         return self.users_affected_count_with_dupes > 1
 
-    def _maybeConfirmBugtasks(self):
+    def maybeConfirmBugtasks(self):
         """Maybe try to confirm our new bugtasks."""
         if self.shouldConfirmBugtasks():
             for bugtask in self.bugtasks:
@@ -1804,7 +1804,7 @@ BugMessage""" % sqlvalues(self.id))
             if dupe._getAffectedUser(user) is not None:
                 dupe.markUserAffected(user, affected)
 
-        self._maybeConfirmBugtasks()
+        self.maybeConfirmBugtasks()
 
         self.updateHeat()
 
@@ -1846,8 +1846,9 @@ BugMessage""" % sqlvalues(self.id))
             # to 0 (since it's a duplicate, it shouldn't have any heat
             # at all).
             self.setHeat(0, affected_targets=affected_targets)
-            # XXX fire event or explicitly ask duplicate to recalculate
-            # bugtask status, re bug 777874
+            # Maybe confirm bug tasks, now that more people might be affected
+            # by this bug.
+            duplicate_of.maybeConfirmBugtasks()
         else:
             # Otherwise, recalculate this bug's heat, since it will be 0
             # from having been a duplicate. We also update the bug that
