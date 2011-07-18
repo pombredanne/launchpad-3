@@ -838,3 +838,10 @@ class TestPackageUploadSet(TestCaseWithFactory):
         self.assertEqual(
             list(reversed(ordered_uploads)),
             list(getUtility(IPackageUploadSet).getAll(series)))
+
+    def test_rejectFromQueue_no_changes_file(self):
+        # If the PackageUpload has no changesfile, we can still reject it.
+        pu = self.factory.makePackageUpload()
+        pu.changesfile = None
+        pu.rejectFromQueue()
+        self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
