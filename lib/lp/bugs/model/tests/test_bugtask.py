@@ -10,6 +10,7 @@ from lazr.lifecycle.snapshot import Snapshot
 from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.interface import providedBy
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import (
@@ -52,11 +53,13 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.testing import (
     ANONYMOUS,
+    feature_flags,
     login,
     login_person,
     logout,
     normalize_whitespace,
     person_logged_in,
+    set_feature_flag,
     StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
@@ -1445,3 +1448,93 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
             self.generic_task.sourcepackagename = source_package_name
             self.assertEqual(
                 source_package_name, self.series_task.sourcepackagename)
+
+
+class TestAutoConfirmBugTasksFlagForProduct(TestCaseWithFactory):
+    """Tests for auto-confirming bug tasks."""
+    # Tests for _checkBug777874FeatureFlag.
+
+    layer = DatabaseFunctionalLayer
+
+    def makeTarget(self):
+        return self.factory.makeProduct()
+
+    flag = u'bugs.bug777874.enabled_product_names'
+    alt_flag = u'bugs.bug777874.enabled_distribution_names'
+
+    def test_False(self):
+        # With no feature flags turned on, we do not auto-confirm.
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        self.assertFalse(
+            removeSecurityProxy(bug_task)._checkBug777874FeatureFlag())
+
+    def test_flag_False(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(self.flag, u'   ')
+            self.assertFalse(
+                removeSecurityProxy(bug_task)._checkBug777874FeatureFlag())
+
+    def test_explicit_flag(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(self.flag, bug_task.pillar.name)
+            self.assertTrue(
+                removeSecurityProxy(bug_task)._checkBug777874FeatureFlag())
+
+    def test_explicit_flag_of_many(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(
+                self.flag, u'  foo bar  ' + bug_task.pillar.name + '    baz ')
+            self.assertTrue(
+                removeSecurityProxy(bug_task)._checkBug777874FeatureFlag())
+
+    def test_match_all_flag(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(self.flag, u'*')
+            self.assertTrue(
+                removeSecurityProxy(bug_task)._checkBug777874FeatureFlag())
+
+    def test_alt_flag_does_not_affect(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(self.alt_flag, bug_task.pillar.name)
+            self.assertFalse(
+                removeSecurityProxy(bug_task)._checkBug777874FeatureFlag())
+
+
+class TestAutoConfirmBugTasksFlagForProductSeries(
+    TestAutoConfirmBugTasksFlagForProduct):
+    """Tests for auto-confirming bug tasks."""
+
+    def makeTarget(self):
+        return self.factory.makeProductSeries()
+
+
+class TestAutoConfirmBugTasksFlagForDistribution(
+    TestAutoConfirmBugTasksFlagForProduct):
+    """Tests for auto-confirming bug tasks."""
+
+    flag = TestAutoConfirmBugTasksFlagForProduct.alt_flag
+    alt_flag = TestAutoConfirmBugTasksFlagForProduct.flag
+
+    def makeTarget(self):
+        return self.factory.makeDistribution()
+
+
+class TestAutoConfirmBugTasksFlagForDistributionSeries(
+    TestAutoConfirmBugTasksFlagForDistribution):
+    """Tests for auto-confirming bug tasks."""
+
+    def makeTarget(self):
+        return self.factory.makeDistroSeries()
+
+
+class TestAutoConfirmBugTasksFlagForDistributionSourcePackage(
+    TestAutoConfirmBugTasksFlagForDistribution):
+    """Tests for auto-confirming bug tasks."""
+
+    def makeTarget(self):
+        return self.factory.makeDistributionSourcePackage()

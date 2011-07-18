@@ -318,6 +318,7 @@ class TestBug(TestCaseWithFactory):
 
 
 class TestBugAutoConfirmation(TestCaseWithFactory):
+    """Tests for auto confirming bugs"""
 
     layer = DatabaseFunctionalLayer
 
