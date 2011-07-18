@@ -255,16 +255,14 @@ class PublishDistro(LaunchpadCronScript):
         # The primary and copy archives use apt-ftparchive to
         # generate the indexes, everything else uses the newer
         # internal LP code.
+        careful_indexing = (self.options.careful or self.options.careful_apt)
         if archive.purpose in (ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
-            publisher.C_doFTPArchive(
-                self.options.careful or self.options.careful_apt)
+            publisher.C_doFTPArchive(careful_indexing)
         else:
-            publisher.C_writeIndexes(
-                self.options.careful or self.options.careful_apt)
+            publisher.C_writeIndexes(careful_indexing)
         self.txn.commit()
 
-        publisher.D_writeReleaseFiles(
-            self.options.careful or self.options.careful_apt)
+        publisher.D_writeReleaseFiles(careful_indexing)
         self.txn.commit()
 
     def main(self):
