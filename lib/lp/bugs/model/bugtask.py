@@ -107,6 +107,7 @@ from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
     BugBlueprintSearch,
     BugBranchSearch,
+    BUG_SUPERVISOR_BUGTASK_STATUSES,
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
