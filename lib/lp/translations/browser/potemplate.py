@@ -62,10 +62,16 @@ from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
 from lp.app.browser.tales import DateTimeFormatterAPI
 from canonical.lazr.utils import smartquote
-from lp.app.enums import service_uses_launchpad
+from lp.app.enums import (
+    service_uses_launchpad,
+    ServiceUsage,
+    )
 from lp.app.errors import NotFoundError
 from lp.registry.browser.productseries import ProductSeriesFacets
-from lp.registry.browser.sourcepackage import SourcePackageFacets
+from lp.registry.browser.sourcepackage import (
+    SourcePackageFacets,
+    SourcePackageOverviewMenu,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -895,18 +901,34 @@ class BaseSeriesTemplatesView(LaunchpadView):
             text += ' (inactive)'
         return text
 
-    def _renderSharing(self, template, url):
+    def _renderSharing(self, template):
         """Render a link to `template`.
 
         :param template: The target `POTemplate`.
-        :param url: The cached URL for `template`.
         :return: HTML for the "sharing" status of `template`.
         """
-        if template.translationtarget.has_sharing_translation_templates:
-            series = template.translationtarget.getSharingPartner()
-            return ' '.join((series.product.name, series.name))
+        tt = template.translationtarget
+        templates = tt.has_sharing_translation_templates
+        packaging = tt.direct_packaging is not None
+        product = packaging and tt.direct_packaging.productseries.product
+        upstream = product and product.translations_usage in (
+            ServiceUsage.LAUNCHPAD, ServiceUsage.EXTERNAL)
+
+        if templates and packaging and upstream:
+            # Are the conditions met for this template to be considered "shared"?
+            state = 'Shared'
         else:
-            return 'No'
+            state = 'Not shared'
+
+        # XXX XSS vuln here?  Might need cgi.escape.
+        details = ('+source/%s/+sharing-details' %
+            template.sourcepackagename.name)
+
+        # XXX The translations.sharing_information.enabled feature flag
+        # looks like it's always on, should I bother protecting this link
+        # with it?
+        return '<a class="sprite edit" href="%s">%s</a>' % (details, state)
+
 
     def _renderLastUpdateDate(self, template):
         """Render a template's "last updated" column."""
@@ -1028,9 +1050,9 @@ class BaseSeriesTemplatesView(LaunchpadView):
             ('actions_column', self._renderActionsColumn(template, base_url)),
         ]
 
+        # If this view is displaying an IDistroSeries, add the sharing column.
         if IDistroSeries.providedBy(self.context):
-            fields[2:3] = [
-                ('sharing', self._renderSharing(template, base_url))]
+            fields[2:3] = [('sharing', self._renderSharing(template))]
 
         tds = [self._renderField(*field) for field in fields]
 
