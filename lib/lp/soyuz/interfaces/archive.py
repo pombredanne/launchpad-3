@@ -20,6 +20,7 @@ __all__ = [
     'CannotUploadToArchive',
     'CannotUploadToPPA',
     'CannotUploadToPocket',
+    'ForbiddenByFeatureFlag',
     'FULL_COMPONENT_SUPPORT',
     'IArchive',
     'IArchiveAppend',
@@ -120,6 +121,12 @@ class ArchiveDependencyError(Exception):
 @error_status(httplib.BAD_REQUEST)
 class CannotCopy(Exception):
     """Exception raised when a copy cannot be performed."""
+
+
+@error_status(httplib.FORBIDDEN)
+class ForbiddenByFeatureFlag(Exception):
+    """Exception raised when using a method protected by a feature flag.
+    """
 
 
 @error_status(httplib.BAD_REQUEST)
