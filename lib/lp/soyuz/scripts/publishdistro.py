@@ -214,7 +214,7 @@ class PublishDistro(LaunchpadCronScript):
         Considers only archives that have their "to be published" flag
         turned on, or are pending deletion.
         """
-        return archive.publish or archive.status == ArchiveStatus.DELETING
+        return archive.publish or (archive.status == ArchiveStatus.DELETING)
 
     def getPublisher(self, distribution, archive, allowed_suites):
         """Get a publisher for the given options."""
