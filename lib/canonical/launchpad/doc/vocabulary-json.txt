@@ -61,7 +61,7 @@ A successful search.
                 "api_uri": "/~guadamen",
                 "css": "sprite team",
                 "link_css": "js-action",
-                "meta": "team",
+                "metadata": "team",
                 "title": "GuadaMen",
                 "value": "guadamen"
             }
@@ -93,7 +93,7 @@ Size and offset parameters can be passed in to switch between batches.
                 "api_uri": "/~commercial-admins",
                 "css": "sprite team",
                 "link_css": "js-action",
-                "meta": "team",
+                "metadata": "team",
                 "title": "Commercial Subscription Admins",
                 "value": "commercial-admins"
             }
@@ -114,7 +114,7 @@ Size and offset parameters can be passed in to switch between batches.
                 "api_uri": "/~launchpad-buildd-admins",
                 "css": "sprite team",
                 "link_css": "js-action",
-                "meta": "team",
+                "metadata": "team",
                 "title": "Launchpad Buildd Admins",
                 "value": "launchpad-buildd-admins"
             }
@@ -147,7 +147,7 @@ included in the picker entry.
                 "css": "sprite person",
                 "description": "<email address hidden>",
                 "link_css": "js-action",
-                "meta": "person",
+                "metadata": "person",
                 "title": "Sample Person",
                 "value": "name12"
             }
@@ -189,7 +189,7 @@ retrieved through vocabularies.
                 "css": "sprite person",
                 "description": "<email address hidden>",
                 "link_css": "js-action",
-                "meta": "person",
+                "metadata": "person",
                 "title": "Sample Person",
                 "value": "name12"
             }
@@ -212,7 +212,7 @@ IRC nicknames should be displayed after any email address.
                 "css": "sprite person",
                 "description": "<email address hidden> (mark on irc.freenode.net)",
                 "link_css": "js-action",
-                "meta": "person",
+                "metadata": "person",
                 "title": "Mark Shuttleworth",
                 "value": "mark"
             }
