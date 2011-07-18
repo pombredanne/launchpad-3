@@ -5,11 +5,14 @@ __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bug import BugSubscriptionInfo
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
+    feature_flags,
     login_person,
     person_logged_in,
+    set_feature_flag,
     TestCaseWithFactory,
     )
 
@@ -361,3 +364,30 @@ class TestBugAutoConfirmation(TestCaseWithFactory):
         with person_logged_in(person):
             bug.markUserAffected(person)
         self.assertFalse(bug.shouldConfirmBugtasks())
+
+    def test_markUserAffected_autoconfirms(self):
+        # markUserAffected will auto confirm if appropriate.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.bug777874.enabled_product_names', u'*')
+            bug = self.factory.makeBug()
+            person = self.factory.makePerson()
+            with person_logged_in(person):
+                bug.markUserAffected(person)
+            self.assertEqual(BugTaskStatus.CONFIRMED, bug.bugtasks[0].status)
+
+    def test_markUserAffected_does_not_autoconfirm_wrongly(self):
+        # markUserAffected will not auto confirm if incorrect.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.bug777874.enabled_product_names', u'*')
+            bug = self.factory.makeBug()
+            person = self.factory.makePerson()
+            with person_logged_in(bug.owner):
+                bug.markUserAffected(bug.owner, False)
+            with person_logged_in(person):
+                bug.markUserAffected(person)
+            self.assertEqual(BugTaskStatus.NEW, bug.bugtasks[0].status)
+        

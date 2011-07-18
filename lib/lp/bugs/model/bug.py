@@ -1782,6 +1782,12 @@ BugMessage""" % sqlvalues(self.id))
         # step, but we will make some unnecessary comparisons.
         return self.users_affected_count_with_dupes > 1
 
+    def _maybeConfirmBugtasks(self):
+        """Maybe try to confirm our new bugtasks."""
+        if self.shouldConfirmBugtasks():
+            for bugtask in self.bugtasks:
+                bugtask.maybeConfirm()
+
     def markUserAffected(self, user, affected=True):
         """See `IBug`."""
         bap = self._getAffectedUser(user)
@@ -1798,7 +1804,7 @@ BugMessage""" % sqlvalues(self.id))
             if dupe._getAffectedUser(user) is not None:
                 dupe.markUserAffected(user, affected)
 
-        # XXX if affected: update status of bugtasks per 777874
+        self._maybeConfirmBugtasks()
 
         self.updateHeat()
 
