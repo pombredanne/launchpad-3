@@ -1161,7 +1161,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
             )
             for dsd in self.getUpgrades()]
         getUtility(IPlainPackageCopyJobSource).createMultiple(
-            target_distroseries, copies,
+            target_distroseries, copies, self.user,
             copy_policy=PackageCopyPolicy.MASS_SYNC)
 
         self.request.response.addInfoNotification(

@@ -16,10 +16,9 @@ from zope.app.form.browser.itemswidgets import (
     )
 from zope.schema.interfaces import IChoice
 
-from lazr.restful.interfaces import IJSONRequestCache
-
 from canonical.launchpad.webapp import canonical_url
 from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.browser.vocabulary import get_person_picker_entry_metadata
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 
@@ -29,19 +28,15 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
     __call__ = ViewPageTemplateFile('templates/form-picker.pt')
 
-    @property
-    def config(self):
-        # Provide default values for the following properties in case someone
-        # creates a vocab picker for a person instead of using the derived
-        # PersonPicker.
-        return {
-            "picker_type": 'default',
-            "show_assign_me_button": 'false',
-            "show_remove_button": 'false',
-            "extra_no_results_message": self.extra_no_results_message,
-            "step_title_text": self.step_title_text,
-            "vocabulary_name": self.vocabulary_name,
-            }
+    picker_type = 'default'
+    # Provide default values for the following properties in case someone
+    # creates a vocab picker for a person instead of using the derived
+    # PersonPicker.
+    show_assign_me_button = 'false'
+    show_remove_button = 'false'
+    assign_me_text = 'Pick me'
+    remove_person_text = 'Remove person'
+    remove_team_text = 'Remove team'
 
     popup_name = 'popup-vocabulary-picker'
 
@@ -110,8 +105,29 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
                          class="%(cssClass)s" />""" % d
 
     @property
+    def selected_value_metadata(self):
+        return None
+
+    @property
     def show_widget_id(self):
         return 'show-widget-%s' % self.input_id.replace('.', '-')
+
+    @property
+    def config(self):
+        return dict(
+            picker_type=self.picker_type,
+            selected_value_metadata=self.selected_value_metadata,
+            header=self.header_text, step_title=self.step_title_text,
+            extra_no_results_message=self.extra_no_results_message,
+            assign_me_text=self.assign_me_text,
+            remove_person_text=self.remove_person_text,
+            remove_team_text=self.remove_team_text,
+            show_remove_button=self.show_remove_button,
+            show_assign_me_button=self.show_assign_me_button)
+
+    @property
+    def json_config(self):
+        return simplejson.dumps(self.config)
 
     @property
     def extra_no_results_message(self):
@@ -172,26 +188,24 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
 class PersonPickerWidget(VocabularyPickerWidget):
 
+    include_create_team_link = False
+    show_assign_me_button = 'true'
+    show_remove_button = 'true'
+
     @property
-    def config(self):
-        # Provide default values for the following properties in case someone
-        # creates a vocab picker for a person instead of using the derived
-        # PersonPicker.
+    def picker_type(self):
+        # This is a method for now so we can block the use of the new
+        # person picker js behind our picker_enhancments feature flag.
         if bool(getFeatureFlag('disclosure.picker_enhancements.enabled')):
             picker_type = 'person'
         else:
             picker_type = 'default'
+        return picker_type
 
-        return {
-            "picker_type": picker_type,
-            "show_assign_me_button": 'true',
-            "show_remove_button": 'true',
-            "extra_no_results_message": self.extra_no_results_message,
-            "step_title_text": self.step_title_text,
-            "vocabulary_name": self.vocabulary_name,
-            }
-
-    include_create_team_link = False
+    @property
+    def selected_value_metadata(self):
+        val = self._getFormValue()
+        return get_person_picker_entry_metadata(val)
 
     def chooseLink(self):
         link = super(PersonPickerWidget, self).chooseLink()

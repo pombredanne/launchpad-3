@@ -92,9 +92,10 @@ class LocalTestHelper:
         target_archive = dsd.derived_series.main_archive
         target_distroseries = dsd.derived_series
         target_pocket = self.factory.getAnyPocket()
+        requester = self.factory.makePerson()
         return getUtility(IPlainPackageCopyJobSource).create(
             dsd.source_package_name.name, source_archive, target_archive,
-            target_distroseries, target_pocket,
+            target_distroseries, target_pocket, requester=requester,
             package_version=dsd.parent_source_version, **kwargs)
 
     def runJob(self, job):
@@ -122,13 +123,15 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
             package_name="foo", source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
             package_version="1.0-1", include_binaries=False,
-            copy_policy=PackageCopyPolicy.MASS_SYNC)
+            copy_policy=PackageCopyPolicy.MASS_SYNC,
+            requester=requester)
         self.assertProvides(job, IPackageCopyJob)
         self.assertEquals(archive1.id, job.source_archive_id)
         self.assertEquals(archive1, job.source_archive)
@@ -140,6 +143,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual("1.0-1", job.package_version)
         self.assertEquals(False, job.include_binaries)
         self.assertEquals(PackageCopyPolicy.MASS_SYNC, job.copy_policy)
+        self.assertEqual(requester, job.requester)
 
     def test_createMultiple_creates_one_job_per_copy(self):
         mother = self.factory.makeDistroSeriesParent()
@@ -148,6 +152,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             derived_series=derived_series)
         mother_package = self.factory.makeSourcePackageName()
         father_package = self.factory.makeSourcePackageName()
+        requester = self.factory.makePerson()
         job_source = getUtility(IPlainPackageCopyJobSource)
         copy_tasks = [
             (
@@ -166,7 +171,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
                 ),
             ]
         job_ids = list(
-            job_source.createMultiple(mother.derived_series, copy_tasks))
+            job_source.createMultiple(mother.derived_series, copy_tasks,
+                                      requester))
         jobs = list(job_source.getActiveJobs(derived_series.main_archive))
         self.assertContentEqual(job_ids, [job.id for job in jobs])
         self.assertEqual(len(copy_tasks), len(set([job.job for job in jobs])))
@@ -185,17 +191,24 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             for job in jobs]
         self.assertEqual(copy_tasks, requested_copies)
 
+        # The passed requester should be the same on all jobs.
+        actual_requester = set(job.requester for job in jobs)
+        self.assertEqual(1, len(actual_requester))
+        self.assertEqual(requester, jobs[0].requester)
+
     def test_getActiveJobs(self):
         # getActiveJobs() can retrieve all active jobs for an archive.
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
         source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
         job = source.create(
             package_name="foo", source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            package_version="1.0-1", include_binaries=False)
+            package_version="1.0-1", include_binaries=False,
+            requester=requester)
         self.assertContentEqual([job], source.getActiveJobs(archive2))
 
     def test_getActiveJobs_gets_oldest_first(self):
@@ -249,12 +262,14 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
         job_source = getUtility(IPlainPackageCopyJobSource)
         job = job_source.create(
             package_name="foo", source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            package_version="1.0-1", include_binaries=False)
+            package_version="1.0-1", include_binaries=False,
+            requester=requester)
         naked_job = removeSecurityProxy(job)
         naked_job.reportFailure = FakeMethod()
 
@@ -268,12 +283,14 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         package = self.factory.makeSourcePackageName()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
             package_name=package.name, source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.UPDATES,
-            include_binaries=False, package_version='1.0')
+            include_binaries=False, package_version='1.0',
+            requester=requester)
 
         naked_job = removeSecurityProxy(job)
         naked_job.reportFailure = FakeMethod()
@@ -315,12 +332,14 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             archive=target_archive)
 
         source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
         job = source.create(
             package_name="libc",
             source_archive=breezy_archive, target_archive=target_archive,
             target_distroseries=target_series,
             target_pocket=PackagePublishingPocket.RELEASE,
-            package_version="2.8-1", include_binaries=False)
+            package_version="2.8-1", include_binaries=False,
+            requester=requester)
         self.assertEqual("libc", job.package_name)
         self.assertEqual("2.8-1", job.package_version)
 
@@ -348,12 +367,14 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
             package_name="foo", source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            package_version="1.0-1", include_binaries=False)
+            package_version="1.0-1", include_binaries=False,
+            requester=requester)
         oops_vars = job.getOopsVars()
         naked_job = removeSecurityProxy(job)
         self.assertIn(
@@ -374,6 +395,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         distroseries = publisher.breezy_autotest
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
         publisher.getPubSource(
             distroseries=distroseries, sourcename="libc",
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
@@ -382,7 +404,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             package_name="libc", source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            package_version="2.8-1", include_binaries=False)
+            package_version="2.8-1", include_binaries=False,
+            requester=requester)
         transaction.commit()
 
         out, err, exit_code = run_script(
@@ -401,12 +424,14 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         distroseries = self.factory.makeDistroSeries()
         archive1 = self.factory.makeArchive(distroseries.distribution)
         archive2 = self.factory.makeArchive(distroseries.distribution)
+        requester = self.factory.makePerson()
         source = getUtility(IPlainPackageCopyJobSource)
         job = source.create(
             package_name="foo", source_archive=archive1,
             target_archive=archive2, target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            package_version="1.0-1", include_binaries=True)
+            package_version="1.0-1", include_binaries=True,
+            requester=requester)
         self.assertEqual(
             ("<PlainPackageCopyJob to copy package foo from "
              "{distroseries.distribution.name}/{archive1.name} to "
@@ -519,6 +544,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # target_archive.
 
         source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
         job = source.create(
             package_name="libc",
             package_version="2.8-1",
@@ -526,7 +552,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             target_archive=target_archive,
             target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            include_binaries=False)
+            include_binaries=False,
+            requester=requester)
 
         self.runJob(job)
 
@@ -556,6 +583,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # Now, run the copy job, which should raise an error because
         # there's no ancestry.
         source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
         job = source.create(
             package_name="copyme",
             package_version="2.8-1",
@@ -563,7 +591,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             target_archive=target_archive,
             target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            include_binaries=False)
+            include_binaries=False,
+            requester=requester)
 
         self.assertRaises(SuspendJobException, self.runJob, job)
         # Simulate the job runner suspending after getting a
@@ -619,6 +648,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # Now, run the copy job.
 
         source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
         job = source.create(
             package_name="copyme",
             package_version="2.8-1",
@@ -626,7 +656,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             target_archive=target_archive,
             target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            include_binaries=False)
+            include_binaries=False,
+            requester=requester)
 
         # The job should be suspended and there's a PackageUpload with
         # its package_copy_job set.
@@ -672,6 +703,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         # Now, run the copy job.
         source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
         job = source.create(
             package_name="copyme",
             package_version="2.8-1",
@@ -679,7 +711,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             target_archive=target_archive,
             target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            include_binaries=False)
+            include_binaries=False,
+            requester=requester)
 
         # The job should be suspended and there's a PackageUpload with
         # its package_copy_job set in the UNAPPROVED queue.
@@ -715,6 +748,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             archive=source_archive)
 
         source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
         job = source.create(
             package_name="copyme",
             package_version="2.8-1",
@@ -722,7 +756,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             target_archive=target_archive,
             target_distroseries=distroseries,
             target_pocket=PackagePublishingPocket.RELEASE,
-            include_binaries=False)
+            include_binaries=False,
+            requester=requester)
 
         # Run the job so it gains a PackageUpload.
         self.assertRaises(SuspendJobException, self.runJob, job)

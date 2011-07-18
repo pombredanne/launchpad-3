@@ -257,7 +257,7 @@ javascript enabled, the information is shown in-place.
     ...     user_browser.contents, 'expander')[0]
     >>> print expander_url
     <a class="expander" href="/ubuntu/+archive/primary/+sourcepub/26/+listing-archive-extra" id="pub26-expander">
-    <img style... src="/@@/treeCollapsed" alt="Show details" title="Show details" id="pub26-arrow" />
+      &nbsp;
     </a>
 
     >>> browser.open(user_browser.getLink(id="pub26-expander").url)

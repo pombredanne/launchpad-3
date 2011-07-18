@@ -37,8 +37,8 @@
 
         // The vocabulary picker, created when used for the first time.
         function make_picker() {
-            config = ${view/config}
-            var picker = Y.lp.app.picker.create(config);
+            var config = ${view/json_config};
+            var picker = Y.lp.app.picker.create('${view/vocabulary_name}', config);
             if (config.extra_no_results_message !== null) {
                 picker.before('resultsChange', function (e) {
                     var new_results = e.details[0].newVal;
