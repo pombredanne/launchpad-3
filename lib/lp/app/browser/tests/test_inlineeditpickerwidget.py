@@ -87,10 +87,10 @@ class TestInlinePersonEditPickerWidget(TestCaseWithFactory):
         # The widget has the correct meta value for a person value.
         widget_value = self.factory.makePerson()
         widget = self.getWidget(widget_value, vocabulary='ValidPersonOrTeam')
-        self.assertEquals('person', widget.config['selected_value_meta'])
+        self.assertEquals('person', widget.config['selected_value_metadata'])
 
     def test_team_selected_value_meta(self):
         # The widget has the correct meta value for a team value.
         widget_value = self.factory.makeTeam()
         widget = self.getWidget(widget_value, vocabulary='ValidPersonOrTeam')
-        self.assertEquals('team', widget.config['selected_value_meta'])
+        self.assertEquals('team', widget.config['selected_value_metadata'])

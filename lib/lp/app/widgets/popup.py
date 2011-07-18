@@ -18,7 +18,7 @@ from zope.schema.interfaces import IChoice
 
 from canonical.launchpad.webapp import canonical_url
 from lp.app.browser.stringformatter import FormattersAPI
-from lp.app.browser.vocabulary import get_person_picker_entry_meta
+from lp.app.browser.vocabulary import get_person_picker_entry_metadata
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 
@@ -105,7 +105,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
                          class="%(cssClass)s" />""" % d
 
     @property
-    def selected_value_meta(self):
+    def selected_value_metadata(self):
         return None
 
     @property
@@ -116,7 +116,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     def config(self):
         return dict(
             picker_type=self.picker_type,
-            selected_value_meta=self.selected_value_meta,
+            selected_value_metadata=self.selected_value_metadata,
             header=self.header_text, step_title=self.step_title_text,
             extra_no_results_message=self.extra_no_results_message,
             assign_me_text=self.assign_me_text,
@@ -203,9 +203,9 @@ class PersonPickerWidget(VocabularyPickerWidget):
         return picker_type
 
     @property
-    def selected_value_meta(self):
+    def selected_value_metadata(self):
         val = self._getFormValue()
-        return get_person_picker_entry_meta(val)
+        return get_person_picker_entry_metadata(val)
 
     def chooseLink(self):
         link = super(PersonPickerWidget, self).chooseLink()

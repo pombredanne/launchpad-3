@@ -128,7 +128,7 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         self.assertEqual('false',
             picker_widget.config['show_assign_me_button'])
         self.assertEqual('false',
-            picker_widget.config['show_assign_me_button'])
+            picker_widget.config['show_remove_button'])
 
         # A person picker widget does show them by default.
         person_picker_widget = PersonPickerWidget(
@@ -136,7 +136,7 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         self.assertEqual('true',
             person_picker_widget.config['show_assign_me_button'])
         self.assertEqual('true',
-            person_picker_widget.config['show_assign_me_button'])
+            person_picker_widget.config['show_remove_button'])
 
     def test_widget_personvalue_meta(self):
         # The person picker has the correct meta value for a person value.
@@ -146,7 +146,7 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
             bound_field, self.vocabulary, self.request)
         person_picker_widget.setRenderedValue(person)
         self.assertEqual('person',
-            person_picker_widget.config['selected_value_meta'])
+            person_picker_widget.config['selected_value_metadata'])
 
     def test_widget_teamvalue_meta(self):
         # The person picker has the correct meta value for a team value.
@@ -156,4 +156,4 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
             bound_field, self.vocabulary, self.request)
         person_picker_widget.setRenderedValue(team)
         self.assertEqual('team',
-            person_picker_widget.config['selected_value_meta'])
+            person_picker_widget.config['selected_value_metadata'])
