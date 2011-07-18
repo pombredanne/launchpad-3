@@ -27,6 +27,8 @@ from operator import attrgetter
 import re
 
 from lazr.enum import BaseItem
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from sqlobject import (
     ForeignKey,
@@ -54,9 +56,11 @@ from storm.store import (
     Store,
     )
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import (
     alsoProvides,
     implements,
+    providedBy,
     )
 from zope.interface.interfaces import IMethod
 from zope.security.proxy import (
@@ -817,7 +821,6 @@ class BugTask(SQLBase, BugTaskMixin):
         return self.importance
 
     # START TEMPORARY BIT.
-
     _parse_launchpad_names = re.compile(r"[a-z0-9][a-z0-9\+\.\-]+").findall
 
     def _checkBug777874FeatureFlag(self):
@@ -842,6 +845,25 @@ class BugTask(SQLBase, BugTaskMixin):
             return False
         return True
     # END TEMPORARY BIT.
+
+    def maybeConfirm(self):
+        """Maybe confirm this bugtask.
+        Only call this if the bug._shouldConfirmBugtasks().
+        This adds the further constraint that the bugtask needs to be NEW,
+        and not imported from an external bug tracker.
+        """
+        if (self.status == BugTaskStatus.NEW
+            and self.bugwatch is None
+            # This part of the conditional is temporary.
+            and self._checkBug777874FeatureFlag()
+            # End of temporary conditional clause.
+            ):
+            user = getUtility(ILaunchpadCelebrities).janitor
+            bugtask_before_modification = Snapshot(
+                self, providing=providedBy(self))
+            self.transitionToStatus(BugTaskStatus.CONFIRMED, user)
+            notify(ObjectModifiedEvent(
+                self, bugtask_before_modification, ['status'], user=user))
 
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""

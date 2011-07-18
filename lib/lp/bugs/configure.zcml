@@ -206,6 +206,7 @@
                     canTransitionToStatus
                     isSubscribed
                     getPackageComponent
+                    maybeConfirm
                     userCanEditImportance
                     userCanEditMilestone
                     userCanSetAnyAssignee

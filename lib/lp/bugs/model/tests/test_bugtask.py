@@ -53,6 +53,7 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.testing import (
     ANONYMOUS,
+    EventRecorder,
     feature_flags,
     login,
     login_person,
@@ -1449,7 +1450,8 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
             self.assertEqual(
                 source_package_name, self.series_task.sourcepackagename)
 
-
+# When feature flag code is removed, delete all
+# TestAutoConfirmBugTasksFlagFor* tests.
 class TestAutoConfirmBugTasksFlagForProduct(TestCaseWithFactory):
     """Tests for auto-confirming bug tasks."""
     # Tests for _checkBug777874FeatureFlag.
@@ -1538,3 +1540,64 @@ class TestAutoConfirmBugTasksFlagForDistributionSourcePackage(
 
     def makeTarget(self):
         return self.factory.makeDistributionSourcePackage()
+
+
+class TestAutoConfirmBugTasks(TestCaseWithFactory):
+    """Tests for auto-confirming bug tasks."""
+    # Tests for maybeConfirm
+
+    layer = DatabaseFunctionalLayer
+
+    def test_auto_confirm(self):
+        # A typical new bugtask auto-confirms.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.bug777874.enabled_product_names', u'*')
+            bug_task = self.factory.makeBugTask()
+            self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+            with EventRecorder() as recorder:
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
+                self.assertEqual(1, len(recorder.events))
+                event = recorder.events[0]
+                self.assertEqual(getUtility(ILaunchpadCelebrities).janitor,
+                                 event.user)
+                self.assertEqual(['status'], event.edited_fields)
+                self.assertEqual(BugTaskStatus.NEW,
+                                 event.object_before_modification.status)
+                self.assertEqual(bug_task, event.object)
+
+    def test_do_not_confirm_bugwatch_tasks(self):
+        # A bugwatch bugtask does not auto-confirm.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.bug777874.enabled_product_names', u'*')
+            product = self.factory.makeProduct()
+            with person_logged_in(product.owner):
+                bug = self.factory.makeBug(
+                    product=product, owner=product.owner)
+                bug_task = bug.getBugTask(product)
+                watch = self.factory.makeBugWatch(bug=bug)
+                bug_task.bugwatch = watch
+            self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+            with EventRecorder() as recorder:
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+                self.assertEqual(0, len(recorder.events))
+
+    def test_only_confirm_new_tasks(self):
+        # A non-new bugtask does not auto-confirm.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.bug777874.enabled_product_names', u'*')
+            bug_task = self.factory.makeBugTask()
+            removeSecurityProxy(bug_task).transitionToStatus(
+                BugTaskStatus.CONFIRMED, bug_task.bug.owner)
+            self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
+            with EventRecorder() as recorder:
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
+                self.assertEqual(0, len(recorder.events))
