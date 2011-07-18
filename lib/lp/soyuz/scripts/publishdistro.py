@@ -112,18 +112,18 @@ class PublishDistro(LaunchpadCronScript):
 
     def logOptions(self):
         """Dump the selected options to the debug log."""
-        main_opts = [
+        if self.countExclusiveOptions() == 0:
+            indexing_engine = "Apt-FTPArchive"
+        else:
+            indexing_engine = "Indexing"
+        log_items = [
             ('Distribution', self.options.distribution),
             ('Publishing', self.options.careful_publishing),
             ('Domination', self.options.careful_domination),
+            (indexing_engine, self.options.careful_apt),
             ]
-        for description, option in main_opts:
+        for description, option in log_items:
             self.logOption(description, option)
-
-        if self.countExclusiveOptions() == 0:
-            self.logOption("Apt-FTPArchive", self.options.careful_apt)
-        else:
-            self.logOption("Indexing", self.options.careful_apt)
 
     def validateOptions(self):
         """Check given options for user interface violations."""
