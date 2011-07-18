@@ -1965,6 +1965,10 @@ class TestSyncSource(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(TestSyncSource, self).setUp()
+        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": 'on'}))
+
     def test_security_team_can_copy_to_primary(self):
         # A member of ubuntu-security can use syncSource on any package
         # in the Ubuntu primary archive, regardless of their normal
