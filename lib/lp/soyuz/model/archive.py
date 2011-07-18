@@ -1559,6 +1559,9 @@ class Archive(SQLBase):
     def copyPackages(self, source_names, from_archive, to_pocket,
                      person, to_series=None, include_binaries=None):
         """See `IArchive`."""
+        if not getFeatureFlag(u"soyuz.copypackage.enabled"):
+            raise ForbiddenByFeatureFlag
+
         sources = self._collectLatestPublishedSources(
             from_archive, source_names)
         if not sources:
