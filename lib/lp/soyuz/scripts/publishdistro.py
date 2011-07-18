@@ -4,20 +4,19 @@
 """Publisher script functions."""
 
 __all__ = [
-    'add_options',
-    'run_publisher',
+    'PublishDistro',
     ]
 
+from optparse import OptionValueError
 from zope.component import getUtility
 
-from canonical.launchpad.scripts import (
-    logger,
-    logger_options,
-    )
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.publishing import getPublisher
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.services.scripts.base import LaunchpadScriptFailure
+from lp.services.scripts.base import (
+    LaunchpadCronScript,
+    LaunchpadScriptFailure,
+    )
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
@@ -27,194 +26,250 @@ from lp.soyuz.interfaces.archive import (
     MAIN_ARCHIVE_PURPOSES,
     )
 
+
 # XXX Julian 2008-02-07 bug=189866:
 # These functions should be in a LaunchpadScript.
+class PublishDistro(LaunchpadCronScript):
 
-def add_options(parser):
-    logger_options(parser)
+    def add_my_options(self):
+        self.parser.add_option(
+            "-C", "--careful", action="store_true", dest="careful",
+            default=False, help="Turns on all the below careful options.")
 
-    parser.add_option("-C", "--careful", action="store_true",
-                      dest="careful", metavar="", default=False,
-                      help="Turns on all the below careful options.")
+        self.parser.add_option(
+            "-P", "--careful-publishing", action="store_true",
+            dest="careful_publishing", default=False,
+            help="Make the package publishing process careful.")
 
-    parser.add_option("-P", "--careful-publishing", action="store_true",
-                      dest="careful_publishing", metavar="", default=False,
-                      help="Make the package publishing process careful.")
+        self.parser.add_option(
+            "-D", "--careful-domination", action="store_true",
+            dest="careful_domination", default=False,
+            help="Make the domination process careful.")
 
-    parser.add_option("-D", "--careful-domination", action="store_true",
-                      dest="careful_domination", metavar="", default=False,
-                      help="Make the domination process careful.")
+        self.parser.add_option(
+            "-A", "--careful-apt", action="store_true", dest="careful_apt",
+            default=False,
+            help="Make index generation (e.g. apt-ftparchive) careful.")
 
-    parser.add_option("-A", "--careful-apt", action="store_true",
-                      dest="careful_apt", metavar="", default=False,
-                      help="Make index generation (e.g. apt-ftparchive) careful.")
+        self.parser.add_option(
+            "-d", "--distribution", dest="distribution", metavar="DISTRO",
+            default="ubuntu", help="The distribution to publish.")
 
-    parser.add_option("-d", "--distribution",
-                      dest="distribution", metavar="DISTRO", default="ubuntu",
-                      help="The distribution to publish.")
+        self.parser.add_option(
+            '-s', '--suite', metavar='SUITE', dest='suite', action='append',
+            type='string', default=[], help='The suite to publish')
 
-    parser.add_option('-s', '--suite', metavar='SUITE', dest='suite',
-                      action='append', type='string', default=[],
-                      help='The suite to publish')
+        self.parser.add_option(
+            "-R", "--distsroot", dest="distsroot", metavar="SUFFIX",
+            default=None,
+            help=(
+                "Override the dists path for generation of the PRIMARY and "
+                "PARTNER archives only."))
 
-    parser.add_option("-R", "--distsroot",
-                      dest="distsroot", metavar="SUFFIX", default=None,
-                      help="Override the dists path for generation of the "
-                           "PRIMARY and PARTNER archives only.")
+        self.parser.add_option(
+            "--ppa", action="store_true", dest="ppa", default=False,
+            help="Only run over PPA archives.")
 
-    parser.add_option("--ppa", action="store_true",
-                      dest="ppa", metavar="PPA", default=False,
-                      help="Only run over PPA archives.")
+        self.parser.add_option(
+            "--private-ppa", action="store_true", dest="private_ppa",
+            default=False, help="Only run over private PPA archives.")
 
-    parser.add_option("--private-ppa", action="store_true",
-                      dest="private_ppa", metavar="PRIVATEPPA", default=False,
-                      help="Only run over private PPA archives.")
+        self.parser.add_option(
+            "--partner", action="store_true", dest="partner", default=False,
+            help="Only run over the partner archive.")
 
-    parser.add_option("--partner", action="store_true",
-                      dest="partner", metavar="PARTNER", default=False,
-                      help="Only run over the partner archive.")
+        self.parser.add_option(
+            "--copy-archive", action="store_true", dest="copy_archive",
+            default=False, help="Only run over the copy archives.")
 
-    parser.add_option("--copy-archive", action="store_true",
-                      dest="copy_archive", metavar="COPYARCHIVE",
-                      default=False,
-                      help="Only run over the copy archives.")
+        self.parser.add_option(
+            "--primary-debug", action="store_true", default=False,
+            dest="primary_debug",
+            help="Only run over the debug-symbols for primary archive.")
 
-    parser.add_option(
-        "--primary-debug", action="store_true", default=False,
-        dest="primary_debug", metavar="PRIMARYDEBUG",
-        help="Only run over the debug-symbols for primary archive.")
+    def logOption(self, description, option):
+        """Describe the state of `option` to the debug log."""
+        if self.options.careful:
+            care = "Careful (Overridden)"
+        elif option:
+            care = "Careful"
+        else:
+            care = "Normal"
+        self.logger.debug("%14s: %s", description, care)
 
+    def countExclusiveOptions(self):
+        """Return the number of exclusive "mode" options that were set.
 
-def run_publisher(options, txn, log=None):
-    if not log:
-        log = logger(options, "publish-distro")
+        In valid use, at most one of them should be set.
+        """
+        exclusive_options = [
+            self.options.partner,
+            self.options.ppa,
+            self.options.private_ppa,
+            self.options.primary_debug,
+            self.options.copy_archive,
+            ]
+        return len(filter(None, exclusive_options))
 
-    def careful_msg(what):
-        """Quick handy util for the below."""
-        if options.careful:
-            return "Careful (Overridden)"
-        if what:
-            return "Careful"
-        return "Normal"
+    def logOptions(self):
+        """Dump the selected options to the debug log."""
+        main_opts = [
+            ('Distribution', self.options.distribution),
+            ('Publishing', self.options.careful_publishing),
+            ('Domination', self.options.careful_domination),
+            ]
+        for description, option in main_opts:
+            self.logOption(description, option)
 
-    exclusive_options = (
-        options.partner, options.ppa, options.private_ppa,
-        options.primary_debug, options.copy_archive)
+        if self.countExclusiveOptions() == 0:
+            self.logOption("Apt-FTPArchive", self.options.careful_apt)
+        else:
+            self.logOption("Indexing", self.options.careful_apt)
 
-    num_exclusive = [flag for flag in exclusive_options if flag]
-    if len(num_exclusive) > 1:
-        raise LaunchpadScriptFailure(
-            "Can only specify one of partner, ppa, private-ppa, copy-archive"
-            " and primary-debug.")
+    def validateOptions(self):
+        """Check given options for user interface violations."""
+        if len(self.args) > 0:
+            raise OptionValueError(
+                "publish-distro takes no arguments, only options.")
+        if self.countExclusiveOptions() > 1:
+            raise OptionValueError(
+                "Can only specify one of partner, ppa, private-ppa, "
+                "copy-archive and primary-debug.")
 
-    log.debug("  Distribution: %s" % options.distribution)
-    log.debug("    Publishing: %s" % careful_msg(options.careful_publishing))
-    log.debug("    Domination: %s" % careful_msg(options.careful_domination))
-    if num_exclusive == 0:
-        log.debug("Apt-FTPArchive: %s" % careful_msg(options.careful_apt))
-    else:
-        log.debug("      Indexing: %s" % careful_msg(options.careful_apt))
+        for_ppa = (self.options.ppa or self.options.private_ppa)
+        if for_ppa and self.options.distsroot:
+            raise OptionValueError(
+                "We should not define 'distsroot' in PPA mode!", )
 
-    log.debug("Finding distribution object.")
-
-    try:
-        distribution = getUtility(IDistributionSet).getByName(
-            options.distribution)
-    except NotFoundError, info:
-        raise LaunchpadScriptFailure(info)
-
-    allowed_suites = set()
-    for suite in options.suite:
+    def findDistro(self):
+        """Find the selected distribution."""
+        self.logger.debug("Finding distribution object.")
         try:
-            distroseries, pocket = distribution.getDistroSeriesAndPocket(
-                suite)
-        except NotFoundError, info:
-            raise LaunchpadScriptFailure(info)
-        allowed_suites.add((distroseries.name, pocket))
+            return getUtility(IDistributionSet).getByName(
+                self.options.distribution)
+        except NotFoundError, e:
+            raise OptionValueError(e)
 
-    if options.partner:
-        archives = [distribution.getArchiveByComponent('partner')]
-    elif options.ppa or options.private_ppa:
-        if options.careful or options.careful_publishing:
-            archives = distribution.getAllPPAs()
-        else:
-            archives = distribution.getPendingPublicationPPAs()
+    def findSuite(self, distribution, suite):
+        """Find the named `suite` in `distribution`."""
+        try:
+            return distribution.getDistroSeriesAndPocket(suite)
+        except NotFoundError, e:
+            raise OptionValueError(e)
 
-        # Filter out non-private if we're publishing private PPAs only,
-        # or filter out private if we're doing non-private.
-        if options.private_ppa:
-            archives = [archive for archive in archives if archive.private]
-        else:
-            archives = [
-                archive for archive in archives if not archive.private]
+    def findAllowedSuites(self, distribution):
+        """Find the selected suite(s)."""
+        return set([
+            self.findSuite(distribution, suite)
+            for suite in self.options.suite])
 
-        if options.distsroot is not None:
-            raise LaunchpadScriptFailure(
-                "We should not define 'distsroot' in PPA mode !")
-    elif options.primary_debug:
+    def findDebugArchive(self, distribution):
         debug_archive = getUtility(IArchiveSet).getByDistroPurpose(
             distribution, ArchivePurpose.DEBUG)
         if debug_archive is None:
-            raise LaunchpadScriptFailure(
+            raise OptionValueError(
                 "Could not find DEBUG archive for %s" % distribution.name)
-        archives = [debug_archive]
-    elif options.copy_archive:
-        archives = getUtility(IArchiveSet).getArchivesForDistribution(
-            distribution, purposes=[ArchivePurpose.COPY])
-        if not bool(archives):
+        return debug_archive
+
+    def getCopyArchives(self, distribution):
+        copy_archives = list(
+            getUtility(IArchiveSet).getArchivesForDistribution(
+                distribution, purposes=[ArchivePurpose.COPY]))
+        if copy_archives == []:
             raise LaunchpadScriptFailure("Could not find any COPY archives")
-    else:
-        archives = [distribution.main_archive]
+        return copy_archives
 
-    # Consider only archives that have their "to be published" flag turned on
-    # or are pending deletion.
-    archives = [
-        archive for archive in archives
-        if archive.publish or archive.status == ArchiveStatus.DELETING]
+    def getPPAs(self, distribution):
+        if self.options.careful or self.options.careful_publishing:
+            return distribution.getAllPPAs()
+        else:
+            return distribution.getPendingPublicationPPAs()
 
-    for archive in archives:
+    def hasDesiredPrivacy(self, ppa):
+        # Filter out non-private if we're publishing private PPAs only,
+        # or filter out private if we're doing non-private.
+        return bool(ppa.private) == bool(self.options.private_ppa)
+
+    def getTargetArchives(self, distribution):
+        if self.options.partner:
+            return [distribution.getArchiveByComponent('partner')]
+        elif self.options.ppa or self.options.private_ppa:
+            return filter(self.hasDesiredPrivacy, self.getPPAs(distribution))
+        elif self.options.primary_debug:
+            return [self.findDebugArchive(distribution)]
+        elif self.options.copy_archive:
+            return self.getCopyArchives(distribution)
+        else:
+            return [distribution.main_archive]
+
+    def isActiveArchive(self, archive):
+        # Consider only archives that have their "to be published" flag
+        # turned on or are pending deletion.
+        return archive.publish or archive.status == ArchiveStatus.DELETING
+
+    def getPublisher(self, distribution, archive, allowed_suites):
         if archive.purpose in MAIN_ARCHIVE_PURPOSES:
-            log.info(
-                "Processing %s %s" % (distribution.name, archive.displayname))
+            description = "%s %s" % (distribution.name, archive.displayname)
             # Only let the primary/partner archives override the distsroot.
-            publisher = getPublisher(
-                archive, allowed_suites, log, options.distsroot)
+            distsroot = self.options.distsroot
         else:
-            log.info("Processing %s" % archive.archive_url)
-            publisher = getPublisher(archive, allowed_suites, log)
+            description = archive.archive_url
+            distsroot = None
 
-        # Do we need to delete the archive or publish it?
-        if archive.status == ArchiveStatus.DELETING:
-            if archive.purpose == ArchivePurpose.PPA:
-                publisher.deleteArchive()
-                txn.commit()
-            else:
-                # Other types of archives do not currently support deletion.
-                log.warning(
-                    "Deletion of %s skipped: operation not supported on %s"
-                    % archive.displayname)
+        self.logger.info("Processing %s", description)
+        return getPublisher(archive, allowed_suites, self.logger, distsroot)
+
+    def deleteArchive(self, archive, publisher):
+        if archive.purpose == ArchivePurpose.PPA:
+            publisher.deleteArchive()
+            self.txn.commit()
         else:
-            publisher.A_publish(options.careful or options.careful_publishing)
-            txn.commit()
+            # Other types of archives do not currently support deletion.
+            self.logger.warning(
+                "Deletion of %s skipped: operation not supported on %s",
+                archive.displayname, archive.purpose.title)
 
-            # Flag dirty pockets for any outstanding deletions.
-            publisher.A2_markPocketsWithDeletionsDirty()
-            publisher.B_dominate(
-                options.careful or options.careful_domination)
-            txn.commit()
+    def publishArchive(self, archive, publisher):
+        publisher.A_publish(
+            self.options.careful or self.options.careful_publishing)
+        self.txn.commit()
 
-            # The primary and copy archives use apt-ftparchive to generate the
-            # indexes, everything else uses the newer internal LP code.
-            if archive.purpose in (ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
-                publisher.C_doFTPArchive(
-                    options.careful or options.careful_apt)
+        # Flag dirty pockets for any outstanding deletions.
+        publisher.A2_markPocketsWithDeletionsDirty()
+        publisher.B_dominate(
+            self.options.careful or self.options.careful_domination)
+        self.txn.commit()
+
+        # The primary and copy archives use apt-ftparchive to
+        # generate the indexes, everything else uses the newer
+        # internal LP code.
+        if archive.purpose in (ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
+            publisher.C_doFTPArchive(
+                self.options.careful or self.options.careful_apt)
+        else:
+            publisher.C_writeIndexes(
+                self.options.careful or self.options.careful_apt)
+        self.txn.commit()
+
+        publisher.D_writeReleaseFiles(
+            self.options.careful or self.options.careful_apt)
+        self.txn.commit()
+
+    def main(self):
+        self.validateOptions()
+        self.logOptions()
+        distribution = self.findDistro()
+        allowed_suites = self.findAllowedSuites(distribution)
+        archives = filter(
+            self.isActiveArchive, self.getTargetArchives(distribution))
+
+        for archive in archives:
+            publisher = self.getPublisher(
+                distribution, archive, allowed_suites)
+
+            if archive.status == ArchiveStatus.DELETING:
+                self.deleteArchive(archive, publisher)
             else:
-                publisher.C_writeIndexes(
-                    options.careful or options.careful_apt)
-            txn.commit()
+                self.publishArchive(archive, publisher)
 
-            publisher.D_writeReleaseFiles(
-                options.careful or options.careful_apt)
-            txn.commit()
-
-    log.debug("Ciao")
+        self.logger.debug("Ciao")

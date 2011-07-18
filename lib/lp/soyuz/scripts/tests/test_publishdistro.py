@@ -1,17 +1,16 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functional tests for publish-distro.py script."""
 
 __metaclass__ = type
 
-from optparse import OptionParser
+from optparse import OptionValueError
 import os
 import shutil
 import subprocess
 import sys
 import unittest
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -21,16 +20,13 @@ from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.log.logger import BufferLogger
-from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.enums import (
     ArchivePurpose,
     BinaryPackageFormat,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
-from lp.soyuz.scripts import publishdistro
+from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.scripts.publishdistro import PublishDistro
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 
@@ -46,12 +42,11 @@ class TestPublishDistro(TestNativePublishingBase):
         args = ["-d", distribution]
         if extra_args is not None:
             args.extend(extra_args)
-        parser = OptionParser()
-        publishdistro.add_options(parser)
-        options, args = parser.parse_args(args=args)
+        publish_distro = PublishDistro(test_args=args)
+        publish_distro.logger = BufferLogger()
+        publish_distro.txn = self.layer.txn
         self.layer.switchDbUser(config.archivepublisher.dbuser)
-        publishdistro.run_publisher(
-            options, self.layer.txn, log=BufferLogger())
+        publish_distro.main()
         self.layer.switchDbUser('launchpad')
 
     def runPublishDistroScript(self):
@@ -250,7 +245,7 @@ class TestPublishDistro(TestNativePublishingBase):
             private=True, distribution=ubuntutest)
 
         # Publish something to the private PPA:
-        pub_source =  self.getPubSource(
+        pub_source = self.getPubSource(
             sourcename='baz', filecontent='baz', archive=private_ppa)
         self.layer.txn.commit()
 
@@ -271,7 +266,7 @@ class TestPublishDistro(TestNativePublishingBase):
         # 'ubuntutest' (default testing distribution) has no DEBUG
         # archive, Thus an error is raised.
         self.assertRaises(
-            LaunchpadScriptFailure,
+            OptionValueError,
             self.runPublishDistro, ['--primary-debug'])
 
         # The DEBUG repository path was not created.
@@ -338,7 +333,7 @@ class TestPublishDistro(TestNativePublishingBase):
         removeSecurityProxy(copy_archive).publish = True
 
         # Publish something.
-        pub_source =  self.getPubSource(
+        pub_source = self.getPubSource(
             sourcename='baz', filecontent='baz', archive=copy_archive)
 
         # Try a plain PPA run, to ensure the copy archive is not published.
@@ -394,32 +389,32 @@ class TestPublishDistro(TestNativePublishingBase):
     def testExclusiveOptions(self):
         """Test that some command line options are mutually exclusive."""
         self.assertRaises(
-            LaunchpadScriptFailure,
+            OptionValueError,
             self.runPublishDistro,
             ['--ppa', '--partner', '--primary-debug', '--copy-archive'])
         self.assertRaises(
-            LaunchpadScriptFailure,
+            OptionValueError,
             self.runPublishDistro, ['--ppa', '--partner'])
         self.assertRaises(
-            LaunchpadScriptFailure,
+            OptionValueError,
             self.runPublishDistro, ['--ppa', '--private-ppa'])
         self.assertRaises(
-            LaunchpadScriptFailure,
+            OptionValueError,
             self.runPublishDistro, ['--ppa', '--primary-debug'])
         self.assertRaises(
-            LaunchpadScriptFailure,
+            OptionValueError,
             self.runPublishDistro, ['--ppa', '--copy-archive'])
         self.assertRaises(
-            LaunchpadScriptFailure,
+            OptionValueError,
             self.runPublishDistro, ['--partner', '--private-ppa'])
         self.assertRaises(
-            LaunchpadScriptFailure,
+            OptionValueError,
             self.runPublishDistro, ['--partner', '--primary-debug'])
         self.assertRaises(
-            LaunchpadScriptFailure,
+            OptionValueError,
             self.runPublishDistro, ['--partner', '--copy-archive'])
         self.assertRaises(
-            LaunchpadScriptFailure,
+            OptionValueError,
             self.runPublishDistro, ['--primary-debug', '--copy-archive'])
 
 
