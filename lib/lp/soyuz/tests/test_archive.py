@@ -1951,6 +1951,15 @@ class TestSyncSourceFeatureFlag(TestCaseWithFactory):
             archive.copyPackage,
             None, None, None, None, None)
 
+    def test_copyPackages_requires_feature_flag(self):
+        # Ensure feature is off.
+        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": ''}))
+        archive = self.factory.makeArchive()
+        self.assertRaises(
+            ForbiddenByFeatureFlag,
+            archive.copyPackages,
+            None, None, None, None, None)
+
 
 class TestSyncSource(TestCaseWithFactory):
 
