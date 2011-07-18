@@ -1450,8 +1450,11 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
             self.assertEqual(
                 source_package_name, self.series_task.sourcepackagename)
 
-# When feature flag code is removed, delete all
-# TestAutoConfirmBugTasksFlagFor* tests.
+# START TEMPORARY BIT.
+# When feature flag code is removed, delete these tests (up to "# END
+# TEMPORARY BIT.")
+
+
 class TestAutoConfirmBugTasksFlagForProduct(TestCaseWithFactory):
     """Tests for auto-confirming bug tasks."""
     # Tests for _checkBug777874FeatureFlag.
@@ -1541,6 +1544,54 @@ class TestAutoConfirmBugTasksFlagForDistributionSourcePackage(
     def makeTarget(self):
         return self.factory.makeDistributionSourcePackage()
 
+
+class TestAutoConfirmBugTasksTransitionToTarget(TestCaseWithFactory):
+    """Tests for auto-confirming bug tasks."""
+    # Tests for making sure that switching a task from one project that
+    # does not auto-confirm to another that does performs the auto-confirm
+    # correctly, if appropriate.  This is only necessary for as long as a
+    # project may not participate in auto-confirm.
+
+    layer = DatabaseFunctionalLayer
+
+    def test_no_transitionToTarget(self):
+        # We can change the target.  If the normal bug conditions do not
+        # hold, there will be no transition.
+        person = self.factory.makePerson()
+        autoconfirm_product = self.factory.makeProduct(owner=person)
+        no_autoconfirm_product = self.factory.makeProduct(owner=person)
+        with feature_flags():
+            set_feature_flag(u'bugs.bug777874.enabled_product_names',
+                             autoconfirm_product.name)
+            bug_task = self.factory.makeBugTask(
+                target=no_autoconfirm_product, owner=person)
+            with person_logged_in(person):
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+                bug_task.transitionToTarget(autoconfirm_product)
+                self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+
+    def test_transitionToTarget(self):
+        # If the conditions *do* hold, though, we will auto-confirm.
+        person = self.factory.makePerson()
+        another_person = self.factory.makePerson()
+        autoconfirm_product = self.factory.makeProduct(owner=person)
+        no_autoconfirm_product = self.factory.makeProduct(owner=person)
+        with feature_flags():
+            set_feature_flag(u'bugs.bug777874.enabled_product_names',
+                             autoconfirm_product.name)
+            bug_task = self.factory.makeBugTask(
+                target=no_autoconfirm_product, owner=person)
+            with person_logged_in(another_person):
+                bug_task.bug.markUserAffected(another_person)
+            with person_logged_in(person):
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+                bug_task.transitionToTarget(autoconfirm_product)
+                self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
+        
+
+# END TEMPORARY BIT.
 
 class TestAutoConfirmBugTasks(TestCaseWithFactory):
     """Tests for auto-confirming bug tasks."""

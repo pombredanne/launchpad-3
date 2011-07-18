@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-from zope.security.proxy import removeSecurityProxy
-
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.model.bug import BugSubscriptionInfo
@@ -326,7 +324,7 @@ class TestBugAutoConfirmation(TestCaseWithFactory):
         # After a bug is created, only one person is affected, and we should
         # not try to confirm bug tasks.
         bug = self.factory.makeBug()
-        self.assertFalse(removeSecurityProxy(bug)._shouldConfirmBugtasks())
+        self.assertFalse(bug.shouldConfirmBugtasks())
 
     def test_shouldConfirmBugtasks_after_another_positively_affected(self):
         # We should confirm bug tasks if the number of affected users is
@@ -335,7 +333,7 @@ class TestBugAutoConfirmation(TestCaseWithFactory):
         person = self.factory.makePerson()
         with person_logged_in(person):
             bug.markUserAffected(person)
-        self.assertTrue(removeSecurityProxy(bug)._shouldConfirmBugtasks())
+        self.assertTrue(bug.shouldConfirmBugtasks())
 
     def test_shouldConfirmBugtasks_after_another_persons_dupe(self):
         # We should confirm bug tasks if someone else files a dupe.
@@ -343,7 +341,7 @@ class TestBugAutoConfirmation(TestCaseWithFactory):
         duplicate_bug = self.factory.makeBug()
         with person_logged_in(duplicate_bug.owner):
             duplicate_bug.markAsDuplicate(bug)
-        self.assertTrue(removeSecurityProxy(bug)._shouldConfirmBugtasks())
+        self.assertTrue(bug.shouldConfirmBugtasks())
 
     def test_shouldConfirmBugtasks_after_same_persons_dupe_False(self):
         # We should not confirm bug tasks if same person files a dupe.
@@ -351,7 +349,7 @@ class TestBugAutoConfirmation(TestCaseWithFactory):
         with person_logged_in(bug.owner):
             duplicate_bug = self.factory.makeBug(owner=bug.owner)
             duplicate_bug.markAsDuplicate(bug)
-        self.assertFalse(removeSecurityProxy(bug)._shouldConfirmBugtasks())
+        self.assertFalse(bug.shouldConfirmBugtasks())
 
     def test_shouldConfirmBugtasks_honors_negatively_affected(self):
         # We should confirm bug tasks if the number of affected users is
@@ -362,4 +360,4 @@ class TestBugAutoConfirmation(TestCaseWithFactory):
         person = self.factory.makePerson()
         with person_logged_in(person):
             bug.markUserAffected(person)
-        self.assertFalse(removeSecurityProxy(bug)._shouldConfirmBugtasks())
+        self.assertFalse(bug.shouldConfirmBugtasks())

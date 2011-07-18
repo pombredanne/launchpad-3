@@ -854,9 +854,9 @@ class BugTask(SQLBase, BugTaskMixin):
         """
         if (self.status == BugTaskStatus.NEW
             and self.bugwatch is None
-            # This part of the conditional is temporary.
+            # START TEMPORARY BIT.
             and self._checkBug777874FeatureFlag()
-            # End of temporary conditional clause.
+            # END TEMPORARY BIT.
             ):
             user = getUtility(ILaunchpadCelebrities).janitor
             bugtask_before_modification = Snapshot(
@@ -1130,6 +1130,12 @@ class BugTask(SQLBase, BugTaskMixin):
         if self.target != target_before_change:
             target_before_change.recalculateBugHeatCache()
             self.target.recalculateBugHeatCache()
+            # START TEMPORARY BIT.
+            # We also should see if we ought to auto-transition to the
+            # CONFIRMED status.
+            if self.bug.shouldConfirmBugtasks():
+                self.maybeConfirm()
+            # END TEMPORARY BIT.
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""

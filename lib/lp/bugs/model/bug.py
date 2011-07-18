@@ -1774,7 +1774,7 @@ BugMessage""" % sqlvalues(self.id))
         store.flush()
         store.invalidate(self)
 
-    def _shouldConfirmBugtasks(self):
+    def shouldConfirmBugtasks(self):
         """Should we try to confirm this bug's bugtasks?
         The answer is yes if more than one user is affected."""
         # == 2 would probably be sufficient once we have all legacy bug tasks
