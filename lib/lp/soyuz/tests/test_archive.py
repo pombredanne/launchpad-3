@@ -39,6 +39,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import clear_property_cache
 from lp.services.worlddata.interfaces.country import ICountrySet
@@ -59,6 +60,7 @@ from lp.soyuz.interfaces.archive import (
     CannotRestrictArchitectures,
     CannotUploadToPocket,
     CannotUploadToPPA,
+    ForbiddenByFeatureFlag,
     IArchiveSet,
     InsufficientUploadRights,
     InvalidPocketForPartnerArchive,
@@ -1934,6 +1936,20 @@ class TestGetPublishedSources(TestCaseWithFactory):
             ['package1', 'package2'],
             [filtered_source.sourcepackagerelease.name for filtered_source in
             filtered_sources])
+
+
+class TestSyncSourceFeatureFlag(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_copyPackage_requires_feature_flag(self):
+        # Ensure feature is off.
+        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": ''}))
+        archive = self.factory.makeArchive()
+        self.assertRaises(
+            ForbiddenByFeatureFlag,
+            archive.copyPackage,
+            None, None, None, None, None)
 
 
 class TestSyncSource(TestCaseWithFactory):
