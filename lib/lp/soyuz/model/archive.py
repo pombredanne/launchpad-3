@@ -103,6 +103,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database.bulk import load_related
+from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import (
     cachedproperty,
@@ -132,6 +133,7 @@ from lp.soyuz.interfaces.archive import (
     CannotUploadToPPA,
     ComponentNotFound,
     default_name_by_purpose,
+    ForbiddenByFeatureFlag,
     FULL_COMPONENT_SUPPORT,
     IArchive,
     IArchiveSet,
@@ -1533,6 +1535,9 @@ class Archive(SQLBase):
     def copyPackage(self, source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False):
         """See `IArchive`."""
+        if not getFeatureFlag(u"soyuz.copypackage.enabled"):
+            raise ForbiddenByFeatureFlag
+
         # Asynchronously copy a package using the job system.
         pocket = self._text_to_pocket(to_pocket)
         series = self._text_to_series(to_series)
