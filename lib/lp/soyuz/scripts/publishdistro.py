@@ -1,7 +1,7 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Publisher script functions."""
+"""Publisher script class."""
 
 __all__ = [
     'PublishDistro',
@@ -27,9 +27,8 @@ from lp.soyuz.interfaces.archive import (
     )
 
 
-# XXX Julian 2008-02-07 bug=189866:
-# These functions should be in a LaunchpadScript.
 class PublishDistro(LaunchpadCronScript):
+    """Distro publisher."""
 
     def add_my_options(self):
         self.parser.add_option(
@@ -164,6 +163,7 @@ class PublishDistro(LaunchpadCronScript):
             for suite in self.options.suite])
 
     def findDebugArchive(self, distribution):
+        """Find the debug archive for `distribution`."""
         debug_archive = getUtility(IArchiveSet).getByDistroPurpose(
             distribution, ArchivePurpose.DEBUG)
         if debug_archive is None:
@@ -172,6 +172,7 @@ class PublishDistro(LaunchpadCronScript):
         return debug_archive
 
     def getCopyArchives(self, distribution):
+        """Find copy archives for `distribution`, if any."""
         copy_archives = list(
             getUtility(IArchiveSet).getArchivesForDistribution(
                 distribution, purposes=[ArchivePurpose.COPY]))
@@ -180,17 +181,22 @@ class PublishDistro(LaunchpadCronScript):
         return copy_archives
 
     def getPPAs(self, distribution):
+        """Find private package archive(s) for `distribution`."""
         if self.options.careful or self.options.careful_publishing:
             return distribution.getAllPPAs()
         else:
             return distribution.getPendingPublicationPPAs()
 
     def hasDesiredPrivacy(self, ppa):
-        # Filter out non-private if we're publishing private PPAs only,
-        # or filter out private if we're doing non-private.
+        """Does `ppa` have the privacy setting we're looking for?
+
+        Picks out private archives if we're publishing private PPAs only,
+        or public ones if we're doing non-private.
+        """
         return bool(ppa.private) == bool(self.options.private_ppa)
 
     def getTargetArchives(self, distribution):
+        """Find the archive(s) selected by the script's options."""
         if self.options.partner:
             return [distribution.getArchiveByComponent('partner')]
         elif self.options.ppa or self.options.private_ppa:
@@ -203,11 +209,15 @@ class PublishDistro(LaunchpadCronScript):
             return [distribution.main_archive]
 
     def isActiveArchive(self, archive):
-        # Consider only archives that have their "to be published" flag
-        # turned on or are pending deletion.
+        """Is this an archive we're supposed to act on?
+
+        Considers only archives that have their "to be published" flag
+        turned on, or are pending deletion.
+        """
         return archive.publish or archive.status == ArchiveStatus.DELETING
 
     def getPublisher(self, distribution, archive, allowed_suites):
+        """Get a publisher for the given options."""
         if archive.purpose in MAIN_ARCHIVE_PURPOSES:
             description = "%s %s" % (distribution.name, archive.displayname)
             # Only let the primary/partner archives override the distsroot.
@@ -220,6 +230,7 @@ class PublishDistro(LaunchpadCronScript):
         return getPublisher(archive, allowed_suites, self.logger, distsroot)
 
     def deleteArchive(self, archive, publisher):
+        """Ask `publisher` to delete `archive`."""
         if archive.purpose == ArchivePurpose.PPA:
             publisher.deleteArchive()
             self.txn.commit()
@@ -230,6 +241,7 @@ class PublishDistro(LaunchpadCronScript):
                 archive.displayname, archive.purpose.title)
 
     def publishArchive(self, archive, publisher):
+        """Ask `publisher` to publish `archive`."""
         publisher.A_publish(
             self.options.careful or self.options.careful_publishing)
         self.txn.commit()
@@ -256,6 +268,7 @@ class PublishDistro(LaunchpadCronScript):
         self.txn.commit()
 
     def main(self):
+        """See `LaunchpadScript`."""
         self.validateOptions()
         self.logOptions()
         distribution = self.findDistro()
