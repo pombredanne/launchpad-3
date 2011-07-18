@@ -23,7 +23,10 @@ from bzrlib.plugins.builder.recipe import (
     )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
-from lazr.restful.interface import use_template
+from lazr.restful.interface import (
+    copy_field,
+    use_template,
+    )
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
     IWebServiceClientRequest,
@@ -81,6 +84,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.lazrjs import (
     BooleanChoiceWidget,
     InlineEditPickerWidget,
+    InlinePersonEditPickerWidget,
     TextAreaEditorWidget,
     TextLineEditorWidget,
     )
@@ -106,6 +110,7 @@ from lp.code.interfaces.sourcepackagerecipe import (
 from lp.code.model.branchtarget import PersonBranchTarget
 from lp.code.model.sourcepackagerecipe import get_buildable_distroseries_set
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.features import getFeatureFlag
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.model.archive import Archive
@@ -197,7 +202,7 @@ class SourcePackageRecipeContextMenu(ContextMenu):
             has_upload = ppa.checkArchivePermission(recipe.owner)
             show_request_build = has_upload
 
-        show_request_build= (show_request_build and
+        show_request_build = (show_request_build and
             check_permission('launchpad.Edit', recipe))
         return Link(
                 '+request-daily-build', 'Build now',
@@ -251,8 +256,20 @@ class SourcePackageRecipeView(LaunchpadView):
 
     @property
     def person_picker(self):
-        return InlineEditPickerWidget(
-            self.context, ISourcePackageRecipe['owner'],
+        # If we are using the enhanced picker, we need to ensure the vocab
+        # gives us terms showing just the displyname rather than displayname
+        # plus Luanchpad id since the enhanced picker provides this extra
+        # information itself.
+        enhanced_picker_enabled = bool(
+                    getFeatureFlag('disclosure.picker_enhancements.enabled'))
+        if enhanced_picker_enabled:
+            vocabulary = 'UserTeamsParticipationPlusSelfSimpleDisplay'
+        else:
+            vocabulary = 'UserTeamsParticipationPlusSelf'
+        field = copy_field(
+            ISourcePackageRecipe['owner'], vocabularyName=vocabulary)
+        return InlinePersonEditPickerWidget(
+            self.context, field,
             format_link(self.context.owner),
             header='Change owner',
             step_title='Select a new owner')

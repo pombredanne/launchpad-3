@@ -27,6 +27,7 @@ from zope.interface import (
     Interface,
     )
 from zope.schema import (
+    Bool,
     Choice,
     Datetime,
     Int,
@@ -107,6 +108,10 @@ class IJob(Interface):
 
     max_retries = Int(title=_(
         'The number of retries permitted before this job permanently fails.'))
+
+    is_pending = Bool(
+        title=_("Whether or not this job's status is such that it "
+                "could eventually complete."))
 
     def acquireLease(duration=300):
         """Acquire the lease for this Job, or raise LeaseHeld."""

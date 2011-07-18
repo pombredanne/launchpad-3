@@ -1427,7 +1427,7 @@ def user_has_special_branch_access(user):
     if user is None:
         return False
     celebs = getUtility(ILaunchpadCelebrities)
-    return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)
+    return user.inTeam(celebs.admin)
 
 
 def get_db_branch_info(stacked_on_url, last_revision_id, control_string,

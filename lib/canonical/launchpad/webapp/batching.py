@@ -98,19 +98,17 @@ class BatchNavigator(lazr.batchnavigator.BatchNavigator):
 class ActiveBatchNavigator(BatchNavigator):
     """A paginator for active items.
 
-    Used when a view needs to display more than one BatchNavigator of items.
+    Used when a view needs to display two BatchNavigators.
     """
-    start_variable_name = 'active_start'
-    batch_variable_name = 'active_batch'
+    variable_name_prefix = 'active'
 
 
 class InactiveBatchNavigator(BatchNavigator):
     """A paginator for inactive items.
 
-    Used when a view needs to display more than one BatchNavigator of items.
+    Used when a view needs to display two Batchavigators.
     """
-    start_variable_name = 'inactive_start'
-    batch_variable_name = 'inactive_batch'
+    variable_name_prefix = 'inactive'
 
 
 class TableBatchNavigator(BatchNavigator):

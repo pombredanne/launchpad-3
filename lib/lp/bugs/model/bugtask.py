@@ -45,6 +45,7 @@ from storm.expr import (
     Or,
     Select,
     SQL,
+    Sum,
     )
 from storm.info import ClassAlias
 from storm.store import (
@@ -1844,30 +1845,55 @@ class BugTaskSet:
                     sqlvalues(personid=params.subscriber.id))
 
         if params.structural_subscriber is not None:
-            with_clauses.append('''ss as (SELECT * from StructuralSubscription
-                WHERE StructuralSubscription.subscriber = %s)'''
-                % sqlvalues(params.structural_subscriber))
+            ssub_match_product = (
+                BugTask.productID ==
+                StructuralSubscription.productID)
+            ssub_match_productseries = (
+                BugTask.productseriesID ==
+                StructuralSubscription.productseriesID)
+            # Prevent circular import problems.
+            from lp.registry.model.product import Product
+            ssub_match_project = And(
+                Product.projectID ==
+                StructuralSubscription.projectID,
+                BugTask.product == Product.id)
+            ssub_match_distribution = (
+                BugTask.distributionID ==
+                StructuralSubscription.distributionID)
+            ssub_match_sourcepackagename = (
+                BugTask.sourcepackagenameID ==
+                StructuralSubscription.sourcepackagenameID)
+            ssub_match_null_sourcepackagename = (
+                StructuralSubscription.sourcepackagename == None)
+            ssub_match_distribution_with_optional_package = And(
+                ssub_match_distribution, Or(
+                    ssub_match_sourcepackagename,
+                    ssub_match_null_sourcepackagename))
+            ssub_match_distribution_series = (
+                BugTask.distroseriesID ==
+                StructuralSubscription.distroseriesID)
+            ssub_match_milestone = (
+                BugTask.milestoneID ==
+                StructuralSubscription.milestoneID)
 
+            join_clause = Or(
+                ssub_match_product,
+                ssub_match_productseries,
+                ssub_match_project,
+                ssub_match_distribution_with_optional_package,
+                ssub_match_distribution_series,
+                ssub_match_milestone)
+
+            join_tables.append(
+                (Product, LeftJoin(Product, And(
+                                BugTask.productID == Product.id,
+                                Product.active))))
+            join_tables.append(
+                (StructuralSubscription,
+                 Join(StructuralSubscription, join_clause)))
             extra_clauses.append(
-                """BugTask.id IN (
-                SELECT DISTINCT BugTask.id
-                    FROM BugTask
-                LEFT JOIN Product ON (
-                    BugTask.product = Product.id AND Product.active)
-                LEFT JOIN ss ss1 ON BugTask.product = ss1.product
-                LEFT JOIN ss ss2 ON BugTask.productseries = ss2.productseries
-                LEFT JOIN ss ss3 ON Product.project = ss3.project
-                LEFT JOIN ss ss4 ON (
-                    BugTask.distribution = ss4.distribution AND (
-                        BugTask.sourcepackagename = ss4.sourcepackagename OR
-                        ss4.sourcepackagename IS NULL))
-                LEFT JOIN ss ss5 ON BugTask.distroseries = ss5.distroseries
-                LEFT JOIN ss ss6 ON BugTask.milestone = ss6.milestone
-                WHERE
-                    NULL_COUNT(ARRAY[ss1.id, ss2.id, ss3.id,
-                                     ss4.id, ss5.id, ss6.id]) < 6)
-                """
-                )
+                'StructuralSubscription.subscriber = %s'
+                % sqlvalues(params.structural_subscriber))
             has_duplicate_results = True
 
 
@@ -2500,13 +2526,60 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         return self._search(BugTask.bugID, [], None, params).result_set
 
-    def countBugs(self, params, group_on):
+    def countBugs(self, user, contexts, group_on):
         """See `IBugTaskSet`."""
-        resultset = self._search(
-            group_on + (SQL("COUNT(Distinct BugTask.bug)"),),
-            [], None, params).result_set
-        # We group on the related field:
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        conditions = []
+        # Open bug statuses
+        conditions.append(BugSummary.status.is_in(UNRESOLVED_BUGTASK_STATUSES))
+        # BugSummary does not include duplicates so no need to exclude.
+        context_conditions = []
+        for context in contexts:
+            condition = removeSecurityProxy(
+                context.getBugSummaryContextWhereClause())
+            if condition is not False:
+                context_conditions.append(condition)
+        if not context_conditions:
+            return {}
+        conditions.append(Or(*context_conditions))
+        # bugsummary by design requires either grouping by tag or excluding
+        # non-null tags.
+        # This is an awkward way of saying
+        # if BugSummary.tag not in group_on:
+        # - see bug 799602
+        group_on_tag = False
+        for column in group_on:
+            if column is BugSummary.tag:
+                group_on_tag = True
+        if not group_on_tag:
+            conditions.append(BugSummary.tag == None)
+        else:
+            conditions.append(BugSummary.tag != None)
+        store = IStore(BugSummary)
+        admin_team = getUtility(ILaunchpadCelebrities).admin
+        if user is not None and not user.inTeam(admin_team):
+            # admins get to see every bug, everyone else only sees bugs
+            # viewable by them-or-their-teams.
+            store = store.with_(SQL(
+                "teams AS ("
+                "SELECT team from TeamParticipation WHERE person=?)",
+                (user.id,)))
+        # Note that because admins can see every bug regardless of subscription
+        # they will see rather inflated counts. Admins get to deal.
+        if user is None:
+            conditions.append(BugSummary.viewed_by_id == None)
+        elif not user.inTeam(admin_team):
+            conditions.append(
+                Or(
+                    BugSummary.viewed_by_id == None,
+                    BugSummary.viewed_by_id.is_in(SQL("SELECT team FROM teams"))
+                    ))
+        sum_count = Sum(BugSummary.count)
+        resultset = store.find(group_on + (sum_count,), *conditions)
         resultset.group_by(*group_on)
+        resultset.having(sum_count != 0)
+        # Ensure we have no order clauses.
         resultset.order_by()
         result = {}
         for row in resultset:
