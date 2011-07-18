@@ -411,7 +411,7 @@ class BugTracker(SQLBase):
             return False
 
     def getBugFilingAndSearchLinks(self, remote_product, summary=None,
-                                   description=None):
+                                   description=None, remote_component=None):
         """See `IBugTracker`."""
         bugtracker_urls = {'bug_filing_url': None, 'bug_search_url': None}
 
@@ -424,6 +424,10 @@ class BugTracker(SQLBase):
             # Turn the remote product into an empty string so that
             # quote() doesn't blow up later on.
             remote_product = ''
+
+        if remote_component is None:
+            # Ditto for remote component.
+            remote_component = ''
 
         if self in self._custom_filing_url_patterns:
             # Some bugtrackers are customised to accept different
@@ -487,6 +491,7 @@ class BugTracker(SQLBase):
             url_components = {
                 'base_url': base_url,
                 'remote_product': quote(remote_product),
+                'remote_component': quote(remote_component),
                 'summary': quote(summary),
                 'description': quote(description),
                 }
