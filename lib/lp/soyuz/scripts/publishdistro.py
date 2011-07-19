@@ -27,6 +27,16 @@ from lp.soyuz.interfaces.archive import (
     )
 
 
+def is_ppa_private(ppa):
+    """Is `ppa` private?"""
+    return ppa.private
+
+
+def is_ppa_public(ppa):
+    """Is `ppa` public?"""
+    return not ppa.private
+
+
 class PublishDistro(LaunchpadCronScript):
     """Distro publisher."""
 
@@ -86,8 +96,26 @@ class PublishDistro(LaunchpadCronScript):
             dest="primary_debug",
             help="Only run over the debug-symbols for primary archive.")
 
+    def isCareful(self, option):
+        """Is the given "carefulness" option enabled?
+
+        Yes if the option is True, but also if the global "careful" option
+        is set.
+
+        :param option: The specific "careful" option to test, e.g.
+            `self.options.careful_publishing`.
+        :return: Whether the option should be treated as asking us to be
+            careful.
+        """
+        return option or self.options.careful
+
     def describeCare(self, option):
-        """Helper: describe carefulness setting of given option."""
+        """Helper: describe carefulness setting of given option.
+
+        Produces a human-readable string saying whether the option is set
+        to careful mode; or "overridden" to careful mode by the global
+        "careful" option; or is left in normal mode.
+        """
         if self.options.careful:
             return "Careful (Overridden)"
         elif option:
@@ -146,81 +174,77 @@ class PublishDistro(LaunchpadCronScript):
     def findDistro(self):
         """Find the selected distribution."""
         self.logger.debug("Finding distribution object.")
-        try:
-            return getUtility(IDistributionSet).getByName(
-                self.options.distribution)
-        except NotFoundError, e:
-            raise OptionValueError(e)
+        name = self.options.distribution
+        distro = getUtility(IDistributionSet).getByName(name)
+        if distro is None:
+            raise OptionValueError("Distribution '%s' not found." % name)
+        return distro
 
-    def findSuite(self, distribution, suite):
-        """Find the named `suite` in `distribution`.
+    def findSuite(self, suite):
+        """Find the named `suite` in the selected `Distribution`.
 
-        :param distribution: The `Distribution` the suite belongs to.
         :param suite: The suite name to look for.
         :return: A tuple of distroseries name and pocket.
         """
         try:
-            series, pocket = distribution.getDistroSeriesAndPocket(suite)
+            series, pocket = self.distribution.getDistroSeriesAndPocket(suite)
         except NotFoundError, e:
             raise OptionValueError(e)
         return series.name, pocket
 
-    def findAllowedSuites(self, distribution):
+    def findAllowedSuites(self):
         """Find the selected suite(s)."""
         return set([
-            self.findSuite(distribution, suite)
+            self.findSuite(self.distribution, suite)
             for suite in self.options.suite])
 
-    def findDebugArchive(self, distribution):
-        """Find the debug archive for `distribution`."""
+    def getDebugArchive(self):
+        """Find the debug archive for the selected distribution, as a list."""
         debug_archive = getUtility(IArchiveSet).getByDistroPurpose(
-            distribution, ArchivePurpose.DEBUG)
+            self.distribution, ArchivePurpose.DEBUG)
         if debug_archive is None:
             raise OptionValueError(
-                "Could not find DEBUG archive for %s" % distribution.name)
-        return debug_archive
+                "Could not find DEBUG archive for %s"
+                % self.distribution.name)
+        return [debug_archive]
 
-    def getCopyArchives(self, distribution):
-        """Find copy archives for `distribution`, if any."""
+    def getCopyArchives(self):
+        """Find copy archives for the selected distribution."""
         copy_archives = list(
             getUtility(IArchiveSet).getArchivesForDistribution(
-                distribution, purposes=[ArchivePurpose.COPY]))
+                self.distribution, purposes=[ArchivePurpose.COPY]))
         if copy_archives == []:
             raise LaunchpadScriptFailure("Could not find any COPY archives")
         return copy_archives
 
-    def getPPAs(self, distribution):
-        """Find private package archive(s) for `distribution`."""
-        if self.options.careful or self.options.careful_publishing:
-            return distribution.getAllPPAs()
+    def getPPAs(self):
+        """Find private package archives for the selected distribution."""
+        if self.isCareful(self.options.careful_publishing):
+            return self.distribution.getAllPPAs()
         else:
-            return distribution.getPendingPublicationPPAs()
+            return self.distribution.getPendingPublicationPPAs()
 
-    def hasDesiredPrivacy(self, ppa):
-        """Does `ppa` have the privacy setting we're looking for?
-
-        Picks out private archives if we're publishing private PPAs only,
-        or public ones if we're doing non-private.
-        """
-        return bool(ppa.private) == bool(self.options.private_ppa)
-
-    def getTargetArchives(self, distribution):
+    def getTargetArchives(self):
         """Find the archive(s) selected by the script's options."""
         if self.options.partner:
-            return [distribution.getArchiveByComponent('partner')]
-        elif self.options.ppa or self.options.private_ppa:
-            return filter(self.hasDesiredPrivacy, self.getPPAs(distribution))
+            return [self.distribution.getArchiveByComponent('partner')]
+        elif self.options.ppa:
+            return filter(is_ppa_public, self.getPPAs())
+        elif self.options.private_ppa:
+            return filter(is_ppa_private, self.getPPAs())
         elif self.options.primary_debug:
-            return [self.findDebugArchive(distribution)]
+            return self.getDebugArchive()
         elif self.options.copy_archive:
-            return self.getCopyArchives(distribution)
+            return self.getCopyArchives()
         else:
-            return [distribution.main_archive]
+            return [self.distribution.main_archive]
 
-    def getPublisher(self, distribution, archive, allowed_suites):
+    def getPublisher(self, archive, allowed_suites):
         """Get a publisher for the given options."""
         if archive.purpose in MAIN_ARCHIVE_PURPOSES:
-            description = "%s %s" % (distribution.name, archive.displayname)
+            description = "%s %s" % (
+                self.distribution.name,
+                archive.displayname)
             # Only let the primary/partner archives override the distsroot.
             distsroot = self.options.distsroot
         else:
@@ -234,29 +258,31 @@ class PublishDistro(LaunchpadCronScript):
         """Ask `publisher` to delete `archive`."""
         if archive.purpose == ArchivePurpose.PPA:
             publisher.deleteArchive()
-            self.txn.commit()
+            return True
         else:
             # Other types of archives do not currently support deletion.
             self.logger.warning(
                 "Deletion of %s skipped: operation not supported on %s",
                 archive.displayname, archive.purpose.title)
+            return False
 
     def publishArchive(self, archive, publisher):
-        """Ask `publisher` to publish `archive`."""
-        publisher.A_publish(
-            self.options.careful or self.options.careful_publishing)
+        """Ask `publisher` to publish `archive`.
+
+        Commits transactions along the way.
+        """
+        publisher.A_publish(self.isCareful(self.options.careful_publishing))
         self.txn.commit()
 
         # Flag dirty pockets for any outstanding deletions.
         publisher.A2_markPocketsWithDeletionsDirty()
-        publisher.B_dominate(
-            self.options.careful or self.options.careful_domination)
+        publisher.B_dominate(self.isCareful(self.options.careful_domination))
         self.txn.commit()
 
         # The primary and copy archives use apt-ftparchive to
         # generate the indexes, everything else uses the newer
         # internal LP code.
-        careful_indexing = (self.options.careful or self.options.careful_apt)
+        careful_indexing = self.isCareful(self.options.careful_apt)
         if archive.purpose in (ArchivePurpose.PRIMARY, ArchivePurpose.COPY):
             publisher.C_doFTPArchive(careful_indexing)
         else:
@@ -264,25 +290,28 @@ class PublishDistro(LaunchpadCronScript):
         self.txn.commit()
 
         publisher.D_writeReleaseFiles(careful_indexing)
-        self.txn.commit()
+        # The caller will commit this last step.
 
     def main(self):
         """See `LaunchpadScript`."""
         self.validateOptions()
         self.logOptions()
-        distribution = self.findDistro()
-        allowed_suites = self.findAllowedSuites(distribution)
+        self.distribution = self.findDistro()
+        allowed_suites = self.findAllowedSuites()
 
-        for archive in self.getTargetArchives(distribution):
+        for archive in self.getTargetArchives():
             publisher = self.getPublisher(
-                distribution, archive, allowed_suites)
+                self.distribution, archive, allowed_suites)
 
             if archive.status == ArchiveStatus.DELETING:
-                self.deleteArchive(archive, publisher)
+                work_done = self.deleteArchive(archive, publisher)
             elif archive.publish:
                 self.publishArchive(archive, publisher)
+                work_done = True
             else:
-                # Nothing to do with this archive.
-                pass
+                work_done = False
+
+            if work_done:
+                self.txn.commit()
 
         self.logger.debug("Ciao")
