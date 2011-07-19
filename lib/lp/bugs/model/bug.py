@@ -60,6 +60,7 @@ from storm.expr import (
     Select,
     SQL,
     Sum,
+    Union,
     )
 from storm.info import ClassAlias
 from storm.locals import (
@@ -444,15 +445,20 @@ class Bug(SQLBase):
     @property
     def user_ids_affected_with_dupes(self):
         """Return all IDs of Persons affected by this bug and its dupes.
-        The return value is a Storm expression."""
-        return Select(
-            Person.id,
-            And(BugAffectsPerson.person == Person.id,
-                BugAffectsPerson.affected,
-                Or(BugAffectsPerson.bug == self,
-                   And(BugAffectsPerson.bug == Bug.id,
-                       Bug.duplicateof == self.id))),
-            distinct=True)
+        The return value is a Storm expression.  Running a query with
+        this expression returns a result that may contain the same ID
+        multiple times, for example if that person is affected via
+        more than one duplicate."""
+        return Union(
+            Select(Person.id,
+                   And(BugAffectsPerson.person == Person.id,
+                       BugAffectsPerson.affected,
+                       BugAffectsPerson.bug == self)),
+            Select(Person.id,
+                   And(BugAffectsPerson.person == Person.id,
+                       BugAffectsPerson.bug == Bug.id,
+                       BugAffectsPerson.affected,
+                       Bug.duplicateof == self.id)))
 
     @property
     def users_affected_with_dupes(self):
