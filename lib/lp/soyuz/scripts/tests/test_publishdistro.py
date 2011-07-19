@@ -537,6 +537,8 @@ class TestPublishDistroMethods(TestCaseWithFactory):
             PublishDistro(test_args=['-d', wrong_name]).findDistro)
 
     def test_findSuite_finds_release_pocket(self):
+        # Despite its lack of a suffix, a release suite shows up
+        # normally in findSuite results.
         series = self.factory.makeDistroSeries()
         distro = series.distribution
         self.assertEqual(
@@ -544,6 +546,8 @@ class TestPublishDistroMethods(TestCaseWithFactory):
             self.makeScript(distro).findSuite(series.name))
 
     def test_findSuite_finds_other_pocket(self):
+        # Suites that are not in the release pocket have their pocket
+        # name as a suffix.  These show up in findSuite results.
         series = self.factory.makeDistroSeries()
         distro = series.distribution
         self.assertEqual(
@@ -551,14 +555,18 @@ class TestPublishDistroMethods(TestCaseWithFactory):
             self.makeScript(distro).findSuite(series.name + "-updates"))
 
     def test_findSuite_raises_if_not_found(self):
+        # If findSuite can't find its suite, that's an OptionValueError.
         self.assertRaises(
             OptionValueError,
             self.makeScript().findSuite, self.factory.getUniqueString())
 
     def test_findAllowedSuites_finds_nothing_if_no_suites_given(self):
+        # If no suites are given, findAllowedSuites returns an empty
+        # sequence.
         self.assertContentEqual([], self.makeScript().findAllowedSuites())
 
     def test_findAllowedSuites_finds_series_and_pocket(self):
+        # findAllowedSuites looks up the requested suites.
         series = self.factory.makeDistroSeries()
         suite = "%s-updates" % series.name
         script = self.makeScript(series.distribution, ['--suite', suite])
@@ -567,6 +575,8 @@ class TestPublishDistroMethods(TestCaseWithFactory):
             script.findAllowedSuites())
 
     def test_findAllowedSuites_finds_multiple(self):
+        # Multiple suites may be requested; findAllowedSuites looks them
+        # all up.
         series = self.factory.makeDistroSeries()
         script = self.makeScript(series.distribution, [
             '--suite', '%s-updates' % series.name,
@@ -578,6 +588,8 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         self.assertContentEqual(expected_suites, script.findAllowedSuites())
 
     def test_getDebugArchive_returns_list(self):
+        # getDebugArchive returns a list of one archive.  Fits in more
+        # regularly with the other methods to find archives.
         distro = self.factory.makeDistribution()
         script = self.makeScript(distro)
         debug_archive = self.factory.makeArchive(
@@ -585,19 +597,26 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         self.assertEqual([debug_archive], script.getDebugArchive())
 
     def test_getDebugArchive_raises_if_not_found(self):
+        # If getDebugArchive doesn't find a debug archive, that's an
+        # OptionValueError.
         self.assertRaises(OptionValueError, self.makeScript().getDebugArchive)
 
     def test_getDebugArchive_ignores_other_archive_purposes(self):
+        # getDebugArchive does not return archives that aren't debug
+        # archives.
         distro = self.factory.makeDistribution()
         script = self.makeScript(distro)
         self.factory.makeArchive(distro, purpose=ArchivePurpose.PARTNER)
         self.assertRaises(OptionValueError, script.getDebugArchive)
 
     def test_getDebugArchive_ignores_other_distros(self):
+        # getDebugArchive won't return an archive for the wrong
+        # distribution.
         self.factory.makeArchive(purpose=ArchivePurpose.DEBUG)
         self.assertRaises(OptionValueError, self.makeScript().getDebugArchive)
 
     def test_getCopyArchives_returns_list(self):
+        # getCopyArchives returns a list of archives.
         distro = self.factory.makeDistribution()
         script = self.makeScript(distro)
         copy_archive = self.factory.makeArchive(
@@ -605,21 +624,29 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         self.assertEqual([copy_archive], script.getCopyArchives())
 
     def test_getCopyArchives_raises_if_not_found(self):
+        # If the distribution has no copy archives, that's a script
+        # failure.
         self.assertRaises(
             LaunchpadScriptFailure, self.makeScript().getCopyArchives)
 
     def test_getCopyArchives_ignores_other_archive_purposes(self):
+        # getCopyArchives won't return archives that aren't copy
+        # archives.
         distro = self.factory.makeDistribution()
         script = self.makeScript(distro)
         self.factory.makeArchive(distro, purpose=ArchivePurpose.PARTNER)
         self.assertRaises(LaunchpadScriptFailure, script.getCopyArchives)
 
     def test_getCopyArchives_ignores_other_distros(self):
+        # getCopyArchives won't return an archive for the wrong
+        # distribution.
         self.factory.makeArchive(purpose=ArchivePurpose.COPY)
         self.assertRaises(
             LaunchpadScriptFailure, self.makeScript().getCopyArchives)
 
     def test_getPPAs_gets_pending_distro_PPAs_if_careful(self):
+        # In careful mode, getPPAs includes PPAs for the distribution
+        # that are pending pulication.
         distro = self.factory.makeDistribution()
         script = self.makeScript(distro, ['--careful'])
         ppa = self.factory.makeArchive(distro, purpose=ArchivePurpose.PPA)
@@ -627,12 +654,16 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         self.assertContentEqual([ppa], script.getPPAs())
 
     def test_getPPAs_gets_nonpending_distro_PPAs_if_careful(self):
+        # In careful mode, getPPAs includes PPAs for the distribution
+        # that are not pending pulication.
         distro = self.factory.makeDistribution()
         script = self.makeScript(distro, ['--careful'])
         ppa = self.factory.makeArchive(distro, purpose=ArchivePurpose.PPA)
         self.assertContentEqual([ppa], script.getPPAs())
 
     def test_getPPAs_gets_pending_distro_PPAs_if_not_careful(self):
+        # In non-careful mode, getPPAs includes PPAs that are pending
+        # pulication.
         distro = self.factory.makeDistribution()
         script = self.makeScript(distro)
         ppa = self.factory.makeArchive(distro, purpose=ArchivePurpose.PPA)
@@ -640,19 +671,27 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         self.assertContentEqual([ppa], script.getPPAs())
 
     def test_getPPAs_ignores_nonpending_distro_PPAs_if_not_careful(self):
+        # In non-careful mode, getPPAs does not include PPAs that are
+        # not pending pulication.
         distro = self.factory.makeDistribution()
         script = self.makeScript(distro)
         self.factory.makeArchive(distro, purpose=ArchivePurpose.PPA)
         self.assertContentEqual([], script.getPPAs())
 
     def test_getPPAs_returns_empty_if_careful_and_no_PPAs_found(self):
+        # If, in careful mode, getPPAs finds no archives it returns an
+        # empty sequence.
         self.assertContentEqual(
             [], self.makeScript(args=['--careful']).getPPAs())
 
     def test_getPPAs_returns_empty_if_not_careful_and_no_PPAs_found(self):
+        # If, in non-careful mode, getPPAs finds no archives it returns
+        # an empty sequence.
         self.assertContentEqual([], self.makeScript().getPPAs())
 
     def test_getTargetArchives_gets_partner_archive(self):
+        # If the selected exclusive option is "partner,"
+        # getTargetArchives looks for a partner archive.
         distro = self.factory.makeDistribution()
         partner = self.factory.makeArchive(
             distro, purpose=ArchivePurpose.PARTNER)
@@ -660,6 +699,8 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         self.assertContentEqual([partner], script.getTargetArchives())
 
     def test_getTargetArchives_ignores_public_ppas_if_private(self):
+        # If the selected exclusive option is "private-ppa,"
+        # getTargetArchives looks for PPAs but leaves out public ones.
         distro = self.factory.makeDistribution()
         self.factory.makeArchive(
             distro, purpose=ArchivePurpose.PPA, private=False)
@@ -667,6 +708,8 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         self.assertContentEqual([], script.getTargetArchives())
 
     def test_getTargetArchives_gets_private_ppas_if_private(self):
+        # If the selected exclusive option is "private-ppa,"
+        # getTargetArchives looks for private PPAs.
         distro = self.factory.makeDistribution()
         ppa = self.factory.makeArchive(
             distro, purpose=ArchivePurpose.PPA, private=True)
@@ -674,6 +717,8 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         self.assertContentEqual([ppa], script.getTargetArchives())
 
     def test_getTargetArchives_gets_public_ppas_if_not_private(self):
+        # If the selected exclusive option is "ppa," getTargetArchives
+        # looks for public PPAs.
         distro = self.factory.makeDistribution()
         ppa = self.factory.makeArchive(
             distro, purpose=ArchivePurpose.PPA, private=False)
@@ -681,6 +726,8 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         self.assertContentEqual([ppa], script.getTargetArchives())
 
     def test_getTargetArchives_ignores_private_ppas_if_not_private(self):
+        # If the selected exclusive option is "ppa," getTargetArchives
+        # leaves out private PPAs.
         distro = self.factory.makeDistribution()
         self.factory.makeArchive(
             distro, purpose=ArchivePurpose.PPA, private=True)
@@ -688,24 +735,32 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         self.assertContentEqual([], script.getTargetArchives())
 
     def test_getTargetArchives_gets_primary_debug_archive(self):
+        # If the selected exclusive option is "primary-debug,"
+        # getTargetArchives looks for a debug archive.
         distro = self.factory.makeDistribution()
         debug = self.factory.makeArchive(distro, purpose=ArchivePurpose.DEBUG)
         script = self.makeScript(distro, ['--primary-debug'])
         self.assertContentEqual([debug], script.getTargetArchives())
 
     def test_getTargetArchives_gets_copy_archives(self):
+        # If the selected exclusive option is "copy-archive,"
+        # getTargetArchives looks for a copy archive.
         distro = self.factory.makeDistribution()
         copy = self.factory.makeArchive(distro, purpose=ArchivePurpose.COPY)
         script = self.makeScript(distro, ['--copy-archive'])
         self.assertContentEqual([copy], script.getTargetArchives())
 
     def test_getPublisher_returns_publisher(self):
+        # getPublisher produces a Publisher instance.
         distro = self.factory.makeDistribution()
         script = self.makeScript(distro)
         publisher = script.getPublisher(distro.main_archive, None)
         self.assertIsInstance(publisher, Publisher)
 
     def test_deleteArchive_deletes_ppa(self):
+        # If fed a PPA, deleteArchive will properly delete it (and
+        # return True to indicate it's done something that needs
+        # committing).
         distro = self.factory.makeDistribution()
         ppa = self.factory.makeArchive(distro, purpose=ArchivePurpose.PPA)
         script = self.makeScript(distro)
@@ -715,6 +770,8 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         self.assertContentEqual([], script.getPPAs())
 
     def test_deleteArchive_ignores_non_ppa(self):
+        # If fed an archive that's not a PPA, deleteArchive will do
+        # nothing and return False to indicate the fact.
         distro = self.factory.makeDistribution()
         archive = self.factory.makeArchive(
             distro, purpose=ArchivePurpose.DEBUG)
@@ -724,6 +781,9 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         self.assertContentEqual([archive], script.getDebugArchive())
 
     def test_publishArchive_drives_publisher(self):
+        # publishArchive puts a publisher through its paces.  This work
+        # ought to be in the publisher itself, so if you find this way
+        # of doing things annoys you, that's your cue to help clean up!
         distro = self.factory.makeDistribution()
         script = self.makeScript(distro)
         script.txn = FakeTransaction()
@@ -736,6 +796,9 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         self.assertEqual(1, publisher.D_writeReleaseFiles.call_count)
 
     def test_publishArchive_uses_apt_ftparchive_for_main_archive(self):
+        # For some types of archive, publishArchive invokes the
+        # publisher's C_doFTPArchive method as a way of generating
+        # indexes.
         distro = self.factory.makeDistribution()
         script = self.makeScript(distro)
         script.txn = FakeTransaction()
@@ -745,6 +808,9 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         self.assertEqual(0, publisher.C_writeIndexes.call_count)
 
     def test_publishArchive_writes_own_indexes_for_ppa(self):
+        # For some types of archive, publishArchive invokes the
+        # publisher's C_writeIndexes as an alternative to
+        # C_doFTPArchive.
         distro = self.factory.makeDistribution()
         script = self.makeScript(distro)
         script.txn = FakeTransaction()
