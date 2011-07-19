@@ -86,15 +86,18 @@ class PublishDistro(LaunchpadCronScript):
             dest="primary_debug",
             help="Only run over the debug-symbols for primary archive.")
 
-    def logOption(self, description, option):
-        """Describe the state of `option` to the debug log."""
+    def describeCare(self, option):
+        """Helper: describe carefulness setting of given option."""
         if self.options.careful:
-            care = "Careful (Overridden)"
+            return "Careful (Overridden)"
         elif option:
-            care = "Careful"
+            return "Careful"
         else:
-            care = "Normal"
-        self.logger.debug("%14s: %s", description, care)
+            return "Normal"
+
+    def logOption(self, name, value):
+        """Describe the state of `option` to the debug log."""
+        self.logger.debug("%14s: %s", name, value)
 
     def countExclusiveOptions(self):
         """Return the number of exclusive "mode" options that were set.
@@ -116,14 +119,14 @@ class PublishDistro(LaunchpadCronScript):
             indexing_engine = "Apt-FTPArchive"
         else:
             indexing_engine = "Indexing"
+        self.logOption('Distribution', self.options.distribution)
         log_items = [
-            ('Distribution', self.options.distribution),
             ('Publishing', self.options.careful_publishing),
             ('Domination', self.options.careful_domination),
             (indexing_engine, self.options.careful_apt),
             ]
-        for description, option in log_items:
-            self.logOption(description, option)
+        for name, option in log_items:
+            self.logOption(name, self.describeCare(option))
 
     def validateOptions(self):
         """Check given options for user interface violations."""
@@ -150,11 +153,17 @@ class PublishDistro(LaunchpadCronScript):
             raise OptionValueError(e)
 
     def findSuite(self, distribution, suite):
-        """Find the named `suite` in `distribution`."""
+        """Find the named `suite` in `distribution`.
+
+        :param distribution: The `Distribution` the suite belongs to.
+        :param suite: The suite name to look for.
+        :return: A tuple of distroseries name and pocket.
+        """
         try:
-            return distribution.getDistroSeriesAndPocket(suite)
+            series, pocket = distribution.getDistroSeriesAndPocket(suite)
         except NotFoundError, e:
             raise OptionValueError(e)
+        return series.name, pocket
 
     def findAllowedSuites(self, distribution):
         """Find the selected suite(s)."""
