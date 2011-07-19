@@ -395,37 +395,6 @@ class TestPublishDistro(TestNativePublishingBase):
             "%s/hoary-test/main/binary-i386/Packages" % self.config.distsroot)
         self.assertNotExists(index_path)
 
-    def testExclusiveOptions(self):
-        """Test that some command line options are mutually exclusive."""
-        self.assertRaises(
-            OptionValueError,
-            self.runPublishDistro,
-            ['--ppa', '--partner', '--primary-debug', '--copy-archive'])
-        self.assertRaises(
-            OptionValueError,
-            self.runPublishDistro, ['--ppa', '--partner'])
-        self.assertRaises(
-            OptionValueError,
-            self.runPublishDistro, ['--ppa', '--private-ppa'])
-        self.assertRaises(
-            OptionValueError,
-            self.runPublishDistro, ['--ppa', '--primary-debug'])
-        self.assertRaises(
-            OptionValueError,
-            self.runPublishDistro, ['--ppa', '--copy-archive'])
-        self.assertRaises(
-            OptionValueError,
-            self.runPublishDistro, ['--partner', '--private-ppa'])
-        self.assertRaises(
-            OptionValueError,
-            self.runPublishDistro, ['--partner', '--primary-debug'])
-        self.assertRaises(
-            OptionValueError,
-            self.runPublishDistro, ['--partner', '--copy-archive'])
-        self.assertRaises(
-            OptionValueError,
-            self.runPublishDistro, ['--primary-debug', '--copy-archive'])
-
 
 class FakeArchive:
     def __init__(self, purpose=ArchivePurpose.PRIMARY):
@@ -555,6 +524,28 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         self.assertRaises(
             OptionValueError,
             self.makeScript().findSuite, self.factory.getUniqueString())
+
+    def test_findAllowedSuites_finds_nothing_if_no_suites_given(self):
+        self.assertContentEqual([], self.makeScript().findAllowedSuites())
+
+    def test_findAllowedSuites_finds_series_and_pocket(self):
+        series = self.factory.makeDistroSeries()
+        suite = "%s-updates" % series.name
+        script = self.makeScript(series.distribution, ['--suite', suite])
+        self.assertContentEqual(
+            [(series.name, PackagePublishingPocket.UPDATES)],
+            script.findAllowedSuites())
+
+    def test_findAllowedSuites_finds_multiple(self):
+        series = self.factory.makeDistroSeries()
+        script = self.makeScript(series.distribution, [
+            '--suite', '%s-updates' % series.name,
+            '--suite', series.name])
+        expected_suites = [
+            (series.name, PackagePublishingPocket.UPDATES),
+            (series.name, PackagePublishingPocket.RELEASE),
+            ]
+        self.assertContentEqual(expected_suites, script.findAllowedSuites())
 
     def test_getDebugArchive_returns_list(self):
         distro = self.factory.makeDistribution()

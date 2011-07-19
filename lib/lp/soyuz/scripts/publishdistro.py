@@ -194,9 +194,7 @@ class PublishDistro(LaunchpadCronScript):
 
     def findAllowedSuites(self):
         """Find the selected suite(s)."""
-        return set([
-            self.findSuite(self.distribution, suite)
-            for suite in self.options.suite])
+        return set([self.findSuite(suite) for suite in self.options.suite])
 
     def getDebugArchive(self):
         """Find the debug archive for the selected distribution, as a list."""
@@ -300,8 +298,7 @@ class PublishDistro(LaunchpadCronScript):
         allowed_suites = self.findAllowedSuites()
 
         for archive in self.getTargetArchives():
-            publisher = self.getPublisher(
-                self.distribution, archive, allowed_suites)
+            publisher = self.getPublisher(archive, allowed_suites)
 
             if archive.status == ArchiveStatus.DELETING:
                 work_done = self.deleteArchive(archive, publisher)
