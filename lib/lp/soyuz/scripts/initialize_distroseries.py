@@ -242,7 +242,7 @@ class InitializeDistroSeries:
             distroseriesparent.initialized = True
 
     def _has_same_parents_as_previous_series(self):
-        # Does this distroseries have the same parents as it's previous
+        # Does this distroseries have the same parents as its previous
         # series? (note that the parent's order does not matter here)
         dsp_set = getUtility(IDistroSeriesParentSet)
         previous_series_parents = [
