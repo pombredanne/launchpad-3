@@ -24,11 +24,11 @@ from lp.registry.enum import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.scripts.populate_distroseriesdiff import (
-    DSDUpdater,
     compose_sql_difference_type,
-    compose_sql_find_latest_source_package_releases,
     compose_sql_find_differences,
+    compose_sql_find_latest_source_package_releases,
     compose_sql_populate_distroseriesdiff,
+    DSDUpdater,
     find_derived_series,
     populate_distroseriesdiff,
     PopulateDistroSeriesDiff,
@@ -37,12 +37,12 @@ from lp.services.log.logger import (
     BufferLogger,
     DevNullLogger,
     )
+from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status,
     inactive_publishing_status,
     )
 from lp.soyuz.model.archive import Archive
-from lp.soyuz.enums import ArchivePurpose
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
@@ -444,8 +444,7 @@ class TestPopulateDistroSeriesDiff(TestCaseWithFactory, FactoryHelper):
     def test_creates_distroseriesdifference(self):
         dsp = self.makeDerivedDistroSeries()
         spph = self.makeSPPH(distroseries=dsp.derived_series)
-        populate_distroseriesdiff(
-            DevNullLogger(), dsp.derived_series, dsp.parent_series)
+        populate_distroseriesdiff(dsp.derived_series, dsp.parent_series)
         dsd = self.getDistroSeriesDiff(dsp.derived_series).one()
         spr = spph.sourcepackagerelease
         self.assertEqual(spr.sourcepackagename, dsd.source_package_name)
@@ -458,7 +457,7 @@ class TestPopulateDistroSeriesDiff(TestCaseWithFactory, FactoryHelper):
         changelog = self.factory.makeChangelog(versions=['3.1', '3.141'])
         parent_changelog = self.factory.makeChangelog(
             versions=['3.1', '3.14'])
-        transaction.commit() # Yay, librarian.
+        transaction.commit()  # Yay, librarian.
         existing_versions = {
             'base': '3.1',
             'parent': '3.14',

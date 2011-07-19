@@ -210,6 +210,7 @@ class InitializeDistroSeries:
         self._copy_architectures()
         self._copy_packages()
         self._copy_packagesets()
+        self._create_dsds()
         self._set_initialized()
         transaction.commit()
 
@@ -239,6 +240,61 @@ class InitializeDistroSeries:
             self.distroseries)
         for distroseriesparent in distroseriesparents:
             distroseriesparent.initialized = True
+
+    def _has_same_parents_as_previous_series(self):
+        # Does this distroseries have the same parents as it's previous
+        # series? (note that the parent's order does not matter here)
+        dsp_set = getUtility(IDistroSeriesParentSet)
+        previous_series_parents = [
+            dsp.parent_series for dsp in dsp_set.getByDerivedSeries(
+                self.distroseries.previous_series)]
+        return set(previous_series_parents) == set(self.parents)
+
+    def _create_dsds(self):
+        if not self.first_derivation:
+            if (self._has_same_parents_as_previous_series() and
+                not self.packagesets):
+                # If the parents are the same as previous_series's
+                # parents and all the packagesets are being copied,
+                # then we simply copy the DSDs from previous_series
+                # for performance reasons.
+                self._copy_dsds_from_previous_series()
+            else:
+                # Either the parents have changed (compared to
+                # previous_series's parent) or a selection only of the
+                # packagesets is being copied so we have to recompute
+                # the DSDs.
+                self._compute_dsds()
+
+    def _copy_dsds_from_previous_series(self):
+        self._store.execute("""
+            INSERT INTO DistroSeriesDifference
+                (derived_series, source_package_name, package_diff,
+                status, difference_type, parent_package_diff,
+                source_version, parent_source_version,
+                base_version, parent_series)
+            SELECT
+                %s AS derived_series, source_package_name,
+                package_diff, status,
+                difference_type, parent_package_diff, source_version,
+                parent_source_version, base_version, parent_series
+            FROM DistroSeriesDifference AS dsd
+                WHERE dsd.derived_series = %s
+            """ % sqlvalues(
+                self.distroseries.id,
+                self.distroseries.previous_series.id))
+
+    def _compute_dsds(self):
+        # Avoid circular imports.
+        from lp.registry.scripts.populate_distroseriesdiff import (
+            populate_distroseriesdiff,
+            update_distroseriesdiff,
+            )
+        for parent in self.parents:
+            populate_distroseriesdiff(self.distroseries, parent)
+        transaction.commit()
+        update_distroseriesdiff(transaction.commit, self.distroseries)
+        transaction.commit()
 
     def _copy_configuration(self):
         self.distroseries.backports_not_automatic = any(

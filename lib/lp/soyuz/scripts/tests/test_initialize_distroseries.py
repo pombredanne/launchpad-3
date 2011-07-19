@@ -18,6 +18,9 @@ from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceSource,
+    )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import SourcePackageFormat
@@ -40,6 +43,7 @@ from lp.soyuz.scripts.initialize_distroseries import (
     InitializeDistroSeries,
     )
 from lp.testing import TestCaseWithFactory
+from lp.testing.fakemethod import FakeMethod
 
 
 class InitializationHelperTestCase(TestCaseWithFactory):
@@ -704,7 +708,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             InitializationError, self._fullInitialize,
             [self.parent1, self.parent2])
 
-    def setUpSeriesWithPreviousSeries(self, parent, previous_parents=(),
+    def setUpSeriesWithPreviousSeries(self, previous_parents=(),
                                       publish_in_distribution=True):
         # Helper method to create a series within an initialized
         # distribution (i.e. that has an initialized series) with a
@@ -730,10 +734,9 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         # the previous_series' parents.
         previous_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
         previous_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
-        parent, unused = self.setupParent()
         child = self.setUpSeriesWithPreviousSeries(
-            parent=parent,
             previous_parents=[previous_parent1, previous_parent2])
+        parent, unused = self.setupParent()
         self._fullInitialize([parent], child=child)
 
         # The parent for the derived series is the distroseries given as
@@ -759,9 +762,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         # parents of the previous series are used as parents.
         previous_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
         previous_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
-        parent, unused = self.setupParent()
         child = self.setUpSeriesWithPreviousSeries(
-            parent=parent,
             previous_parents=[previous_parent1, previous_parent2])
         # Initialize from an empty list of parents.
         self._fullInitialize([], child=child)
@@ -773,10 +774,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
     def test_derive_empty_parents_distribution_not_initialized(self):
         # Initializing a series with an empty parent list if the series'
         # distribution has no initialized series triggers an error.
-        parent, unused = self.setupParent()
         previous_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
         child = self.setUpSeriesWithPreviousSeries(
-            parent=parent,
             previous_parents=[previous_parent1],
             publish_in_distribution=False)
 
@@ -852,3 +851,121 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertFalse(
             InitializeDistroSeries._use_cloner(
                 target_archive, target_archive, distroseries))
+
+    def test__has_same_parents_as_previous_series_explicit(self):
+        # IDS._has_same_parents_as_previous_series returns True if the
+        # parents for the series to be initialized are the same as
+        # previous_series' parents.
+        prev_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        prev_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
+        child = self.setUpSeriesWithPreviousSeries(
+            previous_parents=[prev_parent1, prev_parent2])
+        # The same parents can be explicitely set.
+        ids = InitializeDistroSeries(
+            child, [prev_parent2.id, prev_parent1.id])
+
+        self.assertTrue(ids._has_same_parents_as_previous_series())
+
+    def test__has_same_parents_as_previous_series_implicit(self):
+        # IDS._has_same_parents_as_previous_series returns True if the
+        # parents for the series to be initialized are the same as
+        # previous_series' parents.
+        prev_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        prev_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
+        child = self.setUpSeriesWithPreviousSeries(
+            previous_parents=[prev_parent1, prev_parent2])
+        # If no parents are provided, the parents from previous_series
+        # will be used.
+        ids = InitializeDistroSeries(child)
+
+        self.assertTrue(ids._has_same_parents_as_previous_series())
+
+    def test_not__has_same_parents_as_previous_series(self):
+        # IDS._has_same_parents_as_previous_series returns False if the
+        # parents for the series to be initialized are *not* the same as
+        # previous_series' parents.
+        prev_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        prev_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
+        child = self.setUpSeriesWithPreviousSeries(
+            previous_parents=[prev_parent1, prev_parent2])
+        parent3 = self.factory.makeDistroSeries()
+        ids = InitializeDistroSeries(
+            child, [prev_parent2.id, prev_parent1.id, parent3.id])
+
+        self.assertFalse(ids._has_same_parents_as_previous_series())
+
+    def test_initialization_copy_dsds(self):
+        # Post-first initialization of a series with the same parents
+        # than those of the previous_series causes a copy of
+        # previous_series' DSDs.
+        prev_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        prev_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
+        child = self.setUpSeriesWithPreviousSeries(
+            previous_parents=[prev_parent1, prev_parent2])
+        self.factory.makeDistroSeriesDifference()
+        self.factory.makeDistroSeriesDifference(
+            derived_series=child.previous_series,
+            source_package_name_str=u'p1')
+        self.factory.makeDistroSeriesDifference(
+            derived_series=child.previous_series,
+            source_package_name_str=u'p2')
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        # No DSDs for the child yet.
+        self.assertEquals(0, dsd_source.getForDistroSeries(child).count())
+        self._fullInitialize([], child=child)
+
+        self.assertContentEqual(
+            [u'p1', u'p2'],
+            sorted(
+                [diff.source_package_name.name
+                    for diff in dsd_source.getForDistroSeries(child)]))
+
+    def test_initialization_compute_dsds(self):
+        # Post-first initialization of a series with different parents
+        # than those of the previous_series triggers the computation
+        # of the DSDs (using populate_distroseriesdiff's methods).
+        prev_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        prev_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
+        child = self.setUpSeriesWithPreviousSeries(
+            previous_parents=[prev_parent1, prev_parent2])
+        parent3, unused = self.setupParent(packages={u'p3': u'2.5'})
+        from lp.registry.scripts import populate_distroseriesdiff as module
+        module.populate_distroseriesdiff = FakeMethod()
+        module.update_distroseriesdiff = FakeMethod()
+        self._fullInitialize(
+            [prev_parent1, prev_parent2, parent3], child=child)
+
+        # populate_distroseriesdiff has been called for each parent.
+        self.assertContentEqual(
+            [((child, prev_parent1), {}),
+             ((child, prev_parent2), {}),
+             ((child, parent3), {})],
+            module.populate_distroseriesdiff.calls)
+
+        # update_distroseriesdiff has been called once for the child series.
+        self.assertContentEqual(
+            [((transaction.commit, child), {})],
+            module.update_distroseriesdiff.calls)
+
+    def test_initialization_compute_dsds_specific_packagesets(self):
+        # Post-first initialization of a series with specific
+        # packagesets triggers the computation (as opposed to the copy)
+        # of the DSDs.
+        prev_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        prev_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', prev_parent1.owner,
+            distroseries=prev_parent1)
+        test1.addSources('p1')
+        child = self.setUpSeriesWithPreviousSeries(
+            previous_parents=[prev_parent1, prev_parent2])
+        parent3, unused = self.setupParent(packages={u'p3': u'2.5'})
+        from lp.registry.scripts import populate_distroseriesdiff as module
+        module.update_distroseriesdiff = FakeMethod()
+        ids = InitializeDistroSeries(
+            child, [], packagesets=(str(test1.id),))
+        ids._compute_dsds = FakeMethod()
+        ids.check()
+        ids.initialize()
+
+        self.assertEquals(1, ids._compute_dsds.call_count)
