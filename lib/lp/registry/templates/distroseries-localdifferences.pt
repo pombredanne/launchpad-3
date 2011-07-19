@@ -61,10 +61,12 @@
                 <a tal:attributes="href context/fmt:url"
                    tal:content="series_name">Deriwarty</a> version
               </th>
-              <th tal:condition="view/show_parent_packagesets">
+              <th tal:condition="view/show_parent_packagesets"
+                  class="parent-package-sets">
                 Parent package-sets
               </th>
-              <th tal:condition="view/show_packagesets">
+              <th tal:condition="view/show_packagesets"
+                  class="package-sets">
                 Package-sets
               </th>
                <th>Last uploaded</th>
@@ -201,6 +203,12 @@ LPS.use('lp.registry.distroseriesdifferences_details', function(Y) {
 
   Y.on('domready', diff_module.setup_expandable_rows);
 });
+</script>
+<script type="text/javascript">
+  LPS.use("lp.registry.distroseries.differences", function(Y) {
+      var differences = Y.lp.registry.distroseries.differences;
+      Y.on("domready", differences.setupPackageSetPicker);
+  });
 </script>
 
     </div>
