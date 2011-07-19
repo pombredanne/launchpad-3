@@ -32,9 +32,10 @@ __all__ = [
     'KeyServerResource',
     ]
 
+import cgi
 import glob
 import os
-import cgi
+from time import sleep
 
 from twisted.web.resource import Resource
 
@@ -69,7 +70,7 @@ def locate_key(root, suffix):
         # fingerprint. Let's glob.
         if suffix.startswith('0x'):
             suffix = suffix[2:]
-        keys = glob.glob(os.path.join(root, '*'+suffix))
+        keys = glob.glob(os.path.join(root, '*' + suffix))
         if len(keys) == 1:
             path = keys[0]
         else:
@@ -110,6 +111,12 @@ class PksResource(_BaseResource):
         return 'Welcome To Fake SKS service.\n'
 
 
+KEY_NOT_FOUND_BODY = (
+    "<html><head><title>Error handling request</title></head>\n"
+    "<body><h1>Error handling request</h1>Error handling request: "
+    "No keys found</body></html>")
+
+
 class LookUp(Resource):
 
     isLeaf = True
@@ -126,29 +133,31 @@ class LookUp(Resource):
         except KeyError:
             return 'Invalid Arguments %s' % request.args
 
-        return self.processRequest(action, keyid)
+        return self.processRequest(action, keyid, request)
 
-    def processRequest(self, action, keyid):
+    def processRequest(self, action, keyid, request):
+        # Sleep a short time so that tests can ensure that timeouts
+        # are properly handled by setting an even shorter timeout.
+        sleep(0.02)
         if (action not in self.permitted_actions) or not keyid:
             return 'Forbidden: "%s" on ID "%s"' % (action, keyid)
-
-        page = ('<html>\n<head>\n'
-                '<title>Results for Key %s</title>\n'
-                '</head>\n<body>'
-                '<h1>Results for Key %s</h1>\n'
-                % (keyid, keyid))
 
         filename = '%s.%s' % (keyid, action)
 
         path = locate_key(self.root, filename)
         if path is not None:
             content = cgi.escape(open(path).read())
+            page = ('<html>\n<head>\n'
+                    '<title>Results for Key %s</title>\n'
+                    '</head>\n<body>'
+                    '<h1>Results for Key %s</h1>\n'
+                    '<pre>\n%s\n</pre>\n</html>') % (keyid, keyid, content)
+            return page
         else:
-            content = 'Key Not Found'
-
-        page += '<pre>\n%s\n</pre>\n</html>' % content
-
-        return page
+            # No joke: our real-world keyserver returns a 500 error
+            # if it does not know about a key with the given ID.
+            request.setResponseCode(500)
+            return KEY_NOT_FOUND_BODY
 
 
 SUBMIT_KEY_PAGE = """

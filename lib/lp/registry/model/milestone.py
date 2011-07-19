@@ -14,8 +14,9 @@ __all__ = [
     ]
 
 import datetime
+import httplib
 
-from lazr.restful.declarations import webservice_error
+from lazr.restful.declarations import error_status
 from sqlobject import (
     AND,
     BoolCol,
@@ -40,6 +41,7 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.sorting import expand_numbers
 from lp.app.errors import NotFoundError
 from lp.blueprints.model.specification import Specification
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -119,16 +121,16 @@ class HasMilestonesMixin:
     milestones = property(_get_milestones)
 
 
+@error_status(httplib.BAD_REQUEST)
 class MultipleProductReleases(Exception):
     """Raised when a second ProductRelease is created for a milestone."""
-    webservice_error(400)
 
     def __init__(self, msg='A milestone can only have one ProductRelease.'):
         super(MultipleProductReleases, self).__init__(msg)
 
 
 class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
-    implements(IHasBugs, IMilestone)
+    implements(IHasBugs, IMilestone, IBugSummaryDimension)
 
     # XXX: Guilherme Salgado 2007-03-27 bug=40978:
     # Milestones should be associated with productseries/distroseriess
@@ -247,6 +249,12 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
             "associated with it.")
         SQLBase.destroySelf(self)
 
+    def getBugSummaryContextWhereClause(self):
+        """See BugTargetBase."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return BugSummary.milestone_id == self.id
+
 
 class MilestoneSet:
     implements(IMilestoneSet)
@@ -271,8 +279,8 @@ class MilestoneSet:
 
     def getByNameAndProduct(self, name, product, default=None):
         """See lp.registry.interfaces.milestone.IMilestoneSet."""
-        query = AND(Milestone.q.name==name,
-                    Milestone.q.productID==product.id)
+        query = AND(Milestone.q.name == name,
+                    Milestone.q.productID == product.id)
         milestone = Milestone.selectOne(query)
         if milestone is None:
             return default
@@ -280,8 +288,8 @@ class MilestoneSet:
 
     def getByNameAndDistribution(self, name, distribution, default=None):
         """See lp.registry.interfaces.milestone.IMilestoneSet."""
-        query = AND(Milestone.q.name==name,
-                    Milestone.q.distributionID==distribution.id)
+        query = AND(Milestone.q.name == name,
+                    Milestone.q.distributionID == distribution.id)
         milestone = Milestone.selectOne(query)
         if milestone is None:
             return default

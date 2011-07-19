@@ -418,16 +418,17 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
             self.widgets['sourcepackagename'].name)
         if sourcepackagename is None and entered_package:
             # The entered package doesn't exist.
-            filebug_url = "%s/+filebug" % canonical_url(
-                getUtility(ILaunchpadCelebrities).launchpad)
-            self.setFieldError(
-                'sourcepackagename',
-                structured(
-                'There is no package in %s named "%s". If it should'
-                ' be here, <a href="%s">report this as a bug</a>.',
-                distribution.displayname,
-                entered_package,
-                filebug_url))
+            if distribution.has_published_binaries:
+                binary_tracking = ''
+            else:
+                binary_tracking = structured(
+                    ' Launchpad does not track binary package names '
+                    'in %s.', distribution.displayname)
+            error = structured(
+                'There is no package in %s named "%s".%s',
+                distribution.displayname, entered_package,
+                binary_tracking)
+            self.setFieldError('sourcepackagename', error)
         else:
             try:
                 validate_new_distrotask(
@@ -658,13 +659,13 @@ class ProductBugTaskCreationStep(BugTaskCreationStep):
 
         if not target.bugtracker:
             return None
-        else:
-            bug = self.context.bug
-            title = bug.title
-            description = u"Originally reported at:\n  %s\n\n%s" % (
-                canonical_url(bug), bug.description)
-            return target.bugtracker.getBugFilingAndSearchLinks(
-                target.remote_product, title, description)
+
+        bug = self.context.bug
+        title = bug.title
+        description = u"Originally reported at:\n  %s\n\n%s" % (
+            canonical_url(bug), bug.description)
+        return target.bugtracker.getBugFilingAndSearchLinks(
+            target.remote_product, title, description)
 
 
 class BugTrackerCreationStep(AlsoAffectsStep):

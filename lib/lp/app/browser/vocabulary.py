@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'HugeVocabularyJSONView',
     'IPickerEntry',
+    'get_person_picker_entry_metadata',
     ]
 
 import simplejson
@@ -42,6 +43,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.pillaraffiliation import IHasAffiliation
 from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
 from lp.services.features import getFeatureFlag
+from lp.soyuz.interfaces.archive import IArchive
 
 # XXX: EdwinGrubbs 2009-07-27 bug=405476
 # This limits the output to one line of text, since the sprite class
@@ -57,16 +59,30 @@ class IPickerEntry(Interface):
     description = Attribute('Description')
     image = Attribute('Image URL')
     css = Attribute('CSS Class')
+    alt_title = Attribute('Alternative title')
+    title_link = Attribute('URL used for anchor on title')
+    alt_title_link = Attribute('URL used for anchor on alt title')
+    link_css = Attribute('CSS Class for links')
+    badges = Attribute('List of badge img attributes')
+    metadata = Attribute('Metadata about the entry')
 
 
 class PickerEntry:
     """See `IPickerEntry`."""
     implements(IPickerEntry)
 
-    def __init__(self, description=None, image=None, css=None, api_uri=None):
+    def __init__(self, description=None, image=None, css=None, alt_title=None,
+                 title_link=None, alt_title_link=None, link_css='js-action',
+                 badges=None, metadata=None):
         self.description = description
         self.image = image
         self.css = css
+        self.alt_title = alt_title
+        self.title_link = title_link
+        self.alt_title_link = alt_title_link
+        self.link_css = link_css
+        self.badges = badges
+        self.metadata = metadata
 
 
 @adapter(Interface)
@@ -95,6 +111,13 @@ class DefaultPickerEntryAdapter(object):
         return extra
 
 
+def get_person_picker_entry_metadata(picker_entry):
+    """Return the picker entry meta for a given result value."""
+    if picker_entry is not None and IPerson.providedBy(picker_entry):
+        return "team" if picker_entry.is_team else "person"
+    return None
+
+
 @adapter(IPerson)
 class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
     """Adapts IPerson to IPickerEntry."""
@@ -108,10 +131,11 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
         if enhanced_picker_enabled:
             # If the person is affiliated with the associated_object then we
             # can display a badge.
-            badge_name = IHasAffiliation(
+            badge_info = IHasAffiliation(
                 associated_object).getAffiliationBadge(person)
-            if badge_name is not None:
-                extra.image = "/@@/%s" % badge_name
+            if badge_info:
+                extra.badges = [
+                    dict(url=badge_info.url, alt=badge_info.alt_text)]
 
         if person.preferredemail is not None:
             if person.hide_email_addresses:
@@ -122,7 +146,14 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
                 except Unauthorized:
                     extra.description = '<email address hidden>'
 
+        extra.metadata = get_person_picker_entry_metadata(person)
         if enhanced_picker_enabled:
+            # We will display the person's name (launchpad id) after their
+            # displayname.
+            extra.alt_title = person.name
+            # We will linkify the person's name so it can be clicked to open
+            # the page for that person.
+            extra.alt_title_link = canonical_url(person, rootsite='mainsite')
             # We will display the person's irc nick(s) after their email
             # address in the description text.
             irc_nicks = None
@@ -164,6 +195,18 @@ class SourcePackageNamePickerEntryAdapter(DefaultPickerEntryAdapter):
         descriptions = getSourcePackageDescriptions([sourcepackagename])
         extra.description = descriptions.get(
             sourcepackagename.name, "Not yet built")
+        return extra
+
+
+@adapter(IArchive)
+class ArchivePickerEntryAdapter(DefaultPickerEntryAdapter):
+    """Adapts IArchive to IPickerEntry."""
+
+    def getPickerEntry(self, associated_object, **kwarg):
+        archive = self.context
+        extra = super(ArchivePickerEntryAdapter, self).getPickerEntry(
+            associated_object)
+        extra.description = '%s/%s' % (archive.owner.name, archive.name)
         return extra
 
 
@@ -236,6 +279,18 @@ class HugeVocabularyJSONView:
                 entry['image'] = picker_entry.image
             if picker_entry.css is not None:
                 entry['css'] = picker_entry.css
+            if picker_entry.alt_title is not None:
+                entry['alt_title'] = picker_entry.alt_title
+            if picker_entry.title_link is not None:
+                entry['title_link'] = picker_entry.title_link
+            if picker_entry.alt_title_link is not None:
+                entry['alt_title_link'] = picker_entry.alt_title_link
+            if picker_entry.link_css is not None:
+                entry['link_css'] = picker_entry.link_css
+            if picker_entry.badges is not None:
+                entry['badges'] = picker_entry.badges
+            if picker_entry.metadata is not None:
+                entry['metadata'] = picker_entry.metadata
             result.append(entry)
 
         self.request.response.setHeader('Content-type', 'application/json')

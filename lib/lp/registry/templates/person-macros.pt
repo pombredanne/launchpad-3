@@ -173,7 +173,7 @@
       </a>
     </td>
     <td style="text-align: right">
-      <a tal:attributes="href string:${spr/sourcepackage/fmt:url}/+questions"
+      <a tal:attributes="href string:${spr/distrosourcepackage/fmt:url}/+questions"
          tal:content="spr/open_questions">
       </a>
     </td>

@@ -37,6 +37,7 @@ from lp.answers.model.question import (
     QuestionTargetMixin,
     QuestionTargetSearch,
     )
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import get_bug_tags_open_count
@@ -44,10 +45,9 @@ from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,
     )
-from lp.bugs.model.bugtask import BugTask
 from lp.buildmaster.enums import BuildStatus
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks,
+from lp.code.model.seriessourcepackagebranch import (
+    SeriesSourcePackageBranchSet,
     )
 from lp.code.model.branch import Branch
 from lp.code.model.hasbranches import (
@@ -197,13 +197,19 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
     """
 
     implements(
-        ISourcePackage, IHasBugHeat, IHasBuildRecords)
+        IBugSummaryDimension, ISourcePackage, IHasBugHeat, IHasBuildRecords)
 
     classProvides(ISourcePackageFactory)
 
     def __init__(self, sourcepackagename, distroseries):
+        # We store the ID of the sourcepackagename and distroseries
+        # simply because Storm can break when accessing them
+        # with implicit flush is blocked (like in a permission check when
+        # storing the object in the permission cache).
+        self.sourcepackagenameID = sourcepackagename.id
         self.sourcepackagename = sourcepackagename
         self.distroseries = distroseries
+        self.distroseriesID = distroseries.id
 
     @classmethod
     def new(cls, sourcepackagename, distroseries):
@@ -422,9 +428,9 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         # if we are an ubuntu sourcepackage, try the previous series of
         # ubuntu
         if self.distribution == ubuntu:
-            ubuntuseries = self.distroseries.prior_series
-            if ubuntuseries:
-                previous_ubuntu_series = ubuntuseries[0]
+            ubuntuseries = self.distroseries.priorReleasedSeries()
+            previous_ubuntu_series = ubuntuseries.first()
+            if previous_ubuntu_series is not None:
                 sp = SourcePackage(sourcepackagename=self.sourcepackagename,
                                    distroseries=previous_ubuntu_series)
                 return sp.packaging
@@ -494,12 +500,15 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
         """See `IBugTarget`."""
         return self.distroseries.getUsedBugTags()
 
-    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
-        """See `IBugTarget`."""
+    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
+                                     include_tags=None):
+        """See IBugTarget."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         return get_bug_tags_open_count(
-            And(BugTask.distroseries == self.distroseries,
-                BugTask.sourcepackagename == self.sourcepackagename),
-            user, wanted_tags=wanted_tags)
+            And(BugSummary.distroseries == self.distroseries,
+                BugSummary.sourcepackagename == self.sourcepackagename),
+            user, tag_limit=tag_limit, include_tags=include_tags)
 
     @property
     def max_bug_heat(self):
@@ -520,11 +529,13 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
             "future. For now, you probably meant to file the bug on the "
             "distro-wide (i.e. not series-specific) source package.")
 
-    def _getBugTaskContextClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
-        return (
-            'BugTask.distroseries = %s AND BugTask.sourcepackagename = %s' %
-                sqlvalues(self.distroseries, self.sourcepackagename))
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return And(
+                BugSummary.distroseries == self.distroseries,
+                BugSummary.sourcepackagename == self.sourcepackagename)
 
     def setPackaging(self, productseries, owner):
         """See `ISourcePackage`."""
@@ -585,7 +596,7 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
 
     def __hash__(self):
         """See `ISourcePackage`."""
-        return hash(self.distroseries.id) ^ hash(self.sourcepackagename.id)
+        return hash(self.distroseriesID) ^ hash(self.sourcepackagenameID)
 
     def __eq__(self, other):
         """See `ISourcePackage`."""
@@ -725,10 +736,9 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
 
     def setBranch(self, pocket, branch, registrant):
         """See `ISourcePackage`."""
-        series_set = getUtility(IMakeOfficialBranchLinks)
-        series_set.delete(self, pocket)
+        SeriesSourcePackageBranchSet.delete(self, pocket)
         if branch is not None:
-            series_set.new(
+            SeriesSourcePackageBranchSet.new(
                 self.distroseries, pocket, self.sourcepackagename, branch,
                 registrant)
 

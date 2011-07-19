@@ -44,15 +44,12 @@ __all__ = [
 import httplib
 
 from bzrlib.plugins.builder.recipe import RecipeParseError
-from lazr.restful.declarations import (
-    error_status,
-    webservice_error,
-    )
+from lazr.restful.declarations import error_status
 
 from lp.app.errors import NameLookupFailed
 
 # Annotate the RecipeParseError's with a 400 webservice status.
-error_status(400)(RecipeParseError)
+error_status(httplib.BAD_REQUEST)(RecipeParseError)
 
 
 class BadBranchMergeProposalSearchContext(Exception):
@@ -67,10 +64,9 @@ class BranchCreationException(Exception):
     """Base class for branch creation exceptions."""
 
 
+@error_status(httplib.CONFLICT)
 class BranchExists(BranchCreationException):
     """Raised when creating a branch that already exists."""
-
-    webservice_error(400)
 
     def __init__(self, existing_branch):
         # XXX: TimPenhey 2009-07-12 bug=405214: This error
@@ -95,9 +91,9 @@ class BranchTargetError(Exception):
     """Raised when there is an error determining a branch target."""
 
 
+@error_status(httplib.BAD_REQUEST)
 class CannotDeleteBranch(Exception):
     """The branch cannot be deleted at this time."""
-    webservice_error(httplib.BAD_REQUEST)
 
 
 class BranchCreationForbidden(BranchCreationException):
@@ -108,6 +104,7 @@ class BranchCreationForbidden(BranchCreationException):
     """
 
 
+@error_status(httplib.BAD_REQUEST)
 class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
     """Branch creator is not a member of the owner team.
 
@@ -115,17 +112,14 @@ class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
     the branch to a team that they are not a member of.
     """
 
-    webservice_error(400)
 
-
+@error_status(httplib.BAD_REQUEST)
 class BranchCreatorNotOwner(BranchCreationException):
     """A user cannot create a branch belonging to another user.
 
     Raised when a user is attempting to create a branch and set the owner of
     the branch to another user.
     """
-
-    webservice_error(400)
 
 
 class BranchTypeError(Exception):
@@ -184,10 +178,17 @@ class InvalidBranchMergeProposal(Exception):
     """
 
 
+@error_status(httplib.BAD_REQUEST)
 class BranchMergeProposalExists(InvalidBranchMergeProposal):
     """Raised if there is already a matching BranchMergeProposal."""
 
-    webservice_error(400)  # Bad request.
+    def __init__(self, existing_proposal):
+        super(BranchMergeProposalExists, self).__init__(
+                'There is already a branch merge proposal registered for '
+                'branch %s to land on %s that is still active.' %
+                (existing_proposal.source_branch.displayname,
+                 existing_proposal.target_branch.displayname))
+        self.existing_proposal = existing_proposal
 
 
 class InvalidNamespace(Exception):
@@ -212,8 +213,6 @@ class NoLinkedBranch(InvalidBranchException):
 class NoSuchBranch(NameLookupFailed):
     """Raised when we try to load a branch that does not exist."""
 
-    webservice_error(400)
-
     _message_prefix = "No such branch"
 
 
@@ -235,9 +234,8 @@ class StaleLastMirrored(Exception):
             (db_branch.last_mirrored_id, self.info['last_revision_id']))
 
 
+@error_status(httplib.BAD_REQUEST)
 class PrivateBranchRecipe(Exception):
-
-    webservice_error(400)
 
     def __init__(self, branch):
         message = (
@@ -272,10 +270,9 @@ class UnknownBranchTypeError(Exception):
     """Raised when the user specifies an unrecognized branch type."""
 
 
+@error_status(httplib.BAD_REQUEST)
 class CodeImportNotInReviewedState(Exception):
     """Raised when the user requests an import of a non-automatic import."""
-
-    webservice_error(400)
 
 
 class CodeImportAlreadyRequested(Exception):
@@ -286,16 +283,14 @@ class CodeImportAlreadyRequested(Exception):
         self.requesting_user = requesting_user
 
 
+@error_status(httplib.BAD_REQUEST)
 class CodeImportAlreadyRunning(Exception):
     """Raised when the user requests an import that is already running."""
 
-    webservice_error(400)
 
-
+@error_status(httplib.BAD_REQUEST)
 class TooNewRecipeFormat(Exception):
     """The format of the recipe supplied was too new."""
-
-    webservice_error(400)
 
     def __init__(self, supplied_format, newest_supported):
         super(TooNewRecipeFormat, self).__init__()
@@ -303,9 +298,8 @@ class TooNewRecipeFormat(Exception):
         self.newest_supported = newest_supported
 
 
+@error_status(httplib.BAD_REQUEST)
 class RecipeBuildException(Exception):
-
-    webservice_error(400)
 
     def __init__(self, recipe, distroseries, template):
         self.recipe = recipe
@@ -342,10 +336,9 @@ class BuildNotAllowedForDistro(RecipeBuildException):
             'A build against this distro is not allowed.')
 
 
+@error_status(httplib.BAD_REQUEST)
 class InvalidMergeQueueConfig(Exception):
     """The config specified is not a valid JSON string."""
-
-    webservice_error(400)
 
     def __init__(self):
         message = ('The configuration specified is not a valid JSON string.')

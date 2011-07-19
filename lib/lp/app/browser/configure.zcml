@@ -345,6 +345,15 @@
       class="canonical.launchpad.webapp.error.NoReferrerErrorView"
       />
 
+  <!-- DeliveryFailure -->
+  <browser:page
+      for="openid.yadis.discover.DiscoveryFailure"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-discoveryfailure.pt"
+      class="canonical.launchpad.webapp.error.OpenIdDiscoveryFailureView"
+      />
+
   <!-- UnsafeFormGetSubmissionError -->
   <browser:page
       for="canonical.launchpad.webapp.interfaces.UnsafeFormGetSubmissionError"
@@ -403,6 +412,10 @@
 
   <adapter
     factory="lp.app.browser.vocabulary.SourcePackageNamePickerEntryAdapter"
+    />
+
+  <adapter
+    factory="lp.app.browser.vocabulary.ArchivePickerEntryAdapter"
     />
 
   <!-- TALES namespaces. -->

@@ -56,10 +56,9 @@ class TestAssignmentNotification(TestCaseWithFactory):
             ['status'], user=self.user))
         transaction.commit()
         self.assertEqual(len(stub.test_emails), 2, 'email not sent')
-        rationale = 'duplicate bug (%i)' % self.dup_bug.id
+        rationale = 'duplicate bug report (%i)' % self.dup_bug.id
         msg = stub.test_emails[-1][2]
-        self.assertTrue(rationale in msg,
-                        '%s not in\n%s\n' % (rationale, msg))
+        self.assertIn(rationale, msg)
 
 
 def test_suite():

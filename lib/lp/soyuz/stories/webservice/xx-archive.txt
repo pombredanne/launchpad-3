@@ -17,10 +17,32 @@ We publish a subset of their attributes.
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(cprov_archive)
     commercial: False
+    dependencies_collection_link:
+        u'http://.../~cprov/+archive/ppa/dependencies'
+    description: u'packages to help my friends.'
+    displayname: u'PPA for Celso Providelo'
+    distribution_link: u'http://.../ubuntu'
+    external_dependencies: None
+    name: u'ppa'
+    owner_link: u'http://.../~cprov'
+    private: False
+    require_virtualized: True
+    resource_type_link: u'http://.../#archive'
+    self_link: u'http://.../~cprov/+archive/ppa'
+    signing_key_fingerprint: None
+    web_link: u'http://launchpad.../~cprov/+archive/ppa'
+
+For "devel" additional attributes are available.
+
+    >>> cprov_archive_devel = webservice.get("/~cprov/+archive/ppa", api_version='devel').jsonBody()
+    >>> pprint_entry(cprov_archive_devel)
+    commercial: False
     dependencies_collection_link: u'http://.../~cprov/+archive/ppa/dependencies'
     description: u'packages to help my friends.'
     displayname: u'PPA for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
+    enabled_restricted_families_collection_link: u'http://.../~cprov/+archive/ppa/enabled_restricted_families'
+    external_dependencies: None
     name: u'ppa'
     owner_link: u'http://.../~cprov'
     private: False
@@ -83,10 +105,12 @@ The archive has the following attributes:
     ...     ubuntutest['main_archive_link']).jsonBody()
     >>> pprint_entry(ubuntu_main_archive)
     commercial: False
-    dependencies_collection_link: u'http://.../ubuntutest/+archive/primary/dependencies'
+    dependencies_collection_link:
+        u'http://.../ubuntutest/+archive/primary/dependencies'
     description: None
     displayname: u'Primary Archive for Ubuntu Test'
     distribution_link: u'http://.../ubuntutest'
+    external_dependencies: None
     name: u'primary'
     owner_link: u'http://.../~ubuntu-team'
     private: False
@@ -108,14 +132,16 @@ A distribution can also provide a list of all its archives:
 
 Attempting to grab a non-existent archive will result in a 404 error:
 
-    >>> bogus_archive = "http://api.launchpad.dev/beta/ubuntutest/+archive/bogus"
+    >>> bogus_archive = (
+    ...     "http://api.launchpad.dev/beta/ubuntutest/+archive/bogus")
     >>> print webservice.get(bogus_archive)
     HTTP/1.1 404 Not Found
     ...
     Object: ..., name: u'bogus'
 
 
-= Archive Permissions =
+Archive Permissions
+===================
 
 Archives have associated permissions.  These are currently either upload
 rights or queue administration rights.  The URL to the permissions
@@ -126,7 +152,8 @@ where `item` is a component or a source package name.
 
 This is a permission that allows a team to upload to a component:
 
-    >>> url = '/ubuntu/+archive/primary/+upload/ubuntu-team?type=component&item=main'
+    >>> url = ('/ubuntu/+archive/primary/+upload/ubuntu-team'
+    ...     '?type=component&item=main')
     >>> ubuntu_main_permission = webservice.get(url).jsonBody()
     >>> pprint_entry(ubuntu_main_permission)
     archive_link: u'http://.../ubuntu/+archive/primary'
@@ -140,7 +167,8 @@ This is a permission that allows a team to upload to a component:
 
 This is a permission that allows an individual to upload a source package.
 
-    >>> url = '/ubuntu/+archive/primary/+upload/carlos?type=packagename&item=mozilla-firefox'
+    >>> url = ('/ubuntu/+archive/primary/+upload/carlos'
+    ...     '?type=packagename&item=mozilla-firefox')
     >>> carlos_mozilla_permission = webservice.get(url).jsonBody()
     >>> pprint_entry(carlos_mozilla_permission)
     archive_link: u'http://.../ubuntu/+archive/primary'
@@ -155,7 +183,8 @@ This is a permission that allows an individual to upload a source package.
 
 This is a queue admin right for ubuntu-team:
 
-    >>> url = '/ubuntu/+archive/primary/+queue-admin/ubuntu-team?type=component&item=main'
+    >>> url = ('/ubuntu/+archive/primary/+queue-admin/ubuntu-team'
+    ...     '?type=component&item=main')
     >>> ubuntu_main_permission = webservice.get(url).jsonBody()
     >>> pprint_entry(ubuntu_main_permission)
     archive_link: u'http://.../ubuntu/+archive/primary'
@@ -170,7 +199,8 @@ This is a queue admin right for ubuntu-team:
 
 And one for an individual:
 
-    >>> url = '/ubuntu/+archive/primary/+queue-admin/name12?type=component&item=universe'
+    >>> url = ('/ubuntu/+archive/primary/+queue-admin/name12'
+    ...     '?type=component&item=universe')
     >>> name16_admin_permission = webservice.get(url).jsonBody()
     >>> pprint_entry(name16_admin_permission)
     archive_link: u'http://.../ubuntu/+archive/primary'
@@ -184,7 +214,8 @@ And one for an individual:
     source_package_name: None
 
 
-== Archive Permission Custom Operations ==
+Archive Permission Custom Operations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Permission collections can be retrieved with custom operations on the
 archive.
@@ -231,7 +262,7 @@ Passing a bad package name results in an error:
     >>> print user_webservice.named_get(
     ...     ubuntu['main_archive_link'], 'getUploadersForPackage',
     ...     source_package_name="badpackage")
-    HTTP/1.1 400 Bad Request
+    HTTP/1.1 404 Not Found
     ...
 
 Colin is a valid member of the team who owns the ubuntu primary archive.
@@ -304,7 +335,7 @@ Passing a bad component name results in an error:
     >>> print cjwatson_webservice.named_get(
     ...     ubuntu['main_archive_link'], 'getUploadersForComponent',
     ...     component_name="badcomponent")
-    HTTP/1.1 400 Bad Request
+    HTTP/1.1 404 Not Found
     ...
 
 If you don't specify the component, you get all the uploaders for
@@ -336,12 +367,12 @@ component.
     Archive Upload Rights ...~ubuntu-team restricted None
     Archive Upload Rights ...~ubuntu-team universe None
 
-We can use ``checkUpload`` to verify that a person can upload a 
+We can use ``checkUpload`` to verify that a person can upload a
 sourcepackage.
 
     >>> grumpy = user_webservice.get("/ubuntu/grumpy").jsonBody()
     >>> response = user_webservice.named_get(
-    ...     ubuntu['main_archive_link'], 'checkUpload', 
+    ...     ubuntu['main_archive_link'], 'checkUpload',
     ...     distroseries=grumpy['self_link'],
     ...     sourcepackagename='mozilla-firefox', pocket='Release',
     ...     component='restricted', person=name12['self_link'])
@@ -369,7 +400,7 @@ And ``checkUpload`` now also no longer passes:
 
     >>> grumpy = user_webservice.get("/ubuntu/grumpy").jsonBody()
     >>> response = user_webservice.named_get(
-    ...     ubuntu['main_archive_link'], 'checkUpload', 
+    ...     ubuntu['main_archive_link'], 'checkUpload',
     ...     distroseries=grumpy['self_link'],
     ...     sourcepackagename='mozilla-firefox', pocket='Release',
     ...     component='main', person=name12['self_link'])
@@ -485,14 +516,16 @@ And we can see that it's gone:
     Queue Administration Rights ...~name12 restricted None
     Queue Administration Rights ...~name12 universe None
 
-== Malformed archive permission URLs ==
+Malformed archive permission URLs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Malformed URLs are handled reasonably well.
 
 The type of item for which we seek the archive permission is missing. The
 latter can thus not be found.
 
-    >>> missing_type_url = '/ubuntu/+archive/primary/+upload/name12?item=firefox'
+    >>> missing_type_url = ('/ubuntu/+archive/primary/+upload/name12'
+    ...     '?item=firefox')
     >>> this_will_fail = webservice.get(missing_type_url)
     >>> print this_will_fail
     HTTP/1.1 404 Not Found
@@ -501,7 +534,8 @@ latter can thus not be found.
 The ultimate item type ('Integer') is wrong. The archive permission is hence
 not found.
 
-    >>> wrong_type_url = '/ubuntu/+archive/primary/+upload/name12?type=packageset&item=firefox&type=Integer'
+    >>> wrong_type_url = ('/ubuntu/+archive/primary/+upload/name12'
+    ...     '?type=packageset&item=firefox&type=Integer')
     >>> this_will_fail = webservice.get(missing_type_url)
     >>> print this_will_fail
     HTTP/1.1 404 Not Found
@@ -509,23 +543,26 @@ not found.
 
 The item name is missing. The archive permission is hence not found.
 
-    >>> missing_item_url = '/ubuntu/+archive/primary/+upload/name12?type=packageset'
+    >>> missing_item_url = ('/ubuntu/+archive/primary/+upload/name12'
+    ...     '?type=packageset')
     >>> this_will_fail = webservice.get(missing_type_url)
     >>> print this_will_fail
     HTTP/1.1 404 Not Found
     ...
 
-The ultimate item name ('vapourware') is wrong. The archive permission is hence
-not found.
+The ultimate item name ('vapourware') is wrong. The archive permission is
+hence not found.
 
-    >>> wrong_type_url = '/ubuntu/+archive/primary/+upload/name12?type=packageset&item=firefox&item=vapourware'
+    >>> wrong_type_url = ('/ubuntu/+archive/primary/+upload/name12'
+    ...     '?type=packageset&item=firefox&item=vapourware')
     >>> this_will_fail = webservice.get(missing_type_url)
     >>> print this_will_fail
     HTTP/1.1 404 Not Found
     ...
 
 
-= Getting Build counts for an IArchive =
+Getting Build counts for an IArchive
+====================================
 
 IArchive exposes the getBuildCounters() method, enabling this data to be
 used and displayed via XHR.
@@ -553,7 +590,8 @@ The optional param exclude_needsbuild is also provided:
     pending: 1
     succeeded: 8
 
-== Getting published sources and binaries for an IArchive ==
+Getting published sources and binaries for an IArchive
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 IArchive exposes the getPublishedSources() and getPublishedBinaries()
 methods.
@@ -582,7 +620,8 @@ request.
     400 Bad Request
 
 
-== Package copying/synchronisation ==
+Package copying/synchronisation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 IArchive contains 2 custom operations to copy packages from another archive.
 These are syncSource() and syncSources(). Both are wrappers of the
@@ -761,10 +800,12 @@ allowed to call the method at all.
     HTTP/1.1 401 Unauthorized
     ...
 
-== Non-virtualized archives ==
+Non-virtualized archives
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-Modifying the require_virtualized flag through the API is not allowed except for
-admins and commercial admins.
+
+Modifying the require_virtualized flag through the API is not allowed except
+for admins and commercial admins.
 
     >>> import simplejson
     >>> def modify_archive(service, archive):
@@ -782,7 +823,8 @@ admins and commercial admins.
     >>> mark_archive = webservice.get("/~mark/+archive/ppa").jsonBody()
     >>> mark_archive['require_virtualized'] = False
     >>> response = modify_archive(admin_webservice, mark_archive)
-    >>> webservice.get("/~mark/+archive/ppa").jsonBody()['require_virtualized']
+    >>> webservice.get(
+    ...     "/~mark/+archive/ppa").jsonBody()['require_virtualized']
     False
 
 Attempting to modify this flag without the necessary permissions will fail.
@@ -792,7 +834,8 @@ Attempting to modify this flag without the necessary permissions will fail.
     ...
     http_etag: You tried to modify a read-only attribute.
 
-== Private archives ==
+Private archives
+~~~~~~~~~~~~~~~~
 
 Create a private PPA for Celso with a private source publication.
 
@@ -819,10 +862,12 @@ the IArchive context, in this case only Celso has it.
 
     >>> pprint_entry(user_webservice.get("/~cprov/+archive/p3a").jsonBody())
     commercial: False
-    dependencies_collection_link: u'http://.../~cprov/+archive/p3a/dependencies'
+    dependencies_collection_link:
+        u'http://.../~cprov/+archive/p3a/dependencies'
     description: u'tag:launchpad.net:2008:redacted'
     displayname: u'PPA named p3a for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
+    external_dependencies: None
     name: u'p3a'
     owner_link: u'http://.../~cprov'
     private: True
@@ -834,10 +879,12 @@ the IArchive context, in this case only Celso has it.
 
     >>> pprint_entry(cprov_webservice.get("/~cprov/+archive/p3a").jsonBody())
     commercial: False
-    dependencies_collection_link: u'http://.../~cprov/+archive/p3a/dependencies'
+    dependencies_collection_link:
+        u'http://.../~cprov/+archive/p3a/dependencies'
     description: u'packages to help my friends.'
     displayname: u'PPA named p3a for Celso Providelo'
     distribution_link: u'http://.../ubuntu'
+    external_dependencies: None
     name: u'p3a'
     owner_link: u'http://.../~cprov'
     private: True
@@ -847,7 +894,8 @@ the IArchive context, in this case only Celso has it.
     signing_key_fingerprint: u'ABCDEF0123456789ABCDDCBA0000111112345678'
     web_link: u'http://launchpad.../~cprov/+archive/p3a'
 
-== Creating subscriptions to a (private) archive ==
+Creating subscriptions to a (private) archive
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 IArchive exposes the newSubscription() method, enabling new subscriptions
 to be created via AJAX.
@@ -936,7 +984,8 @@ is already a current subscription:
     for 'PPA named p3a for Celso Providelo'.
 
 
-== Modifying privacy ==
+Modifying privacy
+~~~~~~~~~~~~~~~~~
 
 Modifying the privacy flag through the API is not allowed except for
 admins and commercial admins.
@@ -949,7 +998,8 @@ admins and commercial admins.
     (<Archive at ...>, 'private', 'launchpad.Commercial')
 
 
-=== Copying private file to public archives ===
+Copying private file to public archives
+---------------------------------------
 
 Copying private sources to public archives works fine with
 `syncSource` or `syncSources` operations.
@@ -997,7 +1047,8 @@ error is returned.
     (same version already uploaded and waiting in ACCEPTED queue)
 
 
-= Archive dependencies =
+Archive dependencies
+====================
 
 Archives can specify dependencies on pockets and components of other
 archives. Found at <dependentarchive.id>/+dependency/<dependencyarchive.id>,

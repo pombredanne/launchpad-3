@@ -79,10 +79,6 @@ from lp.code.interfaces.codereviewcomment import (
     )
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import IPreviewDiff
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks,
-    ISeriesSourcePackageBranch,
-    )
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild,
@@ -106,6 +102,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceAdmin,
     IDistroSeriesDifferenceEdit,
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParent
@@ -178,6 +175,7 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageReleaseDownloadCount,
     )
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJob
 from lp.soyuz.interfaces.packageset import (
     IPackageset,
     IPackagesetSet,
@@ -987,6 +985,20 @@ class ViewCountry(AnonymousAuthorization):
     usedfor = ICountry
 
 
+class AdminDistroSeriesDifference(AuthorizationBase):
+    """You need to be an archive admin or LP admin to get lp.Admin."""
+    permission = 'launchpad.Admin'
+    usedfor = IDistroSeriesDifferenceAdmin
+
+    def checkAuthenticated(self, user):
+        # Archive admin is done by component, so here we just
+        # see if the user has that permission on any components
+        # at all.
+        archive = self.obj.derived_series.main_archive
+        return bool(
+            archive.getComponentsForQueueAdmin(user.person)) or user.in_admin
+
+
 class EditDistroSeriesDifference(AuthorizationBase):
     """Anyone with lp.View on the distribution can edit a DSD."""
     permission = 'launchpad.Edit'
@@ -1025,10 +1037,8 @@ class EditProductSeries(EditByOwnersOrAdmins):
             # The user is the owner of the product, or the release manager.
             return True
         # Rosetta experts need to be able to upload translations.
-        # Bazaar experts need to be able to change the linked branches.
         # Registry admins are just special.
         if (user.in_registry_experts or
-            user.in_bazaar_experts or
             user.in_rosetta_experts):
             return True
         return EditByOwnersOrAdmins.checkAuthenticated(self, user)
@@ -1134,7 +1144,7 @@ class OnlyBazaarExpertsAndAdmins(AuthorizationBase):
     experts."""
 
     def checkAuthenticated(self, user):
-        return user.in_admin or user.in_bazaar_experts
+        return user.in_admin
 
 
 class OnlyVcsImportsAndAdmins(AuthorizationBase):
@@ -1178,7 +1188,7 @@ class EditCodeImportJobWorkflow(OnlyVcsImportsAndAdmins):
 class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     """Control who can edit the object view of a CodeImportMachine.
 
-    Access is restricted to members of ~bazaar-experts and Launchpad admins.
+    Access is restricted to Launchpad admins.
     """
     permission = 'launchpad.Edit'
     usedfor = ICodeImportMachine
@@ -1187,13 +1197,13 @@ class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
 class AdminSourcePackageRecipeBuilds(AuthorizationBase):
     """Control who can edit SourcePackageRecipeBuilds.
 
-    Access is restricted to members of ~bazaar-experts and Buildd Admins.
+    Access is restricted to Buildd Admins.
     """
     permission = 'launchpad.Admin'
     usedfor = ISourcePackageRecipeBuild
 
     def checkAuthenticated(self, user):
-        return user.in_bazaar_experts or user.in_buildd_admin
+        return user.in_buildd_admin
 
 
 class EditBranchMergeQueue(AuthorizationBase):
@@ -1437,7 +1447,22 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
         permissions = permission_set.componentsForQueueAdmin(
             self.obj.distroseries.distribution.all_distro_archives,
             user.person)
-        return permissions.count() > 0
+        return not permissions.is_empty()
+
+
+class EditPlainPackageCopyJob(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IPlainPackageCopyJob
+
+    def checkAuthenticated(self, user):
+        archive = self.obj.target_archive
+        if archive.is_ppa:
+            return archive.checkArchivePermission(user.person)
+
+        permission_set = getUtility(IArchivePermissionSet)
+        permissions = permission_set.componentsForQueueAdmin(
+            archive, user.person)
+        return not permissions.is_empty()
 
 
 class EditPackageUpload(AdminByAdminsTeam):
@@ -1811,7 +1836,7 @@ class AccessBranch(AuthorizationBase):
 
 
 class EditBranch(AuthorizationBase):
-    """The owner, bazaar experts or admins can edit branches."""
+    """The owner or admins can edit branches."""
     permission = 'launchpad.Edit'
     usedfor = IBranch
 
@@ -1859,13 +1884,12 @@ def can_upload_linked_package(person_role, branch):
 
 
 class AdminBranch(AuthorizationBase):
-    """The bazaar experts or admins can administer branches."""
+    """The admins can administer branches."""
     permission = 'launchpad.Admin'
     usedfor = IBranch
 
     def checkAuthenticated(self, user):
-        return (user.in_admin or
-                user.in_bazaar_experts)
+        return user.in_admin
 
 
 class AdminDistroSeriesTranslations(AuthorizationBase):
@@ -2505,38 +2529,6 @@ class EditArchivePermissionSet(AuthorizationBase):
         return user.in_admin or user.in_ubuntu_techboard
 
 
-class LinkOfficialSourcePackageBranches(AuthorizationBase):
-    """Who can source packages to their official branches?
-
-    Only members of the ~ubuntu-branches celebrity team! Or admins.
-    """
-
-    permission = 'launchpad.Edit'
-    usedfor = IMakeOfficialBranchLinks
-
-    def checkUnauthenticated(self):
-        return False
-
-    def checkAuthenticated(self, user):
-        return user.in_ubuntu_branches or user.in_admin
-
-
-class ChangeOfficialSourcePackageBranchLinks(AuthorizationBase):
-    """Who can change the links from source packages to their branches?
-
-    Only members of the ~ubuntu-branches celebrity team! Or admins.
-    """
-
-    permission = 'launchpad.Edit'
-    usedfor = ISeriesSourcePackageBranch
-
-    def checkUnauthenticated(self):
-        return False
-
-    def checkAuthenticated(self, user):
-        return user.in_ubuntu_branches or user.in_admin
-
-
 class ViewPackageset(AnonymousAuthorization):
     """Anyone can view an IPackageset."""
     usedfor = IPackageset
@@ -2611,3 +2603,27 @@ class SetMessageVisibility(AuthorizationBase):
 
 class ViewPublisherConfig(AdminByAdminsTeam):
     usedfor = IPublisherConfig
+
+
+class EditSourcePackage(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ISourcePackage
+
+    def checkAuthenticated(self, user):
+        """Anyone who can upload a package can edit it."""
+        if user.in_admin:
+            return True
+
+        distribution = self.obj.distribution
+        if user.inTeam(distribution.owner):
+            return True
+
+        # We use verifyUpload() instead of checkUpload() because
+        # we don't have a pocket.
+        # It returns the reason the user can't upload
+        # or None if they are allowed.
+        reason = distribution.main_archive.verifyUpload(
+            user.person, distroseries=self.obj.distroseries,
+            sourcepackagename=self.obj.sourcepackagename,
+            component=None, strict_component=False)
+        return reason is None

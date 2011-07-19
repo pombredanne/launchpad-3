@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for traversal from the root branch object."""
@@ -9,11 +9,17 @@ import unittest
 
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
+from canonical.launchpad.webapp import (
+    canonical_url,
+    )
+from canonical.launchpad.webapp.interfaces import (
+    BrowserNotificationLevel,
+    ILaunchpadRoot,
+    )
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.url import urlappend
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -32,6 +38,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.publication import test_traverse
 from lp.testing.views import create_view
 
 # We set the request header HTTP_REFERER  when we want to simulate navigation
@@ -93,24 +100,30 @@ class TraversalMixin:
         self.assertEqual(url, redirection.target)
 
     def traverse(self, path, first_segment, use_default_referer=True):
-        """Traverse to 'segments' using a 'LaunchpadRootNavigation' object.
+        """Traverse to 'path' using a 'LaunchpadRootNavigation' object.
 
         Using the Zope traversal machinery, traverse to the path given by
         'segments', starting at a `LaunchpadRootNavigation` object.
 
-        :param segments: A list of path segments.
+        CAUTION: Prefer test_traverse to this method, because it correctly
+        establishes the global request.
+
+        :param path: A slash-delimited path.
         :param use_default_referer: If True, set the referer attribute in the
             request header to DEFAULT_REFERER = "http://launchpad.dev"
             (otherwise it remains as None)
         :return: The object found.
         """
+        # XXX: What's the difference between first_segment and path? -- mbp
+        # 2011-06-27.
         extra = {'PATH_INFO': urlappend('/%s' % first_segment, path)}
         if use_default_referer:
             extra['HTTP_REFERER'] = DEFAULT_REFERER
         request = LaunchpadTestRequest(**extra)
         segments = reversed(path.split('/'))
         request.setTraversalStack(segments)
-        traverser = LaunchpadRootNavigation(None, request=request)
+        traverser = LaunchpadRootNavigation(
+            getUtility(ILaunchpadRoot), request=request)
         return traverser.publishTraverse(request, first_segment)
 
 
@@ -148,7 +161,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         # branch that doesn't exist will display an error message.
         branch = self.factory.makeAnyBranch()
         bad_name = branch.unique_name + 'wibble'
-        requiredMessage = "No such branch: '%s'." % (branch.name+"wibble")
+        requiredMessage = "No such branch: '%s'." % (
+            branch.name + "wibble")
         self.assertDisplaysError(bad_name, requiredMessage)
 
     def test_private_branch(self):
@@ -176,7 +190,8 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         removeSecurityProxy(branch).private = True
         login(ANONYMOUS)
         requiredMessage = (
-            u"The target %s does not have a linked branch." % naked_product.name)
+            u"The target %s does not have a linked branch." %
+            naked_product.name)
         self.assertDisplaysNotice(naked_product.name, requiredMessage)
 
     def test_nonexistent_product(self):
@@ -217,8 +232,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         sourcepackage = self.factory.makeSourcePackage()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
         distro_package = sourcepackage.distribution_sourcepackage
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        registrant = ubuntu_branches.teamowner
+        registrant = distro_package.distribution.owner
         target = ICanHasLinkedBranch(distro_package)
         with person_logged_in(registrant):
             target.setBranch(branch, registrant)
@@ -231,8 +245,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         branch = self.factory.makePackageBranch(
             sourcepackage=sourcepackage, private=True)
         distro_package = sourcepackage.distribution_sourcepackage
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        registrant = ubuntu_branches.teamowner
+        registrant = distro_package.distribution.owner
         with person_logged_in(registrant):
             ICanHasLinkedBranch(distro_package).setBranch(branch, registrant)
         login(ANONYMOUS)
@@ -367,6 +380,42 @@ class TestPersonTraversal(TestCaseWithFactory, TraversalMixin):
         # All other user cannot traverse to the team.
         login_person(self.any_user)
         self.assertRaises(NotFound, self.traverse, segment, segment)
+
+    def test_self_url_traversal(self):
+        # Just /~/ expands to the current user.  (Bug 785800).
+        person = self.factory.makePerson()
+        login_person(person)
+        obj, view, req = test_traverse('http://launchpad.dev/~')
+        view = removeSecurityProxy(view)
+        self.assertEqual(
+            canonical_url(person),
+            view.target.rstrip('/'))
+
+    def test_self_url_not_logged_in(self):
+        # /~/ when not logged in asks you to log in.
+        self.assertRaises(Unauthorized,
+            test_traverse, 'http://launchpad.dev/~')
+
+    def test_self_url_pathinfo(self):
+        # You can traverse below /~/.
+        person = self.factory.makePerson()
+        login_person(person)
+        obj, view, req = test_traverse('http://launchpad.dev/~/+editsshkeys')
+        view = removeSecurityProxy(view)
+        self.assertEqual(
+            canonical_url(person) + '/+editsshkeys',
+            view.target)
+
+    def test_self_url_app_domain(self):
+        # You can traverse below /~/.
+        person = self.factory.makePerson()
+        login_person(person)
+        obj, view, req = test_traverse('http://bugs.launchpad.dev/~')
+        view = removeSecurityProxy(view)
+        self.assertEqual(
+            canonical_url(person, rootsite='bugs'),
+            view.target.rstrip('/'))
+
 
 
 class TestErrorViews(TestCaseWithFactory):

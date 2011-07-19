@@ -34,7 +34,6 @@ class ILaunchpadCelebrities(Interface):
     Celebrities are SQLBase instances that have a well known name.
     """
     admin = Attribute("The 'admins' team.")
-    bazaar_experts = Attribute("The Bazaar Experts team.")
     software_center_agent = Attribute("The Software Center Agent.")
     bug_importer = Attribute("The bug importer.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
@@ -58,7 +57,6 @@ class ILaunchpadCelebrities(Interface):
     sourceforge_tracker = Attribute("The SourceForge Bug Tracker")
     ubuntu = Attribute("The Ubuntu Distribution.")
     ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
-    ubuntu_branches = Attribute("The Ubuntu branches team")
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
     ubuntu_cdimage_mirror = Attribute("The main cdimage mirror for Ubuntu.")
     ubuntu_security = Attribute("The 'ubuntu-security' team.")

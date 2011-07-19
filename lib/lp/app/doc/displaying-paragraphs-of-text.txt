@@ -6,7 +6,7 @@ see <https://launchpad.canonical.com/DisplayingParagraphsOfText>.
 
 == Basics ==
 
-    >>> from canonical.launchpad.ftests import test_tales
+    >>> from lp.testing import test_tales
 
     >>> text = ('This is a paragraph.\n'
     ...         '\n'

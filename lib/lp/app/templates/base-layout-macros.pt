@@ -79,12 +79,8 @@
   <script type="text/javascript">
     // Define a global YUI sandbox that should be used by everyone.
     var LPS = YUI({
-      // Don't try to fetch the loader module.
-      bootstrap: false,
       // Don't try to fetch CSS files.
       fetchCSS: false,
-      // Turn off combo loading.
-      combine: false,
       // For paranoia, set a low timeout to not wait on loading a resource.
       timeout: 50
       });
@@ -111,14 +107,17 @@
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
   <script id="base-layout-load-scripts" type="text/javascript">
-    LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', function(Y) {
+    LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', 'lp.app.longpoll', function(Y) {
         Y.on('load', function(e) {
             sortables_init();
             initInlineHelp();
             Y.lp.activate_collapsibles();
             activateFoldables();
             activateConstrainBugExpiration();
-            Y.lp.app.links.check_valid_lp_links();
+	    Y.lp.app.links.check_valid_lp_links();
+            // Longpolling will only start if
+	    // LP.cache.longpoll is populated.
+            Y.lp.app.longpoll.setupLongPollManager();
         }, window);
 
         // Hook up the function that dismisses the help window if we click

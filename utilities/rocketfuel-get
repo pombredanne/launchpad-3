@@ -10,6 +10,9 @@
 # Stop if there's an error, and treat unset variables as errors.
 set -eu
 
+# A rough measure of how much stuff we can do in parallel.
+CPU_COUNT="$(egrep -c '^processor\b' /proc/cpuinfo)"
+
 # Helper function to run a child process, indenting stdout to aid
 # readability.
 run-child() {
@@ -27,6 +30,7 @@ fi
 
 LP_DOWNLOAD_CACHE_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/download-cache"
 LP_EGGS_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/eggs"
+YUI_PATH="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR/yui"
 LP_DOWNLOAD_CACHE_PATH="$(eval echo ${LP_DOWNLOAD_CACHE_PATH})"
 LP_EGGS_PATH="$(eval echo ${LP_EGGS_PATH})"
 
@@ -36,7 +40,7 @@ bzr pull -d "$LP_TRUNK_PATH"
 FINAL_REV=$(bzr revno "$LP_TRUNK_PATH")
 
 # Make sure our directories are around.
-mkdir -p "$LP_SOURCEDEPS_PATH" "$LP_EGGS_PATH"
+mkdir -p "$LP_SOURCEDEPS_PATH" "$LP_EGGS_PATH" "$YUI_PATH"
 
 # Get/update the download cache.
 if [ -d "$LP_DOWNLOAD_CACHE_PATH" ]
@@ -56,23 +60,18 @@ then
 fi
 
 echo "Updating sourcecode dependencies in rocketfuel:"
-echo ""
-echo "    Sourcedeps: $LP_SOURCEDEPS_PATH"
-
-run-child $LP_TRUNK_PATH/utilities/update-sourcecode $LP_SOURCEDEPS_PATH $sourcedeps_conf
-
+run-child \
+    "$LP_TRUNK_PATH/utilities/update-sourcecode" \
+    "$LP_SOURCEDEPS_PATH" "$sourcedeps_conf"
 
 # Update the current trees in the repo.
 echo "Updating sourcecode dependencies in current local branches:"
-for branch in "$LP_PROJECT_PATH"/*
-do
-    if [ -d "$branch/sourcecode" ]
-    then
-        echo "    ${branch}"
-        run-child "$LP_TRUNK_PATH/utilities/link-external-sourcecode" \
-            --parent="$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR" --target="$branch"
-    fi
-done
+find "$LP_PROJECT_PATH" -mindepth 2 -maxdepth 2 \
+    -type d -name sourcecode -printf '%h\0' | \
+    run-child xargs --no-run-if-empty \
+        --max-procs="${CPU_COUNT}" --max-args=1 --null \
+        "$LP_TRUNK_PATH/utilities/link-external-sourcecode" \
+            --parent "$LP_PROJECT_ROOT/$LP_SOURCEDEPS_DIR" --target
 
 # Build launchpad if there were changes.
 if [ $FINAL_REV != $INITIAL_REV ];

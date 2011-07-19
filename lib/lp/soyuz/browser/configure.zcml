@@ -32,6 +32,18 @@
             path_expression="string:+binarypub"
             attribute_to_parent="archive"
             urldata="lp.soyuz.browser.publishing.BinaryPublicationURL"/>
+        <browser:url
+	    for="lp.soyuz.interfaces.processor.IProcessorFamilySet"
+            path_expression="string:+processor-families"
+            parent_utility="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"/>
+        <browser:url
+	    for="lp.soyuz.interfaces.processor.IProcessorFamily"
+            path_expression="string:${name}"
+            parent_utility="lp.soyuz.interfaces.processor.IProcessorFamilySet" />
+        <browser:url
+	    for="lp.soyuz.interfaces.processor.IProcessor"
+            path_expression="string:${id}"
+            attribute_to_parent="family" />
     </facet>
     <browser:navigation
         module="lp.soyuz.browser.binarypackagerelease"
@@ -217,8 +229,11 @@
         name="+index"/>
     <browser:navigation
         module="lp.soyuz.browser.archive"
-        classes="
-            ArchiveNavigation"/>
+        classes="ArchiveNavigation" />
+    <browser:navigation
+        module="lp.soyuz.browser.processor"
+	classes="
+	    ProcessorFamilySetNavigation ProcessorFamilyNavigation"/>
     <browser:url
         for="lp.soyuz.interfaces.archive.IPPA"
         path_expression="string:+archive"
@@ -720,6 +735,12 @@
             permission="zope.Public"
             name="+portlet-ppa-architectures"
             template="../templates/distribution-portlet-ppa-architectures.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+            class=
+                "lp.soyuz.browser.sourcepackage.SourcePackageDifferenceView"
+            permission="zope.Public"
+            name="+difference"/>
         <browser:page
             for="lp.registry.interfaces.sourcepackage.ISourcePackage"
             class=

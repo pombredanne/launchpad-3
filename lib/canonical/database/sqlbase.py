@@ -24,7 +24,6 @@ __all__ = [
     'quote_like',
     'quoteIdentifier',
     'quote_identifier',
-    'RandomiseOrderDescriptor',
     'reset_store',
     'rollback',
     'session_store',
@@ -184,7 +183,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         correct master Store.
         """
         from canonical.launchpad.interfaces.lpstorm import IMasterStore
-        # Make it simple to write dumb-invalidators - initialised
+        # Make it simple to write dumb-invalidators - initialized
         # _cached_properties to a valid list rather than just-in-time
         # creation.
         self._cached_properties = []
@@ -343,7 +342,10 @@ class ZopelessTransactionManager(object):
             [database]
             rw_main_master: %(main_connection_string)s
             isolation_level: %(isolation_level)s
-            """ % vars())
+            """ % {
+                'isolation_level': isolation_level,
+                'main_connection_string': main_connection_string,
+                })
 
         if dbuser:
             # XXX 2009-05-07 stub bug=373252: Scripts should not be connecting
@@ -352,7 +354,7 @@ class ZopelessTransactionManager(object):
                 [launchpad]
                 dbuser: %(dbuser)s
                 auth_dbuser: launchpad_auth
-                """ % vars())
+                """ % {'dbuser': dbuser})
 
         if cls._installed is not None:
             if cls._config_overlay != overlay:

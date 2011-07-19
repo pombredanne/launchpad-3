@@ -26,10 +26,13 @@ from openid.consumer.consumer import (
     SUCCESS,
     )
 from openid.extensions import sreg
+from openid.yadis.discover import DiscoveryFailure
+import urllib2
 from zope.component import getUtility
 from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
 from zope.session.interfaces import ISession
+from zope.testbrowser.testing import Browser as TestBrowser
 
 from canonical.launchpad.interfaces.account import (
     AccountStatus,
@@ -49,7 +52,10 @@ from canonical.launchpad.testing.pages import (
     )
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.interfaces import IStoreSelector
+from canonical.launchpad.webapp.interfaces import (
+    ILaunchpadApplication,
+    IStoreSelector,
+    )
 from canonical.launchpad.webapp.login import (
     OpenIDCallbackView,
     OpenIDLogin,
@@ -65,8 +71,10 @@ from lp.services.openid.model.openididentifier import OpenIdIdentifier
 from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.testing import (
     logout,
+    TestCase,
     TestCaseWithFactory,
     )
+from lp.testing.fixture import ZopeViewReplacementFixture
 from lp.testopenid.interfaces.server import ITestOpenIDPersistentIdentity
 
 
@@ -597,6 +605,37 @@ class TestOpenIDReplayAttack(TestCaseWithFactory):
                           extract_text(error_msg))
 
 
+class FakeHTTPResponse:
+    status = 500
+
+
+class OpenIDConsumerThatFailsDiscovery:
+
+    def begin(self, url):
+        raise DiscoveryFailure(
+            'HTTP Response status from identity URL host is not 200. '
+            'Got status 500', FakeHTTPResponse)
+
+
+class TestMissingServerShowsNiceErrorPage(TestCase):
+    layer = DatabaseFunctionalLayer
+
+    def test_missing_openid_server_shows_nice_error_page(self):
+        fixture = ZopeViewReplacementFixture('+login', ILaunchpadApplication)
+        class OpenIDLoginThatFailsDiscovery(fixture.original):
+            def _getConsumer(self):
+                return OpenIDConsumerThatFailsDiscovery()
+        fixture.replacement = OpenIDLoginThatFailsDiscovery
+        self.useFixture(fixture)
+        browser = TestBrowser()
+        self.assertRaises(urllib2.HTTPError,
+                          browser.open, 'http://launchpad.dev/+login')
+        self.assertEquals('503 Service Unavailable',
+                          browser.headers.get('status'))
+        self.assertTrue(
+            'OpenID Provider Is Unavailable at This Time' in browser.contents)
+
+
 class FakeOpenIDRequest:
     extensions = None
     return_to = None
@@ -659,6 +698,8 @@ class TestOpenIDLogin(TestCaseWithFactory):
         sreg_extension = extensions[0]
         self.assertIsInstance(sreg_extension, sreg.SRegRequest)
         self.assertEquals(['email', 'fullname'],
+                          sorted(sreg_extension.allRequestedFields()))
+        self.assertEquals(sorted(sreg_extension.required),
                           sorted(sreg_extension.allRequestedFields()))
 
     def test_logs_to_timeline(self):

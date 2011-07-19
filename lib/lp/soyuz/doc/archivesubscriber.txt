@@ -131,7 +131,7 @@ entry is created:
     To start downloading and using software from this archive you need to
     view your access details by visiting this link:
     <BLANKLINE>
-    <http://launchpad.dev/~joesmith/+archivesubscriptions>
+    <http://launchpad.dev/~/+archivesubscriptions>
     <BLANKLINE>
     You can find out more about Celso Providelo here:
     <BLANKLINE>
@@ -167,7 +167,7 @@ the e-mail does not contain the description.
     To start downloading and using software from this archive you need to
     view your access details by visiting this link:
     <BLANKLINE>
-    <http://launchpad.dev/~fredsmith/+archivesubscriptions>
+    <http://launchpad.dev/~/+archivesubscriptions>
     <BLANKLINE>
     You can find out more about Celso Providelo here:
     <BLANKLINE>

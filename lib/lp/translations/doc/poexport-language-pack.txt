@@ -4,7 +4,7 @@ Language Pack Exports
 Launchpad has a way to export all distribution series translations in a
 tarball to provide language packs.
 
-Some initialisation tasks:
+Some initialization tasks:
 
     >>> import datetime
     >>> import pytz
@@ -137,7 +137,7 @@ Get the Grumpy distro series.
     >>> series = getUtility(IDistributionSet)['ubuntu'].getSeries('grumpy')
 
 
-Sample data initialisation
+Sample data initialization
 ..........................
 
 We need to import an XPI template and a translation to see those files

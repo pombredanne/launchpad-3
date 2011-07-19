@@ -101,7 +101,7 @@ class PersonCelebrityDescriptor(CelebrityDescriptor):
     This descriptor maintains a list of names so code can detect
     if a given person is a celebrity for special handling.
     """
-    names = set() # Populated by the constructor.
+    names = set()  # Populated by the constructor.
 
     def __init__(self, name):
         PersonCelebrityDescriptor.names.add(name)
@@ -128,7 +128,6 @@ class LaunchpadCelebrities:
     implements(ILaunchpadCelebrities)
 
     admin = PersonCelebrityDescriptor('admins')
-    bazaar_experts = PersonCelebrityDescriptor('bazaar-experts')
     software_center_agent = PersonCelebrityDescriptor(
         'software-center-agent')
     bug_importer = PersonCelebrityDescriptor('bug-importer')
@@ -153,7 +152,6 @@ class LaunchpadCelebrities:
     savannah_tracker = CelebrityDescriptor(IBugTrackerSet, 'savannah')
     sourceforge_tracker = CelebrityDescriptor(IBugTrackerSet, 'sf')
     ubuntu = CelebrityDescriptor(IDistributionSet, 'ubuntu')
-    ubuntu_branches = PersonCelebrityDescriptor('ubuntu-branches')
     ubuntu_bugzilla = CelebrityDescriptor(IBugTrackerSet, 'ubuntu-bugzilla')
     ubuntu_security = PersonCelebrityDescriptor('ubuntu-security')
     ubuntu_techboard = PersonCelebrityDescriptor('techboard')

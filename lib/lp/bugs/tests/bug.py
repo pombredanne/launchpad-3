@@ -17,7 +17,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.ftests import sync
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
@@ -43,35 +42,38 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 
 def print_direct_subscribers(bug_page):
     """Print the direct subscribers listed in a portlet."""
-    print_subscribers(bug_page, 'subscribers-direct')
+    print_subscribers(bug_page, 'Maybe', reverse=True)
 
 
 def print_also_notified(bug_page):
-    """Print the structural subscribers listed in a portlet."""
+    """Print the structural and duplicate subscribers listed in a portlet."""
     print 'Also notified:'
-    print_subscribers(bug_page, 'subscribers-indirect')
+    print_subscribers(bug_page, 'Maybe')
 
 
-def print_subscribers_from_duplicates(bug_page):
-    """Print the subscribers from duplicates listed in a portlet."""
-    print 'From duplicates:'
-    print_subscribers(bug_page, 'subscribers-from-duplicates')
+def print_subscribers(bug_page, subscription_level=None, reverse=False):
+    """Print the subscribers listed in the subscribers JSON portlet."""
+    from simplejson import loads
+    details = loads(bug_page)
 
-
-def print_subscribers(bug_page, subscriber_list_id):
-    """Print the subscribers listed in the subscriber portlet."""
-    subscriber_list = find_tag_by_id(bug_page, subscriber_list_id)
-    if subscriber_list is None:
-        # No list with this ID (as can happen if there are
-        # no indirect subscribers), so just print an empty string.
+    if details is None:
+        # No subscribers at all.
         print ""
     else:
-        anchors = subscriber_list.findAll('a')
-        for anchor in anchors:
-            sub_display = extract_text(anchor)
-            if anchor.has_key('title'):
-                sub_display += (' (%s)' % anchor['title'])
-            print sub_display
+        lines = []
+        for subscription in details:
+            level_matches = (
+                (not reverse and
+                 subscription['subscription_level'] == subscription_level) or
+                (reverse and
+                 subscription['subscription_level'] != subscription_level))
+            if subscription_level is None or level_matches:
+                subscriber = subscription['subscriber']
+                line = subscriber['display_name']
+                if subscriber['can_edit']:
+                    line += " (Unsubscribe)"
+                lines.append(line)
+        print "\n".join(sorted(lines))
 
 
 def print_bug_affects_table(content, highlighted_only=False):
@@ -91,7 +93,8 @@ def print_bug_affects_table(content, highlighted_only=False):
         if tr.td.table:
             # Don't print the bugtask edit form.
             continue
-        print extract_text(tr)
+        # Strip zero-width white-spaces.
+        print extract_text(tr).replace('&#8203;', '')
 
 
 def print_remote_bugtasks(content):
@@ -118,7 +121,8 @@ def print_bugs_list(content, list_id):
     bugs_list = find_tag_by_id(content, list_id).findAll(
         None, {'class': 'similar-bug'})
     for node in bugs_list:
-        print extract_text(node)
+        # Also strip zero-width spaces out.
+        print extract_text(node).replace('&#8203;', '')
 
 
 def print_bugtasks(text, show_heat=None):
@@ -224,7 +228,6 @@ def create_old_bug(
             bugtracker=external_bugtracker, remotebug='1234')
     date = datetime.now(UTC) - timedelta(days=days_old)
     removeSecurityProxy(bug).date_last_updated = date
-    sync_bugtasks([bugtask])
     return bugtask
 
 
@@ -248,15 +251,6 @@ def summarize_bugtasks(bugtasks):
             bugtask.bug.duplicateof is not None,
             bugtask.milestone is not None,
             bugtask.bug.messages.count() == 1)
-
-
-def sync_bugtasks(bugtasks):
-    """Sync the bugtask and its bug to the database."""
-    if not isinstance(bugtasks, list):
-        bugtasks = [bugtasks]
-    for bugtask in bugtasks:
-        sync(bugtask)
-        sync(bugtask.bug)
 
 
 def print_upstream_linking_form(browser):

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'get_recipients',  # Available for testing only.
     'notify',
     ]
 
@@ -18,20 +19,24 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.mail import (
-    format_address,
-    sendmail,
-    )
 from canonical.launchpad.webapp import canonical_url
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.archiveuploader.changesfile import ChangesFile
-from lp.archiveuploader.utils import safe_fix_maintainer
+from lp.archiveuploader.utils import (
+    ParseMaintError,
+    safe_fix_maintainer,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.encoding import (
     ascii_smash,
     guess as guess_encoding,
+    )
+from lp.services.mail.sendmail import (
+    format_address,
+    format_address_for_person,
+    sendmail,
     )
 
 
@@ -62,8 +67,12 @@ def reject_changes_file(blamer, changes_file_path, changes, archive,
     }
     template = get_template(archive, 'rejected')
     body = template % information
-    to_addrs = get_recipients(blamer, archive, distroseries, changes, logger)
-    logger.debug("Sending rejection email.")
+    to_addrs = get_recipients(
+        blamer, archive, distroseries, logger, changes=changes)
+    debug(logger, "Sending rejection email.")
+    if not to_addrs:
+        debug(logger, "No recipients have a preferred email.")
+        return
     send_mail(None, archive, to_addrs, subject, body, False, logger=logger)
 
 
@@ -87,7 +96,7 @@ ACTION_DESCRIPTIONS = {
     'unapproved': 'Waiting for approval',
     'rejected': 'Rejected',
     'accepted': 'Accepted',
-    'announcement': 'Accepted'
+    'announcement': 'Accepted',
     }
 
 
@@ -115,10 +124,9 @@ def calculate_subject(spr, bprs, customfiles, archive, distroseries,
 
 
 def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
-           announce_list=None, summary_text=None, changes=None,
-           changesfile_content=None, changesfile_object=None, action=None,
-           dry_run=False, logger=None):
-    """Notify about 
+           summary_text=None, changes=None, changesfile_content=None,
+           changesfile_object=None, action=None, dry_run=False, logger=None):
+    """Notify about
 
     :param blamer: The `IPerson` who is to blame for this notification.
     :param spr: The `ISourcePackageRelease` that was created.
@@ -127,7 +135,6 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     :param archive: The target `IArchive`.
     :param distroseries: The target `IDistroSeries`.
     :param pocket: The target `PackagePublishingPocket`.
-    :param announce_list: Where to announce the upload.
     :param summary_text: The summary of the notification.
     :param changes: A dictionary of the parsed changes file.
     :param changesfile_content: The raw content of the changes file, so it
@@ -153,6 +160,8 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     if spr is None and not bprs and not customfiles:
         # We do not have enough context to do a normal notification, so
         # reject what we do have.
+        if changesfile_object is None:
+            return
         reject_changes_file(
             blamer, changesfile_object.name, changes, archive, distroseries,
             summary_text, logger=logger)
@@ -171,7 +180,8 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
         return
 
     recipients = get_recipients(
-        blamer, archive, distroseries, changes, logger)
+        blamer, archive, distroseries, logger, changes=changes, spr=spr,
+        bprs=bprs)
 
     # There can be no recipients if none of the emails are registered
     # in LP.
@@ -202,8 +212,8 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
         subject = calculate_subject(
             spr, bprs, customfiles, archive, distroseries, pocket, action)
         body = assemble_body(
-            blamer, spr, archive, distroseries, summarystring, changes,
-            action, announce_list)
+            blamer, spr, bprs, archive, distroseries, summarystring, changes,
+            action)
         send_mail(
             spr, archive, recipients, subject, body, dry_run,
             changesfile_content=changesfile_content,
@@ -212,14 +222,17 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
 
     build_and_send_mail(action, recipients)
 
+    (changesfile, date, from_addr, maintainer) = fetch_information(
+        spr, bprs, changes)
     # If we're sending an acceptance notification for a non-PPA upload,
     # announce if possible. Avoid announcing backports, binary-only
     # security uploads, or autosync uploads.
-    if (action == 'accepted' and announce_list and not archive.is_ppa and
-        pocket != PackagePublishingPocket.BACKPORTS and
-        not (pocket == PackagePublishingPocket.SECURITY and spr is None) and
-        not is_auto_sync_upload(spr, bprs, pocket, changes['Changed-By'])):
-        from_addr = sanitize_string(changes['Changed-By'])
+    if (action == 'accepted' and distroseries.changeslist
+        and not archive.is_ppa
+        and pocket != PackagePublishingPocket.BACKPORTS
+        and not (pocket == PackagePublishingPocket.SECURITY and spr is None)
+        and not is_auto_sync_upload(
+            spr, bprs, pocket, from_addr)):
         name = None
         bcc_addr = None
         if spr:
@@ -230,18 +243,22 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
             bcc_addr = '%s_derivatives@packages.qa.debian.org' % name
 
         build_and_send_mail(
-            'announcement', [str(announce_list)], from_addr, bcc_addr)
+            'announcement', [str(distroseries.changeslist)], from_addr,
+            bcc_addr)
 
 
-def assemble_body(blamer, spr, archive, distroseries, summary, changes,
-                  action, announce_list):
+def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
+                  action):
     """Assemble the e-mail notification body."""
+    if changes is None:
+        changes = {}
+    (changesfile, date, changedby, maintainer) = fetch_information(
+        spr, bprs, changes)
     information = {
         'STATUS': ACTION_DESCRIPTIONS[action],
         'SUMMARY': summary,
-        'DATE': 'Date: %s' % changes['Date'],
-        'CHANGESFILE': ChangesFile.formatChangesComment(
-            sanitize_string(changes.get('Changes'))),
+        'DATE': 'Date: %s' % date,
+        'CHANGESFILE': changesfile,
         'DISTRO': distroseries.distribution.title,
         'ANNOUNCE': 'No announcement sent',
         'CHANGEDBY': '',
@@ -253,7 +270,6 @@ def assemble_body(blamer, spr, archive, distroseries, summary, changes,
         }
     if spr:
         information['SPR_URL'] = canonical_url(spr)
-    changedby = sanitize_string(changes.get('Changed-By'))
     if changedby:
         information['CHANGEDBY'] = '\nChanged-By: %s' % changedby
     origin = changes.get('Origin')
@@ -262,15 +278,14 @@ def assemble_body(blamer, spr, archive, distroseries, summary, changes,
     if action == 'unapproved':
         information['SUMMARY'] += (
             "\nThis upload awaits approval by a distro manager\n")
-    if announce_list:
-        information['ANNOUNCE'] = "Announcing to %s" % announce_list
-    if blamer is not None:
-        signer_signature = '%s <%s>' % (
-            blamer.displayname, blamer.preferredemail.email)
+    if distroseries.changeslist:
+        information['ANNOUNCE'] = "Announcing to %s" % (
+            distroseries.changeslist)
+    if blamer is not None and blamer != email_to_person(changedby):
+        signer_signature = person_to_email(blamer)
         if signer_signature != changedby:
             information['SIGNER'] = '\nSigned-By: %s' % signer_signature
     # Add maintainer if present and different from changed-by.
-    maintainer = sanitize_string(changes.get('Maintainer'))
     if maintainer and maintainer != changedby:
         information['MAINTAINER'] = '\nMaintainer: %s' % maintainer
     return get_template(archive, action) % information
@@ -344,8 +359,8 @@ def send_mail(
     debug(logger, "  Subject: %s" % subject)
     debug(logger, "  Sender: %s" % from_addr)
     debug(logger, "  Recipients: %s" % recipients)
-    if extra_headers.has_key('Bcc'):
-       debug(logger, "  Bcc: %s" % extra_headers['Bcc'])
+    if 'Bcc' in extra_headers:
+        debug(logger, "  Bcc: %s" % extra_headers['Bcc'])
     debug(logger, "  Body:")
     for line in mail_text.splitlines():
         debug(logger, line)
@@ -407,11 +422,29 @@ def debug(logger, msg):
         logger.debug(msg)
 
 
-def get_recipients(blamer, archive, distroseries, changes, logger):
+def get_recipients(blamer, archive, distroseries, logger, changes=None,
+                   spr=None, bprs=None):
     """Return a list of recipients for notification emails."""
     candidate_recipients = []
     debug(logger, "Building recipients list.")
-    changer = email_to_person(changes['Changed-By'])
+    (changesfile, date, changedby, maint) = fetch_information(
+        spr, bprs, changes)
+
+    if changedby:
+        try:
+            changer = email_to_person(changedby)
+        except ParseMaintError:
+            changer = None
+    else:
+        changer = None
+
+    if maint:
+        try:
+            maintainer = email_to_person(maint)
+        except ParseMaintError:
+            maintainer = None
+    else:
+        maintainer = None
 
     if blamer:
         # This is a signed upload.
@@ -431,8 +464,7 @@ def get_recipients(blamer, archive, distroseries, changes, logger):
         candidate_recipients.extend(uploaders)
 
     # If this is not a PPA, we also consider maintainer and changed-by.
-    if blamer and not archive.is_ppa:
-        maintainer = email_to_person(changes['Maintainer'])
+    elif blamer is not None:
         if (maintainer and maintainer != blamer and
                 maintainer.isUploader(distroseries.distribution)):
             debug(logger, "Adding maintainer to recipients")
@@ -449,8 +481,7 @@ def get_recipients(blamer, archive, distroseries, changes, logger):
     for person in candidate_recipients:
         if person is None or person.preferredemail is None:
             continue
-        recipient = format_address(person.displayname,
-            person.preferredemail.email)
+        recipient = format_address_for_person(person)
         debug(logger, "Adding recipient: '%s'" % recipient)
         recipients.append(recipient)
 
@@ -518,6 +549,12 @@ def email_to_person(fullemail):
     return getUtility(IPersonSet).getByEmail(email)
 
 
+def person_to_email(person):
+    """Return a string of full name <e-mail address> given an IPerson."""
+    if person and person.preferredemail:
+        return format_address_for_person(person)
+
+
 def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
     """Return True if this is a (Debian) auto sync upload.
 
@@ -530,6 +567,27 @@ def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
     return (
         spr and not bprs and changed_by == katie and
         pocket != PackagePublishingPocket.SECURITY)
+
+
+def fetch_information(spr, bprs, changes):
+    changedby = None
+    maintainer = None
+    if changes:
+        changesfile = ChangesFile.formatChangesComment(
+            sanitize_string(changes.get('Changes')))
+        date = changes.get('Date')
+        changedby = sanitize_string(changes.get('Changed-By'))
+        maintainer = sanitize_string(changes.get('Maintainer'))
+    elif spr or bprs:
+        if not spr and bprs:
+            spr = bprs[0].build.source_package_release
+        changesfile = spr.changelog_entry
+        date = spr.dateuploaded
+        changedby = person_to_email(spr.creator)
+        maintainer = person_to_email(spr.maintainer)
+    else:
+        changesfile = date = None
+    return (changesfile, date, changedby, maintainer)
 
 
 class LanguagePackEncountered(Exception):

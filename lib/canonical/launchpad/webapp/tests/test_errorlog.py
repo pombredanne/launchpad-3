@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import datetime
 import logging
+import httplib
 import os
 import shutil
 import stat
@@ -18,7 +19,7 @@ import traceback
 import unittest
 
 from lazr.batchnavigator.interfaces import InvalidBatchSizeError
-from lazr.restful.declarations import webservice_error
+from lazr.restful.declarations import error_status
 import pytz
 import testtools
 from zope.app.publication.tests.test_zopepublication import (
@@ -41,7 +42,10 @@ from canonical.launchpad.webapp.errorlog import (
     OopsLoggingHandler,
     ScriptRequest,
     )
-from canonical.launchpad.webapp.interfaces import NoReferrerError
+from canonical.launchpad.webapp.interfaces import (
+    IUnloggedException,
+    NoReferrerError,
+    )
 from canonical.testing import reset_logging
 from lp.app.errors import (
     GoneError,
@@ -50,6 +54,7 @@ from lp.app.errors import (
 from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from lp.services.osutils import remove_tree
 from lp.testing import TestCase
+from lp_sitecustomize import customize_get_converter
 
 
 UTC = pytz.timezone('UTC')
@@ -439,27 +444,29 @@ class TestErrorReportingUtility(testtools.TestCase):
         utility = ErrorReportingUtility()
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
-        # Exceptions that don't use webservice_error result in OOPSes.
+        # Exceptions that don't use error_status result in OOPSes.
         try:
             raise ArbitraryException('xyz\nabc')
         except ArbitraryException:
             utility.raising(sys.exc_info(), request, now=now)
             self.assertNotEqual(request.oopsid, None)
 
-        # Exceptions with a webservice_error in the 500 range result
+        # Exceptions with a error_status in the 500 range result
         # in OOPSes.
+        @error_status(httplib.INTERNAL_SERVER_ERROR)
         class InternalServerError(Exception):
-            webservice_error(500)
+            pass
         try:
             raise InternalServerError("")
         except InternalServerError:
             utility.raising(sys.exc_info(), request, now=now)
             self.assertNotEqual(request.oopsid, None)
 
-        # Exceptions with any other webservice_error do not result
+        # Exceptions with any other error_status do not result
         # in OOPSes.
+        @error_status(httplib.BAD_REQUEST)
         class BadDataError(Exception):
-            webservice_error(400)
+            pass
         try:
             raise BadDataError("")
         except BadDataError:
@@ -965,6 +972,116 @@ class TestOopsLoggingHandler(TestCase):
         # Logging an error without an exception does nothing.
         self.logger.error("Delicious ponies")
         self.assertIs(None, self.error_utility.getLastOopsReport())
+
+
+class TestOopsIgnoring(testtools.TestCase):
+
+    def test_offsite_404_ignored(self):
+        # A request originating from another site that generates a NotFound
+        # (404) is ignored (i.e., no OOPS is logged).
+        utility = ErrorReportingUtility()
+        request = dict(HTTP_REFERER='example.com')
+        self.assertTrue(utility._isIgnoredException('NotFound', request))
+
+    def test_onsite_404_not_ignored(self):
+        # A request originating from a local site that generates a NotFound
+        # (404) produces an OOPS.
+        utility = ErrorReportingUtility()
+        request = dict(HTTP_REFERER='canonical.com')
+        self.assertTrue(utility._isIgnoredException('NotFound', request))
+
+    def test_404_without_referer_is_ignored(self):
+        # If a 404 is generated and there is no HTTP referer, we don't produce
+        # an OOPS.
+        utility = ErrorReportingUtility()
+        request = dict()
+        self.assertTrue(utility._isIgnoredException('NotFound', request))
+
+    def test_marked_exception_is_ignored(self):
+        # If an exception has been marked as ignorable, then it is ignored.
+        utility = ErrorReportingUtility()
+        exception = Exception()
+        directlyProvides(exception, IUnloggedException)
+        self.assertTrue(
+            utility._isIgnoredException('RuntimeError', exception=exception))
+
+    def test_unmarked_exception_generates_oops(self):
+        # If an exception has not been marked as ignorable, then it is not.
+        utility = ErrorReportingUtility()
+        exception = Exception()
+        self.assertFalse(
+            utility._isIgnoredException('RuntimeError', exception=exception))
+
+
+class TestWrappedParameterConverter(testtools.TestCase):
+    """Make sure URL parameter type conversions don't generate OOPS reports"""
+
+    def test_return_value_untouched(self):
+        # When a converter succeeds, its return value is passed through the
+        # wrapper untouched.
+
+        class FauxZopePublisherBrowserModule:
+            def get_converter(self, type_):
+                def the_converter(value):
+                    return 'converted %r to %s' % (value, type_)
+                return the_converter
+
+        module = FauxZopePublisherBrowserModule()
+        customize_get_converter(module)
+        converter = module.get_converter('int')
+        self.assertEqual("converted '42' to int", converter('42'))
+
+    def test_value_errors_marked(self):
+        # When a ValueError is raised by the wrapped converter, the exception
+        # is marked with IUnloggedException so the OOPS machinery knows that a
+        # report should not be logged.
+
+        class FauxZopePublisherBrowserModule:
+            def get_converter(self, type_):
+                def the_converter(value):
+                    raise ValueError
+                return the_converter
+
+        module = FauxZopePublisherBrowserModule()
+        customize_get_converter(module)
+        converter = module.get_converter('int')
+        try:
+            converter(42)
+        except ValueError, e:
+            self.assertTrue(IUnloggedException.providedBy(e))
+
+    def test_other_errors_not_marked(self):
+        # When an exception other than ValueError is raised by the wrapped
+        # converter, the exception is not marked with IUnloggedException an
+        # OOPS report will be created.
+
+        class FauxZopePublisherBrowserModule:
+            def get_converter(self, type_):
+                def the_converter(value):
+                    raise RuntimeError
+                return the_converter
+
+        module = FauxZopePublisherBrowserModule()
+        customize_get_converter(module)
+        converter = module.get_converter('int')
+        try:
+            converter(42)
+        except RuntimeError, e:
+            self.assertFalse(IUnloggedException.providedBy(e))
+
+    def test_none_is_not_wrapped(self):
+        # The get_converter function that we're wrapping can return None, in
+        # that case there's no function for us to wrap and we just return None
+        # as well.
+
+        class FauxZopePublisherBrowserModule:
+            def get_converter(self, type_):
+                return None
+
+        module = FauxZopePublisherBrowserModule()
+        customize_get_converter(module)
+        converter = module.get_converter('int')
+        self.assertTrue(converter is None)
 
 
 def test_suite():

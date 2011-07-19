@@ -28,6 +28,7 @@ from lazr.restful.declarations import (
     export_operation_as,
     export_read_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
@@ -157,7 +158,7 @@ class IDistributionPublic(
         Summary(
             title=_("Summary"),
             description=_(
-                "A short paragraph to introduce the the goals and highlights "
+                "A short paragraph to introduce the goals and highlights "
                 "of the distribution."),
             required=True))
     homepage_content = exported(
@@ -340,6 +341,11 @@ class IDistributionPublic(
                       "on disk."),
         readonly=True, required=False)
 
+    has_published_sources = Bool(
+        title=_("Has Published Sources"),
+        description=_("True if this distribution has sources published."),
+        readonly=True, required=False)
+
     def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().
 
@@ -384,6 +390,29 @@ class IDistributionPublic(
 
         :param name_or_version: The `IDistroSeries.name` or
             `IDistroSeries.version`.
+        """
+
+    @operation_parameters(
+        since=Datetime(
+            title=_("Time of last change"),
+            description=_(
+                "Return branches that have new tips since this timestamp."),
+            required=False))
+    @export_operation_as(name="getBranchTips")
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getBranchTips(since):
+        """Return a list of branches which have new tips since a date.
+
+        Each branch information is a tuple of (branch_unique_name,
+        tip_revision, (official_series*)).
+
+        So for each branch in the distribution, you'll get the branch unique
+        name, the revision id of tip, and if the branch is official for some
+        series, the list of series name.
+
+        :param since: If specified, limits results to branches modified since
+            that date and time.
         """
 
     @operation_parameters(
@@ -562,14 +591,21 @@ class IDistributionPublic(
         Raises NotFoundError if it fails to find the named file.
         """
 
-    def guessPackageNames(pkgname):
-        """Try and locate source and binary package name objects that
-        are related to the provided name --  which could be either a
-        source or a binary package name. Returns a tuple of
-        (sourcepackagename, binarypackagename) based on the current
-        publishing status of these binary / source packages. Raises
-        NotFoundError if it fails to find any package published with
-        that name in the distribution.
+    def guessPublishedSourcePackageName(pkgname):
+        """Return the "published" SourcePackageName related to pkgname.
+
+        If pkgname corresponds to a source package that was published in
+        any of the distribution series, that's the SourcePackageName that is
+        returned.
+
+        If there is any official source package branch linked, then that
+        source package name is returned.
+
+        Otherwise, try to find a published binary package name and then return
+        the source package name from which it comes from.
+
+        :raises NotFoundError: when pkgname doesn't correspond to either a
+            published source or binary package name in this distribution.
         """
 
     def getAllPPAs():

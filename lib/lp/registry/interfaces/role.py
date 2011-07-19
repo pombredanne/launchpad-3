@@ -70,9 +70,6 @@ class IPersonRoles(Interface):
     in_admin = Bool(
         title=_("True if this person is a Launchpad admin."),
         required=True, readonly=True)
-    in_bazaar_experts = Bool(
-        title=_("True if this person is a Bazaar expert."),
-        required=True, readonly=True)
     in_software_center_agent = Bool(
         title=_("True if this person is the Software Center Agent."),
         required=True, readonly=True)
@@ -111,9 +108,6 @@ class IPersonRoles(Interface):
         required=True, readonly=True)
     in_rosetta_experts = Bool(
         title=_("True if this person is a rosetta expert."),
-        required=True, readonly=True)
-    in_ubuntu_branches = Bool(
-        title=_("True if this person is on the Ubuntu branches team."),
         required=True, readonly=True)
     in_ubuntu_security = Bool(
         title=_("True if this person is on the Ubuntu security team."),

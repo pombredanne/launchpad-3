@@ -385,6 +385,7 @@ class EC2TestRunner:
         p('mkdir /var/launchpad/tmp')
         p('mv /var/launchpad/sourcecode /var/launchpad/tmp/sourcecode')
         p('mkdir /var/launchpad/tmp/eggs')
+        p('mkdir /var/launchpad/tmp/yui')
         user_connection.run_with_ssh_agent(
             'bzr pull lp:lp-source-dependencies '
             '-d /var/launchpad/download-cache')
