@@ -101,10 +101,12 @@ class TestLoggingUIFactory(TestCase):
     def test_user_warning(self):
         factory = self.makeLoggingUIFactory()
         factory.show_user_warning('cross_format_fetch',
-            old_format="athing", new_format="anotherthing")
-        message = factory._user_warning_templates['cross_format_fetch'] % (
-            "athing", "anotherthing")
-        self.assertEqual('warning: %s' % message, self.messages)
+            from_format="athing", to_format="anotherthing")
+        message = factory._user_warning_templates['cross_format_fetch'] % {
+            "from_format": "athing",
+            "to_format": "anotherthing",
+            }
+        self.assertEqual([message], self.messages)
 
 
 def test_suite():
