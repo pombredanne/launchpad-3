@@ -2118,7 +2118,15 @@ class TestSyncSource(TestCaseWithFactory):
         # There should be one copy job.
         job_source = getUtility(IPlainPackageCopyJobSource)
         copy_job = job_source.getActiveJobs(target_archive).one()
-        self.assertEqual(target_archive, copy_job.target_archive)
+        self.assertThat(copy_job, MatchesStructure(
+            package_name=Equals(source_name),
+            package_version=Equals(version),
+            target_archive=Equals(target_archive),
+            source_archive=Equals(source_archive),
+            target_distroseries=Equals(to_series),
+            target_pocket=Equals(to_pocket),
+            include_binaries=Equals(False),
+            copy_policy=Equals(PackageCopyPolicy.INSECURE)))
 
     def test_copyPackages_with_multiple_packages(self):
         (source, source_archive, source_name, target_archive, to_pocket,
