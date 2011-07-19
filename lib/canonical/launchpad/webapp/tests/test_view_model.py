@@ -37,8 +37,6 @@ class TestJsonModelNamespace(TestCaseWithFactory):
     """Test that traversal to ++model++ returns a namespace."""
     layer = DatabaseFunctionalLayer
 
-
-
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         login(ANONYMOUS)
@@ -135,7 +133,8 @@ class TestJsonModelView(BrowserTestCase):
                 request = get_current_browser_request()
                 target_info = {}
                 target_info['title'] = "The Title"
-                IJSONRequestCache(request).objects['target_info'] = target_info
+                cache = IJSONRequestCache(request).objects
+                cache['target_info'] = target_info
         canonical.launchpad.webapp.tests.ProductModelTestView = \
             ProductModelTestView
         self.configZCML()
@@ -151,7 +150,9 @@ class TestJsonModelView(BrowserTestCase):
                 request = get_current_browser_request()
                 target_info = {}
                 target_info['title'] = "The Title"
-                IJSONRequestCache(request).objects['target_info'] = target_info
+                cache = IJSONRequestCache(request).objects
+                cache['target_info'] =  target_info
+
             def render(self):
                 request = get_current_browser_request()
                 other_info = {}
