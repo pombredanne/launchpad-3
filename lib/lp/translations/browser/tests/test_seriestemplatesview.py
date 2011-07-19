@@ -252,6 +252,7 @@ class TestDistroSeriesTemplatesView(SeriesTemplatesViewScenario,
     columns = [
         ['priority_column'],
         ['sourcepackage_column'],
+        ['sharing'],
         ['template_column'],
         ['length_column'],
         ['lastupdate_column'],
@@ -287,13 +288,87 @@ class TestDistroSeriesTemplatesView(SeriesTemplatesViewScenario,
 
     def test_renderSourcePackage(self):
         # _renderSourcePackage returns the template's source-package
-        # name for a productseries view.
+        # name for a distroseries view.
         template = self._makeTemplate()
         view = self._makeView(template)
 
-        return self.assertEqual(
+        self.assertEqual(
             template.sourcepackagename.name,
             view._renderSourcePackage(template))
+
+
+class TestSharingColumn(TestDistroSeriesTemplatesView):
+    """Test the _renderSharing method of BaseSeriesTemplatesView."""
+
+    columns = [
+        ['priority_column'],
+        ['sourcepackage_column'],
+        ['sharing'],
+        ['template_column'],
+        ['length_column'],
+        ['lastupdate_column'],
+        ['actions_column'],
+    ]
+
+    # For this test we're already logged in, so this test doesn't apply.
+    test_logging_in_adds_actions_column = None
+
+    def setUp(self):
+        super(TestSharingColumn, self).setUp(user='mark@example.com')
+        self.shared_template_name = self.factory.getUniqueString()
+        self.distroseries = self.factory.makeUbuntuDistroSeries()
+        self.distroseries.distribution.translation_focus = (
+            self.distroseries)
+#        distroseries = self._getSeries()
+#        distroseries.distribution.translation_focus = distroseries
+#        self.distroseries = self.factory.makeDistroSeries()
+#        self.distroseries.distribution.translation_focus = self.distroseries
+        self.sourcepackage = self.factory.makeSourcePackage(
+            distroseries=self.distroseries)
+        self.productseries = self.factory.makeProductSeries()
+
+    def make_this_side_template(self):
+        return self.factory.makePOTemplate(
+            productseries=self.productseries, name=self.shared_template_name)
+
+    def make_other_side_template(self):
+        return self.factory.makePOTemplate(
+            sourcepackage=self.sourcepackage, name=self.shared_template_name)
+
+    def test_basics(self):
+        # _renderSharing returns the template's sharing state and a link to
+        # the +sharing-details of the relevant source package.
+        template = self._makeTemplate()
+        view = self._makeView(template)
+        # Here we're just testing to see if some sharing state is returned
+        # (not what it is) and that it is a link.
+        rendered = view._renderSharing(template)
+        self.assertTrue('<a' in rendered)
+        self.assertTrue('shared' in rendered.lower())
+
+    def test_unshared(self):
+        template = self._makeTemplate()
+        view = self._makeView(template)
+        rendered = view._renderSharing(template)
+        # Unshared templates are displayed as such.
+        self.assertTrue('Not shared' in rendered)
+        # The text links to the source package.
+        link_segment = ('+source/%s/+sharing-details' %
+            template.sourcepackagename.name)
+        self.assertTrue(link_segment in rendered)
+
+    def test_shared(self):
+        this = self.make_this_side_template()
+        other = self.make_other_side_template()
+        view = self._makeView(this)
+        rendered = view._renderSharing(this)
+        import pdb;pdb.set_trace()
+        # Unshared templates are displayed as such.
+        self.assertTrue('Shared' in rendered)
+        # The text links to the source package.
+        link_segment = ('+source/%s/+sharing-details' %
+            template.sourcepackagename.name)
+        self.assertTrue(link_segment in rendered)
 
 
 class TestProductSeriesTemplatesView(SeriesTemplatesViewScenario,

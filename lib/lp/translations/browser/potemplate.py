@@ -72,7 +72,6 @@ from lp.registry.browser.sourcepackage import (
     SourcePackageFacets,
     SourcePackageOverviewMenu,
     )
-from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -920,13 +919,9 @@ class BaseSeriesTemplatesView(LaunchpadView):
         else:
             state = 'Not shared'
 
-        # XXX XSS vuln here?  Might need cgi.escape.
+        # TODO XSS vuln here?  Might need cgi.escape.
         details = ('+source/%s/+sharing-details' %
             template.sourcepackagename.name)
-
-        # XXX The translations.sharing_information.enabled feature flag
-        # looks like it's always on, should I bother protecting this link
-        # with it?
         return '<a class="sprite edit" href="%s">%s</a>' % (details, state)
 
 
@@ -1026,8 +1021,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
             ('actions_column', actions_header),
             ]
 
-        if IDistroSeries.providedBy(self.context):
-            columns[2:3] = [('sharing', "Sharing")]
+        if self.is_distroseries:
+            columns[2:2] = [('sharing', "Sharing")]
 
         return '\n'.join([
             self._renderField(css, text, tag='th')
@@ -1050,9 +1045,11 @@ class BaseSeriesTemplatesView(LaunchpadView):
             ('actions_column', self._renderActionsColumn(template, base_url)),
         ]
 
-        # If this view is displaying an IDistroSeries, add the sharing column.
-        if IDistroSeries.providedBy(self.context):
-            fields[2:3] = [('sharing', self._renderSharing(template))]
+        # TODO The translations.sharing_information.enabled feature flag looks
+        # like it's always on now, should I bother protecting this column with
+        # it?
+        if self.is_distroseries:
+            fields[2:2] = [('sharing', self._renderSharing(template))]
 
         tds = [self._renderField(*field) for field in fields]
 
