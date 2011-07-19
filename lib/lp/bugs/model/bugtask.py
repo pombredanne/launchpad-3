@@ -57,7 +57,6 @@ from zope.interface import (
     alsoProvides,
     implements,
     )
-from zope.interface.interfaces import IMethod
 from zope.security.proxy import (
     isinstance as zope_isinstance,
     removeSecurityProxy,
