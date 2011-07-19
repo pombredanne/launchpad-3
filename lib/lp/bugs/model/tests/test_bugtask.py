@@ -1450,42 +1450,42 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
             self.assertEqual(
                 source_package_name, self.series_task.sourcepackagename)
 
-# START TEMPORARY BIT.
+# START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 # When feature flag code is removed, delete these tests (up to "# END
-# TEMPORARY BIT.")
+# TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.")
 
 
 class TestAutoConfirmBugTasksFlagForProduct(TestCaseWithFactory):
     """Tests for auto-confirming bug tasks."""
-    # Tests for _checkBug777874FeatureFlag.
+    # Tests for _checkAutoconfirmFeatureFlag.
 
     layer = DatabaseFunctionalLayer
 
     def makeTarget(self):
         return self.factory.makeProduct()
 
-    flag = u'bugs.bug777874.enabled_product_names'
-    alt_flag = u'bugs.bug777874.enabled_distribution_names'
+    flag = u'bugs.autoconfirm.enabled_product_names'
+    alt_flag = u'bugs.autoconfirm.enabled_distribution_names'
 
     def test_False(self):
         # With no feature flags turned on, we do not auto-confirm.
         bug_task = self.factory.makeBugTask(target=self.makeTarget())
         self.assertFalse(
-            removeSecurityProxy(bug_task)._checkBug777874FeatureFlag())
+            removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
 
     def test_flag_False(self):
         bug_task = self.factory.makeBugTask(target=self.makeTarget())
         with feature_flags():
             set_feature_flag(self.flag, u'   ')
             self.assertFalse(
-                removeSecurityProxy(bug_task)._checkBug777874FeatureFlag())
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
 
     def test_explicit_flag(self):
         bug_task = self.factory.makeBugTask(target=self.makeTarget())
         with feature_flags():
             set_feature_flag(self.flag, bug_task.pillar.name)
             self.assertTrue(
-                removeSecurityProxy(bug_task)._checkBug777874FeatureFlag())
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
 
     def test_explicit_flag_of_many(self):
         bug_task = self.factory.makeBugTask(target=self.makeTarget())
@@ -1493,21 +1493,21 @@ class TestAutoConfirmBugTasksFlagForProduct(TestCaseWithFactory):
             set_feature_flag(
                 self.flag, u'  foo bar  ' + bug_task.pillar.name + '    baz ')
             self.assertTrue(
-                removeSecurityProxy(bug_task)._checkBug777874FeatureFlag())
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
 
     def test_match_all_flag(self):
         bug_task = self.factory.makeBugTask(target=self.makeTarget())
         with feature_flags():
             set_feature_flag(self.flag, u'*')
             self.assertTrue(
-                removeSecurityProxy(bug_task)._checkBug777874FeatureFlag())
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
 
     def test_alt_flag_does_not_affect(self):
         bug_task = self.factory.makeBugTask(target=self.makeTarget())
         with feature_flags():
             set_feature_flag(self.alt_flag, bug_task.pillar.name)
             self.assertFalse(
-                removeSecurityProxy(bug_task)._checkBug777874FeatureFlag())
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
 
 
 class TestAutoConfirmBugTasksFlagForProductSeries(
@@ -1561,7 +1561,7 @@ class TestAutoConfirmBugTasksTransitionToTarget(TestCaseWithFactory):
         autoconfirm_product = self.factory.makeProduct(owner=person)
         no_autoconfirm_product = self.factory.makeProduct(owner=person)
         with feature_flags():
-            set_feature_flag(u'bugs.bug777874.enabled_product_names',
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names',
                              autoconfirm_product.name)
             bug_task = self.factory.makeBugTask(
                 target=no_autoconfirm_product, owner=person)
@@ -1578,7 +1578,7 @@ class TestAutoConfirmBugTasksTransitionToTarget(TestCaseWithFactory):
         autoconfirm_product = self.factory.makeProduct(owner=person)
         no_autoconfirm_product = self.factory.makeProduct(owner=person)
         with feature_flags():
-            set_feature_flag(u'bugs.bug777874.enabled_product_names',
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names',
                              autoconfirm_product.name)
             bug_task = self.factory.makeBugTask(
                 target=no_autoconfirm_product, owner=person)
@@ -1589,9 +1589,8 @@ class TestAutoConfirmBugTasksTransitionToTarget(TestCaseWithFactory):
                 self.assertEqual(BugTaskStatus.NEW, bug_task.status)
                 bug_task.transitionToTarget(autoconfirm_product)
                 self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
-        
+# END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 
-# END TEMPORARY BIT.
 
 class TestAutoConfirmBugTasks(TestCaseWithFactory):
     """Tests for auto-confirming bug tasks."""
@@ -1604,7 +1603,7 @@ class TestAutoConfirmBugTasks(TestCaseWithFactory):
         # When feature flag code is removed, remove the next two lines and
         # dedent the rest.
         with feature_flags():
-            set_feature_flag(u'bugs.bug777874.enabled_product_names', u'*')
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
             bug_task = self.factory.makeBugTask()
             self.assertEqual(BugTaskStatus.NEW, bug_task.status)
             with EventRecorder() as recorder:
@@ -1624,7 +1623,7 @@ class TestAutoConfirmBugTasks(TestCaseWithFactory):
         # When feature flag code is removed, remove the next two lines and
         # dedent the rest.
         with feature_flags():
-            set_feature_flag(u'bugs.bug777874.enabled_product_names', u'*')
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
             product = self.factory.makeProduct()
             with person_logged_in(product.owner):
                 bug = self.factory.makeBug(
@@ -1643,7 +1642,7 @@ class TestAutoConfirmBugTasks(TestCaseWithFactory):
         # When feature flag code is removed, remove the next two lines and
         # dedent the rest.
         with feature_flags():
-            set_feature_flag(u'bugs.bug777874.enabled_product_names', u'*')
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
             bug_task = self.factory.makeBugTask()
             removeSecurityProxy(bug_task).transitionToStatus(
                 BugTaskStatus.CONFIRMED, bug_task.bug.owner)

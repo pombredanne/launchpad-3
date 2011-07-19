@@ -108,13 +108,13 @@ flag_info = sorted([
      'boolean',
      ('Enables ranking by pillar affiliation in the person picker.'),
      ''),
-    ('bugs.bug777874.enabled_distribution_names',
+    ('bugs.autoconfirm.enabled_distribution_names',
      'space delimited',
      ('Enables auto-confirming bugtasks for distributions (and their '
       'series and packages).  Use the default domain.  Specify a single '
       'asterisk ("*") to enable for all distributions.'),
      'None are enabled'),
-    ('bugs.bug777874.enabled_product_names',
+    ('bugs.autoconfirm.enabled_product_names',
      'space delimited',
      ('Enables auto-confirming bugtasks for products (and their '
       'series).  Use the default domain.  Specify a single '

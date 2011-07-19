@@ -370,7 +370,7 @@ class TestBugAutoConfirmation(TestCaseWithFactory):
         # When feature flag code is removed, remove the next two lines and
         # dedent the rest.
         with feature_flags():
-            set_feature_flag(u'bugs.bug777874.enabled_product_names', u'*')
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
             bug = self.factory.makeBug()
             person = self.factory.makePerson()
             with person_logged_in(person):
@@ -382,7 +382,7 @@ class TestBugAutoConfirmation(TestCaseWithFactory):
         # When feature flag code is removed, remove the next two lines and
         # dedent the rest.
         with feature_flags():
-            set_feature_flag(u'bugs.bug777874.enabled_product_names', u'*')
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
             bug = self.factory.makeBug()
             person = self.factory.makePerson()
             with person_logged_in(bug.owner):
@@ -396,7 +396,7 @@ class TestBugAutoConfirmation(TestCaseWithFactory):
         # When feature flag code is removed, remove the next two lines and
         # dedent the rest.
         with feature_flags():
-            set_feature_flag(u'bugs.bug777874.enabled_product_names', u'*')
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
             bug = self.factory.makeBug()
             duplicate_bug = self.factory.makeBug()
             with person_logged_in(duplicate_bug.owner):
@@ -408,10 +408,9 @@ class TestBugAutoConfirmation(TestCaseWithFactory):
         # When feature flag code is removed, remove the next two lines and
         # dedent the rest.
         with feature_flags():
-            set_feature_flag(u'bugs.bug777874.enabled_product_names', u'*')
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
             bug = self.factory.makeBug()
             with person_logged_in(bug.owner):
                 duplicate_bug = self.factory.makeBug(owner=bug.owner)
                 duplicate_bug.markAsDuplicate(bug)
             self.assertEqual(BugTaskStatus.NEW, bug.bugtasks[0].status)
-        
