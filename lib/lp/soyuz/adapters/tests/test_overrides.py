@@ -4,6 +4,7 @@
 """Test generic override policy classes."""
 
 from operator import attrgetter
+
 from testtools.matchers import Equals
 from zope.component import getUtility
 
@@ -136,7 +137,7 @@ class TestOverrides(TestCaseWithFactory):
         pocket = self.factory.getAnyPocket()
         for i in xrange(10):
             bpph = self.factory.makeBinaryPackagePublishingHistory(
-                distroarchseries=distroarchseries, 
+                distroarchseries=distroarchseries,
                 archive=distroseries.main_archive, pocket=pocket)
             bpns.append((bpph.binarypackagerelease.binarypackagename, None))
         flush_database_caches()
@@ -242,9 +243,26 @@ class TestOverrides(TestCaseWithFactory):
         overrides = policy.calculateBinaryOverrides(
             distroseries.main_archive, distroseries, pocket, bpns)
         self.assertEqual(5, len(overrides))
-        key=attrgetter("binary_package_name.name",
-            "distro_arch_series.architecturetag", 
+        key = attrgetter("binary_package_name.name",
+            "distro_arch_series.architecturetag",
             "component.name")
         sorted_expected = sorted(expected, key=key)
         sorted_overrides = sorted(overrides, key=key)
         self.assertEqual(sorted_expected, sorted_overrides)
+
+    def test_arch_not_in_distroseries(self):
+        # If calculateBinaryOverrides is passed with an archtag that
+        # does not correspond to an ArchSeries of the distroseries,
+        # an empty list is returned.
+        distroseries = self.factory.makeDistroSeries()
+        das = self.factory.makeDistroArchSeries(
+            architecturetag='amd64',
+            distroseries=distroseries)
+        distroseries.nominatedarchindep = das
+        bpn = self.factory.makeBinaryPackageName()
+        pocket = self.factory.getAnyPocket()
+        policy = FromExistingOverridePolicy()
+        overrides = policy.calculateBinaryOverrides(
+            distroseries.main_archive, distroseries, pocket, ((bpn, 'i386'),))
+
+        self.assertEqual([], overrides)

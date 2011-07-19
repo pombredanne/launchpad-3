@@ -235,9 +235,13 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
 
         store = IStore(BinaryPackagePublishingHistory)
         expanded = calculate_target_das(distroseries, binaries)
+        filtered_expanded = [
+            (bpn, das) for bpn, das in expanded if das is not None]
+        if filtered_expanded == []:
+            return []
         candidates = (
             make_package_condition(archive, das, bpn)
-            for bpn, das in expanded)
+            for bpn, das in filtered_expanded)
         already_published = DecoratedResultSet(
             store.find(
                 (BinaryPackageRelease.binarypackagenameID,
