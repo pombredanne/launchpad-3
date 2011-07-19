@@ -60,7 +60,6 @@ from storm.expr import (
     Select,
     SQL,
     Sum,
-    Union,
     )
 from storm.info import ClassAlias
 from storm.locals import (
@@ -445,20 +444,15 @@ class Bug(SQLBase):
     @property
     def user_ids_affected_with_dupes(self):
         """Return all IDs of Persons affected by this bug and its dupes.
-        The return value is a Storm expression.  Running a query with
-        this expression returns a result that may contain the same ID
-        multiple times, for example if that person is affected via
-        more than one duplicate."""
-        return Union(
-            Select(Person.id,
-                   And(BugAffectsPerson.person == Person.id,
-                       BugAffectsPerson.affected,
-                       BugAffectsPerson.bug == self)),
-            Select(Person.id,
-                   And(BugAffectsPerson.person == Person.id,
-                       BugAffectsPerson.bug == Bug.id,
-                       BugAffectsPerson.affected,
-                       Bug.duplicateof == self.id)))
+        The return value is a Storm expression."""
+        return Select(
+            Person.id,
+            And(BugAffectsPerson.person == Person.id,
+                BugAffectsPerson.affected,
+                Or(BugAffectsPerson.bug == self,
+                   And(BugAffectsPerson.bug == Bug.id,
+                       Bug.duplicateof == self.id))),
+            distinct=True)
 
     @property
     def users_affected_with_dupes(self):
@@ -1780,6 +1774,20 @@ BugMessage""" % sqlvalues(self.id))
         store.flush()
         store.invalidate(self)
 
+    def shouldConfirmBugtasks(self):
+        """Should we try to confirm this bug's bugtasks?
+        The answer is yes if more than one user is affected."""
+        # == 2 would probably be sufficient once we have all legacy bug tasks
+        # confirmed.  For now, this is a compromise: we don't need a migration
+        # step, but we will make some unnecessary comparisons.
+        return self.users_affected_count_with_dupes > 1
+
+    def maybeConfirmBugtasks(self):
+        """Maybe try to confirm our new bugtasks."""
+        if self.shouldConfirmBugtasks():
+            for bugtask in self.bugtasks:
+                bugtask.maybeConfirm()
+
     def markUserAffected(self, user, affected=True):
         """See `IBug`."""
         bap = self._getAffectedUser(user)
@@ -1795,6 +1803,9 @@ BugMessage""" % sqlvalues(self.id))
         for dupe in self.duplicates:
             if dupe._getAffectedUser(user) is not None:
                 dupe.markUserAffected(user, affected)
+
+        if affected:
+            self.maybeConfirmBugtasks()
 
         self.updateHeat()
 
@@ -1836,6 +1847,9 @@ BugMessage""" % sqlvalues(self.id))
             # to 0 (since it's a duplicate, it shouldn't have any heat
             # at all).
             self.setHeat(0, affected_targets=affected_targets)
+            # Maybe confirm bug tasks, now that more people might be affected
+            # by this bug.
+            duplicate_of.maybeConfirmBugtasks()
         else:
             # Otherwise, recalculate this bug's heat, since it will be 0
             # from having been a duplicate. We also update the bug that
