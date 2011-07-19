@@ -397,6 +397,7 @@ class TestPublishDistro(TestNativePublishingBase):
 
 
 class FakeArchive:
+    """A very simple fake `Archive`."""
     def __init__(self, purpose=ArchivePurpose.PRIMARY):
         self.purpose = purpose
 
@@ -428,56 +429,78 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         return script
 
     def test_isCareful_is_false_if_option_not_set(self):
+        # isCareful normally returns False for a carefulness option that
+        # evaluates to False.
         self.assertFalse(self.makeScript().isCareful(False))
 
     def test_isCareful_is_true_if_option_is_set(self):
+        # isCareful returns True for a carefulness option that evaluates
+        # to True.
         self.assertTrue(self.makeScript().isCareful(True))
 
     def test_isCareful_is_true_if_global_careful_option_is_set(self):
+        # isCareful returns True for any option value if the global
+        # "careful" option has been set.
         self.assertTrue(self.makeScript(args=['--careful']).isCareful(False))
 
     def test_describeCare_reports_non_careful_option(self):
+        # describeCare describes the absence of carefulness as "Normal."
         self.assertEqual("Normal", self.makeScript().describeCare(False))
 
     def test_describeCare_reports_careful_option(self):
+        # describeCare describes a carefulness option that's been set to
+        # True as "Careful."
         self.assertEqual("Careful", self.makeScript().describeCare(True))
 
     def test_describeCare_reports_careful_override(self):
+        # If a carefulness option is considered to be set regardless of
+        # its actual value because the global "careful" option overrides
+        # it, describeCare reports that as "Careful (Overridden)."
         self.assertEqual(
             "Careful (Overridden)",
             self.makeScript(args=['--careful']).describeCare(False))
 
     def test_countExclusiveOptions_is_zero_if_none_set(self):
+        # If none of the exclusive options is set, countExclusiveOptions
+        # counts zero.
         self.assertEqual(0, self.makeScript().countExclusiveOptions())
 
     def test_countExclusiveOptions_counts_partner(self):
+        # countExclusiveOptions includes the "partner" option.
         self.assertEqual(
             1, self.makeScript(args=['--partner']).countExclusiveOptions())
 
     def test_countExclusiveOptions_counts_ppa(self):
+        # countExclusiveOptions includes the "ppa" option.
         self.assertEqual(
             1, self.makeScript(args=['--ppa']).countExclusiveOptions())
 
     def test_countExclusiveOptions_counts_private_ppa(self):
+        # countExclusiveOptions includes the "private-ppa" option.
         self.assertEqual(
             1,
             self.makeScript(args=['--private-ppa']).countExclusiveOptions())
 
     def test_countExclusiveOptions_counts_primary_debug(self):
+        # countExclusiveOptions includes the "primary-debug" option.
         self.assertEqual(
             1,
             self.makeScript(args=['--primary-debug']).countExclusiveOptions())
 
     def test_countExclusiveOptions_counts_copy_archive(self):
+        # countExclusiveOptions includes the "copy-archive" option.
         self.assertEqual(
             1,
             self.makeScript(args=['--copy-archive']).countExclusiveOptions())
 
     def test_countExclusiveOptions_detects_conflict(self):
+        # If more than one of the exclusive options has been set, that
+        # raises the result from countExclusiveOptions above 1.
         script = self.makeScript(args=['--ppa', '--partner'])
         self.assertEqual(2, script.countExclusiveOptions())
 
     def test_validateOptions_rejects_nonoption_arguments(self):
+        # validateOptions disallows non-option command-line arguments.
         script = self.makeScript(args=['please'])
         self.assertRaises(OptionValueError, script.validateOptions)
 
@@ -489,18 +512,25 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         self.assertRaises(OptionValueError, script.validateOptions)
 
     def test_validateOptions_does_not_accept_distsroot_for_ppa(self):
+        # The "distsroot" option is not allowed with the ppa option.
         script = self.makeScript(args=['--ppa', '--distsroot=/tmp'])
         self.assertRaises(OptionValueError, script.validateOptions)
 
     def test_validateOptions_does_not_accept_distsroot_for_private_ppa(self):
+        # The "distsroot" option is not allowed with the private-ppa
+        # option.
         script = self.makeScript(args=['--private-ppa', '--distsroot=/tmp'])
         self.assertRaises(OptionValueError, script.validateOptions)
 
     def test_findDistro_finds_distribution(self):
+        # findDistro looks up and returns the distribution named on the
+        # command line.
         distro = self.factory.makeDistribution()
         self.assertEqual(distro, self.makeScript(distro).findDistro())
 
     def test_findDistro_raises_if_distro_not_found(self):
+        # If findDistro can't find the distribution, that's an
+        # OptionValueError.
         wrong_name = self.factory.getUniqueString()
         self.assertRaises(
             OptionValueError,
