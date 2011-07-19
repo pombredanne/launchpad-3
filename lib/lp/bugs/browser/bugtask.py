@@ -1643,6 +1643,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         """Update the bugtask with the form data."""
         self.updateContextFromData(data)
 
+
 class BugTaskStatusView(LaunchpadView):
     """Viewing the status of a bug task."""
 

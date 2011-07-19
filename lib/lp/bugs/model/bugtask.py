@@ -105,9 +105,9 @@ from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
 from lp.bugs.interfaces.bugtask import (
+    BUG_SUPERVISOR_BUGTASK_STATUSES,
     BugBlueprintSearch,
     BugBranchSearch,
-    BUG_SUPERVISOR_BUGTASK_STATUSES,
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
