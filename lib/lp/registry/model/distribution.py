@@ -10,7 +10,8 @@ __all__ = [
     'DistributionSet',
     ]
 
-from operator import attrgetter
+from operator import attrgetter, itemgetter
+import itertools
 
 from sqlobject import (
     BoolCol,
@@ -101,6 +102,7 @@ from lp.blueprints.model.specification import (
     Specification,
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtask import (
@@ -111,7 +113,6 @@ from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     BugSet,
     get_bug_tags,
-    get_bug_tags_open_count,
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -220,9 +221,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                    HasBugHeatMixin, HasDriversMixin, TranslationPolicyMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IDistribution, IFAQTarget, IHasBugHeat, IHasBugSupervisor,
-        IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadUsage,
-        IServiceUsage)
+        IBugSummaryDimension, IDistribution, IFAQTarget, IHasBugHeat,
+        IHasBugSupervisor, IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot,
+        ILaunchpadUsage, IServiceUsage)
 
     _table = 'Distribution'
     _defaultOrder = 'name'
@@ -638,9 +639,13 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return self.name
 
-    def _getBugTaskContextWhereClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
-        return "BugTask.distribution = %d" % self.id
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return And(
+                BugSummary.distribution_id == self.id,
+                BugSummary.sourcepackagename_id == None)
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this distribution."""
@@ -650,15 +655,35 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
-                                     include_tags=None):
-        """See IBugTarget."""
-        # Circular fail.
-        from lp.bugs.model.bugsummary import BugSummary
-        return get_bug_tags_open_count(
-            And(BugSummary.distribution_id == self.id,
-                BugSummary.sourcepackagename_id == None),
-            user, tag_limit=tag_limit, include_tags=include_tags)
+    def getBranchTips(self, since=None):
+        """See `IDistribution`."""
+        query = """
+            SELECT unique_name, last_scanned_id, SPBDS.name FROM Branch
+            JOIN DistroSeries
+                ON Branch.distroseries = DistroSeries.id
+            LEFT OUTER JOIN SeriesSourcePackageBranch
+                ON Branch.id = SeriesSourcePackageBranch.branch
+            LEFT OUTER JOIN DistroSeries SPBDS
+                -- (SPDBS stands for Source Package Branch Distro Series)
+                ON SeriesSourcePackageBranch.distroseries = SPBDS.id
+            WHERE DistroSeries.distribution = %s""" % sqlvalues(self.id)
+
+        if since is not None:
+            query += (
+                ' AND branch.last_scanned > %s' % sqlvalues(since))
+
+        query += ' ORDER BY unique_name, last_scanned_id;'
+
+        data = Store.of(self).execute(query)
+
+        result = []
+        # Group on location (unique_name) and revision (last_scanned_id).
+        for key, group in itertools.groupby(data, itemgetter(0, 1)):
+            result.append(list(key))
+            # Pull out all the official series names and append them as a list
+            # to the end of the current record, removing Nones from the list.
+            result[-1].append(filter(None, map(itemgetter(-1), group)))
+        return result
 
     def getMirrorByName(self, name):
         """See `IDistribution`."""
@@ -721,10 +746,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See canonical.launchpad.interfaces.IBugTarget."""
         bug_params.setBugTarget(distribution=self)
         return BugSet().createBug(bug_params)
-
-    def _getBugTaskContextClause(self):
-        """See BugTargetBase."""
-        return 'BugTask.distribution = %s' % sqlvalues(self)
 
     @property
     def currentseries(self):
@@ -1432,7 +1453,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # the sourcepackagename from that.
             bpph = IStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
-                # See comment above for rationale for using an extra query 
+                # See comment above for rationale for using an extra query
                 # instead of an inner join. (Bottom line, it would time out
                 # otherwise.)
                 BinaryPackagePublishingHistory.archiveID.is_in(

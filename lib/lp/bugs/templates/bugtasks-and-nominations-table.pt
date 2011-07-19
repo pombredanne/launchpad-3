@@ -59,19 +59,6 @@
   </tal:not-editable>
 </tal:affects-me-too>
 
-<script type="text/javascript">
-  function toggleFormVisibility(row_id) {
-    row = document.getElementById(row_id)
-    edit_icon = document.getElementById(row_id + "-edit")
-    if (row.style.display=="none") {
-      row.style.display = "table-row";
-    } else {
-      row.style.display = "none";
-    }
-    return false;
-  }
-</script>
-
 <table
   id="affected-software"
   tal:attributes="class python: context.duplicateof and 'duplicate listing' or 'listing'"

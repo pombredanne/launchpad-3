@@ -5,8 +5,7 @@
 
 This module runs the interface test against the Product, ProductSeries
 ProjectGroup, DistributionSourcePackage, and DistroSeries implementations
-IBugTarget. It runs the bugtarget-bugcount.txt, and
-bugtarget-questiontarget.txt tests.
+IBugTarget. It runs the bugtarget-questiontarget.txt test.
 """
 # pylint: disable-msg=C0103
 
@@ -287,15 +286,6 @@ def test_suite():
 
     for setUpMethod in setUpMethods:
         test = LayeredDocFileSuite('bugtarget-questiontarget.txt',
-            setUp=setUpMethod, tearDown=tearDown,
-            layer=DatabaseFunctionalLayer)
-        suite.addTest(test)
-
-    setUpMethods.append(sourcePackageSetUp)
-    setUpMethods.append(projectSetUp)
-
-    for setUpMethod in setUpMethods:
-        test = LayeredDocFileSuite('bugtarget-bugcount.txt',
             setUp=setUpMethod, tearDown=tearDown,
             layer=DatabaseFunctionalLayer)
         suite.addTest(test)

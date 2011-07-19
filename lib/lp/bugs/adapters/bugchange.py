@@ -594,12 +594,12 @@ class BugTagsChange(AttributeChange):
         removed_tags = old_tags.difference(new_tags)
 
         messages = []
-        if len(added_tags) > 0:
-            messages.append(
-                "** Tags added: %s" % " ".join(sorted(added_tags)))
         if len(removed_tags) > 0:
             messages.append(
                 "** Tags removed: %s" % " ".join(sorted(removed_tags)))
+        if len(added_tags) > 0:
+            messages.append(
+                "** Tags added: %s" % " ".join(sorted(added_tags)))
 
         return {'text': "\n".join(messages)}
 

@@ -711,6 +711,100 @@ We can get all of a user's hardware submissions by retrieving their
     ...
 
 
+=== Searching for submissions ===
+
+Alternatively, we can also search for hardware submissions by user:
+
+    >>> owner = webservice.getAbsoluteUrl('/~name12')
+    >>> submissions = webservice.get(
+    ...     '/+hwdb?ws.op=search&owner=%s' % owner).jsonBody()
+    >>> print submissions['total_size']
+    2
+
+    >>> owner = webservice.getAbsoluteUrl('/~name20')
+    >>> submissions = webservice.get(
+    ...     '/+hwdb?ws.op=search&owner=%s' % owner).jsonBody()
+    >>> print submissions['total_size']
+    0
+
+...and by device:
+
+    >>> device = webservice.getAbsoluteUrl('/+hwdb/+device/1')
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', device=device).jsonBody()
+    >>> print submissions['total_size']
+    1
+
+...and by driver:
+
+    >>> driver = webservice.getAbsoluteUrl('/+hwdb/+driver/1')
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', driver=driver).jsonBody()
+    >>> print submissions['total_size']
+    1
+
+...and by distribution:
+
+    >>> ubuntu_url = webservice.getAbsoluteUrl('/ubuntu')
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', distribution=ubuntu_url).jsonBody()
+    >>> print submissions['total_size']
+    1
+    >>> debian_url = webservice.getAbsoluteUrl('/debian')
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', distribution=debian_url).jsonBody()
+    >>> print submissions['total_size']
+    0
+
+...and by distroseries:
+
+    >>> hoary_url = webservice.getAbsoluteUrl('/ubuntu/hoary')
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', distroseries=hoary_url).jsonBody()
+    >>> print submissions['total_size']
+    1
+    >>> warty_url = webservice.getAbsoluteUrl('/ubuntu/warty')
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', distroseries=warty_url).jsonBody()
+    >>> print submissions['total_size']
+    0
+
+...and by architecture:
+
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', architecture='i386').jsonBody()
+    >>> print submissions['total_size']
+    1
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', architecture='powerpc').jsonBody()
+    >>> print submissions['total_size']
+    0
+
+...and by date created:
+
+    >>> date_created = u'2007-09-11T00:00:00+00:00'
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', created_before=date_created).jsonBody()
+    >>> print submissions['total_size']
+    1
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', created_after=date_created).jsonBody()
+    >>> print submissions['total_size']
+    1
+
+...and by date submitted:
+
+    >>> date_submitted = u'2007-09-11T15:23:45.653316+00:00'
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', submitted_before=date_submitted).jsonBody()
+    >>> print submissions['total_size']
+    1
+    >>> submissions = webservice.named_get(
+    ...     '/+hwdb', 'search', submitted_after=date_submitted).jsonBody()
+    >>> print submissions['total_size']
+    1
+
+
 === Submission Devices ===
 
 The table HWSubmissionDevice associates devices with submissions.

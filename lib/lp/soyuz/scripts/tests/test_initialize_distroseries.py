@@ -42,9 +42,10 @@ from lp.soyuz.scripts.initialize_distroseries import (
 from lp.testing import TestCaseWithFactory
 
 
-class TestInitializeDistroSeries(TestCaseWithFactory):
-
-    layer = LaunchpadZopelessLayer
+class InitializationHelperTestCase(TestCaseWithFactory):
+    # Helper class to:
+    # - setup/populate parents with packages;
+    # - initialize a child from parents.
 
     def setupParent(self, packages=None, format_selection=None,
                     distribution=None):
@@ -94,6 +95,26 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
                     distroarchseries=parent_das,
                     pocket=PackagePublishingPocket.RELEASE,
                     status=PackagePublishingStatus.PUBLISHED)
+                self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
+
+    def _fullInitialize(self, parents, child=None, previous_series=None,
+                        arches=(), packagesets=(), rebuild=False,
+                        distribution=None, overlays=(),
+                        overlay_pockets=(), overlay_components=()):
+        if child is None:
+            child = self.factory.makeDistroSeries(
+                distribution=distribution, previous_series=previous_series)
+        ids = InitializeDistroSeries(
+            child, [parent.id for parent in parents], arches, packagesets,
+            rebuild, overlays, overlay_pockets, overlay_components)
+        ids.check()
+        ids.initialize()
+        return child
+
+
+class TestInitializeDistroSeries(InitializationHelperTestCase):
+
+    layer = LaunchpadZopelessLayer
 
     def test_failure_for_already_released_distroseries(self):
         # Initializing a distro series that has already been used will
@@ -208,20 +229,6 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         # Other configuration bits are copied too.
         self.assertTrue(child.backports_not_automatic)
 
-    def _fullInitialize(self, parents, child=None, previous_series=None,
-                        arches=(), packagesets=(), rebuild=False,
-                        distribution=None, overlays=(),
-                        overlay_pockets=(), overlay_components=()):
-        if child is None:
-            child = self.factory.makeDistroSeries(
-                distribution=distribution, previous_series=previous_series)
-        ids = InitializeDistroSeries(
-            child, [parent.id for parent in parents], arches, packagesets,
-            rebuild, overlays, overlay_pockets, overlay_components)
-        ids.check()
-        ids.initialize()
-        return child
-
     def test_initialize(self):
         # Test a full initialize with no errors.
         self.parent, self.parent_das = self.setupParent()
@@ -316,6 +323,35 @@ class TestInitializeDistroSeries(TestCaseWithFactory):
         self.assertContentEqual(
             [(u'udev', u'0.1-1'), (u'firefox', u'2.1')],
             pub_sources)
+
+    def test_intra_distro_perm_copying(self):
+        # If child.distribution equals parent.distribution, we also
+        # copy the archivepermissions.
+        parent, unused = self.setupParent()
+        uploader = self.factory.makePerson()
+        test1 = self.factory.makePackageset(
+            u'test1', u'test 1 packageset', parent.owner,
+            distroseries=parent)
+        #test1 = getUtility(IPackagesetSet).new(
+        #    u'test1', u'test 1 packageset', self.parent.owner,
+        #    distroseries=self.parent)
+        test1.addSources('udev')
+        archive_permset = getUtility(IArchivePermissionSet)
+        archive_permset.newPackagesetUploader(
+            parent.main_archive, uploader, test1)
+        # Create child series in the same distribution.
+        child = self.factory.makeDistroSeries(
+            distribution=parent.distribution,
+            previous_series=parent)
+        self._fullInitialize([parent], child=child)
+
+        # The uploader can upload to the new distroseries.
+        self.assertTrue(archive_permset.isSourceUploadAllowed(
+                parent.main_archive, 'udev', uploader,
+                distroseries=parent))
+        self.assertTrue(archive_permset.isSourceUploadAllowed(
+                child.main_archive, 'udev', uploader,
+                distroseries=child))
 
     def test_no_cross_distro_perm_copying(self):
         # No cross-distro archivepermissions copying should happen.
