@@ -78,4 +78,5 @@ class JsonModelNamespaceView(view):
         naked_view = removeSecurityProxy(view)
         naked_view.initialize()
         cache = naked_view.getCacheJSON()
+        self.request.response.setHeader('content-type', 'application/json')
         return cache
