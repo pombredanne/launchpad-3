@@ -912,18 +912,25 @@ class BaseSeriesTemplatesView(LaunchpadView):
         product = packaging and tt.direct_packaging.productseries.product
         upstream = product and product.translations_usage in (
             ServiceUsage.LAUNCHPAD, ServiceUsage.EXTERNAL)
+        name = packaging and template.name in [t.name for t in
+            tt.direct_packaging.productseries.getTemplatesCollection()
+            .select()]
 
-        if templates and packaging and upstream:
+        # If all the conditions are met for sharing...
+        if templates and packaging and upstream and name:
             # Are the conditions met for this template to be considered "shared"?
-            state = 'Shared'
+            escaped_source = cgi.escape(template.sourcepackagename.name)
+            escaped_series = cgi.escape(tt.direct_packaging.productseries.name)
+            escaped_template = cgi.escape(template.name)
+            source_url = '+source/%s' % escaped_source
+            details_url = source_url + '/+sharing-details'
+            pot_url = ('/%s/%s/+pots/%s' %
+                (escaped_source, escaped_series, escaped_template))
+            return (
+                '<a class="sprite edit" href="%s"></a><a href="%s">%s/%s</a>'
+                % (details_url, pot_url, escaped_source, escaped_series))
         else:
-            state = 'Not shared'
-
-        # TODO XSS vuln here?  Might need cgi.escape.
-        details = ('+source/%s/+sharing-details' %
-            template.sourcepackagename.name)
-        return '<a class="sprite edit" href="%s">%s</a>' % (details, state)
-
+            return ''
 
     def _renderLastUpdateDate(self, template):
         """Render a template's "last updated" column."""
@@ -1022,7 +1029,7 @@ class BaseSeriesTemplatesView(LaunchpadView):
             ]
 
         if self.is_distroseries:
-            columns[2:2] = [('sharing', "Sharing")]
+            columns[3:3] = [('sharing', "Shared with")]
 
         return '\n'.join([
             self._renderField(css, text, tag='th')
@@ -1045,11 +1052,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
             ('actions_column', self._renderActionsColumn(template, base_url)),
         ]
 
-        # TODO The translations.sharing_information.enabled feature flag looks
-        # like it's always on now, should I bother protecting this column with
-        # it?
         if self.is_distroseries:
-            fields[2:2] = [('sharing', self._renderSharing(template))]
+            fields[3:3] = [('sharing', self._renderSharing(template))]
 
         tds = [self._renderField(*field) for field in fields]
 

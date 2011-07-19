@@ -13,6 +13,7 @@ from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.enums import ServiceUsage
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.productseries import ProductSeries
 from lp.translations.browser.distroseries import DistroSeriesTemplatesView
@@ -21,6 +22,7 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.factory import ObjectFactory
 from lp.testing.sampledata import ADMIN_EMAIL
 
 
@@ -252,8 +254,8 @@ class TestDistroSeriesTemplatesView(SeriesTemplatesViewScenario,
     columns = [
         ['priority_column'],
         ['sourcepackage_column'],
-        ['sharing'],
         ['template_column'],
+        ['sharing'],
         ['length_column'],
         ['lastupdate_column'],
     ]
@@ -297,78 +299,59 @@ class TestDistroSeriesTemplatesView(SeriesTemplatesViewScenario,
             view._renderSourcePackage(template))
 
 
+class FauxSharedTemplate:
+    """A stand-in for a template that is shared."""
+    name = 'TEMPLATE_NAME'
+    class translationtarget:
+        has_sharing_translation_templates = True
+        class direct_packaging:
+            class productseries:
+                name = 'PRODUCT_SERIES_NAME'
+                class product:
+                    translations_usage = ServiceUsage.LAUNCHPAD
+                @staticmethod
+                def getTemplatesCollection():
+                    class TemplateCollection:
+                        @staticmethod
+                        def select():
+                            class template:
+                                name = 'TEMPLATE_NAME'
+                            return [template]
+                    return TemplateCollection
+    class sourcepackagename:
+        name = 'SOURCE_PACKAGE_NAME'
+
+
 class TestSharingColumn(TestDistroSeriesTemplatesView):
     """Test the _renderSharing method of BaseSeriesTemplatesView."""
 
     columns = [
         ['priority_column'],
         ['sourcepackage_column'],
-        ['sharing'],
         ['template_column'],
+        ['sharing'],
         ['length_column'],
         ['lastupdate_column'],
-        ['actions_column'],
     ]
 
-    # For this test we're already logged in, so this test doesn't apply.
-    test_logging_in_adds_actions_column = None
-
-    def setUp(self):
-        super(TestSharingColumn, self).setUp(user='mark@example.com')
-        self.shared_template_name = self.factory.getUniqueString()
-        self.distroseries = self.factory.makeUbuntuDistroSeries()
-        self.distroseries.distribution.translation_focus = (
-            self.distroseries)
-#        distroseries = self._getSeries()
-#        distroseries.distribution.translation_focus = distroseries
-#        self.distroseries = self.factory.makeDistroSeries()
-#        self.distroseries.distribution.translation_focus = self.distroseries
-        self.sourcepackage = self.factory.makeSourcePackage(
-            distroseries=self.distroseries)
-        self.productseries = self.factory.makeProductSeries()
-
-    def make_this_side_template(self):
-        return self.factory.makePOTemplate(
-            productseries=self.productseries, name=self.shared_template_name)
-
-    def make_other_side_template(self):
-        return self.factory.makePOTemplate(
-            sourcepackage=self.sourcepackage, name=self.shared_template_name)
-
-    def test_basics(self):
-        # _renderSharing returns the template's sharing state and a link to
-        # the +sharing-details of the relevant source package.
-        template = self._makeTemplate()
-        view = self._makeView(template)
-        # Here we're just testing to see if some sharing state is returned
-        # (not what it is) and that it is a link.
-        rendered = view._renderSharing(template)
-        self.assertTrue('<a' in rendered)
-        self.assertTrue('shared' in rendered.lower())
-
     def test_unshared(self):
+        # Unshared templates result in an empty cell.
         template = self._makeTemplate()
         view = self._makeView(template)
         rendered = view._renderSharing(template)
-        # Unshared templates are displayed as such.
-        self.assertTrue('Not shared' in rendered)
-        # The text links to the source package.
-        link_segment = ('+source/%s/+sharing-details' %
-            template.sourcepackagename.name)
-        self.assertTrue(link_segment in rendered)
+        self.assertEqual('', rendered)
 
     def test_shared(self):
-        this = self.make_this_side_template()
-        other = self.make_other_side_template()
-        view = self._makeView(this)
-        rendered = view._renderSharing(this)
-        import pdb;pdb.set_trace()
-        # Unshared templates are displayed as such.
-        self.assertTrue('Shared' in rendered)
-        # The text links to the source package.
-        link_segment = ('+source/%s/+sharing-details' %
-            template.sourcepackagename.name)
-        self.assertTrue(link_segment in rendered)
+        view = self._makeView()
+        rendered = view._renderSharing(FauxSharedTemplate)
+        # Shared templates are displayed with an edit link that leads to the
+        # +sharing-details page...
+        details_link_segment = ('+source/%s/+sharing-details' %
+            FauxSharedTemplate.sourcepackagename.name)
+        self.assertTrue(details_link_segment in rendered)
+        # ...and a link to the shared template.
+        template_link_segment = ('/+pots/%s' % FauxSharedTemplate.name)
+        self.assertTrue(template_link_segment in rendered)
 
 
 class TestProductSeriesTemplatesView(SeriesTemplatesViewScenario,
