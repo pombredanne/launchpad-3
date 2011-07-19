@@ -24,12 +24,10 @@ from bzrlib.bzrdir import (
     )
 from bzrlib.errors import (
     NoSuchFile,
-    NotBranchError,
     )
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib import trace
 from bzrlib.transport import get_transport
-from bzrlib.upgrade import upgrade
 from bzrlib.urlutils import (
     join as urljoin,
     local_path_from_url,
