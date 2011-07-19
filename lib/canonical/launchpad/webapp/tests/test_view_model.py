@@ -5,15 +5,18 @@
 __metaclass__ = type
 
 
+from lazr.restful.interfaces import IJSONRequestCache
 from lazr.restful.utils import get_current_browser_request
-from zope.location.interfaces import LocationError
+from simplejson import loads
+from testtools.matchers import KeysEqual
+from zope.configuration import xmlconfig
 
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.publisher import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from lp.app.browser.launchpadform import LaunchpadFormView
 from canonical.launchpad.webapp.namespace import JsonModelNamespaceView
+import canonical.launchpad.webapp.tests
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.browser.launchpadform import LaunchpadFormView
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
@@ -21,19 +24,20 @@ from lp.testing import (
     logout,
     TestCaseWithFactory,
     )
-from lp.testing.views import create_initialized_view
+
 
 class FakeView:
     """A view object that just has a fake context and request."""
-
     def __init__(self):
         self.context = object()
         self.request = object()
 
 
 class TestJsonModelNamespace(TestCaseWithFactory):
-
+    """Test that traversal to ++model++ returns a namespace."""
     layer = DatabaseFunctionalLayer
+
+
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -46,7 +50,7 @@ class TestJsonModelNamespace(TestCaseWithFactory):
     def test_JsonModelNamespace_traverse_non_LPview(self):
         # Test traversal for JSON model namespace,
         # ++model++ for a non-LaunchpadView context.
-        request = get_current_browser_request
+        request = get_current_browser_request()
         context = object()
         view = FakeView()
         namespace = JsonModelNamespaceView(context, request)
@@ -56,7 +60,7 @@ class TestJsonModelNamespace(TestCaseWithFactory):
     def test_JsonModelNamespace_traverse_LPView(self):
         # Test traversal for JSON model namespace,
         # ++model++ for a non-LaunchpadView context.
-        request = get_current_browser_request
+        request = get_current_browser_request()
         context = object()
         view = LaunchpadView(context, request)
         namespace = JsonModelNamespaceView(view, request)
@@ -66,7 +70,7 @@ class TestJsonModelNamespace(TestCaseWithFactory):
     def test_JsonModelNamespace_traverse_LPFormView(self):
         # Test traversal for JSON model namespace,
         # ++model++ for a non-LaunchpadView context.
-        request = get_current_browser_request
+        request = get_current_browser_request()
         context = object()
         view = LaunchpadFormView(context, request)
         namespace = JsonModelNamespaceView(view, request)
@@ -74,33 +78,11 @@ class TestJsonModelNamespace(TestCaseWithFactory):
         self.assertEqual(result, namespace)
 
 
-from zope.configuration import xmlconfig
-from zope.interface import (
-    Attribute,
-    implements,
-    Interface,
-    )
-from zope.component import provideAdapter
-from zope.publisher.interfaces.browser import IDefaultBrowserLayer
-import canonical.launchpad.webapp.tests
-
-
-class ISchnizzle(Interface):
-    name = Attribute("name")
-    person = Attribute("person")
-
-class Schnizzle:
-    implements(ISchnizzle)
-    def __init__(self, name, person):
-        self.name = name
-        self.person = person
-
-class SchnizzleView(object):
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+class BaseProductModelTestView(LaunchpadView):
     def initialize(self):
+        # Ensure initialize does not put anything in the cache.
         pass
+
 
 class TestJsonModelView(BrowserTestCase):
 
@@ -109,61 +91,76 @@ class TestJsonModelView(BrowserTestCase):
     def setUp(self):
         TestCaseWithFactory.setUp(self)
         login(ANONYMOUS)
+        self.product = self.factory.makeProduct(name="test-product")
+        self.url = canonical_url(self.product) + '/+modeltest/++model++'
 
     def tearDown(self):
         logout()
         TestCaseWithFactory.tearDown(self)
 
-    def test_JsonModel_view_cache(self):
-        # Register the ZCML for our test view.
-        for interface in [ISchnizzle]:
-            name = interface.getName()
-            setattr(canonical.launchpad.webapp.tests, name, interface)
-            interface.__module__ = 'canonical.launchpad.webapp.tests'
-        canonical.launchpad.webapp.tests.SchnizzleView = SchnizzleView
+    def configZCML(self):
+        # Register the ZCML for our test view.  Note the view class must be
+        # registered first.
         xmlconfig.string("""
           <configure
               xmlns:browser="http://namespaces.zope.org/browser">
               <include package="canonical.launchpad.webapp"
                   file="meta.zcml" />
               <include package="zope.app.zcmlfiles" file="meta.zcml" />
-              <browser:url
-                for="canonical.launchpad.webapp.tests.ISchnizzle"
-                path_expression="string:${name}"
-                attribute_to_parent = "person" />
-              <browser:defaultView
-                for="canonical.launchpad.webapp.tests.ISchnizzle"
-                name="+index"/>
               <browser:page
-                name="+index"
-                for="canonical.launchpad.webapp.tests.ISchnizzle"
-                class="canonical.launchpad.webapp.tests.SchnizzleView"
+                name="+modeltest"
+                for="lp.registry.interfaces.product.IProduct"
+                class="canonical.launchpad.webapp.tests.ProductModelTestView"
                 permission="zope.Public"
                 />
           </configure>""")
 
-        ## provideAdapter(SchnizzleView, (ISchnizzle, IDefaultBrowserLayer),
-        ##     name="+schniz", provides=Interface)
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
-        schniz = Schnizzle("sammy", self.factory.makePerson(name="schnoz"))
-        view = create_initialized_view(schniz, name="+index")
-        #view.render()
-        url = canonical_url(schniz) + '/++model++'
-        browser = self.getUserBrowser(url)
-        print browser
+    def test_JsonModel_default_cache(self):
+        # If nothing is added to the class by the view, the cache will only
+        # have the context.
+        class ProductModelTestView(BaseProductModelTestView):
+            pass
+        canonical.launchpad.webapp.tests.ProductModelTestView = \
+            ProductModelTestView
+        self.configZCML()
+        browser = self.getUserBrowser(self.url)
+        cache = loads(browser.contents)
+        self.assertEqual(['context'], cache.keys())
 
+    def test_JsonModel_custom_cache(self):
+        # Adding an item to the cache in the initialize method results in it
+        # being in the cache.
+        class ProductModelTestView(BaseProductModelTestView):
+            def initialize(self):
+                request = get_current_browser_request()
+                target_info = {}
+                target_info['title'] = "The Title"
+                IJSONRequestCache(request).objects['target_info'] = target_info
+        canonical.launchpad.webapp.tests.ProductModelTestView = \
+            ProductModelTestView
+        self.configZCML()
+        browser = self.getUserBrowser(self.url)
+        cache = loads(browser.contents)
+        self.assertThat(cache, KeysEqual('context', 'target_info'))
 
-class TestJsonModelBrowser(BrowserTestCase):
+    def test_JsonModel_custom_cache_wrong_method(self):
+        # Adding an item to the cache in some other method is not recognized,
+        # even if it called as part of normal rendering.
+        class ProductModelTestView(BaseProductModelTestView):
+            def initialize(self):
+                request = get_current_browser_request()
+                target_info = {}
+                target_info['title'] = "The Title"
+                IJSONRequestCache(request).objects['target_info'] = target_info
+            def render(self):
+                request = get_current_browser_request()
+                other_info = {}
+                other_info['spaz'] = "Stuff"
+                IJSONRequestCache(request).objects['other_info'] = other_info
 
-    layer = DatabaseFunctionalLayer
-
-    def test_JsonModelNamespace_named_view(self):
-        # Test the output of a named view.
-        person = self.factory.makePerson(name="joe")
-        url = canonical_url(person) + '/++model++'
-        browser = self.getUserBrowser(url)
-        self.assertTextMatchesExpressionIgnoreWhitespace("""
-            {"context": {.*}}""", browser.contents)
-        self.assertTextMatchesExpressionIgnoreWhitespace("""
-            .*"self_link": "http://launchpad.dev/api/.*/~joe".*""",
-            browser.contents)
+        canonical.launchpad.webapp.tests.ProductModelTestView = \
+            ProductModelTestView
+        self.configZCML()
+        browser = self.getUserBrowser(self.url)
+        cache = loads(browser.contents)
+        self.assertThat(cache, KeysEqual('context', 'target_info'))
