@@ -1677,7 +1677,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
             # fromText() creates a bug watch associated with the bug.
-            getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
+            with person_logged_in(owner):
+                getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
         bugtask = bug.default_bugtask
         if date_closed is not None:
             bugtask.transitionToStatus(
@@ -4165,7 +4166,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makePlainPackageCopyJob(
         self, package_name=None, package_version=None, source_archive=None,
-        target_archive=None, target_distroseries=None, target_pocket=None):
+        target_archive=None, target_distroseries=None, target_pocket=None,
+        requester=None):
         """Create a new `PlainPackageCopyJob`."""
         if package_name is None and package_version is None:
             package_name = self.makeSourcePackageName().name
@@ -4178,10 +4180,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             target_distroseries = self.makeDistroSeries()
         if target_pocket is None:
             target_pocket = self.getAnyPocket()
+        if requester is None:
+            requester = self.makePerson()
         return getUtility(IPlainPackageCopyJobSource).create(
             package_name, source_archive, target_archive,
             target_distroseries, target_pocket,
-            package_version=package_version)
+            package_version=package_version, requester=requester)
 
 
 # Some factory methods return simple Python types. We don't add

@@ -26,6 +26,8 @@ value_domain_info = sorted([
      'The flag value is set to the given floating point number.'),
     ('int',
      "An integer."),
+    ('space delimited',
+     'Space-delimited strings.')
     ])
 
 # Data for generating web-visible feature flag documentation.
@@ -106,6 +108,18 @@ flag_info = sorted([
      'boolean',
      ('Enables ranking by pillar affiliation in the person picker.'),
      ''),
+    ('bugs.autoconfirm.enabled_distribution_names',
+     'space delimited',
+     ('Enables auto-confirming bugtasks for distributions (and their '
+      'series and packages).  Use the default domain.  Specify a single '
+      'asterisk ("*") to enable for all distributions.'),
+     'None are enabled'),
+    ('bugs.autoconfirm.enabled_product_names',
+     'space delimited',
+     ('Enables auto-confirming bugtasks for products (and their '
+      'series).  Use the default domain.  Specify a single '
+      'asterisk ("*") to enable for all products.'),
+     'None are enabled'),
     ])
 
 # The set of all flag names that are documented.

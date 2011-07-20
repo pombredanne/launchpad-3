@@ -62,21 +62,22 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         widget_config = simplejson.loads(picker_widget.json_config)
         self.assertEqual(
             'ValidTeamOwner', picker_widget.vocabulary_name)
-        self.assertEqual(
-            simplejson.dumps(self.vocabulary.displayname),
-            widget_config['header'])
-        self.assertEqual(
-            simplejson.dumps(self.vocabulary.step_title),
+        self.assertEqual(self.vocabulary.displayname, widget_config['header'])
+        self.assertEqual(self.vocabulary.step_title,
             widget_config['step_title'])
         self.assertEqual(
             'show-widget-field-test_valid-item', picker_widget.show_widget_id)
         self.assertEqual(
             'field.test_valid.item', picker_widget.input_id)
-        self.assertEqual(
-            simplejson.dumps(None), picker_widget.extra_no_results_message)
+        self.assertIsNone(picker_widget.extra_no_results_message)
         markup = picker_widget()
-        self.assertIn(
-            "Y.lp.app.picker.create('ValidTeamOwner', config);", markup)
+        self.assertTextMatchesExpressionIgnoreWhitespace("""\
+            .*
+            var picker = Y\\.lp\\.app\\.picker\\.create\\('ValidTeamOwner',
+                config,
+                'field\\.test_valid.item'\\);
+            .*
+            """, markup)
 
     def test_widget_fieldname_with_invalid_html_chars(self):
         # Check the picker widget is correctly set up for a field which has a

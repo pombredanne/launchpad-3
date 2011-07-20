@@ -16,7 +16,7 @@
         <a tal:condition="expandable"
            tal:attributes="href tasklink" class="bugtask-expander">
           <tal:link_text tal:replace="expander_link_text" />
-          &nbsp;
+          &#8203;
         </a>
         <tal:no_expander tal:condition="not: expandable"
                          tal:replace="expander_link_text" />

@@ -22,6 +22,7 @@ from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
+from lazr.restful.fields import Reference
 from zope.interface import (
     Attribute,
     Interface,
@@ -35,6 +36,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from lp.registry.interfaces.person import IPerson
 
 
 class SuspendJobException(Exception):
@@ -108,6 +110,11 @@ class IJob(Interface):
 
     max_retries = Int(title=_(
         'The number of retries permitted before this job permanently fails.'))
+
+    requester = Reference(
+        IPerson, title=_("The person who requested the job"),
+        required=False, readonly=True
+        )
 
     is_pending = Bool(
         title=_("Whether or not this job's status is such that it "

@@ -138,7 +138,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
         :return: A string that will be passed to Y.Node.create()
                  so it needs to be contained in a single HTML element.
         """
-        return simplejson.dumps(None)
+        return None
 
     @property
     def vocabulary_name(self):
@@ -157,11 +157,11 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 
     @property
     def header_text(self):
-        return simplejson.dumps(self.header or self.vocabulary.displayname)
+        return self.header or self.vocabulary.displayname
 
     @property
     def step_title_text(self):
-        return simplejson.dumps(self.step_title or self.vocabulary.step_title)
+        return self.step_title or self.vocabulary.step_title
 
     @property
     def input_id(self):
@@ -248,7 +248,7 @@ class SearchForUpstreamPopupWidget(VocabularyPickerWidget):
 
     @property
     def extra_no_results_message(self):
-        return simplejson.dumps("<strong>Didn't find the project you were "
+        return ("<strong>Didn't find the project you were "
                 "looking for? "
                 '<a href="%s/+affects-new-product">Register it</a>.</strong>'
                 % canonical_url(self.context.context))
