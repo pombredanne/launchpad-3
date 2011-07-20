@@ -546,13 +546,6 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
                 # and private teams user is not a member of.
                 continue
 
-            if subscription.subscribed_by == person:
-                subscribed_by = 'Self-subscribed'
-            else:
-                subscribed_by = "Subscribed by %s (%s)" % (
-                    subscription.subscribed_by.displayname,
-                    subscription.subscribed_by.name)
-
             subscriber = {
                 'name': person.name,
                 'display_name': person.displayname,
@@ -560,7 +553,7 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
                 'self_link': absoluteURL(person, api_request),
                 'is_team': person.is_team,
                 'can_edit': can_edit,
-                'subscribed_by': subscribed_by,
+                'subscribed_by': subscription.display_subscribed_by,
                 }
             record = {
                 'subscriber': subscriber,
