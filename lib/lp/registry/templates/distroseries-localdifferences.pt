@@ -211,7 +211,7 @@ LPS.use('lp.registry.distroseriesdifferences_details', function(Y) {
       var differences = Y.lp.registry.distroseries.differences;
       // Probably only one, but check for more just in case.
       Y.all("th.package-sets").each(function(header) {
-        differences.setupPackageSetPicker(header, form);
+        differences.connect_packageset_picker(header, form);
       });
     });
   });
