@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 from lazr.delegates import delegates
+import logging
 import simplejson
 from storm.locals import (
     And,
@@ -451,6 +452,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         try:
             self.attemptCopy()
         except CannotCopy, e:
+            logger = logging.getLogger()
+            logger.info("Job:\n%s\nraised CannotCopy:\n%s" %(self, e))
             self.abort()  # Abort the txn.
             self.reportFailure(e)
 
@@ -461,6 +464,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             # Rely on the job runner to do the final commit.  Note that
             # we're not raising any exceptions here, failure of a copy is
             # not a failure of the job.
+        except SuspendJobException:
+            raise
         except:
             self._rejectPackageUpload()
             raise
