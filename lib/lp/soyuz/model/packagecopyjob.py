@@ -444,8 +444,19 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         try:
             self.attemptCopy()
         except CannotCopy, e:
-            self.abort()
+            self.abort()  # Abort the txn.
             self.reportFailure(e)
+
+            # If there is an associated PackageUpload we need to reject it,
+            # else it will sit in ACCEPTED forever.
+            pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+                [self.context.id]).any()
+            if pu is not None:
+                pu.setRejected()
+
+            # Rely on the job runner to do the final commit.  Note that
+            # we're not raising any exceptions here, failure of a copy is
+            # not a failure of the job.
 
     def attemptCopy(self):
         """Attempt to perform the copy.

@@ -103,6 +103,10 @@ class LocalTestHelper:
         """Helper to switch to the right DB user and run the job."""
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
+        # Set the state to RUNNING.
+        job.start()
+        # Commit the RUNNING state.
+        self.layer.txn.commit()
         job.run()
 
 
@@ -966,10 +970,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.runJob(job)
 
         # The job will have failed because the requester has no permission
-        # to upload to the archive we created.
-        self.assertEquals(JobStatus.FAILED, job.status)
-
-        # The job should have set the PU status to REJECTED.
+        # to upload to the archive we created. The job should have set the
+        # PU status to REJECTED.
         self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
 
 
