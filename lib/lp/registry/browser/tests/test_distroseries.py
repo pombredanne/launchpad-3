@@ -2079,6 +2079,35 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
             'http://127.0.0.1?start=1&batch=1',
             view.action_url)
 
+    def test_specified_packagesets_filter_none_specified(self):
+        # The view property specified_packagesets_filter return a collection
+        # of Packagesets given by the field.packageset query parameter.
+        set_derived_series_ui_feature_flag(self)
+        dsd = self.factory.makeDistroSeriesDifference()
+        person = dsd.derived_series.owner
+        #set_derived_series_sync_feature_flag(self)
+        with person_logged_in(person):
+            view = create_initialized_view(
+                dsd.derived_series, '+localpackagediffs', method='GET',
+                query_string='')
+            self.assertIs(None, view.specified_packagesets_filter)
+
+    def test_specified_packagesets_filter_specified(self):
+        # The view property specified_packagesets_filter return a collection
+        # of Packagesets given by the field.packageset query parameter.
+        set_derived_series_ui_feature_flag(self)
+        dsd = self.factory.makeDistroSeriesDifference()
+        person = dsd.derived_series.owner
+        packageset = self.factory.makePackageset(
+            distroseries=dsd.derived_series)
+        #set_derived_series_sync_feature_flag(self)
+        with person_logged_in(person):
+            view = create_initialized_view(
+                dsd.derived_series, '+localpackagediffs', method='GET',
+                query_string='field.packageset=%d' % packageset.id)
+            self.assertContentEqual(
+                [packageset], view.specified_packagesets_filter)
+
 
 class TestDistroSeriesNeedsPackagesView(TestCaseWithFactory):
     """Test the distroseries +needs-packaging view."""
