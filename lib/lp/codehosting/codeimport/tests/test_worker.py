@@ -226,7 +226,6 @@ class TestBazaarBranchStore(WorkerTest):
         target_url = store._getMirrorURL(self.arbitrary_branch_id)
         knit_format = format_registry.get('knit')()
         create_branch_with_one_revision(target_url, format=knit_format)
-        default_format = BzrDirFormat.get_default_format()
 
         # The fetched branch is in the default format.
         new_branch = store.pull(
