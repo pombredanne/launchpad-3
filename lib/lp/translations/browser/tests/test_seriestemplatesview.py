@@ -335,20 +335,23 @@ class TestSharingColumn(TestDistroSeriesTemplatesView):
     ]
 
     def test_unshared(self):
-        # Unshared templates result in an empty cell.
+        # Unshared templates result in the text "not shared" and an edit link.
         template = self._makeTemplate()
         view = self._makeView(template)
         rendered = view._renderSharing(template)
-        self.assertEqual('', rendered)
+        self.assertTrue('not shared' in rendered)
+        edit_link_segment = ('+source/%s/+sharing-details' %
+            template.sourcepackagename.name)
+        self.assertTrue(edit_link_segment in rendered)
 
     def test_shared(self):
         view = self._makeView()
         rendered = view._renderSharing(FauxSharedTemplate)
         # Shared templates are displayed with an edit link that leads to the
         # +sharing-details page...
-        details_link_segment = ('+source/%s/+sharing-details' %
+        edit_link_segment = ('+source/%s/+sharing-details' %
             FauxSharedTemplate.sourcepackagename.name)
-        self.assertTrue(details_link_segment in rendered)
+        self.assertTrue(edit_link_segment in rendered)
         # ...and a link to the shared template.
         template_link_segment = ('/+pots/%s' % FauxSharedTemplate.name)
         self.assertTrue(template_link_segment in rendered)

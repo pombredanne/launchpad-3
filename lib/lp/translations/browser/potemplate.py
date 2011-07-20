@@ -916,21 +916,25 @@ class BaseSeriesTemplatesView(LaunchpadView):
             tt.direct_packaging.productseries.getTemplatesCollection()
             .select()]
 
+        # Build the edit link.
+        escaped_source = cgi.escape(template.sourcepackagename.name)
+        source_url = '+source/%s' % escaped_source
+        details_url = source_url + '/+sharing-details'
+        edit_link = '<a class="sprite edit" href="%s"></a>' % details_url
+
         # If all the conditions are met for sharing...
         if templates and packaging and upstream and name:
             # Are the conditions met for this template to be considered "shared"?
-            escaped_source = cgi.escape(template.sourcepackagename.name)
             escaped_series = cgi.escape(tt.direct_packaging.productseries.name)
             escaped_template = cgi.escape(template.name)
-            source_url = '+source/%s' % escaped_source
-            details_url = source_url + '/+sharing-details'
             pot_url = ('/%s/%s/+pots/%s' %
                 (escaped_source, escaped_series, escaped_template))
-            return (
-                '<a class="sprite edit" href="%s"></a><a href="%s">%s/%s</a>'
-                % (details_url, pot_url, escaped_source, escaped_series))
+            return (edit_link + '<a href="%s">%s/%s</a>'
+                % (pot_url, escaped_source, escaped_series))
         else:
-            return ''
+            # Otherwise just say that the template isn't shared and give them
+            # a link to change the sharing.
+            return edit_link + 'not shared'
 
     def _renderLastUpdateDate(self, template):
         """Render a template's "last updated" column."""
