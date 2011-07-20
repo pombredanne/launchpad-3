@@ -33,7 +33,8 @@ MAX_LAG = timedelta(seconds=45)
 
 
 class DatabasePreflight:
-    def __init__(self, log, master_con):
+    def __init__(self, log, master_con, do_connection_check):
+        self.do_connection_check = do_connection_check
         self.log = log
         self.is_replicated = replication.helpers.slony_installed(master_con)
         if self.is_replicated:
@@ -42,27 +43,28 @@ class DatabasePreflight:
             for node in self.nodes:
                 node.con = psycopg2.connect(node.connection_string)
                 node.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+
+            # Create a list of nodes subscribed to the replicated sets we
+            # are modifying.
+            cur = master_con.cursor()
+            cur.execute("""
+                WITH subscriptions AS (
+                    SELECT *
+                    FROM _sl.sl_subscribe
+                    WHERE sub_set = 1 AND sub_active IS TRUE)
+                SELECT sub_provider FROM subscriptions
+                UNION
+                SELECT sub_receiver FROM subscriptions
+                """)
+            lpmain_node_ids = set(row[0] for row in cur.fetchall())
+            self.lpmain_nodes = set(
+                node for node in self.nodes
+                if node.node_id in lpmain_node_ids)
         else:
             node = replication.helpers.Node(None, None, None, True)
             node.con = master_con
             self.nodes = set([node])
-
-        # Create a list of nodes subscribed to the replicated sets we
-        # are modifying.
-        cur = master_con.cursor()
-        cur.execute("""
-            WITH subscriptions AS (
-                SELECT *
-                FROM _sl.sl_subscribe
-                WHERE sub_set = 1 AND sub_active IS TRUE)
-            SELECT sub_provider FROM subscriptions
-            UNION
-            SELECT sub_receiver FROM subscriptions
-            """)
-        lpmain_node_ids = set(row[0] for row in cur.fetchall())
-        self.lpmain_nodes = set(
-            node for node in self.nodes
-            if node.node_id in lpmain_node_ids)
+            self.lpmain_nodes = self.nodes
 
     def check_is_superuser(self):
         """Return True if all the node connections are as superusers."""
@@ -206,7 +208,7 @@ class DatabasePreflight:
             return False
 
         success = True
-        if not self.check_open_connections():
+        if self.do_connection_check and not self.check_open_connections():
             success = False
         if not self.check_long_running_transactions():
             success = False
@@ -221,6 +223,10 @@ def main():
     parser = OptionParser()
     db_options(parser)
     logger_options(parser)
+    parser.add_option(
+        "--skip-connection-check", dest='connection_check',
+        default=True, action="store_false",
+        help="Don't check open connections.")
     (options, args) = parser.parse_args()
     if args:
         parser.error("Too many arguments")
@@ -230,7 +236,8 @@ def main():
     master_con = connect(lp.dbuser)
     master_con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
-    preflight_check = DatabasePreflight(log, master_con)
+    preflight_check = DatabasePreflight(
+        log, master_con, options.connection_check)
 
     if preflight_check.check_all():
         log.info('Preflight check succeeded. Good to go.')
