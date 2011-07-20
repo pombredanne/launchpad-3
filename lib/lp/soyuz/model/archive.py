@@ -1587,7 +1587,7 @@ class Archive(SQLBase):
         copy_tasks = []
         for source in sources:
             task = (
-                source.sourcepackagerelease.sourcepackagename,
+                source.sourcepackagerelease.sourcepackagename.name,
                 source.sourcepackagerelease.version,
                 from_archive,
                 self,
