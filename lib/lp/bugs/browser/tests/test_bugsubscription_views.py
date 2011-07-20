@@ -487,6 +487,38 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 'can_edit': False,
                 'web_link': canonical_url(subscriber),
                 'self_link': absoluteURL(subscriber, api_request),
+                'subscribed_by': 'Self-subscribed',
+                },
+            'subscription_level': "Lifecycle",
+            }
+        self.assertEqual(
+            dumps([expected_result]), harness.view.subscriber_data_js)
+
+    def test_data_person_subscription_other_subscriber(self):
+        # A subscriber_data_js returns JSON string of a list
+        # containing all subscriber information needed for
+        # subscribers_list.js subscribers loading.
+        bug = self._makeBugWithNoSubscribers()
+        subscribed_by = self.factory.makePerson(
+            name="someone", displayname='Someone')
+        subscriber = self.factory.makePerson(
+            name='user', displayname='Subscriber Name')
+        with person_logged_in(subscriber):
+            bug.subscribe(person=subscriber,
+                          subscribed_by=subscribed_by,
+                          level=BugNotificationLevel.LIFECYCLE)
+        harness = LaunchpadFormHarness(bug, BugPortletSubscribersWithDetails)
+        api_request = IWebServiceClientRequest(harness.request)
+
+        expected_result = {
+            'subscriber': {
+                'name': 'user',
+                'display_name': 'Subscriber Name',
+                'is_team': False,
+                'can_edit': False,
+                'web_link': canonical_url(subscriber),
+                'self_link': absoluteURL(subscriber, api_request),
+                'subscribed_by': 'Subscribed by Someone (someone)',
                 },
             'subscription_level': "Lifecycle",
             }
@@ -497,8 +529,10 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
         # For a team subscription, subscriber_data_js has is_team set
         # to true.
         bug = self._makeBugWithNoSubscribers()
+        teamowner = self.factory.makePerson(
+            name="team-owner", displayname="Team Owner")
         subscriber = self.factory.makeTeam(
-            name='team', displayname='Team Name')
+            name='team', displayname='Team Name', owner=teamowner)
         with person_logged_in(subscriber.teamowner):
             bug.subscribe(subscriber, subscriber.teamowner,
                           level=BugNotificationLevel.LIFECYCLE)
@@ -513,6 +547,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 'can_edit': False,
                 'web_link': canonical_url(subscriber),
                 'self_link': absoluteURL(subscriber, api_request),
+                'subscribed_by': 'Subscribed by Team Owner (team-owner)',
                 },
             'subscription_level': "Lifecycle",
             }
@@ -523,8 +558,10 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
         # For a team subscription, subscriber_data_js has can_edit
         # set to true for team owner.
         bug = self._makeBugWithNoSubscribers()
+        teamowner = self.factory.makePerson(
+            name="team-owner", displayname="Team Owner")
         subscriber = self.factory.makeTeam(
-            name='team', displayname='Team Name')
+            name='team', displayname='Team Name', owner=teamowner)
         with person_logged_in(subscriber.teamowner):
             bug.subscribe(subscriber, subscriber.teamowner,
                           level=BugNotificationLevel.LIFECYCLE)
@@ -540,6 +577,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 'can_edit': True,
                 'web_link': canonical_url(subscriber),
                 'self_link': absoluteURL(subscriber, api_request),
+                'subscribed_by': 'Subscribed by Team Owner (team-owner)',
                 },
             'subscription_level': "Lifecycle",
             }
@@ -552,8 +590,11 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
         # set to true for team member.
         bug = self._makeBugWithNoSubscribers()
         member = self.factory.makePerson()
+        teamowner = self.factory.makePerson(
+            name="team-owner", displayname="Team Owner")
         subscriber = self.factory.makeTeam(
-            name='team', displayname='Team Name', members=[member])
+            name='team', displayname='Team Name', owner=teamowner,
+            members=[member])
         with person_logged_in(subscriber.teamowner):
             bug.subscribe(subscriber, subscriber.teamowner,
                           level=BugNotificationLevel.LIFECYCLE)
@@ -569,6 +610,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 'can_edit': True,
                 'web_link': canonical_url(subscriber),
                 'self_link': absoluteURL(subscriber, api_request),
+                'subscribed_by': 'Subscribed by Team Owner (team-owner)',
                 },
             'subscription_level': "Lifecycle",
             }
@@ -598,6 +640,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 'can_edit': True,
                 'web_link': canonical_url(subscriber),
                 'self_link': absoluteURL(subscriber, api_request),
+                'subscribed_by': 'Self-subscribed',
                 },
             'subscription_level': "Lifecycle",
             }
@@ -615,7 +658,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
         subscriber = self.factory.makePerson(
             name='user', displayname='Subscriber Name')
         subscribed_by = self.factory.makePerson(
-            name='someone', displayname='Subscribed By Name')
+            name='someone', displayname='Someone')
         with person_logged_in(subscriber):
             bug.subscribe(subscriber, subscribed_by,
                           level=BugNotificationLevel.LIFECYCLE)
@@ -630,6 +673,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 'can_edit': True,
                 'web_link': canonical_url(subscriber),
                 'self_link': absoluteURL(subscriber, api_request),
+                'subscribed_by': 'Subscribed by Someone (someone)',
                 },
             'subscription_level': "Lifecycle",
             }
