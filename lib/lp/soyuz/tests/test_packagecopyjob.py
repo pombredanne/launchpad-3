@@ -943,8 +943,6 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             status=PackagePublishingStatus.PUBLISHED)
         job_source = getUtility(IPlainPackageCopyJobSource)
         requester = self.factory.makePerson()
-        #with person_logged_in(target_archive.owner):
-        #    target_archive.newComponentUploader(requester, "main")
         job = job_source.create(
             package_name="copyme",
             package_version="1.0",
