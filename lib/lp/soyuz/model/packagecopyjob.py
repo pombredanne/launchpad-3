@@ -453,7 +453,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             self.attemptCopy()
         except CannotCopy, e:
             logger = logging.getLogger()
-            logger.info("Job:\n%s\nraised CannotCopy:\n%s" %(self, e))
+            logger.info("Job:\n%s\nraised CannotCopy:\n%s" % (self, e))
             self.abort()  # Abort the txn.
             self.reportFailure(e)
 
