@@ -969,7 +969,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         pu.acceptFromQueue()
         self.runJob(job)
 
-        # The job will have failed because the requester has no permission
+        # The copy will have failed because the requester has no permission
         # to upload to the archive we created. The job should have set the
         # PU status to REJECTED.
         self.assertEqual(PackageUploadStatus.REJECTED, pu.status)

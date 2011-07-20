@@ -439,6 +439,13 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             self._createPackageUpload(unapproved=True)
             raise SuspendJobException
 
+    def _rejectPackageUpload(self):
+        # Helper to find and reject any associated PackageUpload.
+        pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            [self.context.id]).any()
+        if pu is not None:
+            pu.setRejected()
+
     def run(self):
         """See `IRunnableJob`."""
         try:
@@ -449,14 +456,14 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
             # If there is an associated PackageUpload we need to reject it,
             # else it will sit in ACCEPTED forever.
-            pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
-                [self.context.id]).any()
-            if pu is not None:
-                pu.setRejected()
+            self._rejectPackageUpload()
 
             # Rely on the job runner to do the final commit.  Note that
             # we're not raising any exceptions here, failure of a copy is
             # not a failure of the job.
+        except:
+            self._rejectPackageUpload()
+            raise
 
     def attemptCopy(self):
         """Attempt to perform the copy.
