@@ -180,7 +180,7 @@ else
 	for jsname in $^ ; do \
 	    echo "/* $$jsname */" >> $@ ;\
 	    cat $$jsname >> $@ ;\
-	done 
+	done
 endif
 
 jsbuild: $(PY) $(JS_OUT)
