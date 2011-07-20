@@ -259,16 +259,16 @@ def main():
         default=False, action="store_true",
         help="Don't check open connections.")
     parser.add_option(
-        "--kill-open-connections", dest='kill_connections',
+        "--kill-connections", dest='kill_connections',
         default=False, action="store_true",
-        help="Kill open connections instead of just reporting an error.")
+        help="Kill non-system connections instead of reporting an error.")
     (options, args) = parser.parse_args()
     if args:
         parser.error("Too many arguments")
 
     if options.kill_connections and options.skip_connection_check:
         parser.error(
-            "--skip-connection-check conflicts with --kill-open-connections")
+            "--skip-connection-check conflicts with --kill-connections")
 
     log = logger(options)
 
