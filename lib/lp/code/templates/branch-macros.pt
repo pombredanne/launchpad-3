@@ -271,17 +271,6 @@
       The revision commit message.
     </tal:commit-message>
   </dd>
-  <div
-      class="revision-expander"
-      tal:condition="request/features/code.ajax_revision_diffs.enabled">
-    <a class="unseen expander-icon"
-       tal:attributes="id string:expandable-${rev_no/sequence}"
-     >Changes</a>
-    <div class="unseen expander-content">
-      <img src="/@@/spinner" alt="Please wait" />
-      Loading diff
-    </div>
-  </div>
 
   <div tal:condition="rev_info | nothing">
     <div tal:define="merge_proposal python:rev_info['merge_proposal']"
