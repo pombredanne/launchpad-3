@@ -206,8 +206,14 @@ LPS.use('lp.registry.distroseriesdifferences_details', function(Y) {
 </script>
 <script type="text/javascript">
   LPS.use("lp.registry.distroseries.differences", function(Y) {
+    Y.on("domready", function() {
+      var form = Y.one("form#distroseries-localdiff-search-filter");
       var differences = Y.lp.registry.distroseries.differences;
-      Y.on("domready", differences.setupPackageSetPicker);
+      // Probably only one, but check for more just in case.
+      Y.all("th.package-sets").each(function(header) {
+        differences.setupPackageSetPicker(header, form);
+      });
+    });
   });
 </script>
 
