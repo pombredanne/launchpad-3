@@ -3,8 +3,11 @@
 
 __metaclass__ = type
 
-__all__ = ['BugAlsoAffectsProductMetaView', 'BugAlsoAffectsDistroMetaView',
-           'BugAlsoAffectsProductWithProductCreationView']
+__all__ = [
+    'BugAlsoAffectsProductMetaView',
+    'BugAlsoAffectsDistroMetaView',
+    'BugAlsoAffectsProductWithProductCreationView'
+    ]
 
 import cgi
 from textwrap import dedent
@@ -14,6 +17,7 @@ from lazr.enum import (
     Item,
     )
 from lazr.lifecycle.event import ObjectCreatedEvent
+from lazr.restful.interface import copy_field
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
 from zope.app.form.interfaces import (
@@ -84,6 +88,8 @@ from lp.registry.interfaces.product import (
     IProductSet,
     License,
     )
+from lp.registry.vocabularies import DistributionSourcePackageVocabulary
+from lp.services.features import getFeatureFlag
 from lp.services.fields import StrippedTextLine
 from lp.services.propertycache import cachedproperty
 
@@ -354,6 +360,19 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
 
     label = "Also affects distribution/package"
     target_field_names = ('distribution', 'sourcepackagename')
+
+    def setUpFields(self):
+        super(DistroBugTaskCreationStep, self).setUpFields()
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            # Replace the default field with a field that uses the better
+            # vocabulary.
+            print "FF enabled, replacing field"
+            self.form_fields = self.form_fields.omit('sourcepackagename')
+            distribution = getUtility(ILaunchpadCelebrities).ubuntu
+            new_sourcepackagename = copy_field(
+                IAddBugTaskForm['sourcepackagename'],
+                vocabulary=DistributionSourcePackageVocabulary(distribution))
+            self.form_fields += form.Fields(new_sourcepackagename)
 
     @property
     def initial_values(self):
