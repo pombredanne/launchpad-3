@@ -73,18 +73,8 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         markup = picker_widget()
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             .*
-            picker = Y\\.lp\\.app\\.picker\\.create\\(
-                'ValidTeamOwner',
-                {"show_remove_button": "false",
-                "show_assign_me_button": "false",
-                "assign_me_text": "Pick me",
-                "remove_team_text": "Remove team",
-                "extra_no_results_message": null,
-                "remove_person_text": "Remove person",
-                "header": "Select a Team or Person",
-                "selected_value_metadata": null,
-                "picker_type": "default",
-                "step_title": "Search"},
+            var picker = Y\\.lp\\.app\\.picker\\.create\\('ValidTeamOwner',
+                config,
                 'field\\.test_valid.item'\\);
             .*
             """, markup)

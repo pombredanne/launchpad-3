@@ -42,8 +42,7 @@
                 config.show_assign_me_button = ${view/show_assign_me_button}
                 config.show_remove_button = ${view/show_remove_button}
             }
-            var picker = Y.lp.app.picker.create(
-                                '${view/vocabulary_name}',
+            var picker = Y.lp.app.picker.create('${view/vocabulary_name}',
                                 config,
                                 '${view/input_id}');
             return picker;
