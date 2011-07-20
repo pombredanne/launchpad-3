@@ -30,13 +30,14 @@
 
     <tal:chooseLink replace="structure view/chooseLink" />
     <script tal:content="structure string:
-    LPS.use('node', 'lp.app.picker', 'plugin', function(Y) {
+    LPS.use('node', 'lp.app.picker', function(Y) {
         if (Y.UA.ie) {
             return;
         }
 
         var picker = null;
         var config = ${view/json_config};
+        var vocabulary = config.vocabulary_name;
         Y.on('domready', function(e) {
             // Sort out the Choose... link.
             var show_widget_node = Y.one('#${view/show_widget_id}');
@@ -46,7 +47,7 @@
             show_widget_node.get('parentNode').removeClass('unseen');
             show_widget_node.on('click', function (e) {
                 if (picker === null) {
-                    picker = Y.lp.app.picker.make_picker(config);
+                    picker = Y.lp.app.picker.create(vocabulary, config);
                 }
                 picker.show();
                 e.preventDefault();
