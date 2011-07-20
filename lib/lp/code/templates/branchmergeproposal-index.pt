@@ -226,6 +226,7 @@
             '.revision-group-diff',
             '.expander-icon',
             '.expander-content',
+            false,
             Y.lp.code.branch.revisionexpander.bmp_diff_loader);
     });
   });
