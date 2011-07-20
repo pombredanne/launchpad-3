@@ -100,15 +100,6 @@ class BazaarBranchStore:
             if needs_tree:
                 local_branch.bzrdir.create_workingtree()
             return local_branch
-        # XXX Tim Penhey 2009-09-18 bug 432217 Automatic upgrade of import
-        # branches disabled.  Need an orderly upgrade process.
-        if False and remote_bzr_dir.needs_format_conversion(
-            format=required_format):
-            try:
-                remote_bzr_dir.root_transport.delete_tree('backup.bzr')
-            except NoSuchFile:
-                pass
-            upgrade(remote_url, required_format)
         # The proper thing to do here would be to call
         # "remote_bzr_dir.sprout()".  But 2a fetch slowly checks which
         # revisions are in the ancestry of the tip of the remote branch, which
