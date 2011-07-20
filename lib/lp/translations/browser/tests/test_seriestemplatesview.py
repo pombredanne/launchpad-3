@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import re
 
+from testtools.matchers import LessThan
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login
@@ -20,9 +21,11 @@ from lp.translations.browser.distroseries import DistroSeriesTemplatesView
 from lp.translations.browser.productseries import ProductSeriesTemplatesView
 from lp.testing import (
     login_person,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
 from lp.testing.factory import ObjectFactory
+from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import ADMIN_EMAIL
 
 
@@ -355,6 +358,16 @@ class TestSharingColumn(TestDistroSeriesTemplatesView):
         # ...and a link to the shared template.
         template_link_segment = ('/+pots/%s' % FauxSharedTemplate.name)
         self.assertTrue(template_link_segment in rendered)
+
+
+    def test_queries(self):
+        template = self._makeTemplate()
+        view = self._makeView(template)
+        with StormStatementRecorder() as recorder:
+            assert recorder.count == 0, 'Unexpected queries have been made.'
+            rendered = view._renderSharing(template)
+        self.assertThat(recorder, HasQueryCount(LessThan(3)))
+
 
 
 class TestProductSeriesTemplatesView(SeriesTemplatesViewScenario,
