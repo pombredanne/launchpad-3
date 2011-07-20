@@ -2110,6 +2110,28 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
                 [packageset1, packageset2],
                 view.specified_packagesets_filter)
 
+    def test_search_for_packagesets(self):
+        # If packagesets are supplied in the query the resulting batch will
+        # only contain packages in the given packagesets.
+        set_derived_series_ui_feature_flag(self)
+        dsd = self.factory.makeDistroSeriesDifference()
+        person = dsd.derived_series.owner
+        packageset = self.factory.makePackageset(
+            owner=person, distroseries=dsd.derived_series)
+        # The package is not in the packageset so the batch will be empty.
+        with person_logged_in(person):
+            view = create_initialized_view(
+                dsd.derived_series, '+localpackagediffs', method='GET',
+                query_string='field.packageset=%d' % packageset.id)
+            self.assertEqual(0, len(view.cached_differences.batch))
+            # The batch will contain the package once it has been added to the
+            # packageset.
+            packageset.add((dsd.source_package_name,))
+            view = create_initialized_view(
+                dsd.derived_series, '+localpackagediffs', method='GET',
+                query_string='field.packageset=%d' % packageset.id)
+            self.assertEqual(1, len(view.cached_differences.batch))
+
 
 class TestDistroSeriesNeedsPackagesView(TestCaseWithFactory):
     """Test the distroseries +needs-packaging view."""

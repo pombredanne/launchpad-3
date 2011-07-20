@@ -1072,7 +1072,8 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             IDistroSeriesDifferenceSource).getForDistroSeries(
                 self.context, difference_type=self.differences_type,
                 name_filter=self.specified_name_filter,
-                status=status, child_version_higher=child_version_higher)
+                status=status, child_version_higher=child_version_higher,
+                packagesets=self.specified_packagesets_filter)
         return BatchNavigator(differences, self.request)
 
     @cachedproperty
