@@ -250,7 +250,7 @@ class TestOverrides(TestCaseWithFactory):
         sorted_overrides = sorted(overrides, key=key)
         self.assertEqual(sorted_expected, sorted_overrides)
 
-    def test_arch_not_in_distroseries(self):
+    def test_calculateBinaryOverrides_skips_unknown_arch(self):
         # If calculateBinaryOverrides is passed with an archtag that
         # does not correspond to an ArchSeries of the distroseries,
         # an empty list is returned.
