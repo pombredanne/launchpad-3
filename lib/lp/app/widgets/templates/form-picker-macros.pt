@@ -30,38 +30,21 @@
 
     <tal:chooseLink replace="structure view/chooseLink" />
     <script tal:content="structure string:
-    LPS.use('node', 'lp.app.picker', 'plugin', function(Y) {
+    LPS.use('node', 'lp.app.picker', function(Y) {
         if (Y.UA.ie) {
             return;
         }
 
         // The vocabulary picker, created when used for the first time.
         function make_picker() {
-            var config = {
-                header: ${view/header_text},
-                step_title: ${view/step_title_text},
-                extra_no_results_message: ${view/extra_no_results_message},
-                picker_type: '${view/picker_type}'
-            };
+            var config = ${view/json_config};
             if (config.picker_type == 'person') {
                 config.show_assign_me_button = ${view/show_assign_me_button}
                 config.show_remove_button = ${view/show_remove_button}
             }
-            var picker = Y.lp.app.picker.create('${view/vocabulary_name}', config);
-            if (config.extra_no_results_message !== null) {
-                picker.before('resultsChange', function (e) {
-                    var new_results = e.details[0].newVal;
-                    if (new_results.length === 0) {
-                        picker.set('footer_slot',
-                                   Y.Node.create(config.extra_no_results_message));
-                    }
-                    else {
-                        picker.set('footer_slot', null);
-                    }
-                });
-            }
-            picker.plug(Y.lazr.picker.TextFieldPickerPlugin,
-                        {input_element: '[id=\x22${view/input_id}\x22]'});
+            var picker = Y.lp.app.picker.create('${view/vocabulary_name}',
+                                config,
+                                '${view/input_id}');
             return picker;
         }
         var picker = null;

@@ -55,6 +55,7 @@ from math import (
     )
 from operator import attrgetter
 import re
+import transaction
 import urllib
 
 from lazr.delegates import delegates
@@ -74,7 +75,6 @@ from lazr.restful.interfaces import (
 from lazr.uri import URI
 from pytz import utc
 from simplejson import dumps
-from storm.expr import SQL
 from z3c.ptcompat import ViewPageTemplateFile
 from zope import (
     component,
@@ -247,13 +247,12 @@ from lp.bugs.interfaces.bugtask import (
     IUpstreamBugTask,
     IUpstreamProductBugTaskSearch,
     UNRESOLVED_BUGTASK_STATUSES,
+    UserCannotEditBugTaskStatus,
     )
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.bugs.model.bug import Bug
-from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -1528,14 +1527,25 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         # happen to be the only values that changed. We explicitly verify that
         # we got a new status and/or assignee, because the form is not always
         # guaranteed to pass all the values. For example: bugtasks linked to a
-        # bug watch don't allow editting the form, and the value is missing
+        # bug watch don't allow editing the form, and the value is missing
         # from the form.
         missing = object()
         new_status = new_values.pop("status", missing)
         new_assignee = new_values.pop("assignee", missing)
         if new_status is not missing and bugtask.status != new_status:
             changed = True
-            bugtask.transitionToStatus(new_status, self.user)
+            try:
+                bugtask.transitionToStatus(new_status, self.user)
+            except UserCannotEditBugTaskStatus:
+                # We need to roll back the transaction at this point,
+                # since other changes may have been made.
+                transaction.abort()
+                self.setFieldError(
+                    'status',
+                    "Only the Bug Supervisor for %s can set the bug's "
+                    "status to %s" %
+                    (bugtask.target.displayname, new_status.title))
+                return
 
         if new_assignee is not missing and bugtask.assignee != new_assignee:
             if new_assignee is not None and new_assignee != self.user:
@@ -3599,6 +3609,8 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             'bugtask_path': '/'.join(
                 [''] + canonical_url(self.context).split('/')[3:]),
             'prefix': get_prefix(self.context),
+            'assignee_is_team': self.context.assignee
+                and self.context.assignee.is_team,
             'assignee_vocabulary': assignee_vocabulary,
             'hide_assignee_team_selection': hide_assignee_team_selection,
             'user_can_unassign': self.context.userCanUnassign(user),

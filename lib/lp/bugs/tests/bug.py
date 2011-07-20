@@ -93,7 +93,8 @@ def print_bug_affects_table(content, highlighted_only=False):
         if tr.td.table:
             # Don't print the bugtask edit form.
             continue
-        print extract_text(tr)
+        # Strip zero-width white-spaces.
+        print extract_text(tr).replace('&#8203;', '')
 
 
 def print_remote_bugtasks(content):
@@ -120,7 +121,8 @@ def print_bugs_list(content, list_id):
     bugs_list = find_tag_by_id(content, list_id).findAll(
         None, {'class': 'similar-bug'})
     for node in bugs_list:
-        print extract_text(node)
+        # Also strip zero-width spaces out.
+        print extract_text(node).replace('&#8203;', '')
 
 
 def print_bugtasks(text, show_heat=None):
