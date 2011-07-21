@@ -1381,18 +1381,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         """
         return self.context.userCanEditImportance(self.user)
 
-    def _getProductOrDistro(self):
-        """Return the product or distribution relevant to the context."""
-        bugtask = self.context
-        if IUpstreamBugTask.providedBy(bugtask):
-            return bugtask.product
-        elif IProductSeriesBugTask.providedBy(bugtask):
-            return bugtask.productseries.product
-        elif IDistroBugTask.providedBy(bugtask):
-            return bugtask.distribution
-        else:
-            return bugtask.distroseries.distribution
-
     def validate(self, data):
         """See `LaunchpadFormView`."""
         bugtask = self.context
