@@ -1802,3 +1802,11 @@ class TestBugTargetKeys(TestCaseWithFactory):
                 distroseries=sp.distroseries,
                 sourcepackagename=sp.sourcepackagename,
                 ))
+
+    def test_no_key_for_non_targets(self):
+        self.assertRaises(
+            AssertionError, bug_target_to_key, self.factory.makePerson())
+
+    def test_no_target_for_bad_keys(self):
+        self.assertRaises(
+            AssertionError, bug_target_from_key, None, None, None, None, None)
