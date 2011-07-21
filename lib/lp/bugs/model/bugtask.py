@@ -319,6 +319,8 @@ def bug_target_to_key(target):
     elif ISourcePackage.providedBy(target):
         values['distroseries'] = target.distroseries
         values['sourcepackagename'] = target.sourcepackagename
+    else:
+        raise AssertionError("Not an IBugTarget.")
     return values
 
 
