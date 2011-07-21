@@ -36,7 +36,11 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
-from lp.bugs.model.bugtask import build_tag_search_clause
+from lp.bugs.model.bugtask import (
+    build_tag_search_clause,
+    flatten_target,
+    IllegalTarget,
+    )
 from lp.bugs.tests.bug import (
     create_old_bug,
     )
@@ -1651,3 +1655,81 @@ class TestAutoConfirmBugTasks(TestCaseWithFactory):
                 bug_task.maybeConfirm()
                 self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
                 self.assertEqual(0, len(recorder.events))
+
+
+class TestFlattenTarget(TestCaseWithFactory):
+    """Tests for flatten_target."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_product(self):
+        product = self.factory.makeProduct()
+        self.assertEquals(
+            dict(
+                product=product,
+                productseries=None,
+                distribution=None,
+                distroseries=None,
+                sourcepackagename=None,
+                ),
+            flatten_target(product))
+
+    def test_productseries(self):
+        series = self.factory.makeProductSeries()
+        self.assertEquals(
+            dict(
+                product=None,
+                productseries=series,
+                distribution=None,
+                distroseries=None,
+                sourcepackagename=None,
+                ),
+            flatten_target(series))
+
+    def test_distribution(self):
+        distro = self.factory.makeDistribution()
+        self.assertEquals(
+            dict(
+                product=None,
+                productseries=None,
+                distribution=distro,
+                distroseries=None,
+                sourcepackagename=None,
+                ),
+            flatten_target(distro))
+
+    def test_distroseries(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertEquals(
+            dict(
+                product=None,
+                productseries=None,
+                distribution=None,
+                distroseries=distroseries,
+                sourcepackagename=None,
+                ),
+            flatten_target(distroseries))
+
+    def test_distributionsourcepackage(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        self.assertEquals(
+            dict(
+                product=None,
+                productseries=None,
+                distribution=dsp.distribution,
+                distroseries=None,
+                sourcepackagename=dsp.sourcepackagename,
+                ),
+            flatten_target(dsp))
+
+    def test_sourcepackage(self):
+        sp = self.factory.makeSourcePackage()
+        self.assertEquals(
+            dict(
+                product=None,
+                productseries=None,
+                distribution=None,
+                distroseries=sp.distroseries,
+                sourcepackagename=sp.sourcepackagename,
+                ),
+            flatten_target(sp))
