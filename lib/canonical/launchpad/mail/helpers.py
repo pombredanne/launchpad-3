@@ -11,11 +11,6 @@ from uuid import uuid1
 
 from zope.component import getUtility
 
-from lp.bugs.interfaces.bugtask import (
-    IDistroBugTask,
-    IDistroSeriesBugTask,
-    IUpstreamBugTask,
-    )
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError,
     IWeaklyAuthenticatedPrincipal,
@@ -59,11 +54,11 @@ def guess_bugtask(bug, person):
         return bug.bugtasks[0]
     else:
         for bugtask in bug.bugtasks:
-            if IUpstreamBugTask.providedBy(bugtask):
+            if bugtask.product:
                 # Is the person an upstream maintainer?
                 if person.inTeam(bugtask.product.owner):
                     return bugtask
-            elif IDistroBugTask.providedBy(bugtask):
+            elif bugtask.distribution:
                 # Is the person a member of the distribution?
                 if person.inTeam(bugtask.distribution.members):
                     return bugtask
