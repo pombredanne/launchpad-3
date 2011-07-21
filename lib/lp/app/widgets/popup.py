@@ -105,6 +105,17 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
                          class="%(cssClass)s" />""" % d
 
     @property
+    def selected_value(self):
+        """ String representation of field value associated with the picker.
+
+        Default implementation is to return the 'name' attribute.
+        """
+        val = self._getFormValue()
+        if val is not None and hasattr(val, 'name'):
+            return getattr(val, 'name')
+        return None
+
+    @property
     def selected_value_metadata(self):
         return None
 
@@ -116,6 +127,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     def config(self):
         return dict(
             picker_type=self.picker_type,
+            selected_value=self.selected_value,
             selected_value_metadata=self.selected_value_metadata,
             header=self.header_text, step_title=self.step_title_text,
             extra_no_results_message=self.extra_no_results_message,

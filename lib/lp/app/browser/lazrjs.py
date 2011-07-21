@@ -240,6 +240,90 @@ class InlineEditPickerWidget(WidgetBase):
 
     def __init__(self, context, exported_field, default_html,
                  content_box_id=None, header='Select an item',
+                 step_title='Search',
+                 null_display_value='None',
+                 edit_view="+edit", edit_url=None, edit_title=''):
+        """Create a widget wrapper.
+
+        :param context: The object that is being edited.
+        :param exported_field: The attribute being edited. This should be
+            a field from an interface of the form ISomeInterface['fieldname']
+        :param default_html: Default display of attribute.
+        :param content_box_id: The HTML id to use for this widget.
+            Automatically generated if this is not provided.
+        :param header: The large text at the top of the picker.
+        :param step_title: Smaller line of text below the header.
+        :param null_display_value: This will be shown for a missing value
+        :param edit_view: The view name to use to generate the edit_url if
+            one is not specified.
+        :param edit_url: The URL to use for editing when the user isn't logged
+            in and when JS is off.  Defaults to the edit_view on the context.
+        :param edit_title: Used to set the title attribute of the anchor.
+        """
+        super(InlineEditPickerWidget, self).__init__(
+            context, exported_field, content_box_id,
+            edit_view, edit_url, edit_title)
+        self.default_html = default_html
+        self.header = header
+        self.step_title = step_title
+        self.null_display_value = null_display_value
+
+        # JSON encoded attributes.
+        self.json_content_box_id = simplejson.dumps(self.content_box_id)
+        self.json_attribute = simplejson.dumps(self.api_attribute + '_link')
+        self.json_vocabulary_name = simplejson.dumps(
+            self.exported_field.vocabularyName)
+
+    @property
+    def picker_type(self):
+        return 'default'
+
+    @property
+    def selected_value_metadata(self):
+        return None
+
+    @property
+    def selected_value(self):
+        """ String representation of field value associated with the picker.
+
+        Default implementation is to return the 'name' attribute.
+        """
+        val = getattr(self.context, self.exported_field.__name__)
+        if val is not None and hasattr(val, 'name'):
+            return getattr(val, 'name')
+        return None
+
+    @property
+    def config(self):
+        return self.getConfig()
+
+    def getConfig(self):
+        return dict(
+            picker_type=self.picker_type,
+            header=self.header, step_title=self.step_title,
+            selected_value=self.selected_value,
+            selected_value_metadata=self.selected_value_metadata,
+            null_display_value=self.null_display_value,
+            show_search_box=self.show_search_box)
+
+    @property
+    def json_config(self):
+        return simplejson.dumps(self.config)
+
+    @cachedproperty
+    def vocabulary(self):
+        registry = getVocabularyRegistry()
+        return registry.get(
+            IVocabulary, self.exported_field.vocabularyName)
+
+    @property
+    def show_search_box(self):
+        return IHugeVocabulary.providedBy(self.vocabulary)
+
+
+class InlinePersonEditPickerWidget(InlineEditPickerWidget):
+    def __init__(self, context, exported_field, default_html,
+                 content_box_id=None, header='Select an item',
                  step_title='Search', assign_me_text='Pick me',
                  remove_person_text='Remove person',
                  remove_team_text='Remove team',
@@ -265,53 +349,23 @@ class InlineEditPickerWidget(WidgetBase):
             in and when JS is off.  Defaults to the edit_view on the context.
         :param edit_title: Used to set the title attribute of the anchor.
         """
-        super(InlineEditPickerWidget, self).__init__(
-            context, exported_field, content_box_id,
+        super(InlinePersonEditPickerWidget, self).__init__(
+            context, exported_field, default_html, content_box_id, header,
+            step_title, null_display_value,
             edit_view, edit_url, edit_title)
-        self.default_html = default_html
-        self.header = header
-        self.step_title = step_title
+
         self.assign_me_text = assign_me_text
         self.remove_person_text = remove_person_text
         self.remove_team_text = remove_team_text
-        self.null_display_value = null_display_value
 
-        # JSON encoded attributes.
-        self.json_content_box_id = simplejson.dumps(self.content_box_id)
-        self.json_attribute = simplejson.dumps(self.api_attribute + '_link')
-        self.json_vocabulary_name = simplejson.dumps(
-            self.exported_field.vocabularyName)
+    @property
+    def picker_type(self):
+        return 'person'
 
     @property
     def selected_value_metadata(self):
-        return None
-
-    @property
-    def config(self):
-        return dict(
-            header=self.header, step_title=self.step_title,
-            selected_value_metadata=self.selected_value_metadata,
-            assign_me_text=self.assign_me_text,
-            remove_person_text=self.remove_person_text,
-            remove_team_text=self.remove_team_text,
-            null_display_value=self.null_display_value,
-            show_remove_button=self.optional_field,
-            show_assign_me_button=self.show_assign_me_button,
-            show_search_box=self.show_search_box)
-
-    @property
-    def json_config(self):
-        return simplejson.dumps(self.config)
-
-    @cachedproperty
-    def vocabulary(self):
-        registry = getVocabularyRegistry()
-        return registry.get(
-            IVocabulary, self.exported_field.vocabularyName)
-
-    @property
-    def show_search_box(self):
-        return IHugeVocabulary.providedBy(self.vocabulary)
+        val = getattr(self.context, self.exported_field.__name__)
+        return get_person_picker_entry_metadata(val)
 
     @property
     def show_assign_me_button(self):
@@ -320,12 +374,15 @@ class InlineEditPickerWidget(WidgetBase):
         user = getUtility(ILaunchBag).user
         return user and user in vocabulary
 
-
-class InlinePersonEditPickerWidget(InlineEditPickerWidget):
-    @property
-    def selected_value_metadata(self):
-        val = getattr(self.context, self.exported_field.__name__)
-        return get_person_picker_entry_metadata(val)
+    def getConfig(self):
+        config = super(InlinePersonEditPickerWidget, self).getConfig()
+        config.update(dict(
+            show_remove_button=self.optional_field,
+            show_assign_me_button=self.show_assign_me_button,
+            assign_me_text=self.assign_me_text,
+            remove_person_text=self.remove_person_text,
+            remove_team_text=self.remove_team_text))
+        return config
 
 
 class InlineMultiCheckboxWidget(WidgetBase):
