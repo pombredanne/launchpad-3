@@ -344,7 +344,6 @@ class PackageClonerTests(TestCaseWithFactory):
         # This is a processor family without a DAS in the source, so
         # we expect no builds.
         family = self.factory.makeProcessorFamily(name="armel")
-        self.factory.makeProcessor(family=family, name="armel")
         proc_families = [family]
         copy_archive, distroseries = self.makeCopyArchive(
             [package_info], proc_families=proc_families)
@@ -357,7 +356,6 @@ class PackageClonerTests(TestCaseWithFactory):
         # One of these processor families has a DAS in the source, so
         # we expect one set of builds
         family = self.factory.makeProcessorFamily(name="armel")
-        self.factory.makeProcessor(family=family, name="armel")
         proc_families = [family, ProcessorFamilySet().getByName("x86")]
         copy_archive, distroseries = self.makeCopyArchive(
             [package_info], proc_families=proc_families)
