@@ -8,9 +8,7 @@ __metaclass__ = type
 from optparse import OptionValueError
 import os
 from testtools.matchers import StartsWith
-from textwrap import dedent
 
-from canonical.config import config
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
