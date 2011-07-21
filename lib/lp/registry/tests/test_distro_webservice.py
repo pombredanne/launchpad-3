@@ -9,10 +9,7 @@ import pytz
 from launchpadlib.errors import Unauthorized
 
 from zope.component import getUtility
-from zope.security.management import (
-    endInteraction,
-    newInteraction,
-    )
+from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -60,7 +57,8 @@ class TestGetBranchTips(TestCaseWithFactory):
         series_2 = self.series_2 = self.factory.makeDistroRelease(self.distro)
         source_package = self.factory.makeSourcePackage(distroseries=series_1)
         branch = self.factory.makeBranch(sourcepackage=source_package)
-        unofficial_branch =  self.factory.makeBranch(sourcepackage=source_package)
+        unofficial_branch = self.factory.makeBranch(
+            sourcepackage=source_package)
         registrant = self.factory.makePerson()
         now = datetime.now(pytz.UTC)
         sourcepackagename = self.factory.makeSourcePackageName()
@@ -158,17 +156,17 @@ class TestGetBranchTipsSecurity(TestCaseWithFactory):
         # A private branch should not be included for anonymous users or for
         # authenticated users who do not have the necessary privileges.
         branch, distro = self.makeBranch()
-        self.assertFalse( # Double-checking.
+        self.assertFalse(  # Double-checking.
             removeSecurityProxy(branch).visibleByUser(None))
         self.assertEqual([], distro.getBranchTips())
         person = self.factory.makePerson()
-        self.assertFalse( # Double-checking.
+        self.assertFalse(  # Double-checking.
             removeSecurityProxy(branch).visibleByUser(person))
         with person_logged_in(person):
             self.assertEqual([], distro.getBranchTips())
 
     def assertVisible(self, distro, branch, person):
-        self.assertTrue( # Double-checking.
+        self.assertTrue(  # Double-checking.
             removeSecurityProxy(branch).visibleByUser(person))
         with person_logged_in(person):
             self.assertEqual(1, len(distro.getBranchTips()))
