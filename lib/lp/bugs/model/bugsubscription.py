@@ -62,7 +62,7 @@ class BugSubscription(StormBase):
     @property
     def display_subscribed_by(self):
         """See `IBugSubscription`."""
-        if self.person == self.subscribed_by:
+        if self.person_id == self.subscribed_by_id:
             return u'Self-subscribed'
         else:
             return u'Subscribed by %s (%s)' % (

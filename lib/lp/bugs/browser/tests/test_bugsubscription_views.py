@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BugSubscription views."""
@@ -6,7 +6,8 @@
 __metaclass__ = type
 
 from simplejson import dumps
-
+from storm.store import Store
+from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.traversing.browser import absoluteURL
 
@@ -23,8 +24,10 @@ from lp.bugs.enum import BugNotificationLevel
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     person_logged_in,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 
@@ -524,6 +527,24 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
             }
         self.assertEqual(
             dumps([expected_result]), harness.view.subscriber_data_js)
+
+    def test_data_person_subscription_other_subscriber_query_count(self):
+        # All subscriber data should be retrieved with a single query.
+        bug = self._makeBugWithNoSubscribers()
+        subscribed_by = self.factory.makePerson(
+            name="someone", displayname='Someone')
+        subscriber = self.factory.makePerson(
+            name='user', displayname='Subscriber Name')
+        with person_logged_in(subscriber):
+            bug.subscribe(person=subscriber,
+                          subscribed_by=subscribed_by,
+                          level=BugNotificationLevel.LIFECYCLE)
+        harness = LaunchpadFormHarness(bug, BugPortletSubscribersWithDetails)
+        # Invoke the view method, ignoring the results.
+        Store.of(bug).invalidate()
+        with StormStatementRecorder() as recorder:
+            harness.view.direct_subscriber_data(bug)
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
 
     def test_data_team_subscription(self):
         # For a team subscription, subscriber_data_js has is_team set

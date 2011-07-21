@@ -939,10 +939,12 @@ BugMessage""" % sqlvalues(self.id))
 
     def getDirectSubscribersWithDetails(self):
         """See `IBug`."""
+        SubscribedBy = ClassAlias(Person, name="subscribed_by")
         results = Store.of(self).find(
-            (Person, BugSubscription),
+            (Person, SubscribedBy, BugSubscription),
             BugSubscription.person_id == Person.id,
             BugSubscription.bug_id == self.id,
+            BugSubscription.subscribed_by_id == SubscribedBy.id,
             Not(In(BugSubscription.person_id,
                    Select(BugMute.person_id, BugMute.bug_id == self.id)))
             ).order_by(Person.displayname)

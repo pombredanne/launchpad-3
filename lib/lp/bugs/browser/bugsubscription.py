@@ -529,17 +529,19 @@ class BugSubscriptionSubscribeSelfView(LaunchpadFormView,
 class BugPortletSubscribersWithDetails(LaunchpadView):
     """A view that returns a JSON dump of the subscriber details for a bug."""
 
-    @property
-    def subscriber_data_js(self):
-        """Return subscriber_ids in a form suitable for JavaScript use."""
+    @cachedproperty
+    def api_request(self):
+        return IWebServiceClientRequest(self.request)
+
+    def direct_subscriber_data(self, bug):
+        """Get the direct subscriber data.
+
+        This method is isolated from the subscriber_data_js so that query
+        count testing can be done accurately and robustly.
+        """
         data = []
-        if IBug.providedBy(self.context):
-            bug = self.context
-        elif IBugTask.providedBy(self.context):
-            bug = self.context.bug
         details = list(bug.getDirectSubscribersWithDetails())
-        api_request = IWebServiceClientRequest(self.request)
-        for person, subscription in details:
+        for person, subscribed_by, subscription in details:
             can_edit = subscription.canBeUnsubscribedByUser(self.user)
             if person == self.user or (person.private and not can_edit):
                 # Skip the current user viewing the page,
@@ -550,7 +552,7 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
                 'name': person.name,
                 'display_name': person.displayname,
                 'web_link': canonical_url(person, rootsite='mainsite'),
-                'self_link': absoluteURL(person, api_request),
+                'self_link': absoluteURL(person, self.api_request),
                 'is_team': person.is_team,
                 'can_edit': can_edit,
                 'subscribed_by': subscription.display_subscribed_by,
@@ -561,6 +563,17 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
                     removeSecurityProxy(subscription.bug_notification_level)),
                 }
             data.append(record)
+        return data
+
+    @property
+    def subscriber_data_js(self):
+        """Return subscriber_ids in a form suitable for JavaScript use."""
+        if IBug.providedBy(self.context):
+            bug = self.context
+        elif IBugTask.providedBy(self.context):
+            bug = self.context.bug
+
+        data = self.direct_subscriber_data(bug)
 
         others = list(bug.getIndirectSubscribers())
         for person in others:
@@ -571,7 +584,7 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
                 'name': person.name,
                 'display_name': person.displayname,
                 'web_link': canonical_url(person, rootsite='mainsite'),
-                'self_link': absoluteURL(person, api_request),
+                'self_link': absoluteURL(person, self.api_request),
                 'is_team': person.is_team,
                 'can_edit': False,
                 }
