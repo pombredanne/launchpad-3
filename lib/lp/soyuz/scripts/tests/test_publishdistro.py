@@ -559,7 +559,7 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         distro = self.makeDistro()
         self.assertEqual([distro], self.makeScript(distro).findDistros())
 
-    def test_findDistro_finds_ubuntu_by_default(self):
+    def test_findDistros_finds_ubuntu_by_default(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.assertContentEqual(
             [ubuntu], PublishDistro(test_args=[]).findDistros())
@@ -584,7 +584,7 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         # distributions.
         dsp = self.factory.makeDistroSeriesParent()
         self.assertContentEqual(
-            [dsp.derived_series],
+            [dsp.derived_series.distribution],
             self.makeScript(all_derived=True).findDistros())
 
     def test_findDistros_for_all_derived_ignores_ubuntu(self):
@@ -593,8 +593,8 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.factory.makeDistroSeriesParent(
             parent_series=ubuntu.currentseries)
-        self.assertContentEqual(
-            [], self.makeScript(all_derived=True).findDistros())
+        self.assertNotIn(
+            ubuntu, self.makeScript(all_derived=True).findDistros())
 
     def test_findDistros_for_all_derived_ignores_nonderived_distros(self):
         self.makeDistro()

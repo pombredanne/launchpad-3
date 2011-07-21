@@ -179,14 +179,32 @@ class PublishDistro(LaunchpadCronScript):
             raise OptionValueError(
                 "We should not define 'distsroot' in PPA mode!", )
 
-    def findDistros(self):
-        """Find the selected distribution(s)."""
+    def findSelectedDistro(self):
+        """Find the `Distribution` named by the --distribution option.
+
+        Defaults to Ubuntu if no name was given.
+        """
         self.logger.debug("Finding distribution object.")
         name = self.options.distribution
+        if name is None:
+            # Default to publishing Ubuntu.
+            name = "ubuntu"
         distro = getUtility(IDistributionSet).getByName(name)
         if distro is None:
             raise OptionValueError("Distribution '%s' not found." % name)
-        return [distro]
+        return distro
+
+    def findDerivedDistros(self):
+        """Find all Ubuntu-derived distributions."""
+        self.logger.debug("Finding derived distributions.")
+        return getUtility(IDistributionSet).getDerivedDistributions()
+
+    def findDistros(self):
+        """Find the selected distribution(s)."""
+        if self.options.all_derived:
+            return self.findDerivedDistros()
+        else:
+            return [self.findSelectedDistro()]
 
     def findSuite(self, distribution, suite):
         """Find the named `suite` in the selected `Distribution`.
