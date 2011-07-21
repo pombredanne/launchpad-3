@@ -69,6 +69,7 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasMugshot,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.url import urlparse
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -657,24 +658,88 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getBranchTips(self, since=None):
         """See `IDistribution`."""
-        query = """
-            SELECT unique_name, last_scanned_id, SPBDS.name FROM Branch
-            JOIN DistroSeries
-                ON Branch.distroseries = DistroSeries.id
-            LEFT OUTER JOIN SeriesSourcePackageBranch
-                ON Branch.id = SeriesSourcePackageBranch.branch
-            LEFT OUTER JOIN DistroSeries SPBDS
-                -- (SPDBS stands for Source Package Branch Distro Series)
-                ON SeriesSourcePackageBranch.distroseries = SPBDS.id
-            WHERE DistroSeries.distribution = %s""" % sqlvalues(self.id)
-
+        person = getUtility(ILaunchBag).user
+        # This, ignoring privacy issues, is what we want.
+        base_query = """
+        SELECT Branch.unique_name,
+               Branch.last_scanned_id,
+               SPBDS.name AS distro_series_name,
+               Branch.id,
+               Branch.private,
+               Branch.owner
+        FROM Branch
+        JOIN DistroSeries
+            ON Branch.distroseries = DistroSeries.id
+        LEFT OUTER JOIN SeriesSourcePackageBranch
+            ON Branch.id = SeriesSourcePackageBranch.branch
+        LEFT OUTER JOIN DistroSeries SPBDS
+            -- (SPDBS stands for Source Package Branch Distro Series)
+            ON SeriesSourcePackageBranch.distroseries = SPBDS.id
+        WHERE DistroSeries.distribution = %s
+        """ % sqlvalues(self.id)
         if since is not None:
-            query += (
-                ' AND branch.last_scanned > %s' % sqlvalues(since))
+            # If "since" was provided, take into account.
+            base_query += (
+                '      AND branch.last_scanned > %s\n' % sqlvalues(since))
+        if person is None:
+            # Now we see just a touch of privacy concerns.
+            # If the current user is anonymous, they cannot see any private
+            # branches.
+            base_query += ('      AND NOT Branch.private\n')
+        # We want to order the results, in part for easier grouping at the
+        # end.
+        base_query += 'ORDER BY unique_name, last_scanned_id'
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if person is None or person.inTeam(admins):
+            # Anonymous is already handled above; admins can see everything.
+            # In both cases, we can just use the query as it already stands.
+            query = base_query
+        else:
+            # Otherwise (an authenticated, non-admin user), we need to do some
+            # more sophisticated privacy dances.  Note that the one thing we
+            # are ignoring here is stacking.  See the discussion in comment 1
+            # of https://bugs.launchpad.net/launchpad/+bug/812335 . Often, we
+            # use unions for this kind of work.  The WITH statement can give
+            # us a similar approach with more flexibility. In both cases,
+            # we're essentially declaring that we have a better idea of a good
+            # high-level query plan than Postgres will.
+            query = """
+            WITH teams AS (
+                    SELECT team
+                        FROM TeamParticipation
+                        WHERE TeamParticipation.person = %s
+                ), all_branches AS (
+            %%s
+                ), private_branches AS (
+                    SELECT unique_name,
+                           last_scanned_id,
+                           distro_series_name,
+                           id,
+                           owner
+                    FROM all_branches
+                    WHERE private
+                ), owned_branch_ids AS (
+                    SELECT id
+                    FROM private_branches
+                    WHERE owner = %s OR owner IN (SELECT team FROM teams)
+                ), subscribed_branch_ids AS (
+                    SELECT private_branches.id
+                    FROM private_branches
+                    JOIN BranchSubscription
+                        ON BranchSubscription.branch = private_branches.id
+                    WHERE BranchSubscription.person = %s OR
+                          BranchSubscription.person IN (
+                            SELECT team FROM teams)
+                )
+            SELECT unique_name, last_scanned_id, distro_series_name
+            FROM all_branches
+            WHERE NOT private OR
+                  id IN (SELECT id FROM owned_branch_ids) OR
+                  id IN (SELECT id FROM subscribed_branch_ids)
+            """ % sqlvalues(person.id, person.id, person.id)
+            query = query % base_query
 
-        query += ' ORDER BY unique_name, last_scanned_id;'
-
-        data = Store.of(self).execute(query)
+        data = Store.of(self).execute(query + ';')
 
         result = []
         # Group on location (unique_name) and revision (last_scanned_id).
