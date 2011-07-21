@@ -15,6 +15,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archivepublisher.publishing import Publisher
@@ -28,6 +29,7 @@ from lp.services.log.logger import (
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.enums import (
     ArchivePurpose,
+    ArchiveStatus,
     BinaryPackageFormat,
     PackagePublishingStatus,
     )
@@ -399,7 +401,9 @@ class TestPublishDistro(TestNativePublishingBase):
 class FakeArchive:
     """A very simple fake `Archive`."""
     def __init__(self, purpose=ArchivePurpose.PRIMARY):
+        self.publish = True
         self.purpose = purpose
+        self.status = ArchiveStatus.ACTIVE
 
 
 class FakePublisher:
@@ -426,11 +430,16 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         return self.factory.makeDistribution(
             publish_root_dir=unicode(self.makeTemporaryDirectory()))
 
-    def makeScript(self, distribution=None, args=[]):
+    def makeScript(self, distribution=None, args=[], all_derived=False):
         """Create a `PublishDistro` for `distribution`."""
-        if distribution is None:
+        if distribution is None and not all_derived:
             distribution = self.makeDistro()
-        full_args = ['-d', distribution.name] + args
+        distro_args = []
+        if distribution is not None:
+            distro_args.extend(['--distribution', distribution.name])
+        if all_derived:
+            distro_args.append('--all-derived')
+        full_args = args + distro_args
         script = PublishDistro(test_args=full_args)
         script.distribution = distribution
         script.logger = DevNullLogger()
@@ -530,11 +539,25 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         script = self.makeScript(args=['--private-ppa', '--distsroot=/tmp'])
         self.assertRaises(OptionValueError, script.validateOptions)
 
+    def test_validateOptions_requires_distro_by_default(self):
+        # Unless --all-derived is given, validateOptions requires the
+        # --distribution option.
+        self.assertRaises(
+            OptionValueError, PublishDistro(test_args=[]).validateOptions)
+
     def test_validateOptions_accepts_all_derived_without_distro(self):
-        self.assertTrue(False) # XXX: Test
+        # If --all-derived is given, the --distribution option is not
+        # required.
+        PublishDistro(test_args=['--all-derived']).validateOptions()
+        # The test is that we get here without error.
+        pass
 
     def test_validateOptions_does_not_accept_distro_with_all_derived(self):
-        self.assertTrue(False) # XXX: Test
+        # The --all-derived option conflicts with the --distribution
+        # option.
+        distro = self.makeDistro()
+        script = PublishDistro(test_args=['-d', distro.name, '--all-derived'])
+        self.assertRaises(OptionValueError, script.validateOptions)
 
     def test_findDistros_finds_selected_distribution(self):
         # findDistros looks up and returns the distribution named on the
@@ -550,14 +573,34 @@ class TestPublishDistroMethods(TestCaseWithFactory):
             OptionValueError,
             PublishDistro(test_args=['-d', wrong_name]).findDistros)
 
+    def test_findDistros_for_all_derived_distros_may_return_empty(self):
+        # If the --all-derived option is given but there are no derived
+        # distributions to publish, findDistros returns no distributions
+        # (but it does return normally).
+        self.assertContentEqual(
+            [], self.makeScript(all_derived=True).findDistros())
+
     def test_findDistros_for_all_derived_finds_derived_distros(self):
-        self.assertTrue(False) # XXX: Test
+        # If --all-derived is given, findDistros finds all derived
+        # distributions.
+        dsp = self.factory.makeDistroSeriesParent()
+        self.assertContentEqual(
+            [dsp.derived_series],
+            self.makeScript(all_derived=True).findDistros())
 
     def test_findDistros_for_all_derived_ignores_ubuntu(self):
-        self.assertTrue(False) # XXX: Test
+        # The --all-derived option does not include Ubuntu, even if it
+        # is itself a derived distribution.
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.factory.makeDistroSeriesParent(
+            parent_series=ubuntu.currentseries)
+        self.assertContentEqual(
+            [], self.makeScript(all_derived=True).findDistros())
 
     def test_findDistros_for_all_derived_ignores_nonderived_distros(self):
-        self.assertTrue(False) # XXX: Test
+        self.makeDistro()
+        self.assertContentEqual(
+            [], self.makeScript(all_derived=True).findDistros())
 
     def test_findSuite_finds_release_pocket(self):
         # Despite its lack of a suffix, a release suite shows up
@@ -860,4 +903,25 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         self.assertEqual(1, publisher.C_writeIndexes.call_count)
 
     def test_publishes_only_selected_archives(self):
-        self.assertTrue(False) # XXX: Test
+        # The script publishes only the archives returned by
+        # getTargetArchives, for the distributions returned by
+        # findDistros.
+        distro = self.makeDistro()
+        # The script gets a distribution and archive of its own, to
+        # prove that any distros and archives other than what
+        # findDistros and getTargetArchives return are ignored.
+        script = self.makeScript()
+        script.txn = FakeTransaction()
+        script.findDistros = FakeMethod([distro])
+        archive = FakeArchive()
+        script.getTargetArchives = FakeMethod([archive])
+        publisher = FakePublisher()
+        script.getPublisher = FakeMethod(publisher)
+        script.publishArchive = FakeMethod()
+        script.main()
+        [(args, kwargs)] = script.getPublisher.calls
+        distro_arg, archive_arg = args[:2]
+        self.assertEqual(distro, distro_arg)
+        self.assertEqual(archive, archive_arg)
+        self.assertEqual(
+            [((archive, publisher), {})], script.publishArchive.calls)

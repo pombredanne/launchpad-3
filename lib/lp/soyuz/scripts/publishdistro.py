@@ -65,6 +65,10 @@ class PublishDistro(LaunchpadCronScript):
             default="ubuntu", help="The distribution to publish.")
 
         self.parser.add_option(
+            "-a", "--all-derived", action="store_true", dest="all_derived",
+            default=False, help="Publish all Ubuntu-derived distributions.")
+
+        self.parser.add_option(
             '-s', '--suite', metavar='SUITE', dest='suite', action='append',
             type='string', default=[], help='The suite to publish')
 
