@@ -1110,13 +1110,20 @@ class BugTask(SQLBase, BugTaskMixin):
             self.milestone = None
 
         # Check if any series are involved. You can't retarget series
-        # tasks.
+        # tasks. Except for SourcePackage tasks, which can only be
+        # retargetted to another SourcePackage in the same DistroSeries.
         interfaces = set(providedBy(target))
         interfaces.update(providedBy(self.target))
-        if interfaces.intersection(
-            (IProductSeries, IDistroSeries, ISourcePackage)):
+        if interfaces.intersection((IProductSeries, IDistroSeries)):
             raise IllegalTarget(
                 "Series tasks may only be created by approving nominations.")
+        elif ISourcePackage in interfaces:
+            if (not ISourcePackage.providedBy(target) or
+                not ISourcePackage.providedBy(self.target) or
+                target.distroseries != self.target.distroseries):
+                raise IllegalTarget(
+                    "Series source package tasks may only be retargetted "
+                    "to another source package in the same series.")
 
         # Inhibit validate_target_attribute, as we can't set them all
         # atomically, but we know the final result is correct.

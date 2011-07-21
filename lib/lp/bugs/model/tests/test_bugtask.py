@@ -1718,6 +1718,11 @@ class TestTransitionToTarget(TestCaseWithFactory):
             self.factory.makeDistributionSourcePackage(distribution=distro),
             self.factory.makeDistributionSourcePackage(distribution=distro))
 
+    def test_sourcepackage_to_sourcepackage_in_same_series_works(self):
+        sp1 = self.factory.makeSourcePackage()
+        sp2 = self.factory.makeSourcePackage(distroseries=sp1.distroseries)
+        self.assertTransitionWorks(sp1, sp2)
+
     def test_different_distros_works(self):
         self.assertTransitionWorks(
             self.factory.makeDistributionSourcePackage(),
