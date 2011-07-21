@@ -177,7 +177,10 @@ $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
 	cat $^ | $(PY) -m lp.scripts.utilities.js.jsmin > $@
 else
-	cat $^ > $@
+	for jsname in $^ ; do \
+	    echo "/* $$jsname */" >> $@ ;\
+	    cat $$jsname >> $@ ;\
+	done
 endif
 
 jsbuild: $(PY) $(JS_OUT)
