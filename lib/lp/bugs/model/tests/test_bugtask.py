@@ -1658,6 +1658,69 @@ class TestAutoConfirmBugTasks(TestCaseWithFactory):
                 self.assertEqual(0, len(recorder.events))
 
 
+class TestTransitionToTarget(TestCaseWithFactory):
+    """Tests for BugTask.transitionToTarget."""
+
+    layer = DatabaseFunctionalLayer
+
+    def makeAndTransition(self, old, new):
+        task = self.factory.makeBugTask(target=old)
+        self.assertEqual(old, task.target)
+        with person_logged_in(task.owner):
+            task.transitionToTarget(new)
+        return task
+
+    def assertTransitionWorks(self, a, b):
+        """Check that a transition between two targets works both ways."""
+        self.assertEqual(b, self.makeAndTransition(a, b).target)
+        self.assertEqual(a, self.makeAndTransition(b, a).target)
+
+    def assertTransitionForbidden(self, a, b):
+        """Check that a transition between two targets fails both ways."""
+        self.assertRaises(IllegalTarget, self.makeAndTransition, a, b)
+        self.assertRaises(IllegalTarget, self.makeAndTransition, b, a)
+
+    def test_product_to_product_works(self):
+        self.assertTransitionWorks(
+            self.factory.makeProduct(),
+            self.factory.makeProduct())
+
+    def test_package_to_package_works(self):
+        distro = self.factory.makeDistribution()
+        self.assertTransitionWorks(
+            self.factory.makeDistributionSourcePackage(distribution=distro),
+            self.factory.makeDistributionSourcePackage(distribution=distro))
+
+    def test_distribution_to_package_works(self):
+        distro = self.factory.makeDistribution()
+        dsp = self.factory.makeDistributionSourcePackage(distribution=distro)
+        self.assertEquals(dsp.distribution, distro)
+        self.assertTransitionWorks(distro, dsp)
+
+    def test_different_distros_works(self):
+        self.assertTransitionWorks(
+            self.factory.makeDistributionSourcePackage(),
+            self.factory.makeDistributionSourcePackage())
+
+    def test_cannot_transition_to_productseries(self):
+        product = self.factory.makeProduct()
+        self.assertTransitionForbidden(
+            product,
+            self.factory.makeProductSeries(product=product))
+
+    def test_cannot_transition_to_distroseries(self):
+        distro = self.factory.makeDistribution()
+        series = self.factory.makeDistroSeries(distribution=distro)
+        self.assertTransitionForbidden(distro, series)
+
+    def test_cannot_transition_to_sourcepackage(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        series = self.factory.makeDistroSeries(distribution=dsp.distribution)
+        sp = self.factory.makeSourcePackage(
+            distroseries=series, sourcepackagename=dsp.sourcepackagename)
+        self.assertTransitionForbidden(dsp, sp)
+
+
 class TestTargetFlattening(TestCaseWithFactory):
     """Tests for flatten_target."""
 
@@ -1666,7 +1729,7 @@ class TestTargetFlattening(TestCaseWithFactory):
     def assertTargetFlattens(self, target, flat):
         """Check that a target flattens to the dict and back."""
         self.assertEqual(flat, flatten_target(target))
-        self.assertEqual(target, determine_target(****flat))
+        self.assertEqual(target, determine_target(**flat))
 
     def test_product(self):
         product = self.factory.makeProduct()

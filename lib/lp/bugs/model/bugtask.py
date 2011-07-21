@@ -1133,22 +1133,17 @@ class BugTask(SQLBase, BugTaskMixin):
             # current target, or reset it to None
             self.milestone = None
 
-        if IUpstreamBugTask.providedBy(self):
-            if IProduct.providedBy(target):
-                self.product = target
-            else:
-                raise IllegalTarget(
-                    "Upstream bug tasks may only be re-targeted "
-                    "to another project.")
-        else:
-            if (IDistributionSourcePackage.providedBy(target) and
-                (target.distribution == self.target or
-                 target.distribution == self.target.distribution)):
-                self.sourcepackagename = target.sourcepackagename
-            else:
-                raise IllegalTarget(
-                    "Distribution bug tasks may only be re-targeted "
-                    "to a package in the same distribution.")
+        # Check if any series are involved. You can't retarget series
+        # tasks.
+        interfaces = set(providedBy(target))
+        interfaces.update(providedBy(self.target))
+        if interfaces.intersection(
+            (IProductSeries, IDistroSeries, ISourcePackage)):
+            raise IllegalTarget(
+                "Series tasks may only be created by approving nominations.")
+
+        for name, value in flatten_target(target).iteritems():
+            setattr(self, name, value)
 
         # After the target has changed, we need to recalculate the maximum bug
         # heat for the new and old targets.
