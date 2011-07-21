@@ -297,7 +297,8 @@ class PublishDistro(LaunchpadCronScript):
         for distribution in self.findDistros():
             allowed_suites = self.findAllowedSuites(distribution)
             for archive in self.getTargetArchives(distribution):
-                publisher = self.getPublisher(archive, allowed_suites)
+                publisher = self.getPublisher(
+                    distribution, archive, allowed_suites)
 
                 if archive.status == ArchiveStatus.DELETING:
                     work_done = self.deleteArchive(archive, publisher)
