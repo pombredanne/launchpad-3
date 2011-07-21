@@ -37,9 +37,9 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.model.bugtask import (
+    bug_target_from_key,
+    bug_target_to_key,
     build_tag_search_clause,
-    determine_target,
-    flatten_target,
     IllegalTarget,
     )
 from lp.bugs.tests.bug import (
@@ -1721,19 +1721,19 @@ class TestTransitionToTarget(TestCaseWithFactory):
         self.assertTransitionForbidden(dsp, sp)
 
 
-class TestTargetFlattening(TestCaseWithFactory):
+class TestBugTargetKeys(TestCaseWithFactory):
     """Tests for flatten_target."""
 
     layer = DatabaseFunctionalLayer
 
-    def assertTargetFlattens(self, target, flat):
+    def assertTargetKeyWorks(self, target, flat):
         """Check that a target flattens to the dict and back."""
-        self.assertEqual(flat, flatten_target(target))
-        self.assertEqual(target, determine_target(**flat))
+        self.assertEqual(flat, bug_target_to_key(target))
+        self.assertEqual(target, bug_target_from_key(**flat))
 
     def test_product(self):
         product = self.factory.makeProduct()
-        self.assertTargetFlattens(
+        self.assertTargetKeyWorks(
             product,
             dict(
                 product=product,
@@ -1745,7 +1745,7 @@ class TestTargetFlattening(TestCaseWithFactory):
 
     def test_productseries(self):
         series = self.factory.makeProductSeries()
-        self.assertTargetFlattens(
+        self.assertTargetKeyWorks(
             series,
             dict(
                 product=None,
@@ -1757,7 +1757,7 @@ class TestTargetFlattening(TestCaseWithFactory):
 
     def test_distribution(self):
         distro = self.factory.makeDistribution()
-        self.assertTargetFlattens(
+        self.assertTargetKeyWorks(
             distro,
             dict(
                 product=None,
@@ -1769,7 +1769,7 @@ class TestTargetFlattening(TestCaseWithFactory):
 
     def test_distroseries(self):
         distroseries = self.factory.makeDistroSeries()
-        self.assertTargetFlattens(
+        self.assertTargetKeyWorks(
             distroseries,
             dict(
                 product=None,
@@ -1781,7 +1781,7 @@ class TestTargetFlattening(TestCaseWithFactory):
 
     def test_distributionsourcepackage(self):
         dsp = self.factory.makeDistributionSourcePackage()
-        self.assertTargetFlattens(
+        self.assertTargetKeyWorks(
             dsp,
             dict(
                 product=None,
@@ -1793,7 +1793,7 @@ class TestTargetFlattening(TestCaseWithFactory):
 
     def test_sourcepackage(self):
         sp = self.factory.makeSourcePackage()
-        self.assertTargetFlattens(
+        self.assertTargetKeyWorks(
             sp,
             dict(
                 product=None,

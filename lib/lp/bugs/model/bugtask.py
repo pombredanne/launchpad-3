@@ -14,7 +14,8 @@ __all__ = [
     'BugTask',
     'BugTaskSet',
     'bugtask_sort_key',
-    'determine_target',
+    'bug_target_from_key',
+    'bug_target_to_key',
     'get_bug_privacy_filter',
     'get_related_bugtasks_search_params',
     'search_value_to_where_condition',
@@ -272,9 +273,9 @@ def get_related_bugtasks_search_params(user, context, **kwargs):
     return search_params
 
 
-def determine_target(product, productseries, distribution, distroseries,
-                     sourcepackagename):
-    """Returns the IBugTarget defined by the given arguments."""
+def bug_target_from_key(product, productseries, distribution, distroseries,
+                        sourcepackagename):
+    """Returns the IBugTarget defined by the given DB column values."""
     if product:
         return product
     elif productseries:
@@ -295,7 +296,7 @@ def determine_target(product, productseries, distribution, distroseries,
         raise AssertionError("Unable to determine bugtask target.")
 
 
-def flatten_target(target):
+def bug_target_to_key(target):
     """Returns the DB column values for an IBugTarget."""
     values = dict(
                 product=None,
@@ -366,7 +367,7 @@ class BugTaskMixin:
         # We explicitly reference attributes here (rather than, say,
         # IDistroBugTask.providedBy(self)), because we can't assume this
         # task has yet been marked with the correct interface.
-        return determine_target(
+        return bug_target_from_key(
             self.product, self.productseries, self.distribution,
             self.distroseries, self.sourcepackagename)
 
@@ -436,7 +437,7 @@ def validate_target_attribute(self, attr, value):
     # Update the target name cache with the potential new target. The
     # attribute changes haven't been made yet, so we need to calculate the
     # target manually.
-    self.updateTargetNameCache(determine_target(**target_params))
+    self.updateTargetNameCache(bug_target_from_key(**target_params))
 
     return value
 
