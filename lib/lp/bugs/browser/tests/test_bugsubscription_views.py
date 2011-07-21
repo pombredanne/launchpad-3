@@ -470,7 +470,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
         self.assertEqual(dumps([]), harness.view.subscriber_data_js)
 
     def test_data_person_subscription(self):
-        # A subscriber_data_js returns JSON string of a list
+        # subscriber_data_js returns JSON string of a list
         # containing all subscriber information needed for
         # subscribers_list.js subscribers loading.
         bug = self._makeBugWithNoSubscribers()
@@ -490,7 +490,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 'can_edit': False,
                 'web_link': canonical_url(subscriber),
                 'self_link': absoluteURL(subscriber, api_request),
-                'subscribed_by': 'Self-subscribed',
+                'display_subscribed_by': 'Self-subscribed',
                 },
             'subscription_level': "Lifecycle",
             }
@@ -498,9 +498,8 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
             dumps([expected_result]), harness.view.subscriber_data_js)
 
     def test_data_person_subscription_other_subscriber(self):
-        # A subscriber_data_js returns JSON string of a list
-        # containing all subscriber information needed for
-        # subscribers_list.js subscribers loading.
+        # Ensure subscriber_data_js does the correct thing when the person who
+        # did the subscribing is someone else.
         bug = self._makeBugWithNoSubscribers()
         subscribed_by = self.factory.makePerson(
             name="someone", displayname='Someone')
@@ -521,7 +520,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 'can_edit': False,
                 'web_link': canonical_url(subscriber),
                 'self_link': absoluteURL(subscriber, api_request),
-                'subscribed_by': 'Subscribed by Someone (someone)',
+                'display_subscribed_by': 'Subscribed by Someone (someone)',
                 },
             'subscription_level': "Lifecycle",
             }
@@ -568,7 +567,8 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 'can_edit': False,
                 'web_link': canonical_url(subscriber),
                 'self_link': absoluteURL(subscriber, api_request),
-                'subscribed_by': 'Subscribed by Team Owner (team-owner)',
+                'display_subscribed_by': \
+                    'Subscribed by Team Owner (team-owner)',
                 },
             'subscription_level': "Lifecycle",
             }
@@ -598,7 +598,8 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 'can_edit': True,
                 'web_link': canonical_url(subscriber),
                 'self_link': absoluteURL(subscriber, api_request),
-                'subscribed_by': 'Subscribed by Team Owner (team-owner)',
+                'display_subscribed_by': \
+                    'Subscribed by Team Owner (team-owner)',
                 },
             'subscription_level': "Lifecycle",
             }
@@ -631,7 +632,8 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 'can_edit': True,
                 'web_link': canonical_url(subscriber),
                 'self_link': absoluteURL(subscriber, api_request),
-                'subscribed_by': 'Subscribed by Team Owner (team-owner)',
+                'display_subscribed_by': \
+                    'Subscribed by Team Owner (team-owner)',
                 },
             'subscription_level': "Lifecycle",
             }
@@ -661,7 +663,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 'can_edit': True,
                 'web_link': canonical_url(subscriber),
                 'self_link': absoluteURL(subscriber, api_request),
-                'subscribed_by': 'Self-subscribed',
+                'display_subscribed_by': 'Self-subscribed',
                 },
             'subscription_level': "Lifecycle",
             }
@@ -694,7 +696,7 @@ class BugPortletSubscribersWithDetailsTests(TestCaseWithFactory):
                 'can_edit': True,
                 'web_link': canonical_url(subscriber),
                 'self_link': absoluteURL(subscriber, api_request),
-                'subscribed_by': 'Subscribed by Someone (someone)',
+                'display_subscribed_by': 'Subscribed by Someone (someone)',
                 },
             'subscription_level': "Lifecycle",
             }

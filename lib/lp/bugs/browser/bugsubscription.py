@@ -49,7 +49,6 @@ from lp.bugs.browser.structuralsubscription import (
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
-from lp.bugs.interfaces.bugtask import IBugTask
 from lp.bugs.model.personsubscriptioninfo import PersonSubscriptions
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
@@ -555,7 +554,7 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
                 'self_link': absoluteURL(person, self.api_request),
                 'is_team': person.is_team,
                 'can_edit': can_edit,
-                'subscribed_by': subscription.display_subscribed_by,
+                'display_subscribed_by': subscription.display_subscribed_by,
                 }
             record = {
                 'subscriber': subscriber,
@@ -568,11 +567,7 @@ class BugPortletSubscribersWithDetails(LaunchpadView):
     @property
     def subscriber_data_js(self):
         """Return subscriber_ids in a form suitable for JavaScript use."""
-        if IBug.providedBy(self.context):
-            bug = self.context
-        elif IBugTask.providedBy(self.context):
-            bug = self.context.bug
-
+        bug = IBug(self.context)
         data = self.direct_subscriber_data(bug)
 
         others = list(bug.getIndirectSubscribers())
