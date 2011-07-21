@@ -69,6 +69,7 @@ from lp.bugs.interfaces.bugwatch import (
     UnrecognizedBugTrackerURL,
     )
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.services.features import getFeatureFlag
 from lp.services.fields import URIField
 
 
@@ -494,7 +495,17 @@ class BugTaskSourcePackageNameWidget(VocabularyPickerWidget):
             return self.context.missing_value
 
         distribution = self.getDistribution()
-
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            try:
+                source = self.context.vocabulary.getTermByToken(input).value
+            except NotFoundError:
+                raise ConversionError(
+                    "Launchpad doesn't know of any source package named"
+                    " '%s' in %s." % (input, distribution.displayname))
+            else:
+                return source
+        # Else the untrusted SPN vocab was used so it needs seconday
+        # verification.
         try:
             source = distribution.guessPublishedSourcePackageName(input)
         except NotFoundError:

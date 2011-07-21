@@ -640,7 +640,7 @@ class ValidPersonOrTeamVocabulary(
                     Person.id.is_in(public_inner_textual_select),
                     Person.visibility == PersonVisibility.PUBLIC,
                     Person.merged == None,
-                    Or(# A valid person-or-team is either a team...
+                    Or(  # A valid person-or-team is either a team...
                        # Note: 'Not' due to Bug 244768.
                        Not(Person.teamowner == None),
                        # Or a person who has a preferred email address.
@@ -836,10 +836,10 @@ class ValidPersonOrTeamVocabulary(
                 And(
                     SQL("Person.id = MatchingPerson.id"),
                     Or(
-                        And(# A public person or team
+                        And(  # A public person or team
                             Person.visibility == PersonVisibility.PUBLIC,
                             Person.merged == None,
-                            Or(# A valid person-or-team is either a team...
+                            Or(  # A valid person-or-team is either a team...
                                 # Note: 'Not' due to Bug 244768.
                                 Not(Person.teamowner == None),
                                 # Or a person who has preferred email address.
@@ -1981,13 +1981,28 @@ class DistributionSourcePackageVocabulary:
 
     implements(IHugeVocabulary)
     displayname = 'Select a package'
-    step_title = 'Search'
+    step_title = 'Search by name or distro/name'
 
     def __init__(self, context):
         self.context = context
+        if IDistributionSourcePackage.providedBy(context):
+            self.distribution = context.distribution
+        elif (IBugTask.providedBy(context)
+            and IDistributionSourcePackage.providedBy(context.target)):
+            self.distribution = context.target.distribution
+        else:
+            try:
+                self.distribution = IDistribution(context)
+            except TypeError:
+                self.distribution = None
 
     def __contains__(self, obj):
-        pass
+        # XXX sinzui 2011-07-21: This could be a real db lookup, but this
+        # hack does imply we know if there is publishing history.
+        term = self.toTerm(obj)
+        if term.title == "Not yet built.":
+            return False
+        return True
 
     def __iter__(self):
         pass
@@ -1995,17 +2010,39 @@ class DistributionSourcePackageVocabulary:
     def __len__(self):
         pass
 
-    def toTerm(self, spn):
+    def getDistributionAndPackageName(self, text):
+        # XXX sinzui 2011-07-21: match the toTerm() format, but also
+        # use it to select a distribution. Maybe this should also split on
+        # a the first space.
+        from lp.registry.interfaces.distribution import IDistributionSet
+        distribution = None
+        if '/' in text:
+            distro_name, text = text.split('/', 1)
+            distribution = getUtility(IDistributionSet).getByName(distro_name)
+        if distribution is None:
+            distribution = self.distribution
+        return distribution, text
+
+    def toTerm(self, spn, distribution=None):
         """See `IVocabulary`."""
-        dsp = self.context.getSourcePackage(spn)
+        distribution = distribution or self.distribution
+        if distribution is None or spn is None:
+            # XXX sinzui 2011-07-21: Maybe this should raise a LookupError?
+            return
+        dsp = distribution.getSourcePackage(spn)
         if dsp.publishing_history:
             binaries = dsp.publishing_history[0].getBuiltBinaries()
             summary = ', '.join(
                 [binary.binary_package_name for binary in binaries])
         else:
+            # XXX sinzui 2011-07-21: is this a false spn? This should not
+            # repeat the mistakes of SPNV where the user is shown an
+            # impossible choice. This case might be a LookupError.
+            # __contains__ uses this value to determine that the spn
+            # is false.
             summary = "Not yet built."
-        token = '%s-%s' % (dsp.distribution.name, dsp.name)
-        return SimpleTerm(summary, token, dsp.name)
+        token = '%s/%s' % (dsp.distribution.name, dsp.name)
+        return SimpleTerm(dsp.sourcepackagename, token, summary)
 
     def getTerm(self, spn):
         """See `IBaseVocabulary`."""
@@ -2013,12 +2050,17 @@ class DistributionSourcePackageVocabulary:
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        pass
+        distribution, package_name = self.getDistributionAndPackageName(token)
+        return self.toTerm(package_name, distribution)
 
     def searchForTerms(self, query=None):
         """See `IHugeVocabulary`."""
-        distribution = self.context
         if query is None:
+            return
+        distribution, query = self.getDistributionAndPackageName(query)
+        if distribution is None:
+            # XXX sinzui 2011-07-21: This could failover to ubuntu, but
+            # that might be non-obvious.
             return
         search_term = unicode(query)
         store = IStore(SourcePackagePublishingHistory)
@@ -2059,4 +2101,4 @@ class DistributionSourcePackageVocabulary:
                     SourcePackageName.name.contains_string(search_term),
                     BinaryPackageName.name.contains_string(
                         search_term))).config(distinct=True)
-        return [self.toTerm(spn) for spn in spns]
+        return CountableIterator(spns.count(), spns, self.toTerm)
