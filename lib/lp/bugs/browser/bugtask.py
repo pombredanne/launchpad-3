@@ -273,7 +273,11 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
-from lp.registry.vocabularies import MilestoneVocabulary
+from lp.registry.vocabularies import (
+    DistributionSourcePackageVocabulary,
+    MilestoneVocabulary,
+    )
+from lp.services.features import getFeatureFlag
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
 
@@ -1357,6 +1361,17 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                 readonly=False))
             self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
                 BugTaskAssigneeWidget)
+
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            # Replace the default field with a field that uses the better
+            # vocabulary.
+            print "FF enabled, replacing field"
+            self.form_fields = self.form_fields.omit('sourcepackagename')
+            #distribution = getUtility(ILaunchpadCelebrities).ubuntu
+            self.form_fields += formlib.form.Fields(Choice(
+                __name__='sourcepackagename', title=_('SourcePackageName'),
+                required=False, vocabulary='DistributionSourcePackageVocabulary'))
+                #source=DistributionSourcePackageVocabulary(self.context.distribution)))
 
     def _getReadOnlyFieldNames(self):
         """Return the names of fields that will be rendered read only."""
