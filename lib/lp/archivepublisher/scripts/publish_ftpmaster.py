@@ -9,7 +9,6 @@ __all__ = [
     ]
 
 from datetime import datetime
-from optparse import OptionParser
 import os
 from pytz import utc
 from zope.component import getUtility
@@ -26,7 +25,7 @@ from lp.services.scripts.base import (
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.utils import file_exists
 from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.scripts import publishdistro
+from lp.soyuz.scripts.publishdistro import PublishDistro
 from lp.soyuz.scripts.ftpmaster import LpQueryDistro
 from lp.soyuz.scripts.processaccepted import ProcessAccepted
 
@@ -363,10 +362,10 @@ class PublishFTPMaster(LaunchpadCronScript):
             args +
             sum([['-s', suite] for suite in suites], []))
 
-        parser = OptionParser()
-        publishdistro.add_options(parser)
-        options, args = parser.parse_args(arguments)
-        publishdistro.run_publisher(options, self.txn, log=self.logger)
+        publish_distro = PublishDistro(test_args=arguments)
+        publish_distro.logger = self.logger
+        publish_distro.txn = self.txn
+        publish_distro.main()
 
     def publishDistroArchive(self, archive, security_suites=None):
         """Publish the results for an archive.

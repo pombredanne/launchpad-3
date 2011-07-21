@@ -15,6 +15,7 @@ import psycopg2
 from canonical.database.sqlbase import (
     connect,
     ISOLATION_LEVEL_AUTOCOMMIT,
+    sqlvalues,
     )
 from canonical.launchpad.scripts import (
     db_options,
@@ -42,27 +43,28 @@ class DatabasePreflight:
             for node in self.nodes:
                 node.con = psycopg2.connect(node.connection_string)
                 node.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+
+            # Create a list of nodes subscribed to the replicated sets we
+            # are modifying.
+            cur = master_con.cursor()
+            cur.execute("""
+                WITH subscriptions AS (
+                    SELECT *
+                    FROM _sl.sl_subscribe
+                    WHERE sub_set = 1 AND sub_active IS TRUE)
+                SELECT sub_provider FROM subscriptions
+                UNION
+                SELECT sub_receiver FROM subscriptions
+                """)
+            lpmain_node_ids = set(row[0] for row in cur.fetchall())
+            self.lpmain_nodes = set(
+                node for node in self.nodes
+                if node.node_id in lpmain_node_ids)
         else:
             node = replication.helpers.Node(None, None, None, True)
             node.con = master_con
             self.nodes = set([node])
-
-        # Create a list of nodes subscribed to the replicated sets we
-        # are modifying.
-        cur = master_con.cursor()
-        cur.execute("""
-            WITH subscriptions AS (
-                SELECT *
-                FROM _sl.sl_subscribe
-                WHERE sub_set = 1 AND sub_active IS TRUE)
-            SELECT sub_provider FROM subscriptions
-            UNION
-            SELECT sub_receiver FROM subscriptions
-            """)
-        lpmain_node_ids = set(row[0] for row in cur.fetchall())
-        self.lpmain_nodes = set(
-            node for node in self.nodes
-            if node.node_id in lpmain_node_ids)
+            self.lpmain_nodes = self.nodes
 
     def check_is_superuser(self):
         """Return True if all the node connections are as superusers."""
@@ -217,20 +219,68 @@ class DatabasePreflight:
         return success
 
 
+class NoConnectionCheckPreflight(DatabasePreflight):
+    def check_open_connections(self):
+        return True
+
+
+class KillConnectionsPreflight(DatabasePreflight):
+    def check_open_connections(self):
+        """Kill all non-system connections to Launchpad databases.
+
+        We only check on subscribed nodes, as there will be active systems
+        connected to other nodes in the replication cluster (such as the
+        SSO servers).
+
+        System users are defined by SYSTEM_USERS.
+        """
+        for node in self.lpmain_nodes:
+            cur = node.con.cursor()
+            cur.execute("""
+                SELECT procpid, datname, usename, pg_terminate_backend(procpid)
+                FROM pg_stat_activity
+                WHERE
+                    datname=current_database()
+                    AND procpid <> pg_backend_pid()
+                    AND usename NOT IN %s
+                """ % sqlvalues(SYSTEM_USERS))
+            for procpid, datname, usename, ignored in cur.fetchall():
+                self.log.warning(
+                    "Killed %s [%s] on %s", usename, procpid, datname)
+        return True
+
+
 def main():
     parser = OptionParser()
     db_options(parser)
     logger_options(parser)
+    parser.add_option(
+        "--skip-connection-check", dest='skip_connection_check',
+        default=False, action="store_true",
+        help="Don't check open connections.")
+    parser.add_option(
+        "--kill-connections", dest='kill_connections',
+        default=False, action="store_true",
+        help="Kill non-system connections instead of reporting an error.")
     (options, args) = parser.parse_args()
     if args:
         parser.error("Too many arguments")
+
+    if options.kill_connections and options.skip_connection_check:
+        parser.error(
+            "--skip-connection-check conflicts with --kill-connections")
 
     log = logger(options)
 
     master_con = connect(lp.dbuser)
     master_con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
-    preflight_check = DatabasePreflight(log, master_con)
+    if options.kill_connections:
+        preflight_check = KillConnectionsPreflight(log, master_con)
+    elif options.skip_connection_check:
+        preflight_check = NoConnectionCheckPreflight(log, master_con)
+    else:
+        preflight_check = DatabasePreflight(log, master_con)
 
     if preflight_check.check_all():
         log.info('Preflight check succeeded. Good to go.')

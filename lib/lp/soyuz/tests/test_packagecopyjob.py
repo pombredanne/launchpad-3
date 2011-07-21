@@ -3,6 +3,7 @@
 
 """Tests for sync package jobs."""
 
+import operator
 from testtools.content import text_content
 from testtools.matchers import (
     Equals,
@@ -102,6 +103,10 @@ class LocalTestHelper:
         """Helper to switch to the right DB user and run the job."""
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
+        # Set the state to RUNNING.
+        job.start()
+        # Commit the RUNNING state.
+        self.layer.txn.commit()
         job.run()
 
 
@@ -333,6 +338,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         source = getUtility(IPlainPackageCopyJobSource)
         requester = self.factory.makePerson()
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(requester, "main")
         job = source.create(
             package_name="libc",
             source_archive=breezy_archive, target_archive=target_archive,
@@ -406,6 +413,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             target_pocket=PackagePublishingPocket.RELEASE,
             package_version="2.8-1", include_binaries=False,
             requester=requester)
+        with person_logged_in(archive2.owner):
+            archive2.newComponentUploader(requester, "main")
         transaction.commit()
 
         out, err, exit_code = run_script(
@@ -545,6 +554,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
         source = getUtility(IPlainPackageCopyJobSource)
         requester = self.factory.makePerson()
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(requester, "restricted")
         job = source.create(
             package_name="libc",
             package_version="2.8-1",
@@ -584,6 +595,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # there's no ancestry.
         source = getUtility(IPlainPackageCopyJobSource)
         requester = self.factory.makePerson()
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(requester, "main")
         job = source.create(
             package_name="copyme",
             package_version="2.8-1",
@@ -736,6 +749,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
         distroseries = publisher.breezy_autotest
+        distroseries.changeslist = "changes@example.com"
 
         target_archive = self.factory.makeArchive(
             distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
@@ -748,7 +762,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             archive=source_archive)
 
         source = getUtility(IPlainPackageCopyJobSource)
-        requester = self.factory.makePerson()
+        requester = self.factory.makePerson(email="requester@example.com")
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(requester, "main")
         job = source.create(
             package_name="copyme",
             package_version="2.8-1",
@@ -771,6 +787,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
             [removeSecurityProxy(job).context.id]).one()
         pu.acceptFromQueue()
+        # Clear existing emails so we can see only the ones the job
+        # generates later.
+        pop_notifications()
         self.runJob(job)
 
         # The job should have set the PU status to DONE:
@@ -779,6 +798,16 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # Make sure packages were actually copied.
         existing_sources = target_archive.getPublishedSources(name='copyme')
         self.assertIsNot(None, existing_sources.any())
+
+        # It would be nice to test emails in a separate test but it would
+        # require all of the same setup as above again so we might as well
+        # do it here.
+        emails = pop_notifications(sort_key=operator.itemgetter('To'))
+
+        # We expect an uploader email and an announcement to the changeslist.
+        self.assertEquals(2, len(emails))
+        self.assertIn("requester@example.com", emails[0]['To'])
+        self.assertIn("changes@example.com", emails[1]['To'])
 
     def test_findMatchingDSDs_matches_all_DSDs_for_job(self):
         # findMatchingDSDs finds matching DSDs for any of the packages
@@ -900,6 +929,48 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
                 self.makeJob(dsd, copy_policy=policy))
             self.assertEqual(
                 policy, naked_job.getPolicyImplementation().enum_value)
+
+    def test_rejects_PackageUpload_when_job_fails(self):
+        # If a PCJ with a PU fails when running then we need to ensure the
+        # PU gets rejected.
+        target_archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PRIMARY)
+        source_archive = self.factory.makeArchive()
+        source_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename="copyme",
+            version="1.0",
+            archive=source_archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
+        job = job_source.create(
+            package_name="copyme",
+            package_version="1.0",
+            source_archive=source_archive,
+            target_archive=target_archive,
+            target_distroseries=source_pub.distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False,
+            requester=requester)
+
+        # Run the job so it gains a PackageUpload.
+        self.assertRaises(SuspendJobException, self.runJob, job)
+        # Simulate the job runner suspending after getting a
+        # SuspendJobException
+        job.suspend()
+        self.layer.txn.commit()
+        self.layer.switchDbUser("launchpad_main")
+
+        # Accept the upload to release the job then run it.
+        pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            [removeSecurityProxy(job).context.id]).one()
+        pu.acceptFromQueue()
+        self.runJob(job)
+
+        # The copy will have failed because the requester has no permission
+        # to upload to the archive we created. The job should have set the
+        # PU status to REJECTED.
+        self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
 
 
 class TestPlainPackageCopyJobPermissions(TestCaseWithFactory):

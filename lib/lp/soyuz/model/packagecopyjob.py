@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 from lazr.delegates import delegates
+import logging
 import simplejson
 from storm.locals import (
     And,
@@ -439,13 +440,35 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             self._createPackageUpload(unapproved=True)
             raise SuspendJobException
 
+    def _rejectPackageUpload(self):
+        # Helper to find and reject any associated PackageUpload.
+        pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            [self.context.id]).any()
+        if pu is not None:
+            pu.setRejected()
+
     def run(self):
         """See `IRunnableJob`."""
         try:
             self.attemptCopy()
         except CannotCopy, e:
-            self.abort()
+            logger = logging.getLogger()
+            logger.info("Job:\n%s\nraised CannotCopy:\n%s" % (self, e))
+            self.abort()  # Abort the txn.
             self.reportFailure(e)
+
+            # If there is an associated PackageUpload we need to reject it,
+            # else it will sit in ACCEPTED forever.
+            self._rejectPackageUpload()
+
+            # Rely on the job runner to do the final commit.  Note that
+            # we're not raising any exceptions here, failure of a copy is
+            # not a failure of the job.
+        except SuspendJobException:
+            raise
+        except:
+            self._rejectPackageUpload()
+            raise
 
     def attemptCopy(self):
         """Attempt to perform the copy.
@@ -482,13 +505,14 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         do_copy(
             sources=[source_package], archive=self.target_archive,
             series=self.target_distroseries, pocket=self.target_pocket,
-            include_binaries=self.include_binaries, check_permissions=False,
-            overrides=[override], send_email=send_email)
+            include_binaries=self.include_binaries, check_permissions=True,
+            person=self.requester, overrides=[override],
+            send_email=send_email)
 
         if pu is not None:
             # A PackageUpload will only exist if the copy job had to be
             # held in the queue because of policy/ancestry checks.  If one
-            # does exist we need to make sure.
+            # does exist we need to make sure it gets moved to DONE.
             pu.setDone()
 
     def abort(self):
