@@ -1685,17 +1685,32 @@ class TestTransitionToTarget(TestCaseWithFactory):
             self.factory.makeProduct(),
             self.factory.makeProduct())
 
-    def test_package_to_package_works(self):
-        distro = self.factory.makeDistribution()
+    def test_product_to_distribution_works(self):
         self.assertTransitionWorks(
-            self.factory.makeDistributionSourcePackage(distribution=distro),
-            self.factory.makeDistributionSourcePackage(distribution=distro))
+            self.factory.makeProduct(),
+            self.factory.makeDistributionSourcePackage())
+
+    def test_product_to_package_works(self):
+        self.assertTransitionWorks(
+            self.factory.makeProduct(),
+            self.factory.makeDistributionSourcePackage())
+
+    def test_distribution_to_distribution_works(self):
+        self.assertTransitionWorks(
+            self.factory.makeDistribution(),
+            self.factory.makeDistribution())
 
     def test_distribution_to_package_works(self):
         distro = self.factory.makeDistribution()
         dsp = self.factory.makeDistributionSourcePackage(distribution=distro)
         self.assertEquals(dsp.distribution, distro)
         self.assertTransitionWorks(distro, dsp)
+
+    def test_package_to_package_works(self):
+        distro = self.factory.makeDistribution()
+        self.assertTransitionWorks(
+            self.factory.makeDistributionSourcePackage(distribution=distro),
+            self.factory.makeDistributionSourcePackage(distribution=distro))
 
     def test_different_distros_works(self):
         self.assertTransitionWorks(
@@ -1722,7 +1737,7 @@ class TestTransitionToTarget(TestCaseWithFactory):
 
 
 class TestBugTargetKeys(TestCaseWithFactory):
-    """Tests for flatten_target."""
+    """Tests for bug_target_to_key and bug_target_from_key."""
 
     layer = DatabaseFunctionalLayer
 
