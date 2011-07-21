@@ -10,7 +10,8 @@ __all__ = [
     'DistributionSet',
     ]
 
-from operator import attrgetter
+from operator import attrgetter, itemgetter
+import itertools
 
 from sqlobject import (
     BoolCol,
@@ -653,6 +654,36 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def getUsedBugTags(self):
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
+
+    def getBranchTips(self, since=None):
+        """See `IDistribution`."""
+        query = """
+            SELECT unique_name, last_scanned_id, SPBDS.name FROM Branch
+            JOIN DistroSeries
+                ON Branch.distroseries = DistroSeries.id
+            LEFT OUTER JOIN SeriesSourcePackageBranch
+                ON Branch.id = SeriesSourcePackageBranch.branch
+            LEFT OUTER JOIN DistroSeries SPBDS
+                -- (SPDBS stands for Source Package Branch Distro Series)
+                ON SeriesSourcePackageBranch.distroseries = SPBDS.id
+            WHERE DistroSeries.distribution = %s""" % sqlvalues(self.id)
+
+        if since is not None:
+            query += (
+                ' AND branch.last_scanned > %s' % sqlvalues(since))
+
+        query += ' ORDER BY unique_name, last_scanned_id;'
+
+        data = Store.of(self).execute(query)
+
+        result = []
+        # Group on location (unique_name) and revision (last_scanned_id).
+        for key, group in itertools.groupby(data, itemgetter(0, 1)):
+            result.append(list(key))
+            # Pull out all the official series names and append them as a list
+            # to the end of the current record, removing Nones from the list.
+            result[-1].append(filter(None, map(itemgetter(-1), group)))
+        return result
 
     def getMirrorByName(self, name):
         """See `IDistribution`."""
@@ -1422,7 +1453,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # the sourcepackagename from that.
             bpph = IStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
-                # See comment above for rationale for using an extra query 
+                # See comment above for rationale for using an extra query
                 # instead of an inner join. (Bottom line, it would time out
                 # otherwise.)
                 BinaryPackagePublishingHistory.archiveID.is_in(

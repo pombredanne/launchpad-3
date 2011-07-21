@@ -50,8 +50,8 @@ __all__ = [
     'ZopeTestInSubProcess',
     ]
 
-from cStringIO import StringIO
 from contextlib import contextmanager
+from cStringIO import StringIO
 from datetime import (
     datetime,
     timedelta,
@@ -74,8 +74,6 @@ import tempfile
 import time
 import unittest
 
-import simplejson
-
 from bzrlib import trace
 from bzrlib.bzrdir import (
     BzrDir,
@@ -84,6 +82,7 @@ from bzrlib.bzrdir import (
 from bzrlib.transport import get_transport
 import fixtures
 import pytz
+import simplejson
 from storm.expr import Variable
 from storm.store import Store
 from storm.tracer import (
@@ -546,7 +545,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         The config values will be restored during test tearDown.
         """
         name = self.factory.getUniqueString()
-        body = '\n'.join(["%s: %s" % (k, v) for k, v in kwargs.iteritems()])
+        body = '\n'.join("%s: %s" % (k, v) for k, v in kwargs.iteritems())
         config.push(name, "\n[%s]\n%s\n" % (section, body))
         self.addCleanup(config.pop, name)
 
@@ -872,7 +871,7 @@ class YUIUnitTestCase(TestCase):
 
     def id(self):
         """Return an ID for this test based on the file path."""
-        return self.test_path
+        return os.path.relpath(self.test_path, config.root)
 
     def setUp(self):
         super(YUIUnitTestCase, self).setUp()
