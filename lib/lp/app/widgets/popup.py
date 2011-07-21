@@ -202,7 +202,7 @@ class PersonPickerWidget(VocabularyPickerWidget):
 
     include_create_team_link = False
     show_assign_me_button = 'true'
-    show_remove_button = 'true'
+    show_remove_button = 'false'
 
     @property
     def picker_type(self):
