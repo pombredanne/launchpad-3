@@ -6,9 +6,11 @@ __metaclass__ = type
 from datetime import timedelta
 import unittest
 
+from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from testtools.matchers import Equals
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
@@ -30,6 +32,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskSearchParams,
     BugTaskStatus,
+    IBugTask,
     IBugTaskSet,
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
@@ -1664,9 +1667,13 @@ class TestTransitionToTarget(TestCaseWithFactory):
 
     def makeAndTransition(self, old, new):
         task = self.factory.makeBugTask(target=old)
+        p = self.factory.makePerson()
         self.assertEqual(old, task.target)
+        old_state = Snapshot(task, providing=providedBy(task))
         with person_logged_in(task.owner):
+            task.bug.subscribe(p, p)
             task.transitionToTarget(new)
+            notify(ObjectModifiedEvent(task, old_state, ["target"]))
         return task
 
     def assertTransitionWorks(self, a, b):
