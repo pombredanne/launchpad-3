@@ -182,25 +182,7 @@ Jdub is only a member of the ubuntu team.  He can request to be placed
 on another team's mailing list at the same time that he requests
 membership on the team.
 
-First, we need to make sure that Jdub is a member of the Beta Testers
-team.  (Otherwise, the mailing list subscription checkbox won't show at
-all.)
-
-    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from zope.component import getUtility
-    >>> login('foo.bar@canonical.com')
-    >>> beta = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
-    >>> person_set = getUtility(IPersonSet)
-    >>> jdub = person_set.getByName('jdub')
-    >>> mark = person_set.getByName('mark')
-    >>> ignored = beta.addMember(jdub, reviewer=mark)
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-    >>> logout()
-
-We also need to confirm that the desired team has a list to subscribe
+First we need to confirm that the desired team has a list to subscribe
 to.  We will use Carlos, as he is an administrator for the Rosetta
 Admins team, and he should know if the list is available.
 

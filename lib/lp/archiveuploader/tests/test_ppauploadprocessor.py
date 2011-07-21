@@ -59,16 +59,6 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
         self.build_uploadprocessor = self.getUploadProcessor(
             self.layer.txn, builds=True)
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        # Let's make 'name16' person member of 'launchpad-beta-tester'
-        # team only in the context of this test.
-        beta_testers = getUtility(
-            ILaunchpadCelebrities).launchpad_beta_testers
-        admin = getUtility(ILaunchpadCelebrities).admin
-        self.name16 = getUtility(IPersonSet).getByName("name16")
-        beta_testers.addMember(self.name16, admin)
-        # Pop the two messages notifying the team modification.
-        stub.test_emails.pop()
-        stub.test_emails.pop()
 
         # create name16 PPA
         self.name16_ppa = getUtility(IArchiveSet).new(

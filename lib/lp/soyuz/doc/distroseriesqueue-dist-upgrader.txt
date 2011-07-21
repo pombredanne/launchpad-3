@@ -286,12 +286,6 @@ files in the respective PPA location.
     >>> from lp.soyuz.enums import ArchivePurpose
     >>> from lp.soyuz.interfaces.archive import IArchiveSet
 
-    >>> beta_testers = getUtility(ILaunchpadCelebrities
-    ...     ).launchpad_beta_testers
-    >>> admin = getUtility(ILaunchpadCelebrities).admin
-    >>> name16 = getUtility(IPersonSet).getByName("name16")
-    >>> ignored = beta_testers.addMember(name16, admin)
-
     >>> foobar_archive = getUtility(IArchiveSet).new(
     ...     distribution=ubuntutest, purpose=ArchivePurpose.PPA,
     ...     owner=name16)
