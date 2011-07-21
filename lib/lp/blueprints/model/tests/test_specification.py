@@ -80,8 +80,8 @@ class TestSpecificationSubscriptionSort(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_subscribers(self):
-        #Test the sorting of subscribers to be by lowercase displayname
-        #rather than name
+        # Subscriptions are sorted by subscriber's displayname without regard
+        # to case
         spec = self.factory.makeBlueprint()
         bob = self.factory.makePerson(name='zbob', displayname='Bob')
         ced = self.factory.makePerson(name='xed', displayname='ced')
