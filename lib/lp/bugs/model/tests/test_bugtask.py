@@ -31,7 +31,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
     IBugTaskSet,
-    IUpstreamBugTask,
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     )
@@ -1161,7 +1160,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         # Helper functions for the list comprehension below.
         def _is_resolved_upstream_task(bugtask):
             return (
-                IUpstreamBugTask.providedBy(bugtask) and
+                bugtask.product is not None and
                 bugtask.status in resolved_upstream_states)
 
         def _is_resolved_bugwatch_task(bugtask):
@@ -1197,7 +1196,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         # Helper functions for the list comprehension below.
         def _is_open_upstream_task(bugtask):
             return (
-                IUpstreamBugTask.providedBy(bugtask) and
+                bugtask.product is not None and
                 bugtask.status in open_states)
 
         def _is_open_bugwatch_task(bugtask):
@@ -1221,7 +1220,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         Returns True if yes, otherwise False.
         """
         for bugtask in bug.bugtasks:
-            if IUpstreamBugTask.providedBy(bugtask):
+            if bugtask.product is not None:
                 return True
         return False
 
