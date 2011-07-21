@@ -22,7 +22,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.testing.fakepackager import FakePackager
 from lp.app.errors import NotFoundError
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase,
     )
@@ -61,6 +60,7 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
 
         # create name16 PPA
+        self.name16 = getUtility(IPersonSet).getByName("name16")
         self.name16_ppa = getUtility(IArchiveSet).new(
             owner=self.name16, distribution=self.ubuntu,
             purpose=ArchivePurpose.PPA)
