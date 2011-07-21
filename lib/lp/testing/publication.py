@@ -124,7 +124,12 @@ def test_traverse(url):
     # Find the object from the view instead on relying that it stays
     # in the traversed_objects stack. That doesn't apply to the web
     # service for example.
-    obj = removeSecurityProxy(view).context
+    try:
+        obj = removeSecurityProxy(view).context
+    except AttributeError:
+        # But sometime the view didn't store the context...
+        # Use the last traversed object in these cases.
+        obj = request.traversed_objects[-2]
 
     restoreInteraction()
 
