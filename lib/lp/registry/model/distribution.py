@@ -689,8 +689,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # We want to order the results, in part for easier grouping at the
         # end.
         base_query += 'ORDER BY unique_name, last_scanned_id'
-        admins = getUtility(ILaunchpadCelebrities).admin
-        if person is None or person.inTeam(admins):
+        if (person is None or
+            person.inTeam(getUtility(ILaunchpadCelebrities).admin)):
             # Anonymous is already handled above; admins can see everything.
             # In both cases, we can just use the query as it already stands.
             query = base_query
@@ -747,7 +747,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             result.append(list(key))
             # Pull out all the official series names and append them as a list
             # to the end of the current record, removing Nones from the list.
-            result[-1].append(filter(None, map(itemgetter(-1), group)))
+            result[-1].append(filter(None, map(itemgetter(2), group)))
         return result
 
     def getMirrorByName(self, name):
