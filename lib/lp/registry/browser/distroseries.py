@@ -827,6 +827,8 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         super(DistroSeriesDifferenceBaseView, self).initialize()
 
     def initialize_sync_label(self, label):
+        # XXX: GavinPanella 2011-07-13 bug=809985: Good thing the app servers
+        # are running single threaded...
         self.__class__.actions.byname['actions.sync'].label = label
 
     @property
@@ -861,6 +863,8 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             SimpleTerm(diff, diff.id)
                     for diff in self.cached_differences.batch]
         diffs_vocabulary = SimpleVocabulary(terms)
+        # XXX: GavinPanella 2011-07-13 bug=809985: Good thing the app servers
+        # are running single threaded...
         choice = self.form_fields['selected_differences'].field.value_type
         choice.vocabulary = diffs_vocabulary
 
@@ -1054,7 +1058,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         differences = getUtility(
             IDistroSeriesDifferenceSource).getForDistroSeries(
                 self.context, difference_type=self.differences_type,
-                source_package_name_filter=self.specified_name_filter,
+                name_filter=self.specified_name_filter,
                 status=status, child_version_higher=child_version_higher)
         return BatchNavigator(differences, self.request)
 
@@ -1161,7 +1165,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
             )
             for dsd in self.getUpgrades()]
         getUtility(IPlainPackageCopyJobSource).createMultiple(
-            target_distroseries, copies,
+            target_distroseries, copies, self.user,
             copy_policy=PackageCopyPolicy.MASS_SYNC)
 
         self.request.response.addInfoNotification(

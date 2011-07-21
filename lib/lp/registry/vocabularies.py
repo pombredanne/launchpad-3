@@ -1837,8 +1837,7 @@ class DistroSeriesDerivationVocabulary:
         """See `IHugeVocabulary`."""
         parent = ClassAlias(DistroSeries, "parent")
         child = ClassAlias(DistroSeries, "child")
-        # Select only the series with architectures setup in LP.
-        where = [DistroSeries.id == DistroArchSeries.distroseriesID]
+        where = []
         if query is not None:
             term = '%' + query.lower() + '%'
             search = Or(
@@ -1857,6 +1856,9 @@ class DistroSeriesDerivationVocabulary:
                 DistroSeries.distributionID.is_in(parent_distributions))
             return self.find_terms(where)
         else:
+            # Select only the series with architectures setup in LP.
+            where.append(
+                DistroSeries.id == DistroArchSeries.distroseriesID)
             where.append(
                 DistroSeries.distribution != self.distribution)
             return self.find_terms(where)
@@ -1981,7 +1983,7 @@ class DistributionSourcePackageVocabulary:
     displayname = 'Select a package'
     step_title = 'Search'
 
-    def __init__(self, context=None):
+    def __init__(self, context):
         self.context = context
 
     def __contains__(self, obj):
@@ -1993,9 +1995,9 @@ class DistributionSourcePackageVocabulary:
     def __len__(self):
         pass
 
-    def toTerm(self, dsp):
+    def toTerm(self, spn):
         """See `IVocabulary`."""
-        # SimpleTerm(value, token=None, title=None)
+        dsp = self.context.getSourcePackage(spn)
         if dsp.publishing_history:
             binaries = dsp.publishing_history[0].getBuiltBinaries()
             summary = ', '.join(
@@ -2005,9 +2007,9 @@ class DistributionSourcePackageVocabulary:
         token = '%s-%s' % (dsp.distribution.name, dsp.name)
         return SimpleTerm(summary, token, dsp.name)
 
-    def getTerm(self, dsp):
+    def getTerm(self, spn):
         """See `IBaseVocabulary`."""
-        return self.toTerm(dsp)
+        return self.toTerm(spn)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
@@ -2057,5 +2059,4 @@ class DistributionSourcePackageVocabulary:
                     SourcePackageName.name.contains_string(search_term),
                     BinaryPackageName.name.contains_string(
                         search_term))).config(distinct=True)
-        return [
-            self.toTerm(distribution.getSourcePackage(spn)) for spn in spns]
+        return [self.toTerm(spn) for spn in spns]

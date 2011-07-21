@@ -10,6 +10,7 @@ from lazr.lifecycle.snapshot import Snapshot
 from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.interface import providedBy
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import (
@@ -52,11 +53,14 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.testing import (
     ANONYMOUS,
+    EventRecorder,
+    feature_flags,
     login,
     login_person,
     logout,
     normalize_whitespace,
     person_logged_in,
+    set_feature_flag,
     StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
@@ -1445,3 +1449,205 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
             self.generic_task.sourcepackagename = source_package_name
             self.assertEqual(
                 source_package_name, self.series_task.sourcepackagename)
+
+# START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
+# When feature flag code is removed, delete these tests (up to "# END
+# TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.")
+
+
+class TestAutoConfirmBugTasksFlagForProduct(TestCaseWithFactory):
+    """Tests for auto-confirming bug tasks."""
+    # Tests for _checkAutoconfirmFeatureFlag.
+
+    layer = DatabaseFunctionalLayer
+
+    def makeTarget(self):
+        return self.factory.makeProduct()
+
+    flag = u'bugs.autoconfirm.enabled_product_names'
+    alt_flag = u'bugs.autoconfirm.enabled_distribution_names'
+
+    def test_False(self):
+        # With no feature flags turned on, we do not auto-confirm.
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        self.assertFalse(
+            removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
+
+    def test_flag_False(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(self.flag, u'   ')
+            self.assertFalse(
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
+
+    def test_explicit_flag(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(self.flag, bug_task.pillar.name)
+            self.assertTrue(
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
+
+    def test_explicit_flag_of_many(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(
+                self.flag, u'  foo bar  ' + bug_task.pillar.name + '    baz ')
+            self.assertTrue(
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
+
+    def test_match_all_flag(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(self.flag, u'*')
+            self.assertTrue(
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
+
+    def test_alt_flag_does_not_affect(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(self.alt_flag, bug_task.pillar.name)
+            self.assertFalse(
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
+
+
+class TestAutoConfirmBugTasksFlagForProductSeries(
+    TestAutoConfirmBugTasksFlagForProduct):
+    """Tests for auto-confirming bug tasks."""
+
+    def makeTarget(self):
+        return self.factory.makeProductSeries()
+
+
+class TestAutoConfirmBugTasksFlagForDistribution(
+    TestAutoConfirmBugTasksFlagForProduct):
+    """Tests for auto-confirming bug tasks."""
+
+    flag = TestAutoConfirmBugTasksFlagForProduct.alt_flag
+    alt_flag = TestAutoConfirmBugTasksFlagForProduct.flag
+
+    def makeTarget(self):
+        return self.factory.makeDistribution()
+
+
+class TestAutoConfirmBugTasksFlagForDistributionSeries(
+    TestAutoConfirmBugTasksFlagForDistribution):
+    """Tests for auto-confirming bug tasks."""
+
+    def makeTarget(self):
+        return self.factory.makeDistroSeries()
+
+
+class TestAutoConfirmBugTasksFlagForDistributionSourcePackage(
+    TestAutoConfirmBugTasksFlagForDistribution):
+    """Tests for auto-confirming bug tasks."""
+
+    def makeTarget(self):
+        return self.factory.makeDistributionSourcePackage()
+
+
+class TestAutoConfirmBugTasksTransitionToTarget(TestCaseWithFactory):
+    """Tests for auto-confirming bug tasks."""
+    # Tests for making sure that switching a task from one project that
+    # does not auto-confirm to another that does performs the auto-confirm
+    # correctly, if appropriate.  This is only necessary for as long as a
+    # project may not participate in auto-confirm.
+
+    layer = DatabaseFunctionalLayer
+
+    def test_no_transitionToTarget(self):
+        # We can change the target.  If the normal bug conditions do not
+        # hold, there will be no transition.
+        person = self.factory.makePerson()
+        autoconfirm_product = self.factory.makeProduct(owner=person)
+        no_autoconfirm_product = self.factory.makeProduct(owner=person)
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names',
+                             autoconfirm_product.name)
+            bug_task = self.factory.makeBugTask(
+                target=no_autoconfirm_product, owner=person)
+            with person_logged_in(person):
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+                bug_task.transitionToTarget(autoconfirm_product)
+                self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+
+    def test_transitionToTarget(self):
+        # If the conditions *do* hold, though, we will auto-confirm.
+        person = self.factory.makePerson()
+        another_person = self.factory.makePerson()
+        autoconfirm_product = self.factory.makeProduct(owner=person)
+        no_autoconfirm_product = self.factory.makeProduct(owner=person)
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names',
+                             autoconfirm_product.name)
+            bug_task = self.factory.makeBugTask(
+                target=no_autoconfirm_product, owner=person)
+            with person_logged_in(another_person):
+                bug_task.bug.markUserAffected(another_person)
+            with person_logged_in(person):
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+                bug_task.transitionToTarget(autoconfirm_product)
+                self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
+# END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
+
+
+class TestAutoConfirmBugTasks(TestCaseWithFactory):
+    """Tests for auto-confirming bug tasks."""
+    # Tests for maybeConfirm
+
+    layer = DatabaseFunctionalLayer
+
+    def test_auto_confirm(self):
+        # A typical new bugtask auto-confirms.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            bug_task = self.factory.makeBugTask()
+            self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+            with EventRecorder() as recorder:
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
+                self.assertEqual(1, len(recorder.events))
+                event = recorder.events[0]
+                self.assertEqual(getUtility(ILaunchpadCelebrities).janitor,
+                                 event.user)
+                self.assertEqual(['status'], event.edited_fields)
+                self.assertEqual(BugTaskStatus.NEW,
+                                 event.object_before_modification.status)
+                self.assertEqual(bug_task, event.object)
+
+    def test_do_not_confirm_bugwatch_tasks(self):
+        # A bugwatch bugtask does not auto-confirm.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            product = self.factory.makeProduct()
+            with person_logged_in(product.owner):
+                bug = self.factory.makeBug(
+                    product=product, owner=product.owner)
+                bug_task = bug.getBugTask(product)
+                watch = self.factory.makeBugWatch(bug=bug)
+                bug_task.bugwatch = watch
+            self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+            with EventRecorder() as recorder:
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+                self.assertEqual(0, len(recorder.events))
+
+    def test_only_confirm_new_tasks(self):
+        # A non-new bugtask does not auto-confirm.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            bug_task = self.factory.makeBugTask()
+            removeSecurityProxy(bug_task).transitionToStatus(
+                BugTaskStatus.CONFIRMED, bug_task.bug.owner)
+            self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
+            with EventRecorder() as recorder:
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
+                self.assertEqual(0, len(recorder.events))

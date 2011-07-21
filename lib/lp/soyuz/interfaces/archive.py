@@ -20,6 +20,7 @@ __all__ = [
     'CannotUploadToArchive',
     'CannotUploadToPPA',
     'CannotUploadToPocket',
+    'ForbiddenByFeatureFlag',
     'FULL_COMPONENT_SUPPORT',
     'IArchive',
     'IArchiveAppend',
@@ -120,6 +121,12 @@ class ArchiveDependencyError(Exception):
 @error_status(httplib.BAD_REQUEST)
 class CannotCopy(Exception):
     """Exception raised when a copy cannot be performed."""
+
+
+@error_status(httplib.FORBIDDEN)
+class ForbiddenByFeatureFlag(Exception):
+    """Exception raised when using a method protected by a feature flag.
+    """
 
 
 @error_status(httplib.BAD_REQUEST)
@@ -1216,6 +1223,91 @@ class IArchiveView(IHasBuildRecords):
         :param date_created: Optional, defaults to now
 
         :return: A new IArchiveAuthToken
+        """
+
+    @call_with(person=REQUEST_USER)
+    @operation_parameters(
+        source_name=TextLine(title=_("Source package name")),
+        version=TextLine(title=_("Version")),
+        from_archive=Reference(schema=Interface),
+        # Really IArchive, see below
+        to_pocket=TextLine(title=_("Pocket name")),
+        to_series=TextLine(title=_("Distroseries name"), required=False),
+        include_binaries=Bool(
+            title=_("Include Binaries"),
+            description=_("Whether or not to copy binaries already built for"
+                          " this source"),
+            required=False))
+    @export_write_operation()
+    @operation_for_version('devel')
+    def copyPackage(source_name, version, from_archive, to_pocket,
+                    person, to_series=None, include_binaries=False):
+        """Copy a single named source into this archive.
+
+        Asynchronously copy a specific version of a named source to the
+        destination archive if necessary.  Calls to this method will return
+        immediately if the copy passes basic security checks and the copy
+        will happen sometime later with full checking.
+
+        :param source_name: a string name of the package to copy.
+        :param version: the version of the package to copy.
+        :param from_archive: the source archive from which to copy.
+        :param to_pocket: the target pocket (as a string).
+        :param to_series: the target distroseries (as a string).
+        :param include_binaries: optional boolean, controls whether or not
+            the published binaries for each given source should also be
+            copied along with the source.
+        :param person: the `IPerson` who requests the sync.
+
+        :raises NoSuchSourcePackageName: if the source name is invalid
+        :raises PocketNotFound: if the pocket name is invalid
+        :raises NoSuchDistroSeries: if the distro series name is invalid
+        :raises CannotCopy: if there is a problem copying.
+        """
+
+    @call_with(person=REQUEST_USER)
+    @operation_parameters(
+        source_names=List(
+            title=_("Source package names"),
+            value_type=TextLine()),
+        from_archive=Reference(schema=Interface),
+        #Really IArchive, see below
+        to_pocket=TextLine(title=_("Pocket name")),
+        to_series=TextLine(title=_("Distroseries name"), required=False),
+        include_binaries=Bool(
+            title=_("Include Binaries"),
+            description=_("Whether or not to copy binaries already built for"
+                          " this source"),
+            required=False))
+    @export_write_operation()
+    @operation_for_version('devel')
+    def copyPackages(source_names, from_archive, to_pocket, person,
+                     to_series=None, include_binaries=False):
+        """Atomically copy multiple named sources into this archive from another.
+
+        Asynchronously copy the most recent PUBLISHED versions of the named
+        sources to the destination archive if necessary.  Calls to this
+        method will return immediately if the copy passes basic security
+        checks and the copy will happen sometime later with full checking.
+
+        This operation will only succeed when all requested packages
+        are synchronised between the archives. If any of the requested
+        copies cannot be performed, the whole operation will fail. There
+        will be no partial changes of the destination archive.
+
+        :param source_names: a list of string names of packages to copy.
+        :param from_archive: the source archive from which to copy.
+        :param to_pocket: the target pocket (as a string).
+        :param to_series: the target distroseries (as a string).
+        :param include_binaries: optional boolean, controls whether or not
+            the published binaries for each given source should also be
+            copied along with the source.
+        :param person: the `IPerson` who requests the sync.
+
+        :raises NoSuchSourcePackageName: if the source name is invalid
+        :raises PocketNotFound: if the pocket name is invalid
+        :raises NoSuchDistroSeries: if the distro series name is invalid
+        :raises CannotCopy: if there is a problem copying.
         """
 
 

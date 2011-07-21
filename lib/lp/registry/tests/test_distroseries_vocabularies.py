@@ -66,6 +66,17 @@ class TestDistroSeriesDerivationVocabulary(TestCaseWithFactory):
         observed_distroseries = set(term.value for term in vocabulary)
         self.assertEqual(expected_distroseries, observed_distroseries)
 
+    def test_distribution_with_non_derived_series_no_arch(self):
+        # Only the parents with DistroArchSeries configured in LP are
+        # returned in the DistroSeriesDerivationVocabulary if no other
+        # derived distroseries are present in the distribution.
+        distroseries = self.factory.makeDistroSeries()
+        vocabulary = DistroSeriesDerivationVocabulary(distroseries)
+        another_parent_no_arch = self.factory.makeDistroSeries()
+        observed_distroseries = set(term.value for term in vocabulary)
+
+        self.assertNotIn(another_parent_no_arch, observed_distroseries)
+
     def makeDistroSeriesWithDistroArch(self, *args, **kwargs):
         # Helper method to create a distroseries with a
         # DistroArchSeries.
@@ -89,8 +100,8 @@ class TestDistroSeriesDerivationVocabulary(TestCaseWithFactory):
         self.assertContentEqual(expected_distroseries, observed_distroseries)
 
     def test_distribution_with_derived_series_no_arch(self):
-        # Only the parents with DistroArcheSeries configured in LP are
-        # returned.
+        # Distroseries with no DistroArchSeries can be parents if this
+        # is not the first derivation in the distribution.
         parent_distroseries = self.makeDistroSeriesWithDistroArch()
         another_parent_no_arch = self.factory.makeDistroSeries(
             distribution=parent_distroseries.distribution)
@@ -98,11 +109,9 @@ class TestDistroSeriesDerivationVocabulary(TestCaseWithFactory):
         self.factory.makeDistroSeriesParent(
             derived_series=distroseries, parent_series=parent_distroseries)
         vocabulary = DistroSeriesDerivationVocabulary(distroseries)
-        expected_distroseries = set(parent_distroseries.distribution.series)
-        expected_distroseries.remove(another_parent_no_arch)
         observed_distroseries = set(term.value for term in vocabulary)
 
-        self.assertContentEqual(expected_distroseries, observed_distroseries)
+        self.assertIn(another_parent_no_arch, observed_distroseries)
 
     def test_distribution_with_derived_series_from_multiple_parents(self):
         # Given a distribution with series, one or more of which are derived
