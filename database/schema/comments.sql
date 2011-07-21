@@ -267,7 +267,6 @@ COMMENT ON COLUMN BugTask.sourcepackagename IS 'The name of the sourcepackage in
 COMMENT ON COLUMN BugTask.distribution IS 'The distro of the named sourcepackage.';
 COMMENT ON COLUMN BugTask.status IS 'The general health of the bug, e.g. Accepted, Rejected, etc.';
 COMMENT ON COLUMN BugTask.importance IS 'The importance of fixing the bug.';
-COMMENT ON COLUMN BugTask.priority IS 'Obsolete.';
 COMMENT ON COLUMN BugTask.binarypackagename IS 'The name of the binary package built from the source package. This column may only contain a value if this bug task is linked to a sourcepackage (not a product)';
 COMMENT ON COLUMN BugTask.assignee IS 'The person who has been assigned to fix this bug in this product or (sourcepackagename, distro)';
 COMMENT ON COLUMN BugTask.date_assigned IS 'The date on which the bug in this (sourcepackagename, distro) or product was assigned to someone to fix';
@@ -1625,6 +1624,11 @@ COMMENT ON COLUMN BinaryPackageRelease.debug_package IS 'The corresponding binar
 COMMENT ON COLUMN BinaryPackageRelease.user_defined_fields IS 'A JSON struct containing a sequence of key-value pairs with user defined fields in the control file.';
 COMMENT ON COLUMN BinaryPackageRelease.homepage IS 'Upstream project homepage URL, not checked for validity.';
 
+-- BinaryPackageReleaseContents
+
+COMMENT ON TABLE BinaryPackageReleaseContents IS 'BinaryPackageReleaseContents: Mapping table that maps from BinaryPackageReleases to path names.';
+COMMENT ON COLUMN BinaryPackageReleaseContents.binarypackagerelease IS 'The BinaryPackageRelease that contains the path name.';
+COMMENT ON COLUMN BinaryPackageReleaseContents.binarypackagepath IS 'The path name, via the BinaryPackagePath table.';
 
 -- BinaryPackageFile
 
@@ -1636,6 +1640,11 @@ COMMENT ON COLUMN BinaryPackageFile.filetype IS 'The "type" of the file. E.g. DE
 -- BinaryPackageName
 
 COMMENT ON TABLE BinaryPackageName IS 'BinaryPackageName: A soyuz binary package name.';
+
+-- BinaryPackagePath
+
+COMMENT ON TABLE BinaryPackagePath IS 'BinaryPackagePath: A table of filenames shipped in binary packages.';
+COMMENT ON COLUMN BinaryPackagePath.path IS 'The full path of the file.';
 
 -- Distribution
 
@@ -1667,6 +1676,7 @@ COMMENT ON COLUMN DistroSeries.registrant IS 'The user who registered this distr
 COMMENT ON COLUMN DistroSeries.driver IS 'This is a person or team who can act as a driver for this specific release - note that the distribution drivers can also set goals for any release.';
 COMMENT ON COLUMN DistroSeries.changeslist IS 'The email address (name name) of the changes announcement list for this distroseries. If NULL, no announcement mail will be sent.';
 COMMENT ON COLUMN DistroSeries.defer_translation_imports IS 'Don''t accept PO imports for this release just now.';
+COMMENT ON COLUMN DistroSeries.include_long_descriptions IS 'Include long descriptions in Packages rather than in Translation-en.';
 
 
 -- DistroArchSeries

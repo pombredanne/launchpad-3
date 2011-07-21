@@ -5,6 +5,8 @@ __metaclass__ = type
 
 __all__ = [
     "IPackageCopyJob",
+    "IPackageCopyJobEdit",
+    "IPackageCopyJobSource",
     "IPlainPackageCopyJob",
     "IPlainPackageCopyJobSource",
     "PackageCopyJobType",
@@ -37,8 +39,30 @@ from lp.soyuz.enums import PackageCopyPolicy
 from lp.soyuz.interfaces.archive import IArchive
 
 
-class IPackageCopyJob(Interface):
-    """A job that copies packages between `IArchive`s."""
+class IPackageCopyJobSource(Interface):
+    """Utility for `IPackageCopyJob`-implementing types."""
+
+    def wrap(package_copy_job):
+        """Wrap a `PackageCopyJob` in its concrete implementation type.
+
+        As a special case, `None` produces `None`.
+
+        :param package_copy_job: A `PackageCopyJob`.
+        :return: An `IPackageCopyJob` implementation based on
+            `package_copy_job`, but of the job's specific concrete type
+            (such as `PlainPackageCopyJob`).
+        """
+
+
+class IPackageCopyJobEdit(Interface):
+    """Privileged access to an `IPackageCopyJob`."""
+
+    def extendMetadata(metadata_dict):
+        """Update the job's JSON metadata with items from `metadata_dict`."""
+
+
+class IPackageCopyJobPublic(Interface):
+    """The immutable data on an `IPackageCopyJob`, for normal use."""
 
     id = Int(
         title=_('DB ID'), required=True, readonly=True,
@@ -74,7 +98,17 @@ class IPackageCopyJob(Interface):
         schema=IJob, title=_('The common Job attributes'),
         required=True, readonly=True)
 
-    metadata = Attribute('A dict of data about the job.')
+    component_name = TextLine(
+        title=_("Component override name"), required=False, readonly=True)
+
+    section_name = TextLine(
+        title=_("Section override name"), required=False, readonly=True)
+
+    metadata = Attribute(_("A dict of data about the job."))
+
+
+class IPackageCopyJob(IPackageCopyJobPublic, IPackageCopyJobEdit):
+    """An `IJob` representing a copy of packages between places."""
 
 
 class PackageCopyJobType(DBEnumeratedType):
@@ -92,7 +126,7 @@ class IPlainPackageCopyJobSource(IJobSource):
     def create(package_name, source_archive,
                target_archive, target_distroseries, target_pocket,
                include_binaries=False, package_version=None,
-               copy_policy=PackageCopyPolicy.INSECURE):
+               copy_policy=PackageCopyPolicy.INSECURE, requester=None):
         """Create a new `IPlainPackageCopyJob`.
 
         :param package_name: The name of the source package to copy.
@@ -107,9 +141,10 @@ class IPlainPackageCopyJobSource(IJobSource):
         :param package_version: The version string for the package version
             that is to be copied.
         :param copy_policy: Applicable `PackageCopyPolicy`.
+        :param requester: The user requesting the copy.
         """
 
-    def createMultiple(target_distroseries, copy_tasks,
+    def createMultiple(target_distroseries, copy_tasks, requester,
                        copy_policy=PackageCopyPolicy.INSECURE,
                        include_binaries=False):
         """Create multiple new `IPlainPackageCopyJob`s at once.
@@ -119,6 +154,7 @@ class IPlainPackageCopyJobSource(IJobSource):
         :param copy_tasks: A list of tuples describing the copies to be
             performed: (package name, package version, source archive,
             target archive, target pocket).
+        :param requester: The user requesting the copy.
         :param copy_policy: Applicable `PackageCopyPolicy`.
         :param include_binaries: As in `do_copy`.
         :return: An iterable of `PackageCopyJob` ids.

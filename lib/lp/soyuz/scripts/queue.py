@@ -194,12 +194,10 @@ class QueueAction:
                     term, version = term.strip().split('/')
 
                 # Expand SQLObject results.
-                # XXX 2011-06-13 JeroenVermeulen bug=394645: This should
-                # use getPackageUploads, not getQueueItems, so that it
-                # will also include copy-job uploads.
-                for item in self.distroseries.getQueueItems(
+                queue_items = self.distroseries.getPackageUploads(
                     status=self.queue, name=term, version=version,
-                    exact_match=self.exact_match, pocket=self.pocket):
+                    exact_match=self.exact_match, pocket=self.pocket)
+                for item in queue_items:
                     if item not in self.items:
                         self.items.append(item)
                 self.package_names.append(term)
@@ -237,32 +235,50 @@ class QueueAction:
         self.display(self.__doc__)
         raise QueueActionError(extended_info)
 
+    def _makeTag(self, queue_item):
+        """Compose an upload type tag for `queue_item`.
+
+        A source upload without binaries is tagged as "S-".
+        A binary upload without source is tagged as "-B."
+        An upload with both source and binaries is tagged as "SB".
+        An upload with a package copy job is tagged as "X-".
+        """
+        # XXX cprov 2006-07-31: source_tag and build_tag ('S' & 'B')
+        # are necessary simply to keep the format legaxy.
+        # We may discuss a more reasonable output format later
+        # and avoid extra boring code. The IDRQ.displayname should
+        # do should be enough.
+        if queue_item.package_copy_job is not None:
+            return "X-"
+
+        source_tag = {
+            True: 'S',
+            False: '-',
+        }
+        binary_tag = {
+            True: 'B',
+            False: '-',
+        }
+        return (
+            source_tag[bool(queue_item.contains_source)] +
+            binary_tag[bool(queue_item.contains_build)])
+
     def displayItem(self, queue_item):
         """Display one line summary of the queue item provided."""
-        source_tag = '-'
-        build_tag = '-'
+        tag = self._makeTag(queue_item)
         displayname = queue_item.displayname
         version = queue_item.displayversion
         age = DurationFormatterAPI(
             datetime.now(pytz.timezone('UTC')) -
             queue_item.date_created).approximateduration()
 
-        # XXX cprov 2006-07-31: source_tag and build_tag ('S' & 'B')
-        # are necessary simply to keep the format legaxy.
-        # We may discuss a more reasonable output format later
-        # and avoid extra boring code. The IDRQ.displayname should
-        # do should be enough.
-        if queue_item.contains_source:
-            source_tag = 'S'
         if queue_item.contains_build:
-            build_tag = 'B'
             displayname = "%s (%s)" % (queue_item.displayname,
                                        queue_item.displayarchs)
 
-        self.display("%8d | %s%s | %s | %s | %s" %
-                     (queue_item.id, source_tag, build_tag,
-                      displayname.ljust(20)[:20], version.ljust(20)[:20],
-                      age))
+        self.display("%8d | %s | %s | %s | %s" %
+                     (queue_item.id, tag, displayname.ljust(20)[:20],
+                     version.ljust(20)[:20], age))
 
     def displayInfo(self, queue_item, only=None):
         """Displays additional information about the provided queue item.
@@ -575,11 +591,15 @@ class QueueActionOverride(QueueAction):
         for queue_item in self.items:
             # We delegate to the queue_item itself to override any/all
             # of its sources.
-            if queue_item.contains_source:
+            if queue_item.contains_source or queue_item.package_copy_job:
+                if queue_item.sourcepackagerelease:
+                    old_component = queue_item.sourcepackagerelease.component
+                else:
+                    old_component = getUtility(IComponentSet)[
+                        queue_item.package_copy_job.component_name]
                 queue_item.overrideSource(
                     component, section, [
-                        component,
-                        queue_item.sourcepackagerelease.component])
+                        component, old_component])
                 self.overrides_performed += 1
             self.displayInfo(queue_item)
 
@@ -683,7 +703,7 @@ class CommandRunner:
         # check syntax, abort process if anything gets wrong
         try:
             action = terms[0]
-            arguments = terms[1:]
+            arguments = [unicode(term) for term in terms[1:]]
         except IndexError:
             raise CommandRunnerError('Invalid sentence, use help.')
 

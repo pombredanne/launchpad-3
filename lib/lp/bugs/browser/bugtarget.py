@@ -24,7 +24,9 @@ __all__ = [
 import cgi
 from cStringIO import StringIO
 from datetime import datetime
+from functools import partial
 from operator import itemgetter
+import httplib
 import urllib
 from urlparse import urljoin
 
@@ -71,7 +73,6 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -329,6 +330,17 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         self.extra_data = FileBugData()
 
     def initialize(self):
+        # redirect_ubuntu_filebug is a cached_property.
+        # Access it first just to compute its value. Because it
+        # makes a DB access to get the bug supervisor, it causes
+        # trouble in tests when form validation errors occur. Because the
+        # transaction is doomed, the storm cache is invalidated and accessing
+        # the property will result in a a LostObjectError, because
+        # the created objects disappeared. Not likely a problem in production
+        # since the objects will still be in the DB, but doesn't hurt there
+        # either. It makes for better diagnosis of failing tests.
+        if self.redirect_ubuntu_filebug:
+            pass
         LaunchpadFormView.initialize(self)
         if (not self.redirect_ubuntu_filebug and
             self.extra_data_token is not None and
@@ -473,7 +485,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
                     distribution = self.context.distribution
 
                 try:
-                    distribution.guessPackageNames(packagename)
+                    distribution.guessPublishedSourcePackageName(packagename)
                 except NotFoundError:
                     if distribution.series:
                         # If a distribution doesn't have any series,
@@ -590,13 +602,9 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             # package name, so let the Soyuz API figure it out for us.
             packagename = str(packagename.name)
             try:
-                sourcepackagename, binarypackagename = (
-                    context.guessPackageNames(packagename))
+                sourcepackagename = context.guessPublishedSourcePackageName(
+                    packagename)
             except NotFoundError:
-                # guessPackageNames may raise NotFoundError. It would be
-                # nicer to allow people to indicate a package even if
-                # never published, but the quick fix for now is to note
-                # the issue and move on.
                 notifications.append(
                     "The package %s is not published in %s; the "
                     "bug was targeted only to the distribution."
@@ -608,7 +616,6 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
                         packagename, context.displayname))
             else:
                 context = context.getSourcePackage(sourcepackagename.name)
-                params.binarypackagename = binarypackagename
 
         extra_data = self.extra_data
         if extra_data.extra_description:
@@ -955,7 +962,7 @@ class FileBugAdvancedView(FileBugViewBase):
         filebug_url = canonical_url(
             self.context, rootsite='bugs', view_name='+filebug')
         self.request.response.redirect(
-            filebug_url, status=HTTP_MOVED_PERMANENTLY)
+            filebug_url, status=httplib.MOVED_PERMANENTLY)
 
 
 class FilebugShowSimilarBugsView(FileBugViewBase):
@@ -1190,7 +1197,7 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
         return url
 
 
-class BugTargetBugListingView:
+class BugTargetBugListingView(LaunchpadView):
     """Helper methods for rendering bug listings."""
 
     @property
@@ -1218,7 +1225,7 @@ class BugTargetBugListingView:
         elif IProductSeries(self.context, None):
             milestone_resultset = self.context.product.milestones
         else:
-            raise AssertionError("series_list called with illegal context")
+            raise AssertionError("milestones_list called with illegal context")
         return list(milestone_resultset)
 
     @property
@@ -1230,25 +1237,25 @@ class BugTargetBugListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         series_buglistings = []
         bug_task_set = getUtility(IBugTaskSet)
         series_list = self.series_list
         if not series_list:
             return series_buglistings
-        open_bugs = bug_task_set.open_bugtask_search
-        open_bugs.setTarget(any(*series_list))
         # This would be better as delegation not a case statement.
         if IDistribution(self.context, None):
-            backlink = BugTask.distroseriesID
+            backlink = BugSummary.distroseries_id
         elif IProduct(self.context, None):
-            backlink = BugTask.productseriesID
+            backlink = BugSummary.productseries_id
         elif IDistroSeries(self.context, None):
-            backlink = BugTask.distroseriesID
+            backlink = BugSummary.distroseries_id
         elif IProductSeries(self.context, None):
-            backlink = BugTask.productseriesID
+            backlink = BugSummary.productseries_id
         else:
             raise AssertionError("illegal context %r" % self.context)
-        counts = bug_task_set.countBugs(open_bugs, (backlink,))
+        counts = bug_task_set.countBugs(self.user, series_list, (backlink,))
         for series in series_list:
             series_bug_count = counts.get((series.id,), 0)
             if series_bug_count > 0:
@@ -1263,14 +1270,23 @@ class BugTargetBugListingView:
     @property
     def milestone_buglistings(self):
         """Return a buglisting for each milestone."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import (
+            BugSummary,
+            CombineBugSummaryConstraint,
+            )
         milestone_buglistings = []
         bug_task_set = getUtility(IBugTaskSet)
         milestones = self.milestones_list
         if not milestones:
             return milestone_buglistings
-        open_bugs = bug_task_set.open_bugtask_search
-        open_bugs.setTarget(any(*milestones))
-        counts = bug_task_set.countBugs(open_bugs, (BugTask.milestoneID,))
+        # Note: this isn't totally optimal as a query, but its the simplest to
+        # code; we can iterate if needed to provide one complex context to
+        # countBugs.
+        query_milestones = map(partial(
+            CombineBugSummaryConstraint, self.context), milestones)
+        counts = bug_task_set.countBugs(
+            self.user, query_milestones, (BugSummary.milestone_id,))
         for milestone in milestones:
             milestone_bug_count = counts.get((milestone.id,), 0)
             if milestone_bug_count > 0:

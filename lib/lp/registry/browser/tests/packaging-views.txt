@@ -256,17 +256,16 @@ order.
 
 A packaging link can be deleted if the owner believes it is an error. The
 package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
+(Note that the packaging link for thunderbird in the sample data does not
+have an owner, so we login as a member of distribution owner team
+instead.)
 
     >>> from canonical.launchpad.testing.pages import find_tag_by_id
-    >>> [hoary_package] = [
-    ...     package for series in view.series_batch.batch
-    ...     for package in series.packagings
-    ...     if package.distroseries.name == 'hoary' and
-    ...         package.sourcepackagename.name == 'thunderbird']
-    >>> login_person(hoary_package.sourcepackage.currentrelease.maintainer)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> steve_a = getUtility(IPersonSet).getByName('stevea')
+    >>> login_person(steve_a)
     >>> view = create_initialized_view(
-    ...     product, name='+packages',
-    ...     principal=hoary_package.sourcepackage.currentrelease.maintainer)
+    ...     product, name='+packages', principal=steve_a)
     >>> print_packages(view)
     trunk
     hotter
@@ -280,12 +279,19 @@ package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
     >>> for link in table.findAll('a'):
     ...     if '+remove-packaging' in link['href']:
     ...         print link['href']
+    http://launchpad.dev/ubuntu/grumpy/+source/hot/+remove-packaging
     http://launchpad.dev/ubuntu/hoary/+source/thunderbird/+remove-packaging
+    http://launchpad.dev/ubuntu/hoary/+source/hot/+remove-packaging
 
+    >>> [hoary_package] = [
+    ...     package for series in view.series_batch.batch
+    ...     for package in series.packagings
+    ...     if package.distroseries.name == 'hoary' and
+    ...         package.sourcepackagename.name == 'thunderbird']
     >>> form = {'field.actions.unlink': 'Unlink'}
     >>> unlink_view = create_initialized_view(
     ...     hoary_package.sourcepackage, name='+remove-packaging', form=form,
-    ...     principal=hoary_package.sourcepackage.currentrelease.maintainer)
+    ...     principal=steve_a)
     >>> unlink_view.errors
     []
 

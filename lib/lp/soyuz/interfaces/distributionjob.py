@@ -10,6 +10,8 @@ __all__ = [
     "IDistroSeriesDifferenceJobSource",
     "IInitializeDistroSeriesJob",
     "IInitializeDistroSeriesJobSource",
+    "InitializationCompleted",
+    "InitializationPending",
 ]
 
 from lazr.enum import (
@@ -76,6 +78,28 @@ class DistributionJobType(DBEnumeratedType):
         """)
 
 
+class InitializationPending(Exception):
+    """The initialization of the distroseries has already been scheduled.
+
+    :ivar job: The `InitializeDistroSeriesJob` that's already scheduled.
+    """
+
+    def __init__(self, job):
+        super(InitializationPending, self).__init__()
+        self.job = job
+
+
+class InitializationCompleted(Exception):
+    """The initialization of the distroseries has already been done.
+
+    :ivar job: The `InitializeDistroSeriesJob` that's already scheduled.
+    """
+
+    def __init__(self, job):
+        super(InitializationCompleted, self).__init__()
+        self.job = job
+
+
 class IInitializeDistroSeriesJobSource(IJobSource):
     """An interface for acquiring IInitializeDistroSeriesJobs."""
 
@@ -83,8 +107,10 @@ class IInitializeDistroSeriesJobSource(IJobSource):
                overlay_pockets, overlay_components):
         """Create a new initialization job for a distroseries."""
 
-    def getPendingJobsForDistroseries(distroseries):
-        """Retrieve pending initialization jobs for a distroseries.
+    def get(distroseries):
+        """Retrieve the initialization job for a distroseries, if any.
+
+        :return: `None` or an `IInitializeDistroSeriesJob`.
         """
 
 

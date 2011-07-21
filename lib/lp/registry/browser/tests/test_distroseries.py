@@ -5,11 +5,13 @@
 
 __metaclass__ = type
 
+from datetime import timedelta
 import difflib
 import re
 from textwrap import TextWrapper
 
 from BeautifulSoup import BeautifulSoup
+from lazr.restful.interfaces import IJSONRequestCache
 from lxml import html
 import soupmatchers
 from storm.zope.interfaces import IResultSet
@@ -30,7 +32,11 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.testing.pages import find_tag_by_id
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
@@ -47,6 +53,7 @@ from lp.registry.browser.distroseries import (
     IGNORED,
     NON_IGNORED,
     RESOLVED,
+    seriesToVocab,
     )
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
@@ -59,6 +66,7 @@ from lp.services.features import (
     getFeatureFlag,
     )
 from lp.services.features.testing import FeatureFixture
+from lp.services.utils import utc_now
 from lp.soyuz.enums import (
     ArchivePermissionType,
     PackagePublishingStatus,
@@ -77,8 +85,11 @@ from lp.soyuz.model import distroseriesdifferencejob
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.packagecopyjob import PlainPackageCopyJob
 from lp.testing import (
+    ANONYMOUS,
     anonymous_logged_in,
     celebrity_logged_in,
+    login,
+    login_celebrity,
     login_person,
     person_logged_in,
     StormStatementRecorder,
@@ -87,6 +98,7 @@ from lp.testing import (
     )
 from lp.testing.fakemethod import FakeMethod
 from lp.testing.matchers import (
+    DocTestMatches,
     EqualsIgnoringWhitespace,
     HasQueryCount,
     )
@@ -328,6 +340,28 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
         self.assertTrue(derived_series.isInitializing())
         self.assertThat(html_content, portlet_display)
 
+    def test_differences_portlet_initialization_failed(self):
+        # The difference portlet displays a failure message if initialization
+        # for the series has failed.
+        set_derived_series_ui_feature_flag(self)
+        derived_series = self.factory.makeDistroSeries()
+        parent_series = self.factory.makeDistroSeries()
+        self.simple_user = self.factory.makePerson()
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
+        job = job_source.create(derived_series, [parent_series.id])
+        job.start()
+        job.fail()
+        portlet_display = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Derived series', 'h2',
+                text='Series initialization has failed'),
+            )
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                derived_series, '+index', principal=self.simple_user)
+            html_content = view()
+        self.assertThat(html_content, portlet_display)
+
     def assertInitSeriesLinkPresent(self, series, person):
         self._assertInitSeriesLink(series, person, True)
 
@@ -336,7 +370,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
 
     def _assertInitSeriesLink(self, series, person, present=True):
         # Helper method to check the presence/absence of the link to
-        # +iniseries.
+        # +initseries.
         if person == 'admin':
             person = getUtility(ILaunchpadCelebrities).admin.teamowner
 
@@ -373,6 +407,17 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
 
         self.assertInitSeriesLinkPresent(series, 'admin')
 
+    def test_differences_init_link_series_driver(self):
+        # The link to +initseries is displayed to the distroseries's
+        # drivers.
+        set_derived_series_ui_feature_flag(self)
+        distroseries = self.factory.makeDistroSeries()
+        driver = self.factory.makePerson()
+        with celebrity_logged_in('admin'):
+            distroseries.driver = driver
+
+        self.assertInitSeriesLinkPresent(distroseries, driver)
+
     def test_differences_init_link_not_admin(self):
         # The link to +initseries is not displayed to not admin users if the
         # feature flag is enabled.
@@ -403,6 +448,65 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
         job_source.create(series, [parent_series.id])
 
         self.assertInitSeriesLinkNotPresent(series, 'admin')
+
+
+class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    @property
+    def job_source(self):
+        return getUtility(IInitializeDistroSeriesJobSource)
+
+    def test_initialization_failed_can_retry(self):
+        # When initialization has failed and the user has the ability to retry
+        # it prompts the user to try again.
+        set_derived_series_ui_feature_flag(self)
+        series = self.factory.makeDistroSeries()
+        parent = self.factory.makeDistroSeries()
+        job = self.job_source.create(series, [parent.id])
+        job.start()
+        job.fail()
+        with person_logged_in(series.owner):
+            view = create_initialized_view(series, '+portlet-derivation')
+            html_content = view()
+        self.assertThat(
+            extract_text(html_content), DocTestMatches(
+                "Series initialization has failed\n"
+                "You can attempt initialization again."))
+
+    def test_initialization_failed_cannot_retry(self):
+        # When initialization has failed and the user does not have the
+        # ability to retry it suggests contacting someone who can.
+        set_derived_series_ui_feature_flag(self)
+        series = self.factory.makeDistroSeries()
+        parent = self.factory.makeDistroSeries()
+        job = self.job_source.create(series, [parent.id])
+        job.start()
+        job.fail()
+        with person_logged_in(series.distribution.owner):
+            series.distribution.owner.displayname = u"Bob Individual"
+        with anonymous_logged_in():
+            view = create_initialized_view(series, '+portlet-derivation')
+            html_content = view()
+        self.assertThat(
+            extract_text(html_content), DocTestMatches(
+                "Series initialization has failed\n"
+                "You cannot attempt initialization again, "
+                "but Bob Individual may be able to help."))
+        # When the owner is a team the message differs slightly from when the
+        # owner is an individual.
+        with person_logged_in(series.distribution.owner):
+            series.distribution.owner = self.factory.makeTeam(
+                displayname=u"Team Teamy Team Team")
+        with anonymous_logged_in():
+            view = create_initialized_view(series, '+portlet-derivation')
+            html_content = view()
+        self.assertThat(
+            extract_text(html_content), DocTestMatches(
+                "Series initialization has failed\n"
+                "You cannot attempt initialization again, but a "
+                "member of Team Teamy Team Team may be able to help."))
 
 
 class TestMilestoneBatchNavigatorAttribute(TestCaseWithFactory):
@@ -452,13 +556,12 @@ class TestDistroSeriesAddView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_submit(self):
-        # When creating a new DistroSeries via DistroSeriesAddView, the title
-        # is set to the same as the displayname (title is, in any case,
-        # deprecated), the description is left empty, and previous_series is
-        # None (DistroSeriesInitializeView takes care of setting that).
-        user = self.factory.makePerson()
-        distribution = self.factory.makeDistribution(owner=user)
+    def setUp(self):
+        super(TestDistroSeriesAddView, self).setUp()
+        self.user = self.factory.makePerson()
+        self.distribution = self.factory.makeDistribution(owner=self.user)
+
+    def createNewDistroseries(self):
         form = {
             "field.name": u"polished",
             "field.version": u"12.04",
@@ -466,17 +569,41 @@ class TestDistroSeriesAddView(TestCaseWithFactory):
             "field.summary": u"Even The Register likes it.",
             "field.actions.create": u"Add Series",
             }
-        with person_logged_in(user):
-            create_initialized_view(distribution, "+addseries", form=form)
-        distroseries = distribution.getSeries(u"polished")
+        with person_logged_in(self.user):
+            create_initialized_view(self.distribution, "+addseries",
+                                    form=form)
+        distroseries = self.distribution.getSeries(u"polished")
+        return distroseries
+
+    def assertCreated(self, distroseries):
         self.assertEqual(u"polished", distroseries.name)
         self.assertEqual(u"12.04", distroseries.version)
         self.assertEqual(u"Polished Polecat", distroseries.displayname)
         self.assertEqual(u"Polished Polecat", distroseries.title)
         self.assertEqual(u"Even The Register likes it.", distroseries.summary)
         self.assertEqual(u"", distroseries.description)
+        self.assertEqual(self.user, distroseries.owner)
+
+    def test_plain_submit(self):
+        # When creating a new DistroSeries via DistroSeriesAddView, the title
+        # is set to the same as the displayname (title is, in any case,
+        # deprecated), the description is left empty, and previous_series is
+        # None (DistroSeriesInitializeView takes care of setting that).
+        distroseries = self.createNewDistroseries()
+        self.assertCreated(distroseries)
         self.assertIs(None, distroseries.previous_series)
-        self.assertEqual(user, distroseries.owner)
+
+    def test_submit_sets_previous_series(self):
+        # Creating a new series when one already exists should set the
+        # previous_series.
+        old_series = self.factory.makeDistroSeries(self.distribution,
+                                                   version='11.10')
+        older_series = self.factory.makeDistroSeries(self.distribution,
+                                                     version='11.04')
+        old_time = utc_now() - timedelta(days=5)
+        removeSecurityProxy(old_series).datereleased = old_time
+        distroseries = self.createNewDistroseries()
+        self.assertEqual(old_series, distroseries.previous_series)
 
 
 class TestDistroSeriesInitializeView(TestCaseWithFactory):
@@ -533,28 +660,63 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
                 u"javascript-disabled",
                 message.get("class").split())
 
-    def test_rebuilding_allowed(self):
-        # If the distro has no initialized series, rebuilding is allowed.
+    def test_seriesToVocab(self):
+        distroseries = self.factory.makeDistroSeries()
+        formatted_dict = seriesToVocab(distroseries)
+
+        self.assertEquals(
+            ['api_uri', 'title', 'value'],
+            sorted(formatted_dict.keys()))
+
+    def test_is_first_derivation(self):
+        # If the distro has no initialized series, this initialization
+        # is a 'first_derivation'.
         distroseries = self.factory.makeDistroSeries()
         self.factory.makeDistroSeries(
             distribution=distroseries.distribution)
         view = create_initialized_view(distroseries, "+initseries")
-        self.assertTrue(view.rebuilding_allowed)
+        cache = IJSONRequestCache(view.request).objects
 
-    def test_rebuilding_not_allowed(self):
-        # If the distro has an initialized series, no rebuilding is allowed.
-        distroseries = self.factory.makeDistroSeries()
+        self.assertTrue(cache['is_first_derivation'])
+
+    def test_not_is_first_derivation(self):
+        # If the distro has an initialized series, this initialization
+        # is not a 'first_derivation'. The previous_series and the
+        # previous_series' parents are in LP.cache to be used by
+        # Javascript on the +initseries page.
+        previous_series = self.factory.makeDistroSeries()
+        previous_parent1 = self.factory.makeDistroSeriesParent(
+            derived_series=previous_series).parent_series
+        previous_parent2 = self.factory.makeDistroSeriesParent(
+            derived_series=previous_series).parent_series
+        distroseries = self.factory.makeDistroSeries(
+            previous_series=previous_series)
         another_distroseries = self.factory.makeDistroSeries(
             distribution=distroseries.distribution)
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=another_distroseries)
         view = create_initialized_view(distroseries, "+initseries")
-        self.assertFalse(view.rebuilding_allowed)
+        cache = IJSONRequestCache(view.request).objects
+
+        self.assertFalse(cache['is_first_derivation'])
+        self.assertContentEqual(
+            seriesToVocab(previous_series),
+            cache['previous_series'])
+        self.assertEqual(
+            2,
+            len(cache['previous_parents']))
+        self.assertContentEqual(
+            seriesToVocab(previous_parent1),
+            cache['previous_parents'][0])
+        self.assertContentEqual(
+            seriesToVocab(previous_parent2),
+            cache['previous_parents'][1])
 
     def test_form_hidden_when_distroseries_is_initialized(self):
         # The form is hidden when the feature flag is set but the series has
         # already been initialized.
-        distroseries = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries(
+            previous_series=self.factory.makeDistroSeries())
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=distroseries, archive=distroseries.main_archive)
         view = create_initialized_view(distroseries, "+initseries")
@@ -587,6 +749,84 @@ class TestDistroSeriesInitializeView(TestCaseWithFactory):
             self.assertThat(
                 message.text, EqualsIgnoringWhitespace(
                     u"This series is already being initialized."))
+
+    def test_form_hidden_when_previous_series_none(self):
+        # If the distribution has an initialized series and the
+        # distroseries' previous_series is None: the form is hidden and
+        # the page contains an error message.
+        distroseries = self.factory.makeDistroSeries(
+            previous_series=None)
+        another_distroseries = self.factory.makeDistroSeries(
+            distribution=distroseries.distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=another_distroseries)
+        view = create_initialized_view(distroseries, "+initseries")
+        flags = {u"soyuz.derived_series_ui.enabled": u"true"}
+        with FeatureFixture(flags):
+            root = html.fromstring(view())
+            self.assertEqual(
+                [], root.cssselect("#initseries-form-container"))
+            # Instead an explanatory message is shown.
+            [message] = root.cssselect("p.error.message")
+            self.assertThat(
+                message.text, EqualsIgnoringWhitespace(
+                    u'Unable to initialize series: the distribution '
+                    u'already has initialized series and this distroseries '
+                    u'has no previous series.'))
+
+
+class TestDistroSeriesInitializeViewAccess(TestCaseWithFactory):
+    """Test access to IDS.+initseries."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        super(TestDistroSeriesInitializeViewAccess,
+              self).setUp('foo.bar@canonical.com')
+        set_derived_series_ui_feature_flag(self)
+
+    def test_initseries_access_anon(self):
+        # Anonymous users cannot access +initseries.
+        distroseries = self.factory.makeDistroSeries()
+        view = create_initialized_view(distroseries, "+initseries")
+        login(ANONYMOUS)
+
+        self.assertEqual(
+            False,
+            check_permission('launchpad.Edit', view))
+
+    def test_initseries_access_simpleuser(self):
+        # Unprivileged users cannot access +initseries.
+        distroseries = self.factory.makeDistroSeries()
+        view = create_initialized_view(distroseries, "+initseries")
+        login_person(self.factory.makePerson())
+
+        self.assertEqual(
+            False,
+            check_permission('launchpad.Edit', view))
+
+    def test_initseries_access_admin(self):
+        # Users with lp.Admin can access +initseries.
+        distroseries = self.factory.makeDistroSeries()
+        view = create_initialized_view(distroseries, "+initseries")
+        login_celebrity('admin')
+
+        self.assertEqual(
+            True,
+            check_permission('launchpad.Edit', view))
+
+    def test_initseries_access_driver(self):
+        # Distroseries drivers can access +initseries.
+        distroseries = self.factory.makeDistroSeries()
+        view = create_initialized_view(distroseries, "+initseries")
+        driver = self.factory.makePerson()
+        with celebrity_logged_in('admin'):
+            distroseries.driver = driver
+        login_person(driver)
+
+        self.assertEqual(
+            True,
+            check_permission('launchpad.Edit', view))
 
 
 class DistroSeriesDifferenceMixin:
@@ -1631,15 +1871,16 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
             "updating and synchronizing&hellip;", view.describeJobs(dsd))
 
     def _syncAndGetView(self, derived_series, person, sync_differences,
-                        difference_type=None, view_name='+localpackagediffs'):
+                        difference_type=None, view_name='+localpackagediffs',
+                        query_string=''):
         # A helper to get the POST'ed sync view.
         with person_logged_in(person):
             view = create_initialized_view(
                 derived_series, view_name,
                 method='POST', form={
                     'field.selected_differences': sync_differences,
-                    'field.actions.sync': 'Sync',
-                    })
+                    'field.actions.sync': 'Sync'},
+                query_string=query_string)
             return view
 
     def test_sync_error_nothing_selected(self):
@@ -1821,6 +2062,22 @@ class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
         pcj = PlainPackageCopyJob.getActiveJobs(
             derived_series.main_archive).one()
         self.assertEqual(PackagePublishingPocket.UPDATES, pcj.target_pocket)
+
+    def test_diff_view_action_url(self):
+        # The difference pages have a fixed action_url so that the sync
+        # form self-posts.
+        derived_series, parent_series, unused, diff_id = self._setUpDSD(
+            'my-src-name')
+        person = self.factory.makePerson()
+        set_derived_series_sync_feature_flag(self)
+        with person_logged_in(person):
+            view = create_initialized_view(
+                derived_series, '+localpackagediffs', method='GET',
+                query_string='start=1&batch=1')
+
+        self.assertEquals(
+            'http://127.0.0.1?start=1&batch=1',
+            view.action_url)
 
 
 class TestDistroSeriesNeedsPackagesView(TestCaseWithFactory):

@@ -40,13 +40,7 @@ from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
-from lp.soyuz.model.distroarchseries import DistroArchSeries
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory,
-    SourcePackagePublishingHistory,
-    )
 from lp.soyuz.model.section import Section
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 class IOverride(Interface):
@@ -130,7 +124,7 @@ class BinaryOverride(Override):
 
     def __repr__(self):
         return ("<BinaryOverride at %x component=%r section=%r "
-            "binary_package_name=%r distro_arch_series=%r priority=%r>" % 
+            "binary_package_name=%r distro_arch_series=%r priority=%r>" %
             (id(self), self.component, self.section, self.binary_package_name,
              self.distro_arch_series, self.priority))
 
@@ -187,7 +181,7 @@ class BaseOverridePolicy:
 
 class FromExistingOverridePolicy(BaseOverridePolicy):
     """Override policy that only searches for existing publications.
-    
+
     Override policy that returns the SourcePackageName, component and
     section for the latest published source publication, or the
     BinaryPackageName, DistroArchSeries, component, section and priority
@@ -195,10 +189,15 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
     """
 
     def calculateSourceOverrides(self, archive, distroseries, pocket, spns):
-        store = IStore(SourcePackagePublishingHistory)
+        # Avoid circular imports.
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+
         def eager_load(rows):
             bulk.load(Component, (row[1] for row in rows))
             bulk.load(Section, (row[2] for row in rows))
+
+        store = IStore(SourcePackagePublishingHistory)
         already_published = DecoratedResultSet(
             store.find(
                 (SourcePackageRelease.sourcepackagenameID,
@@ -226,14 +225,22 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
                                  binaries):
-        store = IStore(BinaryPackagePublishingHistory)
+        # Avoid circular imports.
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
+
         def eager_load(rows):
             bulk.load(Component, (row[2] for row in rows))
             bulk.load(Section, (row[3] for row in rows))
+
+        store = IStore(BinaryPackagePublishingHistory)
         expanded = calculate_target_das(distroseries, binaries)
-        candidates = (
+
+        candidates = [
             make_package_condition(archive, das, bpn)
-            for bpn, das in expanded)
+            for bpn, das in expanded if das is not None]
+        if len(candidates) == 0:
+            return []
         already_published = DecoratedResultSet(
             store.find(
                 (BinaryPackageRelease.binarypackagenameID,
@@ -266,11 +273,11 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
 
 class UnknownOverridePolicy(BaseOverridePolicy):
     """Override policy that returns defaults.
-    
+
     Override policy that assumes everything passed in doesn't exist, so
     returns the defaults.
     """
-    
+
     def calculateSourceOverrides(self, archive, distroseries, pocket,
                                  sources):
         default_component = archive.default_component or getUtility(
@@ -291,9 +298,9 @@ class UnknownOverridePolicy(BaseOverridePolicy):
 class UbuntuOverridePolicy(FromExistingOverridePolicy,
                            UnknownOverridePolicy):
     """Override policy for Ubuntu.
-    
-    An override policy that incorporates both the from existing policy 
-    and the unknown policy.
+
+    An override policy that incorporates both the existing policy and the
+    unknown policy.
     """
 
     def calculateSourceOverrides(self, archive, distroseries, pocket,
@@ -314,9 +321,12 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
         total = set(binaries)
         overrides = FromExistingOverridePolicy.calculateBinaryOverrides(
             self, archive, distroseries, pocket, binaries)
-        existing = set((
-            overide.binary_package_name, overide.distro_arch_series.architecturetag)
-                for overide in overrides)
+        existing = set(
+            (
+                overide.binary_package_name,
+                overide.distro_arch_series.architecturetag,
+            )
+            for overide in overrides)
         missing = total.difference(existing)
         if missing:
             unknown = UnknownOverridePolicy.calculateBinaryOverrides(
@@ -340,6 +350,8 @@ def calculate_target_das(distroseries, binaries):
 
 
 def make_package_condition(archive, das, bpn):
+    # Avoid circular imports.
+    from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
     return And(
         BinaryPackagePublishingHistory.archiveID == archive.id,
         BinaryPackagePublishingHistory.distroarchseriesID == das.id,
@@ -347,9 +359,13 @@ def make_package_condition(archive, das, bpn):
 
 
 def id_resolver(lookups):
+    # Avoid circular imports.
+    from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+
     def _resolve(row):
         store = IStore(SourcePackagePublishingHistory)
         return tuple(
             (value if cls is None else store.get(cls, value))
             for value, cls in zip(row, lookups))
+
     return _resolve

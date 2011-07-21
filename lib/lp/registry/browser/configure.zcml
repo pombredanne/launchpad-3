@@ -2016,7 +2016,7 @@
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="lp.registry.browser.distroseries.DistroSeriesInitializeView"
         facet="overview"
-        permission="launchpad.Admin"
+        permission="launchpad.Edit"
         template="../templates/distroseries-initialize.pt">
     </browser:page>
 

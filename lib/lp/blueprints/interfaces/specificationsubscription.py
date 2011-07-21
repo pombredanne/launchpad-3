@@ -11,6 +11,13 @@ __all__ = [
     'ISpecificationSubscription',
     ]
 
+from lazr.restful.declarations import (
+    call_with,
+    export_as_webservice_entry,
+    export_read_operation,
+    operation_for_version,
+    REQUEST_USER,
+    )
 from zope.interface import (
     Attribute,
     Interface,
@@ -26,6 +33,8 @@ from lp.services.fields import PublicPersonChoice
 
 class ISpecificationSubscription(Interface):
     """A subscription for a person to a specification."""
+
+    export_as_webservice_entry(publish_web_link=False, as_of='devel')
 
     id = Int(
         title=_('ID'), required=True, readonly=True)
@@ -47,3 +56,8 @@ class ISpecificationSubscription(Interface):
         'attends meetings about this feature.'),
         default=False)
 
+    @call_with(user=REQUEST_USER)
+    @export_read_operation()
+    @operation_for_version("devel")
+    def canBeUnsubscribedByUser(user):
+        """Can the user unsubscribe the subscriber from the specification?"""

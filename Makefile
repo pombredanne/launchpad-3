@@ -18,7 +18,6 @@ LPCONFIG?=development
 
 ICING=lib/canonical/launchpad/icing
 LP_BUILT_JS_ROOT=${ICING}/build
-LAZR_BUILT_JS_ROOT=lazr-js/build
 
 ifeq ($(LPCONFIG), development)
 JS_BUILD := raw
@@ -26,11 +25,16 @@ else
 JS_BUILD := min
 endif
 
+define JS_LP_PATHS
+lib -path 'lib/lp/*/javascript/*' \
+! -path '*/tests/*' ! -path '*/testing/*' \
+! -path 'lib/lp/services/*'
+endef
+
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
-JS_LAZR := $(LAZR_BUILT_JS_ROOT)/lazr.js
 JS_OTHER := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
-JS_LP := $(shell find lib/lp/*/javascript ! -path '*/tests/*' -name '*.js' ! -name '.*.js' )
-JS_ALL := $(JS_YUI) $(JS_LAZR) $(JS_OTHER) $(JS_LP)
+JS_LP := $(shell find $(JS_LP_PATHS) -name '*.js' ! -name '.*.js')
+JS_ALL := $(JS_YUI) $(JS_OTHER) $(JS_LP)
 JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 
 MINS_TO_SHUTDOWN=15
@@ -40,7 +44,7 @@ CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 BZR_VERSION_INFO = bzr-version-info.py
 
 APIDOC_DIR = lib/canonical/launchpad/apidoc
-WADL_TEMPLATE = $(APIDOC_DIR).tmp/wadl-$(LPCONFIG)-%(version)s.xml
+APIDOC_TMPDIR = $(APIDOC_DIR).tmp/
 API_INDEX = $(APIDOC_DIR)/index.html
 
 # Do not add bin/buildout to this list.
@@ -54,11 +58,10 @@ BUILDOUT_BIN = \
     bin/fl-credential-ctl bin/fl-install-demo bin/fl-monitor-ctl \
     bin/fl-record bin/fl-run-bench bin/fl-run-test bin/googletestservice \
     bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
-    bin/harness bin/iharness bin/ipy bin/jsbuild bin/jslint bin/jssize \
-    bin/jstest bin/killservice bin/kill-test-services bin/lint.sh \
-    bin/lp-windmill bin/retest bin/run bin/sprite-util \
-    bin/start_librarian bin/stxdocs bin/tags bin/test bin/tracereport \
-    bin/twistd bin/update-download-cache bin/windmill
+    bin/harness bin/iharness bin/ipy bin/jsbuild \
+    bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
+    bin/run bin/sprite-util bin/start_librarian bin/stxdocs bin/tags \
+    bin/test bin/tracereport bin/twistd bin/update-download-cache
 
 BUILDOUT_TEMPLATES = buildout-templates/_pythonpath.py.in
 
@@ -79,8 +82,8 @@ $(API_INDEX): $(BZR_VERSION_INFO) $(PY)
 	rm -rf $(APIDOC_DIR) $(APIDOC_DIR).tmp
 	mkdir -p $(APIDOC_DIR).tmp
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py \
-	    --force "$(WADL_TEMPLATE)"
-	mv $(APIDOC_DIR).tmp $(APIDOC_DIR)
+	    --force "$(APIDOC_TMPDIR)"
+	mv $(APIDOC_TMPDIR) $(APIDOC_DIR)
 
 apidoc: compile $(API_INDEX)
 
@@ -101,22 +104,6 @@ check: clean build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS)
-
-jscheck: build
-	# Run all JavaScript integration tests.  The test runner takes care of
-	# setting up the test environment.
-	@echo
-	@echo "Running the JavaScript integration test suite"
-	@echo
-	bin/test $(VERBOSITY) $(TESTOPTS) --layer=WindmillLayer
-
-jscheck_functest: build
-    # Run the old functest Windmill integration tests.  The test runner
-    # takes care of setting up the test environment.
-	@echo
-	@echo "Running Windmill funtest integration test suite"
-	@echo
-	bin/jstest
 
 check_mailman: build
 	# Run all tests, including the Mailman integration
@@ -152,6 +139,18 @@ inplace: build logs clean_logs
 
 build: compile apidoc jsbuild css_combine sprite_image
 
+# LP_SOURCEDEPS_PATH should point to the sourcecode directory, but we
+# want the parent directory where the download-cache and eggs directory
+# are. We re-use the variable that is using for the rocketfuel-get script.
+download-cache:
+ifdef LP_SOURCEDEPS_PATH
+	utilities/link-external-sourcecode $(LP_SOURCEDEPS_PATH)/..
+else
+	@echo "Missing ./download-cache."
+	@echo "Developers: please run utilities/link-external-sourcecode."
+	@exit 1
+endif
+
 css_combine: sprite_css bin/combine-css
 	${SHHH} bin/combine-css
 
@@ -167,43 +166,30 @@ ${ICING}/icon-sprites.positioning ${ICING}/icon-sprites: bin/sprite-util \
 		${ICING}/sprite.css.in
 	${SHHH} bin/sprite-util create-image
 
-# We absolutely do not want to include the lazr.testing module and
-# its jsTestDriver test harness modifications in the lazr.js and
-# launchpad.js roll-up files.  They fiddle with built-in functions!
-# See Bug 482340.
-jsbuild_lazr: bin/jsbuild
+jsbuild_widget_css: bin/jsbuild
 	${SHHH} bin/jsbuild \
-	    --builddir $(LAZR_BUILT_JS_ROOT) \
-	    --exclude testing/ --filetype $(JS_BUILD) \
-	    --copy-yui-to $(LAZR_BUILT_JS_ROOT)/yui
+	    --srcdir lib/lp/app/javascript \
+	    --builddir $(LP_BUILT_JS_ROOT)
 
-$(JS_YUI) $(JS_LAZR): jsbuild_lazr
+$(JS_LP): jsbuild_widget_css
 
 $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
-	cat $^ | $(PY) -m jsmin > $@
+	cat $^ | $(PY) -m lp.scripts.utilities.js.jsmin > $@
 else
-	cat $^ > $@
+	for jsname in $^ ; do \
+	    echo "/* $$jsname */" >> $@ ;\
+	    cat $$jsname >> $@ ;\
+	done
 endif
 
-jsbuild: $(JS_OUT)
+jsbuild: $(PY) $(JS_OUT)
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
 	# deployment we create this ourselves.
 	mkdir eggs
-
-# LP_SOURCEDEPS_PATH should point to the sourcecode directory, but we
-# want the parent directory where the download-cache and eggs directory
-# are. We re-use the variable that is using for the rocketfuel-get script.
-download-cache:
-ifdef LP_SOURCEDEPS_PATH
-	utilities/link-external-sourcecode $(LP_SOURCEDEPS_PATH)/..
-else
-	@echo "Missing ./download-cache."
-	@echo "Developers: please run utilities/link-external-sourcecode."
-	@exit 1
-endif
+	mkdir yui
 
 buildonce_eggs: $(PY)
 	find eggs -name '*.pyc' -exec rm {} \;
@@ -373,6 +359,7 @@ clean_buildout:
 	$(RM) .installed.cfg
 	$(RM) -r build
 	$(RM) _pythonpath.py
+	$(RM) -r yui/*
 
 clean_logs:
 	$(RM) logs/thread*.request
@@ -445,7 +432,9 @@ copy-certificates:
 copy-apache-config:
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
-	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' configs/development/local-launchpad-apache > /etc/apache2/sites-available/local-launchpad
+	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' \
+		configs/development/local-launchpad-apache > \
+		/etc/apache2/sites-available/local-launchpad
 	cp configs/development/local-vostok-apache \
 		/etc/apache2/sites-available/local-vostok
 	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
@@ -484,6 +473,6 @@ pydoctor:
 	test_build test_inplace pagetests check schema default \
 	launchpad.pot pull_branches scan_branches sync_branches	\
 	reload-apache hosted_branches check_mailman check_config \
-	jsbuild jsbuild_lazr clean_js clean_buildout buildonce_eggs \
+	jsbuild jsbuild_widget_css clean_js clean_buildout buildonce_eggs \
 	build_eggs sprite_css sprite_image css_combine compile \
-	check_schema pydoctor clean_logs 
+	check_schema pydoctor clean_logs

@@ -24,8 +24,11 @@ __all__ = [
 import datetime
 from itertools import chain
 from operator import attrgetter
+import re
 
 from lazr.enum import BaseItem
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 import pytz
 from sqlobject import (
     ForeignKey,
@@ -45,6 +48,7 @@ from storm.expr import (
     Or,
     Select,
     SQL,
+    Sum,
     )
 from storm.info import ClassAlias
 from storm.store import (
@@ -52,11 +56,12 @@ from storm.store import (
     Store,
     )
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import (
     alsoProvides,
     implements,
+    providedBy,
     )
-from zope.interface.interfaces import IMethod
 from zope.security.proxy import (
     isinstance as zope_isinstance,
     removeSecurityProxy,
@@ -263,7 +268,7 @@ def get_related_bugtasks_search_params(user, context, **kwargs):
         raise IllegalRelatedBugTasksParams(
             ('Cannot search for related tasks to \'%s\', at least one '
              'of these parameter has to be empty: %s'
-                %(context.name, ", ".join(relevant_fields))))
+                % (context.name, ", ".join(relevant_fields))))
     return search_params
 
 
@@ -814,6 +819,51 @@ class BugTask(SQLBase, BugTaskMixin):
             raise ValueError('Unknown debbugs severity "%s".' % severity)
         return self.importance
 
+    # START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
+    _parse_launchpad_names = re.compile(r"[a-z0-9][a-z0-9\+\.\-]+").findall
+
+    def _checkAutoconfirmFeatureFlag(self):
+        """Does a feature flag enable automatic switching of our bugtasks?"""
+        # This method should be ripped out if we determine that we like
+        # this behavior for all projects.
+        # This is a bit of a feature flag hack, but has been discussed as
+        # a reasonable way to deploy this quickly.
+        pillar = self.pillar
+        if IDistribution.providedBy(pillar):
+            flag_name = 'bugs.autoconfirm.enabled_distribution_names'
+        else:
+            assert IProduct.providedBy(pillar), 'unexpected pillar'
+            flag_name = 'bugs.autoconfirm.enabled_product_names'
+        enabled = features.getFeatureFlag(flag_name)
+        if enabled is None:
+            return False
+        if (enabled.strip() != '*' and
+            pillar.name not in self._parse_launchpad_names(enabled)):
+            # We are not generically enabled ('*') and our pillar's name
+            # is not explicitly enabled.
+            return False
+        return True
+    # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
+
+    def maybeConfirm(self):
+        """Maybe confirm this bugtask.
+        Only call this if the bug._shouldConfirmBugtasks().
+        This adds the further constraint that the bugtask needs to be NEW,
+        and not imported from an external bug tracker.
+        """
+        if (self.status == BugTaskStatus.NEW
+            and self.bugwatch is None
+            # START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
+            and self._checkAutoconfirmFeatureFlag()
+            # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
+            ):
+            user = getUtility(ILaunchpadCelebrities).janitor
+            bugtask_before_modification = Snapshot(
+                self, providing=providedBy(self))
+            self.transitionToStatus(BugTaskStatus.CONFIRMED, user)
+            notify(ObjectModifiedEvent(
+                self, bugtask_before_modification, ['status'], user=user))
+
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
         celebrities = getUtility(ILaunchpadCelebrities)
@@ -1079,6 +1129,12 @@ class BugTask(SQLBase, BugTaskMixin):
         if self.target != target_before_change:
             target_before_change.recalculateBugHeatCache()
             self.target.recalculateBugHeatCache()
+            # START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
+            # We also should see if we ought to auto-transition to the
+            # CONFIRMED status.
+            if self.bug.shouldConfirmBugtasks():
+                self.maybeConfirm()
+            # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 
     def updateTargetNameCache(self, newtarget=None):
         """See `IBugTask`."""
@@ -1791,7 +1847,6 @@ class BugTaskSet:
                 "BugTaskSearchParam.exclude_conjoined cannot be True if "
                 "BugTaskSearchParam.milestone is not set")
 
-
         if params.project:
             # Prevent circular import problems.
             from lp.registry.model.product import Product
@@ -1894,7 +1949,6 @@ class BugTaskSet:
                 'StructuralSubscription.subscriber = %s'
                 % sqlvalues(params.structural_subscriber))
             has_duplicate_results = True
-
 
         # Remove bugtasks from deactivated products, if necessary.
         # We don't have to do this if
@@ -2525,13 +2579,63 @@ class BugTaskSet:
         """See `IBugTaskSet`."""
         return self._search(BugTask.bugID, [], None, params).result_set
 
-    def countBugs(self, params, group_on):
+    def countBugs(self, user, contexts, group_on):
         """See `IBugTaskSet`."""
-        resultset = self._search(
-            group_on + (SQL("COUNT(Distinct BugTask.bug)"),),
-            [], None, params).result_set
-        # We group on the related field:
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        conditions = []
+        # Open bug statuses
+        conditions.append(
+            BugSummary.status.is_in(UNRESOLVED_BUGTASK_STATUSES))
+        # BugSummary does not include duplicates so no need to exclude.
+        context_conditions = []
+        for context in contexts:
+            condition = removeSecurityProxy(
+                context.getBugSummaryContextWhereClause())
+            if condition is not False:
+                context_conditions.append(condition)
+        if not context_conditions:
+            return {}
+        conditions.append(Or(*context_conditions))
+        # bugsummary by design requires either grouping by tag or excluding
+        # non-null tags.
+        # This is an awkward way of saying
+        # if BugSummary.tag not in group_on:
+        # - see bug 799602
+        group_on_tag = False
+        for column in group_on:
+            if column is BugSummary.tag:
+                group_on_tag = True
+        if not group_on_tag:
+            conditions.append(BugSummary.tag == None)
+        else:
+            conditions.append(BugSummary.tag != None)
+        store = IStore(BugSummary)
+        admin_team = getUtility(ILaunchpadCelebrities).admin
+        if user is not None and not user.inTeam(admin_team):
+            # admins get to see every bug, everyone else only sees bugs
+            # viewable by them-or-their-teams.
+            store = store.with_(SQL(
+                "teams AS ("
+                "SELECT team from TeamParticipation WHERE person=?)",
+                (user.id,)))
+        # Note that because admins can see every bug regardless of
+        # subscription they will see rather inflated counts. Admins get to
+        # deal.
+        if user is None:
+            conditions.append(BugSummary.viewed_by_id == None)
+        elif not user.inTeam(admin_team):
+            conditions.append(
+                Or(
+                    BugSummary.viewed_by_id == None,
+                    BugSummary.viewed_by_id.is_in(
+                        SQL("SELECT team FROM teams"))
+                    ))
+        sum_count = Sum(BugSummary.count)
+        resultset = store.find(group_on + (sum_count,), *conditions)
         resultset.group_by(*group_on)
+        resultset.having(sum_count != 0)
+        # Ensure we have no order clauses.
         resultset.order_by()
         result = {}
         for row in resultset:
@@ -3142,7 +3246,7 @@ class BugTaskSet:
         distro_series_ids = set()
         product_ids = set()
         product_series_ids = set()
-        
+
         # Gather all the ids that might have milestones to preload for the
         # for the milestone vocabulary
         for task in bugtasks:
@@ -3152,11 +3256,11 @@ class BugTaskSet:
             product_ids.add(task.productID)
             product_series_ids.add(task.productseriesID)
 
-        distro_ids.discard(None) 
-        distro_series_ids.discard(None) 
-        product_ids.discard(None) 
-        product_series_ids.discard(None) 
-        
+        distro_ids.discard(None)
+        distro_series_ids.discard(None)
+        product_ids.discard(None)
+        product_series_ids.discard(None)
+
         milestones = store.find(
             Milestone,
             Or(
@@ -3174,7 +3278,5 @@ class BugTaskSet:
             Product, Product.id.is_in(product_ids)))
         list(store.find(
             ProductSeries, ProductSeries.id.is_in(product_series_ids)))
-            
-        return milestones
 
-        
+        return milestones

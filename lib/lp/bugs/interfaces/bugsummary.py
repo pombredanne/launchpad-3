@@ -4,7 +4,10 @@
 """BugSummary interfaces."""
 
 __metaclass__ = type
-__all__ = ['IBugSummary']
+__all__ = [
+    'IBugSummary',
+    'IBugSummaryDimension',
+    ]
 
 
 from zope.interface import Interface
@@ -70,3 +73,16 @@ class IBugSummary(Interface):
 
     has_patch = Bool(readonly=True)
     fixed_upstream = Bool(readonly=True)
+
+
+class IBugSummaryDimension(Interface):
+    """Interface for dimensions used in the BugSummary database class."""
+
+    def getBugSummaryContextWhereClause():
+        """Return a storm clause to filter bugsummaries on this context.
+
+        This method is intentended for in-appserver use only.
+        
+        :return: Either a storm clause to filter bugsummaries, or False if
+            there cannot be any matching bug summaries.
+        """

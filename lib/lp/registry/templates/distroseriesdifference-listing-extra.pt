@@ -20,16 +20,19 @@
     </metal:macro-parent>
   </metal:macros>
 
-  <tal:show_options condition="view/show_blacklist_options">
-    <div class="blacklist-options" style="float:right">
-      <dl>
-        <dt>Blacklisted:</dt>
-        <dd>
-          <form><tal:replace replace="structure view/widgets/blacklist_options" /></form>
-        </dd>
-      </dl>
+  <div
+    tal:attributes="class view/blacklist_options_css_class"
+    style="float:right">
+    <dl>
+      <dt>Ignored:</dt>
+      <dd>
+        <form>
+          <tal:replace
+            replace="structure view/widgets/blacklist_options" />
+        </form>
+      </dd>
+    </dl>
   </div>
-  </tal:show_options>
 
   <dl>
     <dt>Binary descriptions:</dt>
@@ -44,7 +47,7 @@
            tal:attributes="href context/base_distro_source_package_release/fmt:url"
            tal:content="context/base_version"/></dd>
     <dd tal:condition="not: context/base_version">
-      Unknown
+      Unknown, so no diffs are available
     </dd>
     <tal:package-diffs-info condition="view/display_package_diffs_info">
     <dt

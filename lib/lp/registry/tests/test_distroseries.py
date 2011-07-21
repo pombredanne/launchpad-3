@@ -5,6 +5,9 @@
 
 __metaclass__ = type
 
+from datetime import (
+    timedelta,
+)
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -20,6 +23,7 @@ from canonical.testing.layers import (
 from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.utils import utc_now
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -255,6 +259,54 @@ class TestDistroSeries(TestCaseWithFactory):
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=distroseries, archive=distroseries.main_archive)
         self.assertTrue(distroseries.isInitialized())
+
+    def test_getInitializationJob(self):
+        # getInitializationJob() returns the most recent
+        # `IInitializeDistroSeriesJob` for the given series.
+        distroseries = self.factory.makeDistroSeries()
+        parent_distroseries = self.factory.makeDistroSeries()
+        self.assertIs(None, distroseries.getInitializationJob())
+        job_source = getUtility(IInitializeDistroSeriesJobSource)
+        job = job_source.create(distroseries, [parent_distroseries.id])
+        self.assertEqual(job, distroseries.getInitializationJob())
+
+    def test_priorReleasedSeries(self):
+        # Make sure that previousReleasedSeries returns all series with a
+        # release date less than the contextual series,
+        # ordered by descending date.
+        distro = self.factory.makeDistribution()
+        # Make an unreleased series.
+        self.factory.makeDistroSeries(distribution=distro)
+        ds1 = self.factory.makeDistroSeries(distribution=distro)
+        ds2 = self.factory.makeDistroSeries(distribution=distro)
+        ds3 = self.factory.makeDistroSeries(distribution=distro)
+        ds4 = self.factory.makeDistroSeries(distribution=distro)
+
+        now = utc_now()
+        older = now - timedelta(days=5)
+        oldest = now - timedelta(days=10)
+        newer = now + timedelta(days=15)
+        removeSecurityProxy(ds1).datereleased = oldest
+        removeSecurityProxy(ds2).datereleased = older
+        removeSecurityProxy(ds3).datereleased = now
+        removeSecurityProxy(ds4).datereleased = newer
+
+        # The data set up here is 5 distroseries. where one is unreleased,
+        # ds1 and ds2 are released and in the past and ds4 is released but
+        # in the future compared to ds3.
+
+        prior = ds3.priorReleasedSeries()
+        self.assertEqual(
+            [ds2, ds1],
+            list(prior))
+
+    def test_getDifferenceComments_gets_DistroSeriesDifferenceComments(self):
+        distroseries = self.factory.makeDistroSeries()
+        dsd = self.factory.makeDistroSeriesDifference(
+            derived_series=distroseries)
+        comment = self.factory.makeDistroSeriesDifferenceComment(dsd)
+        self.assertContentEqual(
+            [comment], distroseries.getDifferenceComments())
 
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):

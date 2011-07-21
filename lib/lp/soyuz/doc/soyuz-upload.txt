@@ -454,57 +454,9 @@ launchpad.Edit on the records:
     >>> distro = getUtility(IDistributionSet).getByName('ubuntutest')
     >>> series = distro['breezy-autotest']
 
-Let's test IHasQueueItems.getQueueItems:
+We use getPackageUploads to inspect the current NEW queue and accept items.
 
-    >>> new_items = series.getQueueItems(PackageUploadStatus.NEW)
-    >>> new_items.count()
-    2
-
-Querying by status and a name term:
-
-    >>> items = series.getQueueItems(PackageUploadStatus.NEW, name='dr')
-    >>> items.count()
-    1
-
-    >>> items[0].sources[0].sourcepackagerelease.name
-    u'drdsl'
-    >>> items[0].sources[0].sourcepackagerelease.version
-    u'1.2.0-0ubuntu1'
-
-Querying by status, name and version terms:
-
-    >>> items = series.getQueueItems(PackageUploadStatus.NEW,
-    ...                               name='dr', version='1.2')
-    >>> items.count()
-    1
-
-    >>> items = series.getQueueItems(PackageUploadStatus.NEW,
-    ...                               name='dr', version='1.5')
-    >>> items.count()
-    0
-
-Using exact_match argument:
-
-As you can see exact_match arguments affects both, name & version:
-
-# XXX cprov 2006-01-25 bug=29642:
-# Andrew suggest we can split the exact_match
-# attribute in two, as exact_name & exact_version, which might be
-# a good idea, since it produce a more controllable behaviour.
-
-    >>> items = series.getQueueItems(PackageUploadStatus.NEW,
-    ...                      name='dr', version='1.2', exact_match=True)
-    >>> items.count()
-    0
-
-    >>> items = series.getQueueItems(PackageUploadStatus.NEW,
-    ...          name='drdsl', version='1.2.0-0ubuntu1', exact_match=True)
-    >>> items.count()
-    1
-
-Using getQueueItem to inspect current NEW queue and accept them.
-
-    >>> queue_items = series.getQueueItems(PackageUploadStatus.NEW)
+    >>> queue_items = series.getPackageUploads(status=PackageUploadStatus.NEW)
     >>> L = []
     >>> for queue_item in queue_items:
     ...      try:
@@ -565,7 +517,7 @@ Invoke Publisher script against the 'ubuntutest' distribution:
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    DEBUG   Initializing zopeless.
+    DEBUG Enabled by DEFAULT section
     DEBUG     Distribution: ubuntutest
     ...
     DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz from library
@@ -663,7 +615,7 @@ already marked as published in the database and, if the files are
 already on disk, verify the contents are as expected.
 
     >>> print stderr
-    DEBUG   Initializing zopeless.
+    DEBUG Enabled by DEFAULT section
     DEBUG     Distribution: ubuntutest
     ...
     DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz is already in pool with the same content.

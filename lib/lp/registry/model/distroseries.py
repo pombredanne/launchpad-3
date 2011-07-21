@@ -80,11 +80,11 @@ from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
     )
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     get_bug_tags,
-    get_bug_tags_open_count,
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -100,6 +100,9 @@ from lp.registry.interfaces.distroseries import (
     )
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
+    )
+from lp.registry.interfaces.distroseriesdifferencecomment import (
+    IDistroSeriesDifferenceCommentSource,
     )
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import (
@@ -208,8 +211,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    StructuralSubscriptionTargetMixin, HasBugHeatMixin):
     """A particular series of a distribution."""
     implements(
-        ICanPublishPackages, IDistroSeries, IHasBugHeat, IHasBuildRecords,
-        IHasQueueItems, IServiceUsage)
+        ICanPublishPackages, IBugSummaryDimension, IDistroSeries, IHasBugHeat,
+        IHasBuildRecords, IHasQueueItems, IServiceUsage)
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']
@@ -685,22 +688,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=["Language.englishname"])
         return result
 
-    @cachedproperty
-    def prior_series(self):
+    def priorReleasedSeries(self):
         """See `IDistroSeries`."""
-        # This property is cached because it is used intensely inside
-        # sourcepackage.py; avoiding regeneration reduces a lot of
-        # count(*) queries.
         datereleased = self.datereleased
         # if this one is unreleased, use the last released one
         if not datereleased:
-            datereleased = 'NOW'
-        results = DistroSeries.select('''
-                distribution = %s AND
-                datereleased < %s
-                ''' % sqlvalues(self.distribution.id, datereleased),
-                orderBy=['-datereleased'])
-        return list(results)
+            datereleased = UTC_NOW
+        return getUtility(IDistroSeriesSet).priorReleasedSeries(
+            self.distribution, datereleased)
 
     @property
     def bug_reporting_guidelines(self):
@@ -840,18 +835,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getUsedBugTags(self):
         """See `IHasBugs`."""
         return get_bug_tags("BugTask.distroseries = %s" % sqlvalues(self))
-
-    def getUsedBugTagsWithOpenCounts(self, user, tag_limit=0,
-                                     include_tags=None):
-        """See IBugTarget."""
-        # Circular fail.
-        from lp.bugs.model.bugsummary import BugSummary
-        return get_bug_tags_open_count(
-            And(
-                BugSummary.distroseries_id == self.id,
-                BugSummary.sourcepackagename_id == None
-                ),
-            user, tag_limit=tag_limit, include_tags=include_tags)
 
     @property
     def has_any_specifications(self):
@@ -1642,164 +1625,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         return PackageUploadQueue(self, state)
 
-    def getPackageUploads(self, created_since_date=None, status=None,
+    def getPackageUploads(self, status=None, created_since_date=None,
                           archive=None, pocket=None, custom_type=None,
                           name=None, version=None, exact_match=False):
         """See `IDistroSeries`."""
         return getUtility(IPackageUploadSet).getAll(
             self, created_since_date, status, archive, pocket, custom_type,
             name=name, version=version, exact_match=exact_match)
-
-    def getQueueItems(self, status=None, name=None, version=None,
-                      exact_match=False, pocket=None, archive=None):
-        """See `IDistroSeries`."""
-        # XXX Julian 2009-07-02 bug=394645
-        # This method is partially deprecated by getPackageUploads(),
-        # see the bug for more info.
-
-        default_clauses = ["""
-            packageupload.distroseries = %s""" % sqlvalues(self)]
-
-        # Restrict result to given archives.
-        archives = self.distribution.getArchiveIDList(archive)
-
-        default_clauses.append("""
-        packageupload.archive IN %s""" % sqlvalues(archives))
-
-        # restrict result to a given pocket
-        if pocket is not None:
-            if not isinstance(pocket, list):
-                pocket = [pocket]
-            default_clauses.append("""
-            packageupload.pocket IN %s""" % sqlvalues(pocket))
-
-        # XXX cprov 2006-06-06:
-        # We may reorganise this code, creating some new methods provided
-        # by IPackageUploadSet, as: getByStatus and getByName.
-        if not status:
-            assert not version and not exact_match
-            return PackageUpload.select(
-                " AND ".join(default_clauses), orderBy=['-id'])
-
-        if not isinstance(status, list):
-            status = [status]
-
-        default_clauses.append("""
-        packageupload.status IN %s""" % sqlvalues(status))
-
-        if not name:
-            assert not version and not exact_match
-            return PackageUpload.select(
-                " AND ".join(default_clauses), orderBy=['-id'])
-
-        source_where_clauses = default_clauses + ["""
-            packageupload.id = packageuploadsource.packageupload
-            """]
-
-        build_where_clauses = default_clauses + ["""
-            packageupload.id = packageuploadbuild.packageupload
-            """]
-
-        custom_where_clauses = default_clauses + ["""
-            packageupload.id = packageuploadcustom.packageupload
-            """]
-
-        # modify source clause to lookup on sourcepackagerelease
-        source_where_clauses.append("""
-            packageuploadsource.sourcepackagerelease =
-            sourcepackagerelease.id""")
-        source_where_clauses.append(
-            "sourcepackagerelease.sourcepackagename = sourcepackagename.id")
-
-        # modify build clause to lookup on binarypackagerelease
-        build_where_clauses.append(
-            "packageuploadbuild.build = binarypackagerelease.build")
-        build_where_clauses.append(
-            "binarypackagerelease.binarypackagename = binarypackagename.id")
-
-        # modify custom clause to lookup on libraryfilealias
-        custom_where_clauses.append(
-            "packageuploadcustom.libraryfilealias = "
-            "libraryfilealias.id")
-
-        # attempt to exact or similar names in builds, sources and custom
-        if exact_match:
-            source_where_clauses.append(
-                "sourcepackagename.name = '%s'" % name)
-            build_where_clauses.append("binarypackagename.name = '%s'" % name)
-            custom_where_clauses.append(
-                "libraryfilealias.filename='%s'" % name)
-        else:
-            source_where_clauses.append(
-                "sourcepackagename.name LIKE '%%' || %s || '%%'"
-                % quote_like(name))
-
-            build_where_clauses.append(
-                "binarypackagename.name LIKE '%%' || %s || '%%'"
-                % quote_like(name))
-
-            custom_where_clauses.append(
-                "libraryfilealias.filename LIKE '%%' || %s || '%%'"
-                % quote_like(name))
-
-        # attempt for given version argument, except by custom
-        if version:
-            # exact or similar matches
-            if exact_match:
-                source_where_clauses.append(
-                    "sourcepackagerelease.version = '%s'" % version)
-                build_where_clauses.append(
-                    "binarypackagerelease.version = '%s'" % version)
-            else:
-                source_where_clauses.append(
-                    "sourcepackagerelease.version LIKE '%%' || %s || '%%'"
-                    % quote_like(version))
-                build_where_clauses.append(
-                    "binarypackagerelease.version LIKE '%%' || %s || '%%'"
-                    % quote_like(version))
-
-        source_clauseTables = [
-            'PackageUploadSource',
-            'SourcePackageRelease',
-            'SourcePackageName',
-            ]
-        source_orderBy = ['-sourcepackagerelease.dateuploaded']
-
-        build_clauseTables = [
-            'PackageUploadBuild',
-            'BinaryPackageRelease',
-            'BinaryPackageName',
-            ]
-        build_orderBy = ['-binarypackagerelease.datecreated']
-
-        custom_clauseTables = [
-            'PackageUploadCustom',
-            'LibraryFileAlias',
-            ]
-        custom_orderBy = ['-LibraryFileAlias.id']
-
-        source_where_clause = " AND ".join(source_where_clauses)
-        source_results = PackageUpload.select(
-            source_where_clause, clauseTables=source_clauseTables,
-            orderBy=source_orderBy)
-
-        build_where_clause = " AND ".join(build_where_clauses)
-        build_results = PackageUpload.select(
-            build_where_clause, clauseTables=build_clauseTables,
-            orderBy=build_orderBy)
-
-        custom_where_clause = " AND ".join(custom_where_clauses)
-        custom_results = PackageUpload.select(
-            custom_where_clause, clauseTables=custom_clauseTables,
-            orderBy=custom_orderBy)
-
-        # XXX StuartBishop 2010-03-11 bug=537335
-        # This method is attempting to return ordered results but
-        # failing. It is also referencing non-existing documentation
-        # in the docstring - this method does not exist in the IDistroSeries
-        # interface.
-
-        return source_results.union(build_results.union(custom_results))
 
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
@@ -1815,9 +1647,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             "not-too-distant future. For now, you probably meant to file "
             "the bug on the distribution instead.")
 
-    def _getBugTaskContextClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
-        return 'BugTask.distroseries = %s' % sqlvalues(self)
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return And(
+                BugSummary.distroseries_id == self.id,
+                BugSummary.sourcepackagename_id == None
+                )
 
     def copyTranslationsFromParent(self, transaction, logger=None):
         """See `IDistroSeries`."""
@@ -1986,7 +1823,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         from lp.registry.interfaces.distroseriesparent import (
             IDistroSeriesParentSet,
             )
-        dsps = getUtility(IDistroSeriesParentSet).getByDerivedSeries(self)
+        dsp_set = getUtility(IDistroSeriesParentSet)
+        dsps = dsp_set.getByDerivedSeries(self).order_by('ordering')
         return [dsp.parent_series for dsp in dsps]
 
     def getDerivedSeries(self):
@@ -2026,7 +1864,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             IDistroSeriesDifferenceSource).getForDistroSeries(
                 self,
                 difference_type=difference_type,
-                source_package_name_filter=source_package_name_filter,
+                name_filter=source_package_name_filter,
                 status=status,
                 child_version_higher=child_version_higher)
 
@@ -2036,14 +1874,23 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def isInitializing(self):
         """See `IDistroSeries`."""
-        job_source = getUtility(IInitializeDistroSeriesJobSource)
-        pending_jobs = job_source.getPendingJobsForDistroseries(self)
-        return not pending_jobs.is_empty()
+        job = self.getInitializationJob()
+        return job is not None and job.is_pending
 
     def isInitialized(self):
         """See `IDistroSeries`."""
         published = self.main_archive.getPublishedSources(distroseries=self)
         return not published.is_empty()
+
+    def getInitializationJob(self):
+        """See `IDistroSeries`."""
+        return getUtility(IInitializeDistroSeriesJobSource).get(self)
+
+    def getDifferenceComments(self, since=None, source_package_name=None):
+        """See `IDistroSeries`."""
+        comment_source = getUtility(IDistroSeriesDifferenceCommentSource)
+        return comment_source.getForDistroSeries(
+            self, since=since, source_package_name=source_package_name)
 
 
 class DistroSeriesSet:
@@ -2171,4 +2018,17 @@ class DistroSeriesSet:
         if orderBy is not None:
             return DistroSeries.select(where_clause, orderBy=orderBy)
         else:
+
             return DistroSeries.select(where_clause)
+
+    def priorReleasedSeries(self, distribution, prior_to_date):
+            """See `IDistroSeriesSet`."""
+            store = Store.of(distribution)
+            results = store.find(
+                DistroSeries,
+                DistroSeries.distributionID == distribution.id,
+                DistroSeries.datereleased < prior_to_date,
+                DistroSeries.datereleased != None
+            ).order_by(Desc(DistroSeries.datereleased))
+
+            return results

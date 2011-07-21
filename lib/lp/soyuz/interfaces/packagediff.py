@@ -15,7 +15,7 @@ __all__ = [
 
 import httplib
 
-from lazr.restful.declarations import webservice_error
+from lazr.restful.declarations import error_status
 from zope.interface import (
     Attribute,
     Interface,
@@ -31,9 +31,9 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.soyuz.enums import PackageDiffStatus
 
 
+@error_status(httplib.BAD_REQUEST)
 class PackageDiffRequestException(Exception):
     """Base class for package diff request errors."""
-    webservice_error(httplib.BAD_REQUEST)
 
 
 class PackageDiffAlreadyRequested(PackageDiffRequestException):

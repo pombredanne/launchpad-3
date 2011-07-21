@@ -40,11 +40,13 @@
                 Y.lp.code.branchmergeproposal.diff.connect_diff_links();
             }, window);
             Y.on('domready', function() {
+                var bug = { self_link: LP.cache.context.bug_link,
+                            web_link: LP.cache.context.web_link };
                 LP.cache.comment_context = LP.cache.bug;
                 Y.lp.comments.hide.setup_hide_controls();
                 var sl = new Y.lp.bugs.subscribers_list.BugSubscribersLoader({
                     container_box: '#other-bug-subscribers',
-                    bug: LP.cache.bug,
+                    bug: bug,
                     subscribers_details_view:
                         '/+bug-portlet-subscribers-details',
                     subscribe_someone_else_link: '.menu-link-addsubscriber'
@@ -71,6 +73,16 @@
     </metal:block>
 
     <metal:side fill-slot="side" tal:define="context_menu context/menu:context">
+      <div id="involvement" class="portlet">
+        <ul class="involvement">
+          <li class="single">
+            <a tal:attributes="href string:${context/target/fmt:url}/+filebug" 
+               class="sprite bugs">
+              Report a bug
+            </a>
+          </li>
+        </ul>
+      </div>
       <div tal:replace="structure context/bug/@@+portlet-privacy" />
       <div tal:replace="structure context/bug/@@+portlet-actions" />
       <div tal:replace="structure context/bug/@@+portlet-duplicates" />
@@ -364,24 +376,6 @@
           </div>
         </tal:comment-list-truncated>
       </tal:comments>
-
-      <div class="related">
-        <h2>What next?</h2>
-        <ul>
-          <li>
-            <a
-                tal:attributes="href string:${context/target/fmt:url}/+filebug"
-                >Report another bug</a>
-            about <tal:context replace="context/target/displayname" />
-          </li>
-          <li>
-            <a
-                tal:attributes="href string:${context/target/fmt:url}/+bugs"
-                >List open bugs</a>
-            for <tal:context replace="context/target/displayname" />
-          </li>
-        </ul>
-      </div>
 
       </div><!-- class="top-portlet" -->
         </div><!-- id="nonportlets"-->

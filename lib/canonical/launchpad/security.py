@@ -175,6 +175,7 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageReleaseDownloadCount,
     )
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJob
 from lp.soyuz.interfaces.packageset import (
     IPackageset,
     IPackagesetSet,
@@ -1036,10 +1037,8 @@ class EditProductSeries(EditByOwnersOrAdmins):
             # The user is the owner of the product, or the release manager.
             return True
         # Rosetta experts need to be able to upload translations.
-        # Bazaar experts need to be able to change the linked branches.
         # Registry admins are just special.
         if (user.in_registry_experts or
-            user.in_bazaar_experts or
             user.in_rosetta_experts):
             return True
         return EditByOwnersOrAdmins.checkAuthenticated(self, user)
@@ -1145,7 +1144,7 @@ class OnlyBazaarExpertsAndAdmins(AuthorizationBase):
     experts."""
 
     def checkAuthenticated(self, user):
-        return user.in_admin or user.in_bazaar_experts
+        return user.in_admin
 
 
 class OnlyVcsImportsAndAdmins(AuthorizationBase):
@@ -1189,7 +1188,7 @@ class EditCodeImportJobWorkflow(OnlyVcsImportsAndAdmins):
 class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     """Control who can edit the object view of a CodeImportMachine.
 
-    Access is restricted to members of ~bazaar-experts and Launchpad admins.
+    Access is restricted to Launchpad admins.
     """
     permission = 'launchpad.Edit'
     usedfor = ICodeImportMachine
@@ -1198,13 +1197,13 @@ class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
 class AdminSourcePackageRecipeBuilds(AuthorizationBase):
     """Control who can edit SourcePackageRecipeBuilds.
 
-    Access is restricted to members of ~bazaar-experts and Buildd Admins.
+    Access is restricted to Buildd Admins.
     """
     permission = 'launchpad.Admin'
     usedfor = ISourcePackageRecipeBuild
 
     def checkAuthenticated(self, user):
-        return user.in_bazaar_experts or user.in_buildd_admin
+        return user.in_buildd_admin
 
 
 class EditBranchMergeQueue(AuthorizationBase):
@@ -1448,7 +1447,22 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
         permissions = permission_set.componentsForQueueAdmin(
             self.obj.distroseries.distribution.all_distro_archives,
             user.person)
-        return permissions.count() > 0
+        return not permissions.is_empty()
+
+
+class EditPlainPackageCopyJob(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IPlainPackageCopyJob
+
+    def checkAuthenticated(self, user):
+        archive = self.obj.target_archive
+        if archive.is_ppa:
+            return archive.checkArchivePermission(user.person)
+
+        permission_set = getUtility(IArchivePermissionSet)
+        permissions = permission_set.componentsForQueueAdmin(
+            archive, user.person)
+        return not permissions.is_empty()
 
 
 class EditPackageUpload(AdminByAdminsTeam):
@@ -1822,7 +1836,7 @@ class AccessBranch(AuthorizationBase):
 
 
 class EditBranch(AuthorizationBase):
-    """The owner, bazaar experts or admins can edit branches."""
+    """The owner or admins can edit branches."""
     permission = 'launchpad.Edit'
     usedfor = IBranch
 
@@ -1870,13 +1884,12 @@ def can_upload_linked_package(person_role, branch):
 
 
 class AdminBranch(AuthorizationBase):
-    """The bazaar experts or admins can administer branches."""
+    """The admins can administer branches."""
     permission = 'launchpad.Admin'
     usedfor = IBranch
 
     def checkAuthenticated(self, user):
-        return (user.in_admin or
-                user.in_bazaar_experts)
+        return user.in_admin
 
 
 class AdminDistroSeriesTranslations(AuthorizationBase):

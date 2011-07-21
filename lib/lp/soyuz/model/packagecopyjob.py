@@ -6,9 +6,10 @@ __metaclass__ = type
 __all__ = [
     "PackageCopyJob",
     "PlainPackageCopyJob",
-]
+    ]
 
 from lazr.delegates import delegates
+import logging
 import simplejson
 from storm.locals import (
     And,
@@ -17,12 +18,12 @@ from storm.locals import (
     Unicode,
     )
 import transaction
-
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import sqlvalues
@@ -38,12 +39,12 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.registry.model.distroseries import DistroSeries
 from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.stormbase import StormBase
 from lp.services.job.interfaces.job import (
     JobStatus,
@@ -62,6 +63,7 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.copypolicy import ICopyPolicy
 from lp.soyuz.interfaces.packagecopyjob import (
     IPackageCopyJob,
+    IPackageCopyJobSource,
     IPlainPackageCopyJob,
     IPlainPackageCopyJobSource,
     PackageCopyJobType,
@@ -76,6 +78,7 @@ class PackageCopyJob(StormBase):
     """Base class for package copying jobs."""
 
     implements(IPackageCopyJob)
+    classProvides(IPackageCopyJobSource)
 
     __storm_table__ = 'PackageCopyJob'
 
@@ -100,10 +103,40 @@ class PackageCopyJob(StormBase):
 
     _json_data = Unicode('json_data')
 
+    # Derived concrete classes.  The entire class gets one dict for
+    # this; it's not meant to be on an instance.
+    concrete_classes = {}
+
+    @classmethod
+    def registerConcreteClass(cls, new_class):
+        """Register a concrete `IPackageCopyJob`-implementing class."""
+        assert new_class.class_job_type not in cls.concrete_classes, (
+            "Class %s is already registered." % new_class)
+        cls.concrete_classes[new_class.class_job_type] = new_class
+
+    @classmethod
+    def wrap(cls, package_copy_job):
+        """See `IPackageCopyJobSource`."""
+        if package_copy_job is None:
+            return None
+        # Read job_type so You Don't Have To.  If any other code reads
+        # job_type, that's probably a sign that the interfaces need more
+        # work.
+        job_type = removeSecurityProxy(package_copy_job).job_type
+        concrete_class = cls.concrete_classes[job_type]
+        return concrete_class(package_copy_job)
+
+    @classmethod
+    def getByID(cls, pcj_id):
+        """See `IPackageCopyJobSource`."""
+        return cls.wrap(IStore(PackageCopyJob).get(PackageCopyJob, pcj_id))
+
     def __init__(self, source_archive, target_archive, target_distroseries,
-                 job_type, metadata, package_name=None, copy_policy=None):
+                 job_type, metadata, requester, package_name=None,
+                 copy_policy=None):
         super(PackageCopyJob, self).__init__()
         self.job = Job()
+        self.job.requester = requester
         self.job_type = job_type
         self.source_archive = source_archive
         self.target_archive = target_archive
@@ -130,6 +163,16 @@ class PackageCopyJob(StormBase):
         existing = self.metadata
         existing.update(metadata_dict)
         self._json_data = self.serializeMetadata(existing)
+
+    @property
+    def component_name(self):
+        """See `IPackageCopyJob`."""
+        return self.metadata.get("component_override")
+
+    @property
+    def section_name(self):
+        """See `IPackageCopyJob`."""
+        return self.metadata.get("section_override")
 
 
 class PackageCopyJobDerived(BaseRunnableJob):
@@ -210,9 +253,10 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def create(cls, package_name, source_archive,
                target_archive, target_distroseries, target_pocket,
                include_binaries=False, package_version=None,
-               copy_policy=PackageCopyPolicy.INSECURE):
+               copy_policy=PackageCopyPolicy.INSECURE, requester=None):
         """See `IPlainPackageCopyJobSource`."""
         assert package_version is not None, "No package version specified."
+        assert requester is not None, "No requester specified."
         metadata = cls._makeMetadata(
             target_pocket, package_version, include_binaries)
         job = PackageCopyJob(
@@ -222,7 +266,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             target_distroseries=target_distroseries,
             package_name=package_name,
             copy_policy=copy_policy,
-            metadata=metadata)
+            metadata=metadata,
+            requester=requester)
         IMasterStore(PackageCopyJob).add(job)
         return cls(job)
 
@@ -252,12 +297,12 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         return format_string % sqlvalues(*data)
 
     @classmethod
-    def createMultiple(cls, target_distroseries, copy_tasks,
+    def createMultiple(cls, target_distroseries, copy_tasks, requester,
                        copy_policy=PackageCopyPolicy.INSECURE,
                        include_binaries=False):
         """See `IPlainPackageCopyJobSource`."""
         store = IMasterStore(Job)
-        job_ids = Job.createMultiple(store, len(copy_tasks))
+        job_ids = Job.createMultiple(store, len(copy_tasks), requester)
         job_contents = [
             cls._composeJobInsertionTuple(
                 target_distroseries, copy_policy, include_binaries, job_id,
@@ -331,22 +376,18 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
     def addSourceOverride(self, override):
         """Add an `ISourceOverride` to the metadata."""
-        component = ""
-        section = ""
+        metadata_changes = {}
         if override.component is not None:
-            component = override.component.name
+            metadata_changes['component_override'] = override.component.name
         if override.section is not None:
-            section = override.section.name
-        metadata_dict = dict(
-            component_override=component,
-            section_override=section)
-        self.context.extendMetadata(metadata_dict)
+            metadata_changes['section_override'] = override.section.name
+        self.context.extendMetadata(metadata_changes)
 
     def getSourceOverride(self):
         """Fetch an `ISourceOverride` from the metadata."""
         name = self.package_name
-        component_name = self.metadata.get("component_override")
-        section_name = self.metadata.get("section_override")
+        component_name = self.component_name
+        section_name = self.section_name
         source_package_name = getUtility(ISourcePackageNameSet)[name]
         try:
             component = getUtility(IComponentSet)[component_name]
@@ -399,13 +440,35 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             self._createPackageUpload(unapproved=True)
             raise SuspendJobException
 
+    def _rejectPackageUpload(self):
+        # Helper to find and reject any associated PackageUpload.
+        pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            [self.context.id]).any()
+        if pu is not None:
+            pu.setRejected()
+
     def run(self):
         """See `IRunnableJob`."""
         try:
             self.attemptCopy()
         except CannotCopy, e:
-            self.abort()
+            logger = logging.getLogger()
+            logger.info("Job:\n%s\nraised CannotCopy:\n%s" % (self, e))
+            self.abort()  # Abort the txn.
             self.reportFailure(e)
+
+            # If there is an associated PackageUpload we need to reject it,
+            # else it will sit in ACCEPTED forever.
+            self._rejectPackageUpload()
+
+            # Rely on the job runner to do the final commit.  Note that
+            # we're not raising any exceptions here, failure of a copy is
+            # not a failure of the job.
+        except SuspendJobException:
+            raise
+        except:
+            self._rejectPackageUpload()
+            raise
 
     def attemptCopy(self):
         """Attempt to perform the copy.
@@ -431,8 +494,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         # We don't need to check any policies, but the admin may have
         # set overrides which we will get from the job's metadata.
         pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
-            [self.context.id])
-        if not pu.any():
+            [self.context.id]).any()
+        if pu is None:
             self._checkPolicies(source_name)
 
         # The package is free to go right in, so just copy it now.
@@ -442,8 +505,15 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         do_copy(
             sources=[source_package], archive=self.target_archive,
             series=self.target_distroseries, pocket=self.target_pocket,
-            include_binaries=self.include_binaries, check_permissions=False,
-            overrides=[override], send_email=send_email)
+            include_binaries=self.include_binaries, check_permissions=True,
+            person=self.requester, overrides=[override],
+            send_email=send_email)
+
+        if pu is not None:
+            # A PackageUpload will only exist if the copy job had to be
+            # held in the queue because of policy/ancestry checks.  If one
+            # does exist we need to make sure it gets moved to DONE.
+            pu.setDone()
 
     def abort(self):
         """Abort work."""
@@ -454,8 +524,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
         target_series = self.target_distroseries
         candidates = dsd_source.getForDistroSeries(
-            distro_series=target_series,
-            source_package_name_filter=self.package_name)
+            distro_series=target_series, name_filter=self.package_name)
 
         # The job doesn't know what distroseries a given package is
         # coming from, and the version number in the DSD may have
@@ -509,3 +578,6 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
     def getPolicyImplementation(self):
         """Return the `ICopyPolicy` applicable to this job."""
         return ICopyPolicy(self.copy_policy)
+
+
+PackageCopyJob.registerConcreteClass(PlainPackageCopyJob)

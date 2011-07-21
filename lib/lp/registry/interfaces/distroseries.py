@@ -15,9 +15,12 @@ __all__ = [
     'IDistroSeriesSet',
     ]
 
+import httplib
+
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     call_with,
+    error_status,
     export_as_webservice_entry,
     export_factory_operation,
     export_read_operation,
@@ -30,7 +33,6 @@ from lazr.restful.declarations import (
     operation_returns_entry,
     rename_parameters_as,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -358,9 +360,8 @@ class IDistroSeriesPublic(
             automatically upgrade within backports, but not into it.
             """))
 
-    # other properties
-    prior_series = Attribute(
-        "Prior series *by date* from the same distribution.")
+    def priorReleasedSeries():
+        """Prior series *by date* from the same distribution."""
 
     main_archive = exported(
         Reference(
@@ -530,24 +531,26 @@ class IDistroSeriesPublic(
     # Really IPackageUpload, patched in _schema_circular_imports.py
     @operation_returns_collection_of(Interface)
     @export_read_operation()
-    def getPackageUploads(created_since_date=None, status=None, archive=None,
+    def getPackageUploads(status=None, created_since_date=None, archive=None,
                           pocket=None, custom_type=None, name=None,
                           version=None, exact_match=False):
         """Get package upload records for this distribution series.
 
+        :param status: Filter results by this `PackageUploadStatus`, or list
+            of statuses.
         :param created_since_date: If specified, only returns items uploaded
             since the timestamp supplied.
-        :param status: Filter results by this `PackageUploadStatus`
-        :param archive: Filter results for this `IArchive`
-        :param pocket: Filter results by this `PackagePublishingPocket`
-        :param custom_type: Filter results by this `PackageUploadCustomFormat`
+        :param archive: Filter results for this `IArchive`.
+        :param pocket: Filter results by this `PackagePublishingPocket`.
+        :param custom_type: Filter results by this
+            `PackageUploadCustomFormat`.
         :param name: Filter results by this file name or package name.
         :param version: Filter results by this version number string.
         :param exact_match: If True, look for exact string matches on the
             `name` and `version` filters.  If False, look for a substring
             match so that e.g. a package "kspreadsheetplusplus" would match
             the search string "spreadsheet".  Defaults to False.
-        :return: A result set containing `IPackageUpload`
+        :return: A result set containing `IPackageUpload`.
         """
 
     def getUnlinkedTranslatableSourcePackages():
@@ -899,6 +902,36 @@ class IDistroSeriesPublic(
     def isInitialized():
         """Has this series been initialized?"""
 
+    def getInitializationJob():
+        """Get the last `IInitializeDistroSeriesJob` for this series.
+
+        :return: `None` if no job is found or an `IInitializeDistroSeriesJob`.
+        """
+
+    @operation_parameters(
+        since=Datetime(
+            title=_("Minimum creation timestamp"),
+            description=_(
+                "Ignore comments that are older than this."),
+            required=False),
+        source_package_name=TextLine(
+            title=_("Name of source package"),
+            description=_("Only return comments for this source package."),
+            required=False))
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getDifferenceComments(since=None, source_package_name=None):
+        """Get `IDistroSeriesDifferenceComment` items.
+
+        :param since: Ignore comments older than this timestamp.
+        :param source_package_name: Return only comments for a source package
+            with this name.
+        :return: A Storm result set of `IDistroSeriesDifferenceComment`
+            objects for this distroseries, ordered from oldest to newest
+            comment.
+        """
+
 
 class IDistroSeriesEditRestricted(Interface):
     """IDistroSeries properties which require launchpad.Edit."""
@@ -1042,10 +1075,22 @@ class IDistroSeriesSet(Interface):
         released == None will do no filtering on status.
         """
 
+    def priorReleasedSeries(self, distribution, prior_to_date):
+        """Find distroseries for the supplied distro  released before a
+        certain date.
 
+        :param distribution: An `IDistribution` in which to search for its
+            series.
+        :param prior_to_date: A `datetime`
+
+        :return: `IResultSet` of `IDistroSeries` that were released before
+            prior_to_date, ordered in increasing order of age.
+        """
+
+
+@error_status(httplib.BAD_REQUEST)
 class DerivationError(Exception):
     """Raised when there is a problem deriving a distroseries."""
-    webservice_error(400)  # Bad Request
     _message_prefix = "Error deriving distro series"
 
 

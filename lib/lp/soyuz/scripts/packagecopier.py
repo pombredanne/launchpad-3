@@ -238,9 +238,23 @@ class CopyChecker:
     Allows the checker function to identify conflicting copy candidates
     within the copying batch.
     """
-    def __init__(self, archive, include_binaries, allow_delayed_copies=True):
+    def __init__(self, archive, include_binaries, allow_delayed_copies=True,
+                 strict_binaries=True):
+        """Initialize a copy checker.
+
+        :param archive: the target `IArchive`.
+        :param include_binaries: controls whether or not the published
+            binaries for each given source should be also copied along
+            with the source.
+        :param allow_delayed_copies: boolean indicating whether or not private
+            sources can be copied to public archives using delayed_copies.
+        :param strict_binaries: If 'include_binaries' is True then setting
+            this to True will make the copy fail if binaries cannot be also
+            copied.
+        """
         self.archive = archive
         self.include_binaries = include_binaries
+        self.strict_binaries = strict_binaries
         self.allow_delayed_copies = allow_delayed_copies
         self._inventory = {}
 
@@ -461,7 +475,7 @@ class CopyChecker:
             if source_file.libraryfile.expires is not None:
                 raise CannotCopy('source contains expired files')
 
-        if self.include_binaries:
+        if self.include_binaries and self.strict_binaries:
             built_binaries = source.getBuiltBinaries(want_files=True)
             if len(built_binaries) == 0:
                 raise CannotCopy("source has no binaries to be copied")
@@ -511,7 +525,8 @@ class CopyChecker:
 
 def do_copy(sources, archive, series, pocket, include_binaries=False,
             allow_delayed_copies=True, person=None, check_permissions=True,
-            overrides=None, send_email=False):
+            overrides=None, send_email=False, strict_binaries=True,
+            create_dsd_job=True, close_bugs=True):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
@@ -543,6 +558,13 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         override must be for the corresponding source in the sources list.
         Overrides will be ignored for delayed copies.
     :param send_email: Should we notify for the copy performed?
+    :param strict_binaries: If 'include_binaries' is True then setting this
+        to True will make the copy fail if binaries cannot be also copied.
+    :param create_dsd_job: A boolean indicating whether or not dsd jobs
+        should be created for the copied source publications.
+    :param close_bugs: A boolean indicating whether or not bugs on the
+        copied publications should be closed.
+
 
     :raise CannotCopy when one or more copies were not allowed. The error
         will contain the reason why each copy was denied.
@@ -554,7 +576,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     copies = []
     errors = []
     copy_checker = CopyChecker(
-        archive, include_binaries, allow_delayed_copies)
+        archive, include_binaries, allow_delayed_copies,
+        strict_binaries=strict_binaries)
 
     for source in sources:
         if series is None:
@@ -588,7 +611,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                 override = overrides[overrides_index]
             sub_copies = _do_direct_copy(
                 source, archive, destination_series, pocket,
-                include_binaries, override)
+                include_binaries, override, create_dsd_job=create_dsd_job,
+                close_bugs=close_bugs)
             if send_email:
                 notify(
                     person, source.sourcepackagerelease, [], [], archive,
@@ -602,7 +626,7 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
 
 
 def _do_direct_copy(source, archive, series, pocket, include_binaries,
-                    override=None):
+                    override=None, create_dsd_job=True, close_bugs=True):
     """Copy publishing records to another location.
 
     Copy each item of the given list of `SourcePackagePublishingHistory`
@@ -621,6 +645,10 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
         not the published binaries for each given source should be also
         copied along with the source.
     :param override: An `IOverride` as per do_copy().
+    :param create_dsd_job: A boolean indicating whether or not a dsd job
+        should be created for the copied source publication.
+    :param close_bugs: A boolean indicating whether or not bugs on the
+        copied publication should be closed.
 
     :return: a list of `ISourcePackagePublishingHistory` and
         `BinaryPackagePublishingHistory` corresponding to the copied
@@ -649,8 +677,10 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
             assert len(overrides) == 1, (
                 "More than one override encountered, something is wrong.")
             override = overrides[0]
-        source_copy = source.copyTo(series, pocket, archive, override)
-        close_bugs_for_sourcepublication(source_copy)
+        source_copy = source.copyTo(
+            series, pocket, archive, override, create_dsd_job)
+        if close_bugs:
+            close_bugs_for_sourcepublication(source_copy)
         copies.append(source_copy)
     else:
         source_copy = source_in_destination.first()
@@ -667,7 +697,8 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries,
     binary_copies = getUtility(IPublishingSet).copyBinariesTo(
         source.getBuiltBinaries(), series, pocket, archive, policy=policy)
 
-    copies.extend(binary_copies)
+    if binary_copies is not None:
+        copies.extend(binary_copies)
 
     # Always ensure the needed builds exist in the copy destination
     # after copying the binaries.

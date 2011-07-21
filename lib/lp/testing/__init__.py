@@ -4,7 +4,6 @@
 # pylint: disable-msg=W0401,C0301,F0401
 
 from __future__ import absolute_import
-from lp.testing.windmill.lpuser import LaunchpadUser
 
 
 __metaclass__ = type
@@ -15,6 +14,7 @@ __all__ = [
     'BrowserTestCase',
     'build_yui_unittest_suite',
     'celebrity_logged_in',
+    'ExpectedException',
     'FakeTime',
     'get_lsb_information',
     'is_logged_in',
@@ -42,7 +42,6 @@ __all__ = [
     'time_counter',
     'unlink_source_packages',
     'validate_mock_class',
-    'WindmillTestCase',
     'with_anonymous_login',
     'with_celebrity_logged_in',
     'with_person_logged_in',
@@ -51,12 +50,13 @@ __all__ = [
     'ZopeTestInSubProcess',
     ]
 
-from cStringIO import StringIO
 from contextlib import contextmanager
+from cStringIO import StringIO
 from datetime import (
     datetime,
     timedelta,
     )
+from fnmatch import fnmatchcase
 from inspect import (
     getargspec,
     getmro,
@@ -74,8 +74,6 @@ import tempfile
 import time
 import unittest
 
-import simplejson
-
 from bzrlib import trace
 from bzrlib.bzrdir import (
     BzrDir,
@@ -84,6 +82,7 @@ from bzrlib.bzrdir import (
 from bzrlib.transport import get_transport
 import fixtures
 import pytz
+import simplejson
 from storm.expr import Variable
 from storm.store import Store
 from storm.tracer import (
@@ -95,8 +94,8 @@ import testtools
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
 from testtools.matchers import MatchesRegex
+from testtools.testcase import ExpectedException as TTExpectedException
 import transaction
-from windmill.authoring import WindmillTestClient
 from zope.component import (
     adapter,
     getUtility,
@@ -154,8 +153,6 @@ from lp.testing._login import (
     with_celebrity_logged_in,
     with_person_logged_in,
     )
-# canonical.launchpad.ftests expects test_tales to be imported from here.
-# XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
 from lp.testing._webservice import (
     api_url,
@@ -165,10 +162,6 @@ from lp.testing._webservice import (
     )
 from lp.testing.fixture import ZopeEventHandlerFixture
 from lp.testing.karma import KarmaRecorder
-from lp.testing.windmill import (
-    constants,
-    lpuser,
-    )
 
 # The following names have been imported for the purpose of being
 # exported. They are referred to here to silence lint warnings.
@@ -552,7 +545,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         The config values will be restored during test tearDown.
         """
         name = self.factory.getUniqueString()
-        body = '\n'.join(["%s: %s" % (k, v) for k, v in kwargs.iteritems()])
+        body = '\n'.join("%s: %s" % (k, v) for k, v in kwargs.iteritems())
         config.push(name, "\n[%s]\n%s\n" % (section, body))
         self.addCleanup(config.pop, name)
 
@@ -805,73 +798,6 @@ class BrowserTestCase(TestCaseWithFactory):
             self.getMainContent(context, view_name, rootsite, no_login, user))
 
 
-class WindmillTestCase(TestCaseWithFactory):
-    """A TestCase class for Windmill tests.
-
-    It provides a WindmillTestClient (self.client) with Launchpad's front
-    page loaded.
-    """
-
-    suite_name = ''
-
-    def setUp(self):
-        super(WindmillTestCase, self).setUp()
-        self.client = WindmillTestClient(self.suite_name)
-        # Load the front page to make sure we don't get fooled by stale pages
-        # left by the previous test. (For some reason, when you create a new
-        # WindmillTestClient you get a new session and everything, but if you
-        # do anything before you open() something you'd be operating on the
-        # page that was last accessed by the previous test, which is the cause
-        # of things like https://launchpad.net/bugs/515494)
-        self.client.open(url=self.layer.appserver_root_url())
-
-    def getClientFor(self, obj, user=None, password='test', base_url=None,
-                     view_name=None):
-        """Return a new client, and the url that it has loaded."""
-        client = WindmillTestClient(self.suite_name)
-        if user is not None:
-            if isinstance(user, LaunchpadUser):
-                email = user.email
-                password = user.password
-            else:
-                email = removeSecurityProxy(user).preferredemail.email
-            client.open(url=lpuser.get_basic_login_url(email, password))
-            client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        if isinstance(obj, basestring):
-            url = obj
-        else:
-            url = canonical_url(
-                obj, view_name=view_name, rootsite=self.layer.facet,
-                force_local_path=True)
-        if base_url is None:
-            base_url = self.layer.base_url
-        obj_url = base_url + url
-        client.open(url=obj_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        return client, obj_url
-
-    def getClientForPerson(self, url, person, password='test'):
-        """Create a LaunchpadUser for a person and login to the url."""
-        naked_person = removeSecurityProxy(person)
-        user = LaunchpadUser(
-            person.displayname, naked_person.preferredemail.email, password)
-        return self.getClientFor(url, user=user)
-
-    def getClientForAnonymous(self, obj, view_name=None):
-        """Return a new client, and the url that it has loaded."""
-        client = WindmillTestClient(self.suite_name)
-        if isinstance(obj, basestring):
-            url = obj
-        else:
-            url = canonical_url(
-                obj, view_name=view_name, force_local_path=True)
-        obj_url = self.layer.base_url + url
-        obj_url = obj_url.replace('http://', 'http://foo:foo@')
-        client.open(url=obj_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        return client, obj_url
-
-
 class WebServiceTestCase(TestCaseWithFactory):
     """Test case optimized for testing the web service using launchpadlib."""
 
@@ -894,7 +820,7 @@ class WebServiceTestCase(TestCaseWithFactory):
 
         :param obj: The object to find the launchpadlib equivalent of.
         :param user: The user to use for accessing the object over
-            lauchpadlib.  Defaults to an arbitrary logged-in user.
+            launchpadlib.  Defaults to an arbitrary logged-in user.
         """
         if user is not None:
             service = self.factory.makeLaunchpadService(
@@ -934,18 +860,13 @@ class YUIUnitTestCase(TestCase):
 
     def id(self):
         """Return an ID for this test based on the file path."""
-        return self.test_path
+        return os.path.relpath(self.test_path, config.root)
 
     def setUp(self):
         super(YUIUnitTestCase, self).setUp()
         # html5browser imports from the gir/pygtk stack which causes
         # twisted tests to break because of gtk's initialize.
-        try:
-            import html5browser
-            # Hush lint.
-            html5browser
-        except ImportError:
-            html5browser = None
+        import html5browser
         client = html5browser.Browser()
         html_uri = 'file://%s' % os.path.join(
             config.root, 'lib', self.test_path)
@@ -999,15 +920,19 @@ class YUIUnitTestCase(TestCase):
 def build_yui_unittest_suite(app_testing_path, yui_test_class):
     suite = unittest.TestSuite()
     testing_path = os.path.join(config.root, 'lib', app_testing_path)
-    unit_test_names = [
-        file_name for file_name in os.listdir(testing_path)
-        if file_name.startswith('test_') and file_name.endswith('.html')]
-    for unit_test_name in unit_test_names:
-        test_path = os.path.join(app_testing_path, unit_test_name)
+    unit_test_names = _harvest_yui_test_files(testing_path)
+    for unit_test_path in unit_test_names:
         test_case = yui_test_class()
-        test_case.initialize(test_path)
+        test_case.initialize(unit_test_path)
         suite.addTest(test_case)
     return suite
+
+
+def _harvest_yui_test_files(file_path):
+    for dirpath, dirnames, filenames in os.walk(file_path):
+        for filename in filenames:
+            if fnmatchcase(filename, "test_*.html"):
+                yield os.path.join(dirpath, filename)
 
 
 class ZopeTestInSubProcess:
@@ -1357,3 +1282,16 @@ def unlink_source_packages(product):
             source_package.productseries,
             source_package.sourcepackagename,
             source_package.distroseries)
+
+
+class ExpectedException(TTExpectedException):
+    """An ExpectedException that provides access to the caught exception."""
+
+    def __init__(self, exc_type, value_re):
+        super(ExpectedException, self).__init__(exc_type, value_re)
+        self.caught_exc = None
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.caught_exc = exc_value
+        return super(ExpectedException, self).__exit__(
+            exc_type, exc_value, traceback)

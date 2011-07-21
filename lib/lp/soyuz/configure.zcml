@@ -167,6 +167,7 @@
                 date_created
                 sourcepackagerelease
                 component_name
+                concrete_package_copy_job
                 contains_source
                 contains_build
                 contains_translation
@@ -399,6 +400,7 @@
             set_attributes="description displayname publish status"/>
         <require
             permission="launchpad.Commercial"
+	    interface="lp.soyuz.interfaces.archive.IArchiveCommercial"
             set_attributes="authorized_size build_debug_symbols buildd_secret
                             commercial enabled_restricted_families
                             external_dependencies private
@@ -914,6 +916,11 @@
 
     <!-- PackageCopyJobSource -->
     <securedutility
+        component=".model.packagecopyjob.PackageCopyJob"
+        provides=".interfaces.packagecopyjob.IPackageCopyJobSource">
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobSource"/>
+    </securedutility>
+    <securedutility
         component=".model.packagecopyjob.PlainPackageCopyJob"
         provides=".interfaces.packagecopyjob.IPlainPackageCopyJobSource">
       <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJobSource"/>
@@ -921,13 +928,21 @@
 
     <!-- PackageCopyJob -->
     <class class=".model.packagecopyjob.PackageCopyJob">
-      <allow interface=".interfaces.packagecopyjob.IPackageCopyJob" />
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobPublic"/>
+      <require
+          permission="launchpad.Edit"
+          set_schema=".interfaces.packagecopyjob.IPackageCopyJobPublic"
+          interface=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
     </class>
 
     <!-- PlainPackageCopyJob -->
     <class class=".model.packagecopyjob.PlainPackageCopyJob">
-      <allow interface=".interfaces.packagecopyjob.IPackageCopyJob" />
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobPublic" />
       <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJob" />
+      <require
+          permission="launchpad.Edit"
+          set_schema=".interfaces.packagecopyjob.IPackageCopyJobPublic"
+          interface=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
     </class>
 
     <!-- PackageCopyPolicy -->
@@ -981,6 +996,40 @@
    <class class="lp.soyuz.adapters.overrides.UbuntuOverridePolicy">
         <allow interface="lp.soyuz.adapters.overrides.IOverridePolicy" />
    </class>
+
+    <!-- BinaryPackagePath -->
+
+    <class
+        class="lp.soyuz.model.binarypackagepath.BinaryPackagePath">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePath"/>
+    </class>
+
+    <!-- BinaryPackagePathSet -->
+
+    <securedutility
+        class="lp.soyuz.model.binarypackagepath.BinaryPackagePath"
+        provides="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSet">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagepath.IBinaryPackagePathSet"/>
+    </securedutility>
+
+    <!-- BinaryPackageReleaseContents -->
+
+    <class
+        class="lp.soyuz.model.binarypackagereleasecontents.BinaryPackageReleaseContents">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContents"/>
+    </class>
+
+    <!-- BinaryPackageReleaseContentsSet -->
+
+    <securedutility
+        class="lp.soyuz.model.binarypackagereleasecontents.BinaryPackageReleaseContents"
+        provides="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContentsSet">
+        <allow
+            interface="lp.soyuz.interfaces.binarypackagereleasecontents.IBinaryPackageReleaseContentsSet"/>
+    </securedutility>
 
    <webservice:register module="lp.soyuz.interfaces.webservice" />
 

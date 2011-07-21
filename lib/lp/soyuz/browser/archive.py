@@ -59,7 +59,6 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import FileNavigationMixin
-from canonical.launchpad.components.tokens import create_token
 from canonical.launchpad.helpers import english_list
 from canonical.launchpad.webapp import (
     canonical_url,
@@ -124,10 +123,7 @@ from lp.soyuz.browser.build import (
     BuildNavigationMixin,
     BuildRecordsView,
     )
-from lp.soyuz.browser.sourceslist import (
-    SourcesListEntries,
-    SourcesListEntriesView,
-    )
+from lp.soyuz.browser.sourceslist import SourcesListEntriesWidget
 from lp.soyuz.browser.widgets.archive import PPANameWidget
 from lp.soyuz.enums import (
     ArchivePermissionType,
@@ -564,7 +560,7 @@ class ArchivePackagesActionMenu(NavigationMenu, ArchiveMenuMixin):
     links = ['copy', 'delete']
 
 
-class ArchiveViewBase(LaunchpadView):
+class ArchiveViewBase(LaunchpadView, SourcesListEntriesWidget):
     """Common features for Archive view classes."""
 
     def initialize(self):
@@ -584,20 +580,13 @@ class ArchiveViewBase(LaunchpadView):
                     "being dispatched.")
             self.request.response.addNotification(structured(notification))
         super(ArchiveViewBase, self).initialize()
+        # Set the archive attribute so SourcesListEntriesWidget can be built
+        # correctly.
+        self.archive = self.context
 
     @cachedproperty
     def private(self):
         return self.context.private
-
-    @cachedproperty
-    def has_sources(self):
-        """Whether or not this PPA has any sources for the view.
-
-        This can be overridden by subclasses as necessary. It allows
-        the view to determine whether to display "This PPA does not yet
-        have any published sources" or "No sources matching 'blah'."
-        """
-        return not self.context.getPublishedSources().is_empty()
 
     @cachedproperty
     def repository_usage(self):
@@ -647,14 +636,6 @@ class ArchiveViewBase(LaunchpadView):
             used_percentage=used_percentage,
             used_css_class=used_css_class,
             quota=quota)
-
-    @property
-    def archive_url(self):
-        """Return an archive_url where available, or None."""
-        if self.has_sources and not self.context.is_copy:
-            return self.context.archive_url
-        else:
-            return None
 
     @property
     def archive_label(self):
@@ -903,14 +884,6 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         display_name = IArchive['displayname']
         title = "Edit the displayname"
         return TextLineEditorWidget(self.context, display_name, title, 'h1')
-
-    @property
-    def sources_list_entries(self):
-        """Setup and return the source list entries widget."""
-        entries = SourcesListEntries(
-            self.context.distribution, self.archive_url,
-            self.context.series_with_sources)
-        return SourcesListEntriesView(entries, self.request)
 
     @property
     def default_series_filter(self):
@@ -1311,7 +1284,8 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
             spph.source_package_name, spph.archive, dest_archive, dest_series,
             dest_pocket, include_binaries=include_binaries,
             package_version=spph.sourcepackagerelease.version,
-            copy_policy=PackageCopyPolicy.INSECURE)
+            copy_policy=PackageCopyPolicy.INSECURE,
+            requester=person)
 
     return structured("""
         <p>Requested sync of %s packages.</p>
@@ -1414,7 +1388,7 @@ def make_archive_vocabulary(archives):
     terms = []
     for archive in archives:
         token = '%s/%s' % (archive.owner.name, archive.name)
-        label = '%s (%s)' % (archive.displayname, token)
+        label = archive.displayname
         terms.append(SimpleTerm(archive, token, label))
     return SimpleVocabulary(terms)
 
@@ -2059,8 +2033,8 @@ class ArchiveAdminView(BaseArchiveEditView):
         archive as private, generate a secret for them.
         """
         if data['private'] and data['buildd_secret'] is None:
-            # buildd secrets are only used by builders, autogenerate one.
-            self.context.buildd_secret = create_token(16)
+            # The buildd secret is auto-generated and set when 'private'
+            # is set to True
             del(data['buildd_secret'])
         super(ArchiveAdminView, self).updateContextFromData(data)
 

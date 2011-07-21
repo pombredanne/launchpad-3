@@ -25,6 +25,8 @@ from storm.expr import (
     And,
     Column,
     Desc,
+    Or,
+    Select,
     Table,
     )
 from storm.locals import (
@@ -65,7 +67,6 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment,
     )
@@ -88,7 +89,10 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
-from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.packageset import (
+    IPackagesetSet,
+    NoSuchPackageSet,
+    )
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
@@ -97,6 +101,7 @@ from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease,
     )
 from lp.soyuz.model.packageset import Packageset
+from lp.soyuz.model.packagesetsources import PackagesetSources
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
@@ -117,7 +122,12 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
         )
     conditions = And(
         DistroSeriesDifference.id.is_in(dsd.id for dsd in dsds),
-        SourcePackagePublishingHistory.archiveID == Archive.id,
+        # XXX: GavinPanella 2011-06-23 bug=801097: The + 0 in the condition
+        # below prevents PostgreSQL from using the (archive, status) index on
+        # SourcePackagePublishingHistory, the use of which results in a
+        # terrible query plan. This might be indicative of an underlying,
+        # undiagnosed issue in production with wider repurcussions.
+        SourcePackagePublishingHistory.archiveID + 0 == Archive.id,
         SourcePackagePublishingHistory.sourcepackagereleaseID == (
             SourcePackageRelease.id),
         SourcePackagePublishingHistory.status.is_in(statuses),
@@ -128,17 +138,22 @@ def most_recent_publications(dsds, in_parent, statuses, match_version=False):
     if in_parent:
         conditions = And(
             conditions,
-            DistroSeries.id == DistroSeriesDifference.parent_series_id,
-            Archive.distributionID == DistroSeries.distributionID,
-            Archive.purpose == ArchivePurpose.PRIMARY,
+            SourcePackagePublishingHistory.distroseriesID == (
+                DistroSeriesDifference.parent_series_id),
             )
     else:
         conditions = And(
             conditions,
-            DistroSeries.id == DistroSeriesDifference.derived_series_id,
-            Archive.distributionID == DistroSeries.distributionID,
-            Archive.purpose == ArchivePurpose.PRIMARY,
+            SourcePackagePublishingHistory.distroseriesID == (
+                DistroSeriesDifference.derived_series_id),
             )
+    # Ensure that the archive has the right purpose.
+    conditions = And(
+        conditions,
+        # DistroSeries.getPublishedSources() matches on MAIN_ARCHIVE_PURPOSES,
+        # but we are only ever going to be interested in PRIMARY archives.
+        Archive.purpose == ArchivePurpose.PRIMARY,
+        )
     # Do we match on DistroSeriesDifference.(parent_)source_version?
     if match_version:
         if in_parent:
@@ -192,7 +207,7 @@ def most_recent_comments(dsds):
     return DecoratedResultSet(comments, itemgetter(0))
 
 
-def packagesets(dsds, in_parent):
+def get_packagesets(dsds, in_parent):
     """Return the packagesets for the given dsds inside the parent or
     the derived `DistroSeries`.
 
@@ -205,7 +220,6 @@ def packagesets(dsds, in_parent):
     if len(dsds) == 0:
         return {}
 
-    PackagesetSources = Table("PackageSetSources")
     FlatPackagesetInclusion = Table("FlatPackagesetInclusion")
 
     tables = IStore(Packageset).using(
@@ -213,18 +227,17 @@ def packagesets(dsds, in_parent):
         PackagesetSources, FlatPackagesetInclusion)
     results = tables.find(
         (DistroSeriesDifference.id, Packageset),
-        Column("packageset", PackagesetSources) == (
-            Column("child", FlatPackagesetInclusion)),
+        PackagesetSources.packageset_id == Column(
+            "child", FlatPackagesetInclusion),
         Packageset.distroseries_id == (
             DistroSeriesDifference.parent_series_id if in_parent else
             DistroSeriesDifference.derived_series_id),
         Column("parent", FlatPackagesetInclusion) == Packageset.id,
-        Column("sourcepackagename", PackagesetSources) == (
+        PackagesetSources.sourcepackagename_id == (
             DistroSeriesDifference.source_package_name_id),
         DistroSeriesDifference.id.is_in(dsd.id for dsd in dsds))
     results = results.order_by(
-        Column("sourcepackagename", PackagesetSources),
-        Packageset.name)
+        PackagesetSources.sourcepackagename_id, Packageset.name)
 
     grouped = defaultdict(list)
     for dsd_id, packageset in results:
@@ -324,10 +337,11 @@ class DistroSeriesDifference(StormBase):
     def getForDistroSeries(
         distro_series,
         difference_type=None,
-        source_package_name_filter=None,
+        name_filter=None,
         status=None,
         child_version_higher=False,
-        parent_series=None):
+        parent_series=None,
+        packagesets=None):
         """See `IDistroSeriesDifferenceSource`."""
         if difference_type is None:
             difference_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
@@ -350,14 +364,33 @@ class DistroSeriesDifference(StormBase):
             conditions.extend([
                DistroSeriesDifference.parent_series == parent_series.id])
 
-        if source_package_name_filter:
-            conditions.extend([
-               SourcePackageName.name == source_package_name_filter])
+        if name_filter:
+            name_matches = [SourcePackageName.name == name_filter]
+            try:
+                packageset = getUtility(IPackagesetSet).getByName(
+                    name_filter, distroseries=distro_series)
+            except NoSuchPackageSet:
+                packageset = None
+            if packageset is not None:
+                name_matches.append(
+                    DistroSeriesDifference.source_package_name_id.is_in(
+                        Select(
+                            PackagesetSources.sourcepackagename_id,
+                            PackagesetSources.packageset == packageset)))
+            conditions.extend([Or(*name_matches)])
 
         if child_version_higher:
             conditions.extend([
                 DistroSeriesDifference.source_version >
                     DistroSeriesDifference.parent_source_version])
+
+        if packagesets is not None:
+            set_ids = [packageset.id for packageset in packagesets]
+            conditions.extend([
+                DistroSeriesDifference.source_package_name_id.is_in(
+                    Select(
+                        PackagesetSources.sourcepackagename_id,
+                        PackagesetSources.packageset_id.is_in(set_ids)))])
 
         differences = IStore(DistroSeriesDifference).find(
             DistroSeriesDifference,
@@ -401,8 +434,8 @@ class DistroSeriesDifference(StormBase):
                 ("sourcepackagereleaseID",))
 
             # Get packagesets and parent_packagesets for each DSD.
-            dsd_packagesets = packagesets(dsds, in_parent=False)
-            dsd_parent_packagesets = packagesets(dsds, in_parent=True)
+            dsd_packagesets = get_packagesets(dsds, in_parent=False)
+            dsd_parent_packagesets = get_packagesets(dsds, in_parent=True)
 
             # Cache latest messages contents (MessageChunk).
             messages = bulk.load_related(

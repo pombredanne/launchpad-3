@@ -20,8 +20,8 @@
         "launchpad@pqm.canonical.com-20100325120516-q8to5dx3gga4wlvi"
     ], 
     "subvertpy": [
-        2043, 
-        "launchpad@pqm.canonical.com-20110520175118-iovx148eje6qt7jt"
+        2044, 
+        "launchpad@pqm.canonical.com-20110616232513-8jq27gm2npjgfr4t"
     ], 
     "python-debian": [
         186, 
@@ -48,16 +48,16 @@
         "sinzui-20090526164636-1swugzupwvjgomo4"
     ], 
     "loggerhead": [
-        445, 
-        "john@arbash-meinel.com-20110325141442-536j4be3x0c464zy"
+        452, 
+        "andrew.bennetts@canonical.com-20110628173100-owrifrnckvoi60af"
     ], 
     "difftacular": [
         6, 
         "aaron@aaronbentley.com-20100715135013-uoi3q430urx9gwb8"
     ], 
     "bzr-svn": [
-        2712, 
-        "launchpad@pqm.canonical.com-20110601185515-xaik1gqvhtr5jiph"
+        2713, 
+        "launchpad@pqm.canonical.com-20110616225217-9knedknnije37ljf"
     ], 
     "bzr-hg": [
         286, 

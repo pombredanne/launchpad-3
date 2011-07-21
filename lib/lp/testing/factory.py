@@ -243,6 +243,7 @@ from lp.services.propertycache import clear_property_cache
 from lp.services.utils import AutoDecorate
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.adapters.overrides import SourceOverride
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
     ArchivePurpose,
@@ -1485,11 +1486,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBranchSubscription(self, branch=None, person=None,
                                subscribed_by=None):
-        """Create a BranchSubscription.
-
-        :param branch_title: The title to use for the created Branch
-        :param person_displayname: The displayname for the created Person
-        """
+        """Create a BranchSubscription."""
         if branch is None:
             branch = self.makeBranch()
         if person is None:
@@ -1680,7 +1677,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
             # fromText() creates a bug watch associated with the bug.
-            getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
+            with person_logged_in(owner):
+                getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
         bugtask = bug.default_bugtask
         if date_closed is not None:
             bugtask.transitionToStatus(
@@ -2552,6 +2550,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """
         if purpose is None:
             purpose = ArchivePurpose.PPA
+        elif isinstance(purpose, basestring):
+            purpose = ArchivePurpose.items[purpose.upper()]
+
         if distribution is None:
             # See bug #568769
             if purpose == ArchivePurpose.PPA:
@@ -3429,7 +3430,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return upload
 
     def makeCopyJobPackageUpload(self, distroseries=None,
-                                 sourcepackagename=None):
+                                 sourcepackagename=None, target_pocket=None):
         """Make a `PackageUpload` with a `PackageCopyJob` attached."""
         if distroseries is None:
             distroseries = self.makeDistroSeries()
@@ -3440,8 +3441,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             package_name=spr.sourcepackagename.name,
             package_version=spr.version,
             source_archive=spph.archive,
+            target_pocket=target_pocket,
             target_archive=distroseries.main_archive,
             target_distroseries=distroseries)
+        job.addSourceOverride(SourceOverride(
+            spr.sourcepackagename, spr.component, spr.section))
         try:
             job.run()
         except SuspendJobException:
@@ -3482,18 +3486,20 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     distribution=distribution)
 
         if archive is None:
-            archive = self.makeArchive(
-                distribution=distroseries.distribution,
-                purpose=ArchivePurpose.PRIMARY)
+            archive = distroseries.main_archive
 
-        if sourcepackagename is None:
-            sourcepackagename = self.makeSourcePackageName()
+        if (sourcepackagename is None or
+            isinstance(sourcepackagename, basestring)):
+            sourcepackagename = self.getOrMakeSourcePackageName(
+                sourcepackagename)
 
-        if component is None:
-            component = self.makeComponent()
+        if (component is None or isinstance(component, basestring)):
+            component = self.makeComponent(component)
 
         if urgency is None:
             urgency = self.getAnySourcePackageUrgency()
+        elif isinstance(urgency, basestring):
+            urgency = SourcePackageUrgency.items[urgency.upper()]
 
         section = self.makeSection(name=section_name)
 
@@ -3554,23 +3560,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBinaryPackageBuild(self, source_package_release=None,
             distroarchseries=None, archive=None, builder=None,
-            status=None, pocket=None, date_created=None, processor=None):
+            status=None, pocket=None, date_created=None, processor=None,
+            sourcepackagename=None):
         """Create a BinaryPackageBuild.
 
         If archive is not supplied, the source_package_release is used
         to determine archive.
         :param source_package_release: The SourcePackageRelease this binary
             build uses as its source.
-        :param distroarchseries: The DistroArchSeries to use.
-        :param archive: The Archive to use.
+        :param sourcepackagename: when source_package_release is None, the
+            sourcepackagename from which the build will come.
+        :param distroarchseries: The DistroArchSeries to use. Defaults to the
+            one from the source_package_release, or a new one if not provided.
+        :param archive: The Archive to use. Defaults to the one from the
+            source_package_release, or the distro arch series main archive
+            otherwise.
         :param builder: An optional builder to assign.
         :param status: The BuildStatus for the build.
         """
-        if archive is None:
-            if source_package_release is None:
-                archive = self.makeArchive()
-            else:
-                archive = source_package_release.upload_archive
         if processor is None:
             processor = self.makeProcessor()
         if distroarchseries is None:
@@ -3581,13 +3588,22 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             distroarchseries = self.makeDistroArchSeries(
                 distroseries=distroseries,
                 processorfamily=processor.family)
+        if archive is None:
+            if source_package_release is None:
+                archive = distroarchseries.main_archive
+            else:
+                archive = source_package_release.upload_archive
         if pocket is None:
             pocket = PackagePublishingPocket.RELEASE
+        elif isinstance(pocket, basestring):
+            pocket = PackagePublishingPocket.items[pocket.upper()]
+
         if source_package_release is None:
             multiverse = self.makeComponent(name='multiverse')
             source_package_release = self.makeSourcePackageRelease(
                 archive, component=multiverse,
-                distroseries=distroarchseries.distroseries)
+                distroseries=distroarchseries.distroseries,
+                sourcepackagename=sourcepackagename)
             self.makeSourcePackagePublishingHistory(
                 distroseries=source_package_release.upload_distroseries,
                 archive=archive, sourcepackagerelease=source_package_release,
@@ -3609,66 +3625,67 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         IStore(binary_package_build).flush()
         return binary_package_build
 
-    def makeSourcePackagePublishingHistory(self, sourcepackagename=None,
-                                           distroseries=None, maintainer=None,
-                                           creator=None, component=None,
-                                           section_name=None,
-                                           urgency=None, version=None,
+    def makeSourcePackagePublishingHistory(self,
+                                           distroseries=None,
                                            archive=None,
-                                           builddepends=None,
-                                           builddependsindep=None,
-                                           build_conflicts=None,
-                                           build_conflicts_indep=None,
-                                           architecturehintlist='all',
-                                           dateremoved=None,
-                                           date_uploaded=UTC_NOW,
+                                           sourcepackagerelease=None,
                                            pocket=None,
                                            status=None,
+                                           dateremoved=None,
+                                           date_uploaded=UTC_NOW,
                                            scheduleddeletiondate=None,
-                                           dsc_standards_version='3.6.2',
-                                           dsc_format='1.0',
-                                           dsc_binaries='foo-bin',
-                                           sourcepackagerelease=None,
                                            ancestor=None,
+                                           **kwargs
                                            ):
-        """Make a `SourcePackagePublishingHistory`."""
-        if distroseries is None:
-            if archive is None:
-                distribution = None
-            else:
-                distribution = archive.distribution
-            distroseries = self.makeDistroRelease(distribution=distribution)
+        """Make a `SourcePackagePublishingHistory`.
 
+        :param sourcepackagerelease: The source package release to publish
+            If not provided, a new one will be created.
+        :param distroseries: The distro series in which to publish.
+            Default to the source package release one, or a new one will
+            be created when not provided.
+        :param archive: The archive to publish into. Default to the
+            initial source package release  upload archive, or to the
+            distro series main archive.
+        :param pocket: The pocket to publish into. Can be specified as a
+            string. Defaults to the RELEASE pocket.
+        :param status: The publication status. Defaults to PENDING. If
+            set to PUBLISHED, the publisheddate will be set to now.
+        :param dateremoved: The removal date.
+        :param date_uploaded: The upload date. Defaults to now.
+        :param scheduleddeletiondate: The date where the publication
+            is scheduled to be removed.
+        :param ancestor: The publication ancestor parameter.
+        :param **kwargs: All other parameters are passed through to the
+            makeSourcePackageRelease call if needed.
+        """
+        if distroseries is None:
+            if sourcepackagerelease is not None:
+                distroseries = sourcepackagerelease.upload_distroseries
+            else:
+                if archive is None:
+                    distribution = None
+                else:
+                    distribution = archive.distribution
+                distroseries = self.makeDistroRelease(
+                    distribution=distribution)
         if archive is None:
-            archive = self.makeArchive(
-                distribution=distroseries.distribution,
-                purpose=ArchivePurpose.PRIMARY)
+            archive = distroseries.main_archive
 
         if pocket is None:
             pocket = self.getAnyPocket()
+        elif isinstance(pocket, basestring):
+            pocket = PackagePublishingPocket.items[pocket.upper()]
 
         if status is None:
             status = PackagePublishingStatus.PENDING
+        elif isinstance(status, basestring):
+            status = PackagePublishingStatus.items[status.upper()]
 
         if sourcepackagerelease is None:
             sourcepackagerelease = self.makeSourcePackageRelease(
-                archive=archive,
-                sourcepackagename=sourcepackagename,
-                distroseries=distroseries,
-                maintainer=maintainer,
-                creator=creator, component=component,
-                section_name=section_name,
-                urgency=urgency,
-                version=version,
-                builddepends=builddepends,
-                builddependsindep=builddependsindep,
-                build_conflicts=build_conflicts,
-                build_conflicts_indep=build_conflicts_indep,
-                architecturehintlist=architecturehintlist,
-                dsc_standards_version=dsc_standards_version,
-                dsc_format=dsc_format,
-                dsc_binaries=dsc_binaries,
-                date_uploaded=date_uploaded)
+                archive=archive, distroseries=distroseries,
+                date_uploaded=date_uploaded, **kwargs)
 
         spph = getUtility(IPublishingSet).newSourcePublication(
             archive, sourcepackagerelease, distroseries,
@@ -3685,12 +3702,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return spph
 
     def makeBinaryPackagePublishingHistory(self, binarypackagerelease=None,
+                                           binarypackagename=None,
                                            distroarchseries=None,
                                            component=None, section_name=None,
                                            priority=None, status=None,
                                            scheduleddeletiondate=None,
                                            dateremoved=None,
-                                           pocket=None, archive=None):
+                                           pocket=None, archive=None,
+                                           source_package_release=None,
+                                           sourcepackagename=None):
         """Make a `BinaryPackagePublishingHistory`."""
         if distroarchseries is None:
             if archive is None:
@@ -3720,8 +3740,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             # in the same archive and suite.
             binarypackagebuild = self.makeBinaryPackageBuild(
                 archive=archive, distroarchseries=distroarchseries,
-                pocket=pocket)
+                pocket=pocket, source_package_release=source_package_release,
+                sourcepackagename=sourcepackagename)
             binarypackagerelease = self.makeBinaryPackageRelease(
+                binarypackagename=binarypackagename,
                 build=binarypackagebuild,
                 component=component,
                 section_name=section_name,
@@ -3785,8 +3807,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """Make a `BinaryPackageRelease`."""
         if build is None:
             build = self.makeBinaryPackageBuild()
-        if binarypackagename is None:
-            binarypackagename = self.makeBinaryPackageName()
+        if (binarypackagename is None or
+            isinstance(binarypackagename, basestring)):
+            binarypackagename = self.getOrMakeBinaryPackageName(
+                binarypackagename)
         if version is None:
             version = build.source_package_release.version
         if binpackageformat is None:
@@ -4142,7 +4166,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makePlainPackageCopyJob(
         self, package_name=None, package_version=None, source_archive=None,
-        target_archive=None, target_distroseries=None, target_pocket=None):
+        target_archive=None, target_distroseries=None, target_pocket=None,
+        requester=None):
         """Create a new `PlainPackageCopyJob`."""
         if package_name is None and package_version is None:
             package_name = self.makeSourcePackageName().name
@@ -4155,10 +4180,12 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             target_distroseries = self.makeDistroSeries()
         if target_pocket is None:
             target_pocket = self.getAnyPocket()
+        if requester is None:
+            requester = self.makePerson()
         return getUtility(IPlainPackageCopyJobSource).create(
             package_name, source_archive, target_archive,
             target_distroseries, target_pocket,
-            package_version=package_version)
+            package_version=package_version, requester=requester)
 
 
 # Some factory methods return simple Python types. We don't add
