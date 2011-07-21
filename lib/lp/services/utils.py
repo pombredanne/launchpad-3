@@ -333,3 +333,11 @@ def obfuscate_email(text_to_obfuscate):
     text = text.replace(
         "<<email address hidden>>", "<email address hidden>")
     return text
+
+def sort_for_display(item_list, display_attribute='displayname'):
+    """Sort a list by a given attribute
+    
+    Returns sorted list of item_list by lower casee of display_attribute
+    """
+    return sorted(item_list,
+        key=lambda x: getattr(x, display_attribute).lower())

@@ -94,6 +94,7 @@ from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
     )
+from lp.services.utils import sort_for_display
 
 
 def recursive_blocked_query(spec):
@@ -221,9 +222,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
     @cachedproperty
     def subscriptions(self):
         """Sort the subscriptions"""
-        return sorted(
-            self._subscriptions,
-                key=lambda sub: sub.person.displayname.lower())
+        return sort_for_display(self._subscriptions, 'sub.person.displayname')
 
     @property
     def target(self):
