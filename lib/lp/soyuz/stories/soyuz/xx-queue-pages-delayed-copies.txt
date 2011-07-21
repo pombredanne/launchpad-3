@@ -122,7 +122,7 @@ Any user can access the DONE queue and access the delayed-copy
     >>> anon_browser.getControl("Update").click()
 
     >>> print anon_browser.getLink('foo, foo').url
-    http://localhost:58000/.../foo_666_source.changes
+    http://.../.../foo_666_source.changes
 
     >>> extra_information = find_tags_by_class(
     ...     anon_browser.contents, 'queue-%s' % delayed_copy.id)

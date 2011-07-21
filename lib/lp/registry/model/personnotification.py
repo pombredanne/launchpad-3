@@ -29,6 +29,7 @@ from lp.registry.interfaces.personnotification import (
     IPersonNotification,
     IPersonNotificationSet,
     )
+from lp.services.propertycache import cachedproperty
 from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
@@ -45,14 +46,32 @@ class PersonNotification(SQLBase):
     body = StringCol(notNull=True)
     subject = StringCol(notNull=True)
 
-    def send(self):
+    @cachedproperty
+    def to_addresses(self):
         """See `IPersonNotification`."""
-        assert self.person.preferredemail is not None, (
-            "Can't send a notification to a person without an email.")
+        if self.person.is_team:
+            return self.person.getTeamAdminsEmailAddresses()
+        elif self.person.preferredemail is None:
+            return []
+        else:
+            return [format_address(
+                self.person.displayname, self.person.preferredemail.email)]
+
+    @property
+    def can_send(self):
+        """See `IPersonNotification`."""
+        return len(self.to_addresses) > 0
+
+    def send(self, logger=None):
+        """See `IPersonNotification`."""
+        if not self.can_send:
+            raise AssertionError(
+                "Can't send a notification to a person without an email.")
+        to_addresses = self.to_addresses
+        if logger:
+            logger.info("Sending notification to %r." % to_addresses)
         from_addr = config.canonical.bounce_address
-        to_addr = format_address(
-            self.person.displayname, self.person.preferredemail.email)
-        simple_sendmail(from_addr, to_addr, self.subject, self.body)
+        simple_sendmail(from_addr, to_addresses, self.subject, self.body)
         self.date_emailed = datetime.now(pytz.timezone('UTC'))
 
 
@@ -73,4 +92,3 @@ class PersonNotificationSet:
         """See `IPersonNotificationSet`."""
         return PersonNotification.select(
             'date_created < %s' % sqlvalues(time_limit))
-

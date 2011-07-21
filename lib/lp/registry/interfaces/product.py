@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -70,21 +70,20 @@ from zope.schema.vocabulary import SimpleVocabulary
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver,
-    IHasDrivers,
     IHasExternalBugTracker,
     IHasIcon,
     IHasLogo,
     IHasMugshot,
     )
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
 from lp.app.interfaces.launchpad import (
     ILaunchpadUsage,
     IServiceUsage,
     )
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.name import name_validator
 from lp.blueprints.interfaces.specificationtarget import ISpecificationTarget
 from lp.blueprints.interfaces.sprint import IHasSprints
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
@@ -94,6 +93,9 @@ from lp.bugs.interfaces.bugtarget import (
     IOfficialBugTagTargetRestricted,
     )
 from lp.bugs.interfaces.securitycontact import IHasSecurityContact
+from lp.bugs.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget,
+    )
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy,
     )
@@ -116,9 +118,10 @@ from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
-from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget,
+from lp.registry.interfaces.role import (
+    IHasAppointedDriver,
+    IHasDrivers,
+    IHasOwner,
     )
 from lp.services.fields import (
     Description,
@@ -136,7 +139,7 @@ from lp.services.fields import (
 from lp.translations.interfaces.hastranslationimports import (
     IHasTranslationImports,
     )
-from lp.translations.interfaces.translationgroup import ITranslationPolicy
+from lp.translations.interfaces.translationpolicy import ITranslationPolicy
 
 # This is based on the definition of <label> in RFC 1035, section
 # 2.3.1, which is what SourceForge project names are based on.
@@ -389,7 +392,7 @@ class IProductModerateRestricted(Interface):
                 "hosting or the project has an up-to-date "
                 "subscription.")))
 
-    license_reviewed = exported(
+    project_reviewed = exported(
         Bool(
             title=_('Project reviewed'),
             description=_("Whether or not this project has been reviewed. "
@@ -398,7 +401,7 @@ class IProductModerateRestricted(Interface):
 
     license_approved = exported(
         Bool(
-            title=_("Project approved"),
+            title=_("License approved"),
             description=_(
                 "The project is legitimate and its license appears valid. "
                 "Not applicable to 'Other/Proprietary'.")))
@@ -706,10 +709,6 @@ class IProductPublic(
         "groups for a product. There can be several: one from the product, "
         "and potentially one from the project, too.")
 
-    aggregatetranslationpermission = Attribute("The translation permission "
-        "that applies to translations in this product, based on the "
-        "permissions that apply to the product as well as its project.")
-
     commercial_subscription = exported(
         Reference(
             ICommercialSubscription,
@@ -735,6 +734,11 @@ class IProductPublic(
             description=_(
                 "Some bug trackers host multiple projects at the same URL "
                 "and require an identifier for the specific project.")))
+
+    active_or_packaged_series = Attribute(
+        _("Series that are active and/or have been packaged."))
+
+    packagings = Attribute(_("All the packagings for the project."))
 
     def getVersionSortedSeries(statuses=None, filter_statuses=None):
         """Return all the series sorted by the name field as a version.
@@ -814,7 +818,8 @@ class IProductPublic(
 class IProduct(
     IHasBugSupervisor, IProductEditRestricted,
     IProductModerateRestricted, IProductDriverRestricted,
-    IProductPublic, IRootContext, IStructuralSubscriptionTarget):
+    IProductPublic, IQuestionTarget, IRootContext,
+    IStructuralSubscriptionTarget):
     """A Product.
 
     The Launchpad Registry describes the open source world as ProjectGroups
@@ -841,6 +846,14 @@ class IProductSet(Interface):
 
     all_active = Attribute(
         "All the active products, sorted newest first.")
+
+    def get_all_active(eager_load=True):
+        """Get all active products.
+
+        :param eager_load: If False do not load related objects such as the
+            owner.
+        :return: An iterable of IProduct.
+        """
 
     def __iter__():
         """Return an iterator over all the active products."""
@@ -882,7 +895,7 @@ class IProductSet(Interface):
                    'project', 'homepageurl', 'screenshotsurl',
                    'downloadurl', 'freshmeatproject', 'wikiurl',
                    'sourceforgeproject', 'programminglang',
-                   'license_reviewed', 'licenses', 'license_info',
+                   'project_reviewed', 'licenses', 'license_info',
                    'registrant'])
     @export_operation_as('new_project')
     def createProduct(owner, name, displayname, title, summary,
@@ -890,7 +903,7 @@ class IProductSet(Interface):
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
-                      license_reviewed=False, mugshot=None, logo=None,
+                      project_reviewed=False, mugshot=None, logo=None,
                       icon=None, licenses=None, license_info=None,
                       registrant=None):
         """Create and return a brand new Product.
@@ -901,8 +914,8 @@ class IProductSet(Interface):
     @operation_parameters(
         search_text=TextLine(title=_("Search text")),
         active=Bool(title=_("Is the project active")),
-        license_reviewed=Bool(title=_("Is the project license reviewed")),
-        licenses = Set(title=_('Licenses'),
+        project_reviewed=Bool(title=_("Is the project license reviewed")),
+        licenses=Set(title=_('Licenses'),
                        value_type=Choice(vocabulary=License)),
         license_info_is_empty=Bool(title=_("License info is empty")),
         has_zero_licenses=Bool(title=_("Has zero licenses")),
@@ -921,7 +934,7 @@ class IProductSet(Interface):
     @export_operation_as('licensing_search')
     def forReview(search_text=None,
                   active=None,
-                  license_reviewed=None,
+                  project_reviewed=None,
                   licenses=None,
                   license_info_is_empty=None,
                   has_zero_licenses=None,
@@ -937,14 +950,20 @@ class IProductSet(Interface):
     @operation_parameters(text=TextLine(title=_("Search text")))
     @operation_returns_collection_of(IProduct)
     @export_read_operation()
-    def search(text=None, soyuz=None,
-               rosetta=None, malone=None,
-               bazaar=None):
+    def search(text=None):
         """Search through the Registry database for products that match the
         query terms. text is a piece of text in the title / summary /
-        description fields of product. soyuz, bazaar, malone etc are
-        hints as to whether the search should be limited to products
-        that are active in those Launchpad applications."""
+        description fields of product.
+
+        This call eager loads data appropriate for web API; caution may be
+        needed for other callers.
+        """
+
+    def search_sqlobject(text):
+        """A compatible sqlobject search for bugalsoaffects.py.
+
+        DO NOT ADD USES.
+        """
 
     @operation_returns_collection_of(IProduct)
     @call_with(quantity=None)
@@ -1037,7 +1056,7 @@ class IProductReviewSearch(Interface):
         title=_('Active'), values=[True, False],
         required=False, default=True)
 
-    license_reviewed = Choice(
+    project_reviewed = Choice(
         title=_('Project Reviewed'), values=[True, False],
         required=False, default=False)
 

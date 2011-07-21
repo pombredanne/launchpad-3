@@ -7,9 +7,9 @@ __metaclass__ = type
 __all__ = []
 
 from canonical.testing import layers
-from lp.testing import TestCase
 from lp.services.features import getFeatureFlag
 from lp.services.features.testing import FeatureFixture
+from lp.testing import TestCase
 
 
 class TestFeaturesContextManager(TestCase):

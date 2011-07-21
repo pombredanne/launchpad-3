@@ -3,8 +3,7 @@ NameBlacklist pages
 
     >>> from zope.component import getUtility
     >>> from lp.testing.sampledata import ADMIN_EMAIL
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.nameblacklist import INameBlacklistSet
     >>> name_blacklist_set = getUtility(INameBlacklistSet)
     >>> from canonical.launchpad.testing.pages import (
@@ -25,9 +24,9 @@ person names can be seen on the /+nameblacklist page.
     >>> view = create_initialized_view(name_blacklist_set, '+index',
     ...                                principal=registry_expert)
     >>> print extract_text(find_tag_by_id(view.render(), 'blacklist'))
-    Regular Expression                      Comment
-    ^admin Edit blacklist expression
-    blacklist Edit blacklist expression     For testing purposes
+    Regular Expression                   Admin    Comment
+    ^admin Edit blacklist expression     &mdash;
+    blacklist Edit blacklist expression  &mdash;  For testing purposes
 
 
 Add expression to blacklist
@@ -37,6 +36,7 @@ An invalid regular expression cannot be added.
 
     >>> form = {
     ...     'field.regexp': u'(',
+    ...     'field.admin': registry_experts.name,
     ...     'field.comment': u'old-comment',
     ...     'field.actions.add': 'Add to blacklist',
     ...     }
@@ -61,17 +61,23 @@ After adding a regular expression, a notification will be displayed.
     ...     print notification.message
     Regular expression "foo" has been added to the name blacklist.
 
+    >>> import transaction
+    >>> transaction.commit()
+    >>> foo_exp = name_blacklist_set.getByRegExp(u'foo')
+    >>> print foo_exp.regexp
+    foo
+    >>> print foo_exp.admin.name
+    registry
+
 
 Edit expression in blacklist
 ----------------------------
 
 When a regular expression is edited, it still must be valid.
 
-    >>> import transaction
-    >>> transaction.commit()
-    >>> foo_exp = name_blacklist_set.getByRegExp(u'foo')
     >>> form = {
     ...     'field.regexp': u'(',
+    ...     'field.admin': registry_experts.name,
     ...     'field.comment': u'new-comment',
     ...     'field.actions.change': 'Change',
     ...     }

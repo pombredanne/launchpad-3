@@ -7,6 +7,11 @@
     xmlns:browser="http://namespaces.zope.org/browser">
 
     <subscriber
+        for="zope.app.publication.interfaces.IBeforeTraverseEvent"
+        handler="lp.services.profile.profile.before_traverse"
+        />
+
+    <subscriber
         handler="lp.services.profile.profile.start_request"
         />
 

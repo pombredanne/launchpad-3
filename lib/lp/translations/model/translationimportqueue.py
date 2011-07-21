@@ -51,16 +51,13 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities,
-    IPersonRoles,
-    )
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     ISlaveStore,
     )
 from canonical.librarian.interfaces import ILibrarianClient
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
@@ -69,6 +66,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -155,7 +153,7 @@ class TranslationImportQueueEntry(SQLBase):
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
     productseries_id = Int(name='productseries', allow_none=True)
     productseries = Reference(productseries_id, 'ProductSeries.id')
-    is_published = BoolCol(dbName='is_published', notNull=True)
+    by_maintainer = BoolCol(notNull=True)
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile',
         notNull=False, default=None)
     potemplate = ForeignKey(foreignKey='POTemplate',
@@ -293,7 +291,8 @@ class TranslationImportQueueEntry(SQLBase):
         return pofile_set.getPOFilesByPathAndOrigin(
             self.path, productseries=self.productseries,
             distroseries=self.distroseries,
-            sourcepackagename=self.sourcepackagename).one()
+            sourcepackagename=self.sourcepackagename,
+            ignore_obsolete=True).one()
 
     def canAdmin(self, roles):
         """See `ITranslationImportQueueEntry`."""
@@ -484,12 +483,12 @@ class TranslationImportQueueEntry(SQLBase):
             if pofile.canEditTranslations(self.importer):
                 pofile.owner = self.importer
 
-        if self.is_published:
-            # This entry comes from upstream, which means that the path we got
-            # is exactly the right one. If it's different from what pofile
-            # has, that would mean that either the entry changed its path
-            # since previous upload or that we had to guess it and now that we
-            # got the right path, we should fix it.
+        if self.by_maintainer:
+            # This was uploaded by the maintainer, which means that the path
+            # we got is exactly the right one. If it's different from what
+            # pofile has, that would mean that either the entry changed its
+            # path since previous upload or that we had to guess it and now
+            # that we got the right path, we should fix it.
             pofile.setPathIfUnique(self.path)
 
         if (sourcepackagename is None and
@@ -922,7 +921,7 @@ class TranslationImportQueue:
         return (
             format, translation_importer.getTranslationFormatImporter(format))
 
-    def addOrUpdateEntry(self, path, content, is_published, importer,
+    def addOrUpdateEntry(self, path, content, by_maintainer, importer,
                          sourcepackagename=None, distroseries=None,
                          productseries=None, potemplate=None, pofile=None,
                          format=None):
@@ -958,13 +957,13 @@ class TranslationImportQueue:
             entry = TranslationImportQueueEntry(path=path, content=alias,
                 importer=importer, sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
-                is_published=is_published, potemplate=potemplate,
+                by_maintainer=by_maintainer, potemplate=potemplate,
                 pofile=pofile, format=format)
         else:
             # It's an update.
             entry.setErrorOutput(None)
             entry.content = alias
-            entry.is_published = is_published
+            entry.by_maintainer = by_maintainer
             if potemplate is not None:
                 # Only set the linked IPOTemplate object if it's not None.
                 entry.potemplate = potemplate
@@ -1008,7 +1007,7 @@ class TranslationImportQueue:
             path = path_filter(path)
         return path
 
-    def _isTranslationFile(self, path):
+    def _isTranslationFile(self, path, only_templates):
         """Is this a translation file that should be uploaded?"""
         if path is None or path == '':
             return False
@@ -1023,11 +1022,15 @@ class TranslationImportQueue:
             # Doesn't look like a supported translation file type.
             return False
 
+        if only_templates and not translation_importer.isTemplateName(path):
+            return False
+
         return True
 
-    def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
+    def addOrUpdateEntriesFromTarball(self, content, by_maintainer, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None, filename_filter=None, approver_factory=None):
+        potemplate=None, filename_filter=None, approver_factory=None,
+        only_templates=False):
         """See ITranslationImportQueue."""
         num_files = 0
         conflict_files = []
@@ -1044,7 +1047,7 @@ class TranslationImportQueue:
         upload_files = {}
         for name in self._iterTarballFiles(tarball):
             path = self._makePath(name, filename_filter)
-            if self._isTranslationFile(path):
+            if self._isTranslationFile(path, only_templates):
                 upload_files[name] = path
         tarball.close()
 
@@ -1066,7 +1069,7 @@ class TranslationImportQueue:
 
             path = upload_files[tarinfo.name]
             entry = approver.approve(self.addOrUpdateEntry(
-                path, file_content, is_published, importer,
+                path, file_content, by_maintainer, importer,
                 sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
                 potemplate=potemplate))

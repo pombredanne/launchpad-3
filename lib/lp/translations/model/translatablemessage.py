@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation for `ITranslatableMessage`."""
@@ -44,9 +44,8 @@ class TranslatableMessage(object):
         self.potemplate = pofile.potemplate
         self.language = pofile.language
 
-        self._current_translation = (
-            self.potmsgset.getCurrentTranslationMessage(
-                self.potemplate, self.language))
+        self._current_translation = self.potmsgset.getCurrentTranslation(
+            self.potemplate, self.language, self.potemplate.translation_side)
 
     @property
     def is_obsolete(self):
@@ -72,7 +71,7 @@ class TranslatableMessage(object):
         """See `ITranslatableMessage`"""
         if self._current_translation is None:
             return False
-        return self._current_translation.is_imported
+        return self._current_translation.is_current_upstream
 
     @property
     def has_plural_forms(self):
@@ -93,30 +92,31 @@ class TranslatableMessage(object):
 
     def getImportedTranslation(self):
         """See `ITranslatableMessage`"""
-        return self.potmsgset.getImportedTranslationMessage(self.potemplate,
-                                                            self.language)
+        return self.potmsgset.getOtherTranslation(
+            self.language, self.potemplate.translation_side)
 
     def getSharedTranslation(self):
         """See `ITranslatableMessage`"""
-        return self.potmsgset.getSharedTranslationMessage(self.language)
+        return self.potmsgset.getSharedTranslation(
+            self.language, self.potemplate.translation_side)
 
     def getAllSuggestions(self):
         """See `ITranslatableMessage`"""
         return self.potmsgset.getLocalTranslationMessages(
-                   self.potemplate, self.language,
-                   include_dismissed=True, include_unreviewed=True)
+            self.potemplate, self.language,
+            include_dismissed=True, include_unreviewed=True)
 
     def getUnreviewedSuggestions(self):
         """See `ITranslatableMessage`"""
         return self.potmsgset.getLocalTranslationMessages(
-                   self.potemplate, self.language,
-                   include_dismissed=False, include_unreviewed=True)
+            self.potemplate, self.language,
+            include_dismissed=False, include_unreviewed=True)
 
     def getDismissedSuggestions(self):
         """See `ITranslatableMessage`"""
         return self.potmsgset.getLocalTranslationMessages(
-                   self.potemplate, self.language,
-                   include_dismissed=True, include_unreviewed=False)
+            self.potemplate, self.language,
+            include_dismissed=True, include_unreviewed=False)
 
     def getExternalTranslations(self):
         """See `ITranslatableMessage`"""
@@ -130,6 +130,5 @@ class TranslatableMessage(object):
 
     def dismissAllSuggestions(self, reviewer, lock_timestamp):
         """See `ITranslatableMessage`"""
-        self.potmsgset.dismissAllSuggestions(self.pofile,
-                                             reviewer, lock_timestamp)
-
+        self.potmsgset.dismissAllSuggestions(
+            self.pofile, reviewer, lock_timestamp)

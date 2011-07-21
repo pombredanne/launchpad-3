@@ -310,8 +310,7 @@ it.
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 
     >>> registry_member = factory.makePerson(
     ...     name='reggie', email='reggie@example.com', password='test')

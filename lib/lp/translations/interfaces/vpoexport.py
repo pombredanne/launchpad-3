@@ -105,12 +105,12 @@ class IVPOExport(Interface):
         description=u"See IPOMsgID.pomsgid.",
         required=False, readonly=True)
 
-    is_current = Bool(
+    is_current_ubuntu = Bool(
         title=_("Whether this message is currently used in Launchpad"),
         description=u"As in ITranslationMessage.",
         readonly=True, required=True)
 
-    is_imported = Bool(
+    is_current_upstream = Bool(
         title=_("Whether this message was imported"),
         description=u"As in ITranslationMessage.",
         readonly=True, required=True)

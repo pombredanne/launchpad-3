@@ -5,10 +5,15 @@
 
 __all__ = [
     'get_mailing_list_api_proxy',
+    'handle_proxy_error',
     'XMLRPCRunner',
     ]
 
 from cStringIO import StringIO
+from datetime import (
+    datetime,
+    timedelta,
+    )
 import errno
 import os
 from random import shuffle
@@ -29,6 +34,7 @@ from Mailman.LockFile import TimeOutError
 from Mailman.Logging.Syslog import syslog
 from Mailman.MailList import MailList
 from Mailman.Queue.Runner import Runner
+from Mailman.Queue.sbcache import get_switchboard
 
 # XXX sinzui 2008-08-15 bug=258423:
 # We should be importing from lazr.errorlog.
@@ -75,6 +81,24 @@ def log_exception(message, *args):
     syslog('error', traceback_text)
 
 
+def handle_proxy_error(error, msg=None, msgdata=None):
+    """Log the error and enqueue the message if needed.
+
+    :param error: The error to log.
+    :param msg: An optional Mailman.Message to re-enqueue.
+    :param msgdata: The message data to enque with the message.
+    :raise DiscardMessage: When a message is enqueued.
+    """
+    if isinstance(error, (xmlrpclib.ProtocolError, socket.error)):
+        log_exception('Cannot talk to Launchpad:\n%s', error)
+    else:
+        log_exception('Launchpad exception: %s', error)
+    if msg is not None:
+        queue = get_switchboard(mm_cfg.INQUEUE_DIR)
+        queue.enqueue(msg, msgdata)
+        raise Errors.DiscardMessage
+
+
 class XMLRPCRunner(Runner):
     """A Mailman 'queue runner' for talking to the Launchpad XMLRPC service.
     """
@@ -104,6 +128,9 @@ class XMLRPCRunner(Runner):
         self._proxy = get_mailing_list_api_proxy()
         # Ensure that the log file exists, mostly for the test suite.
         syslog('xmlrpc', 'XMLRPC runner starting')
+        self.heartbeat_frequency = timedelta(minutes=5)
+        self.last_heartbeat = None
+        self._heartbeat()
 
     def _oneloop(self):
         """Check to see if there's anything for Mailman to do.
@@ -120,12 +147,22 @@ class XMLRPCRunner(Runner):
             self._check_list_actions()
             self._get_subscriptions()
             self._check_held_messages()
-        # pylint: disable-msg=W0702
         except:
             # Log the exception and report an OOPS.
             log_exception('Unexpected XMLRPCRunner exception')
+        else:
+            self._heartbeat()
         # Snooze for a while.
         return 0
+
+    def _heartbeat(self):
+        """Add a heartbeat to the log for a monitor to watch."""
+        now = datetime.now()
+        last_heartbeat = self.last_heartbeat
+        if (last_heartbeat is None
+            or now - last_heartbeat >= self.heartbeat_frequency):
+            syslog('xmlrpc', '--MARK--')
+            self.last_heartbeat = now
 
     def _log(self, exc):
         """Log the exception in a log file and as an OOPS."""

@@ -42,10 +42,10 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
     )
+from lp.bugs.errors import InvalidBugTargetType
 from lp.bugs.interfaces.bug import (
     CreateBugParams,
     IBugSet,
-    InvalidBugTargetType,
     )
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -296,6 +296,19 @@ class HWDBApplication:
         """See `IHWDBApplication`."""
         return getUtility(IHWDriverSet).all_package_names()
 
+    def search(self, user=None, device=None, driver=None, distribution=None,
+               distroseries=None, architecture=None, owner=None,
+               created_before=None, created_after=None,
+               submitted_before=None, submitted_after=None):
+        """See `IHWDBApplication`."""
+        return getUtility(IHWSubmissionSet).search(
+            user=user, device=device, driver=driver,
+            distribution=distribution, distroseries=distroseries,
+            architecture=architecture, owner=owner,
+            created_before=created_before, created_after=created_after,
+            submitted_before=submitted_before,
+            submitted_after=submitted_after)
+
     def getDistroTarget(self, distribution, distroseries, distroarchseries):
         distro_targets = [
             target for target in (
@@ -381,12 +394,15 @@ class WebServiceApplication(ServiceRootResource):
 
     cached_wadl = {}
 
+    # This should only be used by devel instances: production serves root
+    # WADL (and JSON) from the filesystem.
+
     @classmethod
     def cachedWADLPath(cls, instance_name, version):
         """Helper method to calculate the path to a cached WADL file."""
         return os.path.join(
             os.path.dirname(os.path.normpath(__file__)),
-            'apidoc', 'wadl-%s-%s.xml' % (instance_name, version))
+            'apidoc', version, '%s.wadl' % (instance_name,))
 
     def toWADL(self):
         """See `IWebServiceApplication`.

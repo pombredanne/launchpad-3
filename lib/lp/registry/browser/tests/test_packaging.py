@@ -13,12 +13,12 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import setupBrowser
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     PageTestLayer,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.packaging import (
     IPackagingUtil,
@@ -145,8 +145,13 @@ class TestBrowserDeletePackaging(TestCaseWithFactory):
 
     def setUp(self):
         super(TestBrowserDeletePackaging, self).setUp()
+        # Only the person which created the packaging, admins
+        # and other people with certain privileges can delete a
+        # packaging. Since the sample data record we'll use for
+        # deletion testing does not have any owner set, we'll
+        # log in as an admin.
         self.user_browser = setupBrowser(
-            auth="Basic no-priv@canonical.com:test")
+            auth="Basic foo.bar@canonical.com:test")
 
     def test_deletionIsPersistent(self):
         # Test that deleting a Packaging entry is persistent.

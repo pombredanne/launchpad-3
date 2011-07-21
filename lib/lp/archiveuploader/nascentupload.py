@@ -153,7 +153,7 @@ class NascentUpload:
         self.run_and_reject_on_error(self.changes.checkFileName)
 
         # We need to process changesfile addresses at this point because
-        # we depend on an already initialised policy (distroseries
+        # we depend on an already initialized policy (distroseries
         # and pocket set) to have proper person 'creation rationale'.
         self.run_and_reject_on_error(self.changes.processAddresses)
 
@@ -566,8 +566,10 @@ class NascentUpload:
             candidates = self.policy.distroseries.getPublishedSources(
                 source_name, include_pending=True, pocket=pocket,
                 archive=archive)
-            if candidates:
+            try:
                 return candidates[0]
+            except IndexError:
+                pass
 
         return None
 
@@ -853,7 +855,6 @@ class NascentUpload:
                 changes_file_object = open(self.changes.filepath, "r")
                 self.queue_root.notify(
                     summary_text=self.warning_message,
-                    announce_list=self.policy.announcelist,
                     changes_file_object=changes_file_object,
                     logger=self.logger)
                 changes_file_object.close()
@@ -891,7 +892,7 @@ class NascentUpload:
             return
 
         # We need to check that the queue_root object has been fully
-        # initialised first, because policy checks or even a code exception
+        # initialized first, because policy checks or even a code exception
         # may have caused us to bail out early and not create one.  If it
         # doesn't exist then we can create a dummy one that contains just
         # enough context to be able to generate a rejection email.  Nothing
@@ -925,13 +926,13 @@ class NascentUpload:
             distroseries = getUtility(
                 IDistributionSet)['ubuntu'].currentseries
             return distroseries.createQueueEntry(
-                PackagePublishingPocket.RELEASE, self.changes.filename,
-                self.changes.filecontents, distroseries.main_archive,
-                self.changes.signingkey)
+                PackagePublishingPocket.RELEASE,
+                distroseries.main_archive, self.changes.filename,
+                self.changes.raw_content, self.changes.signingkey)
         else:
             return distroseries.createQueueEntry(
-                self.policy.pocket, self.changes.filename,
-                self.changes.filecontents, self.policy.archive,
+                self.policy.pocket, self.policy.archive,
+                self.changes.filename, self.changes.raw_content,
                 self.changes.signingkey)
 
     #

@@ -8,12 +8,12 @@ __metaclass__ = type
 
 from mechanize import LinkNotFoundError
 from storm.locals import Store
+from testtools.matchers import StartsWith
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
@@ -22,13 +22,31 @@ from canonical.launchpad.testing.pages import (
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.person import IPersonSet
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.testing import (
     ANONYMOUS,
     BrowserTestCase,
     login,
     logout,
+    person_logged_in,
+    TestCaseWithFactory,
     )
+from lp.testing.sampledata import ADMIN_EMAIL
+
+
+class TestCanonicalUrlForRecipeBuild(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_canonical_url(self):
+        owner = self.factory.makePerson(name='ppa-owner')
+        ppa = self.factory.makeArchive(owner=owner, name='ppa')
+        build = self.factory.makeSourcePackageRecipeBuild(archive=ppa)
+        self.assertThat(
+            canonical_url(build),
+            StartsWith(
+                'http://launchpad.dev/~ppa-owner/+archive/ppa/+recipebuild/'))
 
 
 class TestSourcePackageRecipeBuild(BrowserTestCase):
@@ -39,6 +57,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
     def setUp(self):
         """Provide useful defaults."""
         super(TestSourcePackageRecipeBuild, self).setUp()
+        self.admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         self.chef = self.factory.makePerson(
             displayname='Master Chef', name='chef', password='test')
         self.user = self.chef
@@ -68,14 +87,13 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_cancel_build(self):
         """An admin can cancel a build."""
-        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
         queue = self.factory.makeSourcePackageRecipeBuildJob()
         build = queue.specific_job.build
         transaction.commit()
         build_url = canonical_url(build)
         logout()
 
-        browser = self.getUserBrowser(build_url, user=experts)
+        browser = self.getUserBrowser(build_url, user=self.admin)
         browser.getLink('Cancel build').click()
 
         self.assertEqual(
@@ -94,7 +112,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
             build.status)
 
     def test_cancel_build_not_admin(self):
-        """No one but admins can cancel a build."""
+        """No one but an admin can cancel a build."""
         queue = self.factory.makeSourcePackageRecipeBuildJob()
         build = queue.specific_job.build
         transaction.commit()
@@ -112,28 +130,26 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_cancel_build_wrong_state(self):
         """If the build isn't queued, you can't cancel it."""
-        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
         build = self.makeRecipeBuild()
         build.cancelBuild()
         transaction.commit()
         build_url = canonical_url(build)
         logout()
 
-        browser = self.getUserBrowser(build_url, user=experts)
+        browser = self.getUserBrowser(build_url, user=self.admin)
         self.assertRaises(
             LinkNotFoundError,
             browser.getLink, 'Cancel build')
 
     def test_rescore_build(self):
         """An admin can rescore a build."""
-        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
         queue = self.factory.makeSourcePackageRecipeBuildJob()
         build = queue.specific_job.build
         transaction.commit()
         build_url = canonical_url(build)
         logout()
 
-        browser = self.getUserBrowser(build_url, user=experts)
+        browser = self.getUserBrowser(build_url, user=self.admin)
         browser.getLink('Rescore build').click()
 
         self.assertEqual(
@@ -155,14 +171,13 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_rescore_build_invalid_score(self):
         """Build scores can only take numbers."""
-        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
         queue = self.factory.makeSourcePackageRecipeBuildJob()
         build = queue.specific_job.build
         transaction.commit()
         build_url = canonical_url(build)
         logout()
 
-        browser = self.getUserBrowser(build_url, user=experts)
+        browser = self.getUserBrowser(build_url, user=self.admin)
         browser.getLink('Rescore build').click()
 
         self.assertEqual(
@@ -178,7 +193,7 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
             'Invalid integer data')
 
     def test_rescore_build_not_admin(self):
-        """No one but admins can rescore a build."""
+        """No one but admin can rescore a build."""
         queue = self.factory.makeSourcePackageRecipeBuildJob()
         build = queue.specific_job.build
         transaction.commit()
@@ -196,17 +211,46 @@ class TestSourcePackageRecipeBuild(BrowserTestCase):
 
     def test_rescore_build_wrong_state(self):
         """If the build isn't queued, you can't rescore it."""
-        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
         build = self.makeRecipeBuild()
         build.cancelBuild()
         transaction.commit()
         build_url = canonical_url(build)
         logout()
 
-        browser = self.getUserBrowser(build_url, user=experts)
+        browser = self.getUserBrowser(build_url, user=self.admin)
         self.assertRaises(
             LinkNotFoundError,
             browser.getLink, 'Rescore build')
+
+    def test_rescore_build_wrong_state_stale_link(self):
+        """Show sane error if you attempt to rescore a non-queued build.
+
+        This is the case where the user has a stale link that they click on.
+        """
+        build = self.factory.makeSourcePackageRecipeBuild()
+        build.cancelBuild()
+        index_url = canonical_url(build)
+        browser = self.getViewBrowser(build, '+rescore', user=self.admin)
+        self.assertEqual(index_url, browser.url)
+        self.assertIn(
+            'Cannot rescore this build because it is not queued.',
+            browser.contents)
+
+    def test_rescore_build_wrong_state_stale_page(self):
+        """Show sane error if you attempt to rescore a non-queued build.
+
+        This is the case where the user is on the rescore page and submits.
+        """
+        build = self.factory.makeSourcePackageRecipeBuild()
+        index_url = canonical_url(build)
+        browser = self.getViewBrowser(build, '+rescore', user=self.admin)
+        with person_logged_in(self.admin):
+            build.cancelBuild()
+        browser.getLink('Rescore build').click()
+        self.assertEqual(index_url, browser.url)
+        self.assertIn(
+            'Cannot rescore this build because it is not queued.',
+            browser.contents)
 
     def test_builder_history(self):
         build = self.makeRecipeBuild()

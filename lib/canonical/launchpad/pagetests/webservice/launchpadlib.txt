@@ -48,7 +48,8 @@ use launchpadlib.uris.DEV_SERVICE_ROOT as the URL as it uses the https
 scheme which does not work in the test environment.
 
     >>> from launchpadlib.launchpad import Launchpad
-    >>> launchpad = Launchpad(credentials, 'http://api.launchpad.dev/')
+    >>> launchpad = Launchpad(
+    ...     credentials, None, None, 'http://api.launchpad.dev/')
     >>> print launchpad.me.name
     no-priv
 
@@ -94,7 +95,8 @@ and Launchpad.
 Now create a Launchpad object and observe how it populates the cache.
 
     >>> launchpad = Launchpad(
-    ...     credentials, 'http://api.launchpad.dev/', cache=cache)
+    ...     credentials, None, None, 'http://api.launchpad.dev/',
+    ...     cache=cache)
     send: 'GET /1.0/ ...accept: application/vnd.sun.wadl+xml...'
     reply: 'HTTP/1.0 200 Ok\n'
     ...
@@ -106,7 +108,8 @@ Create a second Launchpad object, and the cached documents will be
 used instead of new HTTP requests being used.
 
     >>> launchpad = Launchpad(
-    ...     credentials, 'http://api.launchpad.dev/', cache=cache)
+    ...     credentials, None, None, 'http://api.launchpad.dev/',
+    ...     cache=cache)
 
 Cleanup.
 

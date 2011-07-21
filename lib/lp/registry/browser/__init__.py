@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'add_subscribe_link',
     'BaseRdfView',
     'get_status_counts',
     'MilestoneOverlayMixin',
@@ -22,7 +23,6 @@ import os
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.launchpadform import (
     action,
     LaunchpadEditFormView,
@@ -32,6 +32,7 @@ from canonical.launchpad.webapp.publisher import (
     LaunchpadView,
     )
 from canonical.lazr import ExportedFolder
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     IBugTaskSet,
@@ -67,6 +68,11 @@ def get_status_counts(workitems, status_attr, key='sortkey'):
     return [
         StatusCount(status, statuses[status])
         for status in sorted(statuses, key=attrgetter(key))]
+
+
+def add_subscribe_link(links):
+    """Add the subscription-related links."""
+    links.extend(['subscribe_to_bug_mail', 'edit_bug_mail'])
 
 
 class MilestoneOverlayMixin:
@@ -123,7 +129,7 @@ class MilestoneOverlayMixin:
                 var milestone_rows_id = '#milestone-rows';
 
                 Y.on('domready', function () {
-                    var create_milestone_link = Y.get(
+                    var create_milestone_link = Y.one(
                         '.menu-link-create_milestone');
                     create_milestone_link.addClass('js-action');
                     var milestone_table = Y.lp.registry.milestonetable;
@@ -187,7 +193,7 @@ class RegistryDeleteViewMixin:
             # The owner of the subscription or an admin are the only users
             # that can destroy a subscription, but this rule cannot prevent
             # the owner from removing the structure.
-            Store.of(subscription).remove(subscription)
+            subscription.delete()
 
     def _remove_series_bugs_and_specifications(self, series):
         """Untarget the associated bugs and subscriptions."""

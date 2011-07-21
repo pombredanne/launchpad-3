@@ -47,7 +47,8 @@
           get_timeline_config.size = size;
       }
 
-      LPS.use('lp.registry.timeline', 'node', 'lp.app.dragscroll', function(Y) {
+      LPS.use('lp.registry.timeline', 'node', 'lp.app.dragscroll', 'lp.client',
+        function(Y) {
           Y.on('domready', function(e) {
               if (Y.UA.ie) {
                   return;
@@ -123,9 +124,9 @@
                   }
               };
 
-              var client = new LP.client.Launchpad();
+              var client = new Y.lp.client.Launchpad();
               client.named_get(
-                  LP.client.cache['context']['self_link'],
+                  LP.cache['context']['self_link'],
                   'get_timeline', get_timeline_config);
 
               var drag_scroll_handler =

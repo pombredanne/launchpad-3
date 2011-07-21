@@ -95,45 +95,23 @@
   </div>
 
   <div id="commit-message" class="yui-g">
-  <tal:no-commit-message condition="not: context/commit_message">
     <div tal:define="link menu/set_commit_message"
          tal:condition="link/enabled"
-         tal:content="structure link/render">
+         tal:content="structure link/render"
+         tal:attributes="class view/edit_commit_message_link_class">
       Set commit message
     </div>
-    <div id="edit-commit_message" class="lazr-multiline-edit unseen"
-         tal:content="structure view/commit_message_html"/>
-  </tal:no-commit-message>
-  <tal:has-commit-message condition="context/commit_message">
-    <div tal:define="link menu/set_commit_message"
-         tal:condition="link/enabled"
-         tal:content="structure link/render" class="unseen">
-      Set commit message
-    </div>
-    <div id="edit-commit_message" class="lazr-multiline-edit"
-         tal:content="structure view/commit_message_html"/>
-  </tal:has-commit-message>
+    <tal:widget replace="structure view/commit_message_html"/>
   </div>
 
   <div id="description" class="yui-g">
-  <tal:no-description condition="not: context/description">
     <div tal:define="link menu/set_description"
          tal:condition="link/enabled"
-         tal:content="structure link/render">
+         tal:content="structure link/render"
+         tal:attributes="class view/edit_description_link_class">
       Set description
     </div>
-    <div id="edit-description" class="lazr-multiline-edit unseen"
-         tal:content="structure view/description_html"/>
-  </tal:no-description>
-  <tal:has-description condition="context/description">
-    <div tal:define="link menu/set_description"
-         tal:condition="link/enabled"
-         tal:content="structure link/render" class="unseen">
-      Set description
-    </div>
-    <div id="edit-description" class="lazr-multiline-edit"
-         tal:content="structure view/description_html"/>
-  </tal:has-description>
+    <tal:widget replace="structure view/description_html"/>
   </div>
 
   <div class="yui-g" tal:condition="view/has_bug_or_spec">
@@ -222,10 +200,11 @@
   conf = <tal:status-config replace="view/status_config" />
   <!--
   LPS.use('io-base', 'lp.code.branchmergeproposal.reviewcomment',
-          'lp.code.branchmergeproposal.status', 'lp.app.comment', function(Y) {
+          'lp.code.branchmergeproposal.status', 'lp.app.comment', 
+          'lp.app.widgets.expander', 'lp.code.branch.revisionexpander', function(Y) {
 
     Y.on('load', function() {
-        var logged_in = LP.client.links['me'] !== undefined;
+        var logged_in = LP.links['me'] !== undefined;
 
         if (logged_in) {
             var comment = new Y.lp.app.comment.CodeReviewComment();
@@ -241,6 +220,15 @@
         (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
             ).render();
       }, window);
+
+    Y.on('domready', function() {
+        Y.lp.app.widgets.expander.createByCSS(
+            '.revision-group-diff',
+            '.expander-icon',
+            '.expander-content',
+            false,
+            Y.lp.code.branch.revisionexpander.bmp_diff_loader);
+    });
   });
   -->
 <tal:script replace="structure string:&lt;/script&gt;" />

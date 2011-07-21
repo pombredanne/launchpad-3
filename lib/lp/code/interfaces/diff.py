@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -24,6 +24,7 @@ from zope.interface import Interface
 from zope.schema import (
     Bool,
     Bytes,
+    Dict,
     Int,
     Text,
     TextLine,
@@ -53,7 +54,7 @@ class IDiff(Interface):
         Int(title=_('The number of lines in this diff.'), readonly=True))
 
     diffstat = exported(
-        Text(title=_('Statistics about this diff'), readonly=True))
+        Dict(title=_('Statistics about this diff'), readonly=True))
 
     added_lines_count = exported(
         Int(title=_('The number of lines added in this diff.'),
@@ -122,7 +123,7 @@ class IPreviewDiff(IDiff):
     trying to determine the effective changes of landing the source branch on
     the target branch.
     """
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     source_revision_id = exported(
         TextLine(

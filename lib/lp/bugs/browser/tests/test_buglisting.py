@@ -8,7 +8,6 @@ from storm.store import Store
 from testtools.matchers import Equals
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,
@@ -16,6 +15,7 @@ from canonical.launchpad.testing.pages import (
     )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.model.person import Person
 from lp.testing import (
@@ -25,7 +25,6 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-
 from lp.testing.matchers import HasQueryCount
 from lp.testing.views import create_initialized_view
 
@@ -49,7 +48,7 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         self.assertTrue(len(top_portlet) > 0,
                         "Tag with class=top-portlet not found")
         self.assertTextMatchesExpressionIgnoreWhitespace("""
-            test-dsp in test-distro does not use Launchpad for bug tracking.
+            test-dsp in Test-distro does not use Launchpad for bug tracking.
             Getting started with bug tracking in Launchpad.""",
             extract_text(top_portlet[0]))
 
@@ -140,7 +139,7 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
 
     def test_searchUnbatched_can_preload_objects(self):
         # BugTaskSearchListingView.searchUnbatched() can optionally
-        # preload objects while retureving the bugtasks.
+        # preload objects while retrieving the bugtasks.
         product = self.factory.makeProduct()
         bugtask_1 = self.factory.makeBug(product=product).default_bugtask
         bugtask_2 = self.factory.makeBug(product=product).default_bugtask
@@ -154,7 +153,7 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
             # If the table prejoin failed, then this will issue two
             # additional SQL queries
             [bugtask.owner for bugtask in bugtasks]
-        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertThat(recorder, HasQueryCount(Equals(2)))
 
 
 class BugTargetTestCase(TestCaseWithFactory):

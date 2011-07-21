@@ -14,18 +14,25 @@ __all__ = [
     'UserCannotUnsubscribePerson',
     ]
 
-from lazr.restful.declarations import webservice_error
-from zope.security.interfaces import Unauthorized
+import httplib
+
+from lazr.restful.declarations import error_status
+from zope.security.interfaces import (
+    ForbiddenAttribute,
+    Unauthorized,
+    )
 
 
 class TranslationUnavailable(Exception):
     """Translation objects are unavailable."""
 
 
+@error_status(httplib.NOT_FOUND)
 class NotFoundError(KeyError):
     """Launchpad object not found."""
 
 
+@error_status(httplib.GONE)
 class GoneError(KeyError):
     """Launchpad object is gone."""
 
@@ -62,6 +69,11 @@ class POSTToNonCanonicalURL(UnexpectedFormData):
     One example would be a URL containing uppercase letters.
     """
 
+
+@error_status(httplib.UNAUTHORIZED)
 class UserCannotUnsubscribePerson(Unauthorized):
-    """User does not have persmisson to unsubscribe person or team."""
-    webservice_error(401)
+    """User does not have permission to unsubscribe person or team."""
+
+
+# Slam a 401 response code onto all ForbiddenAttribute errors.
+error_status(httplib.UNAUTHORIZED)(ForbiddenAttribute)

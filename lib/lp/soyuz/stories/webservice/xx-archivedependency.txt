@@ -52,8 +52,7 @@ can't get a list of the dependencies.
     ...     '/~cprov/+archive/p3a/dependencies')
     HTTP/1.1 401 Unauthorized
     ...
-    Unauthorized: (<Archive at ...>, 'dependencies', 'launchpad.View')
-    <BLANKLINE>
+    (<Archive at ...>, 'dependencies', 'launchpad.View')
 
 Nor can said user craft a URL to a dependency.
 
@@ -61,8 +60,7 @@ Nor can said user craft a URL to a dependency.
     ...     '/~cprov/+archive/p3a/+dependency/1')
     HTTP/1.1 401 Unauthorized
     ...
-    Unauthorized: (<Archive at ...>, 'getArchiveDependency', 'launchpad.View')
-    <BLANKLINE>
+    (<Archive at ...>, 'getArchiveDependency', 'launchpad.View')
 
 Celso can see them if we grant private permissions, of course.
 

@@ -4,7 +4,7 @@ Launchpad offers an XML-RPC interface for generating bug tracker tokens.
 
     >>> import xmlrpclib
     >>> from zope.component import getUtility
-    >>> from canonical.functional import XMLRPCTestTransport
+    >>> from lp.testing.xmlrpc import XMLRPCTestTransport
     >>> from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
     >>> bugtracker_api = xmlrpclib.ServerProxy(
     ...     'http://xmlrpc-private.launchpad.dev:8087/bugs',

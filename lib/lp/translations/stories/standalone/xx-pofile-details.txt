@@ -4,6 +4,7 @@ POFile Details Page
 Each translation file has an overview page which shows the list of
 contributors.
 
+    >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> anon_browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
     ...     'evolution-2.2/es/+details')
@@ -67,7 +68,7 @@ a separate method to pretty-print all the translations.
 A user can see all the submissions Carlos has made to this POFile.
 Note that 'english' in the first column indicates a msgid, and 'used',
 'old' or 'unused' indicate type of a translation ('used' if it is
-is_current, 'unused' if not current but unreviewed, and 'old' if it
+is_current_ubuntu, 'unused' if not current but unreviewed, and 'old' if it
 was reviewed and rejected).
 
     >>> print_shown_translations(anon_browser)
@@ -101,8 +102,8 @@ only a single unused suggestion instead:
 A POTMsgSet sequence number is also a link to edit a translation.
 
     >>> anon_browser.getLink('14.').click()
-    >>> anon_browser.url
-    'http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/14/+translate'
+    >>> print anon_browser.url
+    http://.../evolution/trunk/+pots/evolution-2.2/es/14/+translate
     >>> print anon_browser.title
     Browsing Spanish translation...
 
@@ -130,16 +131,15 @@ If a person to filter by is not specified, user is notified of that.
 Merged accounts
 ---------------
 
-On the overview page of each translation pofile, users will not see merged 
+On the overview page of each translation pofile, users will not see merged
 accounts.
 
 We'll create two new accounts to demonstrate this.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 
-    >>> login("admin@canonical.com")
+    >>> login(ADMIN_EMAIL)
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> hoary = ubuntu.getSeries('hoary')
     >>> translator = factory.makePerson(displayname="Poly Glot")
@@ -151,9 +151,9 @@ We'll create two new accounts to demonstrate this.
     >>> language_code = 'es'
     >>> pofile = factory.makePOFile(language_code, potemplate=template)
     >>> potmsgset = factory.makePOTMsgSet(template)
-    >>> translation = factory.makeTranslationMessage(pofile=pofile,
+    >>> translation = factory.makeCurrentTranslationMessage(pofile=pofile,
     ...     translator=merged_translator, potmsgset=potmsgset)
-    >>> translation = factory.makeTranslationMessage(pofile=pofile,
+    >>> translation = factory.makeCurrentTranslationMessage(pofile=pofile,
     ...     translator=translator, potmsgset=potmsgset)
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(merged_translator).merged = translator
@@ -173,3 +173,30 @@ We'll create two new accounts to demonstrate this.
 
     >>> u'Mere Pere' in main_text
     False
+
+
+Statistics
+----------
+
+A POFile's details page shows translation statistics.
+
+    >>> login(ADMIN_EMAIL)
+    >>> naked_pofile = removeSecurityProxy(factory.makePOFile())
+    >>> naked_pofile.potemplate.messagecount = 10
+    >>> naked_pofile.untranslated = 3
+    >>> naked_pofile.currentcount = 4
+    >>> naked_pofile.updatescount = 2
+    >>> naked_pofile.rosettacount = 1 + naked_pofile.updatescount
+    >>> pofile_url = canonical_url(naked_pofile) + '/+details'
+    >>> logout()
+
+    >>> browser.open(pofile_url)
+    >>> stats_portlet = find_tag_by_id(browser.contents, 'portlet-stats')
+    >>> print extract_text(stats_portlet)
+    Statistics
+    Messages: 10
+    Translated: 7 (70.0%)
+    Untranslated: 3 (30.0%)
+    Shared between Ubuntu and upstream: 4 (40.0%)
+    Translated differently between Ubuntu and upstream: 2 (20.0%)
+    Only translated on this side: 1 (10.0%)

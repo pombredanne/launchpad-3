@@ -15,6 +15,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     ZopelessDatabaseLayer,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.nameblacklist import (
     INameBlacklist,
     INameBlacklistSet,
@@ -36,20 +37,24 @@ class TestNameBlacklist(TestCaseWithFactory):
         self.caret_foo_exp = self.name_blacklist_set.create(u'^foo')
         self.foo_exp = self.name_blacklist_set.create(u'foo')
         self.verbose_exp = self.name_blacklist_set.create(u'v e r b o s e')
+        team = self.factory.makeTeam()
+        self.admin_exp = self.name_blacklist_set.create(u'fnord', admin=team)
         self.store = IStore(self.foo_exp)
         self.store.flush()
 
-    def name_blacklist_match(self, name):
+    def name_blacklist_match(self, name, user_id=None):
         '''Return the result of the name_blacklist_match stored procedure.'''
+        user_id = user_id or 0
         result = self.store.execute(
-            "SELECT name_blacklist_match(%s)", (name,))
+            "SELECT name_blacklist_match(%s, %s)", (name, user_id))
         return result.get_one()[0]
 
-    def is_blacklisted_name(self, name):
+    def is_blacklisted_name(self, name, user_id=None):
         '''Call the is_blacklisted_name stored procedure and return the result
         '''
+        user_id = user_id or 0
         result = self.store.execute(
-            "SELECT is_blacklisted_name(%s)", (name,))
+            "SELECT is_blacklisted_name(%s, %s)", (name, user_id))
         blacklisted = result.get_one()[0]
         self.failIf(blacklisted is None, 'is_blacklisted_name returned NULL')
         return bool(blacklisted)
@@ -68,6 +73,30 @@ class TestNameBlacklist(TestCaseWithFactory):
         self.assertEqual(
             self.name_blacklist_match(u"barfoo"),
             self.foo_exp.id)
+
+    def test_name_blacklist_match_admin_does_not_match(self):
+        # A user in the expresssion's admin team is exempt from the
+        # backlisted name restriction.
+        user = self.admin_exp.admin.teamowner
+        self.assertEqual(
+            None, self.name_blacklist_match(u"fnord", user.id))
+
+    def test_name_blacklist_match_launchpad_admin_can_change(self):
+        # A Launchpad admin is exempt from any backlisted name restriction
+        # that has an admin.
+        user = self.factory.makePerson()
+        admins = getUtility(ILaunchpadCelebrities).admin
+        admins.addMember(user, user)
+        self.assertEqual(
+            None, self.name_blacklist_match(u"fnord", user.id))
+
+    def test_name_blacklist_match_launchpad_admin_cannot_change(self):
+        # A Launchpad admin cannot override backlisted names without admins.
+        user = self.factory.makePerson()
+        admins = getUtility(ILaunchpadCelebrities).admin
+        admins.addMember(user, user)
+        self.assertEqual(
+            self.foo_exp.id, self.name_blacklist_match(u"barfoo", user.id))
 
     def test_name_blacklist_match_cache(self):
         # If the blacklist is changed in the DB, these changes are noticed.
@@ -91,6 +120,11 @@ class TestNameBlacklist(TestCaseWithFactory):
         self.caret_foo_exp.regexp = u'bar'
         self.foo_exp.regexp = u'bar2'
         self.failUnless(self.is_blacklisted_name(u"foo") is False)
+
+    def test_is_blacklisted_name_admin_false(self):
+        # Users in the expression's admin team are will return False.
+        user = self.admin_exp.admin.teamowner
+        self.assertFalse(self.is_blacklisted_name(u"fnord", user.id))
 
     def test_case_insensitive(self):
         self.failUnless(self.is_blacklisted_name(u"Foo") is True)
@@ -122,6 +156,15 @@ class TestNameBlacklistSet(TestCaseWithFactory):
         self.assertTrue(verifyObject(INameBlacklist, name_blacklist))
         self.assertEqual(u'foo', name_blacklist.regexp)
         self.assertEqual(u'bar', name_blacklist.comment)
+
+    def test_create_with_three_args(self):
+        # Test NameBlacklistSet.create(regexp, comment, admin).
+        team = self.factory.makeTeam()
+        name_blacklist = self.name_blacklist_set.create(u'foo', u'bar', team)
+        self.assertTrue(verifyObject(INameBlacklist, name_blacklist))
+        self.assertEqual(u'foo', name_blacklist.regexp)
+        self.assertEqual(u'bar', name_blacklist.comment)
+        self.assertEqual(team, name_blacklist.admin)
 
     def test_get_int(self):
         # Test NameBlacklistSet.get() with int id.

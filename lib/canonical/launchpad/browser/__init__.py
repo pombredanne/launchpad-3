@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0401
@@ -11,19 +11,17 @@ files in this directory.
 """
 
 from canonical.launchpad.browser.feeds import *
-from canonical.launchpad.browser.launchpad import *
 from canonical.launchpad.browser.launchpadstatistic import *
 from canonical.launchpad.browser.librarian import *
 from canonical.launchpad.browser.logintoken import *
 from canonical.launchpad.browser.oauth import *
-from canonical.launchpad.browser.packagerelationship import *
 from canonical.launchpad.browser.temporaryblobstorage import *
-from canonical.launchpad.browser.widgets import *
 from lp.answers.browser.faq import *
 from lp.answers.browser.faqcollection import *
 from lp.answers.browser.faqtarget import *
 from lp.answers.browser.question import *
 from lp.answers.browser.questiontarget import *
+from lp.app.browser.launchpad import *
 from lp.blueprints.browser.specificationbranch import *
 from lp.blueprints.browser.specificationdependency import *
 from lp.blueprints.browser.specificationfeedback import *
@@ -48,6 +46,7 @@ from lp.registry.browser.karma import *
 from lp.registry.browser.mailinglists import *
 from lp.registry.browser.objectreassignment import *
 from lp.registry.browser.peoplemerge import *
+from lp.registry.browser.poll import *
 from lp.registry.browser.team import *
 from lp.registry.browser.teammembership import *
 # XXX flacoste 2009/03/18 We should use specific imports instead of
@@ -62,3 +61,5 @@ from lp.soyuz.browser.distroseriessourcepackagerelease import *
 from lp.soyuz.browser.publishing import *
 from lp.soyuz.browser.queue import *
 from lp.soyuz.browser.sourcepackagerelease import *
+
+

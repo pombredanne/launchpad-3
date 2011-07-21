@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -46,7 +46,6 @@ from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.validation import validate_new_team_email
-from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
@@ -56,19 +55,22 @@ from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from lp.app.browser.tales import PersonFormatterAPI
 from canonical.lazr.interfaces import IObjectPrivacy
-from canonical.widgets import (
-    HiddenUserWidget,
-    LaunchpadRadioWidget,
-    )
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.browser.tales import PersonFormatterAPI
 from lp.app.errors import UnexpectedFormData
+from lp.app.validators import LaunchpadValidationError
+from lp.app.widgets.itemswidgets import (
+    LaunchpadRadioWidget,
+    LaunchpadRadioWidgetWithDescription,
+    )
+from lp.app.widgets.owner import HiddenUserWidget
+from lp.app.widgets.popup import PersonPickerWidget
 from lp.registry.browser.branding import BrandingChangeView
 from lp.registry.interfaces.mailinglist import (
     IMailingList,
@@ -211,7 +213,8 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
-        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
+        'subscriptionpolicy', LaunchpadRadioWidgetWithDescription,
+        orientation='vertical')
     custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
 
     def setUpFields(self):
@@ -383,8 +386,9 @@ class TeamContactAddressView(MailingListTeamBaseView):
             # The team's mailing list can be used as the contact
             # address. However we need to change the title of the
             # corresponding term to include the list's email address.
-            title = ('The Launchpad mailing list for this team - '
-                     '<strong>%s</strong>' % self.mailinglist_address)
+            title = structured(
+                'The Launchpad mailing list for this team - '
+                '<strong>%s</strong>', self.mailinglist_address)
             hosted_list_term = SimpleTerm(
                 TeamContactMethod.HOSTED_LIST,
                 TeamContactMethod.HOSTED_LIST.name, title)
@@ -891,7 +895,8 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
     custom_widget(
         'renewal_policy', LaunchpadRadioWidget, orientation='vertical')
     custom_widget(
-        'subscriptionpolicy', LaunchpadRadioWidget, orientation='vertical')
+        'subscriptionpolicy', LaunchpadRadioWidgetWithDescription,
+        orientation='vertical')
     custom_widget('teamdescription', TextAreaWidget, height=10, width=30)
 
     def setUpFields(self):
@@ -979,8 +984,7 @@ class ProposedTeamMembersEditView(LaunchpadFormView):
             failed_names = [person.displayname for person in failed_joins]
             failed_list = ", ".join(failed_names)
 
-            mapping=dict(
-                this_team=target_team.displayname,
+            mapping = dict( this_team=target_team.displayname,
                 failed_list=failed_list)
 
             if len(failed_joins) == 1:
@@ -1030,6 +1034,13 @@ class TeamMemberAddView(LaunchpadFormView):
 
     schema = ITeamMember
     label = "Select the new member"
+    # XXX: jcsackett 5.7.2011 bug=799847 The assignment of 'false' to the vars
+    # below should be changed to the more appropriate False bool when we're
+    # making use of the JSON cache to setup pickers, rather than assembling
+    # javascript in a view macro.
+    custom_widget(
+        'newmember', PersonPickerWidget,
+        show_assign_me_button='false', show_remove_button='false')
 
     @property
     def page_title(self):

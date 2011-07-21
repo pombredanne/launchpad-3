@@ -3,10 +3,10 @@
 
 __metaclass__ = type
 
-import transaction
 from storm.expr import LeftJoin
 from storm.store import Store
-from testtools.matchers import Equals
+from testtools.matchers import LessThan
+import transaction
 from zope.component import getUtility
 
 from canonical.config import config
@@ -14,10 +14,9 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
@@ -25,33 +24,33 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.model.bugtask import BugTask
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.browser.person import (
     PersonEditView,
     PersonView,
-    TeamInvitationView)
-
-
+    TeamInvitationView,
+    )
 from lp.registry.interfaces.karma import IKarmaCacheManager
 from lp.registry.interfaces.person import (
-    PersonVisibility,
     IPersonSet,
+    PersonVisibility,
     )
+from lp.registry.interfaces.persontransferjob import IPersonMergeJobSource
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-
 from lp.registry.model.karma import KarmaCategory
 from lp.registry.model.milestone import milestone_sort_key
+from lp.registry.model.person import Person
 from lp.soyuz.enums import (
+    ArchivePurpose,
     ArchiveStatus,
     PackagePublishingStatus,
     )
-from lp.registry.model.person import Person
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     login_person,
@@ -64,6 +63,22 @@ from lp.testing.views import (
     create_initialized_view,
     create_view,
     )
+
+
+class TestPersonIndexView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_is_merge_pending(self):
+        dupe_person = self.factory.makePerson(name='finch')
+        target_person = self.factory.makePerson()
+        job_source = getUtility(IPersonMergeJobSource)
+        job_source.create(from_person=dupe_person, to_person=target_person)
+        view = create_initialized_view(dupe_person, name="+index")
+        notifications = view.request.response.notifications
+        message = 'Finch is queued to be be merged in a few minutes.'
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(message, notifications[0].message)
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
@@ -581,6 +596,11 @@ class TestPersonUploadedPackagesView(TestCaseWithFactory):
     def setUp(self):
         super(TestPersonUploadedPackagesView, self).setUp()
         self.user = self.factory.makePerson()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        spr = self.factory.makeSourcePackageRelease(
+            creator=self.user, archive=archive)
+        self.spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, archive=archive)
         self.view = create_initialized_view(self.user, '+uploaded-packages')
 
     def test_view_helper_attributes(self):
@@ -591,6 +611,15 @@ class TestPersonUploadedPackagesView(TestCaseWithFactory):
             config.launchpad.default_batch_size,
             self.view.max_results_to_display)
 
+    def test_verify_bugs_and_answers_links(self):
+        # Verify the links for bugs and answers point to locations that
+        # exist.
+        html = self.view()
+        expected_base = '/%s/+source/%s' % (
+            self.spph.distroseries.distribution.name,
+            self.spph.source_package_name)
+        self.assertIn('<a href="%s/+bugs">' % expected_base, html)
+        self.assertIn('<a href="%s/+questions">' % expected_base, html)
 
 class TestPersonPPAPackagesView(TestCaseWithFactory):
     """Test the maintained packages view."""
@@ -858,7 +887,7 @@ class BugTaskViewsTestBase:
             prejoins=[(Person, LeftJoin(Person, BugTask.owner==Person.id))]
             bugtasks = view.searchUnbatched(prejoins=prejoins)
             [bugtask.owner for bugtask in bugtasks]
-        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertThat(recorder, HasQueryCount(LessThan(3)))
 
     def test_getMilestoneWidgetValues(self):
         view = create_initialized_view(self.person, self.view_name)
@@ -876,7 +905,7 @@ class BugTaskViewsTestBase:
         Store.of(milestones[0]).invalidate()
         with StormStatementRecorder() as recorder:
             self.assertEqual(expected, view.getMilestoneWidgetValues())
-        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertThat(recorder, HasQueryCount(LessThan(3)))
 
 
 class TestPersonRelatedBugTaskSearchListingView(

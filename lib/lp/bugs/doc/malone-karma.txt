@@ -11,7 +11,7 @@ documentation cleaner:
 Setup an event listener to help ensure karma is assigned when it should.
 
     >>> from zope.event import notify
-    >>> from lp.registry.tests.karma import KarmaAssignedEventListener
+    >>> from lp.testing.karma import KarmaAssignedEventListener
     >>> karma_helper = KarmaAssignedEventListener()
     >>> karma_helper.register_listener()
 

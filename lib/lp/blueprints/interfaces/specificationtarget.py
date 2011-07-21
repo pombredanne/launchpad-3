@@ -19,6 +19,7 @@ from zope.interface import (
     )
 from zope.schema import TextLine
 
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     exported,
     export_as_webservice_entry,
@@ -42,21 +43,21 @@ class IHasSpecifications(Interface):
     associated with them, and you can use this interface to query those.
     """
 
-    all_specifications = exported(
+    all_specifications = exported(doNotSnapshot(
         CollectionField(
             title=_("All specifications"),
             value_type=Reference(schema=Interface),  # ISpecification, really.
             readonly=True,
             description=_(
                 'A list of all specifications, regardless of status or '
-                'approval or completion, for this object.')),
-        ('devel', dict(exported=True)), exported=False)
+                'approval or completion, for this object.'))),
+                                  as_of="devel")
 
     has_any_specifications = Attribute(
         'A true or false indicator of whether or not this object has any '
         'specifications associated with it, regardless of their status.')
 
-    valid_specifications = exported(
+    valid_specifications = exported(doNotSnapshot(
         CollectionField(
             title=_("Valid specifications"),
             value_type=Reference(schema=Interface),  # ISpecification, really.
@@ -64,8 +65,8 @@ class IHasSpecifications(Interface):
             description=_(
                 'All specifications that are not obsolete. When called from '
                 'an ISpecificationGoal it will also exclude the ones that '
-                'have not been accepted for that goal')),
-        ('devel', dict(exported=True)), exported=False)
+                'have not been accepted for that goal'))),
+                                    as_of="devel")
 
     latest_specifications = Attribute(
         "The latest 5 specifications registered for this context.")
@@ -98,7 +99,7 @@ class ISpecificationTarget(IHasSpecifications):
     specifications directly attached to them.
     """
 
-    export_as_webservice_entry()
+    export_as_webservice_entry(as_of="devel")
 
     @operation_parameters(
         name=TextLine(title=_('The name of the specification')))

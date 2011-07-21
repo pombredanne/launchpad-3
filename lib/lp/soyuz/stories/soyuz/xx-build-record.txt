@@ -319,9 +319,9 @@ appropriate 'Build status' section the user will see 2 new sections,
     >>> binaries = stp.uploadBinaryForBuild(build, 'testing-bin')
     >>> upload = stp.distroseries.createQueueEntry(
     ...     PackagePublishingPocket.RELEASE,
+    ...     stp.distroseries.main_archive,
     ...     'testing_1.0_all.changes',
-    ...     'nothing-special',
-    ...     stp.distroseries.main_archive)
+    ...     'nothing-special')
     >>> unused = upload.addBuild(build)
     >>> logout()
 
@@ -543,7 +543,7 @@ If the source package was created from a recipe build, link to it.
     ...
 
     >>> print anon_browser.getLink('~cprov/product/mybranch recipe build').url
-    http://code.launchpad.dev/~cprov/+recipe/myrecipe/+build/1
+    http://launchpad.dev/~cprov/+archive/ppa/+recipebuild/1
 
 Finally, the 'Build files' section is identical for PPA builds.
 

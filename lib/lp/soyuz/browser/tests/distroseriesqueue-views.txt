@@ -294,5 +294,5 @@ is_new() method requires to work.
 
 We created librarian files that need cleaning up before leaving the test.
 
-  >>> from canonical.librarian.testing.server import cleanupLibrarianFiles
-  >>> cleanupLibrarianFiles()
+  >>> from canonical.testing.layers import LibrarianLayer
+  >>> LibrarianLayer.librarian_fixture.clear()

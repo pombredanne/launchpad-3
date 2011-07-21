@@ -29,15 +29,13 @@ person).
 
     >>> priv_subscription = bug.subscribe(team_owner, priv_team)
 
-The same team cannot unsubscribe the person, though.
+The same team can also unsubscribe the person.
 
     >>> bug.unsubscribe(team_owner, priv_team)
-    Traceback (most recent call last):
-    ...
-    UserCannotUnsubscribePerson: ...
 
 Only the person can unsubscribe him or her self.
 
+    >>> priv_subscription = bug.subscribe(team_owner, priv_team)
     >>> bug.unsubscribe(team_owner, team_owner)
 
 
@@ -157,8 +155,6 @@ Private teams can have structural subscriptions to products.
     ...     subscriber=priv_team, subscribed_by=team_owner)
     >>> sub.target
     <Product at ...>
-    >>> sub.bug_notification_level
-    <DBItem BugNotificationLevel.NOTHING, (10) Nothing>
 
 
 Structural Subscription to Distributions
@@ -171,8 +167,6 @@ Private teams can have structural subscriptions to distros.
     ...     subscriber=priv_team, subscribed_by=team_owner)
     >>> sub.target
     <Distribution 'Ubuntu' (ubuntu)>
-    >>> sub.bug_notification_level
-    <DBItem BugNotificationLevel.NOTHING, (10) Nothing>
 
 
 Project Roles

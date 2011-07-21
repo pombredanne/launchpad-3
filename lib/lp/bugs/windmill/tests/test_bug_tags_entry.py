@@ -6,28 +6,26 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
 import transaction
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.windmill.testing import (
+from lp.bugs.windmill.testing import BugsWindmillLayer
+from lp.testing import WindmillTestCase
+from lp.testing.windmill import (
     constants,
     lpuser,
     )
-from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import WindmillTestCase
 
 
 class TestBugTagsEntry(WindmillTestCase):
+    """XXX: Move to YUI test."""
 
     layer = BugsWindmillLayer
     suite_name = 'Bug tags entry test'
 
     def test_bug_tags_entry(self):
         """Test bug tags inline, auto-completing UI."""
-        client = self.client
 
         # First, we add some official tags to test with
 
@@ -36,16 +34,12 @@ class TestBugTagsEntry(WindmillTestCase):
             u'eenie', u'meenie', u'meinie', u'moe']
         bug = self.factory.makeBug(product=product)
         removeSecurityProxy(bug).tags = ['unofficial-tag']
-        bug_url = canonical_url(bug)
         transaction.commit()
 
 
         # Now let's tag a bug using the auto-complete widget
 
-        client.open(url=bug_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        lpuser.FOO_BAR.ensure_login(client)
-        client.waits.sleep(milliseconds=constants.SLEEP)
+        client, start_url = self.getClientFor(bug, user=lpuser.FOO_BAR)
 
         # XXX intellectronica 2009-05-26:
         # We (almost) consistently get an error on the following line
@@ -67,15 +61,9 @@ class TestBugTagsEntry(WindmillTestCase):
 
         # Test that anonymous users are prompted to log in.
 
-        lpuser.ANONYMOUS.ensure_login(client)
-        client.open(url=bug_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client, start_url = self.getClientForAnonymous(bug)
         client.waits.sleep(milliseconds=constants.SLEEP)
         client.click(id=u'edit-tags-trigger')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.asserts.assertJS(
             js=u'window.location.href.indexOf("+openid") > 0')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

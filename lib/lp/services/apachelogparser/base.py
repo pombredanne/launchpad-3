@@ -6,7 +6,10 @@ import gzip
 import os
 
 from contrib import apachelog
-from lazr.uri import URI
+from lazr.uri import (
+    InvalidURIError,
+    URI,
+    )
 import pytz
 from zope.component import getUtility
 
@@ -23,18 +26,16 @@ from lp.services.geoip.interfaces import IGeoIP
 parser = apachelog.parser(apachelog.formats['extended'])
 
 
-def get_files_to_parse(root, file_names):
+def get_files_to_parse(file_paths):
     """Return an iterator of file and position where reading should start.
 
     The lines read from that position onwards will be the ones that have not
     been parsed yet.
 
-    :param root: The directory where the files are stored.
-    :param file_names: The names of the files.
+    :param file_paths: The paths to the files.
     """
     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    for file_name in file_names:
-        file_path = os.path.join(root, file_name)
+    for file_path in file_paths:
         fd, file_size = get_fd_and_file_size(file_path)
         first_line = unicode(fd.readline())
         parsed_file = store.find(ParsedApacheLog, first_line=first_line).one()
@@ -220,6 +221,12 @@ def get_method_and_path(request):
         # This is the common case.
         path = first
     if path.startswith('http://') or path.startswith('https://'):
-        uri = URI(path)
-        path = uri.path
+        try:
+            uri = URI(path)
+            path = uri.path
+        except InvalidURIError:
+            # The URL is not valid, so we can't extract a path. Let it
+            # pass through, where it will probably be skipped when no
+            # download key can be determined.
+            pass
     return method, path

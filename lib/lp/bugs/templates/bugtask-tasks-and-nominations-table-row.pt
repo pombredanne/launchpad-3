@@ -9,17 +9,14 @@
           form_row_id string:task${context/id}">
   <tr tal:define="editstatus_url string:${context/fmt:url}/+editstatus"
       tal:attributes="class view/getTaskRowCSSClass; id row_id">
-    <td class="icon left right">
+    <td>
       <metal:expander
           metal:define-macro="expander"
           tal:define="expander_link_text expander_link_text|nothing">
         <a tal:condition="expandable"
-           tal:attributes="
-            href tasklink;
-            onclick string:return toggleFormVisibility('${form_row_id}')"
-            class="sprite bug-status-expand">
-          &nbsp;
+           tal:attributes="href tasklink" class="bugtask-expander">
           <tal:link_text tal:replace="expander_link_text" />
+          &#8203;
         </a>
         <tal:no_expander tal:condition="not: expandable"
                          tal:replace="expander_link_text" />
@@ -49,7 +46,7 @@
         <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
           Edit
         </button>
-        <div class="yui3-activator-message-box yui3-activator-hidden" />
+        <div class="yui3-activator-message-box yui3-activator-hidden"></div>
       </span>
     </td>
 
@@ -143,7 +140,7 @@
           <button class="lazr-btn yui3-activator-act yui3-activator-hidden">
             Edit
           </button>
-          <div class="yui3-activator-message-box yui3-activator-hidden" />
+          <div class="yui3-activator-message-box yui3-activator-hidden"></div>
         </span>
       </tal:has_no_watch>
     </td>
@@ -175,19 +172,32 @@
           class="bugtasks-table-row-init-script"
           tal:condition="not:view/many_bugtasks"
           tal:content="string:
-    LPS.use('event', 'lp.bugs.bugtask_index', function(Y) {
-        Y.on('load',
-             function(e) {
-                 Y.lp.bugs.bugtask_index.setup_bugtask_row(${view/js_config});
-             },
-             window);
+    LPS.use('event', 'lp.bugs.bugtask_index', 'lp.app.widgets.expander',
+            function(Y) {
+        Y.on('domready', function() {
+          Y.lp.bugs.bugtask_index.setup_bugtask_row(${view/js_config});
+
+          // Set-up the expander on the bug task summary row.
+          var icon_node = Y.one('tr#${row_id} a.bugtask-expander');
+          var row_node = Y.one('tr#${form_row_id}');
+          if (Y.Lang.isValue(row_node)) {
+            // When no row is present, this is bug task on a project with
+            // multiple per-series tasks, so we do not need to set
+            // the expander for the descriptive parent project task.
+            var content_node = row_node.one('td form');
+            var expander = new Y.lp.app.widgets.expander.Expander(
+              icon_node, row_node, { animate_node: content_node });
+            expander.setUp();
+          }
+        });
     });
   "/>
+
   <tal:form condition="view/displayEditForm">
     <tr
       tal:attributes="id form_row_id"
       tal:condition="expandable"
-      style="display: none"
+      class="bugtask-collapsible-content unseen"
     >
      <td colspan="7" tal:content="structure view/edit_view" />
     </tr>

@@ -52,8 +52,8 @@ from zope.schema import (
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.version import sane_version
+from lp.app.validators import LaunchpadValidationError
+from lp.app.validators.version import sane_version
 from lp.services.fields import (
     ContentNameField,
     PersonChoice,
@@ -217,7 +217,7 @@ class IProductReleaseFilePublic(Interface):
 class IProductReleaseFile(IProductReleaseFileEditRestricted,
                           IProductReleaseFilePublic):
     """A file associated with a ProductRelease."""
-    export_as_webservice_entry("project_release_file")
+    export_as_webservice_entry("project_release_file", publish_web_link=False)
 
 
 class IProductReleaseEditRestricted(Interface):

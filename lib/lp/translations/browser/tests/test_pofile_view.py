@@ -11,16 +11,22 @@ from datetime import (
 import pytz
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.testing.layers import ZopelessDatabaseLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.app.errors import UnexpectedFormData
 from lp.testing import (
+    BrowserTestCase,
     login,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.translations.browser.pofile import (
     POFileBaseView,
     POFileTranslateView,
     )
+from lp.translations.enums import TranslationPermission
 
 
 class TestPOFileBaseViewFiltering(TestCaseWithFactory):
@@ -47,25 +53,29 @@ class TestPOFileBaseViewFiltering(TestCaseWithFactory):
         # A translated message.
         self.translated = self.factory.makePOTMsgSet(
             self.potemplate, sequence=2)
-        self.factory.makeTranslationMessage(self.pofile, self.translated)
+        self.factory.makeCurrentTranslationMessage(
+            self.pofile, self.translated)
         # A translated message with a new suggestion.
         self.new_suggestion = self.factory.makePOTMsgSet(
             self.potemplate, sequence=3)
-        self.factory.makeTranslationMessage(
-            self.pofile, self.new_suggestion,
-            date_updated=self.now())
-        self.factory.makeTranslationMessage(
-            self.pofile, self.new_suggestion, suggestion=True,
-            date_updated=self.now())
-        # An imported that was changed in Launchpad.
-        self.changed = self.factory.makePOTMsgSet(
-            self.potemplate, sequence=4)
-        self.factory.makeTranslationMessage(
-            self.pofile, self.changed, is_imported=True,
-            date_updated=self.now())
-        self.factory.makeTranslationMessage(
-            self.pofile, self.changed,
-            date_updated=self.now())
+        now = self.now()
+        self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=self.new_suggestion,
+            date_created=now, date_reviewed=now)
+        now = self.now()
+        self.factory.makeSuggestion(
+            pofile=self.pofile, potmsgset=self.new_suggestion,
+            date_created=now)
+        # An upstream that was changed in Ubuntu.
+        self.changed = self.factory.makePOTMsgSet(self.potemplate, sequence=4)
+        now = self.now()
+        ubuntu_translation = self.factory.makeSuggestion(
+            pofile=self.pofile, potmsgset=self.changed, date_created=now)
+        ubuntu_translation.is_current_ubuntu = True
+        now = self.now()
+        self.factory.makeCurrentTranslationMessage(
+            pofile=self.pofile, potmsgset=self.changed, date_created=now,
+            date_reviewed=now)
 
         # Update statistics so that shown_count returns correct values.
         self.pofile.updateStatistics()
@@ -108,8 +118,8 @@ class TestPOFileBaseViewFiltering(TestCaseWithFactory):
         self.assertEqual(1, view.shown_count)
         self._assertEqualPOTMsgSets([self.new_suggestion], view.messages)
 
-    def test_show_changed_in_launchpad(self):
-        form = {'show': 'changed_in_launchpad'}
+    def test_show_changed_in_ubuntu(self):
+        form = {'show': 'changed_in_ubuntu'}
         view = POFileBaseView(self.pofile, LaunchpadTestRequest(form=form))
         view.initialize()
         self.assertEqual(1, view.shown_count)
@@ -197,8 +207,7 @@ class DocumentationScenarioMixin:
     def _useNonnewTranslator(self):
         """Create a user who's done translations, and log in as that user."""
         user = self._makeLoggedInUser()
-        self.factory.makeSharedTranslationMessage(
-            translator=user, suggestion=True)
+        self.factory.makeSuggestion(translator=user)
         return user
 
     def _makeView(self, pofile=None, request=None):
@@ -432,3 +441,37 @@ class TestPOFileTranslateViewDocumentation(TestCaseWithFactory,
                                            DocumentationScenarioMixin):
     layer = ZopelessDatabaseLayer
     view_class = POFileTranslateView
+
+
+class TestBrowser(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_unwritable_translation_credits(self):
+        """Text of credits should be sane for non-editors."""
+        # Make the user a translator so they can see translations.
+        self.factory.makeTranslator(person=self.user)
+        pofile = self.factory.makePOFile()
+        # Restrict translations so that the translator cannot change it.
+        product = pofile.potemplate.productseries.product
+        with person_logged_in(product.owner):
+            product.translationpermission = TranslationPermission.CLOSED
+        # Add credits so that they show in the UI
+        credits = self.factory.makePOTMsgSet(
+            potemplate=pofile.potemplate, singular='translator-credits')
+        browser = self.getViewBrowser(pofile)
+        self.assertNotIn('This is a dummy translation', browser.contents)
+        self.assertIn('(no translation yet)', browser.contents)
+
+    def test_anonymous_translation_credits(self):
+        """Credits should be hidden for non-logged-in users."""
+        pofile = self.factory.makePOFile()
+        # Restrict translations so that the translator cannot change it.
+        product = pofile.potemplate.productseries.product
+        # Add credits so that they show in the UI
+        credits = self.factory.makePOTMsgSet(
+            potemplate=pofile.potemplate, singular='translator-credits')
+        browser = self.getViewBrowser(pofile, no_login=True)
+        self.assertTextMatchesExpressionIgnoreWhitespace(
+            'To prevent privacy issues, this translation is not available to'
+            ' anonymous users', browser.contents)

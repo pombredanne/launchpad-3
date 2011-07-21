@@ -19,7 +19,7 @@ somebody are subject to expiration.
 
     # Sanity check in case somebody modifies the question sampledata and
     # forget to update this script.
-    >>> from lp.answers.interfaces.questionenums import QuestionStatus
+    >>> from lp.answers.enums import QuestionStatus
     >>> from lp.answers.model.question import Question
     >>> Question.select('status IN (%i,%i)' % (
     ...     QuestionStatus.OPEN.value,
@@ -82,7 +82,7 @@ somebody are subject to expiration.
     >>> old_open_question.subscribe(admin_team)
     <QuestionSubscription...>
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
-    >>> old_open_question.target.addAnswerContact(salgado)
+    >>> old_open_question.target.addAnswerContact(salgado, salgado)
     True
 
     # Link it to a FAQ item for the same reason. We are setting the

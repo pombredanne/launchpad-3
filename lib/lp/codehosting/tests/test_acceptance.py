@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Acceptance tests for the codehosting server."""
@@ -12,6 +12,7 @@ import signal
 import subprocess
 import sys
 import unittest
+import urllib2
 import xmlrpclib
 
 import bzrlib.branch
@@ -684,6 +685,16 @@ class SmartserverTests(SSHTestCase):
         last_line = self.assertCantPush(self.local_branch_path, remote_url)
         self.assertTrue(
             message in last_line, '%r not in %r' % (message, last_line))
+
+    def test_web_status_available(self):
+        # There is an HTTP service that reports whether the SSH server is
+        # available for new connections.
+        # Munge the config value in strport format into a URL.
+        self.assertEqual('tcp:', config.codehosting.web_status_port[:4])
+        port = int(config.codehosting.web_status_port[4:])
+        web_status_url = 'http://localhost:%d/' % port
+        urllib2.urlopen(web_status_url)
+
 
 
 def make_server_tests(base_suite, servers):

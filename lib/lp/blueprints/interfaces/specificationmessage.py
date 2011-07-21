@@ -18,7 +18,7 @@ from zope.schema import (
     Int,
     )
 
-from canonical.launchpad.interfaces.message import IMessage
+from lp.services.messages.interfaces.message import IMessage
 from lp.blueprints.interfaces.specification import ISpecification
 
 

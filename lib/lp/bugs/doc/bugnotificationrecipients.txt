@@ -43,9 +43,9 @@ appropriate for an email footer.
 
     >>> print_rationales(recipients)
     foo.bar@canonical.com
-        Subscriber (mozilla-firefox in ubuntu)
+        Subscriber (mozilla-firefox in Ubuntu)
         You received this bug notification because you are subscribed
-        to mozilla-firefox in ubuntu.
+        to mozilla-firefox in Ubuntu.
     mark@example.com
         Assignee
         You received this bug notification because you are a bug assignee.
@@ -55,8 +55,8 @@ appropriate for an email footer.
         Ubuntu Team, which is the registrant for Ubuntu.
     test@canonical.com
         Subscriber
-        You received this bug notification because you are a direct
-        subscriber of the bug.
+        You received this bug notification because you are subscribed
+        to the bug report.
 
 The Bug-BugNotificationRecipients API
 =====================================
@@ -104,21 +104,21 @@ If we print out the recipients and rationales, here's what we get:
 
     >>> print_rationales(recipients)
     carlos@canonical.com
-        Subscriber (pmount in debian)
+        Subscriber (pmount in Debian)
         You received this bug notification because you are subscribed
-        to pmount in debian.
+        to pmount in Debian.
     foo.bar@canonical.com
         Subscriber of Duplicate
-        You received this bug notification because you are a direct
-        subscriber of a duplicate bug.
+        You received this bug notification because you are subscribed
+        to a duplicate bug report.
     no-priv@canonical.com
         Assignee
         You received this bug notification because you are a bug
         assignee.
     test@canonical.com
         Subscriber
-        You received this bug notification because you are a direct
-        subscriber of the bug.
+        You received this bug notification because you are subscribed
+        to the bug report.
 
 Note how we account for every important variation in bug subscriptions
 here: bug supervisors, subscribers, dupe subscribers and more.
@@ -156,21 +156,21 @@ themselves why the hell they are getting email for bug 1.
 
     >>> print_rationales(recipients)
     carlos@canonical.com
-        Subscriber (pmount in debian) via Bug 2
+        Subscriber (pmount in Debian) via Bug 2
         You received this bug notification because you are subscribed
-        to pmount in debian (via bug 2).
+        to pmount in Debian (via bug 2).
     foo.bar@canonical.com
         Subscriber of Duplicate via Bug 2
-        You received this bug notification because you are a direct
-        subscriber of a duplicate bug (via bug 2).
+        You received this bug notification because you are subscribed
+        to a duplicate bug report (via bug 2).
     no-priv@canonical.com
         Assignee via Bug 2
         You received this bug notification because you are a bug
         assignee (via bug 2).
     test@canonical.com
         Subscriber via Bug 2
-        You received this bug notification because you are a direct
-        subscriber of the bug (via bug 2).
+        You received this bug notification because you are subscribed
+        to the bug report (via bug 2).
 
 Team subscribers are special
 ============================
@@ -196,8 +196,8 @@ Here's an example of this situation:
     >>> vcs_imports = personset.getByName("vcs-imports")
     >>> recipients.addRegistrant(vcs_imports, gnomebaker)
 
-    >>> shipit_admins = personset.getByName("shipit-admins")
-    >>> recipients.addDirectSubscriber(shipit_admins)
+    >>> commercial_admins = personset.getByName("commercial-admins")
+    >>> recipients.addDirectSubscriber(commercial_admins)
 
 You'll notice that the rationales this time state clearly which team
 membership is causing us to send mail.
@@ -206,8 +206,13 @@ membership is causing us to send mail.
       carlos@canonical.com
           Subscriber of Duplicate @testing-spanish-team
           You received this bug notification because you are a member
-          of testing Spanish team, which is a subscriber of a
-          duplicate bug.
+          of testing Spanish team, which is subscribed to a
+          duplicate bug report.
+      commercial-member@canonical.com
+          Subscriber @commercial-admins
+          You received this bug notification because you are a member
+          of Commercial Subscription Admins, which is subscribed to the
+          bug report.
       david.allouche@canonical.com
           Registrant (gnomebaker) @vcs-imports
           You received this bug notification because you are a member
@@ -215,22 +220,18 @@ membership is causing us to send mail.
       foo.bar@canonical.com
           Subscriber of Duplicate @testing-spanish-team
           You received this bug notification because you are a member
-          of testing Spanish team, which is a subscriber of a
-          duplicate bug.
+          of testing Spanish team, which is subscribed to a
+          duplicate bug report.
       kurem@debian.cz
           Subscriber of Duplicate @testing-spanish-team
           You received this bug notification because you are a member
-          of testing Spanish team, which is a subscriber of a
-          duplicate bug.
-      marilize@hbd.com
-          Subscriber @shipit-admins
-          You received this bug notification because you are a member
-          of ShipIt Administrators, which is a direct subscriber.
+          of testing Spanish team, which is subscribed to a
+          duplicate bug report.
       mark@example.com
           Subscriber of Duplicate @testing-spanish-team
           You received this bug notification because you are a member
-          of testing Spanish team, which is a subscriber of a
-          duplicate bug.
+          of testing Spanish team, which is subscribed to a
+          duplicate bug report.
       robertc@robertcollins.net
           Registrant (gnomebaker) @vcs-imports
           You received this bug notification because you are a member
@@ -240,15 +241,15 @@ membership is causing us to send mail.
           You received this bug notification because you are a member
           of GuadaMen, which is a bug assignee.
       test@canonical.com
-          Subscriber (pmount in debian) @name20
+          Subscriber (pmount in Debian) @name20
           You received this bug notification because you are a member
           of Warty Security Team, which is subscribed to pmount in
-          debian.
+          Debian.
       tsukimi@quaqua.net
           Subscriber of Duplicate @testing-spanish-team
           You received this bug notification because you are a member
-          of testing Spanish team, which is a subscriber of a
-          duplicate bug.
+          of testing Spanish team, which is subscribed to a
+          duplicate bug report.
 
 This doesn't help the end-user too much if he's a member of this team
 indirectly (for instance, if he's a member of a team which is in turn a
@@ -276,12 +277,12 @@ upstream registrant. However, if we ask the rationales instance:
     >>> print_rationales(recipients)
     foo.bar@canonical.com
         Subscriber
-        You received this bug notification because you are a direct
-        subscriber of the bug.
+        You received this bug notification because you are subscribed
+        to the bug report.
     test@canonical.com
         Subscriber
-        You received this bug notification because you are a direct
-        subscriber of the bug.
+        You received this bug notification because you are subscribed
+        to the bug report.
 
 Only the first rationale is presented. This is the case even if we
 update this set of recipients with another one:
@@ -296,12 +297,12 @@ don't matter:
     >>> print_rationales(recipients2)
     foo.bar@canonical.com
         Subscriber
-        You received this bug notification because you are a direct
-        subscriber of the bug.
+        You received this bug notification because you are subscribed
+        to the bug report.
     test@canonical.com
         Subscriber of Duplicate
-        You received this bug notification because you are a direct
-        subscriber of a duplicate bug.
+        You received this bug notification because you are subscribed
+        to a duplicate bug report.
 
 This may be seen as a limitation, but you don't want a 10-line rationale
 footer for people who are central to Launchpad, so for now it's the way

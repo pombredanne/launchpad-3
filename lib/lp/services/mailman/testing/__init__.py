@@ -18,6 +18,9 @@ from Mailman import (
     mm_cfg,
     )
 from Mailman.Queue import XMLRPCRunner
+from Mailman.Logging.Syslog import syslog
+from Mailman.Queue.sbcache import get_switchboard
+
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -55,14 +58,17 @@ class MailmanTestCase(TestCaseWithFactory):
         self.cleanMailmanList(self.mm_list)
 
     def makeMailmanList(self, lp_mailing_list):
-        # This utility is based on mailman/tests/TestBase.py.
-        mlist = MailList.MailList()
         team = lp_mailing_list.team
-        self.cleanMailmanList(None, team.name)
         owner_email = removeSecurityProxy(team.teamowner).preferredemail.email
-        mlist.Create(team.name, owner_email, 'password')
-        mlist.host_name = 'lists.launchpad.dev'
-        mlist.web_page_url = 'http://lists.launchpad.dev/mailman/'
+        return self.makeMailmanListWithoutTeam(team.name, owner_email)
+
+    def makeMailmanListWithoutTeam(self, list_name, owner_email):
+        # This utility is based on mailman/tests/TestBase.py.
+        self.cleanMailmanList(None, list_name)
+        mlist = MailList.MailList()
+        mlist.Create(list_name, owner_email, 'password')
+        mlist.host_name = mm_cfg.DEFAULT_URL_HOST
+        mlist.web_page_url = 'http://%s/mailman/' % mm_cfg.DEFAULT_URL_HOST
         mlist.personalize = 1
         mlist.include_rfc2369_headers = False
         mlist.use_dollar_strings = True
@@ -81,13 +87,14 @@ class MailmanTestCase(TestCaseWithFactory):
             'archives/private/%s.mbox',
             'archives/public/%s',
             'archives/public/%s.mbox',
+            'mhonarc/%s',
             ]
         for dirtmpl in paths:
             list_dir = os.path.join(mm_cfg.VAR_PREFIX, dirtmpl % list_name)
             if os.path.islink(list_dir):
                 os.unlink(list_dir)
             elif os.path.isdir(list_dir):
-                shutil.rmtree(list_dir)
+                shutil.rmtree(list_dir, ignore_errors=True)
 
     def makeMailmanMessage(self, mm_list, sender, subject, content,
                            mime_type='plain', attachment=None):
@@ -107,3 +114,48 @@ class MailmanTestCase(TestCaseWithFactory):
         mm_message = email.message_from_string(
             message.as_string(), Message.Message)
         return mm_message
+
+    def get_log_entry(self, match_text):
+        """Return the first matched text line found in the log."""
+        log_path = syslog._logfiles['xmlrpc']._Logger__filename
+        mark = None
+        with open(log_path, 'r') as log_file:
+            for line in log_file.readlines():
+                if match_text in line:
+                    mark = line
+                    break
+        return mark
+
+    def get_mark(self):
+        """Return the --MARK-- entry from the log or None."""
+        return self.get_log_entry('--MARK--')
+
+    def reset_log(self):
+        """Truncate the log."""
+        log_path = syslog._logfiles['xmlrpc']._Logger__filename
+        syslog._logfiles['xmlrpc'].close()
+        with open(log_path, 'w') as log_file:
+            log_file.truncate()
+        syslog.write_ex('xmlrpc', 'Reset by test.')
+
+    def assertIsEnqueued(self, msg):
+        """Assert the message was appended to the incoming queue."""
+        switchboard = get_switchboard(mm_cfg.INQUEUE_DIR)
+        file_path = switchboard.files()[-1]
+        queued_msg, queued_msg_data = switchboard.dequeue(file_path)
+        self.assertEqual(msg['message-id'], queued_msg['message-id'])
+
+    @contextmanager
+    def raise_proxy_exception(self, method_name):
+        """Raise an exception when calling the passed proxy method name."""
+
+        def raise_exception(*args):
+            raise Exception('Test exception handling.')
+
+        proxy = XMLRPCRunner.get_mailing_list_api_proxy()
+        original_method = getattr(proxy.__class__, method_name)
+        setattr(proxy.__class__, method_name, raise_exception)
+        try:
+            yield
+        finally:
+            setattr(proxy.__class__, method_name, original_method)

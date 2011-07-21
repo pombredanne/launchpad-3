@@ -42,7 +42,7 @@ A distribution source package has a name, displayname, title, and a summary.
     pmount
 
     >>> print dsp.displayname
-    pmount in ubuntu
+    pmount in Ubuntu
 
     >>> print dsp.title.encode('ascii', 'ignore')
     pmount package in Ubuntu
@@ -54,7 +54,6 @@ A distribution source package has a name, displayname, title, and a summary.
 Aggregate attributes
 --------------------
 
-    u'pmount in ubuntu'
     >>> dsp.bugtasks().count()
     0
 

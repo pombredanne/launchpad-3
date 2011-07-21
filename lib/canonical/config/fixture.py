@@ -28,7 +28,6 @@ class ConfigFixture(Fixture):
     _extend_str = dedent("""\
         [meta]
         extends: ../%s/launchpad-lazr.conf
-        
         """)
 
     def __init__(self, instance_name, copy_from_instance):
@@ -44,6 +43,10 @@ class ConfigFixture(Fixture):
         """Add sectioncontent to the lazy config."""
         with open(self.absroot + '/launchpad-lazr.conf', 'ab') as out:
             out.write(sectioncontent)
+        # Trigger a refresh if and only if the config is in use at the moment
+        # in order to make these new values available.
+        if config.instance_name == self.instance_name:
+            config._invalidateConfig()
 
     def setUp(self):
         super(ConfigFixture, self).setUp()

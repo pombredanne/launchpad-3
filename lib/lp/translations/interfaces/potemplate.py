@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -34,6 +34,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.fields import PersonChoice
 from lp.translations.interfaces.rosettastats import IRosettaStats
@@ -168,6 +169,17 @@ class IPOTemplate(IRosettaStats):
         required=False,
         vocabulary="SourcePackageName")
 
+    sourcepackagenameID = Int(
+        title=_("Source Package Name ID"),
+        description=_(
+            "The ID of the source package that uses this template."),
+        required=False,
+        readonly=True)
+
+    sourcepackage = Reference(
+        ISourcePackage, title=u"Source package this template is for, if any.",
+        required=False, readonly=True)
+
     from_sourcepackagename = Choice(
         title=_("From Source Package Name"),
         description=_(
@@ -251,9 +263,6 @@ class IPOTemplate(IRosettaStats):
             value_type=Reference(schema=Interface)),
         exported_as='translation_files')
 
-    relatives_by_name = Attribute(
-        _('All `IPOTemplate` objects that have the same name asa this one.'))
-
     relatives_by_source = Attribute(
         _('''All `IPOTemplate` objects that have the same source.
             For example those that came from the same productseries or the
@@ -305,6 +314,9 @@ class IPOTemplate(IRosettaStats):
             Some formats, such as Mozilla's XPI, use symbolic msgids where
             gettext uses the original English strings to identify messages.
             """))
+
+    translation_side = Int(
+        title=_("Translation side"), required=True, readonly=True)
 
     def __iter__():
         """Return an iterator over current `IPOTMsgSet` in this template."""
@@ -377,6 +389,15 @@ class IPOTemplate(IRosettaStats):
         """Same as getPOTMsgSetByMsgIDText(), with only_current=True
         """
 
+    def sharingKey():
+        """A key for determining the sharing precedence of a template.
+
+        Active templates have precedence over inactive ones.
+        Development foci have precendence over non-development foci.
+        Product development foci have precedence over Package development
+        foci.
+        """
+
     def getPOTMsgSetByID(id):
         """Return the POTMsgSet object related to this POTemplate with the id.
 
@@ -399,6 +420,11 @@ class IPOTemplate(IRosettaStats):
         """Get the PO file of the given language.
 
         Return None if there is no such POFile.
+        """
+
+    def getOtherSidePOTemplate():
+        """Get the POTemplate with the same name on the other side of a
+        packaging link.
         """
 
     def hasPluralMessage():
@@ -480,13 +506,21 @@ class IPOTemplate(IRosettaStats):
         :return: The newly created message set.
         """
 
-    def getOrCreateSharedPOTMsgSet(singular_text, plural_text, context=None):
+    def getOrCreateSharedPOTMsgSet(singular_text, plural_text, context=None,
+                                   initial_file_references=None,
+                                   initial_source_comment=None):
         """Finds an existing shared POTMsgSet to use or creates a new one.
 
         :param singular_text: string containing singular form.
         :param plural_text: string containing plural form.
         :param context: context to differentiate between two messages with
         same singular_text and plural_text.
+        :param initial_file_references: Initializer for file_references if
+            a new POTMsgSet needs to be created.  Will not be set on an
+            existing POTMsgSet.
+        :param initial_source_comment: Initializer for source_comment if
+            a new POTMsgSet needs to be created.  Will not be set on an
+            existing POTMsgSet.
         :return: existing or new shared POTMsgSet with a sequence of 0
         in this POTemplate.
         """
@@ -507,6 +541,15 @@ class IPOTemplate(IRosettaStats):
 
     def getTranslationRows():
         """Return the `IVPOTexport` objects for this template."""
+
+    def awardKarma(person, action_name):
+        """Award karma for a translation action on this template."""
+
+    def getTranslationPolicy():
+        """Return the applicable `ITranslationPolicy` object.
+
+        The returned object is either a `Product` or a `Distribution`.
+        """
 
 
 class IPOTemplateSubset(Interface):
@@ -548,7 +591,7 @@ class IPOTemplateSubset(Interface):
     def __getitem__(name):
         """Get a POTemplate by its name."""
 
-    def new(name, translation_domain, path, owner):
+    def new(name, translation_domain, path, owner, copy_pofiles=True):
         """Create a new template for the context of this Subset."""
 
     def getPOTemplateByName(name):
@@ -642,14 +685,6 @@ class IPOTemplateSet(Interface):
         Return None if there is no such `IPOTemplate`.
         """
 
-    def compareSharingPrecedence(left, right):
-        """Sort comparison: order sharing templates by precedence.
-
-        Sort using this function to order sharing templates from most
-        representative to least representative, as per the message-sharing
-        migration spec.
-        """
-
     def wipeSuggestivePOTemplatesCache():
         """Erase suggestive-templates cache.
 
@@ -691,6 +726,29 @@ class IPOTemplateSharingSubset(Interface):
         :param potemplate_name: The name of the template for which to find
             sharing equivalents.
         :return: A list of all potemplates of the same name from all series.
+        """
+
+    def getSharingPOTemplatesByRegex(name_pattern=None):
+        """Find all sharing templates with names matching the given pattern.
+
+        If name_pattern is None, match is performed on the template name.
+        Use with care as it may return all templates in a distribution!
+
+        :param name_pattern: A POSIX regular expression that the template
+           is matched against.
+        :return: A list of all potemplates matching the pattern.
+        """
+
+    def getSharingPOTemplateIDs(potemplate_name):
+        """Find database ids of all sharing templates of the given name.
+
+        For distributions this method requires that sourcepackagename is set.
+        This avoids serialization of full POTemplate objects.
+
+        :param potemplate_name: The name of the template for which to find
+            sharing equivalents.
+        :return: A list of database ids of all potemplates of the same name
+            from all series.
         """
 
     def groupEquivalentPOTemplates(name_pattern=None):

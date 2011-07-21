@@ -367,7 +367,7 @@ The architecture also has a 'chroot_url' attribute directly referencing
 the file.
 
     >>> print hoary.getDistroArchSeries('hppa').chroot_url
-    http://localhost:58000/.../filename...
+    http://.../filename...
     >>> hoary.getDistroArchSeries('hppa').chroot_url == \
     ...     chroot.http_url
     True

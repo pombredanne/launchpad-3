@@ -15,8 +15,8 @@ front page.
     >>> user_browser.open('http://answers.launchpad.dev/')
     >>> question_portlet = find_tag_by_id(
     ...     user_browser.contents, 'latest-questions-solved')
-    >>> for tr in question_portlet.findAll('tr'):
-    ...     tr['title']
+    >>> for li in question_portlet.findAll('li'):
+    ...     li['title']
     u'I am not able to ... if i click on a mailto:user@domain.com link ...'
 
 He can also see the email address in the tooltip for the question in the
@@ -30,8 +30,8 @@ in the question's description.
 
     >>> question_listing = find_tag_by_id(
     ...     user_browser.contents, 'question-listing')
-    >>> for tr in question_listing.tbody.findAll('tr'):
-    ...     tr['title']
+    >>> for li in question_portlet.findAll('li'):
+    ...     li['title']
     u'I am not able to ... if i click on a mailto:user@domain.com link ...'
 
     >>> user_browser.getLink('mailto: problem in webpage').click()
@@ -66,7 +66,7 @@ description. He can then see the email address in the tooltip in the
 'Latest questions asked' portlet for Answers front page.
 
     >>> user_browser.getLink('#9 mailto: problem in webpage').click()
-    >>> user_browser.getLink('ask your own question separately').click()
+    >>> user_browser.getLink('Ask a question').click()
     >>> user_browser.title
     'Ask a question about...
 
@@ -81,8 +81,8 @@ description. He can then see the email address in the tooltip in the
     >>> user_browser.open('http://answers.launchpad.dev/')
     >>> question_portlet = find_tag_by_id(
     ...     user_browser.contents, 'latest-questions-asked')
-    >>> for tr in question_portlet.findAll('tr'):
-    ...     tr['title']
+    >>> for li in question_portlet.findAll('li'):
+    ...     li['title']
     u'The clicking mailto:user@domain.com crashes the browser.'
      ...
 
@@ -98,15 +98,15 @@ page.
 
     >>> question_portlet = find_tag_by_id(
     ...     anon_browser.contents, 'latest-questions-solved')
-    >>> for tr in question_portlet.findAll('tr'):
-    ...     tr['title']
+    >>> for li in question_portlet.findAll('li'):
+    ...     li['title']
     u'I am not able to ... if i click on a
       mailto:<email address hidden> ...'
 
     >>> question_portlet = find_tag_by_id(
     ...     anon_browser.contents, 'latest-questions-asked')
-    >>> for tr in question_portlet.findAll('tr'):
-    ...     tr['title']
+    >>> for li in question_portlet.findAll('li'):
+    ...     li['title']
     u'The clicking mailto:<email address hidden> crashes the browser.'
      ...
 

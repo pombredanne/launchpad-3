@@ -5,10 +5,12 @@ __metaclass__ = type
 
 __all__ = [
     'distribution_from_distributionsourcepackage',
+    'DistributionSourcePackageAnswersMenu',
     'DistributionSourcePackageBreadcrumb',
     'DistributionSourcePackageChangelogView',
     'DistributionSourcePackageEditView',
     'DistributionSourcePackageFacets',
+    'DistributionSourcePackageHelpView',
     'DistributionSourcePackageNavigation',
     'DistributionSourcePackageOverviewMenu',
     'DistributionSourcePackagePublishingHistoryView',
@@ -52,18 +54,27 @@ from canonical.launchpad.webapp.menu import (
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import (
+    QuestionTargetAnswersMenu,
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
-from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.enums import QuestionStatus
 from lp.app.browser.tales import CustomizableFormatter
+from lp.app.browser.stringformatter import (
+    extract_bug_numbers,
+    extract_email_addresses,
+    )
+from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.bugs.interfaces.bug import IBugSet
-from lp.registry.browser.pillar import PillarBugsMenu
-from lp.registry.browser.structuralsubscription import (
+from lp.bugs.browser.structuralsubscription import (
+    expose_structural_subscription_data_to_js,
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin,
     )
+from lp.bugs.interfaces.bug import IBugSet
+from lp.registry.browser import add_subscribe_link
+from lp.registry.browser.pillar import PillarBugsMenu
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
@@ -71,8 +82,6 @@ from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.sourcepackagerelease import (
-    extract_bug_numbers,
-    extract_email_addresses,
     linkify_changelog,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
@@ -119,11 +128,23 @@ class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
     usedfor = IDistributionSourcePackage
     enable_only = ['overview', 'bugs', 'answers', 'branches']
 
+    def overview(self):
+        text = 'Overview'
+        summary = 'General information about {0}'.format(self.context.displayname)
+        return Link('', text, summary)
+
+    def bugs(self):
+        text = 'Bugs'
+        summary = 'Bugs reported about {0}'.format(self.context.displayname)
+        return Link('', text, summary)
+
+    def branches(self):
+        text = 'Code'
+        summary = 'Branches for {0}'.format(self.context.displayname)
+        return Link('', text, summary)
+
 
 class DistributionSourcePackageLinksMixin:
-
-    def subscribe(self):
-        return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
 
     def publishinghistory(self):
         return Link('+publishinghistory', 'Show publishing history')
@@ -151,17 +172,33 @@ class DistributionSourcePackageOverviewMenu(
 
     usedfor = IDistributionSourcePackage
     facet = 'overview'
-    links = [
-        'subscribe', 'publishinghistory', 'edit', 'new_bugs',
-        'open_questions']
+    links = ['new_bugs', 'open_questions']
 
 
 class DistributionSourcePackageBugsMenu(
-    PillarBugsMenu, DistributionSourcePackageLinksMixin):
+    PillarBugsMenu,
+    StructuralSubscriptionMenuMixin,
+    DistributionSourcePackageLinksMixin):
 
     usedfor = IDistributionSourcePackage
     facet = 'bugs'
-    links = ['filebug', 'subscribe']
+
+    @cachedproperty
+    def links(self):
+        links = ['filebug']
+        add_subscribe_link(links)
+        return links
+
+
+class DistributionSourcePackageAnswersMenu(QuestionTargetAnswersMenu):
+
+    usedfor = IDistributionSourcePackage
+    facet = 'answers'
+
+    links = QuestionTargetAnswersMenu.links + ['gethelp']
+
+    def gethelp(self):
+        return Link('+gethelp', 'Help and support options', icon='info')
 
 
 class DistributionSourcePackageNavigation(Navigation,
@@ -216,12 +253,20 @@ class IDistributionSourcePackageActionMenu(Interface):
 
 
 class DistributionSourcePackageActionMenu(
-    NavigationMenu, DistributionSourcePackageLinksMixin):
+    NavigationMenu,
+    StructuralSubscriptionMenuMixin,
+    DistributionSourcePackageLinksMixin):
     """Action menu for distro source packages."""
     usedfor = IDistributionSourcePackageActionMenu
     facet = 'overview'
     title = 'Actions'
-    links = ('publishing_history', 'change_log', 'subscribe', 'edit')
+
+    @cachedproperty
+    def links(self):
+        links = ['publishing_history', 'change_log']
+        add_subscribe_link(links)
+        links.append('edit')
+        return links
 
     def publishing_history(self):
         text = 'View full publishing history'
@@ -275,7 +320,8 @@ class DistributionSourcePackageBaseView:
         else:
             self._person_data = None
         # Collate diffs for relevant SourcePackageReleases
-        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(sprs)
+        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(
+            sprs, preload_for_display=True)
         spr_diffs = {}
         for spr, diffs in itertools.groupby(pkg_diffs,
                                             operator.attrgetter('to_source')):
@@ -292,6 +338,11 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
                                     LaunchpadView):
     """View class for DistributionSourcePackage."""
     implements(IDistributionSourcePackageActionMenu)
+
+    def initialize(self):
+        super(DistributionSourcePackageView, self).initialize()
+        expose_structural_subscription_data_to_js(
+            self.context, self.request, self.user)
 
     @property
     def label(self):
@@ -515,6 +566,20 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
         """Return result set containing open questions for this package."""
         return self.context.searchQuestions(status=QuestionStatus.OPEN)
 
+    @cachedproperty
+    def bugs_answers_usage(self):
+        """Return a  dict of uses_bugs, uses_answers, uses_both, uses_either.
+        """
+        service_usage = IServiceUsage(self.context)
+        uses_bugs = (
+            service_usage.bug_tracking_usage == ServiceUsage.LAUNCHPAD)
+        uses_answers = service_usage.answers_usage == ServiceUsage.LAUNCHPAD
+        uses_both = uses_bugs and uses_answers
+        uses_either = uses_bugs or uses_answers
+        return dict(
+            uses_bugs=uses_bugs, uses_answers=uses_answers,
+            uses_both=uses_both, uses_either=uses_either)
+
 
 class DistributionSourcePackageChangelogView(
     DistributionSourcePackageBaseView, LaunchpadView):
@@ -566,3 +631,9 @@ class DistributionSourcePackageEditView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
     cancel_url = next_url
+
+
+class DistributionSourcePackageHelpView:
+    """A View to show Answers help."""
+
+    page_title = 'Help and support options'

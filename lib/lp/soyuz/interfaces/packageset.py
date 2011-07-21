@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -14,18 +14,21 @@ __all__ = [
     'NoSuchPackageSet',
     ]
 
+import httplib
+
 from lazr.restful.declarations import (
     collection_default_content,
+    error_status,
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_factory_operation,
     export_read_operation,
     export_write_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
-    webservice_error,
     )
 from lazr.restful.fields import Reference
 from lazr.restful.interface import copy_field
@@ -39,8 +42,8 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.validators.name import name_validator
 from lp.app.errors import NameLookupFailed
+from lp.app.validators.name import name_validator
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
@@ -49,22 +52,19 @@ from lp.soyuz.interfaces.packagesetgroup import IPackagesetGroup
 
 class NoSuchPackageSet(NameLookupFailed):
     """Raised when we try to look up an PackageSet that doesn't exist."""
-    # Bad request.
-    webservice_error(400)
     _message_prefix = "No such package set (in the specified distro series)"
 
 
+@error_status(httplib.BAD_REQUEST)
 class DuplicatePackagesetName(Exception):
     """Raised for packagesets with the same name and distroseries."""
-    # Bad request.
-    webservice_error(400)
 
 
 class IPackagesetViewOnly(IHasOwner):
     """A read-only interface for package sets."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
-    id = Int(title=_('ID'), required=True, readonly=True)
+    id = exported(Int(title=_('ID'), required=True, readonly=True))
 
     date_created = exported(Datetime(
         title=_("Date Created"), required=True, readonly=True,
@@ -234,9 +234,10 @@ class IPackagesetViewOnly(IHasOwner):
     @operation_returns_collection_of(Interface)
     @export_read_operation()
     def relatedSets():
-        """Get all package sets related to this one.
+        """Get all other package sets in this set's `PackagesetGroup`.
 
-        Return all package sets that are related to this one.
+        Returns all package sets that are related to this one, but not
+        this one itself.
 
         :return: A (potentially empty) sequence of `IPackageset` instances.
         """
@@ -244,7 +245,7 @@ class IPackagesetViewOnly(IHasOwner):
 
 class IPackagesetEdit(Interface):
     """A writeable interface for package sets."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     def add(data):
         """Add source package names or other package sets to this one.
@@ -349,12 +350,11 @@ class IPackagesetEdit(Interface):
 
 class IPackageset(IPackagesetViewOnly, IPackagesetEdit):
     """An interface for package sets."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
 
-class IPackagesetSet(Interface):
-    """An interface for multiple package sets."""
-    export_as_webservice_collection(IPackageset)
+class IPackagesetSetEdit(Interface):
+    """Multiple package sets operations requiring `launchpad.Edit`."""
 
     @operation_parameters(
         name=TextLine(title=_('Valid package set name'), required=True),
@@ -390,6 +390,11 @@ class IPackagesetSet(Interface):
         :return: a newly created `IPackageset`.
         """
 
+
+class IPackagesetSet(IPackagesetSetEdit):
+    """An interface for multiple package sets."""
+    export_as_webservice_collection(IPackageset)
+
     @operation_parameters(
         name=TextLine(title=_('Package set name'), required=True),
         distroseries=Reference(
@@ -406,12 +411,13 @@ class IPackagesetSet(Interface):
         :param distroseries: the distroseries to which the new packageset
             is related. Defaults to the current Ubuntu series.
 
-        :return: An `IPackageset` instance or None.
+        :return: An `IPackageset` instance.
+        :raise NoSuchPackageSet: if no package set is found.
         """
 
     @collection_default_content()
-    def get(limit=50):
-        """Return the first `limit` package sets in Launchpad.
+    def get():
+        """Return all of the package sets in Launchpad.
 
         :return: A (potentially empty) sequence of `IPackageset` instances.
         """
@@ -422,6 +428,33 @@ class IPackagesetSet(Interface):
         :param owner: the owner of the package sets sought.
 
         :return: A (potentially empty) sequence of `IPackageset` instances.
+        """
+
+    @operation_parameters(
+        distroseries=copy_field(
+            IPackageset['distroseries'], description=_(
+                "The distribution series to which the packagesets "
+                "are related.")))
+    @operation_returns_collection_of(IPackageset)
+    @export_read_operation()
+    @operation_for_version("beta")
+    def getBySeries(distroseries):
+        """Return the package sets associated with the given distroseries.
+
+        :param distroseries: A `DistroSeries`.
+
+        :return: An iterable collection of `IPackageset` instances.
+        """
+
+    def getForPackages(distroseries, sourcepackagename_ids):
+        """Get `Packagesets` that directly contain the given packages.
+
+        :param distroseries: `DistroSeries` to look in.  Only packagesets for
+            this series will be returned.
+        :param sourcepackagename_ids: A sequence of `SourcePackageName` ids.
+            Only packagesets for these package names will be returned.
+        :return: A dict mapping `SourcePackageName` ids to lists of their
+            respective packagesets, in no particular order.
         """
 
     @operation_parameters(
@@ -454,4 +487,3 @@ class IPackagesetSet(Interface):
 
     def __getitem__(name):
         """Retrieve a package set by name."""
-

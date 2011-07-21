@@ -4,20 +4,20 @@
 
 <configure xmlns="http://namespaces.zope.org/zope">
 
-    <include file="zopeapp.zcml" />
+    <include file="zcml/zopeapp.zcml" />
     <!--<include package="zope.app" />-->
 
     <!-- Session machinery -->
-    <include file="zopeappsession.zcml" />
+    <include file="zcml/zopeappsession.zcml" />
 
     <!-- Browser Configurations -->
-    <include file="zopeappbrowser.zcml" />
+    <include file="zcml/zopeappbrowser.zcml" />
     <!-- <include package="zope.app" file="browser.zcml" /> -->
 
     <include package="canonical" />
 
-    <include files="package-includes/*-meta.zcml" />
-    <includeOverrides file="override-meta.zcml" />
+    <include files="zcml/package-includes/*-meta.zcml" />
+    <includeOverrides file="zcml/override-meta.zcml" />
 
     <!-- package-includes/*-configure.zcml contains package configuration
         shared between a normal launchpad instance and the test suite.
@@ -25,17 +25,17 @@
         package-includes/*-configure-testing.zcml contain configuration
         that needs to be different between normal and test modes.
     -->
-    <include files="package-includes/*-configure.zcml" />
-    <include files="package-includes/*-configure-normal.zcml" />
+    <include files="zcml/package-includes/*-configure.zcml" />
+    <include files="zcml/package-includes/*-configure-normal.zcml" />
 
     <!-- Provide local overrides of standard configurations-->
-    <includeOverrides file="override-configure.zcml" />
-    <includeOverrides file="override-configure-normal.zcml" />
+    <includeOverrides file="zcml/override-configure.zcml" />
+    <includeOverrides file="zcml/override-configure-normal.zcml" />
 
-    <include file="securitypolicy.zcml" />
+    <include file="zcml/securitypolicy.zcml" />
 
     <!-- include request summarizer here so it only affects webapp -->
-    <include file="summarizerequests.zcml" />
+    <include file="zcml/summarizerequests.zcml" />
 
     <include package="zc.zservertracelog" />
 

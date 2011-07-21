@@ -13,6 +13,10 @@ from lp.soyuz.model.publishing import IndexStanzaFields
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 
+def get_field(stanza_fields, name):
+    return dict(stanza_fields.fields).get(name)
+
+
 class TestNativeArchiveIndexes(TestNativePublishingBase):
 
     def setUp(self):
@@ -239,6 +243,33 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              u' Using non-ascii as: \xe7\xe3\xe9\xf3',
              ],
             pub_binary.getIndexStanza().splitlines())
+
+    def testBinaryOmitsIdenticalSourceName(self):
+        # Binaries omit the Source field if it identical to Package.
+        pub_source = self.getPubSource(sourcename='foo')
+        pub_binary = self.getPubBinaries(
+            binaryname='foo', pub_source=pub_source)[0]
+        self.assertIs(
+            None,
+            get_field(pub_binary.buildIndexStanzaFields(), 'Source'))
+
+    def testBinaryIncludesDifferingSourceName(self):
+        # Binaries include a Source field if their name differs.
+        pub_source = self.getPubSource(sourcename='foo')
+        pub_binary = self.getPubBinaries(
+            binaryname='foo-bin', pub_source=pub_source)[0]
+        self.assertEqual(
+            u'foo',
+            get_field(pub_binary.buildIndexStanzaFields(), 'Source'))
+
+    def testBinaryIncludesDifferingSourceVersion(self):
+        # Binaries also include a Source field if their versions differ.
+        pub_source = self.getPubSource(sourcename='foo', version='666')
+        pub_binary = self.getPubBinaries(
+            binaryname='foo', version='999', pub_source=pub_source)[0]
+        self.assertEqual(
+            u'foo (666)',
+            get_field(pub_binary.buildIndexStanzaFields(), 'Source'))
 
 
 class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):

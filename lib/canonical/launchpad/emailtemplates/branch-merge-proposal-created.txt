@@ -1,6 +1,6 @@
 %(proposal_registrant)s has proposed merging %(source_branch)s into %(target_branch)s%(prerequisite)s.
 
-%(reviews)s%(related_bugs)s
+%(reviews)s%(related_bugtasks)s
 For more details, see:
 %(proposal_url)s%(gap)s%(comment)s
 -- 

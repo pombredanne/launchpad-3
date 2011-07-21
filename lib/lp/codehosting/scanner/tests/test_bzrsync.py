@@ -30,19 +30,27 @@ from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchmergeproposaljob import (
-    BranchMergeProposalJobSource, BranchMergeProposalJobType)
+    BranchMergeProposalJobSource,
+    BranchMergeProposalJobType,
+    )
+from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import (
     Revision,
     RevisionAuthor,
     RevisionParent,
     )
 from lp.code.model.tests.test_diff import commit_file
-from lp.codehosting.bzrutils import write_locked
+from lp.codehosting.bzrutils import (
+    read_locked,
+    write_locked,
+    )
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.services.osutils import override_environ
-from lp.testing import TestCaseWithFactory, temp_dir
+from lp.testing import (
+    temp_dir,
+    TestCaseWithFactory,
+    )
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode,
     )
@@ -269,7 +277,7 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
         """
         file = open(os.path.join(self.bzr_tree.basedir, filename), "w")
         if contents is None:
-            file.write(str(time.time()+random.random()))
+            file.write(str(time.time() + random.random()))
         else:
             file.write(contents)
         file.close()
@@ -554,6 +562,31 @@ class TestBzrSync(BzrSyncTestCase):
         self.assertEqual(expected_history, list(db_history))
 
 
+class TestPlanDatabaseChanges(BzrSyncTestCase):
+
+    def test_ancestry_already_present(self):
+        # If a BranchRevision is being added, and it's already in the DB, but
+        # not found through the graph operations, we should schedule it for
+        # deletion anyway.
+        rev1_id = self.bzr_tree.commit(
+            'initial commit', committer='me@example.org')
+        merge_tree = self.bzr_tree.bzrdir.sprout('merge').open_workingtree()
+        merge_id = merge_tree.commit(
+            'mergeable commit', committer='me@example.org')
+        self.bzr_tree.merge_from_branch(merge_tree.branch)
+        rev2_id = self.bzr_tree.commit(
+            'merge', committer='me@example.org')
+        self.useContext(read_locked(self.bzr_tree))
+        syncer = BzrSync(self.db_branch)
+        syncer.syncBranchAndClose(self.bzr_tree.branch)
+        self.assertEqual(rev2_id, self.db_branch.last_scanned_id)
+        self.db_branch.last_scanned_id = rev1_id
+        db_ancestry, db_history = self.db_branch.getScannerData()
+        branchrevisions_to_delete = syncer.planDatabaseChanges(
+            self.bzr_branch, [rev1_id, rev2_id], db_ancestry, db_history)[1]
+        self.assertIn(merge_id, branchrevisions_to_delete)
+
+
 class TestBzrSyncOneRevision(BzrSyncTestCase):
     """Tests for `BzrSync.syncOneRevision`."""
 
@@ -590,7 +623,7 @@ class TestBzrSyncOneRevision(BzrSyncTestCase):
 class TestBzrTranslationsUploadJob(BzrSyncTestCase):
     """Tests BzrSync support for generating TranslationsUploadJobs."""
 
-    def _makeProductSeries(self, mode = None):
+    def _makeProductSeries(self, mode=None):
         """Switch to the Launchpad db user to create and configure a
         product series that is linked to the the branch.
         """

@@ -33,15 +33,9 @@ Not everyone can modify it however:
     >>> print response
     HTTP/1.1 401 Unauthorized...
     Content-Length: ...
-    Content-Type: text/plain
-    X-Lazr-Oopsid: OOPS-...
+    Content-Type: text/plain...
     <BLANKLINE>
-    (..., 'bug_reporting_guidelines', 'launchpad.BugSupervisor')
-    <BLANKLINE>
-    Traceback (most recent call last):
-    ...
-    Unauthorized: (...)
-    <BLANKLINE>
+    (<Product at ...>, 'bug_reporting_guidelines', 'launchpad.BugSupervisor')
 
 
 == Official Bug Tags ==

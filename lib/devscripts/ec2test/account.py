@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A representation of an Amazon Web Services account."""
@@ -32,6 +32,10 @@ VALID_AMI_OWNERS = {
     '038531743404': 'jelmer',
     '444667466231': 'allenap',
     '441991801793': 'gmb',
+    '005470753809': 'bigjools',
+    '967591634984': 'jtv',
+    '507541322704': 'sinzui',
+    '424228475252': 'wallyworld',
     # ...anyone else want in on the fun?
     }
 
@@ -221,23 +225,3 @@ class EC2Account:
 
         self.log('Using machine image version %d\n' % revision)
         return images[0]
-
-    def get_instance(self, instance_id):
-        """Look in all of our reservations for an instance with the given ID.
-
-        Return the instance object if it exists, None otherwise.
-        """
-        # XXX mars 20090729
-        # This method is needed by the ec2-generate-windmill-image.py script,
-        # so please do not delete it.
-        #
-        # This is a strange object on which to put this method, but I did
-        # not want to break encapsulation around the self.conn attribute.
-
-        for reservation in self.conn.get_all_instances():
-            # We need to look inside each reservation for the instances
-            # themselves.
-            for instance in reservation.instances:
-                if instance.id == instance_id:
-                    return instance
-        return None

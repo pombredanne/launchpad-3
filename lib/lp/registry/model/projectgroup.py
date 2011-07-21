@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -20,8 +20,8 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
-    SQL,
     Join,
+    SQL,
     )
 from storm.locals import Int
 from storm.store import Store
@@ -43,10 +43,10 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasMugshot,
     )
 from canonical.launchpad.webapp.authorization import check_permission
+from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
     ISearchableByQuestionOwner,
-    QUESTION_STATUS_DEFAULT_SEARCH,
     )
 from lp.answers.model.faq import (
     FAQ,
@@ -66,10 +66,10 @@ from lp.blueprints.model.specification import (
     Specification,
     )
 from lp.blueprints.model.sprint import HasSprintsMixin
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.model.bug import (
     get_bug_tags,
-    get_bug_tags_open_count,
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -77,6 +77,9 @@ from lp.bugs.model.bugtarget import (
     OfficialBugTag,
     )
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.model.structuralsubscription import (
+    StructuralSubscriptionTargetMixin,
+    )
 from lp.code.model.branchvisibilitypolicy import BranchVisibilityPolicyMixin
 from lp.code.model.hasbranches import (
     HasBranchesMixin,
@@ -91,6 +94,7 @@ from lp.registry.interfaces.projectgroup import (
     IProjectGroupSet,
     )
 from lp.registry.model.announcement import MakesAnnouncements
+from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.karma import KarmaContextMixin
 from lp.registry.model.milestone import (
     HasMilestonesMixin,
@@ -100,13 +104,10 @@ from lp.registry.model.milestone import (
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
-from lp.registry.model.hasdrivers import HasDriversMixin
-from lp.registry.model.structuralsubscription import (
-    StructuralSubscriptionTargetMixin,
-    )
 from lp.services.worlddata.model.language import Language
 from lp.translations.enums import TranslationPermission
 from lp.translations.model.potemplate import POTemplate
+from lp.translations.model.translationpolicy import TranslationPolicyMixin
 
 
 class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -114,11 +115,13 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    KarmaContextMixin, BranchVisibilityPolicyMixin,
                    StructuralSubscriptionTargetMixin,
                    HasBranchesMixin, HasMergeProposalsMixin, HasBugHeatMixin,
-                   HasMilestonesMixin, HasDriversMixin):
+                   HasMilestonesMixin, HasDriversMixin,
+                   TranslationPolicyMixin):
     """A ProjectGroup"""
 
-    implements(IProjectGroup, IFAQCollection, IHasBugHeat, IHasIcon, IHasLogo,
-               IHasMugshot, ISearchableByQuestionOwner)
+    implements(
+        IBugSummaryDimension, IProjectGroup, IFAQCollection, IHasBugHeat,
+        IHasIcon, IHasLogo, IHasMugshot, ISearchableByQuestionOwner)
 
     _table = "Project"
 
@@ -207,6 +210,16 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def has_translatable(self):
         """See `IProjectGroup`."""
         return not self.translatables().is_empty()
+
+    def sharesTranslationsWithOtherSide(self, person, language,
+                                        sourcepackage=None,
+                                        purportedly_upstream=False):
+        """See `ITranslationPolicy`."""
+        assert sourcepackage is None, (
+            "Got a SourcePackage for a ProjectGroup!")
+        # ProjectGroup translations are considered upstream.  They are
+        # automatically shared.
+        return True
 
     def has_branches(self):
         """ See `IProjectGroup`."""
@@ -315,10 +328,13 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def official_bug_tags(self):
         """See `IHasBugs`."""
-        official_bug_tags = set()
-        for product in self.products:
-            official_bug_tags.update(product.official_bug_tags)
-        return sorted(official_bug_tags)
+        store = Store.of(self)
+        result = store.find(
+            OfficialBugTag.tag,
+            OfficialBugTag.product == Product.id,
+            Product.project == self.id).order_by(OfficialBugTag.tag)
+        result.config(distinct=True)
+        return result
 
     def getUsedBugTags(self):
         """See `IHasBugs`."""
@@ -328,17 +344,14 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return get_bug_tags(
             "BugTask.product IN (%s)" % ",".join(product_ids))
 
-    def getUsedBugTagsWithOpenCounts(self, user):
-        """See `IHasBugs`."""
-        if not self.products:
-            return []
+    def getBugSummaryContextWhereClause(self):
+        """See BugTargetBase."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         product_ids = [product.id for product in self.products]
-        return get_bug_tags_open_count(
-            BugTask.productID.is_in(product_ids), user)
-
-    def _getBugTaskContextClause(self):
-        """See `HasBugsBase`."""
-        return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
+        if not product_ids:
+            return False
+        return BugSummary.product_id.is_in(product_ids)
 
     # IQuestionCollection
     def searchQuestions(self, search_text=None,

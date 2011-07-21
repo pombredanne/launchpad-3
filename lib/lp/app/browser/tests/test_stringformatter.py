@@ -15,7 +15,10 @@ from canonical.config import config
 from canonical.launchpad.testing.pages import find_tags_by_class
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.browser.stringformatter import FormattersAPI
+from lp.app.browser.stringformatter import (
+    FormattersAPI,
+    linkify_bug_numbers,
+    )
 from lp.testing import TestCase
 
 
@@ -141,6 +144,11 @@ class TestLinkifyingBugs(TestCase):
             expected_html,
             [FormattersAPI(text).text_to_html() for text in test_strings])
 
+    def test_explicit_bug_linkification(self):
+        text = 'LP: #10'
+        self.assertEqual(
+            'LP: <a href="/bugs/10">#10</a>', linkify_bug_numbers(text))
+
 
 class TestLinkifyingProtocols(TestCase):
 
@@ -194,7 +202,7 @@ class TestLinkifyingProtocols(TestCase):
             ('<p><a rel="nofollow" '
              'href="http://example.com/path_(with_parens">'
              'http://<wbr></wbr>example.<wbr></wbr>com'
-             '/path_<wbr></wbr>(with_parens</a></p>'),           
+             '/path_<wbr></wbr>(with_parens</a></p>'),
             ]
 
         self.assertEqual(
@@ -264,9 +272,17 @@ class TestLinkifyingProtocols(TestCase):
         self.assertEqual(expected_html, html)
 
 
+class TestLastParagraphClass(TestCase):
+
+    def test_last_paragraph_class(self):
+        self.assertEqual(
+            '<p>Foo</p>\n<p class="last">Bar</p>',
+            FormattersAPI("Foo\n\nBar").text_to_html(
+                last_paragraph_class="last"))
+
+
 class TestDiffFormatter(TestCase):
     """Test the string formatter fmt:diff."""
-    layer = DatabaseFunctionalLayer
 
     def test_emptyString(self):
         # An empty string gives an empty string.

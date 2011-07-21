@@ -1,19 +1,8 @@
 Advanced personal subscriptions
 -------------------------------
 
-There are advanced features for bug subscriptions. These require a
-feature flag to be turned on for them to be accessible.
-
-    >>> from lp.services.features.model import FeatureFlag, getFeatureStore
-    >>> feature_store = getFeatureStore()
-    >>> ignore = feature_store.add(FeatureFlag(
-    ...     scope=u'default',
-    ...     flag=u'malone.advanced-subscriptions.enabled',
-    ...     value=u'on', priority=1))
-    >>> feature_store.flush()
-
-Now when a user visits the +subscribe page of a bug they are given the
-option to subscribe to the bug at a given BugNotificationLevel.
+When a user visits the +subscribe page of a bug they are given the option to
+subscribe to the bug at a given BugNotificationLevel.
 
     >>> from canonical.launchpad.webapp import canonical_url
     >>> from lp.testing.sampledata import USER_EMAIL
@@ -26,18 +15,18 @@ option to subscribe to the bug at a given BugNotificationLevel.
     ...     name='field.bug_notification_level')
     >>> for control in bug_notification_level_control.controls:
     ...     print control.optionValue
-    COMMENTS
-    METADATA
-    LIFECYCLE
+    Discussion
+    Details
+    Lifecycle
 
-The user can now subscribe to the bug at any of the given notification
-levels. In this case, they want to subscribe to just metadata updates:
+The user can subscribe to the bug at any of the given notification levels. In
+this case, they want to subscribe to just metadata updates:
 
     >>> bug_notification_level_control.getControl(
-    ...     'Any change is made to this bug, other than a new comment '
-    ...     'being added.').click()
+    ...     'any change is made to this bug, other than a new comment '
+    ...     'being added').click()
     >>> user_browser.getControl('Continue').click()
 
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print extract_text(message)
-    You have been subscribed to this bug.
+    You have subscribed to this bug report.

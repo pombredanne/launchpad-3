@@ -20,27 +20,28 @@ A bug message has a visible field, which is True by default.
     ...     content="new message for visibility test",
     ...     owner=sample_person,
     ...     bug=bug_one)
-    >>> new_message.visible
+    >>> new_message.message.visible
     True
 
-Only Admins can hide bug messages using the visible field.
+Only Admins and registry experts can hide bug messages using the visible
+field.
 
     # Login an Admin user and set visible to False.
     >>> login('foo.bar@canonical.com')
     >>> abugmessage = bugmessageset.get(1)
-    >>> abugmessage.visible
+    >>> abugmessage.message.visible
     True
-    >>> abugmessage.visible = False
-    >>> abugmessage.visible
+    >>> abugmessage.message.visible = False
+    >>> abugmessage.message.visible
     False
 
     # Non-privileged users should not be able to
     # make comments visible again.
     >>> login('no-priv@canonical.com')
     >>> abugmessage = bugmessageset.get(1)
-    >>> abugmessage.visible
+    >>> abugmessage.message.visible
     False
-    >>> abugmessage.visible = True
+    >>> abugmessage.message.visible = True
     Traceback (most recent call last):
     ...
-    Unauthorized: (<BugMessage at ...>, 'visible', 'launchpad.Admin')
+    Unauthorized: (<Message at ...>, 'visible', 'launchpad.Admin')

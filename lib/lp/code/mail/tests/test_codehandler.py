@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing the CodeHandler."""
@@ -22,7 +22,7 @@ from zope.security.management import setSecurityPolicy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.database.message import MessageSet
+from lp.services.messages.model.message import MessageSet
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError,
     IWeaklyAuthenticatedPrincipal,

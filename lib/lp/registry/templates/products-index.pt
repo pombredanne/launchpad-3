@@ -20,23 +20,17 @@
 
   <div metal:fill-slot="main">
     There are
-    <strong class="registry-stat"
-            tal:content="context/count_all">7</strong>
+    <strong tal:content="context/count_all">7</strong>
     projects registered in Launchpad.
-    <strong class="bugs-stat"
-            tal:content="context/count_buggy">7</strong>
+    <strong tal:content="context/count_buggy">7</strong>
     have bugs reported,
-    <strong class="translations-stat"
-            tal:content="context/count_translatable">7</strong>
+    <strong tal:content="context/count_translatable">7</strong>
     have translations,
-    <strong class="code-stat"
-            tal:content="context/count_codified">7</strong>
+    <strong tal:content="context/count_codified">7</strong>
     have Bazaar branches,
-    <strong class="blueprints-stat"
-            tal:content="context/count_featureful">7</strong>
+    <strong tal:content="context/count_featureful">7</strong>
     have blueprints,
-    and <strong class="answers-stat"
-                tal:content="context/count_answered">7</strong>
+    and <strong tal:content="context/count_answered">7</strong>
     have questions &amp; answers.
 
     <form id="project-search" class="central" method="get"

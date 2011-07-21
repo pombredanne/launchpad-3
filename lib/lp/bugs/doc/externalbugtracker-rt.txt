@@ -88,7 +88,17 @@ result in an UnknownRemoteStatusError being raised.
     UnknownRemoteStatusError: spam
 
 
-== Initialisation ==
+== Importance Conversion ==
+
+There is no obvious mapping from ticket priorities to importances. They
+are all imported as Unknown. No exception is raised, because they are
+all unknown.
+
+   >>> rt.convertRemoteImportance('foo').title
+   'Unknown'
+
+
+== Initialization ==
 
 Calling initializeRemoteBugDB() on our RequestTracker instance and
 passing it a set of remote bug IDs will fetch those bug IDs from the
@@ -164,7 +174,7 @@ instance which has several bugs that we wish to watch:
 Launchpad.dev bug #10 is the same bug as reported in example.com bug
 #1585, so we add a watch against the remote bug.
 
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.RT)
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> sample_person = getUtility(IPersonSet).getByEmail(

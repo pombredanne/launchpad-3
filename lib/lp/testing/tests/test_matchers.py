@@ -17,13 +17,19 @@ from zope.interface.verify import verifyObject
 from zope.security.checker import NamesChecker
 from zope.security.proxy import ProxyFactory
 
-from lp.testing import TestCase
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import (
+    BrowsesWithQueryLimit,
     Contains,
     DoesNotContain,
     DoesNotCorrectlyProvide,
     DoesNotProvide,
+    EqualsIgnoringWhitespace,
     HasQueryCount,
     IsNotProxied,
     IsProxied,
@@ -226,6 +232,18 @@ class TestQueryMatching(TestCase):
             mismatch.describe())
 
 
+class TestBrowserQueryMatching(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_smoke(self):
+        person = self.factory.makePerson()
+        matcher = BrowsesWithQueryLimit(100, person)
+        self.assertThat(person, matcher)
+        matcher = Not(BrowsesWithQueryLimit(1, person))
+        self.assertThat(person, matcher)
+
+
 class DoesNotContainTests(TestCase):
 
     def test_describe(self):
@@ -257,3 +275,36 @@ class ContainsTests(TestCase):
         matcher = Contains("bar")
         mismatch = matcher.match("foo")
         self.assertEqual("bar", mismatch.expected)
+
+
+class EqualsIgnoringWhitespaceTests(TestCase):
+
+    def test_str(self):
+        matcher = EqualsIgnoringWhitespace("abc")
+        self.assertEqual("EqualsIgnoringWhitespace('abc')", str(matcher))
+
+    def test_match_str(self):
+        matcher = EqualsIgnoringWhitespace("one \t two \n three")
+        self.assertIs(None, matcher.match(" one \r two     three "))
+
+    def test_mismatch_str(self):
+        matcher = EqualsIgnoringWhitespace("one \t two \n three")
+        mismatch = matcher.match(" one \r three ")
+        self.assertEqual(
+            "'one two three' != 'one three'",
+            mismatch.describe())
+
+    def test_match_unicode(self):
+        matcher = EqualsIgnoringWhitespace(u"one \t two \n \u1234  ")
+        self.assertIs(None, matcher.match(u" one \r two     \u1234 "))
+
+    def test_mismatch_unicode(self):
+        matcher = EqualsIgnoringWhitespace(u"one \t two \n \u1234  ")
+        mismatch = matcher.match(u" one \r \u1234 ")
+        self.assertEqual(
+            u"u'one two \\u1234' != u'one \\u1234'",
+            mismatch.describe())
+
+    def test_match_non_string(self):
+        matcher = EqualsIgnoringWhitespace(1234)
+        self.assertIs(None, matcher.match(1234))

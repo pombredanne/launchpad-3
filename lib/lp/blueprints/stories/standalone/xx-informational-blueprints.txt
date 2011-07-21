@@ -25,7 +25,7 @@ We register a new blueprint.
 
 We then set the blueprint's implementation status to ''informational''.
 
-    >>> user_browser.getLink('Change status').click()
+    >>> user_browser.getLink(url='+status').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/jokosher/+spec/informational-blueprint/+status'
     >>> user_browser.getControl('Implementation Status').value = (
@@ -43,7 +43,7 @@ The blueprint is displayed with the ''informational'' icon.
 An informational blueprint that has been approved, displays on the its
 project's documentation page.
 
-    >>> user_browser.getLink('Change status').click()
+    >>> user_browser.getLink(url='+status').click()
     >>> user_browser.getControl('Definition Status').value = ['APPROVED']
     >>> user_browser.getControl('Change').click()
     >>> browser.open('http://blueprints.launchpad.dev/jokosher/+documentation')

@@ -16,7 +16,7 @@
          tal:content="view/error_message">
         Error message.
       </p>
-      <form class="central" action="/bugs/+bugs" method="get">
+      <form id="search-all-bugs" class="central" action="/bugs/+bugs" method="get">
         <table>
           <tbody>
             <tr>
@@ -24,38 +24,27 @@
                 <input tal:replace="structure view/widgets/searchtext" />
               </td>
               <td>
-                <input type="submit" name="search" value="Search Bug Reports" />
+                <input id="field.actions.search" type="submit"
+                  name="search" value="Search Bug Reports" />
               </td>
             </tr>
-            <tr tal:define="options nocall:view/widgets/scope/options;
-                            target_widget nocall:view/widgets/scope/target_widget">
-              <td tal:attributes="class view/target_css_class"
-                  style="text-align: right;">
-               <div>
-                <label>
-                  <input tal:replace="structure options/all" />
-                  All projects
-                </label>
-                <label>
-                  <input tal:replace="structure options/project" />
-                  One project:
-                  <tal:input replace="structure target_widget/inputField" />
-                </label>
-               </div>
-               <div class="message"
-                    tal:condition="view/target_error"
-                    tal:content="structure view/target_error">
+            <tr>
+              <td colspan="2"
+                tal:attributes="class view/target_css_class">
+                <input tal:replace="structure view/widgets/scope" />
+                <div class="message"
+                  tal:condition="view/widgets/scope/error"
+                  tal:content="view/widgets/scope/error">
                   Error message
-               </div>
+                </div>
               </td>
-              <td tal:content="structure target_widget/chooseLink" />
             </tr>
           </tbody>
         </table>
         <script type="text/javascript"
                 tal:define="script view/focusedElementScript"
                 tal:condition="script"
-                tal:content="structure script" />
+                tal:content="structure script" ></script>
       </form>
       <p id="application-summary">
         Launchpad&rsquo;s bug tracker helps software teams to
@@ -69,23 +58,19 @@
       <div class="first yui-u">
         <div class="portlet">
           <h2>Recently reported</h2>
-          <table id="reported-bugs">
-            <tbody>
-              <tr tal:repeat="bug context/latest_bugs"
-                  tal:replace="structure bug/@@+listing-detailed" />
-            </tbody>
-          </table>
+          <ul id="reported-bugs">
+            <li tal:repeat="bug context/latest_bugs"
+                tal:replace="structure bug/@@+listing-detailed" />
+          </ul>
         </div>
       </div>
       <div class="yui-u">
         <div class="portlet">
           <h2>Recently fixed</h2>
-          <table id="fixed-bugs">
-            <tbody>
-              <tr tal:repeat="fixed_bug view/getMostRecentlyFixedBugs"
-                  tal:replace="structure fixed_bug/@@+listing-detailed" />
-            </tbody>
-          </table>
+          <ul id="fixed-bugs">
+            <li tal:repeat="fixed_bug view/getMostRecentlyFixedBugs"
+                tal:replace="structure fixed_bug/@@+listing-detailed" />
+          </ul>
         </div>
       </div>
     </div>

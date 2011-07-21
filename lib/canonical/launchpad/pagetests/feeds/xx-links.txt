@@ -42,6 +42,34 @@ atom feed for that one bug.
         href="http://feeds.launchpad.dev/bugs/1/bug.atom"
         title="Bug 1 Feed" />]
 
+But if the bug is private, there should be no link.
+
+    # Set up an authenticated browser.
+    >>> from canonical.launchpad.testing.pages import setupBrowserForUser
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login(ANONYMOUS)
+    >>> user = getUtility(IPersonSet).getByEmail('daf@canonical.com')
+    >>> logout()
+    >>> auth_browser = setupBrowserForUser(user, 'daf')
+
+    # First check that the bug exists.
+    >>> auth_browser.open('http://launchpad.dev/bugs/14')
+    >>> print auth_browser.url
+    http://bugs.launchpad.dev/jokosher/+bug/14
+
+    >>> soup = BeautifulSoup(auth_browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    []
+
+Even so, if they somehow manage to hack the url or use inline ajax editing of
+the bug status and attempt to subscribe, they are redirected to the bug page:
+
+    >>> auth_browser.open('http://feeds.launchpad.dev/bugs/14/bug.atom')
+    >>> print auth_browser.url
+    http://bugs.launchpad.dev/
+    >>> print get_feedback_messages(auth_browser.contents)
+    [u'The requested bug is private. Feeds do not serve private bugs.']
 
 == Latest Bugs and Branches for a Person ==
 
@@ -256,7 +284,7 @@ show a link to the atom feed for that source package's latest bugs.
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/ubuntu/+source/cnews/latest-bugs.atom"
-        title="Latest Bugs for cnews in ubuntu" />]
+        title="Latest Bugs for cnews in Ubuntu" />]
 
 
 == Latest Branches for a ProjectGroup ==
@@ -269,10 +297,10 @@ to the atom feed for that project group's latest branches.
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/mozilla/branches.atom"
-        title="Latest Branches for the Mozilla Project" />,
+        title="Latest Branches for The Mozilla Project" />,
      <link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/mozilla/revisions.atom"
-        title="Latest Revisions for the Mozilla Project" />]
+        title="Latest Revisions for The Mozilla Project" />]
 
 
 == Latest Branches for a Product ==
@@ -319,3 +347,24 @@ atom feed for that branch's revisions.
     [<link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/~mark/firefox/release--0.9.1/branch.atom"
 	title="Latest Revisions for Branch lp://dev/~mark/firefox/release--0.9.1" />]
+
+But if the branch is private, there should be no link.
+
+    >>> login(ANONYMOUS)
+    >>> user = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> logout()
+    >>> auth_browser = setupBrowserForUser(user)
+    >>> auth_browser.open(
+    ... 'https://code.launchpad.dev/~name12/landscape/feature-x')
+    >>> soup = BeautifulSoup(auth_browser.contents)
+    >>> soup.head.findAll('link', type='application/atom+xml')
+    []
+
+Even so, if they somehow manage to hack the url, they are redirected to a page
+with an error notification:
+
+    >>> browser.open('http://feeds.launchpad.dev/~name12/landscape/feature-x/branch.atom')
+    >>> print browser.url
+    http://code.launchpad.dev/
+    >>> print get_feedback_messages(browser.contents)
+    [u'The requested branch is private. Feeds do not serve private branches.']

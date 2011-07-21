@@ -99,7 +99,6 @@ special = {
         'questiontarget.txt',
         [('product', productSetUp),
          ('distribution', distributionSetUp),
-         ('sourcepackage', sourcepackageSetUp),
          ('distributionsourcepackage', distributionsourcepackageSetUp),
          ]),
 

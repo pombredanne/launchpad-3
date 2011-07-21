@@ -4,6 +4,8 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import ez_setup
+
+
 ez_setup.use_setuptools()
 
 from setuptools import setup, find_packages
@@ -46,7 +48,8 @@ setup(
         'lazr.smtptest',
         'lazr.testing',
         'lazr.uri',
-        'lazr-js',
+        # Required for launchpadlib
+        'keyring',
         'manuel',
         'mechanize',
         'meliae',
@@ -60,10 +63,13 @@ setup(
         'pydkim',
         'python-openid',
         'pytz',
+        'rabbitfixture',
         # This appears to be a broken indirect dependency from zope.security:
         'RestrictedPython',
+        'selenium',
         'setproctitle',
         'setuptools',
+        'Sphinx',
         'soupmatchers',
         'sourcecodegen',
         'storm',
@@ -77,7 +83,7 @@ setup(
         'zope.app.apidoc',
         'zope.app.appsetup',
         'zope.app.component',
-        'zope.app.dav', # ./package-includes/dav-configure.zcml
+        'zope.app.dav', # ./zcml/package-includes/dav-configure.zcml
         'zope.app.error',
         'zope.app.exception',
         'zope.app.file',
@@ -128,7 +134,7 @@ setup(
         # bug 383360 is fixed and we include it as a source dist.
         'Paste',
         'PasteDeploy',
-        'SimpleTal'
+        'SimpleTal',
     ],
     url='https://launchpad.net/',
     classifiers=[
@@ -146,6 +152,7 @@ setup(
         console_scripts=[ # `console_scripts` is a magic name to setuptools
             'apiindex = lp.scripts.utilities.apiindex:main',
             'killservice = lp.scripts.utilities.killservice:main',
+            'jsbuild = lp.scripts.utilities.js.jsbuild:main',
             'run = canonical.launchpad.scripts.runlaunchpad:start_launchpad',
             'harness = canonical.database.harness:python',
             'twistd = twisted.scripts.twistd:run',

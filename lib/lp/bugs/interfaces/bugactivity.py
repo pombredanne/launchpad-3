@@ -54,6 +54,20 @@ class IBugActivity(Interface):
                  description=_("The property of the bug that changed."),
                  readonly=True))
 
+    target = TextLine(
+        title=_('Change Target'), required=False, readonly=True,
+        description=_(
+            'The target of what changed, if the change occurred on a '
+            'bugtask.'))
+
+    attribute = TextLine(
+        title=_('Changed Attribute'), required=True, readonly=True,
+        description=_(
+            "The attribute that changed.  If the change occurred on a "
+            "bugtask, this will be the bugtask's attribute; otherwise "
+            "it will be the bug attribute, and the same as 'what "
+            "changed'."))
+
     oldvalue = exported(
         TextLine(title=_('Old Value'),
                  description=_("The value before the change."),

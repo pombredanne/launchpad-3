@@ -11,7 +11,7 @@
 
   <tal:history-available condition="context/revision_count"
                          define="branch view/context;
-                                 revisions branch/latest_revisions">
+                                 revision_info view/revision_info">
     <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
 
     <div tal:define="link context_menu/browse_revisions"

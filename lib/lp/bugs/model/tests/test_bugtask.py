@@ -1,20 +1,18 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from datetime import timedelta
-from doctest import DocTestSuite
 import unittest
 
 from lazr.lifecycle.snapshot import Snapshot
-from storm.store import ResultSet
-from testtools.matchers import StartsWith
+from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.interface import providedBy
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import (
     all,
     any,
@@ -25,6 +23,7 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
@@ -37,17 +36,14 @@ from lp.bugs.interfaces.bugtask import (
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
-from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugtask import build_tag_search_clause
 from lp.bugs.tests.bug import (
     create_old_bug,
-    sync_bugtasks,
     )
 from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
     IHWDeviceSet,
     )
-from lp.registry.enum import BugNotificationLevel
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import (
     IPerson,
@@ -57,17 +53,20 @@ from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
 from lp.testing import (
     ANONYMOUS,
+    EventRecorder,
+    feature_flags,
     login,
     login_person,
     logout,
     normalize_whitespace,
+    person_logged_in,
+    set_feature_flag,
+    StormStatementRecorder,
     TestCase,
     TestCaseWithFactory,
     )
-from lp.testing.factory import (
-    is_security_proxied_or_harmless,
-    LaunchpadObjectFactory,
-    )
+from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.matchers import HasQueryCount
 
 
 class TestBugTaskDelta(TestCaseWithFactory):
@@ -211,305 +210,343 @@ class TestBugTaskTagSearchClauses(TestCase):
         self.assertEqual(self.searchClause(any()), None)
         self.assertEqual(self.searchClause(all()), None)
 
-    def test_single_tag_presence(self):
+    def test_single_tag_presence_any(self):
         # The WHERE clause to test for the presence of a single
-        # tag. Should be the same for an `any` query or an `all`
-        # query.
+        # tag where at least one tag is desired.
         expected_query = (
-            """BugTask.bug IN
-                 (SELECT bug FROM BugTag
-                   WHERE tag = 'fred')""")
+            """EXISTS
+                 (SELECT TRUE FROM BugTag
+                   WHERE BugTag.bug = Bug.id
+                     AND BugTag.tag IN ('fred'))""")
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(any(u'fred')),
-            expected_query)
-        self.assertEqualIgnoringWhitespace(
-            self.searchClause(all(u'fred')),
-            expected_query)
+            expected_query,
+            self.searchClause(any(u'fred')))
 
-    def test_single_tag_absence(self):
-        # The WHERE clause to test for the absence of a single
-        # tag. Should be the same for an `any` query or an `all`
-        # query.
+    def test_single_tag_presence_all(self):
+        # The WHERE clause to test for the presence of a single
+        # tag where all tags are desired.
         expected_query = (
-            """BugTask.bug NOT IN
-                 (SELECT bug FROM BugTag
-                   WHERE tag = 'fred')""")
+            """EXISTS
+                 (SELECT TRUE FROM BugTag
+                   WHERE BugTag.bug = Bug.id
+                     AND BugTag.tag = 'fred')""")
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(any(u'-fred')),
-            expected_query)
+            expected_query,
+            self.searchClause(all(u'fred')))
+
+    def test_single_tag_absence_any(self):
+        # The WHERE clause to test for the absence of a single
+        # tag where at least one tag is desired.
+        expected_query = (
+            """NOT EXISTS
+                 (SELECT TRUE FROM BugTag
+                   WHERE BugTag.bug = Bug.id
+                     AND BugTag.tag = 'fred')""")
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(all(u'-fred')),
-            expected_query)
+            expected_query,
+            self.searchClause(any(u'-fred')))
+
+    def test_single_tag_absence_all(self):
+        # The WHERE clause to test for the absence of a single
+        # tag where all tags are desired.
+        expected_query = (
+            """NOT EXISTS
+                 (SELECT TRUE FROM BugTag
+                   WHERE BugTag.bug = Bug.id
+                     AND BugTag.tag IN ('fred'))""")
+        self.assertEqualIgnoringWhitespace(
+            expected_query,
+            self.searchClause(all(u'-fred')))
 
     def test_tag_presence(self):
         # The WHERE clause to test for the presence of tags. Should be
         # the same for an `any` query or an `all` query.
         expected_query = (
-            """BugTask.bug IN
-                 (SELECT bug FROM BugTag)""")
+            """EXISTS
+                 (SELECT TRUE FROM BugTag
+                   WHERE BugTag.bug = Bug.id)""")
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(any(u'*')),
-            expected_query)
+            expected_query,
+            self.searchClause(any(u'*')))
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(all(u'*')),
-            expected_query)
+            expected_query,
+            self.searchClause(all(u'*')))
 
     def test_tag_absence(self):
         # The WHERE clause to test for the absence of tags. Should be
         # the same for an `any` query or an `all` query.
         expected_query = (
-            """BugTask.bug NOT IN
-                 (SELECT bug FROM BugTag)""")
+            """NOT EXISTS
+                 (SELECT TRUE FROM BugTag
+                   WHERE BugTag.bug = Bug.id)""")
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(any(u'-*')),
-            expected_query)
+            expected_query,
+            self.searchClause(any(u'-*')))
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(all(u'-*')),
-            expected_query)
+            expected_query,
+            self.searchClause(all(u'-*')))
 
     def test_multiple_tag_presence_any(self):
         # The WHERE clause to test for the presence of *any* of
         # several tags.
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(any(u'fred', u'bob')),
-            """BugTask.bug IN
-                 (SELECT bug FROM BugTag
-                   WHERE tag = 'bob'
-                  UNION
-                  SELECT bug FROM BugTag
-                   WHERE tag = 'fred')""")
+            """EXISTS
+                 (SELECT TRUE FROM BugTag
+                   WHERE BugTag.bug = Bug.id
+                     AND BugTag.tag IN ('bob', 'fred'))""",
+            self.searchClause(any(u'fred', u'bob')))
         # In an `any` query, a positive wildcard is dominant over
         # other positive tags because "bugs with one or more tags" is
         # a superset of "bugs with a specific tag".
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(any(u'fred', u'*')),
-            """BugTask.bug IN
-                 (SELECT bug FROM BugTag)""")
+            """EXISTS
+                 (SELECT TRUE FROM BugTag
+                   WHERE BugTag.bug = Bug.id)""",
+            self.searchClause(any(u'fred', u'*')))
 
     def test_multiple_tag_absence_any(self):
         # The WHERE clause to test for the absence of *any* of several
         # tags.
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(any(u'-fred', u'-bob')),
-            """BugTask.bug NOT IN
-                 (SELECT bug FROM BugTag
-                   WHERE tag = 'bob'
+            """NOT EXISTS
+                 (SELECT TRUE FROM BugTag
+                   WHERE BugTag.bug = Bug.id
+                     AND BugTag.tag = 'bob'
                   INTERSECT
-                  SELECT bug FROM BugTag
-                   WHERE tag = 'fred')""")
+                  SELECT TRUE FROM BugTag
+                   WHERE BugTag.bug = Bug.id
+                     AND BugTag.tag = 'fred')""",
+            self.searchClause(any(u'-fred', u'-bob')))
         # In an `any` query, a negative wildcard is superfluous in the
         # presence of other negative tags because "bugs without a
         # specific tag" is a superset of "bugs without any tags".
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(any(u'-fred', u'-*')),
-            """BugTask.bug NOT IN
-                 (SELECT bug FROM BugTag
-                   WHERE tag = 'fred')""")
+            """NOT EXISTS
+                 (SELECT TRUE FROM BugTag
+                   WHERE BugTag.bug = Bug.id
+                     AND BugTag.tag = 'fred')""",
+            self.searchClause(any(u'-fred', u'-*')))
 
     def test_multiple_tag_presence_all(self):
         # The WHERE clause to test for the presence of *all* specified
         # tags.
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(all(u'fred', u'bob')),
-            """BugTask.bug IN
-                 (SELECT bug FROM BugTag
-                   WHERE tag = 'bob'
+            """EXISTS
+                 (SELECT TRUE FROM BugTag
+                   WHERE BugTag.bug = Bug.id
+                     AND BugTag.tag = 'bob'
                   INTERSECT
-                  SELECT bug FROM BugTag
-                   WHERE tag = 'fred')""")
+                  SELECT TRUE FROM BugTag
+                   WHERE BugTag.bug = Bug.id
+                     AND BugTag.tag = 'fred')""",
+            self.searchClause(all(u'fred', u'bob')))
         # In an `all` query, a positive wildcard is superfluous in the
         # presence of other positive tags because "bugs with a
         # specific tag" is a subset of (i.e. more specific than) "bugs
         # with one or more tags".
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(all(u'fred', u'*')),
-            """BugTask.bug IN
-                 (SELECT bug FROM BugTag
-                   WHERE tag = 'fred')""")
+            """EXISTS
+                 (SELECT TRUE FROM BugTag
+                   WHERE BugTag.bug = Bug.id
+                     AND BugTag.tag = 'fred')""",
+            self.searchClause(all(u'fred', u'*')))
 
     def test_multiple_tag_absence_all(self):
         # The WHERE clause to test for the absence of all specified
         # tags.
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(all(u'-fred', u'-bob')),
-            """BugTask.bug NOT IN
-                 (SELECT bug FROM BugTag
-                   WHERE tag = 'bob'
-                  UNION
-                  SELECT bug FROM BugTag
-                   WHERE tag = 'fred')""")
+            """NOT EXISTS
+                 (SELECT TRUE FROM BugTag
+                   WHERE BugTag.bug = Bug.id
+                     AND BugTag.tag IN ('bob', 'fred'))""",
+            self.searchClause(all(u'-fred', u'-bob')))
         # In an `all` query, a negative wildcard is dominant over
         # other negative tags because "bugs without any tags" is a
         # subset of (i.e. more specific than) "bugs without a specific
         # tag".
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(all(u'-fred', u'-*')),
-            """BugTask.bug NOT IN
-                 (SELECT bug FROM BugTag)""")
+            """NOT EXISTS
+                 (SELECT TRUE FROM BugTag
+                   WHERE BugTag.bug = Bug.id)""",
+            self.searchClause(all(u'-fred', u'-*')))
 
     def test_mixed_tags_any(self):
         # The WHERE clause to test for the presence of one or more
         # specific tags or the absence of one or more other specific
         # tags.
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(any(u'fred', u'-bob')),
-            """(BugTask.bug IN
-                  (SELECT bug FROM BugTag
-                    WHERE tag = 'fred')
-                OR BugTask.bug NOT IN
-                  (SELECT bug FROM BugTag
-                    WHERE tag = 'bob'))""")
+            """(EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag IN ('fred'))
+                OR NOT EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag = 'bob'))""",
+            self.searchClause(any(u'fred', u'-bob')))
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(any(u'fred', u'-bob', u'eric', u'-harry')),
-            """(BugTask.bug IN
-                  (SELECT bug FROM BugTag
-                    WHERE tag = 'eric'
-                   UNION
-                   SELECT bug FROM BugTag
-                    WHERE tag = 'fred')
-                OR BugTask.bug NOT IN
-                  (SELECT bug FROM BugTag
-                    WHERE tag = 'bob'
+            """(EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag IN ('eric', 'fred'))
+                OR NOT EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag = 'bob'
                    INTERSECT
-                   SELECT bug FROM BugTag
-                    WHERE tag = 'harry'))""")
+                   SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag = 'harry'))""",
+            self.searchClause(any(u'fred', u'-bob', u'eric', u'-harry')))
         # The positive wildcard is dominant over other positive tags.
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(any(u'fred', u'-bob', u'*', u'-harry')),
-            """(BugTask.bug IN
-                  (SELECT bug FROM BugTag)
-                OR BugTask.bug NOT IN
-                  (SELECT bug FROM BugTag
-                    WHERE tag = 'bob'
+            """(EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id)
+                OR NOT EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag = 'bob'
                    INTERSECT
-                   SELECT bug FROM BugTag
-                    WHERE tag = 'harry'))""")
+                   SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag = 'harry'))""",
+            self.searchClause(any(u'fred', u'-bob', u'*', u'-harry')))
         # The negative wildcard is superfluous in the presence of
         # other negative tags.
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(any(u'fred', u'-bob', u'eric', u'-*')),
-            """(BugTask.bug IN
-                  (SELECT bug FROM BugTag
-                    WHERE tag = 'eric'
-                   UNION
-                   SELECT bug FROM BugTag
-                    WHERE tag = 'fred')
-                OR BugTask.bug NOT IN
-                  (SELECT bug FROM BugTag
-                    WHERE tag = 'bob'))""")
+            """(EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag IN ('eric', 'fred'))
+                OR NOT EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag = 'bob'))""",
+            self.searchClause(any(u'fred', u'-bob', u'eric', u'-*')))
         # The negative wildcard is not superfluous in the absence of
         # other negative tags.
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(any(u'fred', u'-*', u'eric')),
-            """(BugTask.bug IN
-                  (SELECT bug FROM BugTag
-                    WHERE tag = 'eric'
-                   UNION
-                   SELECT bug FROM BugTag
-                    WHERE tag = 'fred')
-                OR BugTask.bug NOT IN
-                  (SELECT bug FROM BugTag))""")
+            """(EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag IN ('eric', 'fred'))
+                OR NOT EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id))""",
+            self.searchClause(any(u'fred', u'-*', u'eric')))
         # The positive wildcard is dominant over other positive tags,
         # and the negative wildcard is superfluous in the presence of
         # other negative tags.
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(any(u'fred', u'-*', u'*', u'-harry')),
-            """(BugTask.bug IN
-                  (SELECT bug FROM BugTag)
-                OR BugTask.bug NOT IN
-                  (SELECT bug FROM BugTag
-                    WHERE tag = 'harry'))""")
+            """(EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id)
+                OR NOT EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag = 'harry'))""",
+            self.searchClause(any(u'fred', u'-*', u'*', u'-harry')))
 
     def test_mixed_tags_all(self):
         # The WHERE clause to test for the presence of one or more
         # specific tags and the absence of one or more other specific
         # tags.
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(all(u'fred', u'-bob')),
-            """(BugTask.bug IN
-                  (SELECT bug FROM BugTag
-                     WHERE tag = 'fred')
-                AND BugTask.bug NOT IN
-                  (SELECT bug FROM BugTag
-                    WHERE tag = 'bob'))""")
+            """(EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag = 'fred')
+                AND NOT EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag IN ('bob')))""",
+            self.searchClause(all(u'fred', u'-bob')))
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(all(u'fred', u'-bob', u'eric', u'-harry')),
-            """(BugTask.bug IN
-                  (SELECT bug FROM BugTag
-                    WHERE tag = 'eric'
+            """(EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag = 'eric'
                    INTERSECT
-                   SELECT bug FROM BugTag
-                    WHERE tag = 'fred')
-                AND BugTask.bug NOT IN
-                  (SELECT bug FROM BugTag
-                    WHERE tag = 'bob'
-                   UNION
-                   SELECT bug FROM BugTag
-                    WHERE tag = 'harry'))""")
+                   SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag = 'fred')
+                AND NOT EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag IN ('bob', 'harry')))""",
+            self.searchClause(all(u'fred', u'-bob', u'eric', u'-harry')))
         # The positive wildcard is superfluous in the presence of
         # other positive tags.
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(all(u'fred', u'-bob', u'*', u'-harry')),
-            """(BugTask.bug IN
-                  (SELECT bug FROM BugTag
-                    WHERE tag = 'fred')
-                AND BugTask.bug NOT IN
-                  (SELECT bug FROM BugTag
-                    WHERE tag = 'bob'
-                   UNION
-                   SELECT bug FROM BugTag
-                    WHERE tag = 'harry'))""")
+            """(EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag = 'fred')
+                AND NOT EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag IN ('bob', 'harry')))""",
+            self.searchClause(all(u'fred', u'-bob', u'*', u'-harry')))
         # The positive wildcard is not superfluous in the absence of
         # other positive tags.
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(all(u'-bob', u'*', u'-harry')),
-            """(BugTask.bug IN
-                  (SELECT bug FROM BugTag)
-                AND BugTask.bug NOT IN
-                  (SELECT bug FROM BugTag
-                    WHERE tag = 'bob'
-                   UNION
-                   SELECT bug FROM BugTag
-                    WHERE tag = 'harry'))""")
+            """(EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id)
+                AND NOT EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag IN ('bob', 'harry')))""",
+            self.searchClause(all(u'-bob', u'*', u'-harry')))
         # The negative wildcard is dominant over other negative tags.
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(all(u'fred', u'-bob', u'eric', u'-*')),
-            """(BugTask.bug IN
-                  (SELECT bug FROM BugTag
-                    WHERE tag = 'eric'
+            """(EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag = 'eric'
                    INTERSECT
-                   SELECT bug FROM BugTag
-                    WHERE tag = 'fred')
-                AND BugTask.bug NOT IN
-                  (SELECT bug FROM BugTag))""")
+                   SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag = 'fred')
+                AND NOT EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id))""",
+            self.searchClause(all(u'fred', u'-bob', u'eric', u'-*')))
         # The positive wildcard is superfluous in the presence of
         # other positive tags, and the negative wildcard is dominant
         # over other negative tags.
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(all(u'fred', u'-*', u'*', u'-harry')),
-            """(BugTask.bug IN
-                  (SELECT bug FROM BugTag
-                    WHERE tag = 'fred')
-                AND BugTask.bug NOT IN
-                  (SELECT bug FROM BugTag))""")
+            """(EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id
+                      AND BugTag.tag = 'fred')
+                AND NOT EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id))""",
+            self.searchClause(all(u'fred', u'-*', u'*', u'-harry')))
 
     def test_mixed_wildcards(self):
         # The WHERE clause to test for the presence of tags or the
         # absence of tags.
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(any(u'*', u'-*')),
-            """(BugTask.bug IN
-                  (SELECT bug FROM BugTag)
-                OR BugTask.bug NOT IN
-                  (SELECT bug FROM BugTag))""")
+            """(EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id)
+                OR NOT EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id))""",
+            self.searchClause(any(u'*', u'-*')))
         # The WHERE clause to test for the presence of tags and the
         # absence of tags.
         self.assertEqualIgnoringWhitespace(
-            self.searchClause(all(u'*', u'-*')),
-            """(BugTask.bug IN
-                  (SELECT bug FROM BugTag)
-                AND BugTask.bug NOT IN
-                  (SELECT bug FROM BugTag))""")
+            """(EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id)
+                AND NOT EXISTS
+                  (SELECT TRUE FROM BugTag
+                    WHERE BugTag.bug = Bug.id))""",
+            self.searchClause(all(u'*', u'-*')))
 
 
 class TestBugTaskHardwareSearch(TestCaseWithFactory):
@@ -909,21 +946,26 @@ class TestBugTaskSearch(TestCaseWithFactory):
         person = self.login()
         self.factory.makeBug(product=target, private=True, owner=person)
         self.factory.makeBug(product=target, private=True, owner=person)
+        self.factory.makeBug(product=target, private=True, owner=person)
         # Search style and parameters taken from the milestone index view
         # where the issue was discovered.
         login_person(person)
         tasks = target.searchTasks(BugTaskSearchParams(
             person, omit_dupes=True, orderby=['status', '-importance', 'id']))
-        # We must be finding the bugs.
-        self.assertEqual(2, tasks.count())
+        # We must have found the bugs.
+        self.assertEqual(3, tasks.count())
         # Cache in the storm cache the account->person lookup so its not
         # distorting what we're testing.
         IPerson(person.account, None)
-        # One query and only one should be issued to get the tasks, bugs and
-        # allow access to getConjoinedMaster attribute - an attribute that
-        # triggers a permission check (nb: id does not trigger such a check)
-        self.assertStatementCount(1,
-            lambda: [task.getConjoinedMaster for task in tasks])
+        # The should take 2 queries - one for the tasks, one for the related
+        # products (eager loaded targets).
+        has_expected_queries = HasQueryCount(Equals(2))
+        # No extra queries should be issued to access a regular attribute
+        # on the bug that would normally trigger lazy evaluation for security
+        # checking.  Note that the 'id' attribute does not trigger a check.
+        with StormStatementRecorder() as recorder:
+            [task.getConjoinedMaster for task in tasks]
+            self.assertThat(recorder, has_expected_queries)
 
     def test_omit_targeted_default_is_false(self):
         # The default value of omit_targeted is false so bugs targeted
@@ -969,6 +1011,28 @@ class TestBugTaskSearch(TestCaseWithFactory):
         task2.datecreated += timedelta(days=1)
         result = target.searchTasks(None, created_since=date)
         self.assertEqual([task2], list(result))
+
+
+class BugTaskSetSearchTest(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_explicit_blueprint_specified(self):
+        # If the linked_blueprints is an integer id, then only bugtasks for
+        # bugs that are linked to that blueprint are returned.
+        bug1 = self.factory.makeBug()
+        blueprint1 = self.factory.makeBlueprint()
+        with person_logged_in(blueprint1.owner):
+            blueprint1.linkBug(bug1)
+        bug2 = self.factory.makeBug()
+        blueprint2 = self.factory.makeBlueprint()
+        with person_logged_in(blueprint2.owner):
+            blueprint2.linkBug(bug2)
+        self.factory.makeBug()
+        params = BugTaskSearchParams(
+            user=None, linked_blueprints=blueprint1.id)
+        tasks = set(getUtility(IBugTaskSet).search(params))
+        self.assertThat(set(bug1.bugtasks), Equals(tasks))
 
 
 class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
@@ -1193,7 +1257,6 @@ class BugTaskSetFindExpirableBugTasksTest(unittest.TestCase):
             self.bugtaskset.createTask(
                 bug=bugtasks[-1].bug, owner=self.user,
                 productseries=self.productseries))
-        sync_bugtasks(bugtasks)
 
     def tearDown(self):
         logout()
@@ -1204,14 +1267,16 @@ class BugTaskSetFindExpirableBugTasksTest(unittest.TestCase):
         Four BugTarget types may passed as the target argument:
         Distribution, DistroSeries, Product, ProductSeries.
         """
-        supported_targets = [self.distribution, self.distroseries,
-                             self.product, self.productseries]
-        for target in supported_targets:
+        supported_targets_and_task_count = [
+            (self.distribution, 2), (self.distroseries, 1), (self.product, 2),
+            (self.productseries, 1), (None, 4)]
+        for target, expected_count in supported_targets_and_task_count:
             expirable_bugtasks = self.bugtaskset.findExpirableBugTasks(
                 0, self.user, target=target)
-            self.assertNotEqual(expirable_bugtasks.count(), 0,
-                 "%s has %d expirable bugtasks." %
-                 (self.distroseries, expirable_bugtasks.count()))
+            self.assertEqual(expected_count, expirable_bugtasks.count(),
+                 "%s has %d expirable bugtasks, expected %d." %
+                 (self.distroseries, expirable_bugtasks.count(),
+                  expected_count))
 
     def testUnsupportedBugTargetParam(self):
         """Test that unsupported targets raise errors.
@@ -1292,101 +1357,297 @@ class TestBugTaskStatuses(TestCase):
         self.assertNotIn(BugTaskStatus.UNKNOWN, UNRESOLVED_BUGTASK_STATUSES)
 
 
-class TestGetStructuralSubscribers(TestCaseWithFactory):
+class TestBugTaskContributor(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def make_product_with_bug(self):
+    def test_non_contributor(self):
+        owner = self.factory.makePerson()
+        bug = self.factory.makeBug(owner=owner)
+        # Create a person who has not contributed
+        person = self.factory.makePerson()
+        result = bug.default_bugtask.getContributorInfo(owner, person)
+        self.assertFalse(result['is_contributor'])
+        self.assertEqual(person.displayname, result['person_name'])
+        self.assertEqual(
+            bug.default_bugtask.pillar.displayname, result['pillar_name'])
+
+    def test_contributor(self):
+        owner = self.factory.makePerson()
         product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
-        return product, bug
-
-    def getStructuralSubscribers(self, bugtasks, *args, **kwargs):
-        # Call IBugTaskSet.getStructuralSubscribers() and check that the
-        # result is security proxied.
-        result = getUtility(IBugTaskSet).getStructuralSubscribers(
-            bugtasks, *args, **kwargs)
-        self.assertTrue(is_security_proxied_or_harmless(result))
-        return result
-
-    def test_getStructuralSubscribers_no_subscribers(self):
-        # If there are no subscribers for any of the bug's targets then no
-        # subscribers will be returned by getStructuralSubscribers().
-        product, bug = self.make_product_with_bug()
-        subscribers = self.getStructuralSubscribers(bug.bugtasks)
-        self.assertIsInstance(subscribers, ResultSet)
-        self.assertEqual([], list(subscribers))
-
-    def test_getStructuralSubscribers_single_target(self):
-        # Subscribers for any of the bug's targets are returned.
-        subscriber = self.factory.makePerson()
-        login_person(subscriber)
-        product, bug = self.make_product_with_bug()
-        product.addBugSubscription(subscriber, subscriber)
+        bug = self.factory.makeBug(product=product, owner=owner)
+        bug1 = self.factory.makeBug(product=product, owner=owner)
+        # Create a person who has contributed
+        person = self.factory.makePerson()
+        login('foo.bar@canonical.com')
+        bug1.default_bugtask.transitionToAssignee(person)
+        result = bug.default_bugtask.getContributorInfo(owner, person)
+        self.assertTrue(result['is_contributor'])
+        self.assertEqual(person.displayname, result['person_name'])
         self.assertEqual(
-            [subscriber], list(
-                self.getStructuralSubscribers(bug.bugtasks)))
-
-    def test_getStructuralSubscribers_multiple_targets(self):
-        # Subscribers for any of the bug's targets are returned.
-        actor = self.factory.makePerson()
-        login_person(actor)
-
-        subscriber1 = self.factory.makePerson()
-        subscriber2 = self.factory.makePerson()
-
-        product1 = self.factory.makeProduct(owner=actor)
-        product1.addBugSubscription(subscriber1, subscriber1)
-        product2 = self.factory.makeProduct(owner=actor)
-        product2.addBugSubscription(subscriber2, subscriber2)
-
-        bug = self.factory.makeBug(product=product1)
-        bug.addTask(actor, product2)
-
-        subscribers = self.getStructuralSubscribers(bug.bugtasks)
-        self.assertIsInstance(subscribers, ResultSet)
-        self.assertEqual(set([subscriber1, subscriber2]), set(subscribers))
-
-    def test_getStructuralSubscribers_recipients(self):
-        # If provided, getStructuralSubscribers() calls the appropriate
-        # methods on a BugNotificationRecipients object.
-        subscriber = self.factory.makePerson()
-        login_person(subscriber)
-        product, bug = self.make_product_with_bug()
-        product.addBugSubscription(subscriber, subscriber)
-        recipients = BugNotificationRecipients()
-        subscribers = self.getStructuralSubscribers(
-            bug.bugtasks, recipients=recipients)
-        # The return value is a list only when populating recipients.
-        self.assertIsInstance(subscribers, list)
-        self.assertEqual([subscriber], recipients.getRecipients())
-        reason, header = recipients.getReason(subscriber)
-        self.assertThat(
-            reason, StartsWith(
-                u"You received this bug notification because "
-                u"you are subscribed to "))
-        self.assertThat(header, StartsWith(u"Subscriber "))
-
-    def test_getStructuralSubscribers_level(self):
-        # getStructuralSubscribers() respects the given level.
-        subscriber = self.factory.makePerson()
-        login_person(subscriber)
-        product, bug = self.make_product_with_bug()
-        subscription = product.addBugSubscription(subscriber, subscriber)
-        subscription.bug_notification_level = BugNotificationLevel.METADATA
-        self.assertEqual(
-            [subscriber], list(
-                self.getStructuralSubscribers(
-                    bug.bugtasks, level=BugNotificationLevel.METADATA)))
-        subscription.bug_notification_level = BugNotificationLevel.METADATA
-        self.assertEqual(
-            [], list(
-                self.getStructuralSubscribers(
-                    bug.bugtasks, level=BugNotificationLevel.COMMENTS)))
+            bug.default_bugtask.pillar.displayname, result['pillar_name'])
 
 
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-    suite.addTest(DocTestSuite('lp.bugs.model.bugtask'))
-    return suite
+class TestConjoinedBugTasks(TestCaseWithFactory):
+    """Tests for conjoined bug task functionality."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestConjoinedBugTasks, self).setUp()
+        self.owner = self.factory.makePerson()
+        self.distro = self.factory.makeDistribution(
+            name="eggs", owner=self.owner, bug_supervisor=self.owner)
+        distro_release = self.factory.makeDistroRelease(
+            distribution=self.distro, registrant=self.owner)
+        source_package = self.factory.makeSourcePackage(
+            sourcepackagename="spam", distroseries=distro_release)
+        bug = self.factory.makeBug(
+            distribution=self.distro,
+            sourcepackagename=source_package.sourcepackagename,
+            owner=self.owner)
+        with person_logged_in(self.owner):
+            nomination = bug.addNomination(self.owner, distro_release)
+            nomination.approve(self.owner)
+            self.generic_task, self.series_task = bug.bugtasks
+
+    def test_editing_generic_status_reflects_upon_conjoined_master(self):
+        # If a change is made to the status of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        with person_logged_in(self.owner):
+            self.generic_task.transitionToStatus(
+                BugTaskStatus.CONFIRMED, self.owner)
+            self.assertEqual(
+                BugTaskStatus.CONFIRMED, self.series_task.status)
+
+    def test_editing_generic_importance_reflects_upon_conjoined_master(self):
+        # If a change is made to the importance of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        with person_logged_in(self.owner):
+            self.generic_task.transitionToImportance(
+                BugTaskImportance.HIGH, self.owner)
+            self.assertEqual(
+                BugTaskImportance.HIGH, self.series_task.importance)
+
+    def test_editing_generic_assignee_reflects_upon_conjoined_master(self):
+        # If a change is made to the assignee of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        with person_logged_in(self.owner):
+            self.generic_task.transitionToAssignee(self.owner)
+            self.assertEqual(
+                self.owner, self.series_task.assignee)
+
+    def test_editing_generic_package_reflects_upon_conjoined_master(self):
+        # If a change is made to the source package of a conjoined slave
+        # (generic) task, that change is reflected upon the conjoined
+        # master.
+        source_package_name = self.factory.makeSourcePackageName("ham")
+        with person_logged_in(self.owner):
+            self.generic_task.sourcepackagename = source_package_name
+            self.assertEqual(
+                source_package_name, self.series_task.sourcepackagename)
+
+# START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
+# When feature flag code is removed, delete these tests (up to "# END
+# TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.")
+
+
+class TestAutoConfirmBugTasksFlagForProduct(TestCaseWithFactory):
+    """Tests for auto-confirming bug tasks."""
+    # Tests for _checkAutoconfirmFeatureFlag.
+
+    layer = DatabaseFunctionalLayer
+
+    def makeTarget(self):
+        return self.factory.makeProduct()
+
+    flag = u'bugs.autoconfirm.enabled_product_names'
+    alt_flag = u'bugs.autoconfirm.enabled_distribution_names'
+
+    def test_False(self):
+        # With no feature flags turned on, we do not auto-confirm.
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        self.assertFalse(
+            removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
+
+    def test_flag_False(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(self.flag, u'   ')
+            self.assertFalse(
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
+
+    def test_explicit_flag(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(self.flag, bug_task.pillar.name)
+            self.assertTrue(
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
+
+    def test_explicit_flag_of_many(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(
+                self.flag, u'  foo bar  ' + bug_task.pillar.name + '    baz ')
+            self.assertTrue(
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
+
+    def test_match_all_flag(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(self.flag, u'*')
+            self.assertTrue(
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
+
+    def test_alt_flag_does_not_affect(self):
+        bug_task = self.factory.makeBugTask(target=self.makeTarget())
+        with feature_flags():
+            set_feature_flag(self.alt_flag, bug_task.pillar.name)
+            self.assertFalse(
+                removeSecurityProxy(bug_task)._checkAutoconfirmFeatureFlag())
+
+
+class TestAutoConfirmBugTasksFlagForProductSeries(
+    TestAutoConfirmBugTasksFlagForProduct):
+    """Tests for auto-confirming bug tasks."""
+
+    def makeTarget(self):
+        return self.factory.makeProductSeries()
+
+
+class TestAutoConfirmBugTasksFlagForDistribution(
+    TestAutoConfirmBugTasksFlagForProduct):
+    """Tests for auto-confirming bug tasks."""
+
+    flag = TestAutoConfirmBugTasksFlagForProduct.alt_flag
+    alt_flag = TestAutoConfirmBugTasksFlagForProduct.flag
+
+    def makeTarget(self):
+        return self.factory.makeDistribution()
+
+
+class TestAutoConfirmBugTasksFlagForDistributionSeries(
+    TestAutoConfirmBugTasksFlagForDistribution):
+    """Tests for auto-confirming bug tasks."""
+
+    def makeTarget(self):
+        return self.factory.makeDistroSeries()
+
+
+class TestAutoConfirmBugTasksFlagForDistributionSourcePackage(
+    TestAutoConfirmBugTasksFlagForDistribution):
+    """Tests for auto-confirming bug tasks."""
+
+    def makeTarget(self):
+        return self.factory.makeDistributionSourcePackage()
+
+
+class TestAutoConfirmBugTasksTransitionToTarget(TestCaseWithFactory):
+    """Tests for auto-confirming bug tasks."""
+    # Tests for making sure that switching a task from one project that
+    # does not auto-confirm to another that does performs the auto-confirm
+    # correctly, if appropriate.  This is only necessary for as long as a
+    # project may not participate in auto-confirm.
+
+    layer = DatabaseFunctionalLayer
+
+    def test_no_transitionToTarget(self):
+        # We can change the target.  If the normal bug conditions do not
+        # hold, there will be no transition.
+        person = self.factory.makePerson()
+        autoconfirm_product = self.factory.makeProduct(owner=person)
+        no_autoconfirm_product = self.factory.makeProduct(owner=person)
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names',
+                             autoconfirm_product.name)
+            bug_task = self.factory.makeBugTask(
+                target=no_autoconfirm_product, owner=person)
+            with person_logged_in(person):
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+                bug_task.transitionToTarget(autoconfirm_product)
+                self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+
+    def test_transitionToTarget(self):
+        # If the conditions *do* hold, though, we will auto-confirm.
+        person = self.factory.makePerson()
+        another_person = self.factory.makePerson()
+        autoconfirm_product = self.factory.makeProduct(owner=person)
+        no_autoconfirm_product = self.factory.makeProduct(owner=person)
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names',
+                             autoconfirm_product.name)
+            bug_task = self.factory.makeBugTask(
+                target=no_autoconfirm_product, owner=person)
+            with person_logged_in(another_person):
+                bug_task.bug.markUserAffected(another_person)
+            with person_logged_in(person):
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+                bug_task.transitionToTarget(autoconfirm_product)
+                self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
+# END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
+
+
+class TestAutoConfirmBugTasks(TestCaseWithFactory):
+    """Tests for auto-confirming bug tasks."""
+    # Tests for maybeConfirm
+
+    layer = DatabaseFunctionalLayer
+
+    def test_auto_confirm(self):
+        # A typical new bugtask auto-confirms.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            bug_task = self.factory.makeBugTask()
+            self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+            with EventRecorder() as recorder:
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
+                self.assertEqual(1, len(recorder.events))
+                event = recorder.events[0]
+                self.assertEqual(getUtility(ILaunchpadCelebrities).janitor,
+                                 event.user)
+                self.assertEqual(['status'], event.edited_fields)
+                self.assertEqual(BugTaskStatus.NEW,
+                                 event.object_before_modification.status)
+                self.assertEqual(bug_task, event.object)
+
+    def test_do_not_confirm_bugwatch_tasks(self):
+        # A bugwatch bugtask does not auto-confirm.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            product = self.factory.makeProduct()
+            with person_logged_in(product.owner):
+                bug = self.factory.makeBug(
+                    product=product, owner=product.owner)
+                bug_task = bug.getBugTask(product)
+                watch = self.factory.makeBugWatch(bug=bug)
+                bug_task.bugwatch = watch
+            self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+            with EventRecorder() as recorder:
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+                self.assertEqual(0, len(recorder.events))
+
+    def test_only_confirm_new_tasks(self):
+        # A non-new bugtask does not auto-confirm.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            bug_task = self.factory.makeBugTask()
+            removeSecurityProxy(bug_task).transitionToStatus(
+                BugTaskStatus.CONFIRMED, bug_task.bug.owner)
+            self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
+            with EventRecorder() as recorder:
+                bug_task.maybeConfirm()
+                self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
+                self.assertEqual(0, len(recorder.events))

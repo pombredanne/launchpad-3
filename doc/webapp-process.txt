@@ -194,7 +194,7 @@ Structure of a web application URL
 
 We need to know what types of things are at a particular URL.  Here's an
 example of a typical URL in a web application.  This time, I've included
-the "rosetta" path segment at the root.
+the "rosetta" path segment at the root::
 
   /rosetta/projects/$PACKAGENAME/teams/$TEAM/add-member.html
    |       |        |            |     |     |

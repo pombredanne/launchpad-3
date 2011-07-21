@@ -12,35 +12,12 @@ Here we will merge the profile named 'foo' into the one named 'no-priv'.
     >>> foo = factory.makePerson(name='foo', email='foo@baz.com')
     >>> logout()
 
-Workaround while https://launchpad.net/launchpad/+bug/39016 is not
-fixed.
-
-    >>> from lp.services.mail import stub
-    >>> stub.test_emails[:] = []
-
 First we have to go to the +requestmerge page.
 
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev/people/+requestmerge')
     >>> print browser.title
     Merge Launchpad accounts
-
-If we try to merge a nonexistent account, we'll get an error page.
-
-    >>> browser.getControl('Duplicated Account').value = 'bar'
-    >>> browser.getControl('Continue').click()
-    >>> print "\n".join(get_feedback_messages(browser.contents))
-    There is 1 error.
-    Invalid value
-
-The same will happen if we try to merge a team.
-
-    >>> browser.getControl(
-    ...     'Duplicated Account').value = 'support@canonical.com'
-    >>> browser.getControl('Continue').click()
-    >>> print "\n".join(get_feedback_messages(browser.contents))
-    There is 1 error.
-    Invalid value
 
 In preparation for the actual merge (below), we add an extra email
 address to the 'foo' account, to show how things work when the dupe
@@ -70,6 +47,7 @@ duplicate account. Here the user choses the ones which he want to claim.
 
 Make sure we haven't got leftovers from a previous test
 
+    >>> from lp.services.mail import stub
     >>> len(stub.test_emails)
     0
 
@@ -163,18 +141,6 @@ Get the token we'll have to use to finish the registration process.
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
     >>> assert not stub.test_emails
     >>> token_url = get_token_url_from_email(raw_msg)
-
-    # XXX: Steve Alexander 2006-10-21: To prevent spurious failures in PQM.
-    #>>> browser.open(token_url)
-    #>>> browser.getControl('Confirm').click()
-    #>>> 'The accounts have been merged successfully' in browser.contents
-    #True
-
-Revisiting the mergerequest-sent page now safely redirects the user:
-
-    #>>> browser.open('http://launchpad.dev/people/+mergerequest-sent?dupe=55')
-    #>>> browser.url
-    #'http://launchpad.dev/~no-priv'
 
 If the duplicate account has multiple email addresses and has chosen
 to hide them the process is slightly different.  We cannot display the

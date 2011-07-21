@@ -96,7 +96,7 @@ class CustomLanguageCodeAddView(LaunchpadFormView):
                 self.setFieldError(
                     'language_code',
                     structured(
-                        "There already is a custom language code '%s'." %
+                        "There already is a custom language code '%s'.",
                             self.language_code))
                 return
         else:

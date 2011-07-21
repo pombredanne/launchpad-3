@@ -27,7 +27,7 @@ class BaseIFAQTargetTests:
         """Add the test person to the faq target's answer contacts."""
         language_set = getUtility(ILanguageSet)
         answer_contact.addLanguage(language_set['en'])
-        self.target.addAnswerContact(answer_contact)
+        self.target.addAnswerContact(answer_contact, answer_contact)
 
     def assertCanAppend(self, user, target):
         """Assert that the user can add an FAQ to an FAQ target."""

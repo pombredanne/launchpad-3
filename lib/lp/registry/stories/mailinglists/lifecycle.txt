@@ -21,7 +21,7 @@ The owner of Landscape Developers applies for a mailing list.
 He thinks for a second whether his mailing list is for Ubuntu or not.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'ubuntu-notice'))
-    Ubuntu mailing lists should not be created here. Create them
+    Ubuntu does not use Launchpad to host its mailing lists. Create them
     at lists.ubuntu.com instead.
     >>> print browser.getLink('lists.ubuntu.com')
     <Link text='lists.ubuntu.com' url='https://lists.ubuntu.com'>
@@ -326,8 +326,7 @@ administrator.  He's given mailing list expert authority so that he can
 purge mailing lists.
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> test = person_set.getByName('name12')

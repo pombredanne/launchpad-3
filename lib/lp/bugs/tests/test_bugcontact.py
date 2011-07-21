@@ -12,7 +12,7 @@ from canonical.launchpad.testing.systemdocs import (
     tearDown,
     )
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.registry.tests.test_structuralsubscriptiontarget import (
+from lp.bugs.tests.test_structuralsubscriptiontarget import (
     distributionSetUp,
     productSetUp,
     )

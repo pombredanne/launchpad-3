@@ -2,15 +2,14 @@ The set of temporary blobs
 ==========================
 
 The set of temporary blobs in Launchpad is represented by the collection
-found at /temporary-blobs. The collection contains all the temporary
-blobs whose file aliases have not expired.
+found at /temporary-blobs. The collection is always empty because there
+is no use case for external iteration.
 
     >>> temporary_blobs = webservice.get('/temporary-blobs').jsonBody()
     >>> len(temporary_blobs['entries'])
     0
 
-If we add a new blob, it will show up in the temporary_blobs entries
-set.
+If we add a new blob, it will not show up in the temporary_blobs entries set.
 
     >>> login('foo.bar@canonical.com')
     >>> import os
@@ -34,18 +33,10 @@ set.
 
     >>> temporary_blobs = webservice.get('/temporary-blobs').jsonBody()
     >>> len(temporary_blobs['entries'])
-    1
+    0
 
-Each of the entries in the temporary_blobs entries set is an
-ITemporaryBlobStorage instance. A blob is identified by its UUID, which
-is exported via the webservice as 'token', in keeping with how it's
-referred to in the UI.
-
-    >>> blob = temporary_blobs['entries'][0]
-    >>> blob['token'] == blob_token
-    True
-
-It's possible to fetch a blob directly using its token.
+It is however possible to fetch a blob directly using its token (so that apport
+can tell when a bug is ready to file).
 
     >>> blob_link = '/temporary-blobs/' + blob_token
     >>> blob = webservice.get(blob_link).jsonBody()

@@ -23,10 +23,12 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.librarian.testing.server import (
-    cleanupLibrarianFiles,
     fillLibrarianFile,
     )
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    LibrarianLayer,
+    )
 from lp.archiveuploader.tagfiles import parse_tagfile
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.log.logger import BufferLogger
@@ -68,7 +70,7 @@ class TestSyncSource(TestCase):
         """
         super(TestSyncSource, self).tearDown()
         os.chdir(self._home)
-        cleanupLibrarianFiles()
+        LibrarianLayer.librarian_fixture.clear()
         shutil.rmtree(self._jail)
 
     def _listFiles(self):
@@ -331,8 +333,7 @@ class TestSyncSourceScript(TestCase):
             "Couldn't find %s." % expected_changesfile)
 
         # Parse the generated unsigned changesfile.
-        parsed_changes = parse_tagfile(
-            expected_changesfile, allow_unsigned=True)
+        parsed_changes = parse_tagfile(expected_changesfile)
 
         # It refers to the right source/version.
         self.assertEqual(parsed_changes['Source'], 'bar')
@@ -406,8 +407,7 @@ class TestSyncSourceScript(TestCase):
             "Couldn't find %s." % expected_changesfile)
 
         # Parse the generated unsigned changesfile.
-        parsed_changes = parse_tagfile(
-            expected_changesfile, allow_unsigned=True)
+        parsed_changes = parse_tagfile(expected_changesfile)
 
         # It refers to the right source/version.
         self.assertEqual(parsed_changes['Source'], 'sample1')

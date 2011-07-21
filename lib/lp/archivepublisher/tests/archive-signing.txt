@@ -19,11 +19,11 @@ The signed repository will contained a detached signature of the
 top-level 'Release' file, named 'Release.gpg' and a ASCII-armoded
 export of the public GPG key (name 'key.gpg')
 
-We will setup and use the test-keyserver (zeca).
+We will set up and use the test-keyserver.
 
-    >>> from canonical.zeca.ftests.harness import ZecaTestSetup
-    >>> z = ZecaTestSetup()
-    >>> z.setUp()
+    >>> from lp.testing.keyserver import KeyServerTac
+    >>> tac = KeyServerTac()
+    >>> tac.setUp()
 
 
 Querying 'pending signing key' PPAs
@@ -65,7 +65,7 @@ why it's skipped in the getPPAsPendingSigningKey() results.
 'No Privileges' PPA will be considered for signing_key creation when
 we copy an arbitrary source into it.
 
-    >>> a_source = cprov.archive.getPublishedSources()[0]
+    >>> a_source = cprov.archive.getPublishedSources().first()
     >>> copied_sources = a_source.copyTo(
     ...     a_source.distroseries, a_source.pocket, no_priv.archive)
 
@@ -427,12 +427,9 @@ have a 'signing_key' set,  it raises an error.
     AssertionError: No signing key available for PPA for Celso Providelo
 
 We'll purge 'signing_keys_root' and the PPA repository root so that
-other tests don't choke on it.
+other tests don't choke on it, and shut down the server.
 
     >>> import shutil
     >>> shutil.rmtree(config.personalpackagearchive.signing_keys_root)
     >>> shutil.rmtree(config.personalpackagearchive.root)
-
-Let's shut zeca down.
-
-    >>> z.tearDown()
+    >>> tac.tearDown()

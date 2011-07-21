@@ -128,7 +128,7 @@
               tal:content="entry/updatesCount">
               0
             </span>
-            <a tal:attributes="href string:${entry/fmt:url}/+translate?show=changed_in_launchpad"
+            <a tal:attributes="href string:${entry/fmt:url}/+translate?show=changed_in_ubuntu"
               tal:condition="entry/updatesCount"
               tal:content="entry/updatesCount"
               >

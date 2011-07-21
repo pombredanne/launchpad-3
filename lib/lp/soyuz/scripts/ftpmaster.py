@@ -20,7 +20,6 @@ __all__ = [
     ]
 
 import commands
-from debian.deb822 import Changes
 import hashlib
 import os
 import stat
@@ -29,10 +28,10 @@ import tempfile
 import time
 
 import apt_pkg
+from debian.deb822 import Changes
 from zope.component import getUtility
 
 from canonical.launchpad.helpers import filenameToContentType
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.interfaces import (
     ILibrarianClient,
@@ -40,6 +39,7 @@ from canonical.librarian.interfaces import (
     )
 from canonical.librarian.utils import copy_and_close
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.utils import (
     determine_source_file_type,
     re_extract_src_version,
@@ -60,9 +60,8 @@ from lp.soyuz.adapters.packagelocation import (
     build_package_location,
     PackageLocationError,
     )
-from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,
@@ -72,7 +71,7 @@ from lp.soyuz.scripts.ftpmasterbase import (
 class ArchiveCruftCheckerError(Exception):
     """ArchiveCruftChecker specific exception.
 
-    Mostly used to describe errors in the initialisation of this object.
+    Mostly used to describe errors in the initialization of this object.
     """
 
 
@@ -89,10 +88,7 @@ class ArchiveCruftChecker:
     """
 
     # XXX cprov 2006-05-15: the default archive path should come
-    # from the IDistroSeries.lucilleconfig. But since it's still
-    # not optimal and we have real plans to migrate it from DB
-    # text field to default XML config or a more suitable/reliable
-    # method it's better to not add more obsolete code to handle it.
+    # from the config.
     def __init__(self, logger, distribution_name='ubuntu', suite=None,
                  archive_path='/srv/launchpad.net/ubuntu-archive'):
         """Store passed arguments.
@@ -332,9 +328,7 @@ class ArchiveCruftChecker:
 
         Ensure the package is still published in the suite before add.
         """
-        bpr = getUtility(IBinaryPackageReleaseSet)
-        result = bpr.getByNameInDistroSeries(
-            self.distroseries, package)
+        result = self.distroseries.getBinaryPackagePublishing(name=package)
 
         if len(list(result)) == 0:
             return
@@ -406,7 +400,7 @@ class ArchiveCruftChecker:
             self.logger.debug("No NBS found")
 
     def initialize(self):
-        """Initialise and build required lists of obsolete entries in archive.
+        """Initialize and build required lists of obsolete entries in archive.
 
         Check integrity of passed parameters and store organised data.
         The result list is the self.nbs_to_remove which should contain
@@ -958,9 +952,9 @@ class LpQueryDistro(LaunchpadScript):
     """Main class for scripts/ftpmaster-tools/lp-query-distro.py."""
 
     def __init__(self, *args, **kwargs):
-        """Initialise dynamic 'usage' message and LaunchpadScript parent.
+        """Initialize dynamic 'usage' message and LaunchpadScript parent.
 
-        Also initialise the list 'allowed_arguments'.
+        Also initialize the list 'allowed_arguments'.
         """
         self.allowed_actions = [
             'current', 'development', 'supported', 'pending_suites', 'archs',
@@ -1007,7 +1001,7 @@ class LpQueryDistro(LaunchpadScript):
         print result
 
     def runAction(self, presenter=None):
-        """Run a given initialised action (self.action_name).
+        """Run a given initialized action (self.action_name).
 
         It accepts an optional 'presenter' which will be used to
         store/present the action result.
@@ -1404,7 +1398,7 @@ class ManageChrootScript(SoyuzScript):
         self.options.confirm_all = True
 
         self.logger.debug(
-            "Initialising ChrootManager for '%s'" % (distroarchseries.title))
+            "Initializing ChrootManager for '%s'" % (distroarchseries.title))
         chroot_manager = ChrootManager(
             distroarchseries, filepath=self.options.filepath)
 

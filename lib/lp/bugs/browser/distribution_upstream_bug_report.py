@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for distributions."""
@@ -159,7 +159,6 @@ class PackageBugReportData(BugReportData):
         self.dssp = dssp
         self.product = product
 
-        dsp_url = canonical_url(dsp)
         dsp_bugs_url = canonical_url(dsp, rootsite='bugs')
 
         self.open_bugs_url = urlappend(
@@ -360,17 +359,22 @@ class DistributionUpstreamBugReport(LaunchpadView):
         packages_to_exclude = self.context.upstream_report_excluded_packages
         counts = self.context.getPackagesAndPublicUpstreamBugCounts(
             limit=self.LIMIT, exclude_packages=packages_to_exclude)
+        # The upstream bug report is not useful if the distibution
+        # does not track its bugs on Lauchpad or if it does not have a
+        # current distroseries.
+        self.has_upstream_report = (
+            self.context.bug_tracking_usage == ServiceUsage.LAUNCHPAD and
+            self.current_distro_series is not None)
+        if not self.has_upstream_report:
+            return
         for (dsp, product, open, triaged, upstream, watched,
              bugs_with_upstream_patches) in counts:
             # The +edit-packaging page is only available for
             # IDistributionSeriesSourcepackages, so deduce one here. If
             # the distribution doesn't have series we can't offer a link
             # to add packaging information.
-            if self.current_distro_series:
-                dssp = self.current_distro_series.getSourcePackage(
-                    dsp.sourcepackagename)
-            else:
-                dssp = None
+            dssp = self.current_distro_series.getSourcePackage(
+                dsp.sourcepackagename)
             self.total.open_bugs += open
             self.total.triaged_bugs += triaged
             self.total.upstream_bugs += upstream

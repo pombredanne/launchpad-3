@@ -1,7 +1,7 @@
 Running Launchpad with Chameleon Template Engine
 ================================================
 
-- Need to pull the following dependencies into ``sourcecode``::
+- Need to pull the following dependencies into ``sourcecode``:
 
   - lp:sourcecodegen/trunk
   - lp:chameleon.core/trunk
@@ -14,7 +14,8 @@ Running Launchpad with Chameleon Template Engine
   ``z3c.pt`` and use ``zope.pagetemplate`` instead. Yes, it's that
   simple. This is possible thanks to ``z3c.ptcompat``.
 
-- Other useful environment options for ``z3c.pt``::
+
+Other useful environment options for ``z3c.pt``::
 
   # in debug-mode, templates on disk are reloaded if they're modified
   CHAMELEON_DEBUG (default: false)

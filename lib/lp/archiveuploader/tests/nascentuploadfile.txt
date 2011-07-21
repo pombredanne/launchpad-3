@@ -221,7 +221,7 @@ is base for ChangesFile and DSCFile.
     >>> sig_file = SignableTagFile()
 
 Note that the policy.{distroseries, pocket} must be already
-initialised before issuing any parse request, otherwise we can't
+initialized before issuing any parse request, otherwise we can't
 generate proper PERSON_CREATION_RATIONALE_MESSAGES.
 
     >>> sig_file_policy = getPolicy(name='insecure', distro='ubuntu')
@@ -295,7 +295,7 @@ for which the uploader must have explicit permissions (bug 589073).
     >>> print addr['email']
     foo@canonical.com
 
-If the use an un-initialised policy to create a launchpad person the
+If the use an un-initialized policy to create a launchpad person the
 creation_rationale will still be possible, however missing important
 information, the upload target:
 
@@ -351,11 +351,6 @@ The IGPGKey used to sign this ChangesFile:
 
     >>> ed_binary_changes.signingkey.displayname
     u'1024D/5D147547'
-
-The IGPGKey fingerprint used to sign this ChangesFile:
-
-    >>> print ed_binary_changes.fingerprint
-    FD311613D941C6DE55737D310E3498675D147547
 
 
 == DSCFile ==
@@ -413,11 +408,6 @@ ISourcePackageRelease.dscsiginingkey:
 
     >>> ed_source_dsc.signingkey.displayname
     u'1024D/6C64A8C5'
-
-The IGPGKey fingerprint used to sign this DSC:
-
-    >>> print ed_source_dsc.fingerprint
-    340CA3BB270E2716C9EE0B768E7EB7086C64A8C5
 
 A DSCFile provides a verification API similiar to what we have in
 ChangesFile itself:

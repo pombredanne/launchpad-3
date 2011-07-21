@@ -32,7 +32,7 @@ bugs or where the product requests that bugs are private by default)
 have the full message:
 
     >>> browser.open("http://bugs.launchpad.dev/firefox/+filebug")
-    >>> browser.getControl('Summary').value = (
+    >>> browser.getControl('Summary', index=0).value = (
     ...     'Firefox crashes when I change the default route')
     >>> browser.getControl('Continue').click()
 
@@ -65,10 +65,10 @@ But poor old no privs does not, and neither do anonymous users:
     >>> browser.open('http://bugs.launchpad.dev/bugs/4')
     Traceback (most recent call last):
     ...
-    Unauthorized: Bug 4 is private
+    NotFound: ...
 
     >>> anon_browser.open('http://bugs.launchpad.dev/bugs/4')
     Traceback (most recent call last):
     ...
-    Unauthorized: Bug 4 is private
+    NotFound: ...
 

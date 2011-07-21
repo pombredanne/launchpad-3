@@ -3,16 +3,30 @@
 
 """tales.py doctests."""
 
-import unittest
-
-from doctest import DocTestSuite
 from lxml import html
 
-from zope.component import getAdapter
-from zope.traversing.interfaces import IPathAdapter
+from zope.component import (
+    getAdapter,
+    getUtility
+    )
+from zope.traversing.interfaces import (
+    IPathAdapter,
+    TraversalError,
+    )
 
-from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.testing import test_tales, TestCase, TestCaseWithFactory
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
+from lp.app.browser.tales import (
+    format_link,
+    PersonFormatterAPI,
+    )
+from lp.registry.interfaces.irc import IIrcIDSet
+from lp.testing import (
+    test_tales,
+    TestCaseWithFactory,
+    )
 
 
 def test_requestapi():
@@ -72,9 +86,9 @@ def test_cookie_scope():
         ; Path=/; Secure; Domain=.launchpad.net
 
     The domain parameter is omitted for domains that appear to be
-    separate from a Launchpad instance, such as shipit:
+    separate from a Launchpad instance:
 
-        >>> print cookie_scope('https://shipit.ubuntu.com/')
+        >>> print cookie_scope('https://example.com/')
         ; Path=/; Secure
     """
 
@@ -112,17 +126,41 @@ class TestPersonFormatterAPI(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_nameLink(self):
-        """The nameLink links to the URL with the person name as the text."""
+    def test_link_display_name_id(self):
+        """The link to the user profile page using displayname and id."""
         person = self.factory.makePerson()
+        # Enable the picker_enhancements feature to test the commenter name.
+        from lp.services.features.testing import FeatureFixture
+        feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
+        flags = FeatureFixture(feature_flag)
+        flags.setUp()
+        self.addCleanup(flags.cleanUp)
         formatter = getAdapter(person, IPathAdapter, 'fmt')
-        result = formatter.nameLink(None)
-        expected = '<a href="%s" class="sprite person">%s</a>' % (
-            formatter.url(), person.name)
+        result = formatter.link_display_name_id(None)
+        expected = '<a href="%s" class="sprite person">%s (%s)</a>' % (
+            formatter.url(), person.displayname, person.name)
         self.assertEqual(expected, result)
 
 
-class TestFormattersAPI(TestCase):
+class TestObjectFormatterAPI(TestCaseWithFactory):
+    """Tests for ObjectFormatterAPI"""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_object_link_ignores_default(self):
+        # The rendering of an object's link ignores any specified default
+        # value which would be used in the case where the object were None.
+        person = self.factory.makePerson()
+        person_link = test_tales(
+            'person/fmt:link::default value', person=person)
+        self.assertEqual(PersonFormatterAPI(person).link(None), person_link)
+        person_link = test_tales(
+            'person/fmt:link:bugs:default value', person=person)
+        self.assertEqual(PersonFormatterAPI(person).link(
+            None, rootsite='bugs'), person_link)
+
+
+class TestFormattersAPI(TestCaseWithFactory):
     """Tests for FormattersAPI."""
 
     layer = DatabaseFunctionalLayer
@@ -177,13 +215,90 @@ class TestFormattersAPI(TestCase):
             self.assertEqual('_new', link.get('target'))
 
 
-def test_suite():
-    """Return this module's doctest Suite. Unit tests are also run."""
-    suite = unittest.TestSuite()
-    suite.addTests(DocTestSuite())
-    suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
-    return suite
+class TestNoneFormatterAPI(TestCaseWithFactory):
+    """Tests for NoneFormatterAPI"""
+
+    layer = FunctionalLayer
+
+    def test_format_link_none(self):
+        # Test that format_link() handles None correctly.
+        self.assertEqual(format_link(None), 'None')
+        self.assertEqual(format_link(None, empty_value=''), '')
+
+    def test_valid_traversal(self):
+        # Traversal of allowed names works as expected.
+
+        allowed_names = set([
+            'approximatedate',
+            'approximateduration',
+            'break-long-words',
+            'date',
+            'datetime',
+            'displaydate',
+            'isodate',
+            'email-to-html',
+            'exactduration',
+            'lower',
+            'nice_pre',
+            'nl_to_br',
+            'pagetitle',
+            'rfc822utcdatetime',
+            'text-to-html',
+            'time',
+            'url',
+            'link',
+            ])
+
+        for name in allowed_names:
+            self.assertEqual('', test_tales('foo/fmt:%s' % name, foo=None))
+
+    def test_value_override(self):
+        # Override of rendered value works as expected.
+        self.assertEqual(
+            'default value',
+            test_tales('foo/fmt:link::default value', foo=None))
+        self.assertEqual(
+            'default value',
+            test_tales('foo/fmt:link:rootsite:default value', foo=None))
+
+    def test_invalid_traversal(self):
+        # Traversal of invalid names raises an exception.
+        adapter = getAdapter(None, IPathAdapter, 'fmt')
+        traverse = getattr(adapter, 'traverse', None)
+        self.failUnlessRaises(TraversalError, traverse, "foo", [])
+
+    def test_shorten_traversal(self):
+        # Traversal of 'shorten' works as expected.
+        adapter = getAdapter(None, IPathAdapter, 'fmt')
+        traverse = getattr(adapter, 'traverse', None)
+        # We expect that the last item in extra will be popped off.
+        extra = ['1', '2']
+        self.assertEqual('', traverse('shorten', extra))
+        self.assertEqual(['1'], extra)
 
 
-if __name__ == '__main__':
-    unittest.main()
+class TestIRCNicknameFormatterAPI(TestCaseWithFactory):
+    """Tests for IRCNicknameFormatterAPI"""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_nick_displayname(self):
+        person = self.factory.makePerson(name='fred')
+        ircset = getUtility(IIrcIDSet)
+        ircID = ircset.new(person, "irc.canonical.com", "fred")
+        self.assertEqual(
+            'fred on irc.canonical.com',
+            test_tales('nick/fmt:displayname', nick=ircID))
+
+    def test_nick_formatted_displayname(self):
+        person = self.factory.makePerson(name='fred')
+        ircset = getUtility(IIrcIDSet)
+        # Include some bogus markup to check escaping works.
+        ircID = ircset.new(person, "<b>irc.canonical.com</b>", "fred")
+        expected_html = test_tales(
+            'nick/fmt:formatted_displayname', nick=ircID)
+        self.assertEquals(
+            u'<strong>fred</strong>\n'
+            '<span class="discreet"> on </span>\n'
+            '<strong>&lt;b&gt;irc.canonical.com&lt;/b&gt;</strong>\n',
+            expected_html)

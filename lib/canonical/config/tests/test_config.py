@@ -9,7 +9,6 @@
 
 __metaclass__ = type
 
-import ZConfig
 from doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
 import os
 import pkg_resources
@@ -17,10 +16,14 @@ import unittest
 
 from lazr.config import ConfigSchema
 from lazr.config.interfaces import ConfigErrors
+import ZConfig
 
+import canonical.config
+
+# Configs that shouldn't be tested.
+EXCLUDED_CONFIGS = ['lpnet-template']
 
 # Calculate some landmark paths.
-import canonical.config
 schema_file = pkg_resources.resource_filename('zope.app.server', 'schema.xml')
 schema = ZConfig.loadSchema(schema_file)
 
@@ -67,12 +70,14 @@ def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(DocTestSuite(
         'canonical.config',
-        optionflags=NORMALIZE_WHITESPACE | ELLIPSIS
+        optionflags=NORMALIZE_WHITESPACE | ELLIPSIS,
         ))
     # Add a test for every launchpad[.lazr].conf file in our tree.
     for config_dir in canonical.config.CONFIG_ROOT_DIRS:
         prefix_len = len(os.path.dirname(config_dir)) + 1
         for dirpath, dirnames, filenames in os.walk(config_dir):
+            if os.path.basename(dirpath) in EXCLUDED_CONFIGS:
+                continue
             for filename in filenames:
                 if filename == 'launchpad.conf':
                     config_file = os.path.join(dirpath, filename)

@@ -7,8 +7,8 @@ import unittest
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.publisher import canonical_url
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.testing import login_person
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
@@ -104,6 +104,26 @@ class TestMilestoneBreadcrumb(BaseBreadcrumbTestCase):
         last_crumb = crumbs[-1]
         self.assertEqual(self.milestone.name, last_crumb.text)
 
+
+class TestPollBreadcrumb(BaseBreadcrumbTestCase):
+    """Test breadcrumbs for an `IPoll`."""
+
+    def setUp(self):
+        super(TestPollBreadcrumb, self).setUp()
+        self.team = self.factory.makeTeam(displayname="Poll Team")
+        name = "pollo-poll"
+        title = "Marco Pollo"
+        proposition = "Be mine"
+        self.poll = self.factory.makePoll(
+            team=self.team,
+            name=name,
+            title=title,
+            proposition=proposition)
+
+    def test_poll(self):
+        crumbs = self.getBreadcrumbsForObject(self.poll)
+        last_crumb = crumbs[-1]
+        self.assertEqual(self.poll.title, last_crumb.text)
 
 from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 

@@ -13,18 +13,21 @@ __all__ = [
     'IBinaryPackageBuild',
     'IBuildRescoreForm',
     'IBinaryPackageBuildSet',
+    'UnparsableDependencies',
     ]
+
+import httplib
 
 from lazr.enum import (
     EnumeratedType,
     Item,
     )
 from lazr.restful.declarations import (
+    error_status,
     export_as_webservice_entry,
     export_write_operation,
     exported,
     operation_parameters,
-    webservice_error,
     )
 from lazr.restful.fields import Reference
 from zope.interface import (
@@ -40,16 +43,21 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from lp.buildmaster.enums import BuildStatus
+from lp.buildmaster.interfaces.buildfarmjob import ISpecificBuildFarmJobSource
 from lp.buildmaster.interfaces.packagebuild import IPackageBuild
 from lp.soyuz.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 
 
+@error_status(httplib.BAD_REQUEST)
 class CannotBeRescored(Exception):
     """Raised when rescoring a build that cannot be rescored."""
-    webservice_error(400) # Bad request.
     _message_prefix = "Cannot rescore build"
+
+
+class UnparsableDependencies(Exception):
+    """Raised when parsing invalid dependencies on a binary package."""
 
 
 class IBinaryPackageBuildView(IPackageBuild):
@@ -130,6 +138,13 @@ class IBinaryPackageBuildView(IPackageBuild):
         "of the binaries resulted from this build. It's 'None' if it is "
         "a build imported by Gina.")
 
+    api_score = exported(
+        Int(
+            title=_("Score of the related job (if any)"),
+            readonly=True,
+            ),
+        exported_as="score")
+
     def updateDependencies():
         """Update the build-dependencies line within the targeted context."""
 
@@ -179,6 +194,23 @@ class IBinaryPackageBuildView(IPackageBuild):
         :return: the corresponding `IBinaryPackageFile` if it was found.
         """
 
+    def getBinaryPackageNamesForDisplay():
+        """Retrieve the build's binary package names for display purposes.
+
+        :return: a result set of
+            (`IBinaryPackageRelease`, `IBinaryPackageName`) ordered by name
+            and `IBinaryPackageRelease.id`.
+        """
+
+    def getBinaryFilesForDisplay():
+        """Retrieve the build's `IBinaryPackageFile`s for display purposes.
+
+        Also prefetches other related objects needed for display.
+
+        :return: a result set of (`IBinaryPackageRelease`,
+            `IBinaryPackageFile`, `ILibraryFileAlias`, `ILibraryFileContent`).
+        """
+
 
 class IBinaryPackageBuildEdit(Interface):
     """A Build interface for items requiring launchpad.Edit."""
@@ -221,7 +253,7 @@ class BuildSetStatus(EnumeratedType):
     # currently the title) to be used programatically (for example, as a
     # css class name).
     NEEDSBUILD = Item(
-        title='NEEDSBUILD',# "Need building",
+        title='NEEDSBUILD',  # "Need building",
         description='There are some builds waiting to be built.')
 
     FULLYBUILT_PENDING = Item(
@@ -229,17 +261,17 @@ class BuildSetStatus(EnumeratedType):
         description="All builds were built successfully but have not yet "
                     "been published.")
 
-    FULLYBUILT = Item(title='FULLYBUILT', # "Successfully built",
+    FULLYBUILT = Item(title='FULLYBUILT',  # "Successfully built",
                       description="All builds were built successfully.")
 
-    FAILEDTOBUILD = Item(title='FAILEDTOBUILD', # "Failed to build",
+    FAILEDTOBUILD = Item(title='FAILEDTOBUILD',  # "Failed to build",
                          description="There were build failures.")
 
-    BUILDING = Item(title='BUILDING', # "Currently building",
+    BUILDING = Item(title='BUILDING',  # "Currently building",
                     description="There are some builds currently building.")
 
 
-class IBinaryPackageBuildSet(Interface):
+class IBinaryPackageBuildSet(ISpecificBuildFarmJobSource):
     """Interface for BinaryPackageBuildSet"""
 
     def new(distro_arch_series, source_package_release, processor,
@@ -259,13 +291,6 @@ class IBinaryPackageBuildSet(Interface):
 
     def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
         """Return a build for a SourcePackageRelease and an ArchTag"""
-
-    def getByBuildID(id):
-        """Return the exact build specified.
-
-        id is the numeric ID of the build record in the database.
-        I.E. getUtility(IBuildSet).getByBuildID(foo).id == foo
-        """
 
     def getPendingBuildsForArchSet(archseries):
         """Return all pending build records within a group of ArchSeries
@@ -311,6 +336,7 @@ class IBinaryPackageBuildSet(Interface):
         records. If name is passed return only the builds which the
         sourcepackagename matches (SQL LIKE).
         """
+
     def retryDepWaiting(distroarchseries):
         """Re-process all MANUALDEPWAIT builds for a given IDistroArchSeries.
 
@@ -322,6 +348,8 @@ class IBinaryPackageBuildSet(Interface):
     def getBuildsBySourcePackageRelease(sourcepackagerelease_ids,
                                         buildstate=None):
         """Return all builds related with the given list of source releases.
+
+        Eager loads the PackageBuild and BuildFarmJob records for the builds.
 
         :param sourcepackagerelease_ids: list of `ISourcePackageRelease`s;
         :param buildstate: option build state filter.

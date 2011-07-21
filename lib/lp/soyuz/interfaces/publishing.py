@@ -44,6 +44,7 @@ from zope.interface import (
     Interface,
     )
 from zope.schema import (
+    Bool,
     Choice,
     Date,
     Datetime,
@@ -81,6 +82,7 @@ class PoolFileOverwriteError(Exception):
     file in pool and print a warning in the publisher log. It probably
     requires manual intervention in the archive.
     """
+
 
 class MissingSymlinkInPool(Exception):
     """Raised when there is a missing symlink in pool.
@@ -126,7 +128,7 @@ class ICanPublishPackages(Interface):
     def publish(diskpool, log, archive, pocket, careful=False):
         """Publish associated publishing records targeted for a given pocket.
 
-        Require an initialised diskpool instance and a logger instance.
+        Require an initialized diskpool instance and a logger instance.
         Require an 'archive' which will restrict the publications.
         'careful' argument would cause the 'republication' of all published
         records if True (system will DTRT checking hash of all
@@ -327,6 +329,8 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
+    sourcepackagereleaseID = Attribute(
+        "The DB id for the sourcepackagerelease.")
     sourcepackagerelease = Int(
             title=_('The source package release being published'),
             required=False, readonly=False,
@@ -338,6 +342,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             vocabulary=PackagePublishingStatus,
             required=False, readonly=False,
             ))
+    distroseriesID = Attribute("DB ID for distroseries.")
     distroseries = exported(
         Reference(
             IDistroSeries,
@@ -349,6 +354,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             title=_('The component being published into'),
             required=False, readonly=False,
             )
+    sectionID = Attribute("DB ID for the section")
     section = Int(
             title=_('The section being published into'),
             required=False, readonly=False,
@@ -471,6 +477,12 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         "package that has been published in the main distribution series, "
         "if one exists, or None.")
 
+    ancestor = Reference(
+        Interface, # Really ISourcePackagePublishingHistory
+        title=_('Ancestor'),
+        description=_('The previous release of this source package.'),
+        required=False, readonly=True)
+
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
@@ -578,8 +590,15 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         `IBinaryPackagePublishingHistory`.
         """
 
-    def copyTo(distroseries, pocket, archive):
+    def copyTo(distroseries, pocket, archive, overrides=None):
         """Copy this publication to another location.
+
+        :param distroseries: The `IDistroSeries` to copy the source
+            publication into.
+        :param pocket: The `PackagePublishingPocket` to copy into.
+        :param archive: The `IArchive` to copy the source publication into.
+        :param overrides: A tuple of override data as returned from a
+            `IOverridePolicy`
 
         :return: a `ISourcePackagePublishingHistory` record representing the
             source in the destination location.
@@ -629,7 +648,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
 class ISourcePackagePublishingHistory(ISourcePackagePublishingHistoryPublic,
                                       IPublishingEdit):
     """A source package publishing history record."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
 
 #
@@ -647,10 +666,6 @@ class IBinaryPackageFilePublishing(IFilePublishing):
             )
     binarypackagepublishing = Int(
             title=_('Binary Package publishing record id'), required=True,
-            readonly=True,
-            )
-    architecturetag = TextLine(
-            title=_("Architecture tag. As per dpkg's use"), required=True,
             readonly=True,
             )
 
@@ -672,6 +687,7 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
             required=False, readonly=False,
             ),
         exported_as="distro_arch_series")
+    distroseries = Attribute("The distroseries being published into")
     component = Int(
             title=_('The component being published into'),
             required=False, readonly=False,
@@ -781,6 +797,10 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         TextLine(
             title=_("Binary Package Version"),
             required=False, readonly=True))
+    architecture_specific = exported(
+        Bool(
+            title=_("Architecture Specific"),
+            required=False, readonly=True))
     priority_name = exported(
         TextLine(
             title=_("Priority Name"),
@@ -849,13 +869,13 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
 class IBinaryPackagePublishingHistory(IBinaryPackagePublishingHistoryPublic,
                                       IPublishingEdit):
     """A binary package publishing record."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
 
 class IPublishingSet(Interface):
     """Auxiliary methods for dealing with sets of publications."""
 
-    def copyBinariesTo(binaries, distroseries, pocket, archive):
+    def copyBinariesTo(binaries, distroseries, pocket, archive, policy=None):
         """Copy multiple binaries to a given destination.
 
         Processing multiple binaries in a batch allows certain
@@ -867,9 +887,49 @@ class IPublishingSet(Interface):
         :param distroseries: The target distroseries.
         :param pocket: The target pocket.
         :param archive: The target archive.
+        :param policy: The `IOverridePolicy` to apply to the copy.
 
         :return: A result set of the created binary package
             publishing histories.
+        """
+
+    def publishBinaries(archive, distroseries, pocket, binaries):
+        """Efficiently publish multiple BinaryPackageReleases in an Archive.
+
+        Creates `IBinaryPackagePublishingHistory` records for each binary,
+        handling architecture-independent and debug packages, avoiding
+        creation of duplicate publications, and leaving disabled
+        architectures alone.
+
+        :param archive: The target `IArchive`.
+        :param distroseries: The target `IDistroSeries`.
+        :param pocket: The target `PackagePublishingPocket`.
+        :param binaries: A dict mapping `BinaryPackageReleases` to their
+            desired overrides as (`Component`, `Section`,
+            `PackagePublishingPriority`) tuples.
+
+        :return: A list of new `IBinaryPackagePublishingHistory` records.
+        """
+
+    def publishBinary(archive, binarypackagerelease, distroseries,
+                      component, section, priority, pocket):
+        """Publish a `BinaryPackageRelease` in an archive.
+
+        Creates one or more `IBinaryPackagePublishingHistory` records,
+        handling architecture-independent and DDEB publications transparently.
+
+        Note that binaries will only be copied if they don't already exist in
+        the target; this method cannot be used to change overrides.
+
+        :param archive: The target `IArchive`.
+        :param binarypackagerelease: The `IBinaryPackageRelease` to copy.
+        :param distroseries: An `IDistroSeries`.
+        :param component: The target `IComponent`.
+        :param section: The target `ISection`.
+        :param priority: The target `PackagePublishingPriority`.
+        :param pocket: The target `PackagePublishingPocket`.
+
+        :return: A list of new `IBinaryPackagePublishingHistory` records.
         """
 
     def newBinaryPublication(archive, binarypackagerelease, distroarchseries,
@@ -889,7 +949,8 @@ class IPublishingSet(Interface):
         """
 
     def newSourcePublication(archive, sourcepackagerelease, distroseries,
-                             component, section, pocket):
+                             component, section, pocket, ancestor,
+                             create_dsd_job):
         """Create a new `SourcePackagePublishingHistory`.
 
         :param archive: An `IArchive`
@@ -898,6 +959,10 @@ class IPublishingSet(Interface):
         :param component: An `IComponent`
         :param section: An `ISection`
         :param pocket: A `PackagePublishingPocket`
+        :param ancestor: A `ISourcePackagePublishingHistory` for the previous
+            version of this publishing record
+        :param create_dsd_job: A boolean indicating whether or not dsd job
+            should be created for the new source publication.
 
         datecreated will be UTC_NOW.
         status will be PackagePublishingStatus.PENDING

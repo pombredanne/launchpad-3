@@ -8,22 +8,6 @@
   >
 <body>
 
-<metal:block fill-slot="head_epilogue">
-  <tal:devmode condition="devmode">
-    <tal:archive_js define="lp_js string:${icingroot}/build">
-      <script type="text/javascript"
-              tal:attributes="src string:${lp_js}/soyuz/base.js">
-      </script>
-    </tal:archive_js>
-  </tal:devmode>
-</metal:block>
-
-<div metal:fill-slot="heading">
-  <h1 tal:content="CONTEXTS/fmt:pagetitle">
-    Copy packages from Blah PPA
-  </h1>
-</div>
-
 <div metal:fill-slot="main">
   <div class="top-portlet">
     <tal:cannot_copy condition="not: view/can_copy">

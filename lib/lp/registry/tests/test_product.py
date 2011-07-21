@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -10,9 +10,7 @@ import unittest
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
 import transaction
-from zope.component import getUtility
 
-from canonical.launchpad.ftests import syncUpdate
 from canonical.launchpad.testing.pages import (
     find_main_content,
     get_feedback_messages,
@@ -22,7 +20,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-from lp.registry.interfaces.person import IPersonSet
+from lp.app.enums import ServiceUsage
 from lp.registry.interfaces.product import (
     IProduct,
     License,
@@ -38,7 +36,9 @@ from lp.testing import (
     login,
     login_person,
     TestCaseWithFactory,
+    WebServiceTestCase,
     )
+from lp.translations.enums import TranslationPermission
 
 
 class TestProduct(TestCaseWithFactory):
@@ -249,7 +249,6 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
                          (License.ACADEMIC, License.AFFERO))
         product_license = ProductLicense(
             product=self.product, license=License.PYTHON)
-        syncUpdate(product_license)
         # Cache doesn't see new value.
         self.assertEqual(self.product.licenses,
                          (License.ACADEMIC, License.AFFERO))
@@ -261,7 +260,6 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
         transaction.abort()
         product_license = ProductLicense(
             product=self.product, license=License.MIT)
-        syncUpdate(product_license)
         self.assertEqual(self.product.licenses,
                          (License.ACADEMIC, License.AFFERO, License.MIT))
 
@@ -277,8 +275,6 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
             purchaser=self.product.owner,
             sales_system_id='foo',
             whiteboard='bar')
-        # Cache does not see the change to the database.
-        syncUpdate(subscription)
         self.assertEqual(self.product.commercial_subscription, None)
         self.product.redeemSubscriptionVoucher(
             'hello', self.product.owner, self.product.owner, 1)
@@ -298,7 +294,6 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
             purchaser=self.product.owner,
             sales_system_id='new',
             whiteboard='')
-        syncUpdate(subscription)
         # Cache is cleared and it sees database changes that occur
         # before the cache is populated.
         self.assertEqual(self.product.commercial_subscription.sales_system_id,
@@ -345,9 +340,8 @@ class BugSupervisorTestCase(TestCaseWithFactory):
     def testPersonCanSetSelfAsSupervisor(self):
         # A person can set themselves as bug supervisor for a product.
         # This is a regression test for bug 438985.
-        user = getUtility(IPersonSet).getByName(self.person.name)
         self.product.setBugSupervisor(
-            bug_supervisor=self.person, user=user)
+            bug_supervisor=self.person, user=self.person)
 
         self.assertEqual(
             self.product.bug_supervisor, self.person,
@@ -355,6 +349,35 @@ class BugSupervisorTestCase(TestCaseWithFactory):
             "Instead, bug supervisor for firefox is %s" % (
             self.person.name, self.product.name,
             self.product.bug_supervisor.name))
+
+
+class TestWebService(WebServiceTestCase):
+
+    def test_translations_usage(self):
+        """The translations_usage field should be writable."""
+        product = self.factory.makeProduct()
+        transaction.commit()
+        ws_product = self.wsObject(product, product.owner)
+        ws_product.translations_usage = ServiceUsage.EXTERNAL.title
+        ws_product.lp_save()
+
+    def test_translationpermission(self):
+        """The translationpermission field should be writable."""
+        product = self.factory.makeProduct()
+        transaction.commit()
+        ws_product = self.wsObject(product, product.owner)
+        ws_product.translationpermission = TranslationPermission.CLOSED.title
+        ws_product.lp_save()
+
+    def test_translationgroup(self):
+        """The translationgroup field should be writable."""
+        product = self.factory.makeProduct()
+        group = self.factory.makeTranslationGroup()
+        transaction.commit()
+        ws_product = self.wsObject(product, product.owner)
+        ws_group = self.wsObject(group)
+        ws_product.translationgroup = ws_group
+        ws_product.lp_save()
 
 
 def test_suite():

@@ -20,7 +20,7 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.enums import QuestionStatus
 from lp.answers.interfaces.questionreopening import IQuestionReopening
 from lp.registry.interfaces.person import validate_public_person
 
@@ -45,41 +45,27 @@ class QuestionReopening(SQLBase):
     priorstate = EnumCol(schema=QuestionStatus, notNull=True)
 
 
-def create_questionreopening(question, event):
-    """Event subscriber that creates a QuestionReopening event.
+def create_questionreopening(
+        question,
+        reopen_msg,
+        old_status,
+        old_answerer,
+        old_date_solved):
+    """Helper function to handle question reopening.
 
-    A QuestionReopening is created question with an answer changes back to the
-    OPEN state.
+    A QuestionReopening is created when question with an answer changes back
+    to the OPEN state.
     """
-    # XXX flacoste 2006-10-25 The QuestionReopening is probably not that
-    # useful anymore since the question history is nearly complete.
-    # If we decide to still keep that class, this subscriber should
-    # probably be moved outside of database code.
-    if question.status != QuestionStatus.OPEN:
+    # XXX jcsackett This guard has to be maintained because reopen can
+    # be called with the question in a bad state.
+    if old_answerer is None:
         return
-
-    # Only create a QuestionReopening if the question had previsouly an
-    # answer.
-    old_question = event.object_before_modification
-    if old_question.answerer is None:
-        return
-    assert question.answerer is None, (
-        "Open question shouldn't have an answerer.")
-
-    # The last added message is the cause of the reopening.
-    reopen_msg = question.messages[-1]
-
-    # Make sure that the last message is really the last added one.
-    assert [reopen_msg] == (
-        list(set(question.messages).difference(old_question.messages))), (
-            "Reopening message isn't the last one.")
-
     reopening = QuestionReopening(
-            question=question, reopener=reopen_msg.owner,
+            question=question,
+            reopener=reopen_msg.owner,
             datecreated=reopen_msg.datecreated,
-            answerer=old_question.answerer,
-            date_solved=old_question.date_solved,
-            priorstate=old_question.status)
-
+            answerer=old_answerer,
+            date_solved=old_date_solved,
+            priorstate=old_status)
     reopening = ProxyFactory(reopening)
     notify(ObjectCreatedEvent(reopening, user=reopen_msg.owner))

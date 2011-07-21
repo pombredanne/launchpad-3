@@ -18,6 +18,7 @@ from lazr.restful.declarations import (
     call_with,
     export_factory_operation,
     export_read_operation,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     REQUEST_USER,
@@ -59,14 +60,17 @@ class IHasBranches(Interface):
     @call_with(visible_by_user=REQUEST_USER)
     @operation_returns_collection_of(Interface) # Really IBranch.
     @export_read_operation()
+    @operation_for_version('beta')
     def getBranches(status=None, visible_by_user=None,
-                    modified_since=None):
+                    modified_since=None, eager_load=False):
         """Returns all branches with the given lifecycle status.
 
         :param status: A list of statuses to filter with.
         :param visible_by_user: Normally the user who is asking.
         :param modified_since: If set, filters the branches being returned
             to those that have been modified since the specified date/time.
+        :param eager_load: If True load related objects for the whole
+            collection.
         :returns: A list of `IBranch`.
         """
 
@@ -88,6 +92,7 @@ class IHasMergeProposals(Interface):
     @call_with(visible_by_user=REQUEST_USER)
     @operation_returns_collection_of(Interface) # Really IBranchMergeProposal.
     @export_read_operation()
+    @operation_for_version('beta')
     def getMergeProposals(status=None, visible_by_user=None):
         """Returns all merge proposals of a given status.
 
@@ -114,6 +119,7 @@ class IHasRequestedReviews(Interface):
     @call_with(visible_by_user=REQUEST_USER)
     @operation_returns_collection_of(Interface) # Really IBranchMergeProposal.
     @export_read_operation()
+    @operation_for_version('beta')
     def getRequestedReviews(status=None, visible_by_user=None):
         """Returns merge proposals where a person was asked to review.
 
@@ -148,6 +154,7 @@ class IHasCodeImports(Interface):
         )
     @call_with(registrant=REQUEST_USER)
     @export_factory_operation(Interface, []) # Really ICodeImport.
+    @operation_for_version('beta')
     def newCodeImport(registrant=None, branch_name=None, rcs_type=None,
                       url=None, cvs_root=None, cvs_module=None, owner=None):
         """Create a new code import.

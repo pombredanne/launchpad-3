@@ -12,6 +12,7 @@ import _pythonpath
 import os
 
 from canonical.config import config
+from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
@@ -66,4 +67,4 @@ if __name__ == '__main__':
     script = DistroMirrorProberScript(
         'distributionmirror-prober',
         dbuser=config.distributionmirrorprober.dbuser)
-    script.lock_and_run()
+    script.lock_and_run(isolation=ISOLATION_LEVEL_AUTOCOMMIT)

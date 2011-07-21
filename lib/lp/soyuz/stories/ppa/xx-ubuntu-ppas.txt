@@ -393,9 +393,9 @@ latest published sources with their states.
     Latest updates
     cdrkit ... ago
     Failed to build: i386
-    pmount ... ago
-    Successfully built
     iceweasel ... ago
+    Successfully built
+    pmount ... ago
     Successfully built
 
 A statistics portlet is included on the index page.

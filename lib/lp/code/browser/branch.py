@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
@@ -21,7 +21,6 @@ __all__ = [
     'BranchNavigation',
     'BranchEditMenu',
     'BranchInProductView',
-    'BranchSparkView',
     'BranchUpgradeView',
     'BranchURL',
     'BranchView',
@@ -75,14 +74,15 @@ from zope.traversing.interfaces import IPathAdapter
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad import _
+from canonical.launchpad import (
+    _,
+    searchbuilder,
+    )
 from canonical.launchpad.browser.feeds import (
     BranchFeedLink,
     FeedsMixin,
     )
-from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.helpers import truncate_text
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
     canonical_url,
     ContextMenu,
@@ -98,16 +98,20 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
-from canonical.widgets.suggestion import TargetBranchWidget
-from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
-from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
+from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadEditFormView,
     LaunchpadFormView,
     )
+from lp.app.browser.lazrjs import (
+    EnumChoiceWidget,
+    )
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from lp.app.widgets.suggestion import TargetBranchWidget
 from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugbranch import IBugBranch
@@ -119,7 +123,6 @@ from lp.code.browser.branchref import BranchRef
 from lp.code.browser.decorations import DecoratedBranch
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.enums import (
-    BranchLifecycleStatus,
     BranchType,
     CodeImportResultStatus,
     CodeImportReviewStatus,
@@ -138,11 +141,11 @@ from lp.code.interfaces.branch import (
     IBranch,
     user_has_special_branch_access,
     )
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
-from lp.code.interfaces.sourcepackagerecipe import recipes_enabled
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -249,11 +252,11 @@ class BranchNavigation(Navigation):
     def traverse_translation_templates_build(self, id_string):
         """Traverses to a `TranslationTemplatesBuild`."""
         try:
-            buildfarmjob_id = int(id_string)
+            ttbj_id = int(id_string)
         except ValueError:
             raise NotFoundError(id_string)
         source = getUtility(ITranslationTemplatesBuildSource)
-        return source.getByBuildFarmJob(buildfarmjob_id)
+        return source.getByID(ttbj_id)
 
 
 class BranchEditMenu(NavigationMenu):
@@ -339,10 +342,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
         return Link('+register-merge', text, icon='add', enabled=enabled)
 
     def link_bug(self):
-        if self.context.linked_bugs:
-            text = 'Link to another bug report'
-        else:
-            text = 'Link to a bug report'
+        text = 'Link a bug report'
         return Link('+linkbug', text, icon='add')
 
     def link_blueprint(self):
@@ -361,7 +361,7 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
 
     def source(self):
         """Return a link to the branch's file listing on codebrowse."""
-        text = 'View the branch content'
+        text = 'Browse the code'
         enabled = self.context.code_is_browseable
         url = self.context.codebrowse_url('files')
         return Link(url, text, icon='info', enabled=enabled)
@@ -384,10 +384,8 @@ class BranchContextMenu(ContextMenu, HasRecipesMenuMixin):
             '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
 
     def create_recipe(self):
-        if not self.context.private and recipes_enabled():
-            enabled = True
-        else:
-            enabled = False
+        # You can't create a recipe for a private branch.
+        enabled = not self.context.private
         text = 'Create packaging recipe'
         return Link('+new-recipe', text, enabled=enabled, icon='add')
 
@@ -408,15 +406,14 @@ class BranchMirrorMixin:
         branch = self.branch
 
         # If the user has edit permissions, then show the actual location.
-        if check_permission('launchpad.Edit', branch):
+        if branch.url is None or check_permission('launchpad.Edit', branch):
             return branch.url
 
-        # XXX: Tim Penhey, 2008-05-30
+        # XXX: Tim Penhey, 2008-05-30, bug 235916
         # Instead of a configuration hack we should support the users
         # specifying whether or not they want the mirror location
         # hidden or not.  Given that this is a database patch,
         # it isn't going to happen today.
-        # See bug 235916
         hosts = config.codehosting.private_mirror_hosts.split(',')
         private_mirror_hosts = [name.strip() for name in hosts]
 
@@ -550,7 +547,7 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
 
     @property
     def recipe_count_text(self):
-        count = self.context.getRecipes().count()
+        count = self.context.recipes.count()
         if count == 0:
             return 'No recipes'
         elif count == 1:
@@ -604,14 +601,20 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
         return len(self.landing_candidates) > 5
 
     @cachedproperty
-    def linked_bugs(self):
-        """Return a list of DecoratedBugs linked to the branch."""
-        bugs = self.context.linked_bugs
+    def linked_bugtasks(self):
+        """Return a list of bugtasks linked to the branch."""
         if self.context.is_series_branch:
-            bugs = [
-                bug for bug in bugs
-                if bug.bugtask.status in UNRESOLVED_BUGTASK_STATUSES]
-        return bugs
+            status_filter = searchbuilder.any(*UNRESOLVED_BUGTASK_STATUSES)
+        else:
+            status_filter = None
+        return list(self.context.getLinkedBugTasks(
+            self.user, status_filter))
+
+    @cachedproperty
+    def revision_info(self):
+        collection = getUtility(IAllBranches).visibleByUser(self.user)
+        return collection.getExtendedRevisionDetails(
+            self.user, self.context.latest_revisions)
 
     @cachedproperty
     def latest_code_import_results(self):
@@ -666,17 +669,11 @@ class BranchView(LaunchpadView, FeedsMixin, BranchMirrorMixin):
         return list(self.context.getProductSeriesPushingTranslations())
 
     @property
-    def status_config(self):
+    def status_widget(self):
         """The config to configure the ChoiceSource JS widget."""
-        return simplejson.dumps({
-            'status_widget_items': vocabulary_to_choice_edit_items(
-                BranchLifecycleStatus,
-                css_class_prefix='branchstatus'),
-            'status_value': self.context.lifecycle_status.title,
-            'user_can_edit_status': check_permission(
-                'launchpad.Edit', self.context),
-            'branch_path': '/' + self.context.unique_name,
-            })
+        return EnumChoiceWidget(
+            self.context.branch, IBranch['lifecycle_status'],
+            header='Change status to', css_class_prefix='branchstatus')
 
 
 class BranchInProductView(BranchView):
@@ -835,8 +832,7 @@ class BranchMirrorStatusView(LaunchpadFormView):
         else:
             celebs = getUtility(ILaunchpadCelebrities)
             return (self.user.inTeam(self.context.owner) or
-                    self.user.inTeam(celebs.admin) or
-                    self.user.inTeam(celebs.bazaar_experts))
+                    self.user.inTeam(celebs.admin))
 
     @property
     def mirror_of_ssh(self):
@@ -1038,7 +1034,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             owner_field = self.schema['owner']
             any_owner_choice = Choice(
                 __name__='owner', title=owner_field.title,
-                description = _("As an administrator you are able to reassign"
+                description=_("As an administrator you are able to reassign"
                                 " this branch to any person or team."),
                 required=True, vocabulary='ValidPersonOrTeam')
             any_owner_field = form.Fields(
@@ -1060,7 +1056,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 owner_field = self.schema['owner']
                 owner_choice = Choice(
                     __name__='owner', title=owner_field.title,
-                    description = owner_field.description,
+                    description=owner_field.description,
                     required=True, vocabulary=SimpleVocabulary(terms))
                 new_owner_field = form.Fields(
                     owner_choice, render_context=self.render_context)
@@ -1081,6 +1077,10 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 try:
                     namespace.validateMove(
                         self.context, self.user, name=data['name'])
+                except BranchCreationForbidden:
+                    self.addError(
+                        "%s is not allowed to own branches in %s." % (
+                        owner.displayname, self.context.target.displayname))
                 except BranchExists, e:
                     self._setBranchExists(e.existing_branch)
 
@@ -1115,7 +1115,12 @@ class BranchReviewerEditView(BranchEditFormView):
 
 class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
-    schema = IBranch
+    class schema(Interface):
+        use_template(
+            IBranch, include=['owner', 'name', 'url', 'lifecycle_status'])
+        branch_type = copy_field(
+            IBranch['branch_type'], vocabulary=UICreatableBranchType)
+
     for_input = True
     field_names = ['owner', 'name', 'branch_type', 'url', 'lifecycle_status']
 
@@ -1457,59 +1462,3 @@ class TryImportAgainView(LaunchpadFormView):
     @property
     def prefix(self):
         return "tryagain"
-
-
-class BranchSparkView(LaunchpadView):
-    """This view generates the JSON data for the commit sparklines."""
-
-    __for__ = IBranch
-
-    # How many days to look for commits.
-    COMMIT_DAYS = 90
-
-    def _commitCounts(self):
-        """Return a dict of commit counts for rendering."""
-        epoch = (
-            datetime.now(tz=pytz.UTC) - timedelta(days=(self.COMMIT_DAYS-1)))
-        # Make a datetime for that date, but midnight.
-        epoch = epoch.replace(hour=0, minute=0, second=0, microsecond=0)
-        commits = dict(self.context.commitsForDays(epoch))
-        # However storm returns tz-unaware datetime objects.
-        day = datetime(year=epoch.year, month=epoch.month, day=epoch.day)
-        days = [day + timedelta(days=count)
-                for count in range(self.COMMIT_DAYS)]
-
-        commit_list = []
-        total_commits = 0
-        most_commits = 0
-        for index, day in enumerate(days):
-            count = commits.get(day, 0)
-            commit_list.append(count)
-            total_commits += count
-            if count >= most_commits:
-                most_commits = count
-                max_index = index
-        return {'count': total_commits,
-                'commits': commit_list,
-                'max_commits': max_index}
-
-    def render(self):
-        """Write out the commit data as a JSON string."""
-        # We want:
-        #  count: total commit count
-        #  last_commit: string to say when the last commit was
-        #  commits: an array of COMMIT_DAYS values for commits for that day
-        #  max_commits: an index into the commits array with the most commits,
-        #     most recent wins any ties.
-        values = {'count': 0, 'max_commits': 0}
-        # Check there have been commits.
-        if self.context.revision_count == 0:
-            values['last_commit'] = 'empty branch'
-        else:
-            tip = self.context.getTipRevision()
-            adapter = queryAdapter(tip.revision_date, IPathAdapter, 'fmt')
-            values['last_commit'] = adapter.approximatedate()
-            values.update(self._commitCounts())
-
-        self.request.response.setHeader('content-type', 'application/json')
-        return simplejson.dumps(values)

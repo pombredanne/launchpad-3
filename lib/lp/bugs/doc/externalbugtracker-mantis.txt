@@ -58,7 +58,7 @@ Tracker:
 
     >>> example_bug_tracker = new_bugtracker(BugTrackerType.MANTIS)
 
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
     ...     example_bug_tracker, '1550',
@@ -142,8 +142,8 @@ updateBugWatches() issues only one request to update all watches:
     CALLED _getPage(u'view.php?id=1738')
     CALLED _getPage(u'view.php?id=1748')
     CALLED _getPage(u'view.php?id=1798')
-    WARNING:...:Didn't find bug u'1798' on http://bugs.some.where
-    (local bugs: 10). (OOPS-...)
+    INFO:...:Didn't find bug u'1798' on http://bugs.some.where
+    (local bugs: 10).
 
     >>> remote_statuses = dict(
     ...     (int(bug_watch.remotebug), bug_watch.remotestatus)

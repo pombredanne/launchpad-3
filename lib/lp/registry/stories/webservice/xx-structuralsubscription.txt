@@ -96,8 +96,7 @@ tries this.
     ...     subscriber=webservice.getAbsoluteUrl('/~pythons'))
     HTTP/1.1 401 Unauthorized
     ...
-    UserCannotSubscribePerson: eric does not have permission to subscribe pythons.
-    <BLANKLINE>
+    eric does not have permission to subscribe pythons.
 
 Oops, Eric isn't a team admin. Eric gets Michael to try, since he is an
 admin by virtue of his ownership.
@@ -136,8 +135,7 @@ Eric can't unsubscribe the team either.
     ...     subscriber=webservice.getAbsoluteUrl('/~pythons'))
     HTTP/1.1 401 Unauthorized
     ...
-    UserCannotSubscribePerson: eric does not have permission to unsubscribe pythons.
-    <BLANKLINE>
+    eric does not have permission to unsubscribe pythons.
 
 Michael can, though.
 

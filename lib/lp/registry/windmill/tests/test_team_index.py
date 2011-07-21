@@ -6,14 +6,12 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
-from canonical.launchpad.windmill.testing import lpuser
-from canonical.launchpad.windmill.testing.widgets import (
-    search_and_select_picker_widget,
-    )
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import WindmillTestCase
+from lp.testing.windmill import lpuser
+from lp.testing.windmill.widgets import (
+    search_and_select_picker_widget,
+    )
 
 
 class TestTeamIndex(WindmillTestCase):
@@ -23,10 +21,8 @@ class TestTeamIndex(WindmillTestCase):
     suite_name = __name__
 
     def test_addmember(self):
-        self.client.open(
-            url=u'%s/~testing-spanish-team' % RegistryWindmillLayer.base_url)
-
-        lpuser.TRANSLATIONS_ADMIN.ensure_login(self.client)
+        client, start_url = self.getClientFor(
+            '/~testing-spanish-team', user=lpuser.TRANSLATIONS_ADMIN)
 
         addmember_xpath = (
             '//*[@id="membership"]' +
@@ -71,7 +67,3 @@ class TestTeamIndex(WindmillTestCase):
         self.client.asserts.assertNode(
             xpath='//*[@id="membership-counts"]'
                   '//a[@href="+members#invited"]')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

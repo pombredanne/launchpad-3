@@ -6,17 +6,16 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
-from canonical.launchpad.windmill.testing import (
+from lp.bugs.windmill.testing import BugsWindmillLayer
+from lp.testing import WindmillTestCase
+from lp.testing.windmill import (
     constants,
     lpuser,
     )
-from lp.bugs.windmill.testing import BugsWindmillLayer
-from lp.testing import WindmillTestCase
 
 
 class TestOfficialBugTags(WindmillTestCase):
+    """XXX: Pull most to YUI test, but port XHR check at end."""
 
     layer = BugsWindmillLayer
     suite_name = 'Official bug tags management test'
@@ -27,9 +26,7 @@ class TestOfficialBugTags(WindmillTestCase):
 
     # Firefox is a product - an official bug tags target.
 
-        client.open(url='%s/firefox' % BugsWindmillLayer.base_url)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        lpuser.FOO_BAR.ensure_login(client)
+        client, start_url = self.getClientFor('/firefox', user=lpuser.FOO_BAR)
 
     # foobar has the permission to edit the official bug tags for firefox.
 
@@ -214,6 +211,3 @@ class TestOfficialBugTags(WindmillTestCase):
         client.click(id=u'remove-official-tags')
         client.click(id=u'save-button')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

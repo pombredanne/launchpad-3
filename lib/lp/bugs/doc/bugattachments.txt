@@ -10,7 +10,7 @@ Let's look at a bug that has no attachments:
     >>> from canonical.launchpad.ftests import login
     >>> login("foo.bar@canonical.com")
 
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> from lp.bugs.interfaces.bug import IBugSet
     >>> from lp.bugs.interfaces.bugattachment import IBugAttachment
     >>> from lp.registry.interfaces.person import IPersonSet

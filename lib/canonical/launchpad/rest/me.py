@@ -45,7 +45,7 @@ class MeLink:
 def cache_me_link_when_principal_identified(event):
     """Insert the current user into the JSON request cache.
 
-    This ensures that the Javascript variable LP.client.links['me']
+    This ensures that the Javascript variable LP.links['me']
     will be set.
     """
     # XML-RPC requests and other non-browser requests don't have a

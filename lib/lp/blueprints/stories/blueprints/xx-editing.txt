@@ -65,7 +65,7 @@ specification home page.
 Also, we would like to assign these to someone other than Carlos, and we
 would also like to have a drafter associated with it.
 
-  >>> browser.getLink('Change people').click()
+  >>> browser.getLink(url='+people').click()
   >>> browser.url
   'http://blueprints.launchpad.dev/firefox/+spec/extension-manager-upgrades/+people'
   >>> back_link = browser.getLink('Extension Manager System Upgrades')
@@ -82,7 +82,7 @@ would also like to have a drafter associated with it.
 Finally, we should be able to change the status metadata (definition status,
 implementation status, estimated man days etc) of the specification.
 
-  >>> browser.getLink('Change status').click()
+  >>> browser.getLink(url='+status').click()
   >>> back_link = browser.getLink('Extension Manager System Upgrades')
   >>> back_link.url
   'http://blueprints.launchpad.dev/firefox/+spec/extension-manager-upgrades'
@@ -99,7 +99,7 @@ Any logged in user can edit a specification whiteboard.
   >>> user_browser.open(
   ...     'http://blueprints.launchpad.dev/kubuntu/'
   ...     '+spec/krunch-desktop-plan')
-  >>> user_browser.getLink('Edit whiteboard').click()
+  >>> user_browser.getLink(url='+whiteboard').click()
   >>> back_link = user_browser.getLink('The Krunch Desktop Plan')
   >>> back_link.url
   'http://blueprints.launchpad.dev/kubuntu/+spec/krunch-desktop-plan'
@@ -114,7 +114,7 @@ Any logged in user can edit a specification whiteboard.
 
 Regular users can't access the change status page.
 
-  >>> user_browser.getLink('Change status')
+  >>> user_browser.getLink(url='+status')
   Traceback (most recent call last):
   ...
   LinkNotFoundError
@@ -131,7 +131,7 @@ Nor can they change a blueprint's priority.
     >>> user_browser.open(
     ...     'http://blueprints.launchpad.dev/kubuntu/'
     ...     '+spec/krunch-desktop-plan')
-    >>> user_browser.getLink('Change priority')
+    >>> user_browser.getLink(url='+priority')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -141,7 +141,7 @@ But an administrator can.
     >>> admin_browser.open(
     ...     'http://blueprints.launchpad.dev/kubuntu/'
     ...     '+spec/krunch-desktop-plan')
-    >>> admin_browser.getLink('Change priority').click()
+    >>> admin_browser.getLink(url='+priority').click()
     >>> admin_browser.url
     'http://blueprints.launchpad.dev/kubuntu/+spec/krunch-desktop-plan/+priority'
     >>> back_link = admin_browser.getLink('The Krunch Desktop Plan')

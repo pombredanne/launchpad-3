@@ -6,7 +6,6 @@ __all__ = [
     'OAuthAccessTokenView',
     'OAuthAuthorizeTokenView',
     'OAuthRequestTokenView',
-    'OAuthTokenAuthorizedView',
     'lookup_oauth_context']
 
 from datetime import (
@@ -372,9 +371,6 @@ class OAuthAuthorizeTokenView(LaunchpadFormView, JSONTokenMixin):
         callback = self.request.form.get('oauth_callback')
         if callback:
             self.next_url = callback
-        else:
-            self.next_url = (
-                '+token-authorized?oauth_token=%s' % self.token.key)
 
 
 def lookup_oauth_context(context):
@@ -395,22 +391,6 @@ def lookup_oauth_context(context):
         if context is None:
             raise ValueError(context)
     return context
-
-
-class OAuthTokenAuthorizedView(LaunchpadView):
-    """Where users who reviewed tokens may get redirected to.
-
-    If the consumer didn't include an oauth_callback when sending the user to
-    Launchpad, this is the page the user is redirected to after he logs in and
-    reviews the token.
-    """
-
-    def initialize(self):
-        key = self.request.form.get('oauth_token')
-        self.token = getUtility(IOAuthRequestTokenSet).getByKey(key)
-        assert self.token.is_reviewed, (
-            'Users should be directed to this page only if they already '
-            'authorized the token.')
 
 
 class OAuthAccessTokenView(LaunchpadView):

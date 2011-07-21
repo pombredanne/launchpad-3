@@ -77,16 +77,13 @@ All the distributions that use Malone as their main bug tracker.
     gentoo Gentoo Gentoo
     ubuntu Ubuntu Ubuntu
 
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu in using_malone_vocabulary
     True
     >>> debian = getUtility(ILaunchpadCelebrities).debian
     >>> debian in using_malone_vocabulary
     False
-
-    >>> using_malone_vocabulary.getQuery() is None
-    True
 
     >>> term = using_malone_vocabulary.getTerm(ubuntu)
     >>> print term.token, term.value.displayname, term.title
@@ -303,8 +300,8 @@ both a source and binary package of that name.
     >>> package_name_terms.count()
     2
     >>> [(term.token, term.title) for term in package_name_terms]
-    [('mozilla-firefox', u'iceweasel huh ?'),
-     ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
+    [('mozilla-firefox', u'mozilla-firefox'),
+     ('mozilla-firefox-data', u'mozilla-firefox-data')]
 
 Searching for "mozilla" should return the binary package name above, and
 the source package named "mozilla".
@@ -313,9 +310,9 @@ the source package named "mozilla".
     >>> package_name_terms.count()
     3
     >>> [(term.token, term.title) for term in package_name_terms]
-    [('mozilla', 'Not uploaded'),
-     ('mozilla-firefox', u'iceweasel huh ?'),
-     ('mozilla-firefox-data', u'Mozilla Firefox Data is .....')]
+    [('mozilla', u'mozilla'),
+     ('mozilla-firefox', u'mozilla-firefox'),
+     ('mozilla-firefox-data', u'mozilla-firefox-data')]
 
 The search does a case-insensitive, substring match.
 
@@ -323,8 +320,8 @@ The search does a case-insensitive, substring match.
     >>> package_name_terms.count()
     2
     >>> [(term.token, term.title) for term in package_name_terms]
-    [('linux-2.6.12', u'this kernel is like the crystal method: a temple...'),
-     ('linux-source-2.6.15', u'Source of: linux-2.6.12')]
+    [('linux-2.6.12', u'linux-2.6.12'),
+     ('linux-source-2.6.15', u'linux-source-2.6.15')]
 
 
 BinaryPackageNameVocabulary

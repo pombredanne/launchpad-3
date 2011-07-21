@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """`IFAQTarget` browser views."""
@@ -15,7 +15,6 @@ from canonical.launchpad.webapp import (
     canonical_url,
     stepthrough,
     )
-from canonical.widgets import TokensTextWidget
 from lp.answers.interfaces.faq import IFAQ
 from lp.app.browser.launchpadform import (
     action,
@@ -23,6 +22,7 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     )
 from lp.app.errors import NotFoundError
+from lp.app.widgets.textwidgets import TokensTextWidget
 
 
 class FAQTargetNavigationMixin:

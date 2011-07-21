@@ -27,7 +27,7 @@ class FakeSubscription:
 class BaseMailerSubclass(BaseMailer):
     """Subclass of BaseMailer to avoid getting the body template."""
 
-    def _getBody(self, email):
+    def _getBody(self, email, recipient):
         return 'body'
 
 

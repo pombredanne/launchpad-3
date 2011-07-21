@@ -58,7 +58,6 @@ consumer keys.
     401 Unauthorized
     >>> print response.body
     Unknown consumer (new-consumer).
-    ...
 
 But with anonymous access there is no registration step. The first
 time Launchpad sees a consumer key might be during an
@@ -91,7 +90,6 @@ Anonymous requests can't access certain data.
     401 Unauthorized
     >>> print response.body
     You need to be logged in to view this URL.
-    ...
 
 Anonymous requests can't change the dataset.
 
@@ -103,7 +101,6 @@ Anonymous requests can't change the dataset.
     401 Unauthorized
     >>> print response.body
     (<Person at...>, 'displayname', 'launchpad.Edit')
-    ...
 
 A completely unsigned web service request is treated as an anonymous
 request, with the OAuth consumer name being equal to the User-Agent.
@@ -156,21 +153,8 @@ isn't logged in as any particular user:
     >>> print response.getOutput()
     HTTP/1.1 401 Unauthorized
     ...
-    Unauthorized: You need to be logged in to view this URL.
+    You need to be logged in to view this URL.
 
-An empty or missing user agent results in an error.
-
-    >>> response = request_with_user_agent(' ')
-    >>> print response.getOutput()
-    HTTP/1.1 401 Unauthorized
-    ...
-    Unauthorized: Anonymous requests must provide a User-Agent.
-
-    >>> response = request_with_user_agent(None)
-    >>> print response.getOutput()
-    HTTP/1.1 401 Unauthorized
-    ...
-    Unauthorized: Anonymous requests must provide a User-Agent.
 
 API Requests to other hosts
 ===========================
@@ -225,7 +209,7 @@ anonymous request.
     ...     headers={'Authorization': sample_auth})
     HTTP/1.1 401 Unauthorized
     ...
-    Unauthorized: Anonymous requests must provide a User-Agent.
+    You need to be logged in to view this URL.
 
 
 The 'Vary' Header

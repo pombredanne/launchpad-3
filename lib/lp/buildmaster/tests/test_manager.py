@@ -521,7 +521,7 @@ class TestNewBuilders(TestCase):
         return NewBuildersScanner(manager=manager, clock=clock)
 
     def test_init_stores_existing_builders(self):
-        # Make sure that NewBuildersScanner initialises itself properly
+        # Make sure that NewBuildersScanner initializes itself properly
         # by storing a list of existing builders.
         all_builders = [builder.name for builder in getUtility(IBuilderSet)]
         builder_scanner = self._getScanner()
@@ -554,6 +554,13 @@ class TestNewBuilders(TestCase):
             factory.makeBuilder(name=builder_name)
         self.assertEqual(
             new_builders, builder_scanner.checkForNewBuilders())
+
+    def test_checkForNewBuilders_detects_builder_only_once(self):
+        # checkForNewBuilders() only detects a new builder once.
+        builder_scanner = self._getScanner()
+        LaunchpadObjectFactory().makeBuilder(name="sammy")
+        self.assertEqual(["sammy"], builder_scanner.checkForNewBuilders())
+        self.assertEqual([], builder_scanner.checkForNewBuilders())
 
     def test_scan(self):
         # See if scan detects new builders.

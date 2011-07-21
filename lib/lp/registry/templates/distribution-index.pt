@@ -5,14 +5,31 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad">
+
+  <head>
+    <tal:head-epilogue metal:fill-slot="head_epilogue">
+      <tal:uses_launchpad_bugtracker
+         condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
+        <script type="text/javascript">
+            LPS.use('lp.registry.structural_subscription', function(Y) {
+                var module = Y.lp.registry.structural_subscription;
+                Y.on('domready', function() {
+                  module.setup({content_box: "#structural-subscription-content-box"});
+                });
+            });
+        </script>
+      </tal:uses_launchpad_bugtracker>
+    </tal:head-epilogue>
+  </head>
+
   <body>
     <tal:heading metal:fill-slot="heading">
       <h1 tal:content="context/title">project title</h1>
     </tal:heading>
 
     <tal:registering metal:fill-slot="registering">
-        registered by
-        <a tal:replace="structure context/owner/fmt:link" />
+        Registered by
+        <a tal:replace="structure context/registrant/fmt:link" />
         <span tal:content="context/date_created/fmt:displaydate"
               tal:attributes="title context/date_created/fmt:datetime"
           >on 2005-01-01</span>
@@ -47,7 +64,10 @@
         <div class="yui-u">
           <tal:series replace="structure context/@@+series-and-milestones" />
         </div>
-      </div>
+        <div class="yui-u" tal:condition="features/soyuz.derived_series_ui.enabled">
+          <tal:series replace="structure context/@@+derivatives-slot" />
+        </div>
+       </div>
 
       <div class="yui-g">
         <div class="yui-u first">
@@ -68,6 +88,9 @@
             tal:condition="context/blueprints_usage/enumvalue:LAUNCHPAD" />
 
           <div tal:replace="structure context/@@+portlet-coming-sprints" />
+        </div>
+        <div class="yui-u">
+          <div id="structural-subscription-content-box"></div>
         </div>
       </div>
     </tal:main>

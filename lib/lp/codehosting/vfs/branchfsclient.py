@@ -17,6 +17,7 @@ import time
 from twisted.internet import defer
 
 from lp.code.interfaces.codehosting import BRANCH_TRANSPORT
+from lp.services.twistedsupport import no_traceback_failures
 
 
 class NotInCache(Exception):
@@ -128,5 +129,5 @@ class BranchFileSystemClient:
         except NotInCache:
             deferred = self._codehosting_endpoint.callRemote(
                 'translatePath', self._user_id, path)
-            deferred.addCallback(self._addToCache, path)
+            deferred.addCallback(no_traceback_failures(self._addToCache), path)
             return deferred

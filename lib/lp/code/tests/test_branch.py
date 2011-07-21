@@ -1,16 +1,14 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for methods of Branch and BranchSet."""
 
-import unittest
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
@@ -59,6 +57,14 @@ class PermissionTest(TestCaseWithFactory):
         :param can_access: Whether we expect to access it anonymously.
         """
         self.assertAuthenticatedView(branch, None, can_access)
+
+    def assertCanView(self, person, secured_object):
+        """Assert 'person' can view 'secured_object'."""
+        self.assertPermission(True, person, secured_object, 'launchpad.View')
+
+    def assertCannotView(self, person, secured_object):
+        """Assert 'person' cannot view 'secured_object'."""
+        self.assertPermission(False, person, secured_object, 'launchpad.View')
 
     def assertCanEdit(self, person, secured_object):
         """Assert 'person' can edit 'secured_object'.
@@ -117,13 +123,6 @@ class TestAccessBranch(PermissionTest):
         removeSecurityProxy(team).addMember(person, team_owner)
         branch = self.factory.makeAnyBranch(private=True, owner=team)
         self.assertAuthenticatedView(branch, person, True)
-
-    def test_privateBranchBazaarExperts(self):
-        # The Bazaar experts can access any branch.
-        celebs = getUtility(ILaunchpadCelebrities)
-        branch = self.factory.makeAnyBranch(private=True)
-        self.assertAuthenticatedView(
-            branch, celebs.bazaar_experts.teamowner, True)
 
     def test_privateBranchAdmins(self):
         # Launchpad admins can access any branch.
@@ -377,7 +376,3 @@ class TestComposePublicURL(TestCaseWithFactory):
         # not work for private branches.
         branch = self.factory.makeAnyBranch()
         self.assertRaises(AssertionError, branch.composePublicURL, 'https')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -13,10 +13,10 @@ from lp.translations.scripts.migrate_current_flag import (
 
 
 class MigrateTranslationFlags(LaunchpadScript):
-    """Go through all POFiles and TranslationMessages and get rid of variants.
-
-    Replaces use of `variant` field with a new language with the code
-    corresponding to the 'previous language'@'variant'.
+    """Go through translations for projects and set is_current_upstream flag
+ 
+    Sets the is_current_upstream flag for all current translations in projects
+    so that they appear as current in the new model.
     """
 
     def main(self):

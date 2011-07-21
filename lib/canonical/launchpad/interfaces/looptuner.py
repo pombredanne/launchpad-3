@@ -32,3 +32,12 @@ class ITunableLoop(Interface):
         to get as close as possible to your time goal.
         """
 
+    def cleanUp(self):
+        """Clean up any open resources.
+
+        Optional.
+
+        This method is needed because loops may be aborted before
+        completion, so clean up code in the isDone() method may
+        never be invoked.
+        """

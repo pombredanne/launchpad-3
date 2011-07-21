@@ -82,7 +82,7 @@ Launchpad adds it automatically.
 We were redirected to the next form, the translation was accepted.
 
     >>> print browser.url
-    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?batch=1&start=0
+    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?batch=1
 
 Get previous page to check that the save translation is the right one.
 
@@ -112,7 +112,7 @@ Now, we do the right submit, with one trailing new line...
 We were redirected to the next form, the translation was accepted.
 
     >>> print browser.url
-    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?batch=1&start=0
+    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?batch=1
 
 Get previous page to check that the save translation is the right one.
 
@@ -142,7 +142,7 @@ Last check, the user sends two new line chars instead of just one...
 We were redirected to the next form, the translation was accepted.
 
     >>> print browser.url
-    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?batch=1&start=0
+    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/+translate?batch=1
 
 Get previous page to check that the save translation is the right one.
 

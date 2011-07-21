@@ -90,7 +90,6 @@ published in 'universe' is allowed to depend on binaries published in
 A proper name for this "model" would be 'cross-component-dependency'.
 
     >>> from canonical.database.sqlbase import flush_database_caches
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> from lp.soyuz.interfaces.component import IComponentSet
 
     >>> ubuntu_components = [
@@ -108,7 +107,6 @@ A proper name for this "model" would be 'cross-component-dependency'.
     ...     for component in ubuntu_components:
     ...         component = getUtility(IComponentSet)[component]
     ...         ogre_pub.component = component
-    ...         syncUpdate(ogre_pub)
     ...         flush_database_caches()
     ...         components_term = " ".join(
     ...             get_components_for_context(
@@ -137,7 +135,6 @@ released series.
 
     >>> naked_build = removeSecurityProxy(ogre_build)
     >>> naked_build.pocket = PackagePublishingPocket.BACKPORTS
-    >>> syncUpdate(ogre_build)
 
 Ultimately, it means that a build targeted to the BACKPORTS pocket
 will behave as if it were published in the multiverse component,
@@ -226,11 +223,11 @@ no need to request the builder to load its archive indexes.
     0
 
     >>> print_building_sources_list(a_build)
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
 Once we publish a test binary in Celso's PPA hoary/i386,
@@ -243,11 +240,11 @@ returned 'sources_list' content.
 
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
 Similarly, unpopulated PPA dependencies are *not* listed in the building
@@ -259,11 +256,11 @@ Similarly, unpopulated PPA dependencies are *not* listed in the building
     ...     getUtility(IComponentSet)['main'])
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
 But *populated* PPA dependencies *are* listed in the building 'sources_list'.
@@ -274,122 +271,24 @@ But *populated* PPA dependencies *are* listed in the building 'sources_list'.
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
     deb http://ppa.launchpad.dev/mark/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
-The authentication information gets added for private PPA
-dependencies. We'll create a private PPA and then update cprov's PPA,
-removing the dependency on Mark's public PPA and adding one for the
-new private PPA.
-
-    >>> private_ppa = factory.makeArchive(
-    ...     owner=mark, name='p3a', private=True, distribution=ubuntu)
-    >>> pub_binaries = test_publisher.getPubBinaries(
-    ...     binaryname='dep-bin', archive=private_ppa,
-    ...     status=PackagePublishingStatus.PUBLISHED)
     >>> cprov.archive.removeArchiveDependency(mark.archive)
-    >>> archive_dependency = cprov.archive.addArchiveDependency(
-    ...     private_ppa, PackagePublishingPocket.RELEASE,
-    ...     getUtility(IComponentSet)['main'])
 
-    >>> print_building_sources_list(a_build)
-    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://buildd:sekrit@private-ppa.launchpad.dev/mark/p3a/ubuntu
-        hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
-        main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
-        main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
-        main restricted universe multiverse
-
-Remove the private PPA dependency before continuing.
-
-    >>> cprov.archive.removeArchiveDependency(private_ppa)
-
-    >>> cprov.archive.external_dependencies is None
-    True
-    >>> cprov.archive.enabled
-    True
-
-What happens when we fake external dependencies?
+What when we supply invalid dependencies, an exception is raised.
 
     >>> cprov.archive.external_dependencies = (
     ...     "Malformed format string here --> %(series)")
-
-The error caused by the malformed format string is caught and the other
-dependencies are returned as normal.
-
-    >>> print_building_sources_list(a_build)
-    ERROR:root:Exception during external dependency processing:
     Traceback (most recent call last):
-      File ... in get_sources_list_for_building
-        {'series': distroarchseries.distroseries.name})
-    ValueError: incomplete format
-    <BLANKLINE>
-    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
-        main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
-        main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
-        main restricted universe multiverse
-
-However, in order to avoid the problem going forward (and to allow the PPA
-owner to correct the external dependencies) the PPA will be disabled.
-
-    >>> cprov.archive.enabled
-    False
-
-Restore the 'external_dependencies' property to its original state and
-re-enable the PPA.
-
-    >>> cprov.archive.external_dependencies = None
-    >>> cprov.archive.enable()
-
-    >>> cprov.archive.external_dependencies is None
-    True
-    >>> cprov.archive.enabled
-    True
-
-What happens when we fake external dependencies?
-
-    >>> cprov.archive.external_dependencies = (
-    ...     "Malformed format string here --> %(series)")
-
-The error caused by the malformed format string is caught and the other
-dependencies are returned as normal.
-
-    >>> print_building_sources_list(a_build)
-    ERROR:root:Exception during external dependency processing:
-    Traceback (most recent call last):
-      File ... in get_sources_list_for_building
-        {'series': distroarchseries.distroseries.name})
-    ValueError: incomplete format
-    <BLANKLINE>
-    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
-        main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
-        main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
-        main restricted universe multiverse
-
-However, in order to avoid the problem going forward (and to allow the PPA
-owner to correct the external dependencies) the PPA will be disabled.
-
-    >>> cprov.archive.enabled
-    False
-
-Restore the 'external_dependencies' property to its original state and
-re-enable the PPA.
-
-    >>> cprov.archive.external_dependencies = None
-    >>> cprov.archive.enable()
+    InvalidExternalDependencies: (InvalidExternalDependencies(...),
+    "Invalid external dependencies:\nMalformed format string here
+    --> %(series): Must start with 'deb'\nMalformed format string here
+    --> %(series): Invalid URL\n")
 
 
 == Overriding default primary archive dependencies ==
@@ -407,11 +306,11 @@ dependencies.
 
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
 The default build behaviour will remain unchanged when we override the
@@ -423,11 +322,11 @@ default primary archive dependencies with exactly the same values.
 
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
@@ -450,9 +349,9 @@ the primary archive.
 
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main universe
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main universe
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
@@ -467,7 +366,7 @@ original ubuntu release.
 
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary main restricted
+    deb http://archive.launchpad.dev/ubuntu hoary main restricted
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
 
@@ -480,13 +379,13 @@ environment.
 
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-proposed
+    deb http://archive.launchpad.dev/ubuntu hoary-proposed
         main restricted universe multiverse
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
@@ -499,13 +398,13 @@ Similarly an extension of the BACKPORTS environment can be set.
 
     >>> print_building_sources_list(a_build)
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-backports
+    deb http://archive.launchpad.dev/ubuntu hoary-backports
         main restricted universe multiverse
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
@@ -532,12 +431,12 @@ other partner applications by default.
     >>> [partner_build] = pub_source.createMissingBuilds()
 
     >>> print_building_sources_list(partner_build)
-    deb http://ftpmaster.internal/ubuntu-partner hoary partner
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu-partner hoary partner
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
 
 
@@ -570,9 +469,37 @@ Now builds in Celso's PPA will use the external dependencies.
     deb http://user:pass@repository zoing everything
     deb http://user:pass@repository hoary public private
     deb http://user:pass@repository hoary-extra public
-    deb http://ftpmaster.internal/ubuntu hoary
+    deb http://archive.launchpad.dev/ubuntu hoary
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-security
+    deb http://archive.launchpad.dev/ubuntu hoary-security
         main restricted universe multiverse
-    deb http://ftpmaster.internal/ubuntu hoary-updates
+    deb http://archive.launchpad.dev/ubuntu hoary-updates
         main restricted universe multiverse
+
+
+== Overlays ==
+
+An overlay distroseries is a derived distribution which works like a PPA.
+This means that the parent's details gets added to the sources.list passed to
+the builders.
+
+    >>> depdistro = factory.makeDistribution('depdistro',
+    ...     publish_base_url=u'http://archive.launchpad.dev/')
+    >>> depseries = factory.makeDistroSeries(
+    ...     name='depseries', distribution=depdistro)
+    >>> deparchseries = factory.makeDistroArchSeries(
+    ...     distroseries = depseries, architecturetag = 'i386')
+    >>> universe_component = getUtility(IComponentSet)['universe']
+    >>> dsp = factory.makeDistroSeriesParent(
+    ...     derived_series=hoary, parent_series=depseries,
+    ...     initialized=True, is_overlay=True,
+    ...     pocket=PackagePublishingPocket.SECURITY,
+    ...     component=universe_component)
+    >>> pub_source = test_publisher.getPubSource(
+    ...     version='1.1', archive=hoary.main_archive)
+    >>> [hoary_build] = pub_source.createMissingBuilds()
+    >>> print_building_sources_list(hoary_build)
+    deb http://archive.launchpad.dev/ubuntu hoary main
+    deb http://archive.launchpad.dev/depdistro depseries main universe
+    deb http://archive.launchpad.dev/depdistro depseries-security
+        main universe

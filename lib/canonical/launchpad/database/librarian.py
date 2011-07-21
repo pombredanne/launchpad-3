@@ -30,7 +30,6 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
-import storm.base
 from storm.locals import (
     Date,
     Desc,
@@ -71,6 +70,7 @@ from canonical.librarian.interfaces import (
     IRestrictedLibrarianClient,
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT,
     )
+from lp.services.database.stormbase import StormBase
 
 
 class LibraryFileContent(SQLBase):
@@ -140,14 +140,19 @@ class LibraryFileAlias(SQLBase):
         """See ILibraryFileAlias.https_url"""
         return self.client.getURLForAlias(self.id, secure=True)
 
-    def getURL(self):
+    def getURL(self, secure=True, include_token=False):
         """See ILibraryFileAlias.getURL"""
-        if self.restricted:
-            return self.private_url
-        if config.librarian.use_https:
-            return self.https_url
+        if not self.restricted:
+            if config.librarian.use_https and secure:
+                return self.https_url
+            else:
+                return self.http_url
         else:
-            return self.http_url
+            url = self.private_url
+            if include_token:
+                token = TimeLimitedToken.allocate(url)
+                url += '?token=%s' % token
+            return url
 
     _datafile = None
 
@@ -156,8 +161,7 @@ class LibraryFileAlias(SQLBase):
         self._datafile = self.client.getFileByAlias(self.id, timeout)
         if self._datafile is None:
             raise DownloadFailed(
-                    "Unable to retrieve LibraryFileAlias %d" % self.id
-                    )
+                "Unable to retrieve LibraryFileAlias %d" % self.id)
 
     def read(self, chunksize=None, timeout=LIBRARIAN_SERVER_DEFAULT_TIMEOUT):
         """See ILibraryFileAlias."""
@@ -255,6 +259,10 @@ class LibraryFileAliasWithParent:
         self.context = libraryfile
         self.__parent__ = parent
 
+    def createToken(self):
+        """See `ILibraryFileAliasWithParent`."""
+        return TimeLimitedToken.allocate(self.private_url)
+
 
 class LibraryFileAliasSet(object):
     """Create and find LibraryFileAliases."""
@@ -302,7 +310,7 @@ class LibraryFileDownloadCount(SQLBase):
     country = Reference(country_id, 'Country.id')
 
 
-class TimeLimitedToken(storm.base.Storm):
+class TimeLimitedToken(StormBase):
     """A time limited access token for accessing a private file."""
 
     __storm_table__ = 'TimeLimitedToken'

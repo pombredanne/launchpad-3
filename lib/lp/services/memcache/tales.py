@@ -27,11 +27,11 @@ from zope.tales.expressions import (
     )
 from zope.tales.interfaces import ITALESExpression
 
-from canonical.base import base
 from canonical.config import config
 from lp.app import versioninfo
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.services.memcache.interfaces import IMemcacheClient
+from lp.services.utils import compress_hash
 
 # Request annotation key.
 COUNTER_KEY = 'lp.services.memcache.tales.counter'
@@ -238,7 +238,7 @@ class MemcacheExpr:
         # with a hash. A short hash is good, provided it is still unique,
         # to preserve readability as much as possible. We include the
         # unsanitized URL in the hash to ensure uniqueness.
-        key_hash = base(int(md5(key + url).hexdigest(), 16), 62)
+        key_hash = compress_hash(md5(key + url))
         key = key[:250-len(key_hash)] + key_hash
 
         return key

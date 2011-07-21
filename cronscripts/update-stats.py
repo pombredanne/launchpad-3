@@ -21,9 +21,8 @@ from canonical.config import config
 
 
 class StatUpdater(LaunchpadCronScript):
-    def main(self):
-        self.txn.set_isolation_level(ISOLATION_LEVEL_READ_COMMITTED)
 
+    def main(self):
         self.logger.debug('Starting the stats update')
 
         # Note that we do not issue commits here in the script; content
@@ -42,7 +41,5 @@ class StatUpdater(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = StatUpdater('launchpad-stats',
-                         dbuser=config.statistician.dbuser)
-    script.lock_and_run()
-
+    script = StatUpdater('launchpad-stats', dbuser=config.statistician.dbuser)
+    script.lock_and_run(isolation=ISOLATION_LEVEL_READ_COMMITTED)

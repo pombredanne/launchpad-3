@@ -30,6 +30,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from lp.app.validators.name import name_validator
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.role import IHasOwner
@@ -56,7 +57,8 @@ class IDistroArchSeries(IHasOwner):
                 "identifies this architecture. All binary packages in the "
                 "archive will use this tag in their filename. Please get it "
                 "correct. It should really never be changed!"),
-            required=True),
+            required=True,
+            constraint=name_validator),
         exported_as="architecture_tag")
     official = exported(
         Bool(

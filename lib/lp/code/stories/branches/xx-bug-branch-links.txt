@@ -18,7 +18,7 @@ if the user is not logged in, they will be asked to log in.
 
     >>> anon_browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon')
-    >>> anon_browser.getLink('Link to a bug report').click()
+    >>> anon_browser.getLink('Link a bug report').click()
     Traceback (most recent call last):
     ...
     Unauthorized: (...launchpad.AnyPerson')
@@ -46,7 +46,7 @@ if the user is not logged in, they will be asked to log in.
     >>> printBugBranchLinks(browser)
     No bug branch links
 
-    >>> browser.getLink('Link to a bug report').click()
+    >>> browser.getLink('Link a bug report').click()
     >>> print browser.title
     Link branch...
 
@@ -60,7 +60,7 @@ requires the user to enter a bug number.
 
 Attempting to link to the same bug again gives no error.
 
-    >>> browser.getLink('Link to another bug report').click()
+    >>> browser.getLink('Link a bug report').click()
     >>> browser.getControl('Bug #').value = "9"
     >>> browser.getControl('Continue').click()
     >>> for message in get_feedback_messages(browser.contents):
@@ -215,6 +215,5 @@ Deleting a branch with linked bugs
 
     >>> print find_tag_by_id(admin_browser.contents, 'deletion-items')
     <ul ...
-    <a href="http://bugs.launchpad.dev/product-name.../+bug/..."
-    class="sprite bug-undecided">Bug #...: generic-string...</a>...
+    <a href...>Bug #...: bug-title...</a>...
 

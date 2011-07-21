@@ -21,18 +21,17 @@ from twisted.internet import (
 from twisted.python.failure import Failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 from twisted.web import server
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 import canonical
 from canonical.config import config
 from canonical.launchpad.daemons.tachandler import TacTestSetup
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import (
     TwistedLayer,
     ZopelessDatabaseLayer,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distributionmirror import DistributionMirror
 from lp.registry.scripts import distributionmirror_prober
@@ -56,6 +55,7 @@ from lp.registry.scripts.distributionmirror_prober import (
     ProberTimeout,
     RedirectAwareProberFactory,
     RedirectAwareProberProtocol,
+    RedirectToDifferentFile,
     RequestManager,
     restore_http_proxy,
     should_skip_host,
@@ -666,11 +666,13 @@ class TestMirrorCDImageProberCallbacks(TestCaseWithFactory):
                 BadResponseCode,
                 ProberTimeout,
                 ConnectionSkipped,
+                RedirectToDifferentFile,
                 UnknownURLSchemeAfterRedirect,
                 ]))
         exceptions = [BadResponseCode(str(httplib.NOT_FOUND)),
                       ProberTimeout('http://localhost/', 5),
                       ConnectionSkipped(),
+                      RedirectToDifferentFile('/foo', '/bar'),
                       UnknownURLSchemeAfterRedirect('https://localhost')]
         for exception in exceptions:
             failure = callbacks.ensureOrDeleteMirrorCDImageSeries(

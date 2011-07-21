@@ -17,9 +17,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.matchers import (
-    Contains,
-    )
+from lp.testing.matchers import Contains
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
 

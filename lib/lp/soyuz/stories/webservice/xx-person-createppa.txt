@@ -29,7 +29,4 @@
   HTTP/1.1 400 Bad Request
   Status: 400 Bad Request
   ...
-  Traceback (most recent call last):
-  ...
-  PPACreationError: A PPA cannot have the same name as its distribution.
-  <BLANKLINE>
+  A PPA cannot have the same name as its distribution.

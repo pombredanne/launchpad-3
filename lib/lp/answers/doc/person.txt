@@ -41,7 +41,7 @@ When using the search_text criteria, the default is to sort the results by
 relevancy.  One can use the sort parameter to change that.  It takes one of
 the constant defined in the QuestionSort enumeration.
 
-    >>> from lp.answers.interfaces.questionenums import QuestionSort
+    >>> from lp.answers.enums import QuestionSort
     >>> for question in foo_bar.searchQuestions(
     ...         search_text='firefox', sort=QuestionSort.OLDEST_FIRST):
     ...     print question.id, question.title, question.status.title
@@ -68,8 +68,9 @@ Status
 As shown above, expired and invalid questions are not returned.  The status
 parameter can be used to control the list of statuses to select.
 
-    >>> from lp.answers.interfaces.questionenums import QuestionStatus
-    >>> for question in foo_bar.searchQuestions(status=QuestionStatus.INVALID):
+    >>> from lp.answers.enums import QuestionStatus
+    >>> for question in foo_bar.searchQuestions(
+    ...         status=QuestionStatus.INVALID):
     ...     print question.title, question.status.title
     Firefox is slow and consumes too much RAM   Invalid
 
@@ -92,7 +93,7 @@ takes one or a list of constants from the QuestionParticipation enumeration.
 To select only questions on which the person commented, the
 QuestionParticipation.COMMENTER is used.
 
-    >>> from lp.answers.interfaces.questionenums import QuestionParticipation
+    >>> from lp.answers.enums import QuestionParticipation
     >>> for question in foo_bar.searchQuestions(
     ...         participation=QuestionParticipation.COMMENTER, status=None):
     ...     print question.title
@@ -169,7 +170,7 @@ Foo bar doesn't have any questions written in Spanish.
 But Carlos has one.
 
     # Because not everyone uses a real editor <wink>
-    >>> from canonical.encoding import ascii_smash
+    >>> from lp.services.encoding import ascii_smash
     >>> carlos_raw = personset.getByName('carlos')
     >>> carlos = IQuestionsPerson(carlos_raw)
     >>> for question in carlos.searchQuestions(
@@ -282,7 +283,7 @@ answer contact.
 
     # Answer contacts must speak a language
     >>> no_priv_raw.addLanguage(english)
-    >>> firefox.addAnswerContact(no_priv_raw)
+    >>> firefox.addAnswerContact(no_priv_raw, no_priv_raw)
     True
 
     >>> for target in no_priv.getDirectAnswerQuestionTargets():
@@ -305,7 +306,7 @@ contact through his team membership.
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> landscape_team.addLanguage(english)
-    >>> ubuntu.addAnswerContact(landscape_team)
+    >>> ubuntu.addAnswerContact(landscape_team, landscape_team.teamowner)
     True
 
     >>> print ', '.join(
@@ -333,7 +334,8 @@ IQuestionTargets.
     True
     >>> evolution_package = ubuntu.getSourcePackage('evolution')
     >>> translator_team.addLanguage(english)
-    >>> evolution_package.addAnswerContact(translator_team)
+    >>> evolution_package.addAnswerContact(
+    ...     translator_team, translator_team.teamowner)
     True
     >>> print ', '.join(
     ...     sorted(target.name

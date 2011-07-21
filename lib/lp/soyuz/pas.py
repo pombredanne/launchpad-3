@@ -187,10 +187,10 @@ def determineArchitecturesToBuild(pubrec, legal_archseries,
         # build where no builds would otherwise exist.
         if len(package_tags) == 0 and 'all' in hint_archs:
             nominated_arch = distroseries.nominatedarchindep
-            assert nominated_arch in legal_archseries, (
-                'nominatedarchindep is not present in legal_archseries: %s' %
-                ' '.join(legal_arch_tags))
-            package_tags = set([nominated_arch.architecturetag])
+            if nominated_arch in legal_archseries:
+                package_tags = set([nominated_arch.architecturetag])
+            else:
+                package_tags = set()
 
     if pas_verify:
         build_tags = set()

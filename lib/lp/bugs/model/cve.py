@@ -29,7 +29,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.validators.cve import valid_cve
+from lp.app.validators.cve import valid_cve
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.interfaces.cve import (
     CveStatus,

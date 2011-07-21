@@ -11,9 +11,9 @@
 
     <!-- View or edit all feature rules.
 
-	 Readonly access is guarded by launchpad.Edit on ILaunchpadRoot, which
-	 limits it to ~admins + ~registry, which are all trusted users.  Write access
-	 is for admins only.
+     Readonly access is guarded by launchpad.Edit on ILaunchpadRoot, which
+     limits it to ~admins + ~registry, which are all trusted users.  Write
+     access is for admins only.
     -->
     <browser:page
         for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
@@ -21,5 +21,24 @@
         name="+feature-rules"
         permission="launchpad.Edit"
         template="../templates/feature-rules.pt"/>
+
+    <!-- View documentary info about the available feature flags.
+
+     Access is guarded by launchpad.Edit on ILaunchpadRoot, just like
+     +feature-rules.
+    -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        class="lp.services.features.browser.info.FeatureInfoView"
+        name="+feature-info"
+        permission="launchpad.Edit"
+        template="../templates/feature-info.pt"/>
+
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
+        class="lp.services.features.browser.changelog.FeatureChangeLogView"
+        name="+feature-changelog"
+        permission="launchpad.Edit"
+        template="../templates/feature-changelog.pt"/>
 
 </configure>

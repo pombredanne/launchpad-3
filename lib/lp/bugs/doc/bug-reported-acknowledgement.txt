@@ -109,7 +109,7 @@ Of course the owner can edit the message.
     Ubuntu let Alexander Limi have access.
 
     >>> check_access(project.owner, project)
-    the Mozilla Project let Sample Person have access.
+    The Mozilla Project let Sample Person have access.
 
     >>> check_access(product.owner, product)
     Mozilla Firefox let Sample Person have access.
@@ -120,4 +120,4 @@ Distribution can edit the message.
     >>> check_access(
     ...     distribution_source_package.distribution.owner.activemembers[0],
     ...     distribution_source_package)
-    alsa-utils in ubuntu let Alexander Limi have access.
+    alsa-utils in Ubuntu let Alexander Limi have access.

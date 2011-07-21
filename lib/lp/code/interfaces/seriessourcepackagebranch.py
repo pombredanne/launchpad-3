@@ -9,7 +9,6 @@ __metaclass__ = type
 __all__ = [
     'IFindOfficialBranchLinks',
     'ISeriesSourcePackageBranch',
-    'IMakeOfficialBranchLinks',
     ]
 
 
@@ -33,25 +32,30 @@ class ISeriesSourcePackageBranch(Interface):
     id = Int()
 
     distroseries = Choice(
-        title=_("Series"), required=True, vocabulary='DistroSeries')
+        title=_("Series"), required=True, readonly=True,
+        vocabulary='DistroSeries')
 
     pocket = Choice(
-        title=_("Pocket"), required=True, vocabulary=PackagePublishingPocket)
+        title=_("Pocket"), required=True, readonly=True,
+        vocabulary=PackagePublishingPocket)
 
     sourcepackage = Attribute('The source package')
 
     suite_sourcepackage = Attribute('The suite source package')
 
     sourcepackagename = Choice(
-        title=_("Package"), required=True, vocabulary='SourcePackageName')
+        title=_("Package"), required=True,
+        readonly=True, vocabulary='SourcePackageName')
 
+    branchID = Attribute('The ID of the branch.')
     branch = Choice(
         title=_("Branch"), vocabulary="Branch", required=True, readonly=True)
 
     registrant = Attribute("The person who registered this link.")
 
     date_created = Datetime(
-        title=_("When the branch was linked to the distribution suite."))
+        title=_("When the branch was linked to the distribution suite."),
+        readonly=True)
 
 
 class IFindOfficialBranchLinks(Interface):
@@ -62,6 +66,13 @@ class IFindOfficialBranchLinks(Interface):
         """Get the links to source packages from a branch.
 
         :param branch: An `IBranch`.
+        :return: An `IResultSet` of `ISeriesSourcePackageBranch` objects.
+        """
+
+    def findForBranches(branches):
+        """Get the links to source packages from a branch.
+
+        :param branches: A an iterable of `IBranch`.
         :return: An `IResultSet` of `ISeriesSourcePackageBranch` objects.
         """
 
@@ -78,22 +89,3 @@ class IFindOfficialBranchLinks(Interface):
         :param distrosourcepackage: An `IDistributionSourcePackage`.
         :return: An `IResultSet` of `ISeriesSourcePackageBranch` objects.
         """
-
-
-class IMakeOfficialBranchLinks(Interface):
-    """A set of links from source packages in distribution suites to branches.
-
-    This doesn't really make sense as an interface, but is provided to match
-    the rest of Launchpad.
-    """
-
-    def delete(sourcepackage, pocket):
-        """Remove the SeriesSourcePackageBranch for sourcepackage and pocket.
-
-        :param sourcepackage: An `ISourcePackage`.
-        :param pocket: A `PackagePublishingPocket` enum item.
-        """
-
-    def new(distroseries, pocket, sourcepackagename, branch, registrant,
-            date_created=None):
-        """Link a source package in a distribution suite to a branch."""

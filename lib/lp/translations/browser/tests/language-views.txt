@@ -156,11 +156,11 @@ Add a translation for each translator and one more for main and merged
 accounts.
 
     >>> for translator in translators:
-    ...     translation = factory.makeTranslationMessage(
+    ...     translation = factory.makeCurrentTranslationMessage(
     ...         pofile=pofile, translator=translator, potmsgset=potmsgset)
-    >>> translation = factory.makeTranslationMessage(
+    >>> translation = factory.makeCurrentTranslationMessage(
     ...     pofile=pofile, translator=translator_merged, potmsgset=potmsgset)
-    >>> translation = factory.makeTranslationMessage(
+    >>> translation = factory.makeCurrentTranslationMessage(
     ...     pofile=pofile, translator=translator_main, potmsgset=potmsgset)
 
 Langauge.translators is Monkey-patched to avoid fetching KarmaCache.

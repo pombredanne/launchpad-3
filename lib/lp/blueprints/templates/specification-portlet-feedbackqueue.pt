@@ -8,7 +8,7 @@
   tal:condition="fbreqs"
   id="portlet-feedback"
 >
-    <h2>Feedback requests</h2>
+    <h3>Feedback requests</h3>
     <div>
       <ul style="list-style: none; padding-left: 0;">
         <li tal:repeat="fbreq fbreqs">

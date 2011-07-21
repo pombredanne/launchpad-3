@@ -5,7 +5,6 @@ Recipe Listing Pages
 Pages that want to display lists of recipes use the recipe-listing
 page template, and views derived from RecipeListingView.
 
-
     >>> def print_recipe_listing_head(browser):
     ...     table = find_tag_by_id(browser.contents, 'recipetable')
     ...     for row in table.thead.fetch('tr'):
@@ -28,15 +27,6 @@ Create a sample branch.
     >>> logout()
     >>> nopriv_browser = setupBrowser(
     ...     auth='Basic nopriv@canonical.com:test')
-
-There should be a link on the branch page that says "No recipes" that leads to
-the recipe listings page.
-
-The link to the source package recipe listings should not be shown.
-
-    >>> nopriv_browser.open(recipeless_branch_url)
-    >>> print nopriv_browser.getLink('No recipes').url
-    http://code.launchpad.dev/%7Eperson-name.../product-name.../branch.../+recipes
 
 Create a new sample branch, but this time create some source package branches
 to go along with them.
@@ -73,9 +63,9 @@ The branch page should have a list of all the recipes the branch is a
 base_branch for.
 
     >>> print_recipe_listing_contents(nopriv_browser)
-    generic-string... Person-name...
-    generic-string... Person-name...
-    generic-string... Person-name...
+    spr-name... Person-name...
+    spr-name... Person-name...
+    spr-name... Person-name...
 
 
 Product Recipe Listings
@@ -98,9 +88,9 @@ The listings should now show all recipes whose base branch is a branch from
 this product.
 
     >>> print_recipe_listing_contents(nopriv_browser)
-    generic-string... Person-name... lp://dev/... ...
-    generic-string... Person-name... lp://dev/... ...
-    generic-string... Person-name... lp://dev/... ...
+    spr-name... Person-name... lp://dev/... ...
+    spr-name... Person-name... lp://dev/... ...
+    spr-name... Person-name... lp://dev/... ...
 
 
 Person Recipe Listings
@@ -132,6 +122,6 @@ The listings should now show all recipes whose base branch is a branch from
 this product.
 
     >>> print_recipe_listing_contents(nopriv_browser)
-    generic-string... lp://dev/... ...
-    generic-string... lp://dev/... ...
-    generic-string... lp://dev/... ...
+    spr-name... lp://dev/... ...
+    spr-name... lp://dev/... ...
+    spr-name... lp://dev/... ...

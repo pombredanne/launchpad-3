@@ -82,9 +82,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
             self.publishing_set.getChangesFileLFA(hist.sourcepackagerelease)
             for hist in self.sources)
         urls = [lfa.http_url for lfa in lfas]
-        self.assertEqual(urls, [
-            'http://localhost:58000/94/gedit_666_source.changes',
-            'http://localhost:58000/96/firefox_666_source.changes',
-            ('http://localhost:58000/98/'
-             'getting-things-gnome_666_source.changes'),
-            ])
+        self.assert_(urls[0].endswith('/94/gedit_666_source.changes'))
+        self.assert_(urls[1].endswith('/96/firefox_666_source.changes'))
+        self.assert_(urls[2].endswith(
+            '/98/getting-things-gnome_666_source.changes'))

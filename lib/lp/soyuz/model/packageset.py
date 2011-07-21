@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -36,6 +36,7 @@ from lp.soyuz.interfaces.packageset import (
     NoSuchPackageSet,
     )
 from lp.soyuz.model.packagesetgroup import PackagesetGroup
+from lp.soyuz.model.packagesetsources import PackagesetSources
 
 
 def _order_result_set(result_set):
@@ -408,11 +409,18 @@ class PackagesetSet:
         result_set = store.find(Packageset, Packageset.owner == owner)
         return _order_result_set(result_set)
 
-    def get(self, limit=50):
+    def getBySeries(self, distroseries):
+        """See `IPackagesetSet`."""
+        store = IStore(Packageset)
+        result_set = store.find(
+            Packageset, Packageset.distroseries == distroseries)
+        return _order_result_set(result_set)
+
+    def get(self):
         """See `IPackagesetSet`."""
         store = IStore(Packageset)
         result_set = store.find(Packageset)
-        return _order_result_set(result_set)[:limit]
+        return _order_result_set(result_set)
 
     def _nameToSourcePackageName(self, source_name):
         """Helper to convert a possible string name to ISourcePackageName."""
@@ -420,22 +428,35 @@ class PackagesetSet:
             source_name = getUtility(ISourcePackageNameSet)[source_name]
         return source_name
 
+    def getForPackages(self, distroseries, sourcepackagename_ids):
+        """See `IPackagesetSet`."""
+        tuples = IStore(Packageset).find(
+            (PackagesetSources.sourcepackagename_id, Packageset),
+            Packageset.id == PackagesetSources.packageset_id,
+            Packageset.distroseries == distroseries,
+            PackagesetSources.sourcepackagename_id.is_in(
+                sourcepackagename_ids))
+        packagesets_by_package = {}
+        for package, packageset in tuples:
+            packagesets_by_package.setdefault(package, []).append(packageset)
+        return packagesets_by_package
+
     def setsIncludingSource(self, sourcepackagename, distroseries=None,
                             direct_inclusion=False):
         """See `IPackagesetSet`."""
         sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
 
-        if direct_inclusion == False:
+        if direct_inclusion:
+            query = '''
+                SELECT pss.packageset FROM packagesetsources pss
+                WHERE pss.sourcepackagename = ?
+            '''
+        else:
             query = '''
                 SELECT fpsi.parent
                 FROM packagesetsources pss, flatpackagesetinclusion fpsi
                 WHERE pss.sourcepackagename = ?
                 AND pss.packageset = fpsi.child
-            '''
-        else:
-            query = '''
-                SELECT pss.packageset FROM packagesetsources pss
-                WHERE pss.sourcepackagename = ?
             '''
         store = IStore(Packageset)
         psets = SQL(query, (sourcepackagename.id,))

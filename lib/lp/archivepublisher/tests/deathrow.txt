@@ -246,7 +246,6 @@ Run DeathRow against the current 'removable' context.
     DEBUG Checking superseded_666.dsc (02129bb861061d1a052c592e2dc6b383)
     DEBUG Checking obsolete_666.dsc (02129bb861061d1a052c592e2dc6b383)
     ...
-    DEBUG Batch ...
     INFO Removing 7 files marked for reaping
     DEBUG Removing superseded/superseded_666.dsc from main
     DEBUG Removing superseded-ignored/superseded-bin_666_i386.deb from main
@@ -343,7 +342,6 @@ Now DeathRow considers 'stuck-bin' publications.
     DEBUG Cannot remove.
     DEBUG Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
     DEBUG Already verified.
-    DEBUG Batch ...
     INFO Removing 0 files marked for reaping
     INFO Total bytes freed: 0
     DEBUG Marking 0 condemned packages as removed.
@@ -369,7 +367,6 @@ single pass.
     DEBUG Already verified.
     DEBUG Checking stuck-bin_666_i386.deb (21c2e59531c8710156d34a3c30ac81d5)
     DEBUG Already verified.
-    DEBUG Batch ...
     INFO Removing 1 files marked for reaping
     DEBUG Removing removed-ignored/stuck-bin_666_i386.deb from main
     INFO Total bytes freed: 1

@@ -8,8 +8,8 @@ views for packages for which a user is a bug supervisor.
     Foo Bar is subscribed to these packages.
     ...
     Totals 1 0 1 0
-    mozilla-firefox in ubuntu 1 0 1 0
-    pmount in ubuntu 0 0 0 0
+    mozilla-firefox in Ubuntu 1 0 1 0
+    pmount in Ubuntu 0 0 0 0
 
 If we add a bug for Foo Bar these numbers will be updated:
 
@@ -43,8 +43,8 @@ pmount.
     Foo Bar is subscribed to these packages.
     ...
     Totals 2 0 2 0
-    mozilla-firefox in ubuntu 1 0 1 0
-    pmount in ubuntu 1 0 1 0
+    mozilla-firefox in Ubuntu 1 0 1 0
+    pmount in Ubuntu 1 0 1 0
 
     >>> transaction.abort()
 

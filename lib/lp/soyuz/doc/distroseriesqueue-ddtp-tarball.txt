@@ -1,4 +1,5 @@
-== DDTP-TARBALL upload ==
+DDTP-TARBALL upload
+-------------------
 
 This test will describe how launchpad treats an upload of DDTP
 tarball.
@@ -20,181 +21,194 @@ in ubuntu.
 For further info about DDTP see:
   https://wiki.ubuntu.com/TranslatedPackageDescriptionsSpec
 
-  >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
-  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
-  >>> breezy_autotest = ubuntutest['breezy-autotest']
+    >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+    >>> breezy_autotest = ubuntutest['breezy-autotest']
 
-  >>> from lp.archiveuploader.nascentupload import NascentUpload
-  >>> from lp.archiveuploader.tests import datadir, getPolicy
+    >>> from lp.archiveuploader.nascentupload import NascentUpload
+    >>> from lp.archiveuploader.tests import datadir, getPolicy
 
-  >>> from canonical.launchpad.ftests import import_public_test_keys
-  >>> import_public_test_keys()
+    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> import_public_test_keys()
 
 Login as an admin (or ubuntutest.archive_admin if we have one), since
 we need to access and modify PackageUpload records and other tables.
 
-  >>> login('foo.bar@canonical.com')
+    >>> login('foo.bar@canonical.com')
 
 Set the email address for announcements:
 
-  >>> breezy_autotest.changeslist = 'test@example.com'
+    >>> breezy_autotest.changeslist = 'test@example.com'
 
 First, test the rejection of a missapplied changesfile name, which
 doesn't follow the accepted format,  "<pkg>_<version>_<arch>.changes"
 
-  >>> sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntutest', distroseries=None)
+    >>> sync_policy = getPolicy(
+    ...     name='sync', distro='ubuntutest', distroseries=None)
 
-  >>> from lp.services.log.logger import DevNullLogger
-  >>> upload = NascentUpload.from_changesfile_path(
-  ...     datadir('ddtp-tarball/translations-main_20060728.changes'),
-  ...     sync_policy, DevNullLogger())
-  >>> upload.process()
-  Traceback (most recent call last):
-  ...
-  EarlyReturnUploadError: An error occurred that prevented further processing.
+    >>> from lp.services.log.logger import DevNullLogger
+    >>> upload = NascentUpload.from_changesfile_path(
+    ...     datadir('ddtp-tarball/translations-main_20060728.changes'),
+    ...     sync_policy, DevNullLogger())
+    >>> upload.process()
+    Traceback (most recent call last):
+    ...
+    EarlyReturnUploadError: An error occurred that prevented further
+    processing.
 
 Now do a proper upload into the system.
 
-  >>> insecure_policy = getPolicy(
-  ...     name='insecure', distro='ubuntutest', distroseries=None)
+    >>> insecure_policy = getPolicy(
+    ...     name='insecure', distro='ubuntutest', distroseries=None)
 
-  >>> from lp.services.log.logger import FakeLogger
-  >>> upload = NascentUpload.from_changesfile_path(
-  ...     datadir('ddtp-tarball/translations-main_20060728_all.changes'),
-  ...     insecure_policy, FakeLogger())
-  DEBUG Verifying signature on translations-main_20060728_all.changes
+    >>> from lp.services.log.logger import FakeLogger
+    >>> upload = NascentUpload.from_changesfile_path(
+    ...     datadir('ddtp-tarball/translations-main_20060728_all.changes'),
+    ...     insecure_policy, FakeLogger())
+    DEBUG Verifying signature on translations-main_20060728_all.changes
 
-  >>> upload.process()
-  DEBUG Beginning processing.
-  DEBUG Verifying the changes file.
-  DEBUG Verifying files in upload.
-  DEBUG Single Custom Upload detected.
-  DEBUG Finished checking upload.
+    >>> upload.process()
+    DEBUG Beginning processing.
+    DEBUG Verifying the changes file.
+    DEBUG Verifying files in upload.
+    DEBUG Single Custom Upload detected.
+    DEBUG Finished checking upload.
 
 It was not rejected.
 
-  >>> upload.is_rejected
-  False
+    >>> upload.is_rejected
+    False
 
-  >>> success = upload.do_accept()
-  DEBUG Creating queue entry
-  ...
-  DEBUG Sent a mail:
-  DEBUG     Subject: [ubuntutest/breezy-autotest] translations_main_20060728.tar.gz - (Accepted)
-  DEBUG     Recipients: Foo Bar <foo.bar@canonical.com>
-  DEBUG     Body:
-  DEBUG * Duhh
-  DEBUG
-  DEBUG Date: Thu, 01 Aug 2006 14:20:25 +0300
-  DEBUG Changed-By: Foo Bar <foo.bar@canonical.com>
-  DEBUG Origin: Ubuntu/warty
-  DEBUG
-  DEBUG
-  DEBUG ==
-  DEBUG
-  DEBUG Announcing to test@example.com
-  DEBUG
-  DEBUG Thank you for your contribution to Ubuntu Test.
-  DEBUG
-  DEBUG --
-  DEBUG You are receiving this email because you are the uploader, maintainer or
-  DEBUG signer of the above package.
-  DEBUG Sent a mail:
-  DEBUG     Subject: [ubuntutest/breezy-autotest] translations_main_20060728.tar.gz - (Accepted)
-  DEBUG     Recipients: test@example.com
-  DEBUG     Body:
-  DEBUG * Duhh
-  DEBUG
-  DEBUG Date: Thu, 01 Aug 2006 14:20:25 +0300
-  DEBUG Changed-By: Foo Bar <foo.bar@canonical.com>
-  DEBUG Origin: Ubuntu/warty
-  DEBUG
+    >>> success = upload.do_accept()
+    DEBUG Creating queue entry
+    ...
+    DEBUG Sent a mail:
+    DEBUG   Subject: [ubuntutest/breezy-autotest]
+    translations_main_20060728.tar.gz - (Accepted)
+    DEBUG   Sender: Root <root@localhost>
+    DEBUG   Recipients: Foo Bar <foo.bar@canonical.com>
+    DEBUG   Bcc: Root <root@localhost>
+    DEBUG   Body:
+    DEBUG .
+    DEBUG * Duhh
+    DEBUG
+    DEBUG
+    DEBUG Date: Thu, 01 Aug 2006 14:20:25 +0300
+    DEBUG Changed-By: Foo Bar <foo.bar@canonical.com>
+    DEBUG Origin: Ubuntu/warty
+    DEBUG
+    DEBUG
+    DEBUG ==
+    DEBUG
+    DEBUG Announcing to test@example.com
+    DEBUG
+    DEBUG Thank you for your contribution to Ubuntu Test.
+    DEBUG
+    DEBUG --
+    DEBUG You are receiving this email because you are the uploader,
+    maintainer or
+    DEBUG signer of the above package.
+    DEBUG Sent a mail:
+    DEBUG   Subject: [ubuntutest/breezy-autotest]
+    translations_main_20060728.tar.gz - (Accepted)
+    DEBUG   Sender: Foo Bar <foo.bar@canonical.com>
+    DEBUG   Recipients: test@example.com
+    DEBUG   Bcc: Root <root@localhost>
+    DEBUG   Body:
+    DEBUG .
+    DEBUG * Duhh
+    DEBUG
+    DEBUG
+    DEBUG Date: Thu, 01 Aug 2006 14:20:25 +0300
+    DEBUG Changed-By: Foo Bar <foo.bar@canonical.com>
+    DEBUG Origin: Ubuntu/warty
+    DEBUG
 
 And all things worked.
 
-  >>> success
-  True
+    >>> success
+    True
 
-  >>> not upload.rejection_message
-  True
+    >>> not upload.rejection_message
+    True
 
 We need to commit the transaction to be able to use the librarian files.
 
-  >>> flush_database_updates()
-  >>> transaction.commit()
+    >>> flush_database_updates()
+    >>> transaction.commit()
 
 Let's use the script to fetch the ddtp-tarball upload:
 
-  >>> import subprocess
-  >>> import os
-  >>> import sys
-  >>> from canonical.config import config
+    >>> import subprocess
+    >>> import os
+    >>> import sys
+    >>> from canonical.config import config
 
-  >>> script = os.path.join(
-  ...    config.root, "scripts", "ftpmaster-tools", "queue")
+    >>> script = os.path.join(
+    ...    config.root, "scripts", "ftpmaster-tools", "queue")
 
-  >>> process = subprocess.Popen([sys.executable, script, "-Q", "accepted",
-  ...                             "-s", "breezy-autotest", "fetch", "trans",
-  ...                             "-d", "ubuntutest"],
-  ...                            stdout=subprocess.PIPE)
-  >>> stdout, stderr = process.communicate()
-  >>> process.returncode
-  0
-  >>> print stdout
-  Initialising connection to queue accepted
-  Running: "fetch trans"
-  Fetching ubuntutest/breezy-autotest (ACCEPTED) 1/1
-  ---------------------------------------------------------------------------
-  Constructing translations-main_20060728_all.changes
-  Constructing translations_main_20060728.tar.gz
-  ---------------------------------------------------------------------------
-                                                                 1/1 total
-  <BLANKLINE>
+    >>> process = subprocess.Popen([sys.executable, script, "-Q", "accepted",
+    ...                             "-s", "breezy-autotest", "fetch", "trans",
+    ...                             "-d", "ubuntutest"],
+    ...                            stdout=subprocess.PIPE)
+    >>> stdout, stderr = process.communicate()
+    >>> process.returncode
+    0
+    >>> print stdout
+    Initializing connection to queue accepted
+    Running: "fetch trans"
+    Fetching ubuntutest/breezy-autotest (ACCEPTED) 1/1
+    ---------------------------------------------------------------------------
+    Constructing translations-main_20060728_all.changes
+    Constructing translations_main_20060728.tar.gz
+    ---------------------------------------------------------------------------
+								   1/1 total
+    <BLANKLINE>
 
 Check if the files were written:
 
-  >>> os.path.exists('translations-main_20060728_all.changes')
-  True
-  >>> os.path.exists('translations_main_20060728.tar.gz')
-  True
+    >>> os.path.exists('translations-main_20060728_all.changes')
+    True
+    >>> os.path.exists('translations_main_20060728.tar.gz')
+    True
 
 Cleanup the mess:
 
-  >>> os.remove('translations-main_20060728_all.changes')
-  >>> os.remove('translations_main_20060728.tar.gz')
+    >>> os.remove('translations-main_20060728_all.changes')
+    >>> os.remove('translations_main_20060728.tar.gz')
 
 
 Inspect the QUEUE looking for an ACCEPTED entry corresponding to the
 previous upload:
 
-  >>> from lp.soyuz.enums import PackageUploadStatus
-  >>> queue_item = breezy_autotest.getQueueItems(
-  ...      status=PackageUploadStatus.ACCEPTED)[0]
-  >>> queue_item.customfiles[0].libraryfilealias.filename
-  u'translations_main_20060728.tar.gz'
+    >>> from lp.soyuz.enums import PackageUploadStatus
+    >>> queue_item = breezy_autotest.getPackageUploads(
+    ...      status=PackageUploadStatus.ACCEPTED)[0]
+    >>> queue_item.customfiles[0].libraryfilealias.filename
+    u'translations_main_20060728.tar.gz'
 
 Do the publish, i.e process the CustomUpload decompressing and writing
 the tarball contents in the archive, collect and check debug message:
 
 The umask must be 022 in order to perform the upload.
 
-  >>> old_mask = os.umask(022)
-  >>> pub_records = queue_item.realiseUpload(FakeLogger())
-  DEBUG Publishing custom translations_main_20060728.tar.gz to ubuntutest/breezy-autotest
-  >>> print '%03o' % os.umask(old_mask)
-  022
+    >>> old_mask = os.umask(022)
+    >>> pub_records = queue_item.realiseUpload(FakeLogger())
+    DEBUG Publishing custom translations_main_20060728.tar.gz to
+    ubuntutest/breezy-autotest
+    >>> print '%03o' % os.umask(old_mask)
+    022
 
 Check what was published in the target directory:
 
-  >>> import os
-  >>> archive_dir = '/var/tmp/archive/'
+    >>> import os
+    >>> archive_dir = '/var/tmp/archive/'
 
 DDTP indexes are published in the "i18n" directory inside archive dists:
 
-  >>> upgrade_dir = 'ubuntutest/dists/breezy-autotest/main/i18n'
-  >>> target_dir = os.path.join(archive_dir, upgrade_dir)
+    >>> upgrade_dir = 'ubuntutest/dists/breezy-autotest/main/i18n'
+    >>> target_dir = os.path.join(archive_dir, upgrade_dir)
 
 We simply decompress the contents of the tarball, the files follow
 the format:
@@ -203,14 +217,14 @@ the format:
 
 We have only used uncompressed files for tests:
 
-  >>> dir_list = os.listdir(target_dir)
-  >>> for filename in sorted(dir_list):
-  ...    content = open(os.path.join(target_dir, filename), 'rb').read()
-  ...    print filename, len(content)
-  Translation-bn 0
-  Translation-ca 0
-  Translation-en 16
-  Translation-pt_BR 15
+    >>> dir_list = os.listdir(target_dir)
+    >>> for filename in sorted(dir_list):
+    ...    content = open(os.path.join(target_dir, filename), 'rb').read()
+    ...    print filename, len(content)
+    Translation-bn 0
+    Translation-ca 0
+    Translation-en 16
+    Translation-pt_BR 15
 
 ** Note that a incomming directory inside the tarball "i18n" directory
 was skipped by the DDTP processor
@@ -220,24 +234,24 @@ index , the "bn" one, and left the rest untouched, this feature is
 know as "partial update" and will save some storage when fixing specific
 language indexes or adding new ones:
 
-  >>> insecure_policy = getPolicy(
-  ...     name='insecure', distro='ubuntutest', distroseries=None)
+    >>> insecure_policy = getPolicy(
+    ...     name='insecure', distro='ubuntutest', distroseries=None)
 
-  >>> upload = NascentUpload.from_changesfile_path(
-  ...     datadir('ddtp-tarball/translations-main_20060817_all.changes'),
-  ...     insecure_policy, DevNullLogger())
-  >>> upload.process()
-  >>> upload.is_rejected
-  False
-  >>> success = upload.do_accept()
-  >>> success
-  True
+    >>> upload = NascentUpload.from_changesfile_path(
+    ...     datadir('ddtp-tarball/translations-main_20060817_all.changes'),
+    ...     insecure_policy, DevNullLogger())
+    >>> upload.process()
+    >>> upload.is_rejected
+    False
+    >>> success = upload.do_accept()
+    >>> success
+    True
 
 
 We need to commit the transaction to be able to use the librarian files.
 
-  >>> flush_database_updates()
-  >>> transaction.commit()
+    >>> flush_database_updates()
+    >>> transaction.commit()
 
 
 Our archive uses `dsync` to replace identical files by hard link in
@@ -246,52 +260,49 @@ because it doesn't remove pre-existing files, it simply overwrite them.
 
 Create a hard link to "bn" package file.
 
-  >>> src = os.path.join(target_dir, 'Translation-ca')
-  >>> dest = os.path.join(target_dir, 'Translation-bn')
-  >>> os.remove(dest)
-  >>> os.link(src, dest)
+    >>> src = os.path.join(target_dir, 'Translation-ca')
+    >>> dest = os.path.join(target_dir, 'Translation-bn')
+    >>> os.remove(dest)
+    >>> os.link(src, dest)
 
-  >>> os.path.exists(dest)
-  True
-  >>> os.stat(dest).st_nlink
-  2
-  >>> os.stat(src).st_nlink
-  2
+    >>> os.path.exists(dest)
+    True
+    >>> os.stat(dest).st_nlink
+    2
+    >>> os.stat(src).st_nlink
+    2
 
 
 Retrieve and publish new custom upload:
 
-  >>> queue_item = breezy_autotest.getQueueItems(
-  ...      status=PackageUploadStatus.ACCEPTED)[0]
+    >>> queue_item = breezy_autotest.getPackageUploads(
+    ...      status=PackageUploadStatus.ACCEPTED)[0]
 
-  >>> pub_records = queue_item.realiseUpload()
+    >>> pub_records = queue_item.realiseUpload()
 
 
 Check if there is new content for "bn" index:
 
-  >>> dir_list = os.listdir(target_dir)
-  >>> for filename in sorted(dir_list):
-  ...    content = open(os.path.join(target_dir, filename), 'rb').read()
-  ...    print filename, len(content)
-  Translation-bn 22
-  Translation-ca 0
-  Translation-en 16
-  Translation-pt_BR 15
+    >>> dir_list = os.listdir(target_dir)
+    >>> for filename in sorted(dir_list):
+    ...    content = open(os.path.join(target_dir, filename), 'rb').read()
+    ...    print filename, len(content)
+    Translation-bn 22
+    Translation-ca 0
+    Translation-en 16
+    Translation-pt_BR 15
 
 
 Check if the contents of "ca" were not affected by the "bn" contents
 (this would happen if "bn" was not removed, left as hard link):
 
-  >>> open(os.path.join(target_dir, 'Translation-bn')).read()
-  'hardlinks are bad !!!\n'
+    >>> open(os.path.join(target_dir, 'Translation-bn')).read()
+    'hardlinks are bad !!!\n'
 
-  >>> open(os.path.join(target_dir, 'Translation-ca')).read()
-  ''
+    >>> open(os.path.join(target_dir, 'Translation-ca')).read()
+    ''
 
 Remove the directory to keep the test working.
 
-  >>> import shutil
-  >>> shutil.rmtree(target_dir)
-
-
-
+    >>> import shutil
+    >>> shutil.rmtree(target_dir)

@@ -394,10 +394,10 @@ Disabling
 ---------
 
 Memcache in templates can be disabled entirely by setting the memcache flag to
-'disabled'.
+the empty string.
 
     >>> from lp.services.features.testing import FeatureFixture
-    >>> fixture = FeatureFixture({'memcache': 'disabled'})
+    >>> fixture = FeatureFixture({'memcache': ''})
     >>> fixture.setUp()
 
 And now what cached before will not cache.

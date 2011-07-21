@@ -1,4 +1,4 @@
-<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -277,9 +277,6 @@
                 name="+listing-compact"
                 template="../templates/specification-listing-compact.pt"/>
             <browser:page
-                name="+portlet-subscribers"
-                template="../templates/specification-portlet-subscribers.pt"/>
-            <browser:page
                 name="+portlet-dependencies"
                 template="../templates/specification-portlet-dependencies.pt"/>
             <browser:page
@@ -289,6 +286,29 @@
                 name="+portlet-feedbackqueue"
                 template="../templates/specification-portlet-feedbackqueue.pt"/>
         </browser:pages>
+        <browser:page
+            for="lp.blueprints.interfaces.specification.ISpecification"
+            name="+portlet-subscribers"
+            class="lp.blueprints.browser.specificationsubscription.SpecificationPortletSubcribersContents"
+            template="../templates/specification-portlet-subscribers.pt"
+            permission="zope.Public"/>
+        <browser:page
+            for="lp.blueprints.interfaces.specification.ISpecification"
+            name="+blueprint-portlet-subscribers-content"
+            class="lp.blueprints.browser.specificationsubscription.SpecificationPortletSubcribersContents"
+            template="../templates/specification-portlet-subscribers-content.pt"
+            permission="zope.Public"/>
+        <browser:page
+            for="lp.blueprints.interfaces.specification.ISpecificationSubscription"
+            name="+blueprint-subscriber-row"
+            class="lp.blueprints.browser.specificationsubscription.SpecificationPortletSubcribersContents"
+            template="../templates/specification-subscriber-row.pt"
+            permission="zope.Public"/>
+        <browser:page
+            for="lp.blueprints.interfaces.specification.ISpecification"
+            name="+blueprint-portlet-subscribers-ids"
+            class="lp.blueprints.browser.specificationsubscription.SpecificationPortletSubcribersIds"
+            permission="zope.Public"/>
         <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"
             class="lp.blueprints.browser.specificationdependency.SpecificationDependencyTreeView"
@@ -315,9 +335,15 @@
         <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"
             name="+subscribe"
-            class="lp.blueprints.browser.specification.SpecificationSubscriptionView"
+            class="lp.blueprints.browser.specificationsubscription.SpecificationSubscriptionAddView"
             permission="launchpad.AnyPerson"
             template="../templates/specification-subscription.pt"/>
+        <browser:page
+            for="lp.blueprints.interfaces.specification.ISpecificationSubscription"
+            name="+unsubscribe"
+            class="lp.blueprints.browser.specificationsubscription.SpecificationSubscriptionDeleteView"
+            permission="launchpad.Edit"
+            template="../templates/specification-subscription-delete.pt"/>
         <browser:page
             for="lp.blueprints.interfaces.specification.ISpecification"
             name="+givefeedback"
@@ -327,7 +353,7 @@
         <browser:page
             name="+addsubscriber"
             for="lp.blueprints.interfaces.specification.ISpecification"
-            class="lp.blueprints.browser.specificationsubscription.SpecificationSubscriptionAddView"
+            class="lp.blueprints.browser.specificationsubscription.SpecificationSubscriptionAddSubscriberView"
             permission="launchpad.AnyPerson"
             template="../../app/templates/generic-edit.pt"/>
         <browser:page
@@ -631,4 +657,12 @@
         facet="specifications"
         permission="launchpad.AnyPerson"
         template="../../app/templates/generic-edit.pt"/>
+
+  <adapter
+      factory="lp.blueprints.browser.specification.starter_xhtml_representation"
+      name="starter"/>
+  <adapter
+      factory="lp.blueprints.browser.specification.completer_xhtml_representation"
+      name="completer"/>
+
 </configure>

@@ -24,14 +24,6 @@ simple configuration).
     'launchpad_main'
     >>> config.librarian.dbuser
     'librarian'
-    >>> config.librarian.upload_host
-    'localhost'
-    >>> config.librarian.upload_port
-    59090
-    >>> config.librarian.download_host
-    'localhost'
-    >>> config.librarian.download_port
-    58000
 
 Configs are kept from the 'configs' directory.
 

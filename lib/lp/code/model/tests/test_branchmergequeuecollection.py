@@ -8,9 +8,9 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.branchmergequeuecollection import (
     IAllBranchMergeQueues,
     IBranchMergeQueueCollection,
@@ -185,17 +185,6 @@ class TestGenericBranchMergeQueueCollectionVisibleFilter(TestCaseWithFactory):
             getUtility(ILaunchpadCelebrities).admin)
         admin_team.addMember(admin, admin_team.teamowner)
         queues = self.all_queues.visibleByUser(admin)
-        self.assertEqual(
-            sorted(self.all_queues.getMergeQueues()),
-            sorted(queues.getMergeQueues()))
-
-    def test_bazaar_experts_see_all(self):
-        # Members of the bazaar_experts team see *everything*.
-        bzr_experts = removeSecurityProxy(
-            getUtility(ILaunchpadCelebrities).bazaar_experts)
-        expert = self.factory.makePerson()
-        bzr_experts.addMember(expert, bzr_experts.teamowner)
-        queues = self.all_queues.visibleByUser(expert)
         self.assertEqual(
             sorted(self.all_queues.getMergeQueues()),
             sorted(queues.getMergeQueues()))

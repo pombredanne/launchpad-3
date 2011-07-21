@@ -41,7 +41,7 @@ from lp.soyuz.interfaces.packageset import IPackageset
 
 class IArchivePermission(Interface):
     """The interface for `ArchivePermission`."""
-    export_as_webservice_entry()
+    export_as_webservice_entry(publish_web_link=False)
 
     id = Attribute("The archive permission ID.")
 

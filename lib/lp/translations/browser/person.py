@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Person-related translations view classes."""
@@ -15,6 +15,7 @@ from datetime import (
     datetime,
     timedelta,
     )
+from itertools import islice
 import urllib
 
 import pytz
@@ -34,12 +35,12 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.widgets import LaunchpadRadioWidget
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
     LaunchpadFormView,
     )
+from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.propertycache import cachedproperty
 from lp.translations.browser.translationlinksaggregator import (
@@ -200,9 +201,23 @@ class PersonTranslationView(LaunchpadView):
 
     @cachedproperty
     def recent_activity(self):
-        """Recent translation activity by this person."""
-        entries = ITranslationsPerson(self.context).translation_history[:10]
-        return [ActivityDescriptor(self.context, entry) for entry in entries]
+        """Recent translation activity by this person.
+
+        If the translation activity is associated with a project, we ensure
+        that the project is active.
+        """
+        all_entries = ITranslationsPerson(self.context).translation_history
+
+        def is_active(entry):
+            potemplate = entry.pofile.potemplate
+            if potemplate is None:
+                return True
+            product = potemplate.product
+            return product is None or product.active
+
+        active_entries = (entry for entry in all_entries if is_active(entry))
+        return [ActivityDescriptor(self.context, entry)
+            for entry in islice(active_entries, 10)]
 
     @cachedproperty
     def latest_activity(self):

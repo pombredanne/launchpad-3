@@ -139,7 +139,7 @@ class TestGenerateOverrides(ConfigTestCase):
         # Set that root to the temporary directory.
         cfg.root = self.temp_config_root_dir
         cfg.generate_overrides()
-        override_file = os.path.join(cfg.root, '+config-overrides.zcml')
+        override_file = os.path.join(cfg.root, 'zcml/+config-overrides.zcml')
         self.failUnless(
             os.path.isfile(override_file), "Overrides file wasn't created.")
 

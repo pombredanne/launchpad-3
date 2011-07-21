@@ -86,7 +86,7 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
         return build
 
     @classmethod
-    def get(cls, build_id, store=None):
+    def getByID(cls, build_id, store=None):
         """See `ITranslationTemplatesBuildSource`."""
         store = cls._getStore(store)
         match = store.find(
@@ -95,12 +95,12 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
         return match.one()
 
     @classmethod
-    def getByBuildFarmJob(cls, buildfarmjob_id, store=None):
+    def getByBuildFarmJob(cls, buildfarmjob, store=None):
         """See `ITranslationTemplatesBuildSource`."""
         store = cls._getStore(store)
         match = store.find(
             TranslationTemplatesBuild,
-            TranslationTemplatesBuild.build_farm_job == buildfarmjob_id)
+            TranslationTemplatesBuild.build_farm_job_id == buildfarmjob.id)
         return match.one()
 
     @classmethod
@@ -110,11 +110,3 @@ class TranslationTemplatesBuild(BuildFarmJobDerived, Storm):
         return store.find(
             TranslationTemplatesBuild,
             TranslationTemplatesBuild.branch == branch)
-
-
-def get_translation_templates_build_for_build_farm_job(build_farm_job):
-    """Return a `TranslationTemplatesBuild` from its `BuildFarmJob`."""
-    build = Store.of(build_farm_job).find(
-        TranslationTemplatesBuild,
-        TranslationTemplatesBuild.build_farm_job == build_farm_job).one()
-    return ProxyFactory(build)

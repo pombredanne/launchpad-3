@@ -80,7 +80,7 @@ class LibraryFileAliasResource(resource.Resource):
                 self.aliasID = int(filename)
             except ValueError:
                 log.msg(
-                    "404 (old URL): alias is not an int: %r" % (name,))
+                    "404 (old URL): alias is not an int: %r" % (filename,))
                 return fourOhFour
             filename = request.postpath[0]
 

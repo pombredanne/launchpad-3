@@ -98,7 +98,6 @@ later.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from StringIO import StringIO
     >>> from canonical.database.constants import UTC_NOW
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> from lp.soyuz.enums import PackageDiffStatus
 
@@ -108,7 +107,6 @@ later.
     ...     naked_diff.status = PackageDiffStatus.COMPLETED
     ...     naked_diff.diff_content = getUtility(ILibrarianClient).addFile(
     ...         filename, 3, StringIO('Foo'), 'application/gzipped-patch')
-    ...     syncUpdate(diff)
 
     >>> perform_fake_diff(diff_one, 'biscuit_1.0-1_1.0-2.diff.gz')
 
@@ -202,7 +200,7 @@ corresponding source row in the PPA overview page.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/~name16/+archive/ppa/+packages')
     >>> login('foo.bar@canonical.com')
-    >>> biscuit_ppa = name16.archive.getPublishedSources()[0]
+    >>> biscuit_ppa = name16.archive.getPublishedSources().first()
     >>> biscuit_ppa_id = biscuit_ppa.id
     >>> diff_three.date_fulfilled = None
     >>> diff_three.status = PackageDiffStatus.PENDING

@@ -15,10 +15,10 @@ from zope.component import getUtility
 from zope.event import notify
 
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.bugs.externalbugtracker.base import BugWatchUpdateError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.scripts.checkwatches.base import (
@@ -29,6 +29,7 @@ from lp.bugs.scripts.checkwatches.utilities import (
     get_remote_system_oops_properties,
     )
 from lp.registry.interfaces.person import PersonCreationRationale
+from lp.services.messages.interfaces.message import IMessageSet
 
 
 class BugWatchUpdater(WorkingBase):
@@ -73,11 +74,6 @@ class BugWatchUpdater(WorkingBase):
                 len(self.bug_watch.bugtasks) > 0
                 )
 
-        # XXX: Gavin Panella 2010-04-19 bug=509223:
-        # Exception handling is all wrong! If any of these
-        # throw an exception, *all* the watches in
-        # self.bug_watches, even those that have not errored,
-        # will have negative activity added.
         error_message = None
         error_status = None
         oops_id = None
@@ -95,11 +91,14 @@ class BugWatchUpdater(WorkingBase):
                     self.linkLaunchpadBug()
             except Exception, ex:
                 error_message = str(ex)
-                oops_id = self.error(
-                    "Failure updating bug %r on %s (local bug: %s)." %
-                        (self.remote_bug, self.external_bugtracker.baseurl,
-                        self.local_bug),
-                    self.oops_properties)
+                log_message = (
+                    "Failure updating bug %r on %s (local bug: %s)" %
+                    (self.remote_bug, self.external_bugtracker.baseurl,
+                    self.local_bug))
+                if isinstance(ex, BugWatchUpdateError):
+                    self.logger.info('%s: %s' % (log_message, ex))
+                else:
+                    oops_id = self.error(log_message, self.oops_properties)
             else:
                 error_status = None
 

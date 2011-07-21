@@ -40,6 +40,7 @@ build
 *.egg
 dist
 ./eggs
+./yui
 ./download-cache
 ./_pythonpath.py
 ./production-configs
@@ -76,3 +77,10 @@ lib/canonical/buildd/launchpad-files/*
 librarian.log
 configs/testrunner_*
 configs/testrunner-appserver_*
+doc/_build
+.idea
+run.gdb
+lib/canonical/launchpad/icing/icon-sprites
+lib/canonical/launchpad/icing/icon-sprites.positioning
+lib/canonical/launchpad/icing/yui
+.emacs.desktop

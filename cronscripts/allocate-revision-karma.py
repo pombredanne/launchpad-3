@@ -15,4 +15,4 @@ from lp.code.scripts.revisionkarma import RevisionKarmaAllocator
 if __name__ == '__main__':
     script = RevisionKarmaAllocator('allocate-revision-karma',
         dbuser=config.revisionkarma.dbuser)
-    script.lock_and_run(implicit_begin=True)
+    script.lock_and_run()

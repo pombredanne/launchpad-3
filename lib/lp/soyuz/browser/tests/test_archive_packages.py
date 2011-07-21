@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -11,18 +11,19 @@ __all__ = [
     'TestPPAPackages',
     ]
 
-from zope.component import getUtility
-
 from testtools.matchers import (
     Equals,
     LessThan,
-    MatchesAny,
     )
+from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.testing.pages import get_feedback_messages
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.testing.layers import LaunchpadFunctionalLayer
-from canonical.launchpad.utilities.celebrities import ILaunchpadCelebrities
+from lp.app.utilities.celebrities import ILaunchpadCelebrities
 from lp.soyuz.browser.archive import ArchiveNavigationMenu
 from lp.testing import (
     login,
@@ -30,10 +31,10 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing._webservice import QueryCollector
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import ADMIN_EMAIL
 from lp.testing.views import create_initialized_view
-from lp.testing._webservice import QueryCollector
 
 
 class TestP3APackages(TestCaseWithFactory):
@@ -117,6 +118,52 @@ class TestPPAPackages(TestCaseWithFactory):
         return create_initialized_view(
             ppa, "+packages", query_string=query_string)
 
+    def assertNotifications(self, ppa, notification, person=None):
+        # Assert that while requesting a 'ppa' page as 'person', the
+        # 'notification' appears.
+        if person is not None:
+            login_person(ppa.owner)
+            principal = LaunchpadPrincipal(
+                ppa.owner.account.id, ppa.owner.displayname,
+                ppa.owner.displayname, ppa.owner)
+        else:
+            principal = None
+        page = create_initialized_view(
+            ppa, "+packages", principal=principal).render()
+        notifications = get_feedback_messages(page)
+        self.assertIn(notification, notifications)
+
+    def test_warning_for_disabled_publishing(self):
+        # Ensure that a notification is shown when archive.publish
+        # is False.
+        ppa = self.factory.makeArchive()
+        removeSecurityProxy(ppa).publish = False
+        self.assertNotifications(
+            ppa,
+            "Publishing has been disabled for this archive. (re-enable "
+            "publishing)",
+            person=ppa.owner)
+
+    def test_warning_for_disabled_publishing_with_private_ppa(self):
+        # Ensure that a notification is shown when archive.publish
+        # is False warning that builds won't get dispatched.
+        ppa = self.factory.makeArchive(private=True)
+        removeSecurityProxy(ppa).publish = False
+        self.assertNotifications(
+            ppa,
+            "Publishing has been disabled for this archive. (re-enable "
+            "publishing) Since this archive is private, no builds are being "
+            "dispatched.",
+            person=ppa.owner)
+
+    def test_warning_for_disabled_publishing_with_anonymous_user(self):
+        # The warning notification doesn't mention the Change details
+        # page.
+        ppa = self.factory.makeArchive()
+        removeSecurityProxy(ppa).publish = False
+        self.assertNotifications(
+            ppa, 'Publishing has been disabled for this archive.')
+
     def test_ppa_packages_menu_is_enabled(self):
         joe = self.factory.makePerson()
         ppa = self.factory.makeArchive()
@@ -138,7 +185,7 @@ class TestPPAPackages(TestCaseWithFactory):
         self.assertIs(None, view.specified_name_filter)
 
     def test_source_query_counts(self):
-        query_baseline = 42
+        query_baseline = 43
         # Assess the baseline.
         collector = QueryCollector()
         collector.register()
@@ -196,8 +243,7 @@ class TestPPAPackages(TestCaseWithFactory):
                 archive=ppa)
             url = canonical_url(ppa) + "/+packages"
         browser.open(url)
-        self.assertThat(collector, HasQueryCount(
-            MatchesAny(LessThan(query_baseline), Equals(query_baseline))))
+        self.assertThat(collector, HasQueryCount(LessThan(query_baseline)))
         expected_count = collector.count
         # Use all new objects - avoids caching issues invalidating the
         # gathered metrics.
@@ -211,5 +257,4 @@ class TestPPAPackages(TestCaseWithFactory):
                     archive=ppa, distroarchseries=pkg.distroarchseries)
             url = canonical_url(ppa) + "/+packages"
         browser.open(url)
-        self.assertThat(collector, HasQueryCount(
-            MatchesAny(Equals(expected_count), LessThan(expected_count))))
+        self.assertThat(collector, HasQueryCount(Equals(expected_count)))

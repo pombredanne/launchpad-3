@@ -25,7 +25,6 @@ __metaclass__ = type
 __all__ = [
     'AppServerLayer',
     'BaseLayer',
-    'BaseWindmillLayer',
     'DatabaseFunctionalLayer',
     'DatabaseLayer',
     'ExperimentalLaunchpadZopelessLayer',
@@ -44,6 +43,7 @@ __all__ = [
     'TwistedAppServerLayer',
     'TwistedLaunchpadZopelessLayer',
     'TwistedLayer',
+    'YUITestLayer',
     'ZopelessAppServerLayer',
     'ZopelessDatabaseLayer',
     'ZopelessLayer',
@@ -51,90 +51,117 @@ __all__ = [
     'reconnect_stores',
     ]
 
+from cProfile import Profile
 import datetime
 import errno
 import gc
 import logging
 import os
-import shutil
 import signal
 import socket
 import subprocess
 import sys
-import tempfile
+from textwrap import dedent
 import threading
 import time
-from cProfile import Profile
-from textwrap import dedent
-from unittest import TestCase, TestResult
+from unittest import (
+    TestCase,
+    TestResult,
+    )
 from urllib import urlopen
 
-from fixtures import Fixture
+from fixtures import (
+    Fixture,
+    MonkeyPatch,
+    )
 import psycopg2
 from storm.zope.interfaces import IZStorm
 import transaction
 import wsgi_intercept
 from wsgi_intercept import httplib2_intercept
-
-from lazr.restful.utils import safe_hasattr
-
-from windmill.bin.admin_lib import (
-    start_windmill, teardown as windmill_teardown)
-
-import zope.app.testing.functional
-import zope.publisher.publish
 from zope.app.publication.httpfactory import chooseClasses
-from zope.app.testing.functional import FunctionalTestSetup, ZopePublication
-from zope.component import getUtility, provideUtility
-from zope.component import globalregistry
+import zope.app.testing.functional
+from zope.app.testing.functional import (
+    FunctionalTestSetup,
+    ZopePublication,
+    )
+from zope.component import (
+    getUtility,
+    globalregistry,
+    provideUtility,
+    )
 from zope.component.interfaces import ComponentLookupError
+import zope.publisher.publish
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
-from zope.testing.testrunner.runner import FakeInputContinueGenerator
 
-from canonical.ftests.pgsql import PgTestSetup
-from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.lazr import pidfile
-from canonical.config import CanonicalConfig, config, dbconfig
+from canonical.config import (
+    CanonicalConfig,
+    config,
+    dbconfig,
+    )
 from canonical.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )
 from canonical.database.revision import (
-    confirm_dbrevision, confirm_dbrevision_on_startup)
+    confirm_dbrevision,
+    confirm_dbrevision_on_startup,
+    )
 from canonical.database.sqlbase import (
     cursor,
     session_store,
     ZopelessTransactionManager,
     )
 from canonical.launchpad.interfaces.mailbox import IMailBox
-from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
-from lp.testing import ANONYMOUS, login, logout, is_logged_in
-import lp.services.mail.stub
-from lp.services.mail.mailbox import TestMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.testing.tests.googleserviceharness import (
-    GoogleServiceTestSetup)
 from canonical.launchpad.webapp.interfaces import (
-        DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
+    DEFAULT_FLAVOR,
+    IOpenLaunchBag,
+    IStoreSelector,
+    MAIN_STORE,
+    )
 from canonical.launchpad.webapp.servers import (
-    LaunchpadAccessLogger, register_launchpad_request_publication_factories)
+    LaunchpadAccessLogger,
+    register_launchpad_request_publication_factories,
+    )
+import canonical.launchpad.webapp.session
+from canonical.lazr import pidfile
 from canonical.lazr.testing.layers import MockRootFolder
 from canonical.lazr.timeout import (
-    get_default_timeout_function, set_default_timeout_function)
+    get_default_timeout_function,
+    set_default_timeout_function,
+    )
+from canonical.librarian.testing.server import LibrarianServerFixture
 from canonical.lp import initZopeless
-from canonical.librarian.testing.server import LibrarianTestSetup
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
 from canonical.testing.smtpd import SMTPController
+from lp.services.googlesearch.tests.googleserviceharness import (
+    GoogleServiceTestSetup,
+    )
+from lp.services.mail.mailbox import TestMailBox
+import lp.services.mail.stub
 from lp.services.memcache.client import memcache_client_factory
 from lp.services.osutils import kill_by_pidfile
+from lp.testing import (
+    ANONYMOUS,
+    is_logged_in,
+    login,
+    logout,
+    )
+from lp.testing.fixture import RabbitServer
+from lp.testing.pgsql import PgTestSetup
 
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
 COMMA = ','
 WAIT_INTERVAL = datetime.timedelta(seconds=180)
+
+
+def set_up_functional_test():
+    return FunctionalTestSetup('zcml/ftesting.zcml')
 
 
 class LayerError(Exception):
@@ -355,7 +382,7 @@ class BaseLayer:
                 frame = frame.f_back
             BaseLayer.test_name = str(frame.f_locals['test'])
         finally:
-            del frame # As per no-leak stack inspection in Python reference.
+            del frame  # As per no-leak stack inspection in Python reference.
 
     @classmethod
     @profiled
@@ -389,7 +416,7 @@ class BaseLayer:
         if BaseLayer.disable_thread_check:
             new_threads = None
         else:
-            for loop in range(0,100):
+            for loop in range(0, 100):
                 # Check for tests that leave live threads around early.
                 # A live thread may be the cause of other failures, such as
                 # uncollectable garbage.
@@ -431,7 +458,7 @@ class BaseLayer:
         # due to a leak because someone ignored the warnings.
         if gc.garbage:
             del gc.garbage[:]
-            gc.collect() # Expensive, so only do if there might be garbage.
+            gc.collect()  # Expensive, so only do if there might be garbage.
             if gc.garbage:
                 BaseLayer.flagTestIsolationFailure(
                         "Test left uncollectable garbage\n"
@@ -458,8 +485,7 @@ class BaseLayer:
             and not ZopelessLayer.isSetUp):
             raise LayerIsolationError(
                 "Component architecture should not be loaded by tests. "
-                "This should only be loaded by the Layer."
-                )
+                "This should only be loaded by the Layer.")
 
         # Detect a test that installed the Zopeless database adapter
         # but failed to unregister it. This could be done automatically,
@@ -506,7 +532,7 @@ class BaseLayer:
                     return frame.f_locals['self']
                 frame = frame.f_back
         finally:
-            del frame # As per no-leak stack inspection in Python reference.
+            del frame  # As per no-leak stack inspection in Python reference.
 
     @classmethod
     def getCurrentTestCase(cls):
@@ -524,7 +550,7 @@ class BaseLayer:
                 frame = frame.f_back
             return frame.f_locals['test']
         finally:
-            del frame # As per no-leak stack inspection in Python reference.
+            del frame  # As per no-leak stack inspection in Python reference.
 
     @classmethod
     def appserver_config(cls):
@@ -545,7 +571,6 @@ class MemcachedLayer(BaseLayer):
     ZopelessLayer, FunctionalLayer or sublayer as they will be accessing
     memcached using a utility.
     """
-    _reset_between_tests = True
 
     # A memcache.Client instance.
     client = None
@@ -595,8 +620,8 @@ class MemcachedLayer(BaseLayer):
             time.sleep(0.1)
 
         # Store the pidfile for other processes to kill.
-        pidfile = MemcachedLayer.getPidFile()
-        open(pidfile, 'w').write(str(MemcachedLayer._memcached_process.pid))
+        pid_file = MemcachedLayer.getPidFile()
+        open(pid_file, 'w').write(str(MemcachedLayer._memcached_process.pid))
 
     @classmethod
     @profiled
@@ -614,9 +639,8 @@ class MemcachedLayer(BaseLayer):
     @classmethod
     @profiled
     def testSetUp(cls):
-        if MemcachedLayer._reset_between_tests:
-            MemcachedLayer.client.forget_dead_hosts()
-            MemcachedLayer.client.flush_all()
+        MemcachedLayer.client.forget_dead_hosts()
+        MemcachedLayer.client.flush_all()
 
     @classmethod
     @profiled
@@ -630,7 +654,46 @@ class MemcachedLayer(BaseLayer):
     @classmethod
     def purge(cls):
         "Purge everything from our memcached."
-        MemcachedLayer.client.flush_all() # Only do this in tests!
+        MemcachedLayer.client.flush_all()  # Only do this in tests!
+
+
+class RabbitMQLayer(BaseLayer):
+    """Provides tests access to a rabbitMQ instance."""
+
+    rabbit = RabbitServer()
+
+    _is_setup = False
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        cls.rabbit.setUp()
+        cls.config_fixture.add_section(
+            cls.rabbit.config.service_config)
+        cls.appserver_config_fixture.add_section(
+            cls.rabbit.config.service_config)
+        cls._is_setup = True
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        if not cls._is_setup:
+            return
+        cls.rabbit.cleanUp()
+        cls._is_setup = False
+        # Can't pop the config above, so bail here and let the test runner
+        # start a sub-process.
+        raise NotImplementedError
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        pass
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
 
 
 # We store a reference to the DB-API connect method here when we
@@ -641,13 +704,11 @@ _org_connect = None
 class DatabaseLayer(BaseLayer):
     """Provides tests access to the Launchpad sample database."""
 
-    # If set to False, database will not be reset between tests. It is
-    # your responsibility to set it back to True and call
-    # Database.force_dirty_database() when you do so.
-    _reset_between_tests = True
-
     _is_setup = False
     _db_fixture = None
+    # For parallel testing, we allocate a temporary template to prevent worker
+    # contention.
+    _db_template_fixture = None
 
     @classmethod
     @profiled
@@ -656,7 +717,16 @@ class DatabaseLayer(BaseLayer):
         # Read the sequences we'll need from the test template database.
         reset_sequences_sql = LaunchpadTestSetup(
             dbname='launchpad_ftest_template').generateResetSequencesSQL()
-        cls._db_fixture = LaunchpadTestSetup(
+        # Allocate a template for this test instance
+        if os.environ.get('LP_TEST_INSTANCE'):
+            template_name = '_'.join([LaunchpadTestSetup.template,
+                os.environ.get('LP_TEST_INSTANCE')])
+            cls._db_template_fixture = LaunchpadTestSetup(
+                dbname=template_name, reset_sequences_sql=reset_sequences_sql)
+            cls._db_template_fixture.setUp()
+        else:
+            template_name = LaunchpadTestSetup.template
+        cls._db_fixture = LaunchpadTestSetup(template=template_name,
             reset_sequences_sql=reset_sequences_sql)
         cls.force_dirty_database()
         # Nuke any existing DB (for persistent-test-services) [though they
@@ -686,6 +756,8 @@ class DatabaseLayer(BaseLayer):
         cls.force_dirty_database()
         cls._db_fixture.tearDown()
         cls._db_fixture = None
+        cls._db_template_fixture.tearDown()
+        cls._db_template_fixture = None
 
     @classmethod
     @profiled
@@ -697,8 +769,7 @@ class DatabaseLayer(BaseLayer):
 
     @classmethod
     def _ensure_db(cls):
-        if cls._reset_between_tests:
-            cls._db_fixture.setUp()
+        cls._db_fixture.setUp()
         # Ensure that the database is connectable. Because we might have
         # just created it, keep trying for a few seconds incase PostgreSQL
         # is taking its time getting its house in order.
@@ -722,8 +793,7 @@ class DatabaseLayer(BaseLayer):
         # Ensure that the database is connectable
         cls.connect().close()
 
-        if cls._reset_between_tests:
-            cls._db_fixture.tearDown()
+        cls._db_fixture.tearDown()
 
         # Fail tests that forget to uninstall their database policies.
         from canonical.launchpad.webapp.adapter import StoreSelector
@@ -764,16 +834,18 @@ class DatabaseLayer(BaseLayer):
 
         global _org_connect
         _org_connect = psycopg2.connect
+
         # Proxy real connections with our mockdb.
         def fake_connect(*args, **kw):
             return cls.script.connect(_org_connect, *args, **kw)
+
         psycopg2.connect = fake_connect
 
     @classmethod
     @profiled
     def uninstallMockDb(cls):
         if cls.mockdb_mode is None:
-            return # Already uninstalled
+            return  # Already uninstalled
 
         # Store results if we are recording
         if cls.mockdb_mode == 'record':
@@ -808,25 +880,27 @@ class LibrarianLayer(DatabaseLayer):
     Calls to the Librarian will fail unless there is also a Launchpad
     database available.
     """
-    _reset_between_tests = True
 
     librarian_fixture = None
 
     @classmethod
     @profiled
     def setUp(cls):
-        if not cls._reset_between_tests:
-            raise LayerInvariantError(
-                    "_reset_between_tests changed before LibrarianLayer "
-                    "was actually used."
-                    )
-        cls.librarian_fixture = LibrarianTestSetup()
+        cls.librarian_fixture = LibrarianServerFixture(
+            BaseLayer.config_fixture)
         cls.librarian_fixture.setUp()
         cls._check_and_reset()
+
+        # Make sure things using the appserver config know the
+        # correct Librarian port numbers.
+        cls.appserver_config_fixture.add_section(
+            cls.librarian_fixture.service_config)
 
     @classmethod
     @profiled
     def tearDown(cls):
+        # Permit multiple teardowns while we sort out the layering
+        # responsibilities : not desirable though.
         if cls.librarian_fixture is None:
             return
         try:
@@ -834,14 +908,7 @@ class LibrarianLayer(DatabaseLayer):
         finally:
             librarian = cls.librarian_fixture
             cls.librarian_fixture = None
-            try:
-                if not cls._reset_between_tests:
-                    raise LayerInvariantError(
-                            "_reset_between_tests not reset before LibrarianLayer "
-                            "shutdown"
-                            )
-            finally:
-                librarian.cleanUp()
+            librarian.cleanUp()
 
     @classmethod
     @profiled
@@ -858,10 +925,8 @@ class LibrarianLayer(DatabaseLayer):
                     "Tests should use LibrarianLayer.hide() and "
                     "LibrarianLayer.reveal() where possible, and ensure "
                     "the Librarian is restarted if it absolutely must be "
-                    "shutdown: " + str(e)
-                    )
-        if cls._reset_between_tests:
-            cls.librarian_fixture.clear()
+                    "shutdown: " + str(e))
+        cls.librarian_fixture.clear()
 
     @classmethod
     @profiled
@@ -923,7 +988,7 @@ def test_default_timeout():
     return None
 
 
-class LaunchpadLayer(LibrarianLayer, MemcachedLayer):
+class LaunchpadLayer(LibrarianLayer, MemcachedLayer, RabbitMQLayer):
     """Provides access to the Launchpad database and daemons.
 
     We need to ensure that the database setup runs before the daemon
@@ -934,6 +999,7 @@ class LaunchpadLayer(LibrarianLayer, MemcachedLayer):
     Most tests will use a sublayer such as LaunchpadFunctionalLayer that
     provides access to the Component Architecture.
     """
+
     @classmethod
     @profiled
     def setUp(cls):
@@ -943,7 +1009,7 @@ class LaunchpadLayer(LibrarianLayer, MemcachedLayer):
     @profiled
     def tearDown(cls):
         pass
-    
+
     @classmethod
     @profiled
     def testSetUp(cls):
@@ -1009,7 +1075,7 @@ def wsgi_application(environ, start_response):
     # zope.publisher.paste.Application.
     request_cls, publication_cls = chooseClasses(
         environ['REQUEST_METHOD'], environ)
-    publication = publication_cls(FunctionalTestSetup().db)
+    publication = publication_cls(set_up_functional_test().db)
     request = request_cls(environ['wsgi.input'], environ)
     request.setPublication(publication)
     # The rest of this function is an amalgam of
@@ -1039,14 +1105,17 @@ class FunctionalLayer(BaseLayer):
     @profiled
     def setUp(cls):
         FunctionalLayer.isSetUp = True
-        FunctionalTestSetup().setUp()
+        set_up_functional_test().setUp()
 
-        # Assert that FunctionalTestSetup did what it says it does
+        # Assert that set_up_functional_test did what it says it does
         if not is_ca_available():
             raise LayerInvariantError("Component architecture failed to load")
 
+        # Access the cookie manager's secret to get the cache populated.
+        # If we don't, it may issue extra queries depending on test order.
+        canonical.launchpad.webapp.session.idmanager.secret
         # If our request publication factories were defined using ZCML,
-        # they'd be set up by FunctionalTestSetup().setUp(). Since
+        # they'd be set up by set_up_functional_test().setUp(). Since
         # they're defined by Python code, we need to call that code
         # here.
         register_launchpad_request_publication_factories()
@@ -1055,7 +1124,6 @@ class FunctionalLayer(BaseLayer):
         wsgi_intercept.add_wsgi_intercept(
             'api.launchpad.dev', 80, lambda: wsgi_application)
         httplib2_intercept.install()
-
 
     @classmethod
     @profiled
@@ -1074,7 +1142,7 @@ class FunctionalLayer(BaseLayer):
         transaction.begin()
 
         # Fake a root folder to keep Z3 ZODB dependencies happy.
-        fs = FunctionalTestSetup()
+        fs = set_up_functional_test()
         if not fs.connection:
             fs.connection = fs.db.open()
         root = fs.connection.root()
@@ -1084,8 +1152,7 @@ class FunctionalLayer(BaseLayer):
         # mighty nasty has happened if this is triggered.
         if not is_ca_available():
             raise LayerInvariantError(
-                "Component architecture not loaded or totally screwed"
-                )
+                "Component architecture not loaded or totally screwed")
 
     @classmethod
     @profiled
@@ -1094,8 +1161,7 @@ class FunctionalLayer(BaseLayer):
         # mighty nasty has happened if this is triggered.
         if not is_ca_available():
             raise LayerInvariantError(
-                "Component architecture not loaded or totally screwed"
-                )
+                "Component architecture not loaded or totally screwed")
 
         transaction.abort()
 
@@ -1140,8 +1206,7 @@ class ZopelessLayer(BaseLayer):
         # mighty nasty has happened if this is triggered.
         if not is_ca_available():
             raise LayerInvariantError(
-                "Component architecture not loaded or totally screwed"
-                )
+                "Component architecture not loaded or totally screwed")
         # This should not happen here, it should be caught by the
         # testTearDown() method. If it does, something very nasty
         # happened.
@@ -1161,8 +1226,7 @@ class ZopelessLayer(BaseLayer):
         # mighty nasty has happened if this is triggered.
         if not is_ca_available():
             raise LayerInvariantError(
-                "Component architecture not loaded or totally screwed"
-                )
+                "Component architecture not loaded or totally screwed")
         # Make sure that a test that changed the security policy, reset it
         # back to its default value.
         if getSecurityPolicy() != PermissiveSecurityPolicy:
@@ -1212,6 +1276,14 @@ class TwistedLayer(BaseLayer):
         TwistedLayer._save_signals()
         from twisted.internet import interfaces, reactor
         from twisted.python import threadpool
+        # zope.exception demands more of frame objects than
+        # twisted.python.failure provides in its fake frames.  This is enough
+        # to make it work with them as of 2009-09-16.  See
+        # https://bugs.launchpad.net/bugs/425113.
+        cls._patch = MonkeyPatch(
+            'twisted.python.failure._Frame.f_locals',
+            property(lambda self: {}))
+        cls._patch.setUp()
         if interfaces.IReactorThreads.providedBy(reactor):
             pool = getattr(reactor, 'threadpool', None)
             # If the Twisted threadpool has been obliterated (probably by
@@ -1233,6 +1305,7 @@ class TwistedLayer(BaseLayer):
             if pool is not None:
                 reactor.threadpool.stop()
                 reactor.threadpool = None
+        cls._patch.cleanUp()
         TwistedLayer._restore_signals()
 
 
@@ -1295,6 +1368,7 @@ class DatabaseFunctionalLayer(DatabaseLayer, FunctionalLayer):
 
 class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
     """Provides the Launchpad Zope3 application server environment."""
+
     @classmethod
     @profiled
     def setUp(cls):
@@ -1350,7 +1424,6 @@ class GoogleLaunchpadFunctionalLayer(LaunchpadFunctionalLayer,
     @profiled
     def testTearDown(cls):
         pass
-
 
 
 class ZopelessDatabaseLayer(ZopelessLayer, DatabaseLayer):
@@ -1455,8 +1528,7 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
     def testSetUp(cls):
         if ZopelessTransactionManager._installed is not None:
             raise LayerIsolationError(
-                "Last test using Zopeless failed to tearDown correctly"
-                )
+                "Last test using Zopeless failed to tearDown correctly")
         initZopeless()
 
         # Connect Storm
@@ -1468,8 +1540,7 @@ class LaunchpadZopelessLayer(LaunchpadScriptLayer):
         ZopelessTransactionManager.uninstall()
         if ZopelessTransactionManager._installed is not None:
             raise LayerInvariantError(
-                "Failed to uninstall ZopelessTransactionManager"
-                )
+                "Failed to uninstall ZopelessTransactionManager")
         # LaunchpadScriptLayer will disconnect the stores for us.
 
     @classmethod
@@ -1556,12 +1627,6 @@ class MockHTTPTask:
 class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
     """Environment for page tests.
     """
-    @classmethod
-    @profiled
-    def resetBetweenTests(cls, flag):
-        LibrarianLayer._reset_between_tests = flag
-        DatabaseLayer._reset_between_tests = flag
-        MemcachedLayer._reset_between_tests = flag
 
     @classmethod
     @profiled
@@ -1576,6 +1641,7 @@ class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
         logger.logger.addHandler(file_handler)
         logger.logger.setLevel(logging.INFO)
         access_logger = LaunchpadAccessLogger(logger)
+
         def my__call__(obj, request_string, handle_errors=True, form=None):
             """Call HTTPCaller.__call__ and log the page hit."""
             if PageTestLayer.profiler:
@@ -1593,40 +1659,20 @@ class PageTestLayer(LaunchpadFunctionalLayer, GoogleServiceLayer):
         PageTestLayer.orig__call__ = (
                 zope.app.testing.functional.HTTPCaller.__call__)
         zope.app.testing.functional.HTTPCaller.__call__ = my__call__
-        PageTestLayer.resetBetweenTests(True)
 
     @classmethod
     @profiled
     def tearDown(cls):
-        PageTestLayer.resetBetweenTests(True)
         zope.app.testing.functional.HTTPCaller.__call__ = (
                 PageTestLayer.orig__call__)
         if PageTestLayer.profiler:
             PageTestLayer.profiler.dump_stats(
                 os.environ.get('PROFILE_PAGETESTS_REQUESTS'))
 
-
-    @classmethod
-    @profiled
-    def startStory(cls):
-        MemcachedLayer.testSetUp()
-        DatabaseLayer.testSetUp()
-        LibrarianLayer.testSetUp()
-        LaunchpadLayer.resetSessionDb()
-        PageTestLayer.resetBetweenTests(False)
-
-    @classmethod
-    @profiled
-    def endStory(cls):
-        PageTestLayer.resetBetweenTests(True)
-        LibrarianLayer.testTearDown()
-        DatabaseLayer.testTearDown()
-        MemcachedLayer.testTearDown()
-
     @classmethod
     @profiled
     def testSetUp(cls):
-        pass
+        LaunchpadLayer.resetSessionDb()
 
     @classmethod
     @profiled
@@ -1664,12 +1710,14 @@ class TwistedLaunchpadZopelessLayer(TwistedLayer, LaunchpadZopelessLayer):
         if interfaces.IReactorThreads.providedBy(reactor):
             pool = getattr(reactor, 'threadpool', None)
             if pool is not None and pool.workers > 0:
+
                 def cleanup_thread_stores(event):
                     disconnect_stores()
                     # Don't exit until the event fires.  This ensures
                     # that our thread doesn't get added to
                     # pool.waiters until all threads are processed.
                     event.wait()
+
                 event = threading.Event()
                 # Ensure that the pool doesn't grow, and issue one
                 # cleanup job for each thread in the pool.
@@ -1957,116 +2005,5 @@ class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer):
         LayerProcessController.postTestInvariants()
 
 
-class BaseWindmillLayer(AppServerLayer):
-    """Layer for Windmill tests.
-
-    This layer shouldn't be used directly. A subclass needs to be
-    created specifying which base URL to use (e.g.
-    http://bugs.launchpad.dev:8085/).
-    """
-
-    base_url = None
-    shell_objects = None
-    config_file = None
-
-    @classmethod
-    @profiled
-    def setUp(cls):
-        if cls.base_url is None:
-            # Only do the setup if we're in a subclass that defines
-            # base_url. With no base_url, we can't create the config
-            # file windmill needs.
-            return
-
-        cls._fixStandardInputFileno()
-        cls._configureWindmillLogging()
-        cls._configureWindmillStartup()
-
-        # Tell windmill to start its browser and server.  Our testrunner will
-        # keep going, passing commands to the server for execution.
-        cls.shell_objects = start_windmill()
-
-        # Patch the config to provide the port number and not use https.
-        sites = (
-            (('vhost.%s' % sitename,
-            'rooturl: %s/' % cls.appserver_root_url(sitename))
-            for sitename in ['mainsite', 'answers', 'blueprints', 'bugs',
-                            'code', 'testopenid', 'translations']))
-        for site in sites:
-            config.push('windmillsettings', "\n[%s]\n%s\n" % site)
-        allvhosts.reload()
-
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        if cls.shell_objects is not None:
-            windmill_teardown(cls.shell_objects)
-        if cls.config_file is not None:
-            # Close the file so that it gets deleted.
-            cls.config_file.close()
-        config.reloadConfig()
-        reset_logging()
-
-    @classmethod
-    @profiled
-    def testSetUp(cls):
-        # Left-over threads should be harmless, since they should all
-        # belong to Windmill, which will be cleaned up on layer
-        # tear down.
-        BaseLayer.disable_thread_check = True
-
-    @classmethod
-    def _fixStandardInputFileno(cls):
-        """Patch the STDIN fileno so Windmill doesn't break."""
-        # If we're running in a bin/test sub-process, sys.stdin is
-        # replaced by FakeInputContinueGenerator, which doesn't have a
-        # fileno method. When Windmill starts Firefox,
-        # sys.stdin.fileno() is called, so we add such a method here, to
-        # prevent it from breaking. By returning None, we should ensure
-        # that it doesn't try to use the return value for anything.
-        if not safe_hasattr(sys.stdin, 'fileno'):
-            assert isinstance(sys.stdin, FakeInputContinueGenerator), (
-                "sys.stdin (%r) doesn't have a fileno method." % sys.stdin)
-            sys.stdin.fileno = lambda: None
-
-    @classmethod
-    def _configureWindmillLogging(cls):
-        """Override the default windmill log handling."""
-        if not config.windmill.debug_log:
-            return
-
-        # Add a new log handler to capture all of the windmill testrunner
-        # output. This overrides windmill's own log handling, which we do not
-        # have direct access to.
-        # We'll overwrite the previous log contents to keep the disk usage
-        # low, and because the contents are only meant as an in-situ debugging
-        # aid.
-        filehandler = logging.FileHandler(config.windmill.debug_log, mode='w')
-        filehandler.setLevel(logging.NOTSET)
-        filehandler.setFormatter(
-            logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
-        logging.getLogger('windmill').addHandler(filehandler)
-
-        # Make sure that everything sent to the windmill logger is captured.
-        # This works because windmill configures the root logger for its
-        # purposes, and we are pre-empting that by inserting a new logger one
-        # level higher in the logger chain.
-        logging.getLogger('windmill').setLevel(logging.NOTSET)
-
-    @classmethod
-    def _configureWindmillStartup(cls):
-        """Pass our startup parameters to the windmill server."""
-        # Windmill needs a config file on disk to load its settings from.
-        # There is no way to directly pass settings to the windmill test
-        # driver from out here.
-        config_text = dedent("""\
-            START_FIREFOX = True
-            TEST_URL = '%s/'
-            CONSOLE_LOG_LEVEL = %d
-            """ % (cls.base_url, logging.NOTSET))
-        cls.config_file = tempfile.NamedTemporaryFile(suffix='.py')
-        cls.config_file.write(config_text)
-        # Flush the file so that windmill can read it.
-        cls.config_file.flush()
-        os.environ['WINDMILL_CONFIG_FILE'] = cls.config_file.name
+class YUITestLayer(FunctionalLayer):
+    """The base class for all YUITests cases."""

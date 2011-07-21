@@ -21,11 +21,10 @@ from canonical.librarian.client import LibrarianClient
 from lp.archivepublisher import HARDCODED_COMPONENT_ORDER
 from lp.archivepublisher.config import (
     getPubConfig,
-    LucilleConfigError,
     )
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.domination import Dominator
-from lp.archivepublisher.ftparchive import FTPArchiveHandler
+from lp.archivepublisher.model.ftparchive import FTPArchiveHandler
 from lp.archivepublisher.htaccess import (
     htpasswd_credentials_for_archive,
     write_htaccess,
@@ -109,7 +108,7 @@ def _setupHtaccess(archive, pubconf, log):
 
 
 def getPublisher(archive, allowed_suites, log, distsroot=None):
-    """Return an initialised Publisher instance for the given context.
+    """Return an initialized Publisher instance for the given context.
 
     The callsites can override the location where the archive indexes will
     be stored via 'distroot' argument.
@@ -120,11 +119,7 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
     else:
         log.debug("Finding configuration for '%s' PPA."
                   % archive.owner.name)
-    try:
-        pubconf = getPubConfig(archive)
-    except LucilleConfigError, info:
-        log.error(info)
-        raise
+    pubconf = getPubConfig(archive)
 
     disk_pool = _getDiskPool(pubconf, log)
 
@@ -148,7 +143,7 @@ class Publisher(object):
 
     def __init__(self, log, config, diskpool, archive, allowed_suites=None,
                  library=None):
-        """Initialise a publisher.
+        """Initialize a publisher.
 
         Publishers need the pool root dir and a DiskPool object.
 
@@ -506,6 +501,10 @@ class Publisher(object):
         release_file["Components"] = " ".join(
             reorder_components(all_components))
         release_file["Description"] = drsummary
+        if (pocket == PackagePublishingPocket.BACKPORTS and
+            distroseries.backports_not_automatic):
+            release_file["NotAutomatic"] = "yes"
+            release_file["ButAutomaticUpgrades"] = "yes"
 
         for filename in sorted(list(all_files), key=os.path.dirname):
             entry = self._readIndexFileContents(suite, filename)

@@ -53,7 +53,8 @@
             <tal:widget define="widget nocall:view/widgets/owner">
               <metal:block use-macro="context/@@launchpad_form/widget_row" />
             </tal:widget>
-            <tal:widget define="widget nocall:view/widgets/build_daily">
+            <tal:widget define="widget nocall:view/widgets/build_daily;
+                                widget_help_link string:/+help/recipe-build-frequency.html">
               <metal:block use-macro="context/@@launchpad_form/widget_row" />
             </tal:widget>
 
@@ -98,10 +99,13 @@
               </tal:widget>
             </tal:create-ppa>
 
-            <tal:widget define="widget nocall:view/widgets/distros">
+            <tal:widget define="widget nocall:view/widgets/distroseries">
               <metal:block use-macro="context/@@launchpad_form/widget_row" />
             </tal:widget>
             <tal:widget define="widget nocall:view/widgets/recipe_text">
+              <metal:block use-macro="context/@@launchpad_form/widget_row" />
+            </tal:widget>
+            <tal:widget define="widget nocall:view/widgets/related-branches">
               <metal:block use-macro="context/@@launchpad_form/widget_row" />
             </tal:widget>
 

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,C0322
@@ -28,7 +28,6 @@ __all__ = [
     'PersonEditLocationView',
     'PersonEditSSHKeysView',
     'PersonEditView',
-    'PersonEditWikiNamesView',
     'PersonFacets',
     'PersonGPGView',
     'PersonIndexMenu',
@@ -100,10 +99,7 @@ from lazr.config import as_timedelta
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IWebServiceClientRequest
-from lazr.uri import (
-    InvalidURIError,
-    URI,
-    )
+from lazr.uri import URI
 import pytz
 from storm.expr import Join
 from storm.zope.interfaces import IResultSet
@@ -165,18 +161,11 @@ from canonical.launchpad.interfaces.gpghandler import (
     IGPGHandler,
     )
 from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities,
     INotificationRecipientSet,
     UnknownRecipientError,
     )
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from canonical.launchpad.interfaces.message import (
-    IDirectEmailAuthorization,
-    QuotaReachedError,
-    )
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
-from canonical.launchpad.mailnotification import send_direct_contact_email
-from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -205,19 +194,9 @@ from canonical.launchpad.webapp.login import logoutPerson
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.lazr.utils import smartquote
-from canonical.widgets import (
-    LaunchpadDropdownWidget,
-    LaunchpadRadioWidget,
-    LaunchpadRadioWidgetWithDescription,
-    LocationWidget,
-    PasswordChangeWidget,
-    URIWidget,
-    )
-from canonical.widgets.image import ImageChangeWidget
-from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.answers.browser.questiontarget import SearchQuestionsView
+from lp.answers.enums import QuestionParticipation
 from lp.answers.interfaces.questioncollection import IQuestionSet
-from lp.answers.interfaces.questionenums import QuestionParticipation
 from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.app.browser.launchpadform import (
     action,
@@ -234,6 +213,17 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.validators.email import valid_email
+from lp.app.widgets.image import ImageChangeWidget
+from lp.app.widgets.itemswidgets import (
+    LabeledMultiCheckBoxWidget,
+    LaunchpadDropdownWidget,
+    LaunchpadRadioWidget,
+    LaunchpadRadioWidgetWithDescription,
+    )
+from lp.app.widgets.location import LocationWidget
+from lp.app.widgets.password import PasswordChangeWidget
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
 from lp.blueprints.enums import SpecificationFilter
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
@@ -284,6 +274,10 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.personproduct import IPersonProductFactory
 from lp.registry.interfaces.pillar import IPillarNameSet
+from lp.registry.interfaces.poll import (
+    IPollSet,
+    IPollSubset,
+    )
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.ssh import (
     ISSHKeySet,
@@ -298,16 +292,18 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-from lp.registry.interfaces.wikiname import (
-    IWikiName,
-    IWikiNameSet,
-    )
+from lp.registry.interfaces.wikiname import IWikiNameSet
+from lp.registry.mail.notification import send_direct_contact_email
 from lp.registry.model.milestone import (
     Milestone,
     milestone_sort_key,
     )
 from lp.services.fields import LocationField
 from lp.services.geoip.interfaces import IRequestPreferredLanguages
+from lp.services.messages.interfaces.message import (
+    IDirectEmailAuthorization,
+    QuotaReachedError,
+    )
 from lp.services.openid.adapters.openid import CurrentOpenIDEndPoint
 from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin,
@@ -327,6 +323,8 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.soyuz.browser.archivesubscription import (
     traverse_archive_subscription_for_subscriber,
     )
+from lp.soyuz.enums import ArchiveStatus
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
@@ -540,7 +538,7 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
             # Otherwise we return the normal view for a person's
             # archive subscriptions.
             return queryMultiAdapter(
-                (self.context, self.request), name ="+archivesubscriptions")
+                (self.context, self.request), name="+archivesubscriptions")
 
     @stepthrough('+recipe')
     def traverse_recipe(self, name):
@@ -556,6 +554,10 @@ class PersonNavigation(BranchTraversalMixin, Navigation):
 class TeamNavigation(PersonNavigation):
 
     usedfor = ITeam
+
+    @stepthrough('+poll')
+    def traverse_poll(self, name):
+        return getUtility(IPollSet).getByTeamAndName(self.context, name)
 
     @stepthrough('+invitation')
     def traverse_invitation(self, name):
@@ -1044,7 +1046,6 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
         'common_edithomepage',
         'editemailaddresses',
         'editlanguages',
-        'editwikinames',
         'editircnicknames',
         'editjabberids',
         'editsshkeys',
@@ -1091,12 +1092,6 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin,
     def editemailaddresses(self):
         target = '+editemails'
         text = 'Change e-mail settings'
-        return Link(target, text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
-    def editwikinames(self):
-        target = '+editwikinames'
-        text = 'Update wiki names'
         return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
@@ -1325,6 +1320,17 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         text = 'Show member photos'
         return Link(target, text, icon='team')
 
+    def polls(self):
+        target = '+polls'
+        text = 'Show polls'
+        return Link(target, text, icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def add_poll(self):
+        target = '+newpoll'
+        text = 'Create a poll'
+        return Link(target, text, icon='add')
+
     @enabled_with_permission('launchpad.Edit')
     def editemail(self):
         target = '+contactaddress'
@@ -1409,6 +1415,8 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin, HasRecipesMenuMixin):
         'moderate_mailing_list',
         'editlanguages',
         'map',
+        'polls',
+        'add_poll',
         'join',
         'leave',
         'add_my_teams',
@@ -1429,7 +1437,7 @@ class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['profile', 'members', 'ppas']
+    links = ['profile', 'polls', 'members', 'ppas']
 
 
 class TeamMembershipView(LaunchpadView):
@@ -1903,11 +1911,11 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
     def current_package(self):
         """Get the package whose bugs are currently being searched."""
         if not (
-            self.widgets['distribution'].hasInput() and
+            self.widgets['distribution'].hasValidInput() and
             self.widgets['distribution'].getInputValue()):
             raise UnexpectedFormData("A distribution is required")
         if not (
-            self.widgets['sourcepackagename'].hasInput() and
+            self.widgets['sourcepackagename'].hasValidInput() and
             self.widgets['sourcepackagename'].getInputValue()):
             raise UnexpectedFormData("A sourcepackagename is required")
 
@@ -1997,6 +2005,10 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
 
         return package_links
 
+    @cachedproperty
+    def person_url(self):
+        return canonical_url(self.context)
+
     def getBugSubscriberPackageSearchURL(self, distributionsourcepackage=None,
                                       advanced=False, extra_params=None):
         """Construct a default search URL for a distributionsourcepackage.
@@ -2021,14 +2033,13 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
 
             params.update(extra_params)
 
-        person_url = canonical_url(self.context)
         query_string = urllib.urlencode(sorted(params.items()), doseq=True)
 
         if advanced:
-            return (person_url + '/+packagebugs-search?advanced=1&%s'
+            return (self.person_url + '/+packagebugs-search?advanced=1&%s'
                     % query_string)
         else:
-            return person_url + '/+packagebugs-search?%s' % query_string
+            return self.person_url + '/+packagebugs-search?%s' % query_string
 
     def getBugSubscriberPackageAdvancedSearchURL(self,
                                               distributionsourcepackage=None):
@@ -2097,10 +2108,6 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
         return False
 
     # Methods that customize the advanced search form.
-    def getAdvancedSearchPageHeading(self):
-        return (
-            "Bugs in %s: Advanced Search" % self.current_package.displayname)
-
     def getAdvancedSearchButtonLabel(self):
         return "Search bugs in %s" % self.current_package.displayname
 
@@ -2174,10 +2181,6 @@ class PersonRelatedBugTaskSearchListingView(RelevantMilestonesMixin,
     def getSearchPageHeading(self):
         return "Bugs related to %s" % self.context.displayname
 
-    def getAdvancedSearchPageHeading(self):
-        return "Bugs Related to %s: Advanced Search" % (
-            self.context.displayname)
-
     def getAdvancedSearchButtonLabel(self):
         return "Search bugs related to %s" % self.context.displayname
 
@@ -2229,11 +2232,6 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
         """The header for the search page."""
         return "Bugs assigned to %s" % self.context.displayname
 
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs Assigned to %s: Advanced Search" % (
-            self.context.displayname)
-
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
         return "Search bugs assigned to %s" % self.context.displayname
@@ -2274,11 +2272,6 @@ class PersonCommentedBugTaskSearchListingView(RelevantMilestonesMixin,
     def getSearchPageHeading(self):
         """The header for the search page."""
         return "Bugs commented on by %s" % self.context.displayname
-
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs commented on by %s: Advanced Search" % (
-            self.context.displayname)
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
@@ -2323,11 +2316,6 @@ class PersonReportedBugTaskSearchListingView(RelevantMilestonesMixin,
     def getSearchPageHeading(self):
         """The header for the search page."""
         return "Bugs reported by %s" % self.context.displayname
-
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs Reported by %s: Advanced Search" % (
-            self.context.displayname)
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
@@ -2377,11 +2365,6 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
     def getSearchPageHeading(self):
         """The header for the search page."""
         return "Bugs %s is subscribed to" % self.context.displayname
-
-    def getAdvancedSearchPageHeading(self):
-        """The header for the advanced search page."""
-        return "Bugs %s is Cc'd to: Advanced Search" % (
-            self.context.displayname)
 
     def getAdvancedSearchButtonLabel(self):
         """The Search button for the advanced search page."""
@@ -2794,16 +2777,6 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             check_permission('launchpad.Edit', self.context))
 
     @property
-    def should_show_wikinames_section(self):
-        """Should the 'Wiki names' section be shown?
-
-        It's shown when the person has Wiki names registered or has rights
-        to register new ones.
-        """
-        return not self.context.wiki_names.is_empty() or (
-            check_permission('launchpad.Edit', self.context))
-
-    @property
     def should_show_jabberids_section(self):
         """Should the 'Jabber IDs' section be shown?
 
@@ -2919,6 +2892,21 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             return ''
 
     @cachedproperty
+    def openpolls(self):
+        assert self.context.isTeam()
+        return IPollSubset(self.context).getOpenPolls()
+
+    @cachedproperty
+    def closedpolls(self):
+        assert self.context.isTeam()
+        return IPollSubset(self.context).getClosedPolls()
+
+    @cachedproperty
+    def notyetopenedpolls(self):
+        assert self.context.isTeam()
+        return IPollSubset(self.context).getNotYetOpenedPolls()
+
+    @cachedproperty
     def contributions(self):
         """Cache the results of getProjectsAndCategoriesContributedTo()."""
         return self.context.getProjectsAndCategoriesContributedTo(
@@ -2970,27 +2958,6 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             # Change the host to point to the production site.
             profile_url.host = config.launchpad.non_restricted_hostname
         return str(profile_url)
-
-    @property
-    def subscription_policy_description(self):
-        """Return the description of this team's subscription policy."""
-        assert self.team.isTeam(), (
-            'This method can only be called when the context is a team.')
-        if self.team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
-            description = _(
-                "This is a restricted team; new members can only be added "
-                "by one of the team's administrators.")
-        elif self.team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
-            description = _(
-                "This is a moderated team; all subscriptions are subjected "
-                "to approval by one of the team's administrators.")
-        elif self.team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
-            description = _(
-                "This is an open team; any user can join and no approval "
-                "is required.")
-        else:
-            raise AssertionError('Unknown subscription policy.')
-        return description
 
     def getURLToAssignedBugsInProgress(self):
         """Return an URL to a page which lists all bugs assigned to this
@@ -3086,6 +3053,19 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             return "Contact this team's owner"
         else:
             raise AssertionError('Unknown group to contact.')
+
+    @property
+    def should_show_polls_portlet(self):
+        menu = TeamOverviewMenu(self.context)
+        return (
+            self.has_current_polls or self.closedpolls
+            or menu.add_poll().enabled)
+
+    @property
+    def has_current_polls(self):
+        """Return True if this team has any non-closed polls."""
+        assert self.context.isTeam()
+        return bool(self.openpolls) or bool(self.notyetopenedpolls)
 
     def userIsOwner(self):
         """Return True if the user is the owner of this Team."""
@@ -3389,6 +3369,14 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
 
     def initialize(self):
         super(PersonIndexView, self).initialize()
+        if self.context.is_merge_pending:
+            if self.context.is_team:
+                merge_action = 'merged or deleted'
+            else:
+                merge_action = 'merged'
+            self.request.response.addInfoNotification(
+                "%s is queued to be be %s in a few minutes." % (
+                self.context.displayname, merge_action))
         if self.request.method == "POST":
             self.processForm()
 
@@ -3548,161 +3536,6 @@ class PersonCodeOfConductEditView(LaunchpadView):
                 # Deactivating signature.
                 comment = 'Deactivated by Owner'
                 sCoC_util.modifySignature(sig_id, self.user, comment, False)
-
-
-class PersonEditWikiNamesView(LaunchpadFormView):
-    """View for ~person/+editwikinames"""
-
-    schema = IWikiName
-    fields = ['wiki', 'wikiname']
-    # Use custom widgets solely to get the width correct.  The URIWidget has a
-    # CSS class that does not respect the displayWidth, thus the need to use a
-    # different cssClass.
-    custom_widget('wiki', URIWidget, displayWidth=40, cssClass="textType")
-    custom_widget('wikiname', TextWidget, displayWidth=40)
-
-    @property
-    def label(self):
-        return smartquote("%s's wiki names" % self.context.displayname)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    cancel_url = next_url
-
-    def setUpFields(self):
-        super(PersonEditWikiNamesView, self).setUpFields()
-        if self.context.wiki_names.count() > 0:
-            # Make the wiki and wiki_name entries optional on the edit page if
-            # one or more ids already exist, which allows the removal of ids
-            # without filling out the new wiki fields.
-            wiki_field = self.form_fields['wiki']
-            wikiname_field = self.form_fields['wikiname']
-            # Copy the fields so as not to modify the interface.
-            wiki_field.field = copy_field(wiki_field.field)
-            wiki_field.field.required = False
-            wikiname_field.field = copy_field(wikiname_field.field)
-            wikiname_field.field.required = False
-
-    def _validateWikiURL(self, url):
-        """Validate the URL.
-
-        Make sure that the result is a valid URL with only the
-        appropriate schemes.  The url is assumed to be a string.
-        """
-        if url is None:
-            return
-        try:
-            uri = URI(url)
-            if uri.scheme not in ('http', 'https'):
-                self.setFieldError(
-                    'wiki',
-                    structured(
-                        'The URL scheme "%(scheme)s" is not allowed.  '
-                        'Only http or https URLs may be used.',
-                        scheme=uri.scheme))
-        except InvalidURIError:
-            self.setFieldError(
-                'wiki',
-                structured(
-                    '"%(url)s" is not a valid URL.', url=url))
-
-    def _validateWikiName(self, name):
-        """Ensure the wikiname is valid.
-
-        It must not be longer than 100 characters.  Name is assumed to be a
-        string.
-        """
-        max_len = 100
-        if len(name) > max_len:
-            self.setFieldError(
-                'wikiname',
-                structured(
-                    'The wiki name cannot exceed %d characters.' % max_len))
-
-    def _sanitizeWikiURL(self, url):
-        """Strip whitespaces and make sure :url ends in a single '/'."""
-        if not url:
-            return url
-        return '%s/' % url.strip().rstrip('/')
-
-    def validate(self, data):
-        # If there are already form errors then just show them.
-        if self.errors:
-            return
-        wikiurl = self._sanitizeWikiURL(data.get('wiki'))
-        wikiname = data.get('wikiname')
-        if wikiurl or wikiname:
-            if not wikiurl:
-                self.setFieldError(
-                    'wiki',
-                    structured(
-                        'The Wiki URL must be specified.'))
-            if not wikiname:
-                self.setFieldError(
-                    'wikiname',
-                    structured(
-                        'The Wiki name must be specified.'))
-
-        if self.errors:
-            return
-
-        if wikiurl is not None:
-            self._validateWikiURL(wikiurl)
-        if wikiname is not None:
-            self._validateWikiName(wikiname)
-
-        if self.errors:
-            return
-
-        wikinameset = getUtility(IWikiNameSet)
-        existingwiki = wikinameset.getByWikiAndName(wikiurl, wikiname)
-        if existingwiki:
-            if existingwiki.person != self.context:
-                owner_name = urllib.quote(existingwiki.person.name)
-                merge_url = (
-                    '%s/+requestmerge?field.dupe_person=%s'
-                    % (canonical_url(getUtility(IPersonSet)), owner_name))
-                self.setFieldError(
-                    'wikiname',
-                    structured(
-                        'The WikiName %s%s is already registered by '
-                        '<a href="%s">%s</a>. If you think this is a '
-                        'duplicated account, you can <a href="%s">merge it'
-                        '</a> into your account.',
-                        wikiurl, wikiname,
-                        canonical_url(existingwiki.person),
-                        existingwiki.person.displayname, merge_url))
-            else:
-                # The person already has this wiki.
-                self.setFieldError(
-                    'wikiname',
-                    'The WikiName %s%s already belongs to you.' %
-                    (wikiurl, wikiname))
-
-    def _save(self, wikiurl, wikiname):
-        """Given a wikiurl and wikiname, attempt to save it.
-
-        Verify someone else doesn't have it already.
-        """
-
-    @action(_("Save Changes"), name="save")
-    def save(self, action, data):
-        """Process the wiki names form."""
-        form = self.request.form
-        for obj in self.context.wiki_names:
-            if form.get('remove_%s' % obj.id):
-                obj.destroySelf()
-
-        if not self.errors:
-            wikiurl = self._sanitizeWikiURL(data.get('wiki'))
-            wikiname = data.get('wikiname')
-            # If either url or name are present then they both must be
-            # entered.
-            if wikiurl and wikiname:
-                wikinameset = getUtility(IWikiNameSet)
-                wikinameset.new(self.context, wikiurl, wikiname)
 
 
 class PersonEditIRCNicknamesView(LaunchpadFormView):
@@ -3880,7 +3713,7 @@ class PersonEditSSHKeysView(LaunchpadView):
 
         comment = sshkey.comment
         sshkey.destroySelf()
-        self.info_message = structured('Key "%s" removed' % comment)
+        self.info_message = structured('Key "%s" removed', comment)
 
 
 class PersonGPGView(LaunchpadView):
@@ -4120,7 +3953,8 @@ class PersonEditView(BasePersonEditView):
     """The Person 'Edit' page."""
 
     field_names = ['displayname', 'name', 'mugshot', 'homepage_content',
-                   'hide_email_addresses', 'verbose_bugnotifications']
+                   'hide_email_addresses', 'verbose_bugnotifications',
+                   'selfgenerated_bugnotifications']
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
 
     implements(IPersonEditMenu)
@@ -4138,7 +3972,10 @@ class PersonEditView(BasePersonEditView):
         When a user has a PPA renames are prohibited.
         """
         has_ppa_with_published_packages = (
-            self.context.has_ppa_with_published_packages)
+            getUtility(IArchiveSet).getPPAOwnedByPerson(
+                self.context, has_packages=True,
+                statuses=[ArchiveStatus.ACTIVE,
+                          ArchiveStatus.DELETING]) is not None)
         if has_ppa_with_published_packages:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
@@ -4209,6 +4046,8 @@ class PersonEditView(BasePersonEditView):
             removeSecurityProxy(self.context).name = new_name
             del data['name']
         self.updateContextFromData(data)
+        self.request.response.addInfoNotification(
+            'The changes to your personal details have been saved.')
 
 
 class PersonBrandingView(BrandingChangeView):
@@ -4375,8 +4214,8 @@ class TeamAddMyTeamsView(LaunchpadFormView):
     def setUpFields(self):
         terms = []
         for team in self.candidate_teams:
-            text = '<a href="%s">%s</a>' % (
-                canonical_url(team), team.displayname)
+            text = structured(
+                '<a href="%s">%s</a>', canonical_url(team), team.displayname)
             terms.append(SimpleTerm(team, team.name, text))
         self.form_fields = FormFields(
             List(__name__='teams',
@@ -4474,7 +4313,7 @@ class TeamAddMyTeamsView(LaunchpadFormView):
                 team_string = team_names[0]
             elif len(team_names) > 1:
                 verb = 'have been'
-                team_string= (
+                team_string = (
                     ', '.join(team_names[:-1]) + ' and ' + team_names[-1])
             full_message += '%s %s %s' % (team_string, verb, message)
         self.request.response.addInfoNotification(full_message)
@@ -4594,7 +4433,7 @@ class PersonEditEmailsView(LaunchpadFormView):
                    title=_('These addresses are confirmed as being yours'),
                    source=SimpleVocabulary(terms),
                    ),
-            custom_widget = self.custom_widgets['VALIDATED_SELECTED'])
+            custom_widget=self.custom_widgets['VALIDATED_SELECTED'])
 
     def _unvalidated_emails_field(self):
         """Create a field with a vocabulary of unvalidated and guessed emails.
@@ -4616,7 +4455,7 @@ class PersonEditEmailsView(LaunchpadFormView):
         return FormFields(
             Choice(__name__='UNVALIDATED_SELECTED', title=title,
                    source=SimpleVocabulary(terms)),
-            custom_widget = self.custom_widgets['UNVALIDATED_SELECTED'])
+            custom_widget=self.custom_widgets['UNVALIDATED_SELECTED'])
 
     def _mailing_list_subscription_type(self, mailing_list):
         """Return the context user's subscription type for the given list.

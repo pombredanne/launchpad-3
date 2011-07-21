@@ -73,8 +73,8 @@ class BaseMailer:
         """
         to_addresses = self._getToAddresses(recipient, email)
         headers = self._getHeaders(email)
-        subject = self._getSubject(email)
-        body = self._getBody(email)
+        subject = self._getSubject(email, recipient)
+        body = self._getBody(email, recipient)
         ctrl = self._mail_controller_class(
             self.from_address, to_addresses, subject, body, headers,
             envelope_to=[email])
@@ -86,9 +86,10 @@ class BaseMailer:
             self._addAttachments(ctrl, email)
         return ctrl
 
-    def _getSubject(self, email):
+    def _getSubject(self, email, recipient):
         """The subject template expanded with the template params."""
-        return self._subject_template % self._getTemplateParams(email)
+        return (self._subject_template %
+                    self._getTemplateParams(email, recipient))
 
     def _getReplyToAddress(self):
         """Return the address to use for the reply-to header."""
@@ -116,7 +117,7 @@ class BaseMailer:
         """
         pass
 
-    def _getTemplateParams(self, email):
+    def _getTemplateParams(self, email, recipient):
         """Return a dict of values to use in the body and subject."""
         reason, rationale = self._recipients.getReason(email)
         params = {'reason': reason.getReason()}
@@ -129,10 +130,10 @@ class BaseMailer:
         return text_delta(self.delta, self.delta.delta_values,
             self.delta.new_values, self.delta.interface)
 
-    def _getBody(self, email):
+    def _getBody(self, email, recipient):
         """Return the complete body to use for this email."""
         template = get_email_template(self._template_name)
-        params = self._getTemplateParams(email)
+        params = self._getTemplateParams(email, recipient)
         body = template % params
         footer = self._getFooter(params)
         if footer is not None:

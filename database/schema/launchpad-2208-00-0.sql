@@ -11057,4 +11057,6 @@ ALTER TABLE ONLY webserviceban
 ALTER TABLE ONLY wikiname
     ADD CONSTRAINT wikiname_person_fk FOREIGN KEY (person) REFERENCES person(id);
 
+-- debversion datatype, which will be added to production manually
+\i /usr/share/postgresql/8.4/contrib/debversion.sql
 

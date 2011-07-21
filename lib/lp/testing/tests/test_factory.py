@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the Launchpad object factory."""
@@ -6,13 +6,13 @@
 __metaclass__ = type
 
 from datetime import datetime
-import unittest
 
 import pytz
 from testtools.matchers import StartsWith
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -37,6 +37,7 @@ from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingPriority,
     PackagePublishingStatus,
+    PackageUploadCustomFormat,
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuild
@@ -53,6 +54,8 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import IPackageUpload
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
+from lp.soyuz.model.component import ComponentSelection
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import is_security_proxied_or_harmless
 from lp.testing.matchers import (
@@ -400,6 +403,28 @@ class TestFactory(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         self.assertThat(distroseries.displayname, StartsWith("Distroseries"))
 
+    # makeComponentSelection
+    def test_makeComponentSelection_makes_ComponentSelection(self):
+        selection = self.factory.makeComponentSelection()
+        self.assertIsInstance(selection, ComponentSelection)
+
+    def test_makeComponentSelection_uses_distroseries(self):
+        distroseries = self.factory.makeDistroSeries()
+        selection = self.factory.makeComponentSelection(
+            distroseries=distroseries)
+        self.assertEqual(distroseries, selection.distroseries)
+
+    def test_makeComponentSelection_uses_component(self):
+        component = self.factory.makeComponent()
+        selection = self.factory.makeComponentSelection(component=component)
+        self.assertEqual(component, selection.component)
+
+    def test_makeComponentSelection_finds_component(self):
+        component = self.factory.makeComponent()
+        selection = self.factory.makeComponentSelection(
+            component=component.name)
+        self.assertEqual(component, selection.component)
+
     # makeLanguage
     def test_makeLanguage(self):
         # Without parameters, makeLanguage creates a language with code
@@ -426,6 +451,20 @@ class TestFactory(TestCaseWithFactory):
         self.assertTrue(language.code.startswith('lang'))
         # And name is constructed from code as 'Language %(code)s'.
         self.assertEquals('Test language', language.englishname)
+
+    def test_makeLanguage_with_pluralforms(self):
+        # makeLanguage takes a number of plural forms for the language.
+        for number_of_forms in [None, 1, 3]:
+            language = self.factory.makeLanguage(pluralforms=number_of_forms)
+            self.assertEqual(number_of_forms, language.pluralforms)
+            self.assertEqual(
+                number_of_forms is None, language.pluralexpression is None)
+
+    def test_makeLanguage_with_plural_expression(self):
+        expression = '(n+1) % 5'
+        language = self.factory.makeLanguage(
+            pluralforms=5, plural_expression=expression)
+        self.assertEqual(expression, language.pluralexpression)
 
     # makeSourcePackagePublishingHistory
     def test_makeSourcePackagePublishingHistory_returns_ISPPH(self):
@@ -496,6 +535,90 @@ class TestFactory(TestCaseWithFactory):
         ssp = self.factory.makeSuiteSourcePackage()
         self.assertThat(ssp, ProvidesAndIsProxied(ISuiteSourcePackage))
 
+    def test_makeCurrentTranslationMessage_makes_shared_message(self):
+        tm = self.factory.makeCurrentTranslationMessage()
+        self.assertFalse(tm.is_diverged)
+
+    def test_makeCurrentTranslationMessage_makes_diverged_message(self):
+        tm = self.factory.makeCurrentTranslationMessage(diverged=True)
+        self.assertTrue(tm.is_diverged)
+
+    def test_makeCurrentTranslationMessage_makes_current_upstream(self):
+        pofile = self.factory.makePOFile(
+            'ka', potemplate=self.factory.makePOTemplate(
+                productseries=self.factory.makeProductSeries()))
+
+        tm = self.factory.makeCurrentTranslationMessage(pofile=pofile)
+
+        self.assertTrue(tm.is_current_upstream)
+        self.assertFalse(tm.is_current_ubuntu)
+
+    def test_makeCurrentTranslationMessage_makes_current_ubuntu(self):
+        package = self.factory.makeSourcePackage()
+        pofile = self.factory.makePOFile(
+            'kk', self.factory.makePOTemplate(
+                sourcepackagename=package.sourcepackagename,
+                distroseries=package.distroseries))
+
+        tm = self.factory.makeCurrentTranslationMessage(pofile=pofile)
+
+        self.assertFalse(tm.is_current_upstream)
+        self.assertTrue(tm.is_current_ubuntu)
+
+    def test_makeCurrentTranslationMessage_makes_current_tracking(self):
+        tm = self.factory.makeCurrentTranslationMessage(current_other=True)
+
+        self.assertTrue(tm.is_current_upstream)
+        self.assertTrue(tm.is_current_ubuntu)
+
+    def test_makeCurrentTranslationMessage_uses_given_translation(self):
+        translations = [
+            self.factory.getUniqueString(),
+            self.factory.getUniqueString(),
+            ]
+
+        tm = self.factory.makeCurrentTranslationMessage(
+            translations=translations)
+
+        self.assertEqual(
+            translations, [tm.msgstr0.translation, tm.msgstr1.translation])
+        self.assertIs(None, tm.msgstr2)
+
+    def test_makeCurrentTranslationMessage_sets_reviewer(self):
+        reviewer = self.factory.makePerson()
+
+        tm = self.factory.makeCurrentTranslationMessage(reviewer=reviewer)
+
+        self.assertEqual(reviewer, tm.reviewer)
+
+    def test_makeCurrentTranslationMessage_creates_reviewer(self):
+        tm = self.factory.makeCurrentTranslationMessage(reviewer=None)
+
+        self.assertNotEqual(None, tm.reviewer)
+
+    def test_makeDivergedTranslationMessage_upstream(self):
+        pofile = self.factory.makePOFile('ca')
+
+        tm = self.factory.makeDivergedTranslationMessage(pofile=pofile)
+
+        self.assertTrue(tm.is_current_upstream)
+        self.assertFalse(tm.is_current_ubuntu)
+        self.assertTrue(tm.is_diverged)
+        self.assertEqual(pofile.potemplate, tm.potemplate)
+
+    def test_makeDivergedTranslationMessage_ubuntu(self):
+        potemplate = self.factory.makePOTemplate(
+            distroseries=self.factory.makeDistroSeries(),
+            sourcepackagename=self.factory.makeSourcePackageName())
+        pofile = self.factory.makePOFile('eu', potemplate=potemplate)
+
+        tm = self.factory.makeDivergedTranslationMessage(pofile=pofile)
+
+        self.assertTrue(tm.is_current_ubuntu)
+        self.assertFalse(tm.is_current_upstream)
+        self.assertTrue(tm.is_diverged)
+        self.assertEqual(pofile.potemplate, tm.potemplate)
+
     # makeCVE
     def test_makeCVE_returns_cve(self):
         cve = self.factory.makeCVE(sequence='2000-1234')
@@ -513,6 +636,25 @@ class TestFactory(TestCaseWithFactory):
         cve = self.factory.makeCVE(
             sequence='2000-1234', cvestate=CveStatus.DEPRECATED)
         self.assertEqual(CveStatus.DEPRECATED, cve.status)
+
+    # dir() support.
+    def test_dir(self):
+        # LaunchpadObjectFactory supports dir() even though all of its
+        # attributes are pseudo-attributes.
+        self.assertEqual(
+            dir(self.factory._factory),
+            dir(self.factory))
+
+    def test_getUniqueString_with_prefix(self):
+        s = self.factory.getUniqueString("with-my-prefix")
+        self.assertTrue(s.startswith("with-my-prefix"))
+
+    def test_getUniqueString_with_default_prefix(self):
+        # With no name given, the default prefix gives a clue as to the
+        # source location that called it.
+        s = self.factory.getUniqueString()
+        self.assertTrue(s.startswith("unique-from-test-factory-py-line"),
+            s)
 
 
 class TestFactoryWithLibrarian(TestCaseWithFactory):
@@ -596,6 +738,88 @@ class TestFactoryWithLibrarian(TestCaseWithFactory):
         pu = self.factory.makePackageUpload(
             status=PackageUploadStatus.ACCEPTED)
         self.assertEqual(PackageUploadStatus.ACCEPTED, pu.status)
+
+    # makeSourcePackageUpload
+    def test_makeSourcePackageUpload_makes_proxied_IPackageUpload(self):
+        pu = self.factory.makeSourcePackageUpload()
+        self.assertThat(pu, ProvidesAndIsProxied(IPackageUpload))
+
+    def test_makeSourcePackageUpload_creates_source(self):
+        pu = self.factory.makeSourcePackageUpload()
+        self.assertNotEqual([], list(pu.sources))
+
+    def test_makeSourcePackageUpload_passes_on_args(self):
+        distroseries = self.factory.makeDistroSeries()
+        spn = self.factory.makeSourcePackageName()
+        pu = self.factory.makeSourcePackageUpload(
+            distroseries=distroseries, sourcepackagename=spn)
+        spr = list(pu.sources)[0].sourcepackagerelease
+        self.assertEqual(distroseries, pu.distroseries)
+        self.assertEqual(distroseries.distribution, pu.archive.distribution)
+        self.assertEqual(spn, spr.sourcepackagename)
+
+    # makeBuildPackageUpload
+    def test_makeBuildPackageUpload_makes_proxied_IPackageUpload(self):
+        pu = self.factory.makeBuildPackageUpload()
+        self.assertThat(pu, ProvidesAndIsProxied(IPackageUpload))
+
+    def test_makeBuildPackageUpload_creates_build(self):
+        pu = self.factory.makeBuildPackageUpload()
+        self.assertNotEqual([], list(pu.builds))
+
+    def test_makeBuildPackageUpload_passes_on_args(self):
+        distroseries = self.factory.makeDistroSeries()
+        bpn = self.factory.makeBinaryPackageName()
+        pu = self.factory.makeBuildPackageUpload(
+            distroseries=distroseries, binarypackagename=bpn)
+        build = list(pu.builds)[0].build
+        self.assertEqual(distroseries, pu.distroseries)
+        self.assertEqual(distroseries.distribution, pu.archive.distribution)
+        release = IStore(distroseries).find(
+            BinaryPackageRelease, BinaryPackageRelease.build == build).one()
+        self.assertEqual(bpn, release.binarypackagename)
+
+    # makeCustomPackageUpload
+    def test_makeCustomPackageUpload_makes_proxied_IPackageUpload(self):
+        pu = self.factory.makeCustomPackageUpload()
+        self.assertThat(pu, ProvidesAndIsProxied(IPackageUpload))
+
+    def test_makeCustomPackageUpload_creates_custom_file(self):
+        pu = self.factory.makeCustomPackageUpload()
+        self.assertNotEqual([], list(pu.customfiles))
+
+    def test_makeCustomPackageUpload_passes_on_args(self):
+        distroseries = self.factory.makeDistroSeries()
+        custom_type = PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
+        filename = self.factory.getUniqueString()
+        pu = self.factory.makeCustomPackageUpload(
+            distroseries=distroseries, custom_type=custom_type,
+            filename=filename)
+        custom = list(pu.customfiles)[0]
+        self.assertEqual(distroseries, pu.distroseries)
+        self.assertEqual(distroseries.distribution, pu.archive.distribution)
+        self.assertEqual(custom_type, custom.customformat)
+        self.assertEqual(filename, custom.libraryfilealias.filename)
+
+    # makeCopyJobPackageUpload
+    def test_makeCopyJobPackageUpload_makes_proxied_IPackageUpload(self):
+        pu = self.factory.makeCopyJobPackageUpload()
+        self.assertThat(pu, ProvidesAndIsProxied(IPackageUpload))
+
+    def test_makeCopyJobPackageUpload_creates_PackageCopyJob(self):
+        pu = self.factory.makeCopyJobPackageUpload()
+        self.assertIsNot(None, pu.package_copy_job)
+
+    def test_makeCopyJobPackageUpload_passes_on_args(self):
+        distroseries = self.factory.makeDistroSeries()
+        spn = self.factory.makeSourcePackageName()
+        pu = self.factory.makeCopyJobPackageUpload(
+            distroseries=distroseries, sourcepackagename=spn)
+        job = removeSecurityProxy(pu.package_copy_job)
+        self.assertEqual(distroseries, pu.distroseries)
+        self.assertEqual(distroseries.distribution, pu.archive.distribution)
+        self.assertEqual(distroseries, job.target_distroseries)
+        self.assertEqual(spn.name, job.package_name)
 
     # makeSourcePackageReleaseFile
     def test_makeSourcePackageReleaseFile_returns_ISPRF(self):
@@ -705,7 +929,3 @@ class IsSecurityProxiedOrHarmlessTests(TestCaseWithFactory):
             is_security_proxied_or_harmless({1: unproxied_person}))
         self.assertFalse(
             is_security_proxied_or_harmless({unproxied_person: 1}))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

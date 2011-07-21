@@ -98,6 +98,9 @@ try:
 except KeyError:
     pass
 
+# Suppress accessability warning because the test runner does not have UI.
+os.environ['GTK_MODULES'] = ''
+
 # Silence spurious warnings. Note that this does not propagate to subprocesses
 # so this is not always as easy as it seems. Warnings caused by our code that
 # need to be silenced should have an accompanied Bug reference.
@@ -155,8 +158,8 @@ warnings.filterwarnings('error', category=UnicodeWarning)
 # shortlist() raises an error when it is misused.
 warnings.filterwarnings('error', r'shortlist\(\)')
 
-from canonical.ftests import pgsql
-# If this is removed, make sure canonical.ftests.pgsql is updated
+from lp.testing import pgsql
+# If this is removed, make sure lp.testing.pgsql is updated
 # because the test harness there relies on the Connection wrapper being
 # installed.
 pgsql.installFakeConnect()
@@ -169,7 +172,7 @@ defaults = {
     'tests_pattern': '^f?tests$',
     'test_path': [${buildout:directory/lib|path-repr}],
     'package': ['canonical', 'lp', 'devscripts', 'launchpad_loggerhead'],
-    'layer': ['!(MailmanLayer|WindmillLayer)'],
+    'layer': ['!(MailmanLayer)'],
     }
 
 # Monkey-patch os.listdir to randomise the results

@@ -46,7 +46,7 @@ Sample Person and the Landscape team are now subscribed.
     ...     browser.contents, 'Subscribers')).encode(
     ...     'ascii', 'backslashreplace')
     Subscribers
-      To all bugs in mozilla-firefox in ubuntu:
+      To all bugs in mozilla-firefox in Ubuntu:
         Foo Bar
         Landscape Developers
         Sample Person
@@ -65,7 +65,7 @@ Sample Person can also unsubscribe himself and the Landscape team.
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
     >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
     Subscribers
-      To all bugs in mozilla-firefox in ubuntu:
+      To all bugs in mozilla-firefox in Ubuntu:
         Foo Bar
       To all Ubuntu Linux bugs:
         Landscape Developers
@@ -106,13 +106,13 @@ No Privileges Person is now subscribed...
     >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print message.renderContents()
     No Privileges Person will now receive an e-mail each time someone reports
-    or changes a public bug in "mozilla-firefox in ubuntu".
+    or changes a public bug in "mozilla-firefox in Ubuntu".
 
     >>> browser.open(
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
     >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
     Subscribers
-      To all bugs in mozilla-firefox in ubuntu:
+      To all bugs in mozilla-firefox in Ubuntu:
         Foo Bar
         No Privileges Person
       To all Ubuntu Linux bugs:
@@ -129,12 +129,12 @@ No Privileges Person is now subscribed...
     >>> print find_tags_by_class(
     ...    browser.contents, 'informational message')[0].contents[0]
     No Privileges Person will no longer automatically receive e-mail about
-    public bugs in "mozilla-firefox in ubuntu".
+    public bugs in "mozilla-firefox in Ubuntu".
     >>> browser.open(
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
     >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
     Subscribers
-      To all bugs in mozilla-firefox in ubuntu:
+      To all bugs in mozilla-firefox in Ubuntu:
         Foo Bar
       To all Ubuntu Linux bugs:
         Landscape Developers
@@ -160,7 +160,7 @@ purges the submitted form data from now unexpected values.
 
     >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
     Subscribers
-      To all bugs in mozilla-firefox in ubuntu:
+      To all bugs in mozilla-firefox in Ubuntu:
         Foo Bar
       To all Ubuntu Linux bugs:
         Landscape Developers
@@ -174,7 +174,7 @@ purges the submitted form data from now unexpected values.
     ... 'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+subscribe')
     >>> print extract_text(find_portlet(browser.contents, 'Subscribers'))
     Subscribers
-      To all bugs in mozilla-firefox in ubuntu:
+      To all bugs in mozilla-firefox in Ubuntu:
         Foo Bar
       To all Ubuntu Linux bugs:
         Landscape Developers
@@ -194,23 +194,6 @@ the UI elements for the subscription/unsubscription of arbitrary persons.
     ...
     LookupError: label '\xa0Foo Bar'
 
-
-Bug #462742
-===========
-
-Loading pages with the subscription menu works fine for anonymous users, even
-when there are existing subscriptions.
-
-    >>> browser.open('http://launchpad.dev/bzr')
-    >>> browser.getLink('Subscribe to bug mail').click()
-    >>> browser.getControl(
-    ...     'I want to receive these '
-    ...     'notifications by e-mail.').selected = True
-    >>> browser.getControl('Save these changes').click()
-
-    >>> anon_browser.open('http://launchpad.dev/bzr')
-    >>> print anon_browser.title
-    Bazaar Version Control System in Launchpad
 
 Distribution with a bug supervisor
 ==================================

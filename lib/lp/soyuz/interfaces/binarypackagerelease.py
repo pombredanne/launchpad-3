@@ -10,7 +10,6 @@ __metaclass__ = type
 __all__ = [
     'IBinaryPackageRelease',
     'IBinaryPackageReleaseDownloadCount',
-    'IBinaryPackageReleaseSet',
     ]
 
 from lazr.restful.declarations import (
@@ -37,7 +36,7 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.validators.version import valid_debian_version
+from lp.app.validators.version import valid_debian_version
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.soyuz.interfaces.archive import IArchive
 
@@ -45,6 +44,7 @@ from lp.soyuz.interfaces.archive import IArchive
 class IBinaryPackageRelease(Interface):
     id = Int(title=_('ID'), required=True)
     binarypackagename = Int(required=True)
+    binarypackagenameID = Int(required=True)
     version = TextLine(required=True, constraint=valid_debian_version)
     summary = Text(required=True)
     description = Text(required=True)
@@ -109,18 +109,6 @@ class IBinaryPackageRelease(Interface):
         All arguments are optional and can be set individually. A non-passed
         argument remains untouched.
         """
-
-
-class IBinaryPackageReleaseSet(Interface):
-    """A set of binary packages"""
-
-    def findByNameInDistroSeries(distroseries, pattern,
-                                  archtag=None, fti=False):
-        """Returns a set of binarypackagereleases that matchs pattern
-        inside a distroseries"""
-
-    def getByNameInDistroSeries(distroseries, name):
-        """Get an BinaryPackageRelease in a DistroSeries by its name"""
 
 
 class IBinaryPackageReleaseDownloadCount(Interface):

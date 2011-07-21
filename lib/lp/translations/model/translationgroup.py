@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -35,16 +35,13 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from canonical.launchpad.interfaces.lpstorm import ISlaveStore
+from canonical.launchpad.interfaces.lpstorm import (
+    IStore,
+    ISlaveStore,
+    )
 from lp.app.errors import NotFoundError
 from lp.registry.interfaces.person import validate_public_person
-from lp.registry.model.distribution import Distribution
 from lp.registry.model.person import Person
-from lp.registry.model.product import (
-    Product,
-    ProductWithLicenses,
-    )
-from lp.registry.model.projectgroup import ProjectGroup
 from lp.registry.model.teammembership import TeamParticipation
 from lp.services.worlddata.model.language import Language
 from lp.translations.interfaces.translationgroup import (
@@ -112,10 +109,18 @@ class TranslationGroup(SQLBase):
 
     @property
     def products(self):
+        """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.product import Product
+
         return Product.selectBy(translationgroup=self.id, active=True)
 
     @property
     def projects(self):
+        """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.projectgroup import ProjectGroup
+
         return ProjectGroup.selectBy(translationgroup=self.id, active=True)
 
     # A limit of projects to get for the `top_projects`.
@@ -176,11 +181,17 @@ class TranslationGroup(SQLBase):
             Language.id == Translator.languageID,
             Person.id == Translator.translatorID)
         translator_data = translator_data.order_by(Language.englishname)
-        mapper = lambda row:row[slice(0,3)]
+        mapper = lambda row: row[slice(0, 3)]
         return DecoratedResultSet(translator_data, mapper)
 
     def fetchProjectsForDisplay(self):
         """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.product import (
+            Product,
+            ProductWithLicenses,
+            )
+
         using = [
             Product,
             LeftJoin(LibraryFileAlias, LibraryFileAlias.id == Product.iconID),
@@ -205,6 +216,9 @@ class TranslationGroup(SQLBase):
 
     def fetchProjectGroupsForDisplay(self):
         """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.projectgroup import ProjectGroup
+
         using = [
             ProjectGroup,
             LeftJoin(
@@ -227,6 +241,9 @@ class TranslationGroup(SQLBase):
 
     def fetchDistrosForDisplay(self):
         """See `ITranslationGroup`."""
+        # Avoid circular imports.
+        from lp.registry.model.distribution import Distribution
+
         using = [
             Distribution,
             LeftJoin(
@@ -267,10 +284,17 @@ class TranslationGroupSet:
 
     def __getitem__(self, name):
         """See ITranslationGroupSet."""
+        return self.getByName(name)
+
+    def getByName(self, name):
+        """See ITranslationGroupSet."""
         try:
             return TranslationGroup.byName(name)
         except SQLObjectNotFound:
             raise NotFoundError(name)
+
+    def _get(self):
+        return IStore(TranslationGroup).find(TranslationGroup)
 
     def new(self, name, title, summary, translation_guide_url, owner):
         """See ITranslationGroupSet."""

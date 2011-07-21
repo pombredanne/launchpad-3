@@ -69,8 +69,8 @@ def isZopeless():
 _IGNORED = object()
 
 
-def initZopeless(debug=_IGNORED, dbname=None, dbhost=None, dbuser=None,
-                 implicitBegin=_IGNORED, isolation=ISOLATION_LEVEL_DEFAULT):
+def initZopeless(dbname=None, dbhost=None, dbuser=None,
+                 isolation=ISOLATION_LEVEL_DEFAULT):
     """Initialize the Zopeless environment."""
     if dbuser is None:
         # Nothing calling initZopeless should be connecting as the

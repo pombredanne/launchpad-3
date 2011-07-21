@@ -6,8 +6,15 @@
 __metaclass__ = type
 __all__ = ['Packaging', 'PackagingUtil']
 
+from lazr.lifecycle.event import (
+    ObjectCreatedEvent,
+    ObjectDeletedEvent,
+    )
 from sqlobject import ForeignKey
+from zope.component import getUtility
+from zope.event import notify
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
 from canonical.database.constants import (
     DEFAULT,
@@ -16,6 +23,8 @@ from canonical.database.constants import (
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.packaging import (
     IPackaging,
     IPackagingUtil,
@@ -55,6 +64,31 @@ class Packaging(SQLBase):
         return SourcePackage(distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
 
+    def __init__(self, **kwargs):
+        super(Packaging, self).__init__(**kwargs)
+        notify(ObjectCreatedEvent(self))
+
+    def userCanDelete(self):
+        """See `IPackaging`."""
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            return False
+        admin = getUtility(ILaunchpadCelebrities).admin
+        registry_experts = (
+            getUtility(ILaunchpadCelebrities).registry_experts)
+        return (
+            user.inTeam(self.owner) or
+            user.canAccess(self.sourcepackage, 'setBranch') or
+            user.inTeam(registry_experts) or user.inTeam(admin))
+
+    def destroySelf(self):
+        if not self.userCanDelete():
+            raise Unauthorized(
+                'Only the person who created the packaging and package '
+                'maintainers can delete it.')
+        notify(ObjectDeletedEvent(self))
+        super(Packaging, self).destroySelf()
+
 
 class PackagingUtil:
     """Utilities for Packaging."""
@@ -71,11 +105,11 @@ class PackagingUtil:
             raise AssertionError(
                 "A packaging entry for %s in %s already exists." %
                 (sourcepackagename.name, distroseries.name))
-        Packaging(productseries=productseries,
-                  sourcepackagename=sourcepackagename,
-                  distroseries=distroseries,
-                  packaging=packaging,
-                  owner=owner)
+        return Packaging(productseries=productseries,
+                         sourcepackagename=sourcepackagename,
+                         distroseries=distroseries,
+                         packaging=packaging,
+                         owner=owner)
 
     def deletePackaging(self, productseries, sourcepackagename, distroseries):
         """See `IPackaging`."""

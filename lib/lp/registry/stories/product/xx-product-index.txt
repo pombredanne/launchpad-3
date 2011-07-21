@@ -180,7 +180,7 @@ Changing the state to reviewed but not approved results in the project
 being shown as proprietary.
 
     >>> admin_browser.open('http://launchpad.dev/thunderbird/+review-license')
-    >>> admin_browser.getControl(name='field.license_reviewed').value = True
+    >>> admin_browser.getControl(name='field.project_reviewed').value = True
     >>> admin_browser.getControl(name='field.license_approved').value = False
     >>> admin_browser.getControl('Change').click()
 
@@ -380,4 +380,4 @@ the user to select the package.
     ...     name='field.distributionsourcepackage').value = ['pmount']
     >>> user_browser.getControl('Set Ubuntu Package Information').click()
     >>> print_feedback_messages(user_browser.contents)
-    This project was linked to the source package "pmount in ubuntu"
+    This project was linked to the source package "pmount in Ubuntu"

@@ -202,8 +202,7 @@ person set.
     >>> token.is_reviewed
     True
 
-If no oauth_callback is specified, we redirect the user to
-+authorized-token.
+If no oauth_callback is specified, we don't redirect the user.
 
     # Create a new (unreviewed) token.
     >>> token = request_token_for(consumer)
@@ -215,15 +214,17 @@ If no oauth_callback is specified, we redirect the user to
     >>> browser.getControl('Read Anything').click()
 
     >>> browser.url
-    'http://launchpad.dev/+token-authorized?...'
+    'http://launchpad.dev/+authorize-token'
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
     Almost finished ...
     To finish authorizing the application identified as foobar123451432 to
     access Launchpad on your behalf you should go back to the application
     window in which you started the process and inform it that you have done
     your part of the process.
+    See all applications authorized to access Launchpad on your behalf.
 
-If we can't find the token, we will explain that to the user.
+If we can't find the request token (possibly because it was already
+exchanged for an access token), we will explain that to the user.
 
     >>> params = dict(oauth_callback='http://example.com/oauth')
     >>> browser.open(
@@ -233,6 +234,7 @@ If we can't find the token, we will explain that to the user.
     The information provided by the remote application was incorrect or
     incomplete. Because of that we were unable to identify the application
     which would access Launchpad on your behalf.
+    You may have already authorized this application.
     See all applications authorized to access Launchpad on your behalf.
 
     >>> params = dict(
@@ -244,11 +246,12 @@ If we can't find the token, we will explain that to the user.
     The information provided by the remote application was incorrect or
     incomplete. Because of that we were unable to identify the application
     which would access Launchpad on your behalf.
+    You may have already authorized this application.
     See all applications authorized to access Launchpad on your behalf.
 
-The same happens if the token is already reviewed.  Although that's
-probably an indication that the user has already reviewed that token in
-another window/tab so there's no need to worry.
+If the token is already reviewed (perhaps by the same user in another
+window or tab), but has not yet been exchanged for an access token,
+the success message is printed.
 
     # Need to get the token again as it's been changed in another
     # transaction.
@@ -260,9 +263,9 @@ another window/tab so there's no need to worry.
     >>> browser.open(
     ...     "http://launchpad.dev/+authorize-token?%s" % urlencode(params))
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))
-    Request already reviewed
-    This request for accessing Launchpad on your behalf has been
-    reviewed ... ago.
+    Almost finished ...
+    To finish authorizing the application identified as foobar123451432
+    ...
     See all applications authorized to access Launchpad on your behalf.
 
 Desktop integration
@@ -397,6 +400,7 @@ token is approved and has no expiration date.
     The Ubuntu computer called mycomputer now has access to your
     Launchpad account. Within a few seconds, you should be able to
     start using its Launchpad integration features.
+    See all applications authorized to access Launchpad on your behalf.
 
     >>> print token.is_reviewed
     True
@@ -422,6 +426,7 @@ one hour.
     The integration you just authorized will expire in 59 minutes. At
     that time, you'll have to re-authorize mycomputer, if you want to
     keep using its Launchpad integration features.
+    See all applications authorized to access Launchpad on your behalf.
 
     >>> print token.is_reviewed
     True
@@ -481,6 +486,7 @@ cannot be exchanged for an access token.
     You decided against desktop integration
     You decided not to give mycomputer access to your Launchpad
     account. You can always change your mind later.
+    See all applications authorized to access Launchpad on your behalf.
 
     >>> print token.is_reviewed
     True

@@ -53,7 +53,7 @@
             <tal:releasefilesexist condition="release/files">
 
               <div class="top-portlet">
-                <h2 style="font-size: 1.2em;">
+                <h3>
                   <a tal:attributes="href release/fmt:url">
                     <span tal:replace="release/name_with_codename" /> release</a>
                   from the
@@ -62,14 +62,14 @@
                   <span
                      tal:attributes="title release/datereleased/fmt:datetime"
                      tal:content="release/datereleased/fmt:approximatedate" />
-                </h2>
+                </h3>
 
                 <div tal:attributes="id release/version/fmt:css-id/release-information-"
                      tal:condition="python: release.release_notes or release.changelog">
 
-                  <fieldset class="collapsible collapsed" style="padding: 0px;">
+                  <fieldset class="collapsible" style="padding: 0px;">
                     <legend>Release information</legend>
-
+                    <div class="unseen">
                     <div tal:condition="release/release_notes">
                       <strong>Release notes:</strong>
                       <div style="margin-bottom: 0px;"
@@ -87,6 +87,7 @@
                            tal:content="structure release/changelog/fmt:obfuscate-email/fmt:text-to-html">
                         ProductRelease.changelog.
                       </div>
+                  </div>
                   </div>
                   </fieldset>
                 </div>

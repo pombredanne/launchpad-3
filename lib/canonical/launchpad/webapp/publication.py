@@ -56,7 +56,6 @@ from zope.security.management import newInteraction
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.oauth import IOAuthSignedRequest
 import canonical.launchpad.layers as layers
 from canonical.launchpad.readonly import is_read_only
@@ -78,6 +77,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.opstats import OpStats
 from canonical.launchpad.webapp.vhosts import allvhosts
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import (
     IPerson,
     IPersonSet,
@@ -85,6 +85,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.services import features
 from lp.services.features.flags import NullFeatureController
+from lp.services.osutils import open_for_writing
 
 
 METHOD_WRAPPER_TYPE = type({}.__setitem__)
@@ -245,7 +246,8 @@ class LaunchpadBrowserPublication(
         notify(StartRequestEvent(request))
         request._traversalticks_start = tickcount.tickcount()
         threadid = thread.get_ident()
-        threadrequestfile = open('logs/thread-%s.request' % threadid, 'w')
+        threadrequestfile = open_for_writing(
+            'logs/thread-%s.request' % threadid, 'w')
         try:
             request_txt = unicode(request).encode('UTF-8')
         except Exception:
@@ -328,7 +330,17 @@ class LaunchpadBrowserPublication(
         personless account, return the unauthenticated principal.
         """
         auth_utility = getUtility(IPlacelessAuthUtility)
-        principal = auth_utility.authenticate(request)
+        principal = None
+        # +opstats and +haproxy are status URLs that must not query the DB at
+        # all.  This is enforced (see
+        # lib/canonical/launchpad/webapp/dbpolicy.py). If the request is for
+        # one of those two pages, don't even try to authenticate, because we
+        # may fail.  We haven't traversed yet, so we have to sniff the request
+        # this way.  Even though PATH_INFO is always present in real requests,
+        # we need to tread carefully (``get``) because of test requests in our
+        # automated tests.
+        if request.get('PATH_INFO') not in [u'/+opstats', u'/+haproxy']:
+            principal = auth_utility.authenticate(request)
         if principal is None or principal.person is None:
             # This is either an unauthenticated user or a user who
             # authenticated on our OpenID server using a personless account.
@@ -462,7 +474,7 @@ class LaunchpadBrowserPublication(
             'RootObject:OpStats', 'RootObject:+opstats',
             'RootObject:+haproxy'):
             request.features = NullFeatureController()
-            features.per_thread.features = request.features
+            features.install_feature_controller(request.features)
 
         # Calculate the hard timeout: needed because featureflags can be used
         # to control the hard timeout, and they trigger DB access, but our
@@ -705,6 +717,8 @@ class LaunchpadBrowserPublication(
         superclass.endRequest(self, request, object)
 
         da.clear_request_started()
+
+        getUtility(IOpenLaunchBag).clear()
 
         # Maintain operational statistics.
         if getattr(request, '_wants_retry', False):
