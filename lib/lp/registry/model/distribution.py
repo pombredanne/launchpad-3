@@ -704,10 +704,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # we're essentially declaring that we have a better idea of a good
             # high-level query plan than Postgres will.
             query = """
-            WITH teams AS (
-                    SELECT team
+            WITH principals AS (
+                    SELECT team AS id
                         FROM TeamParticipation
                         WHERE TeamParticipation.person = %s
+                    UNION
+                    SELECT %s
                 ), all_branches AS (
             %%s
                 ), private_branches AS (
@@ -719,24 +721,23 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                     FROM all_branches
                     WHERE private
                 ), owned_branch_ids AS (
-                    SELECT id
+                    SELECT private_branches.id
                     FROM private_branches
-                    WHERE owner = %s OR owner IN (SELECT team FROM teams)
+                    JOIN principals ON private_branches.owner = principals.id
                 ), subscribed_branch_ids AS (
                     SELECT private_branches.id
                     FROM private_branches
                     JOIN BranchSubscription
                         ON BranchSubscription.branch = private_branches.id
-                    WHERE BranchSubscription.person = %s OR
-                          BranchSubscription.person IN (
-                            SELECT team FROM teams)
+                    JOIN principals
+                        ON BranchSubscription.person = principals.id
                 )
             SELECT unique_name, last_scanned_id, distro_series_name
             FROM all_branches
             WHERE NOT private OR
                   id IN (SELECT id FROM owned_branch_ids) OR
                   id IN (SELECT id FROM subscribed_branch_ids)
-            """ % sqlvalues(person.id, person.id, person.id)
+            """ % sqlvalues(person.id, person.id)
             query = query % base_query
 
         data = Store.of(self).execute(query + ';')
