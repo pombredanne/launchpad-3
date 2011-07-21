@@ -11,6 +11,7 @@ __all__ = [
 from lazr.delegates import delegates
 from storm import Undef
 from storm.zope.interfaces import IResultSet
+from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 
@@ -170,3 +171,7 @@ class DecoratedResultSet(object):
         return DecoratedResultSet(
             new_result_set, self.result_decorator, self.pre_iter_hook,
             self.slice_info)
+
+    def getPlainResultSet(self):
+        """Return the plain Storm result set."""
+        return self.result_set
