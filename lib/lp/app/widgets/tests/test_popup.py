@@ -71,7 +71,7 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
             'field.test_valid.item', picker_widget.input_id)
         self.assertIsNone(picker_widget.extra_no_results_message)
         markup = picker_widget()
-        self.assertIn("Y.lp.app.picker.make_picker", markup)
+        self.assertIn("Y.lp.app.picker.create", markup)
         self.assertIn('ValidTeamOwner', markup)
 
     def test_widget_fieldname_with_invalid_html_chars(self):
