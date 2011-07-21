@@ -720,15 +720,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                 series.bugtargetdisplayname)
         self.request.response.redirect(canonical_url(self.context))
 
-    def isSeriesTargetableContext(self):
-        """Is the context something that supports Series targeting?
-
-        Returns True or False.
-        """
-        return (
-            IDistroBugTask.providedBy(self.context) or
-            IDistroSeriesBugTask.providedBy(self.context))
-
     @cachedproperty
     def comments(self):
         """Return the bugtask's comments."""
