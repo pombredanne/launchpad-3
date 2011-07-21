@@ -539,12 +539,6 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         script = self.makeScript(args=['--private-ppa', '--distsroot=/tmp'])
         self.assertRaises(OptionValueError, script.validateOptions)
 
-    def test_validateOptions_requires_distro_by_default(self):
-        # Unless --all-derived is given, validateOptions requires the
-        # --distribution option.
-        self.assertRaises(
-            OptionValueError, PublishDistro(test_args=[]).validateOptions)
-
     def test_validateOptions_accepts_all_derived_without_distro(self):
         # If --all-derived is given, the --distribution option is not
         # required.
@@ -559,27 +553,16 @@ class TestPublishDistroMethods(TestCaseWithFactory):
         script = PublishDistro(test_args=['-d', distro.name, '--all-derived'])
         self.assertRaises(OptionValueError, script.validateOptions)
 
-    def test_completeOptions_does_nothing_if_all_derived_specified(self):
-        script = PublishDistro(test_args=['--all-derived'])
-        script.completeOptions()
-        self.assertIs(None, script.options.distribution)
-
-    def test_completeOptions_does_nothing_if_distro_speficied(self):
-        distro_name = self.factory.getUniqueUnicode()
-        script = PublishDistro(test_args=['-d', distro_name])
-        script.completeOptions()
-        self.assertEqual(distro_name, script.options.distribution)
-
-    def test_completeOptions_makes_distribution_default_to_ubuntu(self):
-        script = PublishDistro(test_args=[])
-        script.completeOptions()
-        self.assertEqual("ubuntu", script.options.distribution)
-
     def test_findDistros_finds_selected_distribution(self):
         # findDistros looks up and returns the distribution named on the
         # command line.
         distro = self.makeDistro()
         self.assertEqual([distro], self.makeScript(distro).findDistros())
+
+    def test_findDistro_finds_ubuntu_by_default(self):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.assertContentEqual(
+            [ubuntu], PublishDistro(test_args=[]).findDistros())
 
     def test_findDistros_raises_if_selected_distro_not_found(self):
         # If findDistro can't find the distribution, that's an

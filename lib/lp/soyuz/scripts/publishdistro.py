@@ -170,24 +170,14 @@ class PublishDistro(LaunchpadCronScript):
                 "Can only specify one of partner, ppa, private-ppa, "
                 "copy-archive and primary-debug.")
 
-        if self.options.all_derived:
-            if self.options.distribution is not None:
+        if self.options.all_derived and self.options.distribution is not None:
                 raise OptionValueError(
                     "Specify --distribution or --all-derived, but not both.")
-        else:
-            if self.options.distribution is None:
-                raise OptionValueError(
-                    "Must specify either --distribution or --all-derived.")
 
         for_ppa = (self.options.ppa or self.options.private_ppa)
         if for_ppa and self.options.distsroot:
             raise OptionValueError(
                 "We should not define 'distsroot' in PPA mode!", )
-
-    def completeOptions(self):
-        """After validation, fill in default option values where needed."""
-        if not self.options.all_derived and self.options.distribution is None:
-            self.options.distribution = "ubuntu"
 
     def findDistros(self):
         """Find the selected distribution(s)."""
@@ -310,7 +300,6 @@ class PublishDistro(LaunchpadCronScript):
     def main(self):
         """See `LaunchpadScript`."""
         self.validateOptions()
-        self.completeOptions()
         self.logOptions()
 
         for distribution in self.findDistros():
