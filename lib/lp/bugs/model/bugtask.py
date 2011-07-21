@@ -406,7 +406,7 @@ def BugTaskToBugAdapter(bugtask):
 def validate_target_attribute(self, attr, value):
     """Update the targetnamecache."""
     # Don't update targetnamecache during _init().
-    if self._SO_creating:
+    if self._SO_creating or self._inhibit_target_check:
         return value
     # Determine the new target attributes.
     target_params = dict(
@@ -512,6 +512,8 @@ class BugTask(SQLBase, BugTaskMixin):
         "date_triaged", "date_fix_committed", "date_fix_released",
         "date_left_closed")
     _NON_CONJOINED_STATUSES = (BugTaskStatus.WONTFIX, )
+
+    _inhibit_target_check = False
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     product = ForeignKey(
@@ -1116,8 +1118,13 @@ class BugTask(SQLBase, BugTaskMixin):
             raise IllegalTarget(
                 "Series tasks may only be created by approving nominations.")
 
-        for name, value in flatten_target(target).iteritems():
+        # Inhibit validate_target_attribute, as we can't set them all
+        # atomically, but we know the final result is correct.
+        self._inhibit_target_check = True
+        for name, value in bug_target_to_key(target).iteritems():
             setattr(self, name, value)
+        self._inhibit_target_check = False
+        self.updateTargetNameCache()
 
         # After the target has changed, we need to recalculate the maximum bug
         # heat for the new and old targets.
