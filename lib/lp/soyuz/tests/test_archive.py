@@ -1947,7 +1947,7 @@ class TestSyncSourceFeatureFlag(TestCaseWithFactory):
     def test_copyPackage_requires_feature_flag(self):
         # Ensure feature is off.
         self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": ''}))
-        archive = self.factory.makeArchive()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         self.assertRaises(
             ForbiddenByFeatureFlag,
             archive.copyPackage,
@@ -1956,7 +1956,27 @@ class TestSyncSourceFeatureFlag(TestCaseWithFactory):
     def test_copyPackages_requires_feature_flag(self):
         # Ensure feature is off.
         self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": ''}))
-        archive = self.factory.makeArchive()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertRaises(
+            ForbiddenByFeatureFlag,
+            archive.copyPackages,
+            None, None, None, None, None)
+
+    def test_copyPackage_to_ppa_requires_feature_flag(self):
+        # Ensure feature is off.
+        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": 'on'}))
+        self.useFixture(FeatureFixture({u"soyuz.copypackageppa.enabled": ''}))
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertRaises(
+            ForbiddenByFeatureFlag,
+            archive.copyPackage,
+            None, None, None, None, None)
+
+    def test_copyPackages_to_ppa_requires_feature_flag(self):
+        # Ensure feature is off.
+        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": 'on'}))
+        self.useFixture(FeatureFixture({u"soyuz.copypackageppa.enabled": ''}))
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         self.assertRaises(
             ForbiddenByFeatureFlag,
             archive.copyPackages,
@@ -1970,6 +1990,8 @@ class TestSyncSource(TestCaseWithFactory):
     def setUp(self):
         super(TestSyncSource, self).setUp()
         self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": 'on'}))
+        self.useFixture(
+            FeatureFixture({u"soyuz.copypackageppa.enabled": 'on'}))
 
     def test_security_team_can_copy_to_primary(self):
         # A member of ubuntu-security can use syncSource on any package

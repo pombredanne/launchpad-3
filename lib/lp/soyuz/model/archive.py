@@ -1532,11 +1532,21 @@ class Archive(SQLBase):
             [source], to_pocket, to_series, include_binaries,
             person=person)
 
+    def _checkCopyPackageFeatureFlags(self):
+        """Prevent copyPackage(s) if these conditions are not met."""
+        if not getFeatureFlag(u"soyuz.copypackage.enabled"):
+            raise ForbiddenByFeatureFlag
+        if (self.is_ppa and 
+            not getFeatureFlag(u"soyuz.copypackageppa.enabled")):
+            # We have no way of giving feedback about failed jobs yet,
+            # so this is disabled for now.
+            raise ForbiddenByFeatureFlag(
+                "Not enabled for copying to PPAs yet.")
+
     def copyPackage(self, source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False):
         """See `IArchive`."""
-        if not getFeatureFlag(u"soyuz.copypackage.enabled"):
-            raise ForbiddenByFeatureFlag
+        self._checkCopyPackageFeatureFlags()
 
         # Asynchronously copy a package using the job system.
         pocket = self._text_to_pocket(to_pocket)
@@ -1559,8 +1569,7 @@ class Archive(SQLBase):
     def copyPackages(self, source_names, from_archive, to_pocket,
                      person, to_series=None, include_binaries=None):
         """See `IArchive`."""
-        if not getFeatureFlag(u"soyuz.copypackage.enabled"):
-            raise ForbiddenByFeatureFlag
+        self._checkCopyPackageFeatureFlags()
 
         sources = self._collectLatestPublishedSources(
             from_archive, source_names)
