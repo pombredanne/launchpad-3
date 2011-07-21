@@ -18,7 +18,6 @@ from canonical.launchpad.scripts import (
     )
 
 
-# NB. This script doesn't need to be invoked from sudo.
 PGBOUNCER_INITD = ['sudo', '/etc/init.d/pgbouncer']
 
 
