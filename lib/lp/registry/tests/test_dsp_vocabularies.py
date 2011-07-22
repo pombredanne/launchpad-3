@@ -29,7 +29,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         term = vocabulary.toTerm(dsp.name)
         self.assertEqual(dsp.sourcepackagename.name, term.title)
-        expected_token = '%s-%s' % (dsp.distribution.name, dsp.name)
+        expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
         self.assertEqual(expected_token, term.token)
         self.assertEqual('Not yet built.', term.value)
 
@@ -42,7 +42,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
             distribution=bpph.distroseries.distribution)
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         term = vocabulary.toTerm(spr.sourcepackagename)
-        expected_token = '%s-%s' % (dsp.distribution.name, dsp.name)
+        expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
         self.assertEqual(expected_token, term.token)
         self.assertEqual(bpph.binary_package_name, term.value)
 
@@ -63,7 +63,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         dsp = spr.distrosourcepackage
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         term = vocabulary.toTerm(spr.sourcepackagename)
-        expected_token = '%s-%s' % (dsp.distribution.name, dsp.name)
+        expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
         self.assertEqual(expected_token, term.token)
         self.assertEqual(', '.join(expected_names), term.value)
 

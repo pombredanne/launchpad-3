@@ -2004,7 +2004,7 @@ class DistributionSourcePackageVocabulary:
                 [binary.binary_package_name for binary in binaries])
         else:
             summary = "Not yet built."
-        token = '%s-%s' % (dsp.distribution.name, dsp.name)
+        token = '%s/%s' % (dsp.distribution.name, dsp.name)
         return SimpleTerm(summary, token, dsp.name)
 
     def getTerm(self, spn):
@@ -2059,4 +2059,4 @@ class DistributionSourcePackageVocabulary:
                     SourcePackageName.name.contains_string(search_term),
                     BinaryPackageName.name.contains_string(
                         search_term))).config(distinct=True)
-        return [self.toTerm(spn) for spn in spns]
+        return CountableIterator(spns.count(), spns, self.toTerm)
