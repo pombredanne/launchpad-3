@@ -26,7 +26,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
     api_url,
     launchpadlib_for,
-    person_logged_in,
     TestCaseWithFactory,
     )
 
@@ -162,14 +161,12 @@ class TestGetBranchTipsSecurity(TestCaseWithFactory):
         person = self.factory.makePerson()
         self.assertFalse(  # Double-checking.
             removeSecurityProxy(branch).visibleByUser(person))
-        with person_logged_in(person):
-            self.assertEqual([], distro.getBranchTips())
+        self.assertEqual([], distro.getBranchTips(user=person))
 
     def assertVisible(self, distro, branch, person):
         self.assertTrue(  # Double-checking.
             removeSecurityProxy(branch).visibleByUser(person))
-        with person_logged_in(person):
-            self.assertEqual(1, len(distro.getBranchTips()))
+        self.assertEqual(1, len(distro.getBranchTips(user=person)))
 
     def test_owned_visible(self):
         # If user owns the branch, it is visible.

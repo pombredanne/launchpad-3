@@ -69,7 +69,6 @@ from canonical.launchpad.interfaces.launchpad import (
     IHasMugshot,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.url import urlparse
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -656,9 +655,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
 
-    def getBranchTips(self, since=None):
+    def getBranchTips(self, user=None, since=None):
         """See `IDistribution`."""
-        person = getUtility(ILaunchBag).user
         # This, ignoring privacy issues, is what we want.
         base_query = """
         SELECT Branch.unique_name,
@@ -681,7 +679,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # If "since" was provided, take into account.
             base_query += (
                 '      AND branch.last_scanned > %s\n' % sqlvalues(since))
-        if person is None:
+        if user is None:
             # Now we see just a touch of privacy concerns.
             # If the current user is anonymous, they cannot see any private
             # branches.
@@ -689,8 +687,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # We want to order the results, in part for easier grouping at the
         # end.
         base_query += 'ORDER BY unique_name, last_scanned_id'
-        if (person is None or
-            person.inTeam(getUtility(ILaunchpadCelebrities).admin)):
+        if (user is None or
+            user.inTeam(getUtility(ILaunchpadCelebrities).admin)):
             # Anonymous is already handled above; admins can see everything.
             # In both cases, we can just use the query as it already stands.
             query = base_query
@@ -737,7 +735,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             WHERE NOT private OR
                   id IN (SELECT id FROM owned_branch_ids) OR
                   id IN (SELECT id FROM subscribed_branch_ids)
-            """ % sqlvalues(person.id, person.id)
+            """ % sqlvalues(user.id, user.id)
             query = query % base_query
 
         data = Store.of(self).execute(query + ';')
