@@ -1008,7 +1008,8 @@ class IArchiveView(IHasBuildRecords):
         :param version: source version filter (always exact match).
         :param status: `PackagePublishingStatus` filter, can be a sequence.
         :param distroseries: `IDistroSeries` filter.
-        :param pocket: `PackagePublishingPocket` filter.
+        :param pocket: `PackagePublishingPocket` filter.  This may be an
+            iterable of more than one pocket or a single pocket.
         :param exact_match: either or not filter source names by exact
                              matching.
         :param created_since_date: Only return results whose `date_created`
