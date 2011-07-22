@@ -857,15 +857,15 @@ class DistroSeriesDifferenceMixin:
         return (derived_series, parent_series)
 
 
-class TestDistroSeriesLocalDifferences(
+class TestDistroSeriesLocalDifferences_WRONG_LAYER(
     DistroSeriesDifferenceMixin, TestCaseWithFactory):
     """Test the distroseries +localpackagediffs page."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        super(TestDistroSeriesLocalDifferences,
-              self).setUp('foo.bar@canonical.com')
+        sup = super(TestDistroSeriesLocalDifferences_WRONG_LAYER, self)
+        sup.setUp('foo.bar@canonical.com')
         set_derived_series_ui_feature_flag(self)
         self.simple_user = self.factory.makePerson()
 
@@ -1076,8 +1076,8 @@ class TestDistroSeriesLocalDiffPerformance(TestCaseWithFactory,
         self._assertQueryCount(derived_series)
 
 
-class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
-                                               DistroSeriesDifferenceMixin):
+class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
+                                       DistroSeriesDifferenceMixin):
     """Test the distroseries +localpackagediffs view."""
 
     layer = LaunchpadFunctionalLayer
@@ -1476,12 +1476,6 @@ class TestDistroSeriesLocalDifferencesZopeless(TestCaseWithFactory,
         self.assertThat(
             recorder2,
             HasQueryCount(Equals(recorder1.count)))
-
-
-class TestDistroSeriesLocalDifferencesFunctional(TestCaseWithFactory,
-                                                 DistroSeriesDifferenceMixin):
-
-    layer = LaunchpadFunctionalLayer
 
     def makeDSDJob(self, dsd):
         """Create a `DistroSeriesDifferenceJob` to update `dsd`."""
