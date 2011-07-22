@@ -91,6 +91,7 @@ from lp.testing import (
     login,
     login_celebrity,
     login_person,
+    normalize_whitespace,
     person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -1359,8 +1360,27 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         [creator_cell] = root.cssselect(
             "table.listing tbody td.last-changed-by")
         self.assertEqual(
-            dsd.source_package_release.creator.displayname,
-            creator_cell.find("a").text)
+            "a moment ago by %s" % (
+                dsd.source_package_release.creator.displayname,),
+            normalize_whitespace(creator_cell.text_content()))
+
+    def test_diff_row_shows_spr_creator_and_uploader_if_different(self):
+        # When the SPR creator and uploader are different both are named on
+        # each difference row.
+        set_derived_series_ui_feature_flag(self)
+        dsd = self.makePackageUpgrade()
+        uploader = self.factory.makePerson()
+        removeSecurityProxy(dsd.source_package_release).dscsigningkey = (
+            self.factory.makeGPGKey(uploader))
+        view = self.makeView(dsd.derived_series)
+        root = html.fromstring(view())
+        [creator_cell] = root.cssselect(
+            "table.listing tbody td.last-changed-by")
+        self.assertEqual(
+            "a moment ago by %s (uploaded by %s)" % (
+                dsd.source_package_release.creator.displayname,
+                dsd.source_package_release.dscsigningkey.owner.displayname),
+            normalize_whitespace(creator_cell.text_content()))
 
     def test_getUpgrades_shows_updates_in_parent(self):
         # The view's getUpgrades methods lists packages that can be
@@ -2267,6 +2287,28 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
         self.assertEqual(
             dsd.parent_source_package_release.creator.displayname,
             creator_cell.find("a").text)
+
+    def test_diff_row_shows_spr_creator_and_uploader_if_different(self):
+        # When the SPR creator and uploader are different both are named on
+        # each difference row.
+        missing_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        dsd = self.factory.makeDistroSeriesDifference(
+            difference_type=missing_type)
+        uploader = self.factory.makePerson()
+        removeSecurityProxy(dsd.parent_source_package_release).dscsigningkey = (
+            self.factory.makeGPGKey(uploader))
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                dsd.derived_series, '+missingpackages',
+                principal=self.simple_user)
+            root = html.fromstring(view())
+        [creator_cell] = root.cssselect(
+            "table.listing tbody td.last-changed-by")
+        self.assertEqual(
+            "a moment ago by %s (uploaded by %s)" % (
+                dsd.parent_source_package_release.creator.displayname,
+                dsd.parent_source_package_release.dscsigningkey.owner.displayname),
+            normalize_whitespace(creator_cell.text_content()))
 
 
 class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory,
