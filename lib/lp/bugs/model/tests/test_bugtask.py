@@ -1746,6 +1746,14 @@ class TestTransitionToTarget(TestCaseWithFactory):
             distroseries=series, sourcepackagename=dsp.sourcepackagename)
         self.assertTransitionForbidden(dsp, sp)
 
+    def test_cannot_transition_to_sourcepackage_in_different_series(self):
+        distro = self.factory.makeDistribution()
+        ds1 = self.factory.makeDistroSeries(distribution=distro)
+        sp1 = self.factory.makeSourcePackage(distroseries=ds1)
+        ds2 = self.factory.makeDistroSeries(distribution=distro)
+        sp2 = self.factory.makeSourcePackage(distroseries=ds2)
+        self.assertTransitionForbidden(sp1, sp2)
+
 
 class TestBugTargetKeys(TestCaseWithFactory):
     """Tests for bug_target_to_key and bug_target_from_key."""
