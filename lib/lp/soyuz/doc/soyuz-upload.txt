@@ -517,7 +517,7 @@ Invoke Publisher script against the 'ubuntutest' distribution:
     >>> print stdout
     <BLANKLINE>
     >>> print stderr
-    DEBUG   Initializing zopeless.
+    DEBUG Enabled by DEFAULT section
     DEBUG     Distribution: ubuntutest
     ...
     DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz from library
@@ -615,7 +615,7 @@ already marked as published in the database and, if the files are
 already on disk, verify the contents are as expected.
 
     >>> print stderr
-    DEBUG   Initializing zopeless.
+    DEBUG Enabled by DEFAULT section
     DEBUG     Distribution: ubuntutest
     ...
     DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz is already in pool with the same content.
