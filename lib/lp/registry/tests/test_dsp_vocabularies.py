@@ -88,7 +88,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
             context=spph.distroseries.distribution)
         results = vocabulary.searchForTerms(query=spph.source_package_name)
         self.assertTermsEqual(
-            vocabulary.toTerm(spph.source_package_name), results[0])
+            vocabulary.toTerm(spph.source_package_name), list(results)[0])
 
     def test_searchForTerms_unpublished_source(self):
         # If the source package name isn't published in the distribution,
@@ -117,7 +117,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
             context=distribution)
         spn = bpph.binarypackagerelease.build.source_package_release.name
         results = vocabulary.searchForTerms(query=bpph.binary_package_name)
-        self.assertTermsEqual(vocabulary.toTerm(spn), results[0])
+        self.assertTermsEqual(vocabulary.toTerm(spn), list(results)[0])
 
     def test_searchForTerms_published_multiple_binaries(self):
         # Searching for a subset of a binary package name returns the SPN
@@ -138,4 +138,4 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         vocabulary = DistributionSourcePackageVocabulary(
             context=das.distroseries.distribution)
         results = vocabulary.searchForTerms(query='xorg-se')
-        self.assertTermsEqual(vocabulary.toTerm(spn), results[0])
+        self.assertTermsEqual(vocabulary.toTerm(spn), list(results)[0])
