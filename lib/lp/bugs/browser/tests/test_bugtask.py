@@ -3,6 +3,8 @@
 
 __metaclass__ = type
 
+import transaction
+
 from datetime import datetime
 
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -147,6 +149,39 @@ class TestBugTaskView(TestCaseWithFactory):
         self.assertEqual(1, len(view.interesting_activity))
         [activity] = view.interesting_activity
         self.assertEqual("description", activity.whatchanged)
+
+    def test_error_for_changing_target_with_invalid_status(self):
+        # If a user moves a bug task with a restricted status (say,
+        # Triaged) to a target where they do not have permission to set
+        # that status, they will be unable to complete the retargeting
+        # and will instead receive an error in the UI.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            name='product1', owner=person, official_malone=True)
+        with person_logged_in(person):
+            product.setBugSupervisor(person, person)
+        product_2 = self.factory.makeProduct(
+            name='product2', official_malone=True)
+        with person_logged_in(product_2.owner):
+            product_2.setBugSupervisor(product_2.owner, product_2.owner)
+        bug = self.factory.makeBug(
+            product=product, owner=person)
+        # We need to commit here, otherwise all the sample data we
+        # created gets destroyed when the transaction is rolled back.
+        transaction.commit()
+        with person_logged_in(person):
+            form_data = {
+                '%s.product' % product.name: product_2.name,
+                '%s.status' % product.name: BugTaskStatus.TRIAGED.title,
+                '%s.actions.save' % product.name: 'Save Changes',
+                }
+            view = create_initialized_view(
+                bug.default_bugtask, name=u'+editstatus',
+                form=form_data)
+            # The bugtask's target won't have changed, since an error
+            # happend. The error will be listed in the view.
+            self.assertEqual(1, len(view.errors))
+            self.assertEqual(product, bug.default_bugtask.target)
 
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):

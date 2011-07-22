@@ -111,6 +111,12 @@ class BazaarBranchStore:
         target_control.create_prefix()
         remote_bzr_dir.transport.copy_tree_to_transport(target_control)
         local_bzr_dir = BzrDir.open_from_transport(target)
+        if local_bzr_dir.needs_format_conversion(format=required_format):
+            try:
+                local_bzr_dir.root_transport.delete_tree('backup.bzr')
+            except NoSuchFile:
+                pass
+            upgrade(target_path, required_format, clean_up=True)
         if needs_tree:
             local_bzr_dir.create_workingtree()
         return local_bzr_dir.open_branch()
