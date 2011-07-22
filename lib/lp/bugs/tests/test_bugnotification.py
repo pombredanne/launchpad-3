@@ -13,7 +13,6 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from storm.store import Store
 from testtools.matchers import Not
-from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
