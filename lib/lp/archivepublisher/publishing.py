@@ -364,7 +364,7 @@ class Publisher(object):
         for spp in distroseries.getSourcePackagePublishing(
             PackagePublishingStatus.PUBLISHED, pocket=pocket,
             component=component, archive=self.archive):
-            stanza = spp.getIndexStanza().encode('utf8') + '\n\n'
+            stanza = spp.getIndexStanza().encode('utf8') + '\n'
             source_index.write(stanza)
 
         source_index.close()

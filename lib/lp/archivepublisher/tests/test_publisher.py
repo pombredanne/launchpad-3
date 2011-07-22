@@ -609,6 +609,7 @@ class TestPublisher(TestPublisherBase):
              ' My leading spaces are normalised to a single space but not '
              'trailing.  ',
              ' It does nothing, though',
+             '',
              ''],
             index_contents)
 
@@ -640,6 +641,7 @@ class TestPublisher(TestPublisherBase):
              'SHA1: 30b7b4e583fa380772c5a40e428434628faef8cf',
              'Description: Foo app is great',
              ' nice udeb',
+             '',
              ''],
             index_contents)
 
