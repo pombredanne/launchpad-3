@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -748,6 +748,13 @@ class IDistributionSet(Interface):
             its keys being `IDistribution` and its values a list of
             `ISourcePackageName`.
         :return: A dict as per `IDistribution.getCurrentSourceReleases`
+        """
+
+    def getDerivedDistributions():
+        """Find derived distributions.
+
+        :return: An iterable of all derived distributions (not including
+            Ubuntu, even if it is technically derived from Debian).
         """
 
 

@@ -4,7 +4,6 @@
 """Test process-accepted.py"""
 
 from cStringIO import StringIO
-from zope.component import getUtility
 
 from canonical.launchpad.interfaces.lpstorm import IStore
 from debian.deb822 import Changes
@@ -14,7 +13,6 @@ from testtools.matchers import LessThan
 from canonical.config import config
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import LaunchpadZopelessLayer
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import BufferLogger
 from lp.services.scripts.base import LaunchpadScriptFailure
@@ -223,32 +221,7 @@ class TestProcessAccepted(TestCaseWithFactory):
         dsp = self.factory.makeDistroSeriesParent()
         script = ProcessAccepted(test_args=['--derived'])
         self.assertIn(
-            dsp.derived_series.distribution, script.findDerivedDistros())
-
-    def test_findDerivedDistros_for_derived_ignores_non_derived_distros(self):
-        distro = self.factory.makeDistribution()
-        script = ProcessAccepted(test_args=['--derived'])
-        self.assertNotIn(distro, script.findDerivedDistros())
-
-    def test_findDerivedDistros_ignores_ubuntu_even_if_derived(self):
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self.factory.makeDistroSeriesParent(
-            derived_series=ubuntu.currentseries)
-        script = ProcessAccepted(test_args=['--derived'])
-        self.assertNotIn(ubuntu, script.findDerivedDistros())
-
-    def test_findDerivedDistros_finds_each_distro_just_once(self):
-        # Derived distros are not duplicated in the output of
-        # findDerivedDistros, even if they have multiple parents and
-        # multiple derived series.
-        dsp = self.factory.makeDistroSeriesParent()
-        distro = dsp.derived_series.distribution
-        other_series = self.factory.makeDistroSeries(distribution=distro)
-        self.factory.makeDistroSeriesParent(derived_series=other_series)
-        script = ProcessAccepted(test_args=['--derived'])
-        derived_distros = list(script.findDerivedDistros())
-        self.assertEqual(
-            1, derived_distros.count(dsp.derived_series.distribution))
+            dsp.derived_series.distribution, script.findTargetDistros())
 
 
 class TestBugsFromChangesFile(TestCaseWithFactory):
