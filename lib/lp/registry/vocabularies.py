@@ -1994,13 +1994,12 @@ class DistributionSourcePackageVocabulary:
             except TypeError:
                 self.distribution = None
 
-    def __contains__(self, obj):
-        # XXX sinzui 2011-07-21: This could be a real db lookup, but this
-        # hack does imply we know if there is publishing history.
-        term = self.toTerm(obj)
-        if term.title == "Not yet built.":
+    def __contains__(self, spn_or_dsp):
+        try:
+            self.toTerm(spn_or_dsp)
+            return True
+        except LookupError:
             return False
-        return True
 
     def __iter__(self):
         pass
@@ -2021,30 +2020,29 @@ class DistributionSourcePackageVocabulary:
             distribution = self.distribution
         return distribution, text
 
-    def toTerm(self, spn, distribution=None):
+    def toTerm(self, spn_or_dsp, distribution=None):
         """See `IVocabulary`."""
-        distribution = distribution or self.distribution
-        if distribution is None or spn is None:
-            # XXX sinzui 2011-07-21: Maybe this should raise a LookupError?
-            return
-        dsp = distribution.getSourcePackage(spn)
-        if dsp.publishing_history:
+        dsp = None
+        if IDistributionSourcePackage.providedBy(spn_or_dsp):
+            dsp = spn_or_dsp
+            distribution = spn_or_dsp.distribution
+        else:
+            distribution = distribution or self.distribution
+            if distribution is not None and spn_or_dsp is not None:
+                dsp = distribution.getSourcePackage(spn_or_dsp)
+        if dsp and dsp.publishing_history:
             binaries = dsp.publishing_history[0].getBuiltBinaries()
             summary = ', '.join(
                 [binary.binary_package_name for binary in binaries])
-        else:
-            # XXX sinzui 2011-07-21: is this a false spn? This should not
-            # repeat the mistakes of SPNV where the user is shown an
-            # impossible choice. This case might be a LookupError.
-            # __contains__ uses this value to determine that the spn
-            # is false.
-            summary = "Not yet built."
-        token = '%s/%s' % (dsp.distribution.name, dsp.name)
-        return SimpleTerm(dsp.sourcepackagename, token, summary)
+            token = '%s/%s' % (dsp.distribution.name, dsp.name)
+            return SimpleTerm(dsp.sourcepackagename, token, summary)
+        # Without SPPH (pending, published, superceeded, deleted)
+        # This SPN was never excepted by one of the distribution's series.
+        raise LookupError(distribution, spn_or_dsp)
 
-    def getTerm(self, spn):
+    def getTerm(self, spn_or_dsp):
         """See `IBaseVocabulary`."""
-        return self.toTerm(spn)
+        return self.toTerm(spn_or_dsp)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
