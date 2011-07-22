@@ -1943,18 +1943,23 @@ class TestGetPublishedSources(TestCaseWithFactory):
         # Passing an iterable of pockets should return publications
         # with any of them in.
         distroseries =  self.factory.makeDistroSeries()
-        for pocket in [
-            PackagePublishingPocket.RELEASE, PackagePublishingPocket.UPDATES,
-            PackagePublishingPocket.BACKPORTS]:
+        pockets = [
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.UPDATES,
+            PackagePublishingPocket.BACKPORTS,
+            ]
+        for pocket in pockets:
             self.factory.makeSourcePackagePublishingHistory(
                 sourcepackagename=pocket.name.lower(),
                 distroseries=distroseries,
                 archive=distroseries.main_archive,
                 pocket=pocket)
+        required_pockets = [
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.UPDATES,
+            ]
         filtered = distroseries.main_archive.getPublishedSources(
-            pocket=[
-                PackagePublishingPocket.RELEASE,
-                PackagePublishingPocket.UPDATES])
+            pocket=required_pockets)
 
         self.assertContentEqual(
             [PackagePublishingPocket.RELEASE, PackagePublishingPocket.UPDATES],
