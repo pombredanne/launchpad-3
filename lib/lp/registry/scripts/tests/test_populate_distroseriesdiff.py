@@ -444,7 +444,9 @@ class TestPopulateDistroSeriesDiff(TestCaseWithFactory, FactoryHelper):
     def test_creates_distroseriesdifference(self):
         dsp = self.makeDerivedDistroSeries()
         spph = self.makeSPPH(distroseries=dsp.derived_series)
-        populate_distroseriesdiff(dsp.derived_series, dsp.parent_series)
+        logger = DevNullLogger()
+        populate_distroseriesdiff(
+            logger, dsp.derived_series, dsp.parent_series)
         dsd = self.getDistroSeriesDiff(dsp.derived_series).one()
         spr = spph.sourcepackagerelease
         self.assertEqual(spr.sourcepackagename, dsd.source_package_name)

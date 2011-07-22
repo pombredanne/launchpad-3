@@ -155,13 +155,12 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         dsdjob = create_job(dsp.derived_series, package, dsp.parent_series)
         self.assertEqual(JobStatus.WAITING, dsdjob.job.status)
 
-    def createSPPHs(self, derived_series, archive, nb_spph=10):
+    def createSPPHs(self, derived_series, nb_spph=10):
         res_spph = []
         for i in xrange(nb_spph):
             packagename = self.factory.makeSourcePackageName()
             spph = self.factory.makeSourcePackagePublishingHistory(
                 sourcepackagename=packagename,
-                archive=archive,
                 distroseries=derived_series,
                 pocket=PackagePublishingPocket.RELEASE)
             res_spph.append(spph)
@@ -170,10 +169,9 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
 
     def test_create_multiple_jobs_structure(self):
         dsp = self.factory.makeDistroSeriesParent()
-        spph = self.createSPPHs(
-            dsp.derived_series, dsp.derived_series.main_archive, 1)[0]
+        spph = self.createSPPHs(dsp.derived_series, 1)[0]
         job_ids = create_multiple_jobs(
-            dsp.derived_series, dsp.parent_series, archive=dsp.derived_series.main_archive)
+            dsp.derived_series, dsp.parent_series)
         job = bulk.load(DistributionJob, job_ids)[0]
 
         sourcepackagenameid = spph.sourcepackagerelease.sourcepackagename.id
@@ -188,23 +186,19 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
 
     def test_create_multiple_jobs_ignore_other_series(self):
         dsp = self.factory.makeDistroSeriesParent()
-        spphs = self.createSPPHs(
-            dsp.derived_series, dsp.derived_series.main_archive)
+        spphs = self.createSPPHs(dsp.derived_series)
 
         # Create other SPPHs ...
         dsp2 = self.factory.makeDistroSeriesParent()
-        self.createSPPHs(
-            dsp2.derived_series, dsp2.derived_series.main_archive)
+        self.createSPPHs(dsp2.derived_series)
 
         # ... and some more.
         dsp3 = self.factory.makeDistroSeriesParent(
             parent_series=dsp.parent_series)
-        self.createSPPHs(
-            dsp3.derived_series, dsp3.derived_series.main_archive)
+        self.createSPPHs(dsp3.derived_series)
 
         job_ids = create_multiple_jobs(
-            dsp.derived_series, dsp.parent_series,
-            archive=dsp.derived_series.main_archive)
+            dsp.derived_series, dsp.parent_series)
         jobs = bulk.load(DistributionJob, job_ids)
 
         self.assertContentEqual(
@@ -214,11 +208,9 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
 
     def test_create_multiple_jobs_creates_waiting_jobs(self):
         dsp = self.factory.makeDistroSeriesParent()
-        self.createSPPHs(
-            dsp.derived_series, dsp.derived_series.main_archive, 1)
+        self.createSPPHs(dsp.derived_series, 1)
         job_ids = create_multiple_jobs(
-            dsp.derived_series, dsp.parent_series,
-            archive=dsp.derived_series.main_archive)
+            dsp.derived_series, dsp.parent_series)
         dsdjob = bulk.load(DistributionJob, job_ids)[0]
 
         self.assertEqual(JobStatus.WAITING, dsdjob.job.status)
@@ -325,12 +317,10 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
 
     def test_massCreateForSeries_obeys_feature_flag(self):
         dsp = self.factory.makeDistroSeriesParent()
-        spph = self.createSPPHs(
-            dsp.derived_series, dsp.derived_series.main_archive, 1)[0]
+        spph = self.createSPPHs(dsp.derived_series, 1)[0]
         self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: ''}))
         self.getJobSource().massCreateForSeries(
-            dsp.derived_series, dsp.parent_series,
-            dsp.derived_series.main_archive)
+            dsp.derived_series, dsp.parent_series)
 
         self.assertContentEqual(
             [],
@@ -622,7 +612,6 @@ class TestDistroSeriesDifferenceJobEndToEnd(TestCaseWithFactory):
         self.assertEqual(
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
             ds_diff[0].status)
-
 
     def test_child_is_synced(self):
         # If the source package gets 'synced' to the child from the parent,
