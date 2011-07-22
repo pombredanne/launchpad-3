@@ -556,12 +556,11 @@ class Archive(SQLBase):
         if pocket is not None:
             try:
                 pockets = tuple(pocket)
-                storm_clauses.append(
-                    "SourcePackagePublishingHistory.pocket IN %s " %
-                       sqlvalues(pockets))
             except TypeError:
-                storm_clauses.append(
-                    SourcePackagePublishingHistory.pocket == pocket)
+                pockets = (pocket,)
+            storm_clauses.append(
+                "SourcePackagePublishingHistory.pocket IN %s " %
+                   sqlvalues(pockets))
 
         if created_since_date is not None:
             clauses.append(
