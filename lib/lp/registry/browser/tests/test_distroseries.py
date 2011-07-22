@@ -2295,8 +2295,8 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
         dsd = self.factory.makeDistroSeriesDifference(
             difference_type=missing_type)
         uploader = self.factory.makePerson()
-        removeSecurityProxy(dsd.parent_source_package_release).dscsigningkey = (
-            self.factory.makeGPGKey(uploader))
+        naked_spr = removeSecurityProxy(dsd.parent_source_package_release)
+        naked_spr.dscsigningkey = self.factory.makeGPGKey(uploader)
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
                 dsd.derived_series, '+missingpackages',
@@ -2304,10 +2304,11 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
             root = html.fromstring(view())
         [creator_cell] = root.cssselect(
             "table.listing tbody td.last-changed-by")
+        parent_spr = dsd.parent_source_package_release
         self.assertEqual(
             "a moment ago by %s (uploaded by %s)" % (
-                dsd.parent_source_package_release.creator.displayname,
-                dsd.parent_source_package_release.dscsigningkey.owner.displayname),
+                parent_spr.creator.displayname,
+                parent_spr.dscsigningkey.owner.displayname),
             normalize_whitespace(creator_cell.text_content()))
 
 
