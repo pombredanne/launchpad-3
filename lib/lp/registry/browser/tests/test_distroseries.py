@@ -1349,6 +1349,19 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertEqual(versions['derived'], derived_span[0].string.strip())
         self.assertEqual(versions['parent'], parent_span[0].string.strip())
 
+    def test_diff_row_shows_spr_creator(self):
+        # The SPR creator (i.e. who make the package change, rather than the
+        # uploader) is shown on each difference row.
+        set_derived_series_ui_feature_flag(self)
+        dsd = self.makePackageUpgrade()
+        view = self.makeView(dsd.derived_series)
+        root = html.fromstring(view())
+        [creator_cell] = root.cssselect(
+            "table.listing tbody td.last-changed-by")
+        self.assertEqual(
+            dsd.source_package_release.creator.displayname,
+            creator_cell.find("a").text)
+
     def test_getUpgrades_shows_updates_in_parent(self):
         # The view's getUpgrades methods lists packages that can be
         # trivially upgraded: changed in the parent, not changed in the
@@ -2207,7 +2220,7 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
                                               DistroSeriesDifferenceMixin):
     """Test the distroseries +missingpackages page."""
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
         super(DistroSeriesMissingPackagesPageTestCase,
@@ -2237,6 +2250,23 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
         self._test_packagesets(
             html_content, packageset_text, 'parent-packagesets',
             'Parent packagesets')
+
+    def test_diff_row_shows_spr_creator(self):
+        # The parent SPR creator (i.e. who make the package change, rather
+        # than the uploader) is shown on each difference row.
+        missing_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        dsd = self.factory.makeDistroSeriesDifference(
+            difference_type=missing_type)
+        with person_logged_in(self.simple_user):
+            view = create_initialized_view(
+                dsd.derived_series, '+missingpackages',
+                principal=self.simple_user)
+            root = html.fromstring(view())
+        [creator_cell] = root.cssselect(
+            "table.listing tbody td.last-changed-by")
+        self.assertEqual(
+            dsd.parent_source_package_release.creator.displayname,
+            creator_cell.find("a").text)
 
 
 class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory,
