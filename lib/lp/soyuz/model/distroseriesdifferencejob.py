@@ -83,8 +83,7 @@ def create_job(derived_series, sourcepackagename, parent_series=None):
     return DistroSeriesDifferenceJob(job)
 
 
-def create_multiple_jobs(derived_series, parent_series, archive,
-                         names=None):
+def create_multiple_jobs(derived_series, parent_series):
     """Create a `DistroSeriesDifferenceJob` for all the source packages in
     archive (optionally limited to the sourcepackagenames passed).
 
@@ -93,18 +92,7 @@ def create_multiple_jobs(derived_series, parent_series, archive,
     :param parent_series: A `DistroSeries` that is a parent of
         `derived_series`.
     :param archive: A `IArchive` where to find the source packages.
-    :param names: An optinal list of source package names to limit
-        the jobs to be created. None means create jobs for all the
-        publications in the archive.
     """
-    names_filter = []
-    if names is not None:
-        names_filter = (
-            SourcePackagePublishingHistory.sourcepackagerelease ==
-                SourcePackageRelease.id,
-            SourcePackageRelease.sourcepackagename ==
-                SourcePackageName.id,
-            SourcePackageName.name.is_in(names))
     store = IStore(SourcePackageRelease)
     source_package_releases = store.find(
         SourcePackageRelease,
@@ -112,10 +100,8 @@ def create_multiple_jobs(derived_series, parent_series, archive,
             SourcePackagePublishingHistory.sourcepackagerelease ==
                 SourcePackageRelease.id,
             SourcePackagePublishingHistory.distroseries == derived_series.id,
-            SourcePackagePublishingHistory.archive == archive.id,
             SourcePackagePublishingHistory.status.is_in(
-                active_publishing_status)),
-            *names_filter)
+                active_publishing_status)))
     nb_jobs = source_package_releases.count()
     sourcepackagenames = source_package_releases.values(
         SourcePackageRelease.sourcepackagenameID)
@@ -245,11 +231,11 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
         return jobs
 
     @classmethod
-    def massCreateForSeries(cls, derived_series, parent_series, archive, names=None):
+    def massCreateForSeries(cls, derived_series, parent_series):
         """See `IDistroSeriesDifferenceJobSource`."""
         if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
             return
-        create_multiple_jobs(derived_series, parent_series, archive, names)
+        create_multiple_jobs(derived_series, parent_series)
 
     @classmethod
     def getPendingJobsForDifferences(cls, derived_series,

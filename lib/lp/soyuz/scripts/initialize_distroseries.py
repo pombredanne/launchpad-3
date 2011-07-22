@@ -214,6 +214,7 @@ class InitializeDistroSeries:
         self._copy_architectures()
         self._copy_packages()
         self._copy_packagesets()
+        self._create_dsds()
         self._set_initialized()
         transaction.commit()
 
@@ -253,7 +254,7 @@ class InitializeDistroSeries:
                 self.distroseries.previous_series)]
         return set(previous_series_parents) == set(self.parents)
 
-    def _create_dsds(self, archive, names=None):
+    def _create_dsds(self):
         if not self.first_derivation:
             if (self._has_same_parents_as_previous_series() and
                 not self.packagesets):
@@ -267,10 +268,10 @@ class InitializeDistroSeries:
                 # previous_series's parents) or a selection only of the
                 # packagesets is being copied so we have to recompute
                 # the DSDs by creating DSD Jobs.
-                self._create_dsd_jobs(archive, names)
+                self._create_dsd_jobs()
         else:
             # If this is the first derivation, create the DSD Jobs.
-            self._create_dsd_jobs(archive, names)
+            self._create_dsd_jobs()
 
     def _copy_dsds_from_previous_series(self):
         self._store.execute("""
@@ -290,11 +291,10 @@ class InitializeDistroSeries:
                 self.distroseries.id,
                 self.distroseries.previous_series.id))
 
-    def _create_dsd_jobs(self, archive, names):
+    def _create_dsd_jobs(self):
         job_source = getUtility(IDistroSeriesDifferenceJobSource)
         for parent in self.parents:
-            job_source.massCreateForSeries(
-                self.distroseries, parent, archive, names)
+            job_source.massCreateForSeries(self.distroseries, parent)
 
     def _copy_configuration(self):
         self.distroseries.backports_not_automatic = any(
@@ -423,10 +423,6 @@ class InitializeDistroSeries:
                     getUtility(IPackageCloner).clonePackages(
                         origin, destination, distroarchseries_list,
                         proc_families, spns, self.rebuild)
-                    if spns:
-                        self._create_dsds(target_archive, names=spns)
-                    else:
-                        self._create_dsds(target_archive)
                 else:
                     # There is only one available pocket in an unreleased
                     # series.
@@ -442,11 +438,10 @@ class InitializeDistroSeries:
                             sources, target_archive, self.distroseries,
                             pocket, include_binaries=not self.rebuild,
                             check_permissions=False, strict_binaries=False,
-                            close_bugs=False)
+                            close_bugs=False, create_dsd_job=False)
                         if self.rebuild:
                             for pubrec in sources_published:
                                 pubrec.createMissingBuilds()
-
                     except CannotCopy, error:
                         raise InitializationError(error)
 

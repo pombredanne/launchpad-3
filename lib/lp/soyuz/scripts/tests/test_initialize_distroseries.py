@@ -44,13 +44,13 @@ from lp.soyuz.scripts.initialize_distroseries import (
     InitializeDistroSeries,
     )
 from lp.testing import TestCaseWithFactory
-from lp.testing.fakemethod import FakeMethod
 from lp.soyuz.model.distroseriesdifferencejob import (
     FEATURE_FLAG_ENABLE_MODULE,
     )
 from lp.soyuz.model.distroseriesdifferencejob import (
     find_waiting_jobs
     )
+
 
 class InitializationHelperTestCase(TestCaseWithFactory):
     # Helper class to:
@@ -949,6 +949,17 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
                 find_waiting_jobs(
                     series, sourcepackagename, parent_series)))
 
+    def test_initialization_first_deriv_create_dsdjs(self):
+        # A first initialization of a series creates the creation
+        # of the DSDJs with all the parents.
+        parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: 'on'}))
+        child = self._fullInitialize([parent1, parent2])
+
+        self.assertWaitingJobExists(child, 'p1', parent1)
+        self.assertWaitingJobExists(child, 'p2', parent2)
+
     def test_initialization_post_first_deriv_create_dsdjs(self):
         # Post-first initialization of a series with different parents
         # than those of the previous_series creates the DSDJs to
@@ -959,7 +970,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             previous_parents=[prev_parent1, prev_parent2])
         parent3, unused = self.setupParent(
             packages={u'p2': u'2.5', u'p3': u'1.1'})
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE:'on'}))
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: 'on'}))
         self._fullInitialize(
             [prev_parent1, prev_parent2, parent3], child=child)
 
@@ -970,8 +981,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
 
     def test_initialization_compute_dsds_specific_packagesets(self):
         # Post-first initialization of a series with specific
-        # packagesets creates the DSDJs.
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE:'on'}))
+        # packagesets creates the DSDJs for the packages inside these
+        # packagesets.
         prev_parent1, unused = self.setupParent(
             packages={u'p1': u'1.2', u'p11': u'3.1'})
         prev_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
@@ -983,6 +994,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         test1.addSources('p1')
         parent3, unused = self.setupParent(
             packages={u'p1': u'2.5', u'p3': u'4.4'})
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: 'on'}))
         self._fullInitialize(
             [prev_parent1, prev_parent2, parent3], child=child,
             packagesets=(str(test1.id),))

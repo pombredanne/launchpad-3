@@ -949,7 +949,8 @@ class IPublishingSet(Interface):
         """
 
     def newSourcePublication(archive, sourcepackagerelease, distroseries,
-                             component, section, pocket, ancestor):
+                             component, section, pocket, ancestor,
+                             create_dsd_job=True):
         """Create a new `SourcePackagePublishingHistory`.
 
         :param archive: An `IArchive`
@@ -960,6 +961,8 @@ class IPublishingSet(Interface):
         :param pocket: A `PackagePublishingPocket`
         :param ancestor: A `ISourcePackagePublishingHistory` for the previous
             version of this publishing record
+        :param create_dsd_job: A boolean indicating whether or not a dsd job
+             should be created for the new source publication.
 
         datecreated will be UTC_NOW.
         status will be PackagePublishingStatus.PENDING
