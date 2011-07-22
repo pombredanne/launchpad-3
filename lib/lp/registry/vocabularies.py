@@ -129,7 +129,10 @@ from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.interfaces.bugtask import IBugTask
-from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distribution import (
+    IDistribution,
+    IDistributionSet,
+    )
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
@@ -2011,7 +2014,6 @@ class DistributionSourcePackageVocabulary:
         # XXX sinzui 2011-07-21: match the toTerm() format, but also
         # use it to select a distribution. Maybe this should also split on
         # a the first space.
-        from lp.registry.interfaces.distribution import IDistributionSet
         distribution = None
         if '/' in text:
             distro_name, text = text.split('/', 1)
