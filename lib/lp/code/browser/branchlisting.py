@@ -349,17 +349,6 @@ class BranchListingItemsMixin:
         raise NotImplementedError(self.getBranchCollection)
 
     @cachedproperty
-    def branch_sparks(self):
-        """Return a simplejson string for [id, url] for branch sparks."""
-        spark_lines = []
-        for count, branch in enumerate(self.visible_branches_for_view):
-            if self.view.showSparkLineForBranch(branch):
-                element_id = 'b-%s' % (count + 1)
-                element_url = canonical_url(branch, view_name='+spark')
-                spark_lines.append((element_id, element_url))
-        return simplejson.dumps(spark_lines)
-
-    @cachedproperty
     def _query_optimiser(self):
         """Return the branch listing query optimiser utility."""
         return getUtility(IBranchListingQueryOptimiser)
@@ -598,11 +587,6 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
         """All branches related to this target, sorted for display."""
         # Separate the public property from the underlying virtual method.
         return BranchListingBatchNavigator(self)
-
-    def showSparkLineForBranch(self, branch):
-        """Should the view render the code to generate the sparklines?"""
-        # Default to no for everything.
-        return False
 
     def getVisibleBranchesForUser(self):
         """Get branches visible to the user.
@@ -1160,11 +1144,6 @@ class ProductBranchListingView(BranchListingView):
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProduct(self.context)
-
-    def showSparkLineForBranch(self, branch):
-        """See `BranchListingView`."""
-        # Show the sparklines for the development focus branch only.
-        return branch == self.development_focus_branch
 
     @cachedproperty
     def development_focus_branch(self):

@@ -94,9 +94,6 @@ class IPersonRoles(Interface):
     in_katie = Bool(
         title=_("True if this person is Katie."),
         required=True, readonly=True)
-    in_launchpad_beta_testers = Bool(
-        title=_("True if this person is a Launchpad beta tester."),
-        required=True, readonly=True)
     in_launchpad_developers = Bool(
         title=_("True if this person is a Launchpad developer."),
         required=True, readonly=True)
