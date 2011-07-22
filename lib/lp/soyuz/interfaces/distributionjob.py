@@ -133,10 +133,26 @@ class IDistroSeriesDifferenceJobSource(IJobSource):
         :param parent_series: The parent `DistroSeries` whose version of
             `sourcepackagename` is to be compared with that in
             `derived_series`.
-        :return: An iterable of `DistroSeriesDifferenceJob`.
+       :return: An iterable of `DistroSeriesDifferenceJob`.
         """
         # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
         # mandatory as part of multi-parent support.
+
+    def massCreateForSeries(derived_series, parent_series, archive,
+                            names=None):
+        """Create jobs for all the publications inside the given archive.
+
+        :param derived_series: A `DistroSeries` that is assumed to be
+            derived from `parent_series`.
+        :param parent_series: The parent `DistroSeries`.
+        :param archive: The `IArchive` where the publications to be
+            considered are.
+        :param names: An optinal list of source package names to limit
+            the jobs to be created. None means create jobs for all the
+            publications in the archive.
+        :return: An iterable of `DistroSeriesDifferenceJob` ids. We don't
+            return the Job themselves for performance reason.
+        """
 
     def getPendingJobsForDifferences(derived_series, distroseriesdifferences):
         """Find `DistroSeriesDifferenceJob`s for `DistroSeriesDifference`s.

@@ -14,8 +14,6 @@ entries remain untouched.
 __metaclass__ = type
 __all__ = [
     'PopulateDistroSeriesDiff',
-    'populate_distroseriesdiff',
-    'update_distroseriesdiff',
     ]
 
 from collections import defaultdict
@@ -44,7 +42,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.distroseriesparent import DistroSeriesParent
-from lp.services.log.logger import DevNullLogger
 from lp.services.scripts.base import LaunchpadScript
 from lp.soyuz.interfaces.publishing import active_publishing_status
 
@@ -199,14 +196,12 @@ def drop_table(store, table):
     store.execute("DROP TABLE IF EXISTS %s" % quote_identifier(table))
 
 
-def populate_distroseriesdiff(derived_series, parent_series, logger=None):
+def populate_distroseriesdiff(logger, derived_series, parent_series):
     """Compare `derived_distroseries` to parent, and register differences.
 
     The differences are registered by creating `DistroSeriesDifference`
     records, insofar as they do not yet exist.
     """
-    if logger is None:
-        logger = DevNullLogger()
     temp_table = "temp_potentialdistroseriesdiff"
 
     store = IStore(derived_series)
@@ -229,31 +224,6 @@ def populate_distroseriesdiff(derived_series, parent_series, logger=None):
     store.execute(
         compose_sql_populate_distroseriesdiff(
             derived_series, parent_series, temp_table))
-
-
-def update_distroseriesdiff(commit, distroseries, logger=None):
-    """Call `DistroSeriesDifference.update()` where appropriate.
-
-    The `DistroSeriesDifference` records we create don't have their
-    details filled out, such as base version or their diffs.
-
-    Only instances where the source package is published in both the
-    parent series and the derived series need to have this done.
-    """
-    if logger is None:
-        logger = DevNullLogger()
-    logger.info(
-        "Updating DSDs for %s.", distroseries.title)
-    store = IStore(distroseries)
-    dsd_ids = store.find(
-        DistroSeriesDifference.id,
-        DistroSeriesDifference.derived_series == distroseries,
-        DistroSeriesDifference.status ==
-            DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-        DistroSeriesDifference.difference_type ==
-            DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
-        DistroSeriesDifference.base_version == None)
-    DSDUpdater(logger, store, commit, dsd_ids).run()
 
 
 def find_derived_series():
@@ -373,7 +343,7 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
         self.logger.info(
             "Looking for differences in %s with regards to %s.",
             distroseries, parent)
-        populate_distroseriesdiff(distroseries, parent, self.logger)
+        populate_distroseriesdiff(self.logger, distroseries, parent)
         self.commit()
         self.logger.info("Updating base_versions.")
         self.update(distroseries)
@@ -392,7 +362,7 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
         relationships = self.getDistroSeries()
         for child in relationships:
             for parent in relationships[child]:
-                self.logger.info(
+               self.logger.info(
                     "%s %s with a parent of %s %s", child.distribution.name,
                     child.name, parent.distribution.name, parent.name)
 
@@ -427,5 +397,23 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
                 self.processDistroSeries(child, parent)
 
     def update(self, distroseries):
-        """Update `DistroSeriesDifference`s for `distroseries`."""
-        update_distroseriesdiff(self.commit, distroseries, self.logger)
+        """Call `DistroSeriesDifference.update()` where appropriate.
+
+        The `DistroSeriesDifference` records we create don't have their
+        details filled out, such as base version or their diffs.
+
+        Only instances where the source package is published in both the
+        parent series and the derived series need to have this done.
+        """
+        self.logger.info(
+            "Updating DSDs for %s.", distroseries.title)
+        store = IStore(distroseries)
+        dsd_ids = store.find(
+            DistroSeriesDifference.id,
+            DistroSeriesDifference.derived_series == distroseries,
+            DistroSeriesDifference.status ==
+                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+            DistroSeriesDifference.difference_type ==
+                DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
+            DistroSeriesDifference.base_version == None)
+        DSDUpdater(self.logger, store, self.commit, dsd_ids).run()

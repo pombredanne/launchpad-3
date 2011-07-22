@@ -23,6 +23,7 @@ from lp.registry.interfaces.distroseriesdifference import (
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.features.testing import FeatureFixture
 from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.component import IComponentSet
@@ -44,7 +45,12 @@ from lp.soyuz.scripts.initialize_distroseries import (
     )
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
-
+from lp.soyuz.model.distroseriesdifferencejob import (
+    FEATURE_FLAG_ENABLE_MODULE,
+    )
+from lp.soyuz.model.distroseriesdifferencejob import (
+    find_waiting_jobs
+    )
 
 class InitializationHelperTestCase(TestCaseWithFactory):
     # Helper class to:
@@ -709,7 +715,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             [self.parent1, self.parent2])
 
     def setUpSeriesWithPreviousSeries(self, previous_parents=(),
-                                      publish_in_distribution=True):
+                                      publish_in_distribution=True,
+                                      same_distribution=True):
         # Helper method to create a series within an initialized
         # distribution (i.e. that has an initialized series) with a
         # 'previous_series' with parents.
@@ -717,7 +724,13 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         # Create a previous_series derived from 2 parents.
         previous_series = self._fullInitialize(previous_parents)
 
-        child = self.factory.makeDistroSeries(previous_series=previous_series)
+        if same_distribution:
+            child = self.factory.makeDistroSeries(
+                previous_series=previous_series,
+                distribution=previous_series.distribution)
+        else:
+            child = self.factory.makeDistroSeries(
+                previous_series=previous_series)
 
         # Add a publishing in another series from this distro.
         other_series = self.factory.makeDistroSeries(
@@ -777,7 +790,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         previous_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
         child = self.setUpSeriesWithPreviousSeries(
             previous_parents=[previous_parent1],
-            publish_in_distribution=False)
+            publish_in_distribution=False,
+            same_distribution=False)
 
         # Initialize from an empty list of parents.
         ids = InitializeDistroSeries(child, [])
@@ -894,7 +908,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
 
         self.assertFalse(ids._has_same_parents_as_previous_series())
 
-    def test_initialization_copy_dsds(self):
+    def test_initialization_post_first_deriv_copy_dsds(self):
         # Post-first initialization of a series with the same parents
         # than those of the previous_series causes a copy of
         # previous_series' DSDs.
@@ -920,52 +934,61 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
                 [diff.source_package_name.name
                     for diff in dsd_source.getForDistroSeries(child)]))
 
-    def test_initialization_compute_dsds(self):
+    def assertWaitingJobExists(self, series, name, parent_series):
+        self._assertWaitingJobExists(series, name, parent_series)
+
+    def assertWaitingJobDoesntExist(self, series, name, parent_series):
+        self._assertWaitingJobExists(series, name, parent_series, False)
+
+    def _assertWaitingJobExists(self, series, name, parent_series,
+                                exists=True):
+        sourcepackagename = self.factory.getOrMakeSourcePackageName(name)
+        self.assertEquals(
+            1 if exists else 0,
+            len(
+                find_waiting_jobs(
+                    series, sourcepackagename, parent_series)))
+
+    def test_initialization_post_first_deriv_create_dsdjs(self):
         # Post-first initialization of a series with different parents
-        # than those of the previous_series triggers the computation
-        # of the DSDs (using populate_distroseriesdiff's methods).
+        # than those of the previous_series creates the DSDJs to
+        # compute the DSDs with the parents.
         prev_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
         prev_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
         child = self.setUpSeriesWithPreviousSeries(
             previous_parents=[prev_parent1, prev_parent2])
-        parent3, unused = self.setupParent(packages={u'p3': u'2.5'})
-        from lp.registry.scripts import populate_distroseriesdiff as module
-        module.populate_distroseriesdiff = FakeMethod()
-        module.update_distroseriesdiff = FakeMethod()
+        parent3, unused = self.setupParent(
+            packages={u'p2': u'2.5', u'p3': u'1.1'})
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE:'on'}))
         self._fullInitialize(
             [prev_parent1, prev_parent2, parent3], child=child)
 
-        # populate_distroseriesdiff has been called for each parent.
-        self.assertContentEqual(
-            [((child, prev_parent1), {}),
-             ((child, prev_parent2), {}),
-             ((child, parent3), {})],
-            module.populate_distroseriesdiff.calls)
-
-        # update_distroseriesdiff has been called once for the child series.
-        self.assertContentEqual(
-            [((transaction.commit, child), {})],
-            module.update_distroseriesdiff.calls)
+        self.assertWaitingJobExists(child, 'p1', prev_parent1)
+        self.assertWaitingJobExists(child, 'p2', prev_parent2)
+        self.assertWaitingJobExists(child, 'p2', parent3)
+        self.assertWaitingJobDoesntExist(child, 'p3', parent3)
 
     def test_initialization_compute_dsds_specific_packagesets(self):
         # Post-first initialization of a series with specific
-        # packagesets triggers the computation (as opposed to the copy)
-        # of the DSDs.
-        prev_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        # packagesets creates the DSDJs.
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE:'on'}))
+        prev_parent1, unused = self.setupParent(
+            packages={u'p1': u'1.2', u'p11': u'3.1'})
         prev_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
-        test1 = getUtility(IPackagesetSet).new(
-            u'test1', u'test 1 packageset', prev_parent1.owner,
-            distroseries=prev_parent1)
-        test1.addSources('p1')
         child = self.setUpSeriesWithPreviousSeries(
             previous_parents=[prev_parent1, prev_parent2])
-        parent3, unused = self.setupParent(packages={u'p3': u'2.5'})
-        from lp.registry.scripts import populate_distroseriesdiff as module
-        module.update_distroseriesdiff = FakeMethod()
-        ids = InitializeDistroSeries(
-            child, [], packagesets=(str(test1.id),))
-        ids._compute_dsds = FakeMethod()
-        ids.check()
-        ids.initialize()
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', child.previous_series.owner,
+            distroseries=child.previous_series)
+        test1.addSources('p1')
+        parent3, unused = self.setupParent(
+            packages={u'p1': u'2.5', u'p3': u'4.4'})
+        self._fullInitialize(
+            [prev_parent1, prev_parent2, parent3], child=child,
+            packagesets=(str(test1.id),))
 
-        self.assertEquals(1, ids._compute_dsds.call_count)
+        self.assertWaitingJobExists(child, 'p1', prev_parent1)
+        self.assertWaitingJobDoesntExist(child, 'p11', prev_parent1)
+        self.assertWaitingJobDoesntExist(child, 'p2', prev_parent2)
+        self.assertWaitingJobExists(child, 'p1', parent3)
+        self.assertWaitingJobDoesntExist(child, 'p3', parent3)

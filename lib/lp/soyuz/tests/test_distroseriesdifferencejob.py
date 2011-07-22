@@ -5,8 +5,12 @@
 
 __metaclass__ = type
 
-import transaction
 from psycopg2 import ProgrammingError
+from testtools.matchers import (
+    Equals,
+    MatchesStructure,
+    )
+import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.proxy import removeSecurityProxy
@@ -23,6 +27,7 @@ from lp.registry.enum import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
+from lp.services.database import bulk
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.enums import PackagePublishingStatus
@@ -33,6 +38,7 @@ from lp.soyuz.interfaces.distributionjob import (
 from lp.soyuz.model.distributionjob import DistributionJob
 from lp.soyuz.model.distroseriesdifferencejob import (
     create_job,
+    create_multiple_jobs,
     DistroSeriesDifferenceJob,
     FEATURE_FLAG_ENABLE_MODULE,
     find_waiting_jobs,
@@ -149,6 +155,74 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         dsdjob = create_job(dsp.derived_series, package, dsp.parent_series)
         self.assertEqual(JobStatus.WAITING, dsdjob.job.status)
 
+    def createSPPHs(self, derived_series, archive, nb_spph=10):
+        res_spph = []
+        for i in xrange(nb_spph):
+            packagename = self.factory.makeSourcePackageName()
+            spph = self.factory.makeSourcePackagePublishingHistory(
+                sourcepackagename=packagename,
+                archive=archive,
+                distroseries=derived_series,
+                pocket=PackagePublishingPocket.RELEASE)
+            res_spph.append(spph)
+        transaction.commit()
+        return res_spph
+
+    def test_create_multiple_jobs_structure(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        spph = self.createSPPHs(
+            dsp.derived_series, dsp.derived_series.main_archive, 1)[0]
+        job_ids = create_multiple_jobs(
+            dsp.derived_series, dsp.parent_series, archive=dsp.derived_series.main_archive)
+        job = bulk.load(DistributionJob, job_ids)[0]
+
+        sourcepackagenameid = spph.sourcepackagerelease.sourcepackagename.id
+        expected_metadata = {
+            u'sourcepackagename': sourcepackagenameid,
+            u'parent_series': dsp.parent_series.id}
+        self.assertThat(job, MatchesStructure(
+            distribution=Equals(dsp.derived_series.distribution),
+            distroseries=Equals(dsp.derived_series),
+            job_type=Equals(DistributionJobType.DISTROSERIESDIFFERENCE),
+            metadata=Equals(expected_metadata)))
+
+    def test_create_multiple_jobs_ignore_other_series(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        spphs = self.createSPPHs(
+            dsp.derived_series, dsp.derived_series.main_archive)
+
+        # Create other SPPHs ...
+        dsp2 = self.factory.makeDistroSeriesParent()
+        self.createSPPHs(
+            dsp2.derived_series, dsp2.derived_series.main_archive)
+
+        # ... and some more.
+        dsp3 = self.factory.makeDistroSeriesParent(
+            parent_series=dsp.parent_series)
+        self.createSPPHs(
+            dsp3.derived_series, dsp3.derived_series.main_archive)
+
+        job_ids = create_multiple_jobs(
+            dsp.derived_series, dsp.parent_series,
+            archive=dsp.derived_series.main_archive)
+        jobs = bulk.load(DistributionJob, job_ids)
+
+        self.assertContentEqual(
+            [spph.sourcepackagerelease.sourcepackagename.id
+                for spph in spphs],
+            [job.metadata[u'sourcepackagename'] for job in jobs])
+
+    def test_create_multiple_jobs_creates_waiting_jobs(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        self.createSPPHs(
+            dsp.derived_series, dsp.derived_series.main_archive, 1)
+        job_ids = create_multiple_jobs(
+            dsp.derived_series, dsp.parent_series,
+            archive=dsp.derived_series.main_archive)
+        dsdjob = bulk.load(DistributionJob, job_ids)[0]
+
+        self.assertEqual(JobStatus.WAITING, dsdjob.job.status)
+
     def find_waiting_jobs_finds_waiting_jobs(self):
         dsp = self.factory.makeDistroSeriesParent()
         package = self.factory.makeSourcePackageName()
@@ -248,6 +322,22 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         self.assertContentEqual(
             [],
             find_waiting_jobs(dsp.derived_series, package, dsp.parent_series))
+
+    def test_massCreateForSeries_obeys_feature_flag(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        spph = self.createSPPHs(
+            dsp.derived_series, dsp.derived_series.main_archive, 1)[0]
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: ''}))
+        self.getJobSource().massCreateForSeries(
+            dsp.derived_series, dsp.parent_series,
+            dsp.derived_series.main_archive)
+
+        self.assertContentEqual(
+            [],
+            find_waiting_jobs(
+                dsp.derived_series,
+                spph.sourcepackagerelease.sourcepackagename,
+                dsp.parent_series))
 
     def test_getPendingJobsForDifferences_finds_job(self):
         dsd = self.factory.makeDistroSeriesDifference()
