@@ -47,7 +47,6 @@ from canonical.launchpad.database.librarian import (
     LibraryFileContent,
     )
 from canonical.launchpad.helpers import shortlist
-from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archiveuploader.utils import determine_source_file_type
 from lp.buildmaster.enums import BuildStatus
@@ -61,10 +60,7 @@ from lp.soyuz.enums import (
     PackageDiffStatus,
     PackagePublishingStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    MAIN_ARCHIVE_PURPOSES,
-    )
+from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.binarypackagebuild import IBinaryPackageBuildSet
 from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
