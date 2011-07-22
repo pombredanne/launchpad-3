@@ -1989,9 +1989,10 @@ class TestSyncSource(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSyncSource, self).setUp()
-        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": 'on'}))
-        self.useFixture(
-            FeatureFixture({u"soyuz.copypackageppa.enabled": 'on'}))
+        self.useFixture(FeatureFixture({
+            u"soyuz.copypackage.enabled": 'on',
+            u"soyuz.copypackageppa.enabled": 'on',
+            }))
 
     def test_security_team_can_copy_to_primary(self):
         # A member of ubuntu-security can use syncSource on any package
