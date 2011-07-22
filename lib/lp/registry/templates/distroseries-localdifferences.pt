@@ -38,7 +38,7 @@
 
       <div metal:use-macro="context/@@launchpad_form/form">
 
-      <div tal:condition="differences/batch" metal:fill-slot="widgets">
+      <div metal:fill-slot="widgets">
         <tal:navigation_top
           replace="structure differences/@@+navigation-links-upper" />
           <table class="listing">
@@ -61,10 +61,12 @@
                 <a tal:attributes="href context/fmt:url"
                    tal:content="series_name">Deriwarty</a> version
               </th>
-              <th tal:condition="view/show_parent_packagesets">
+              <th tal:condition="view/show_parent_packagesets"
+                  class="parent-package-sets">
                 Parent package-sets
               </th>
-              <th tal:condition="view/show_packagesets">
+              <th tal:condition="view/show_packagesets"
+                  class="package-sets">
                 Package-sets
               </th>
                <th>Last uploaded</th>
@@ -201,6 +203,18 @@ LPS.use('lp.registry.distroseriesdifferences_details', function(Y) {
 
   Y.on('domready', diff_module.setup_expandable_rows);
 });
+</script>
+<script type="text/javascript">
+  LPS.use("lp.registry.distroseries.differences", function(Y) {
+    Y.on("domready", function() {
+      var form = Y.one("form#distroseries-localdiff-search-filter");
+      var differences = Y.lp.registry.distroseries.differences;
+      // Probably only one, but check for more just in case.
+      Y.all("th.package-sets").each(function(header) {
+        differences.connect_packageset_picker(header, form);
+      });
+    });
+  });
 </script>
 
     </div>
