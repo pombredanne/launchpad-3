@@ -10,16 +10,6 @@
       <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
       <script type='text/javascript' id='available-official-tags-js'
               tal:content="view/available_official_tags_js" />
-      <tal:if condition="request/features/bugs.private_notification.enabled">
-        <script type="text/javascript">
-          var privacy_notification_enabled = true;
-        </script>
-      </tal:if>
-      <tal:if condition="not:request/features/bugs.private_notification.enabled">
-        <script type="text/javascript">
-          var privacy_notification_enabled = false;
-        </script>
-      </tal:if>
       <script type="text/javascript">
         LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
                   'lp.bugs.subscribers_list',
