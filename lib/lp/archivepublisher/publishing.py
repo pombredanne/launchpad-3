@@ -391,7 +391,7 @@ class Publisher(object):
             for bpp in distroseries.getBinaryPackagePublishing(
                 archtag=arch.architecturetag, pocket=pocket,
                 component=component, archive=self.archive):
-                stanza = bpp.getIndexStanza().encode('utf-8') + '\n\n'
+                stanza = bpp.getIndexStanza().encode('utf-8') + '\n'
                 if (bpp.binarypackagerelease.binpackageformat in
                     (BinaryPackageFormat.DEB, BinaryPackageFormat.DDEB)):
                     package_index.write(stanza)
