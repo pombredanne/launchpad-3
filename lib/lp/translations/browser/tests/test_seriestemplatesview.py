@@ -315,11 +315,20 @@ class FauxSharedTemplate:
                 @staticmethod
                 def getTemplatesCollection():
                     class TemplateCollection:
+                        @classmethod
+                        def restrictName(cls, name):
+                            return cls
+
+                        @classmethod
+                        def select(cls):
+                            return cls
+
                         @staticmethod
-                        def select():
+                        def one():
                             class template:
                                 name = 'TEMPLATE_NAME'
-                            return [template]
+                            return template
+
                     return TemplateCollection
     class sourcepackagename:
         name = 'SOURCE_PACKAGE_NAME'

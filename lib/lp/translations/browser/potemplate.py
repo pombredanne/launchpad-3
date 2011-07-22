@@ -60,8 +60,8 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
-from lp.app.browser.tales import DateTimeFormatterAPI
 from canonical.lazr.utils import smartquote
+from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.enums import (
     service_uses_launchpad,
     ServiceUsage,
@@ -74,7 +74,11 @@ from lp.registry.browser.sourcepackage import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.packaging import Packaging
+from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.database.collection import Collection
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.translations.model.potemplate import POTemplate
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
 from lp.translations.browser.translationsharing import (
@@ -856,6 +860,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
     can_admin = None
 
     def initialize(self, series, is_distroseries=True):
+        self._template_name_cache = {}
+        self._packaging_cache = {}
         self.is_distroseries = is_distroseries
         if is_distroseries:
             self.distroseries = series
@@ -869,11 +875,24 @@ class BaseSeriesTemplatesView(LaunchpadView):
         self.user_is_logged_in = (self.user is not None)
 
     def iter_templates(self):
-        potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(
-            productseries=self.productseries,
-            distroseries=self.distroseries,
-            ordered_by_names=True)
+        return self.context.getTranslationTemplates()
+#        return self.context.getTranslationTemplates().joinOuter(Packaging,
+#            AND(POTemplate.sourcepackagename == Packaging.sourcepackagename,
+#                Packaging.distroseries == self.context.id)
+
+        import pdb;pdb.set_trace()
+        # TODO Figure out why the collection doesn't have security declarations.
+#        result = Collection(
+#            removeSecurityProxy(self.context.getTemplatesCollection(),
+#            tables=[SourcePackageName]))
+        result = Collection(
+            removeSecurityProxy(self.context.getTemplatesCollection()))
+        result.tables.append(SourcePackageName)
+        result.joinOuter(SourcePackageName, POTemplate.from_sourcepackagename == SourcePackageName.id)
+#        result.joinOuter(SourcePackage, POTemplate.translationtarget == SourcePackage.id)
+#        result.joinInner(Packaging, Packaging.distroseries == self.context.id)
+        return result
+
 
     def rowCSSClass(self, template):
         if template.iscurrent:
@@ -906,26 +925,38 @@ class BaseSeriesTemplatesView(LaunchpadView):
         :param template: The target `POTemplate`.
         :return: HTML for the "sharing" status of `template`.
         """
-        tt = template.translationtarget
-        templates = tt.has_sharing_translation_templates
-        packaging = tt.direct_packaging is not None
-        product = packaging and tt.direct_packaging.productseries.product
-        upstream = product and product.translations_usage in (
-            ServiceUsage.LAUNCHPAD, ServiceUsage.EXTERNAL)
-        name = packaging and template.name in [t.name for t in
-            tt.direct_packaging.productseries.getTemplatesCollection()
-            .select()]
-
         # Build the edit link.
         escaped_source = cgi.escape(template.sourcepackagename.name)
         source_url = '+source/%s' % escaped_source
         details_url = source_url + '/+sharing-details'
         edit_link = '<a class="sprite edit" href="%s"></a>' % details_url
 
+        tt = template.translationtarget
+        templates = tt.has_sharing_translation_templates
+
+        # Get out early if we can.  Eliminates unnecessary queries.
+        if not templates:
+            return edit_link + 'not shared'
+
+#        import pdb;pdb.set_trace()
+        packaging = tt.direct_packaging
+
+        product = packaging and packaging.productseries.product
+        upstream = product and product.translations_usage in (
+            ServiceUsage.LAUNCHPAD, ServiceUsage.EXTERNAL)
+
+        if packaging:
+            other_side_name = (removeSecurityProxy(
+                tt.direct_packaging.productseries.getTemplatesCollection())
+                .restrictName(template.name).select().one().name)
+            name = (template.name == other_side_name)
+        else:
+            name = None
+
         # If all the conditions are met for sharing...
         if templates and packaging and upstream and name:
             # Are the conditions met for this template to be considered "shared"?
-            escaped_series = cgi.escape(tt.direct_packaging.productseries.name)
+            escaped_series = cgi.escape(packaging.productseries.name)
             escaped_template = cgi.escape(template.name)
             pot_url = ('/%s/%s/+pots/%s' %
                 (escaped_source, escaped_series, escaped_template))
