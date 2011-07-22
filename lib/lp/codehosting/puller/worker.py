@@ -11,19 +11,14 @@ import urllib2
 import lp.codehosting # to load bzr plugins
 
 from bzrlib import errors
-from bzrlib.branch import (
-    Branch,
-    )
+from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
-from bzrlib.plugins.weave_fmt.branch import (
-    BzrBranchFormat4,
-    )
+from bzrlib.plugins.weave_fmt.branch import BzrBranchFormat4
 from bzrlib.plugins.weave_fmt.repository import (
     RepositoryFormat4,
     RepositoryFormat5,
     RepositoryFormat6,
     )
-
 import bzrlib.ui
 from bzrlib.ui import SilentUIFactory
 from lazr.uri import InvalidURIError

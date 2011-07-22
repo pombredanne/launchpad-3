@@ -32,8 +32,8 @@ from bzrlib.bzrdir import (
 from bzrlib.errors import (
     ConnectionError,
     InvalidEntryName,
-    NoSuchFile,
     NoRepositoryPresent,
+    NoSuchFile,
     NotBranchError,
     )
 from bzrlib.transport import get_transport
