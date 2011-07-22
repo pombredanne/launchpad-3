@@ -22,12 +22,12 @@
       </tal:if>
       <tal:if condition="request/features/bugs.private_notification.enabled">
         <script type="text/javascript">
-          var bugs_private_notification_enabled = true;
+          var privacy_notification_enabled = true;
         </script>
       </tal:if>
       <tal:if condition="not:request/features/bugs.private_notification.enabled">
         <script type="text/javascript">
-          var bugs_private_notification_enabled = false;
+          var privacy_notification_enabled = false;
         </script>
       </tal:if>
       <script type="text/javascript">
