@@ -1939,6 +1939,27 @@ class TestGetPublishedSources(TestCaseWithFactory):
             [filtered_source.sourcepackagerelease.name for filtered_source in
             filtered_sources])
 
+    def test_getPublishedSources_multi_pockets(self):
+        # Passing an iterable of pockets should return publications
+        # with any of them in.
+        distroseries =  self.factory.makeDistroSeries()
+        for pocket in [
+            PackagePublishingPocket.RELEASE, PackagePublishingPocket.UPDATES,
+            PackagePublishingPocket.BACKPORTS]:
+            self.factory.makeSourcePackagePublishingHistory(
+                sourcepackagename=pocket.name.lower(),
+                distroseries=distroseries,
+                archive=distroseries.main_archive,
+                pocket=pocket)
+        filtered = distroseries.main_archive.getPublishedSources(
+            pocket=[
+                PackagePublishingPocket.RELEASE,
+                PackagePublishingPocket.UPDATES])
+
+        self.assertContentEqual(
+            [PackagePublishingPocket.RELEASE, PackagePublishingPocket.UPDATES],
+            [source.pocket for source in filtered])
+
 
 class TestSyncSourceFeatureFlag(TestCaseWithFactory):
 
