@@ -188,6 +188,7 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.bug import (
     BugContextMenu,
@@ -238,6 +239,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     ICreateQuestionFromBugTaskForm,
     IFrontPageBugTaskSearch,
+    IllegalTarget,
     INominationsReviewTableBatchNavigator,
     IPersonBugTaskSearch,
     IRemoveQuestionFromBugTaskForm,
@@ -1132,9 +1134,8 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     # depending on the current context and the permissions of the user viewing
     # the form.
     default_field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
-                           'product', 'sourcepackagename', 'status',
-                           'statusexplanation']
-    custom_widget('sourcepackagename', BugTaskSourcePackageNameWidget)
+                           'status', 'statusexplanation']
+    custom_widget('target', LaunchpadTargetWidget)
     custom_widget('bugwatch', BugTaskBugWatchWidget)
     custom_widget('assignee', BugTaskAssigneeWidget)
 
@@ -1145,6 +1146,12 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         super(BugTaskEditView, self).initialize()
 
     page_title = 'Edit status'
+
+    @property
+    def show_target_widget(self):
+        # Only non-series tasks can be retargetted.
+        return not set(providedBy(self.context.target)).intersection(
+            (IProductSeries, IDistroSeries, ISourcePackage))
 
     @cachedproperty
     def field_names(self):
@@ -1162,6 +1169,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     @cachedproperty
     def editable_field_names(self):
         """Return the names of fields the user has permission to edit."""
+
         if self.context.target_uses_malone:
             # Don't edit self.field_names directly, because it's shared by all
             # BugTaskEditView instances.
@@ -1179,14 +1187,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                 editable_field_names.remove("importance")
         else:
             editable_field_names = set(('bugwatch', ))
-            if not IProduct.providedBy(self.context.target):
-                #XXX: Bjorn Tillenius 2006-03-01:
-                #     Should be possible to edit the product as well,
-                #     but that's harder due to complications with bug
-                #     watches. The new product might use Launchpad
-                #     officially, thus we need to handle that case.
-                #     Let's deal with that later.
-                editable_field_names.add('sourcepackagename')
             if self.context.bugwatch is None:
                 editable_field_names.update(('status', 'assignee'))
                 if ('importance' in self.default_field_names
@@ -1199,6 +1199,9 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                     if ('importance' in self.default_field_names
                         and self.userCanEditImportance()):
                         editable_field_names.add('importance')
+
+        if self.show_target_widget:
+            editable_field_names.add('target')
 
         # To help with caching, return an immutable object.
         return frozenset(editable_field_names)
@@ -1243,6 +1246,11 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         """
         super(BugTaskEditView, self).setUpFields()
         read_only_field_names = self._getReadOnlyFieldNames()
+
+        if 'target' in self.editable_field_names:
+            self.form_fields = self.form_fields.omit('target')
+            target_field = copy_field(IBugTask['target'], readonly=False)
+            self.form_fields += formlib.form.Fields(target_field)
 
         # The status field is a special case because we alter the vocabulary
         # it uses based on the permissions of the user viewing form.
@@ -1365,39 +1373,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         """
         return self.context.userCanEditImportance(self.user)
 
-    def validate(self, data):
-        """See `LaunchpadFormView`."""
-        bugtask = self.context
-        if bugtask.distroseries is not None:
-            distro = bugtask.distroseries.distribution
-        else:
-            distro = bugtask.distribution
-        sourcename = bugtask.sourcepackagename
-        old_product = bugtask.product
-
-        if distro is not None and sourcename != data.get('sourcepackagename'):
-            try:
-                validate_distrotask(
-                    bugtask.bug, distro, data.get('sourcepackagename'))
-            except LaunchpadValidationError, error:
-                self.setFieldError('sourcepackagename', str(error))
-
-        new_product = data.get('product')
-        if (old_product is None or old_product == new_product or
-            bugtask.pillar.bug_tracking_usage != ServiceUsage.LAUNCHPAD):
-            # Either the product wasn't changed, we're dealing with a #
-            # distro task, or the bugtask's product doesn't use Launchpad,
-            # which means the product can't be changed.
-            return
-
-        if new_product is None:
-            self.setFieldError('product', 'Enter a project name')
-        else:
-            try:
-                valid_upstreamtask(bugtask.bug, new_product)
-            except WidgetsError, errors:
-                self.setFieldError('product', errors.args[0])
-
     def updateContextFromData(self, data, context=None):
         """Updates the context object using the submitted form data.
 
@@ -1428,9 +1403,11 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         # product, we'll clear out the milestone value, to avoid
         # violating DB constraints that ensure an upstream task can't
         # be assigned to a milestone on a different product.
+        # XXX: This should be done in transitionToTarget instead, and
+        #      the situation detected to add the notifications.
         milestone_cleared = None
         milestone_ignored = False
-        if bugtask.product and bugtask.product != new_values.get("product"):
+        if bugtask.target != new_values.get("target"):
             # We clear the milestone value if one was already set. We ignore
             # the milestone value if it was currently None, and the user tried
             # to set a milestone value while also changing the product. This
@@ -1449,13 +1426,14 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             # what it was!
             data_to_apply.pop('milestone', None)
 
-
         # We special case setting assignee and status, because there's
         # a workflow associated with changes to these fields.
         if "assignee" in data_to_apply:
             del data_to_apply["assignee"]
         if "status" in data_to_apply:
             del data_to_apply["status"]
+        if "target" in data_to_apply:
+            del data_to_apply["target"]
 
         # We grab the comment_on_change field before we update bugtask so as
         # to avoid problems accessing the field if the user has changed the
@@ -1465,6 +1443,21 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
 
         changed = formlib.form.applyChanges(
             bugtask, self.form_fields, data_to_apply, self.adapters)
+
+        # Set the "changed" flag properly, just in case status and/or assignee
+        # happen to be the only values that changed. We explicitly verify that
+        # we got a new status and/or assignee, because the form is not always
+        # guaranteed to pass all the values. For example: bugtasks linked to a
+        # bug watch don't allow editing the form, and the value is missing
+        # from the form.
+        missing = object()
+        new_target = new_values.pop("target", missing)
+        if new_target is not missing:
+            changed = True
+            try:
+                bugtask.transitionToTarget(new_target)
+            except IllegalTarget as e:
+                self.setFieldError('target', e.message)
 
         # Now that we've updated the bugtask we can add messages about
         # milestone changes, if there were any.
@@ -1486,13 +1479,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                 subject=bugtask.bug.followup_subject(),
                 content=comment_on_change)
 
-        # Set the "changed" flag properly, just in case status and/or assignee
-        # happen to be the only values that changed. We explicitly verify that
-        # we got a new status and/or assignee, because the form is not always
-        # guaranteed to pass all the values. For example: bugtasks linked to a
-        # bug watch don't allow editing the form, and the value is missing
-        # from the form.
-        missing = object()
         new_status = new_values.pop("status", missing)
         new_assignee = new_values.pop("assignee", missing)
         if new_status is not missing and bugtask.status != new_status:
@@ -1581,7 +1567,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             # the one already in real_package_name, which makes our comparison
             # of the two below useless.
             entered_package_name = self.request.form.get(
-                self.widgets['sourcepackagename'].name)
+                self.widgets['target'].package_widget.name)
 
             if real_package_name != entered_package_name:
                 # The user entered a binary package name which got

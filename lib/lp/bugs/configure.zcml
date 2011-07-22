@@ -267,20 +267,16 @@
                     age
                     bugwatch
                     datecreated
-                    distribution
-                    distroseries
                     importance
                     milestone
                     owner
-                    product
-                    productseries
                     related_tasks
                     setImportanceFromDebbugs
                     setStatusFromDebbugs
-                    sourcepackagename
                     statusdisplayhtml
                     statuselsewhere
                     statusexplanation
+                    target
                     targetname
                     title
                     "/>
