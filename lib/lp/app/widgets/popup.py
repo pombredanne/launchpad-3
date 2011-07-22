@@ -33,8 +33,8 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     # Provide default values for the following properties in case someone
     # creates a vocab picker for a person instead of using the derived
     # PersonPicker.
-    show_assign_me_button = 'false'
-    show_remove_button = 'false'
+    show_assign_me_button = False
+    show_remove_button = False
     assign_me_text = 'Pick me'
     remove_person_text = 'Remove person'
     remove_team_text = 'Remove team'
@@ -136,7 +136,9 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
             remove_person_text=self.remove_person_text,
             remove_team_text=self.remove_team_text,
             show_remove_button=self.show_remove_button,
-            show_assign_me_button=self.show_assign_me_button)
+            show_assign_me_button=self.show_assign_me_button,
+            vocabulary_name=self.vocabulary_name,
+            input_element=self.input_id)
 
     @property
     def json_config(self):
@@ -202,8 +204,8 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
 class PersonPickerWidget(VocabularyPickerWidget):
 
     include_create_team_link = False
-    show_assign_me_button = 'true'
-    show_remove_button = 'false'
+    show_assign_me_button = True
+    show_remove_button = False
 
     @property
     def picker_type(self):

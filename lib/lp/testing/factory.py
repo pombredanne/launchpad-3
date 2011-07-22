@@ -1677,7 +1677,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
             # fromText() creates a bug watch associated with the bug.
-            getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
+            with person_logged_in(owner):
+                getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
         bugtask = bug.default_bugtask
         if date_closed is not None:
             bugtask.transitionToStatus(
