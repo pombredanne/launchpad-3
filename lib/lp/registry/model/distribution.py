@@ -705,11 +705,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             WITH principals AS (
                     SELECT team AS id
                         FROM TeamParticipation
-                        WHERE TeamParticipation.person = %s
+                        WHERE TeamParticipation.person = %(user)s
                     UNION
-                    SELECT %s
+                    SELECT %(user)s
                 ), all_branches AS (
-            %%s
+            %(base_query)s
                 ), private_branches AS (
                     SELECT unique_name,
                            last_scanned_id,
@@ -735,8 +735,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             WHERE NOT private OR
                   id IN (SELECT id FROM owned_branch_ids) OR
                   id IN (SELECT id FROM subscribed_branch_ids)
-            """ % sqlvalues(user.id, user.id)
-            query = query % base_query
+            """ % dict(base_query=base_query, user=quote(user.id))
 
         data = Store.of(self).execute(query + ';')
 

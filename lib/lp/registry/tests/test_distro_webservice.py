@@ -45,7 +45,7 @@ class TestDistribution(TestCaseWithFactory):
 
 
 class TestGetBranchTips(TestCaseWithFactory):
-    """Test the getBranchTips method and it's exposure to the web service."""
+    """Test the getBranchTips method and its exposure to the web service."""
 
     layer = DatabaseFunctionalLayer
 
@@ -124,7 +124,7 @@ class TestGetBranchTips(TestCaseWithFactory):
 
 
 class TestGetBranchTipsSecurity(TestCaseWithFactory):
-    """Test the getBranchTips method and it's exposure to the web service."""
+    """Test the getBranchTips method and its exposure to the web service."""
 
     layer = DatabaseFunctionalLayer
 
