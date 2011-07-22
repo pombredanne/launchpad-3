@@ -1340,13 +1340,10 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
             # Replace the default field with a field that uses the better
             # vocabulary.
-            print "FF enabled, replacing field"
             self.form_fields = self.form_fields.omit('sourcepackagename')
-            #distribution = getUtility(ILaunchpadCelebrities).ubuntu
             self.form_fields += formlib.form.Fields(Choice(
                 __name__='sourcepackagename', title=_('SourcePackageName'),
                 required=False, vocabulary='DistributionSourcePackageVocabulary'))
-                #source=DistributionSourcePackageVocabulary(self.context.distribution)))
 
     def _getReadOnlyFieldNames(self):
         """Return the names of fields that will be rendered read only."""

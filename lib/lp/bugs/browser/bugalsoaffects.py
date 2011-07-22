@@ -366,12 +366,10 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
         if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
             # Replace the default field with a field that uses the better
             # vocabulary.
-            print "FF enabled, replacing field"
             self.form_fields = self.form_fields.omit('sourcepackagename')
-            distribution = getUtility(ILaunchpadCelebrities).ubuntu
             new_sourcepackagename = copy_field(
                 IAddBugTaskForm['sourcepackagename'],
-                vocabulary=DistributionSourcePackageVocabulary(distribution))
+                vocabulary='DistributionSourcePackage')
             self.form_fields += form.Fields(new_sourcepackagename)
 
     @property

@@ -2059,7 +2059,7 @@ class DistributionSourcePackageVocabulary:
         if distribution is None:
             # XXX sinzui 2011-07-21: This could failover to ubuntu, but
             # that might be non-obvious.
-            return
+            return self.emptySelectResults()
         search_term = unicode(query)
         store = IStore(SourcePackagePublishingHistory)
         spns = store.using(
