@@ -37,6 +37,7 @@ from bzrlib.errors import (
     NotBranchError,
     )
 from bzrlib.transport import get_transport
+from bzrlib.upgrade import upgrade
 import bzrlib.ui
 from bzrlib.urlutils import (
     join as urljoin,
