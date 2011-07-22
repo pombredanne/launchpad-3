@@ -13,7 +13,8 @@ __all__ = [
     'BugTask',
     'BugTaskSet',
     'bugtask_sort_key',
-    'determine_target',
+    'bug_target_from_key',
+    'bug_target_to_key',
     'get_bug_privacy_filter',
     'get_related_bugtasks_search_params',
     'search_value_to_where_condition',
@@ -266,9 +267,9 @@ def get_related_bugtasks_search_params(user, context, **kwargs):
     return search_params
 
 
-def determine_target(product, productseries, distribution, distroseries,
-                     sourcepackagename):
-    """Returns the IBugTarget defined by the given arguments."""
+def bug_target_from_key(product, productseries, distribution, distroseries,
+                        sourcepackagename):
+    """Returns the IBugTarget defined by the given DB column values."""
     if product:
         return product
     elif productseries:
@@ -287,6 +288,34 @@ def determine_target(product, productseries, distribution, distroseries,
             return distroseries
     else:
         raise AssertionError("Unable to determine bugtask target.")
+
+
+def bug_target_to_key(target):
+    """Returns the DB column values for an IBugTarget."""
+    values = dict(
+                product=None,
+                productseries=None,
+                distribution=None,
+                distroseries=None,
+                sourcepackagename=None,
+                )
+    if IProduct.providedBy(target):
+        values['product'] = target
+    elif IProductSeries.providedBy(target):
+        values['productseries'] = target
+    elif IDistribution.providedBy(target):
+        values['distribution'] = target
+    elif IDistroSeries.providedBy(target):
+        values['distroseries'] = target
+    elif IDistributionSourcePackage.providedBy(target):
+        values['distribution'] = target.distribution
+        values['sourcepackagename'] = target.sourcepackagename
+    elif ISourcePackage.providedBy(target):
+        values['distroseries'] = target.distroseries
+        values['sourcepackagename'] = target.sourcepackagename
+    else:
+        raise AssertionError("Not an IBugTarget.")
+    return values
 
 
 class BugTaskDelta:
@@ -317,7 +346,7 @@ def BugTaskToBugAdapter(bugtask):
 def validate_target_attribute(self, attr, value):
     """Update the targetnamecache."""
     # Don't update targetnamecache during _init().
-    if self._SO_creating:
+    if self._SO_creating or self._inhibit_target_check:
         return value
     # Determine the new target attributes.
     target_params = dict(
@@ -342,7 +371,7 @@ def validate_target_attribute(self, attr, value):
     # Update the target name cache with the potential new target. The
     # attribute changes haven't been made yet, so we need to calculate the
     # target manually.
-    self.updateTargetNameCache(determine_target(**target_params))
+    self.updateTargetNameCache(bug_target_from_key(**target_params))
 
     return value
 
@@ -423,6 +452,8 @@ class BugTask(SQLBase):
         "date_triaged", "date_fix_committed", "date_fix_released",
         "date_left_closed")
     _NON_CONJOINED_STATUSES = (BugTaskStatus.WONTFIX, )
+
+    _inhibit_target_check = False
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     product = ForeignKey(
@@ -523,7 +554,7 @@ class BugTask(SQLBase):
     @property
     def target(self):
         """See `IBugTask`."""
-        return determine_target(
+        return bug_target_from_key(
             self.product, self.productseries, self.distribution,
             self.distroseries, self.sourcepackagename)
 
@@ -1068,22 +1099,29 @@ class BugTask(SQLBase):
             # current target, or reset it to None
             self.milestone = None
 
-        if self.product:
-            if IProduct.providedBy(target):
-                self.product = target
-            else:
+        # Check if any series are involved. You can't retarget series
+        # tasks. Except for SourcePackage tasks, which can only be
+        # retargetted to another SourcePackage in the same DistroSeries.
+        interfaces = set(providedBy(target))
+        interfaces.update(providedBy(self.target))
+        if interfaces.intersection((IProductSeries, IDistroSeries)):
+            raise IllegalTarget(
+                "Series tasks may only be created by approving nominations.")
+        elif ISourcePackage in interfaces:
+            if (not ISourcePackage.providedBy(target) or
+                not ISourcePackage.providedBy(self.target) or
+                target.distroseries != self.target.distroseries):
                 raise IllegalTarget(
-                    "Upstream bug tasks may only be re-targeted "
-                    "to another project.")
-        else:
-            if (IDistributionSourcePackage.providedBy(target) and
-                (target.distribution == self.target or
-                 target.distribution == self.target.distribution)):
-                self.sourcepackagename = target.sourcepackagename
-            else:
-                raise IllegalTarget(
-                    "Distribution bug tasks may only be re-targeted "
-                    "to a package in the same distribution.")
+                    "Series source package tasks may only be retargetted "
+                    "to another source package in the same series.")
+
+        # Inhibit validate_target_attribute, as we can't set them all
+        # atomically, but we know the final result is correct.
+        self._inhibit_target_check = True
+        for name, value in bug_target_to_key(target).iteritems():
+            setattr(self, name, value)
+        self._inhibit_target_check = False
+        self.updateTargetNameCache()
 
         # After the target has changed, we need to recalculate the maximum bug
         # heat for the new and old targets.
