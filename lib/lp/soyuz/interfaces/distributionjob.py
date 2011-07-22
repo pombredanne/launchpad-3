@@ -133,7 +133,7 @@ class IDistroSeriesDifferenceJobSource(IJobSource):
         :param parent_series: The parent `DistroSeries` whose version of
             `sourcepackagename` is to be compared with that in
             `derived_series`.
-       :return: An iterable of `DistroSeriesDifferenceJob`.
+        :return: An iterable of `DistroSeriesDifferenceJob`.
         """
         # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
         # mandatory as part of multi-parent support.
