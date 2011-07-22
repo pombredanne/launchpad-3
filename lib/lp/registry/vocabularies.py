@@ -128,13 +128,7 @@ from canonical.launchpad.webapp.vocabulary import (
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
-from lp.bugs.interfaces.bugtask import (
-    IBugTask,
-    IDistroBugTask,
-    IDistroSeriesBugTask,
-    IProductSeriesBugTask,
-    IUpstreamBugTask,
-    )
+from lp.bugs.interfaces.bugtask import IBugTask
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -1458,14 +1452,18 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
     @staticmethod
     def getMilestoneTarget(milestone_context):
         """Return the milestone target."""
-        if IUpstreamBugTask.providedBy(milestone_context):
-            target = milestone_context.product
-        elif IDistroBugTask.providedBy(milestone_context):
-            target = milestone_context.distribution
-        elif IDistroSeriesBugTask.providedBy(milestone_context):
-            target = milestone_context.distroseries
-        elif IProductSeriesBugTask.providedBy(milestone_context):
-            target = milestone_context.productseries.product
+        if IBugTask.providedBy(milestone_context):
+            bug_target = milestone_context.target
+            if IProduct.providedBy(bug_target):
+                target = milestone_context.product
+            elif IProductSeries.providedBy(bug_target):
+                target = milestone_context.productseries.product
+            elif (IDistribution.providedBy(bug_target) or
+                  IDistributionSourcePackage.providedBy(bug_target)):
+                target = milestone_context.distribution
+            elif (IDistroSeries.providedBy(bug_target) or
+                  ISourcePackage.providedBy(bug_target)):
+                target = milestone_context.distroseries
         elif IDistributionSourcePackage.providedBy(milestone_context):
             target = milestone_context.distribution
         elif ISourcePackage.providedBy(milestone_context):

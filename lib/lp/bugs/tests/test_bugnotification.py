@@ -13,7 +13,6 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from storm.store import Store
 from testtools.matchers import Not
-from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
@@ -29,7 +28,7 @@ from canonical.testing import (
 from lp.answers.tests.test_question_notifications import pop_questionemailjobs
 from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
-    IUpstreamBugTask,
+    IBugTask,
     )
 from lp.bugs.model.bugnotification import (
     BugNotification,
@@ -134,8 +133,7 @@ class TestNotificationsSentForBugExpiration(TestCaseWithFactory):
         # Ensure that notifications are sent to subscribers of a
         # question linked to the expired bug.
         bugtask = self.bug.default_bugtask
-        bugtask_before_modification = Snapshot(
-            bugtask, providing=IUpstreamBugTask)
+        bugtask_before_modification = Snapshot(bugtask, providing=IBugTask)
         bugtask.transitionToStatus(BugTaskStatus.EXPIRED, self.product.owner)
         bug_modified = ObjectModifiedEvent(
             bugtask, bugtask_before_modification, ["status"])
