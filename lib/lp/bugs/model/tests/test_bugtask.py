@@ -81,18 +81,6 @@ class TestBugTaskDelta(TestCaseWithFactory):
         bug_task = self.factory.makeBugTask()
         self.assertEqual(bug_task.getDelta(bug_task), None)
 
-    def test_get_mismatched_delta(self):
-        # getDelta() should raise TypeError when different types of
-        # bug tasks are passed in.
-        product = self.factory.makeProduct()
-        product_bug_task = self.factory.makeBugTask(target=product)
-        distro_source_package = self.factory.makeDistributionSourcePackage()
-        distro_source_package_bug_task = self.factory.makeBugTask(
-            target=distro_source_package)
-        self.assertRaises(
-            TypeError, product_bug_task.getDelta,
-            distro_source_package_bug_task)
-
     def check_delta(self, bug_task_before, bug_task_after, **expected_delta):
         # Get a delta between one bug task and another, then compare
         # the contents of the delta with expected_delta (a dict, or

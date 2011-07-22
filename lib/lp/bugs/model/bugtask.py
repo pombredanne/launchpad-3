@@ -57,7 +57,6 @@ from storm.store import (
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import (
-    alsoProvides,
     implements,
     providedBy,
     )
@@ -119,12 +118,8 @@ from lp.bugs.interfaces.bugtask import (
     IBugTask,
     IBugTaskDelta,
     IBugTaskSet,
-    IDistroBugTask,
-    IDistroSeriesBugTask,
     IllegalRelatedBugTasksParams,
     IllegalTarget,
-    IProductSeriesBugTask,
-    IUpstreamBugTask,
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     UserCannotEditBugTaskAssignee,
@@ -528,9 +523,6 @@ class BugTask(SQLBase):
     @property
     def target(self):
         """See `IBugTask`."""
-        # We explicitly reference attributes here (rather than, say,
-        # IDistroBugTask.providedBy(self)), because we can't assume this
-        # task has yet been marked with the correct interface.
         return determine_target(
             self.product, self.productseries, self.distribution,
             self.distroseries, self.sourcepackagename)
@@ -670,7 +662,7 @@ class BugTask(SQLBase):
     def getConjoinedMaster(self, bugtasks, bugtasks_by_package=None):
         """See `IBugTask`."""
         conjoined_master = None
-        if IDistroBugTask.providedBy(self):
+        if self.distribution:
             if bugtasks_by_package is None:
                 bugtasks_by_package = (
                     self.bug.getBugTasksByPackageName(bugtasks))
@@ -688,7 +680,7 @@ class BugTask(SQLBase):
                 if bugtask.distroseries == current_series:
                     conjoined_master = bugtask
                     break
-        elif IUpstreamBugTask.providedBy(self):
+        elif self.product:
             assert self.product.development_focusID is not None, (
                 'A product should always have a development series.')
             devel_focusID = self.product.development_focusID
@@ -714,7 +706,7 @@ class BugTask(SQLBase):
     def conjoined_slave(self):
         """See `IBugTask`."""
         conjoined_slave = None
-        if IDistroSeriesBugTask.providedBy(self):
+        if self.distroseries:
             distribution = self.distroseries.distribution
             if self.distroseries != distribution.currentseries:
                 # Only current series tasks are conjoined.
@@ -724,7 +716,7 @@ class BugTask(SQLBase):
                     bugtask.sourcepackagename == self.sourcepackagename):
                     conjoined_slave = bugtask
                     break
-        elif IProductSeriesBugTask.providedBy(self):
+        elif self.productseries:
             product = self.productseries.product
             if self.productseries != product.development_focus:
                 # Only development focus tasks are conjoined.
@@ -754,27 +746,6 @@ class BugTask(SQLBase):
             # conjoined masters by calling the underlying sqlobject
             # setter methods directly.
             setattr(self, synched_attr, PassthroughValue(slave_attr_value))
-
-    def _init(self, *args, **kw):
-        """Marks the task when it's created or fetched from the database."""
-        SQLBase._init(self, *args, **kw)
-
-        # We check both the foreign key column and the reference so we
-        # can detect unflushed references.  The reference check will
-        # only be made if the FK is None, so no additional queries
-        # will be executed.
-        if self.productID is not None or self.product is not None:
-            alsoProvides(self, IUpstreamBugTask)
-        elif (self.productseriesID is not None or
-              self.productseries is not None):
-            alsoProvides(self, IProductSeriesBugTask)
-        elif self.distroseriesID is not None or self.distroseries is not None:
-            alsoProvides(self, IDistroSeriesBugTask)
-        elif self.distributionID is not None or self.distribution is not None:
-            # If nothing else, this is a distro task.
-            alsoProvides(self, IDistroBugTask)
-        else:
-            raise AssertionError("Task %d is floating." % self.id)
 
     @property
     def target_uses_malone(self):
@@ -1097,7 +1068,7 @@ class BugTask(SQLBase):
             # current target, or reset it to None
             self.milestone = None
 
-        if IUpstreamBugTask.providedBy(self):
+        if self.product:
             if IProduct.providedBy(target):
                 self.product = target
             else:
@@ -1177,12 +1148,12 @@ class BugTask(SQLBase):
         else:
             component_name = component.name
 
-        if IUpstreamBugTask.providedBy(self):
+        if self.product:
             header_value = 'product=%s;' % self.target.name
-        elif IProductSeriesBugTask.providedBy(self):
+        elif self.productseries:
             header_value = 'product=%s; productseries=%s;' % (
                 self.productseries.product.name, self.productseries.name)
-        elif IDistroBugTask.providedBy(self):
+        elif self.distribution:
             header_value = ((
                 'distribution=%(distroname)s; '
                 'sourcepackage=%(sourcepackagename)s; '
@@ -1190,7 +1161,7 @@ class BugTask(SQLBase):
                 {'distroname': self.distribution.name,
                  'sourcepackagename': sourcepackagename_value,
                  'componentname': component_name})
-        elif IDistroSeriesBugTask.providedBy(self):
+        elif self.distroseries:
             header_value = ((
                 'distribution=%(distroname)s; '
                 'distroseries=%(distroseriesname)s; '
@@ -1219,25 +1190,6 @@ class BugTask(SQLBase):
 
     def getDelta(self, old_task):
         """See `IBugTask`."""
-        valid_interfaces = [
-            IUpstreamBugTask,
-            IProductSeriesBugTask,
-            IDistroBugTask,
-            IDistroSeriesBugTask,
-            ]
-
-        # This tries to find a matching pair of bug tasks, i.e. where
-        # both provide IUpstreamBugTask, or both IDistroBugTask.
-        # Failing that, it drops off the bottom of the loop and raises
-        # the TypeError.
-        for interface in valid_interfaces:
-            if interface.providedBy(self) and interface.providedBy(old_task):
-                break
-        else:
-            raise TypeError(
-                "Can't calculate delta on bug tasks of incompatible types: "
-                "[%s, %s]." % (repr(old_task), repr(self)))
-
         # calculate the differences in the fields that both types of tasks
         # have in common
         changes = {}
@@ -1260,14 +1212,7 @@ class BugTask(SQLBase):
         """Can the user edit this tasks's pillar?"""
         if user is None:
             return False
-        if IUpstreamBugTask.providedBy(self):
-            pillar = self.product
-        elif IProductSeriesBugTask.providedBy(self):
-            pillar = self.productseries.product
-        elif IDistroBugTask.providedBy(self):
-            pillar = self.distribution
-        else:
-            pillar = self.distroseries.distribution
+        pillar = self.pillar
         return ((pillar.bug_supervisor is not None and
                  user.inTeam(pillar.bug_supervisor)) or
                 pillar.userCanEdit(user))

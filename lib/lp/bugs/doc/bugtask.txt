@@ -103,15 +103,12 @@ list.
 
   * a product series
 
-    >>> from lp.bugs.interfaces.bugtask import IProductSeriesBugTask
 
     >>> firefox = productset['firefox']
     >>> firefox_1_0 = firefox.getSeries("1.0")
 
     >>> productseries_task = bugtaskset.createTask(
     ...     owner=mark, bug=bug_one, productseries=firefox_1_0)
-    >>> IProductSeriesBugTask.providedBy(productseries_task)
-    True
 
     >>> productseries_task.target == firefox_1_0
     True
