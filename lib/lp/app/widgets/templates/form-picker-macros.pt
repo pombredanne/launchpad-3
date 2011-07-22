@@ -38,6 +38,7 @@
         var picker = null;
         var config = ${view/json_config};
         var vocabulary = config.vocabulary_name;
+        var input_element = config.input_element;
         Y.on('domready', function(e) {
             // Sort out the Choose... link.
             var show_widget_node = Y.one('#${view/show_widget_id}');
@@ -47,7 +48,8 @@
             show_widget_node.get('parentNode').removeClass('unseen');
             show_widget_node.on('click', function (e) {
                 if (picker === null) {
-                    picker = Y.lp.app.picker.create(vocabulary, config);
+                    picker = Y.lp.app.picker.create(
+                        vocabulary, config, input_element);
                 }
                 picker.show();
                 e.preventDefault();
