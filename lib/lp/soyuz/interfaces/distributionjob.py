@@ -139,7 +139,8 @@ class IDistroSeriesDifferenceJobSource(IJobSource):
         # mandatory as part of multi-parent support.
 
     def massCreateForSeries(derived_series, parent_series):
-        """Create jobs for all the publications inside the given distroseries.
+        """Create jobs for all the publications inside the given distroseries
+            with reference to the given parent series.
 
         :param derived_series: A `DistroSeries` that is assumed to be
             derived from `parent_series`.
