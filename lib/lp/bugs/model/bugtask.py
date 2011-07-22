@@ -10,7 +10,6 @@ __metaclass__ = type
 __all__ = [
     'BugTaskDelta',
     'BugTaskToBugAdapter',
-    'BugTaskMixin',
     'BugTask',
     'BugTaskSet',
     'bugtask_sort_key',
@@ -314,68 +313,6 @@ class BugTaskDelta:
         self.target = target
 
 
-class BugTaskMixin:
-    """Mix-in class for some property methods of IBugTask implementations."""
-
-    @property
-    def bug_subscribers(self):
-        """See `IBugTask`."""
-        return tuple(
-            chain(self.bug.getDirectSubscribers(),
-                  self.bug.getIndirectSubscribers()))
-
-    @property
-    def bugtargetdisplayname(self):
-        """See `IBugTask`."""
-        return self.target.bugtargetdisplayname
-
-    @property
-    def bugtargetname(self):
-        """See `IBugTask`."""
-        return self.target.bugtargetname
-
-    @property
-    def target(self):
-        """See `IBugTask`."""
-        # We explicitly reference attributes here (rather than, say,
-        # IDistroBugTask.providedBy(self)), because we can't assume this
-        # task has yet been marked with the correct interface.
-        return determine_target(
-            self.product, self.productseries, self.distribution,
-            self.distroseries, self.sourcepackagename)
-
-    @property
-    def related_tasks(self):
-        """See `IBugTask`."""
-        other_tasks = [
-            task for task in self.bug.bugtasks if task != self]
-
-        return other_tasks
-
-    @property
-    def pillar(self):
-        """See `IBugTask`."""
-        if self.product is not None:
-            return self.product
-        elif self.productseries is not None:
-            return self.productseries.product
-        elif self.distribution is not None:
-            return self.distribution
-        else:
-            return self.distroseries.distribution
-
-    @property
-    def other_affected_pillars(self):
-        """See `IBugTask`."""
-        result = set()
-        this_pillar = self.pillar
-        for task in self.bug.bugtasks:
-            that_pillar = task.pillar
-            if that_pillar != this_pillar:
-                result.add(that_pillar)
-        return sorted(result, key=pillar_sort_key)
-
-
 def BugTaskToBugAdapter(bugtask):
     """Adapt an IBugTask to an IBug."""
     return bugtask.bug
@@ -478,7 +415,7 @@ def validate_sourcepackagename(self, attr, value):
     return validate_target_attribute(self, attr, value)
 
 
-class BugTask(SQLBase, BugTaskMixin):
+class BugTask(SQLBase):
     """See `IBugTask`."""
     implements(IBugTask)
     _table = "BugTask"
@@ -575,6 +512,59 @@ class BugTask(SQLBase, BugTaskMixin):
         """See `IBugTask`."""
         return 'Bug #%s in %s: "%s"' % (
             self.bug.id, self.bugtargetdisplayname, self.bug.title)
+
+    @property
+    def bug_subscribers(self):
+        """See `IBugTask`."""
+        return tuple(
+            chain(self.bug.getDirectSubscribers(),
+                  self.bug.getIndirectSubscribers()))
+
+    @property
+    def bugtargetname(self):
+        """See `IBugTask`."""
+        return self.target.bugtargetname
+
+    @property
+    def target(self):
+        """See `IBugTask`."""
+        # We explicitly reference attributes here (rather than, say,
+        # IDistroBugTask.providedBy(self)), because we can't assume this
+        # task has yet been marked with the correct interface.
+        return determine_target(
+            self.product, self.productseries, self.distribution,
+            self.distroseries, self.sourcepackagename)
+
+    @property
+    def related_tasks(self):
+        """See `IBugTask`."""
+        other_tasks = [
+            task for task in self.bug.bugtasks if task != self]
+
+        return other_tasks
+
+    @property
+    def pillar(self):
+        """See `IBugTask`."""
+        if self.product is not None:
+            return self.product
+        elif self.productseries is not None:
+            return self.productseries.product
+        elif self.distribution is not None:
+            return self.distribution
+        else:
+            return self.distroseries.distribution
+
+    @property
+    def other_affected_pillars(self):
+        """See `IBugTask`."""
+        result = set()
+        this_pillar = self.pillar
+        for task in self.bug.bugtasks:
+            that_pillar = task.pillar
+            if that_pillar != this_pillar:
+                result.add(that_pillar)
+        return sorted(result, key=pillar_sort_key)
 
     @property
     def bugtargetdisplayname(self):
