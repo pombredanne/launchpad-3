@@ -289,7 +289,7 @@ class InlineEditPickerWidget(WidgetBase):
         Default implementation is to return the 'name' attribute.
         """
         val = getattr(self.context, self.exported_field.__name__)
-        if val is not None and hasattr(val, 'name'):
+        if val is not None and safe_hasattr(val, 'name'):
             return getattr(val, 'name')
         return None
 

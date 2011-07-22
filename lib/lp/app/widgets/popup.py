@@ -17,6 +17,7 @@ from zope.app.form.browser.itemswidgets import (
 from zope.schema.interfaces import IChoice
 
 from canonical.launchpad.webapp import canonical_url
+from canonical.lazr.utils import safe_hasattr
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.vocabulary import get_person_picker_entry_metadata
 from lp.services.features import getFeatureFlag
@@ -111,7 +112,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
         Default implementation is to return the 'name' attribute.
         """
         val = self._getFormValue()
-        if val is not None and hasattr(val, 'name'):
+        if val is not None and safe_hasattr(val, 'name'):
             return getattr(val, 'name')
         return None
 
