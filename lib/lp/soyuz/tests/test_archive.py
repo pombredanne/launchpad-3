@@ -12,7 +12,9 @@ import doctest
 
 from testtools.matchers import (
     DocTestMatches,
+    Equals,
     MatchesRegex,
+    MatchesStructure,
     )
 from testtools.testcase import ExpectedException
 import transaction
@@ -1937,6 +1939,32 @@ class TestGetPublishedSources(TestCaseWithFactory):
             [filtered_source.sourcepackagerelease.name for filtered_source in
             filtered_sources])
 
+    def test_getPublishedSources_multi_pockets(self):
+        # Passing an iterable of pockets should return publications
+        # with any of them in.
+        distroseries =  self.factory.makeDistroSeries()
+        pockets = [
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.UPDATES,
+            PackagePublishingPocket.BACKPORTS,
+            ]
+        for pocket in pockets:
+            self.factory.makeSourcePackagePublishingHistory(
+                sourcepackagename=pocket.name.lower(),
+                distroseries=distroseries,
+                archive=distroseries.main_archive,
+                pocket=pocket)
+        required_pockets = [
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.UPDATES,
+            ]
+        filtered = distroseries.main_archive.getPublishedSources(
+            pocket=required_pockets)
+
+        self.assertContentEqual(
+            [PackagePublishingPocket.RELEASE, PackagePublishingPocket.UPDATES],
+            [source.pocket for source in filtered])
+
 
 class TestSyncSourceFeatureFlag(TestCaseWithFactory):
 
@@ -1945,7 +1973,7 @@ class TestSyncSourceFeatureFlag(TestCaseWithFactory):
     def test_copyPackage_requires_feature_flag(self):
         # Ensure feature is off.
         self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": ''}))
-        archive = self.factory.makeArchive()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         self.assertRaises(
             ForbiddenByFeatureFlag,
             archive.copyPackage,
@@ -1954,7 +1982,27 @@ class TestSyncSourceFeatureFlag(TestCaseWithFactory):
     def test_copyPackages_requires_feature_flag(self):
         # Ensure feature is off.
         self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": ''}))
-        archive = self.factory.makeArchive()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertRaises(
+            ForbiddenByFeatureFlag,
+            archive.copyPackages,
+            None, None, None, None, None)
+
+    def test_copyPackage_to_ppa_requires_feature_flag(self):
+        # Ensure feature is off.
+        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": 'on'}))
+        self.useFixture(FeatureFixture({u"soyuz.copypackageppa.enabled": ''}))
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertRaises(
+            ForbiddenByFeatureFlag,
+            archive.copyPackage,
+            None, None, None, None, None)
+
+    def test_copyPackages_to_ppa_requires_feature_flag(self):
+        # Ensure feature is off.
+        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": 'on'}))
+        self.useFixture(FeatureFixture({u"soyuz.copypackageppa.enabled": ''}))
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         self.assertRaises(
             ForbiddenByFeatureFlag,
             archive.copyPackages,
@@ -1967,7 +2015,10 @@ class TestSyncSource(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSyncSource, self).setUp()
-        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": 'on'}))
+        self.useFixture(FeatureFixture({
+            u"soyuz.copypackage.enabled": 'on',
+            u"soyuz.copypackageppa.enabled": 'on',
+            }))
 
     def test_security_team_can_copy_to_primary(self):
         # A member of ubuntu-security can use syncSource on any package
@@ -2034,14 +2085,15 @@ class TestSyncSource(TestCaseWithFactory):
         copy_job = job_source.getActiveJobs(target_archive).one()
 
         # Its data should reflect the requested copy.
-        self.assertEqual(source_name, copy_job.package_name)
-        self.assertEqual(version, copy_job.package_version)
-        self.assertEqual(target_archive, copy_job.target_archive)
-        self.assertEqual(source_archive, copy_job.source_archive)
-        self.assertEqual(to_series, copy_job.target_distroseries)
-        self.assertEqual(to_pocket, copy_job.target_pocket)
-        self.assertFalse(copy_job.include_binaries)
-        self.assertEquals(PackageCopyPolicy.INSECURE, copy_job.copy_policy)
+        self.assertThat(copy_job, MatchesStructure(
+            package_name=Equals(source_name),
+            package_version=Equals(version),
+            target_archive=Equals(target_archive),
+            source_archive=Equals(source_archive),
+            target_distroseries=Equals(to_series),
+            target_pocket=Equals(to_pocket),
+            include_binaries=Equals(False),
+            copy_policy=Equals(PackageCopyPolicy.INSECURE)))
 
     def test_copyPackage_disallows_non_primary_archive_uploaders(self):
         # If copying to a primary archive and you're not an uploader for
@@ -2115,7 +2167,15 @@ class TestSyncSource(TestCaseWithFactory):
         # There should be one copy job.
         job_source = getUtility(IPlainPackageCopyJobSource)
         copy_job = job_source.getActiveJobs(target_archive).one()
-        self.assertEqual(target_archive, copy_job.target_archive)
+        self.assertThat(copy_job, MatchesStructure(
+            package_name=Equals(source_name),
+            package_version=Equals(version),
+            target_archive=Equals(target_archive),
+            source_archive=Equals(source_archive),
+            target_distroseries=Equals(to_series),
+            target_pocket=Equals(to_pocket),
+            include_binaries=Equals(False),
+            copy_policy=Equals(PackageCopyPolicy.INSECURE)))
 
     def test_copyPackages_with_multiple_packages(self):
         (source, source_archive, source_name, target_archive, to_pocket,

@@ -35,9 +35,9 @@ from storm.expr import (
     Or,
     Sum,
     )
-from storm.zope.interfaces import ISQLObjectResultSet
 from storm.store import Store
 from storm.zope import IResultSet
+from storm.zope.interfaces import ISQLObjectResultSet
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy

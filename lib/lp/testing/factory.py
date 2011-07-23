@@ -894,6 +894,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                             restricted=False):
         """Create a new processor family.
 
+        A default processor for the family will be created with the
+        same name as the family.
+
         :param name: Name of the family (e.g. x86)
         :param title: Optional title of the family
         :param description: Optional extended description
@@ -906,11 +909,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             description = "Description of the %s processor family" % name
         if title is None:
             title = "%s and compatible processors." % name
-        family = getUtility(IProcessorFamilySet).new(name, title, description,
-            restricted=restricted)
+        family = getUtility(IProcessorFamilySet).new(
+            name, title, description, restricted=restricted)
         # Make sure there's at least one processor in the family, so that
         # other things can have a default processor.
-        self.makeProcessor(family=family)
+        self.makeProcessor(name=name, family=family)
         return family
 
     def makeProductRelease(self, milestone=None, product=None,
@@ -1677,7 +1680,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         bug = getUtility(IBugSet).createBug(create_bug_params)
         if bug_watch_url is not None:
             # fromText() creates a bug watch associated with the bug.
-            getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
+            with person_logged_in(owner):
+                getUtility(IBugWatchSet).fromText(bug_watch_url, bug, owner)
         bugtask = bug.default_bugtask
         if date_closed is not None:
             bugtask.transitionToStatus(

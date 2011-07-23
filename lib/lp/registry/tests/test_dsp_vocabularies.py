@@ -29,7 +29,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         term = vocabulary.toTerm(dsp.name)
         self.assertEqual(dsp.sourcepackagename.name, term.title)
-        expected_token = '%s-%s' % (dsp.distribution.name, dsp.name)
+        expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
         self.assertEqual(expected_token, term.token)
         self.assertEqual('Not yet built.', term.value)
 
@@ -42,7 +42,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
             distribution=bpph.distroseries.distribution)
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         term = vocabulary.toTerm(spr.sourcepackagename)
-        expected_token = '%s-%s' % (dsp.distribution.name, dsp.name)
+        expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
         self.assertEqual(expected_token, term.token)
         self.assertEqual(bpph.binary_package_name, term.value)
 
@@ -63,7 +63,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         dsp = spr.distrosourcepackage
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         term = vocabulary.toTerm(spr.sourcepackagename)
-        expected_token = '%s-%s' % (dsp.distribution.name, dsp.name)
+        expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
         self.assertEqual(expected_token, term.token)
         self.assertEqual(', '.join(expected_names), term.value)
 
@@ -88,7 +88,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
             context=spph.distroseries.distribution)
         results = vocabulary.searchForTerms(query=spph.source_package_name)
         self.assertTermsEqual(
-            vocabulary.toTerm(spph.source_package_name), results[0])
+            vocabulary.toTerm(spph.source_package_name), list(results)[0])
 
     def test_searchForTerms_unpublished_source(self):
         # If the source package name isn't published in the distribution,
@@ -117,7 +117,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
             context=distribution)
         spn = bpph.binarypackagerelease.build.source_package_release.name
         results = vocabulary.searchForTerms(query=bpph.binary_package_name)
-        self.assertTermsEqual(vocabulary.toTerm(spn), results[0])
+        self.assertTermsEqual(vocabulary.toTerm(spn), list(results)[0])
 
     def test_searchForTerms_published_multiple_binaries(self):
         # Searching for a subset of a binary package name returns the SPN
@@ -138,4 +138,4 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         vocabulary = DistributionSourcePackageVocabulary(
             context=das.distroseries.distribution)
         results = vocabulary.searchForTerms(query='xorg-se')
-        self.assertTermsEqual(vocabulary.toTerm(spn), results[0])
+        self.assertTermsEqual(vocabulary.toTerm(spn), list(results)[0])
