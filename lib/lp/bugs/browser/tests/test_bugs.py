@@ -86,7 +86,8 @@ class TestMaloneView(TestCaseWithFactory):
         self.assertIsNot(
             None, content.find(True, id=target_widget.show_widget_id))
         text = str(content)
-        picker_vocab = "DistributionOrProductOrProjectGroup"
-        self.assertIn(picker_vocab, text)
+        picker_script = (
+            "Y.lp.app.picker.create('DistributionOrProductOrProjectGroup'")
+        self.assertIn(picker_script, text)
         focus_script = "setFocusByName('field.searchtext')"
         self.assertIn(focus_script, text)
