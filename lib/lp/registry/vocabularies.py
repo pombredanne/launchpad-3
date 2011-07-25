@@ -2057,7 +2057,7 @@ class DistributionSourcePackageVocabulary:
 
     def searchForTerms(self, query=None):
         """See `IHugeVocabulary`."""
-        if query:
+        if not query:
             return EmptyResultSet()
         distribution, query = self.getDistributionAndPackageName(query)
         if distribution is None:
