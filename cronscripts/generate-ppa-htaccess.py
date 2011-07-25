@@ -16,6 +16,6 @@ from lp.archivepublisher.scripts.generate_ppa_htaccess import (
 
 if __name__ == '__main__':
     script = HtaccessTokenGenerator(
-        'generate-ppa-htaccess', dbuser=config.generateppahtaccess.dbuser)
+        'generate-ppa-htaccess', dbuser='generate_ppa_htaccess')
     script.lock_and_run()
 
