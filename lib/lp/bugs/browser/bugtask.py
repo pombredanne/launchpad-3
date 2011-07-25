@@ -132,7 +132,6 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin,
     )
 from canonical.launchpad.interfaces.launchpad import IHasExternalBugTracker
-from canonical.launchpad.interfaces.validation import validate_distrotask
 from canonical.launchpad.mailnotification import get_unified_diff
 from canonical.launchpad.searchbuilder import (
     all,
@@ -1376,10 +1375,11 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
 
         if distro is not None and sourcename != data.get('sourcepackagename'):
             try:
-                validate_distrotask(
-                    bugtask.bug, distro, data.get('sourcepackagename'))
-            except LaunchpadValidationError, error:
-                self.setFieldError('sourcepackagename', str(error))
+                validate_target(
+                    bugtask.bug,
+                    distro.getSourcePackage(data.get('sourcepackagename')))
+            except IllegalTarget as e:
+                self.setFieldError('sourcepackagename', e[0])
 
         new_product = data.get('product')
         if (old_product is None or old_product == new_product or
