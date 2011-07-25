@@ -258,6 +258,8 @@ class DatabasePreflight:
             success = False
         if not self.check_can_sync():
             success = False
+        # Do checks on open transactions last to minimize race
+        # conditions.
         if not self.check_open_connections():
             success = False
         if not self.check_long_running_transactions():
