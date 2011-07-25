@@ -437,57 +437,26 @@ def validate_sourcepackagename(self, attr, value):
     return validate_target_attribute(self, attr, value)
 
 
-def _validate_target_distro(bug, distribution, sourcepackagename=None):
-    if sourcepackagename is not None and len(distribution.series) > 0:
-        # If the distribution has at least one series, check that the
-        # source package has been published in the distribution.
-        try:
-            distribution.guessPublishedSourcePackageName(
-                sourcepackagename.name)
-        except NotFoundError, e:
-            raise IllegalTarget(e[0])
-    new_source_package = distribution.getSourcePackage(sourcepackagename)
-    if sourcepackagename is not None and (
-        bug.getBugTask(new_source_package) is not None):
-        # Ensure this distribution/sourcepackage task is unique.
-        raise IllegalTarget(
-            'This bug has already been reported on %s (%s).' % (
-                sourcepackagename.name, distribution.name))
-    elif (sourcepackagename is None and
-          bug.getBugTask(distribution) is not None):
-        # Don't allow two distribution tasks with no source package.
-        raise IllegalTarget(
-                'This bug has already been reported on %s.' % (
-                    distribution.name))
-    else:
-        # The bugtask is valid.
-        pass
-
-
 def validate_target(bug, target):
     """Validate a bugtask target against a bug's existing tasks.
 
     Checks that no conflicting tasks already exist.
     """
-    user = getUtility(ILaunchBag).user
-    params = BugTaskSearchParams(user, bug=bug)
-    if not target.searchTasks(params).is_empty():
+    if bug.getBugTask(target):
         raise IllegalTarget(
             "A fix for this bug has already been requested for %s"
             % target.displayname)
 
-    # There is an extra set of checks for Distribution and
-    # DistributionSourcePackage tasks.
-    if IDistribution.providedBy(target):
-        distribution = target
-        sourcepackagename = None
-    elif IDistributionSourcePackage.providedBy(target):
-        distribution = target.distribution
-        sourcepackagename = target.sourcepackagename
-    else:
-        return
-
-    _validate_target_distro(bug, distribution, sourcepackagename)
+    if IDistributionSourcePackage.providedBy(target):
+        # If the distribution has at least one series, check that the
+        # source package has been published in the distribution.
+        if (target.sourcepackagename is not None and
+            len(target.distribution.series) > 0):
+            try:
+                target.distribution.guessPublishedSourcePackageName(
+                    target.sourcepackagename.name)
+            except NotFoundError, e:
+                raise IllegalTarget(e[0])
 
 
 def validate_new_target(bug, target):
