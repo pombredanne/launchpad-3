@@ -2012,9 +2012,8 @@ class DistributionSourcePackageVocabulary:
         pass
 
     def getDistributionAndPackageName(self, text):
-        # XXX sinzui 2011-07-21: match the toTerm() format, but also
-        # use it to select a distribution. Maybe this should also split on
-        # a the first space.
+        "Return the distribution and package name from the parsed text."
+        # Match the toTerm() format, but also use it to select a distribution.
         distribution = None
         if '/' in text:
             distro_name, text = text.split('/', 1)
