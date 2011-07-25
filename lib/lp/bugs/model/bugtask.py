@@ -533,7 +533,7 @@ def validate_new_target(bug, target):
         # should be reassigned to the sourcepackage, rather than a new
         # task opened.
         if bug.getBugTask(distribution) is not None:
-            raise LaunchpadValidationError(_(
+            raise IllegalTarget(_(
                     'This bug is already open on ${distribution} with no '
                     'package specified. You should fill in a package '
                     'name for the existing bug.',
@@ -548,15 +548,13 @@ def validate_new_target(bug, target):
             if bugtask.distribution == distribution]
 
         if len(distribution_tasks_for_bug) > 0:
-            raise LaunchpadValidationError(_(
+            raise IllegalTarget(_(
                     'This bug is already on ${distribution}. Please '
                     'specify an affected package in which the bug '
                     'has not yet been reported.',
                     mapping={'distribution': distribution.displayname}))
-    try:
-        validate_target(bug, distribution.getSourcePackage(sourcepackagename))
-    except IllegalTarget as e:
-        raise LaunchpadValidationError(e[0])
+
+    validate_target(bug, distribution.getSourcePackage(sourcepackagename))
 
 
 class BugTask(SQLBase):

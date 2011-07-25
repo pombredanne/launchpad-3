@@ -432,8 +432,8 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
                 if sourcepackagename:
                     target = target.getSourcePackage(sourcepackagename)
                 validate_new_target(self.context.bug, target)
-            except LaunchpadValidationError, error:
-                self.setFieldError('sourcepackagename', error.snippet())
+            except IllegalTarget as e:
+                self.setFieldError('sourcepackagename', e[0])
 
         super(DistroBugTaskCreationStep, self).validateStep(data)
 
