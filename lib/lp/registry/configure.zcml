@@ -257,6 +257,11 @@
             interface="lp.registry.interfaces.distroseries.IDistroSeriesSet"/>
     </securedutility>
     <adapter
+        provides="lp.registry.interfaces.distribution.IDistribution"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        factory="lp.registry.adapters.distroseries_to_distribution"
+        permission="zope.Public"/>
+    <adapter
         provides="lp.app.interfaces.launchpad.ILaunchpadUsage"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         factory="lp.registry.adapters.distroseries_to_distribution"

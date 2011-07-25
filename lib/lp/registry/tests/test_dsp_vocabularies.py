@@ -29,13 +29,20 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         self.assertEqual(dsp.distribution, vocabulary.distribution)
 
     def test_init_dsp_bugtask(self):
-        # Adsp bugtask can be the context
+        # A dsp bugtask can be the context
         dsp = self.factory.makeDistributionSourcePackage(
             sourcepackagename='foo')
         bugtask = self.factory.makeBugTask(target=dsp)
         vocabulary = DistributionSourcePackageVocabulary(bugtask)
         self.assertEqual(bugtask, vocabulary.context)
         self.assertEqual(bugtask.distribution, vocabulary.distribution)
+
+    def test_init_distroseries(self):
+        # A distroseries can be the context.
+        series = self.factory.makeDistroSeries()
+        vocabulary = DistributionSourcePackageVocabulary(series)
+        self.assertEqual(series, vocabulary.context)
+        self.assertEqual(series.distribution, vocabulary.distribution)
 
     def test_toTerm_raises_error(self):
         # An error is raised for DSPs without publishing history.
