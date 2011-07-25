@@ -10,6 +10,7 @@ from lp.archivepublisher.utils import get_ppa_reference
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.notification import (
+    assemble_body,
     calculate_subject,
     get_recipients,
     fetch_information,
@@ -237,3 +238,16 @@ class TestNotification(TestCaseWithFactory):
         expected = [format_address_for_person(p)
                     for p in (blamer, maintainer)]
         self.assertEqual(expected, recipients)
+
+    def test_assemble_body_handles_no_preferred_email_for_changer(self):
+        # If changer has no preferred email address,
+        # assemble_body should still work.
+        spr = self.factory.makeSourcePackageRelease()
+        blamer = self.factory.makePerson()
+        archive = self.factory.makeArchive()
+        series = self.factory.makeDistroSeries()
+
+        spr.creator.setPreferredEmail(None)
+
+        body = assemble_body(blamer, spr, [], archive, series, "",
+                             None, "unapproved")
