@@ -190,12 +190,6 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
 
 @adapter(ISourcePackage)
-@implementer(IServiceUsage)
-def distribution_from_sourcepackage(package):
-    return package.distribution
-
-
-@adapter(ISourcePackage)
 class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
     implements(IBreadcrumb)
