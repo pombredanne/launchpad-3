@@ -12,9 +12,7 @@ __all__ = [
     'valid_cve_sequence',
     'validate_new_team_email',
     'validate_new_person_email',
-    'validate_distrotask',
     'validate_new_distrotask',
-    'valid_upstreamtask',
     'valid_password',
     'validate_date_interval',
     ]
@@ -24,8 +22,6 @@ from textwrap import dedent
 
 from zope.app.form.interfaces import WidgetsError
 from zope.component import getUtility
-
-from lazr.restful.error import expose
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.emailaddress import (
@@ -157,9 +153,13 @@ def validate_new_distrotask(bug, distribution, sourcepackagename=None):
     source package, or that such task is added only when the bug doesn't
     already have any tasks for the distribution.
 
-    The same checks as `validate_distrotask` does are also done.
+    The same checks as `validate_target` does are also done.
     """
     from canonical.launchpad.helpers import shortlist
+    from lp.bugs.model.bugtask import (
+        IllegalTarget,
+        validate_target,
+        )
 
     if sourcepackagename:
         # Ensure that there isn't already a generic task open on the
@@ -187,60 +187,10 @@ def validate_new_distrotask(bug, distribution, sourcepackagename=None):
                     'specify an affected package in which the bug '
                     'has not yet been reported.',
                     mapping={'distribution': distribution.displayname}))
-    validate_distrotask(bug, distribution, sourcepackagename)
-
-
-def validate_distrotask(bug, distribution, sourcepackagename=None):
-    """Check if a distribution bugtask already exists for a given bug.
-
-    If validation fails, a LaunchpadValidationError will be raised.
-    """
-    if sourcepackagename is not None and len(distribution.series) > 0:
-        # If the distribution has at least one series, check that the
-        # source package has been published in the distribution.
-        try:
-            distribution.guessPublishedSourcePackageName(
-                sourcepackagename.name)
-        except NotFoundError, e:
-            raise LaunchpadValidationError(e[0])
-    new_source_package = distribution.getSourcePackage(sourcepackagename)
-    if sourcepackagename is not None and (
-        bug.getBugTask(new_source_package) is not None):
-        # Ensure this distribution/sourcepackage task is unique.
-        raise LaunchpadValidationError(_(
-                'This bug has already been reported on ${source} '
-                '(${distribution}).',
-                mapping={'source': sourcepackagename.name,
-                         'distribution': distribution.name}))
-    elif (sourcepackagename is None and
-          bug.getBugTask(distribution) is not None):
-        # Don't allow two distribution tasks with no source package.
-        raise LaunchpadValidationError(_(
-                'This bug has already been reported on ${distribution}.',
-                 mapping={'distribution': distribution.name}))
-    else:
-        # The bugtask is valid.
-        pass
-
-
-def valid_upstreamtask(bug, bug_target):
-    """Check if a bugtask already exists for a given bug/target.
-
-    If it exists, WidgetsError will be raised.
-    """
-    # Local import to avoid circular imports.
-    from lp.bugs.interfaces.bugtask import BugTaskSearchParams
-    errors = []
-    user = getUtility(ILaunchBag).user
-    params = BugTaskSearchParams(user, bug=bug)
-    if not bug_target.searchTasks(params).is_empty():
-        errors.append(
-            LaunchpadValidationError(_(
-                'A fix for this bug has already been requested for ${target}',
-                mapping={'target': bug_target.displayname})))
-
-    if len(errors) > 0:
-        raise expose(WidgetsError(errors), 400)
+    try:
+        validate_target(bug, distribution.getSourcePackage(sourcepackagename))
+    except IllegalTarget as e:
+        raise LaunchpadValidationError(e[0])
 
 
 def valid_password(password):

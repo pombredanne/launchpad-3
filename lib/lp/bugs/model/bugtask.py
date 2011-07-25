@@ -82,14 +82,13 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad import _
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.validation import (
-    valid_upstreamtask,
-    validate_distrotask,
     validate_new_distrotask,
     )
 from canonical.launchpad.searchbuilder import (
@@ -443,6 +442,54 @@ def validate_sourcepackagename(self, attr, value):
     return validate_target_attribute(self, attr, value)
 
 
+def _validate_target_distro(bug, distribution, sourcepackagename=None):
+    """Check if a distribution bugtask already exists for a given bug.
+
+    If validation fails, a LaunchpadValidationError will be raised.
+    """
+    if sourcepackagename is not None and len(distribution.series) > 0:
+        # If the distribution has at least one series, check that the
+        # source package has been published in the distribution.
+        try:
+            distribution.guessPublishedSourcePackageName(
+                sourcepackagename.name)
+        except NotFoundError, e:
+            raise LaunchpadValidationError(e[0])
+    new_source_package = distribution.getSourcePackage(sourcepackagename)
+    if sourcepackagename is not None and (
+        bug.getBugTask(new_source_package) is not None):
+        # Ensure this distribution/sourcepackage task is unique.
+        raise IllegalTarget(_(
+                'This bug has already been reported on ${source} '
+                '(${distribution}).',
+                mapping={'source': sourcepackagename.name,
+                         'distribution': distribution.name}))
+    elif (sourcepackagename is None and
+          bug.getBugTask(distribution) is not None):
+        # Don't allow two distribution tasks with no source package.
+        raise IllegalTarget(_(
+                'This bug has already been reported on ${distribution}.',
+                 mapping={'distribution': distribution.name}))
+    else:
+        # The bugtask is valid.
+        pass
+
+
+def _validate_target_other(bug, bug_target):
+    """Check if a bugtask already exists for a given bug/target.
+
+    If it exists, WidgetsError will be raised.
+    """
+    # Local import to avoid circular imports.
+    from lp.bugs.interfaces.bugtask import BugTaskSearchParams
+    user = getUtility(ILaunchBag).user
+    params = BugTaskSearchParams(user, bug=bug)
+    if not bug_target.searchTasks(params).is_empty():
+        raise IllegalTarget(_(
+                'A fix for this bug has already been requested for ${target}',
+                mapping={'target': bug_target.displayname}))
+
+
 def validate_target(bug, target):
     if IDistribution.providedBy(target):
         distribution = target
@@ -458,9 +505,9 @@ def validate_target(bug, target):
 
     try:
         if distribution is not None:
-            return validate_distrotask(bug, distribution, sourcepackagename)
+            _validate_target_distro(bug, distribution, sourcepackagename)
         else:
-            return valid_upstreamtask(bug, target)
+            _validate_other(bug, target)
     except (LaunchpadValidationError, WidgetsError) as e:
         raise IllegalTarget(e[0])
 
