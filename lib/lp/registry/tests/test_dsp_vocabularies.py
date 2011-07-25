@@ -184,7 +184,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
             sourcepackagename='foo')
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         token = '%s/%s' % (dsp.distribution.name, dsp.name)
-        self.assertRaises(LookupError, vocabulary.getTermByToken, token)        
+        self.assertRaises(LookupError, vocabulary.getTermByToken, token)
 
     def test_getTermByToken_token(self):
         # The term is return if it matches a published DSP.
