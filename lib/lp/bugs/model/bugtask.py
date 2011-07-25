@@ -464,36 +464,30 @@ def _validate_target_distro(bug, distribution, sourcepackagename=None):
         pass
 
 
-def _validate_target_other(bug, bug_target):
-    user = getUtility(ILaunchBag).user
-    params = BugTaskSearchParams(user, bug=bug)
-    if not bug_target.searchTasks(params).is_empty():
-        raise IllegalTarget(
-            "A fix for this bug has already been requested for %s"
-            % bug_target.displayname)
-
-
 def validate_target(bug, target):
     """Validate a bugtask target against a bug's existing tasks.
 
     Checks that no conflicting tasks already exist.
     """
+    user = getUtility(ILaunchBag).user
+    params = BugTaskSearchParams(user, bug=bug)
+    if not target.searchTasks(params).is_empty():
+        raise IllegalTarget(
+            "A fix for this bug has already been requested for %s"
+            % target.displayname)
+
+    # There is an extra set of checks for Distribution and
+    # DistributionSourcePackage tasks.
     if IDistribution.providedBy(target):
         distribution = target
         sourcepackagename = None
     elif IDistributionSourcePackage.providedBy(target):
         distribution = target.distribution
         sourcepackagename = target.sourcepackagename
-    elif IProduct.providedBy(target):
-        distribution = None
-        sourcepackagename = None
     else:
-        raise AssertionError("%r is not a supported target." % target)
+        return
 
-    if distribution is not None:
-        _validate_target_distro(bug, distribution, sourcepackagename)
-    else:
-        _validate_target_other(bug, target)
+    _validate_target_distro(bug, distribution, sourcepackagename)
 
 
 def validate_new_target(bug, target):

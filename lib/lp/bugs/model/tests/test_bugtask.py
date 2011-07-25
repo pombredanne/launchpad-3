@@ -1857,14 +1857,6 @@ class TestValidateTarget(TestCaseWithFactory):
             % p.displayname,
             validate_target, task.bug, p)
 
-    def test_productseries_is_invalid(self):
-        # ProductSeries tasks aren't created directly, so asking about
-        # their validity makes no sense.
-        task = self.factory.makeBugTask()
-        self.assertRaises(
-            AssertionError,
-            validate_target, task.bug, self.factory.makeProductSeries())
-
     def test_new_distribution_is_allowed(self):
         # A new distribution not on the bug is OK.
         d1 = self.factory.makeDistribution()
@@ -1872,13 +1864,35 @@ class TestValidateTarget(TestCaseWithFactory):
         d2 = self.factory.makeDistribution()
         validate_target(task.bug, d2)
 
+    def test_new_productseries_is_allowed(self):
+        # A new productseries not on the bug is OK.
+        ds1 = self.factory.makeProductSeries()
+        task = self.factory.makeBugTask(target=ds1)
+        ds2 = self.factory.makeProductSeries()
+        validate_target(task.bug, ds2)
+
+    def test_new_distroseries_is_allowed(self):
+        # A new distroseries not on the bug is OK.
+        ds1 = self.factory.makeDistroSeries()
+        task = self.factory.makeBugTask(target=ds1)
+        ds2 = self.factory.makeDistroSeries()
+        validate_target(task.bug, ds2)
+
+    def test_new_sourcepackage_is_allowed(self):
+        # A new sourcepackage not on the bug is OK.
+        sp1 = self.factory.makeSourcePackage()
+        task = self.factory.makeBugTask(target=sp1)
+        sp2 = self.factory.makeSourcePackage()
+        validate_target(task.bug, sp2)
+
     def test_multiple_packageless_distribution_tasks_are_forbidden(self):
         # A distribution with an existing task is not.
         d = self.factory.makeDistribution()
         task = self.factory.makeBugTask(target=d)
         self.assertRaisesWithContent(
             IllegalTarget,
-            "This bug has already been reported on %s." % d.name,
+            "A fix for this bug has already been requested for %s"
+            % d.displayname,
             validate_target, task.bug, d)
 
     def test_distributionsourcepackage_task_is_allowed(self):
@@ -1905,8 +1919,8 @@ class TestValidateTarget(TestCaseWithFactory):
         task = self.factory.makeBugTask(target=dsp)
         self.assertRaisesWithContent(
             IllegalTarget,
-            "This bug has already been reported on %s (%s)."
-            % (dsp.sourcepackagename.name, dsp.distribution.name),
+            "A fix for this bug has already been requested for %s in %s"
+            % (dsp.sourcepackagename.name, dsp.distribution.displayname),
             validate_target, task.bug, dsp)
 
     def test_dsp_without_publications_disallowed(self):
