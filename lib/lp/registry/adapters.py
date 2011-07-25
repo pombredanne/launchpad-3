@@ -28,6 +28,14 @@ from lp.registry.interfaces.poll import (
     )
 
 
+def sourcepackage_to_distribution(source_package):
+    """Adapts `ISourcePackage` object to `IDistribution`.
+
+    This also supports `IDistributionSourcePackage`
+    """
+    return source_package.distribution
+
+
 def distroseries_to_distribution(distroseries):
     """Adapts `IDistroSeries` object to `IDistribution`.
 

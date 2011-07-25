@@ -1986,16 +1986,14 @@ class DistributionSourcePackageVocabulary:
 
     def __init__(self, context):
         self.context = context
-        if IDistributionSourcePackage.providedBy(context):
-            self.distribution = context.distribution
-        elif (IBugTask.providedBy(context)
-            and IDistributionSourcePackage.providedBy(context.target)):
-            self.distribution = context.target.distribution
+        if IBugTask.providedBy(context):
+            target = context.target
         else:
-            try:
-                self.distribution = IDistribution(context)
-            except TypeError:
-                self.distribution = None
+            target = context
+        try:
+            self.distribution = IDistribution(target)
+        except TypeError:
+            self.distribution = None
 
     def __contains__(self, spn_or_dsp):
         try:

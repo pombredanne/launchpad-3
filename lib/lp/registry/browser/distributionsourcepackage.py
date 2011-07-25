@@ -116,12 +116,6 @@ class DistributionSourcePackageBreadcrumb(Breadcrumb):
             self.context.sourcepackagename.name)
 
 
-@adapter(IDistributionSourcePackage)
-@implementer(IServiceUsage)
-def distribution_from_distributionsourcepackage(dsp):
-    return dsp.distribution
-
-
 class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
                                       StandardLaunchpadFacets):
 

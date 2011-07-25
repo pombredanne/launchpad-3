@@ -537,11 +537,19 @@
                 "/>
     </class>
     <adapter
+        provides="lp.registry.interfaces.distribution.IDistribution"
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        factory="lp.registry.adapters.sourcepackage_to_distribution"
+        permission="zope.Public"/>
+    <adapter
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
         factory="canonical.launchpad.components.launchpadcontainer.LaunchpadDistributionSourcePackageContainer"/>
     <adapter
-        factory="lp.registry.browser.distributionsourcepackage.distribution_from_distributionsourcepackage"/>
+        provides="lp.app.interfaces.launchpad.IServiceUsage"
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        factory="lp.registry.adapters.sourcepackage_to_distribution"
+        permission="zope.Public"/>
     <adapter
         factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumb"/>
 
@@ -1619,9 +1627,17 @@
             interface="lp.registry.interfaces.sourcepackage.ISourcePackageFactory"/>
     </securedutility>
     <adapter
+        provides="lp.registry.interfaces.distribution.IDistribution"
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        factory="lp.registry.adapters.sourcepackage_to_distribution"
+        permission="zope.Public"/>
+    <adapter
         factory="lp.registry.browser.sourcepackage.SourcePackageBreadcrumb"/>
     <adapter
-        factory="lp.registry.browser.sourcepackage.distribution_from_sourcepackage"/>
+        provides="lp.app.interfaces.launchpad.IServiceUsage"
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        factory="lp.registry.adapters.sourcepackage_to_distribution"
+        permission="zope.Public"/>
 
     <!-- This is class ProductReleaseSet -->
 
