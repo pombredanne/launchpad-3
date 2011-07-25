@@ -30,6 +30,7 @@ for the member.
     >>> from lp.registry.interfaces.person import (
     ...     IPersonSet,
     ...     TeamMembershipRenewalPolicy,
+    ...     TeamSubscriptionPolicy,
     ...     )
     >>> from lp.registry.interfaces.teammembership import (
     ...     ITeamMembershipSet,
@@ -44,6 +45,31 @@ for the member.
     >>> from lp.testing.sampledata import ADMIN_EMAIL
     >>> admin_person = personset.getByEmail(ADMIN_EMAIL)
 
+
+In open teams joining and leaving the team generates no notifications.
+
+    >>> login_person(admin_person)
+    >>> ubuntu_team_policy = ubuntu_team.subscriptionpolicy
+    >>> ubuntu_team.subscriptionpolicy = TeamSubscriptionPolicy.OPEN
+    >>> base_mails = len(stub.test_emails)
+    >>> new_person = factory.makePerson()
+    >>> login_person(new_person)
+    >>> new_person.join(ubuntu_team)
+    >>> membership = membershipset.getByPersonAndTeam(new_person, ubuntu_team)
+    >>> membership.status.title
+    'Approved'
+    >>> run_mail_jobs()
+    >>> len(stub.test_emails) - base_mails
+    0
+    >>> new_person.leave(ubuntu_team)
+    >>> run_mail_jobs()
+    >>> len(stub.test_emails) - base_mails
+    0
+
+Put ubuntu back to the original status:
+
+    >>> login_person(admin_person)
+    >>> ubuntu_team.subscriptionpolicy = ubuntu_team_policy
 
 Now Robert Collins proposes himself as a member of the Ubuntu Team. This
 generates a notification email only to Ubuntu Team administrators.
@@ -875,8 +901,6 @@ email contain subscription information.
     >>> ignored = team_one.addMember(member, owner)
     >>> print_distinct_emails()
     From: Team One ...
-    ----------------------------------------
-    From: Team One ...
     To: team-member...
     X-Launchpad-Message-Rationale: Member (team-one)
     Subject: You have been added to team-one
@@ -900,8 +924,6 @@ emails contain subscription information.
     ...     name='team-two', email='team-two@example.com', owner=owner)
     >>> ignored = team_one.addMember(team_two, owner, force_team_add=True)
     >>> print_distinct_emails()
-    From: Team One ...
-    ----------------------------------------
     From: Team One ...
     To: team-two...
     X-Launchpad-Message-Rationale: Indirect member (team-one)
