@@ -281,7 +281,14 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
     if distroseries.changeslist:
         information['ANNOUNCE'] = "Announcing to %s" % (
             distroseries.changeslist)
-    if blamer is not None and blamer != email_to_person(changedby):
+    try:
+        changedby_person = email_to_person(changedby)
+    except ParseMaintError:
+        # Some syncs (e.g. from Debian) will involve packages whose
+        # changed-by person was auto-created in LP and hence does not
+        # have a preferred email address set.
+        changedby_person = None
+    if blamer is not None and blamer != changedby_person:
         signer_signature = person_to_email(blamer)
         if signer_signature != changedby:
             information['SIGNER'] = '\nSigned-By: %s' % signer_signature
