@@ -1370,16 +1370,20 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             distro = bugtask.distroseries.distribution
         else:
             distro = bugtask.distribution
-        sourcename = bugtask.sourcepackagename
         old_product = bugtask.product
 
-        if distro is not None and sourcename != data.get('sourcepackagename'):
+        new_spn = data.get('sourcepackagename')
+        if distro is not None and bugtask.sourcepackagename != new_spn:
             try:
-                validate_target(
-                    bugtask.bug,
-                    distro.getSourcePackage(data.get('sourcepackagename')))
+                target = distro
+                if new_spn is not None:
+                    target = distro.getSourcePackage(new_spn)
+                validate_target(bugtask.bug, target)
             except IllegalTarget as e:
-                self.setFieldError('sourcepackagename', e[0])
+                # The field validator may have already set an error.
+                # Don't clobber it.
+                if not self.getFieldError('sourcepackagename'):
+                    self.setFieldError('sourcepackagename', e[0])
 
         new_product = data.get('product')
         if (old_product is None or old_product == new_product or
