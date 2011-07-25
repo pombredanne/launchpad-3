@@ -862,24 +862,20 @@ class TestDistroSeriesLocalDifferences_WRONG_LAYER(
     DistroSeriesDifferenceMixin, TestCaseWithFactory):
     """Test the distroseries +localpackagediffs page."""
 
-    layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        sup = super(TestDistroSeriesLocalDifferences_WRONG_LAYER, self)
-        sup.setUp('foo.bar@canonical.com')
-        set_derived_series_ui_feature_flag(self)
-        self.simple_user = self.factory.makePerson()
+    layer = LaunchpadFunctionalLayer
 
     def test_filter_form_if_differences(self):
         # Test that the page includes the filter form if differences
         # are present
-        login_person(self.simple_user)
+        simple_user = self.factory.makePerson()
+        login_person(simple_user)
         derived_series, parent_series = self._createChildAndParent()
         self.factory.makeDistroSeriesDifference(
             derived_series=derived_series)
 
+        set_derived_series_ui_feature_flag(self)
         view = create_initialized_view(
-            derived_series, '+localpackagediffs', principal=self.simple_user)
+            derived_series, '+localpackagediffs', principal=simple_user)
 
         self.assertIsNot(
             None,
@@ -889,11 +885,13 @@ class TestDistroSeriesLocalDifferences_WRONG_LAYER(
     def test_filter_noform_if_nodifferences(self):
         # Test that the page doesn't includes the filter form if no
         # differences are present
-        login_person(self.simple_user)
+        simple_user = self.factory.makePerson()
+        login_person(simple_user)
         derived_series, parent_series = self._createChildAndParent()
 
+        set_derived_series_ui_feature_flag(self)
         view = create_initialized_view(
-            derived_series, '+localpackagediffs', principal=self.simple_user)
+            derived_series, '+localpackagediffs', principal=simple_user)
 
         self.assertIs(
             None,
@@ -908,11 +906,13 @@ class TestDistroSeriesLocalDifferences_WRONG_LAYER(
                 packages=[ds_diff.source_package_name],
                 distroseries=ds_diff.derived_series)
 
-        with person_logged_in(self.simple_user):
+        set_derived_series_ui_feature_flag(self)
+        simple_user = self.factory.makePerson()
+        with person_logged_in(simple_user):
             view = create_initialized_view(
                 ds_diff.derived_series,
                 '+localpackagediffs',
-                principal=self.simple_user)
+                principal=simple_user)
             html_content = view()
 
         packageset_text = re.compile('\s*' + ps.name)
@@ -931,11 +931,13 @@ class TestDistroSeriesLocalDifferences_WRONG_LAYER(
                     packages=[ds_diff.source_package_name],
                     distroseries=ds_diff.derived_series)
 
-        with person_logged_in(self.simple_user):
+        set_derived_series_ui_feature_flag(self)
+        simple_user = self.factory.makePerson()
+        with person_logged_in(simple_user):
             view = create_initialized_view(
                 ds_diff.derived_series,
                 '+localpackagediffs',
-                principal=self.simple_user)
+                principal=simple_user)
             html_content = view()
 
         packageset_text = re.compile(
