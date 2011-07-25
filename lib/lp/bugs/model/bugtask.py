@@ -55,7 +55,6 @@ from storm.store import (
     EmptyResultSet,
     Store,
     )
-from zope.app.form.interfaces import WidgetsError
 
 from zope.component import getUtility
 from zope.event import notify
@@ -103,7 +102,6 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.app.validators import LaunchpadValidationError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
@@ -441,7 +439,7 @@ def validate_sourcepackagename(self, attr, value):
 def _validate_target_distro(bug, distribution, sourcepackagename=None):
     """Check if a distribution bugtask already exists for a given bug.
 
-    If validation fails, a LaunchpadValidationError will be raised.
+    If validation fails, an IllegalTarget will be raised.
     """
     if sourcepackagename is not None and len(distribution.series) > 0:
         # If the distribution has at least one series, check that the
@@ -450,7 +448,7 @@ def _validate_target_distro(bug, distribution, sourcepackagename=None):
             distribution.guessPublishedSourcePackageName(
                 sourcepackagename.name)
         except NotFoundError, e:
-            raise LaunchpadValidationError(e[0])
+            raise IllegalTarget(e[0])
     new_source_package = distribution.getSourcePackage(sourcepackagename)
     if sourcepackagename is not None and (
         bug.getBugTask(new_source_package) is not None):
@@ -472,7 +470,7 @@ def _validate_target_distro(bug, distribution, sourcepackagename=None):
 def _validate_target_other(bug, bug_target):
     """Check if a bugtask already exists for a given bug/target.
 
-    If it exists, WidgetsError will be raised.
+    If it exists, IllegalTarget will be raised.
     """
     # Local import to avoid circular imports.
     from lp.bugs.interfaces.bugtask import BugTaskSearchParams
@@ -497,13 +495,10 @@ def validate_target(bug, target):
     else:
         raise AssertionError("%r is not a supported target." % target)
 
-    try:
-        if distribution is not None:
-            _validate_target_distro(bug, distribution, sourcepackagename)
-        else:
-            _validate_target_other(bug, target)
-    except (LaunchpadValidationError, WidgetsError) as e:
-        raise IllegalTarget(e[0])
+    if distribution is not None:
+        _validate_target_distro(bug, distribution, sourcepackagename)
+    else:
+        _validate_target_other(bug, target)
 
 
 def validate_new_target(bug, target):
