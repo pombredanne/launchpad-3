@@ -21,17 +21,12 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
             self.factory.makeDistribution())
         self.assertProvides(vocabulary, IHugeVocabulary)
 
-    def test_toTerm_unbuilt_dsp(self):
-        # If the source has no built binaries, the term's value contains a
-        # string to that effect.
+    def test_toTerm_raises_error(self):
+        # An error is raised for DSPs without publishing history.
         dsp = self.factory.makeDistributionSourcePackage(
             sourcepackagename='foo')
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
-        term = vocabulary.toTerm(dsp.name)
-        self.assertEqual(dsp.sourcepackagename.name, term.title)
-        expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
-        self.assertEqual(expected_token, term.token)
-        self.assertEqual('Not yet built.', term.value)
+        self.assertRaises(LookupError, vocabulary.toTerm, dsp.name)
 
     def test_toTerm_built_single_binary(self):
         # The binary package name appears in the term's value.
@@ -44,7 +39,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         term = vocabulary.toTerm(spr.sourcepackagename)
         expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
         self.assertEqual(expected_token, term.token)
-        self.assertEqual(bpph.binary_package_name, term.value)
+        self.assertEqual(bpph.binary_package_name, term.title)
 
     def test_toTerm_built_multiple_binary(self):
         # All of the binary package names appear in the term's value.
@@ -65,7 +60,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         term = vocabulary.toTerm(spr.sourcepackagename)
         expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
         self.assertEqual(expected_token, term.token)
-        self.assertEqual(', '.join(expected_names), term.value)
+        self.assertEqual(', '.join(expected_names), term.title)
 
     def test_searchForTerms_None(self):
         # Searching for nothing gets you that.
