@@ -44,7 +44,7 @@ SYSTEM_USERS = frozenset(['postgres', 'slony', 'nagios', 'lagmon'])
 FRAGILE_USERS = frozenset(['archivepublisher'])
 
 # How lagged the cluster can be before failing the preflight check.
-MAX_LAG = timedelta(seconds=45)
+MAX_LAG = timedelta(seconds=60)
 
 
 class DatabasePreflight:
@@ -201,7 +201,6 @@ class DatabasePreflight:
         # Check replication lag on every node just in case there are
         # disagreements.
         max_lag = timedelta(seconds=-1)
-        max_lag_node = None
         for node in self.nodes:
             cur = node.con.cursor()
             cur.execute("""
@@ -211,7 +210,6 @@ class DatabasePreflight:
             dbname, lag = cur.fetchone()
             if lag > max_lag:
                 max_lag = lag
-                max_lag_node = node
             self.log.debug(
                 "%s reports database lag of %s.", dbname, lag)
         if max_lag <= MAX_LAG:
@@ -287,7 +285,8 @@ class KillConnectionsPreflight(DatabasePreflight):
         for node in self.lpmain_nodes:
             cur = node.con.cursor()
             cur.execute("""
-                SELECT procpid, datname, usename, pg_terminate_backend(procpid)
+                SELECT
+                    procpid, datname, usename, pg_terminate_backend(procpid)
                 FROM pg_stat_activity
                 WHERE
                     datname=current_database()

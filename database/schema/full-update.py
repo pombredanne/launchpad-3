@@ -115,7 +115,6 @@ def main():
         return 99
 
     # Confirm we can invoke PGBOUNCER_INITD
-    pgbouncer_status_cmd = PGBOUNCER_INITD + ['status']
     pgbouncer_rc = run_pgbouncer(log, 'status')
     if pgbouncer_rc != 0:
         return pgbouncer_rc
@@ -182,7 +181,7 @@ def main():
             # Even if upgrade.py or security.py failed, we should be in
             # a good enough state to continue operation so restart
             # pgbouncer and allow connections.
-            #  - upgrade.py may have failed to update the master, and 
+            #  - upgrade.py may have failed to update the master, and
             #    changes should have rolled back.
             #  - upgrade.py may have failed to update a slave, breaking
             #    replication. The master is still operational, but
