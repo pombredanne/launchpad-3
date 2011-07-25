@@ -12,8 +12,7 @@ __all__ = [
     'BugCommentView',
     'BugCommentXHTMLRepresentation',
     'build_comments_from_chunks',
-    'group_comments_with_activity',
-    ]
+    'group_comments_with_activity', ]
 
 from datetime import (
     datetime,
@@ -332,6 +331,13 @@ class BugCommentView(LaunchpadView):
     def page_title(self):
         return 'Comment %d for bug %d' % (
             self.comment.index, self.context.bug.id)
+
+    @property
+    def privacy_notice_classes(self):
+        if not self.context.bug.private:
+            return 'hidden'
+        else:
+            return ''
 
 
 class BugCommentBoxViewMixin:
