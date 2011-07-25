@@ -57,7 +57,6 @@ from storm.store import (
     EmptyResultSet,
     Store,
     )
-
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import (
