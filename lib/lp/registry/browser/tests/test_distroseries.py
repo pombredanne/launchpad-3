@@ -2286,7 +2286,7 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
             "table.listing tbody td.last-changed-by")
         self.assertEqual(
             dsd.parent_source_package_release.creator.displayname,
-            creator_cell.find("a").text)
+            creator_cell.find(".//a").text)
 
     def test_diff_row_shows_spr_creator_and_uploader_if_different(self):
         # When the SPR creator and uploader are different both are named on
