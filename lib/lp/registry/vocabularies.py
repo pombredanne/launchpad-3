@@ -1986,7 +1986,9 @@ class DistributionSourcePackageVocabulary:
 
     def __init__(self, context):
         self.context = context
-        if IBugTask.providedBy(context):
+        # Avoid circular import issues.
+        from lp.answers.interfaces.question import IQuestion
+        if IBugTask.providedBy(context) or IQuestion.providedBy(context):
             target = context.target
         else:
             target = context

@@ -20,8 +20,9 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
             self.factory.makeDistribution())
         self.assertProvides(vocabulary, IHugeVocabulary)
 
-    def test_init_dsp(self):
-        # When the context is a dsp, it also provides the distribution.
+    def test_init_IDistribution(self):
+        # When the context is adaptable to IDistribution, it also provides
+        # the distribution.
         dsp = self.factory.makeDistributionSourcePackage(
             sourcepackagename='foo')
         vocabulary = DistributionSourcePackageVocabulary(dsp)
@@ -35,14 +36,25 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         bugtask = self.factory.makeBugTask(target=dsp)
         vocabulary = DistributionSourcePackageVocabulary(bugtask)
         self.assertEqual(bugtask, vocabulary.context)
-        self.assertEqual(bugtask.distribution, vocabulary.distribution)
+        self.assertEqual(dsp.distribution, vocabulary.distribution)
 
-    def test_init_distroseries(self):
-        # A distroseries can be the context.
-        series = self.factory.makeDistroSeries()
-        vocabulary = DistributionSourcePackageVocabulary(series)
-        self.assertEqual(series, vocabulary.context)
-        self.assertEqual(series.distribution, vocabulary.distribution)
+    def test_init_dsp_question(self):
+        # A dsp bugtask can be the context
+        dsp = self.factory.makeDistributionSourcePackage(
+            sourcepackagename='foo')
+        question = self.factory.makeQuestion(
+            target=dsp, owner=dsp.distribution.owner)
+        vocabulary = DistributionSourcePackageVocabulary(question)
+        self.assertEqual(question, vocabulary.context)
+        self.assertEqual(dsp.distribution, vocabulary.distribution)
+
+    def test_init_no_distribution(self):
+        # The distribution is None if the context cannot be adapted to a
+        # distribution.
+        project = self.factory.makeProduct()
+        vocabulary = DistributionSourcePackageVocabulary(project)
+        self.assertEqual(project, vocabulary.context)
+        self.assertEqual(None, vocabulary.distribution)
 
     def test_toTerm_raises_error(self):
         # An error is raised for DSPs without publishing history.
