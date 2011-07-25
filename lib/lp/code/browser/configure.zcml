@@ -657,13 +657,6 @@
         class="lp.code.browser.branchvisibilitypolicy.RemoveBranchVisibilityTeamPolicyView"
         permission="launchpad.Commercial"
         template="../../app/templates/generic-edit.pt"/>
-    <browser:page
-        name="+spark"
-        for="lp.code.interfaces.branch.IBranch"
-        layer="lp.code.publisher.CodeLayer"
-        class="lp.code.browser.branch.BranchSparkView"
-        facet="branches"
-        permission="zope.Public"/>
     <browser:menus
         classes="
             BranchContextMenu

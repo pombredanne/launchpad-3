@@ -227,9 +227,9 @@ thunderbird to see how this works.
     >>> from zope.event import notify
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from lp.bugs.interfaces.bugtask import IUpstreamBugTask
+    >>> from lp.bugs.interfaces.bugtask import IBugTask
 
-    >>> old_state = Snapshot(bug_in_evolution, providing=IUpstreamBugTask)
+    >>> old_state = Snapshot(bug_in_evolution, providing=IBugTask)
     >>> bug_in_evolution.product = thunderbird
     >>> bug_product_changed = ObjectModifiedEvent(
     ...     bug_in_evolution, old_state, ["product"])
