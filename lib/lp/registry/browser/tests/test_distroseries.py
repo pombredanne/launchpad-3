@@ -1345,7 +1345,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertEqual(versions['derived'], derived_span[0].string.strip())
         self.assertEqual(versions['parent'], parent_span[0].string.strip())
 
-    def test_diff_row_shows_spr_creator(self):
+    def test_diff_row_last_changed(self):
         # The SPR creator (i.e. who make the package change, rather than the
         # uploader) is shown on each difference row.
         set_derived_series_ui_feature_flag(self)
@@ -1359,7 +1359,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
                 dsd.source_package_release.creator.displayname,),
             normalize_whitespace(creator_cell.text_content()))
 
-    def test_diff_row_shows_spr_creator_and_uploader_if_different(self):
+    def test_diff_row_last_changed_also_shows_uploader_if_different(self):
         # When the SPR creator and uploader are different both are named on
         # each difference row.
         set_derived_series_ui_feature_flag(self)
@@ -2266,7 +2266,7 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
             html_content, packageset_text, 'parent-packagesets',
             'Parent packagesets')
 
-    def test_diff_row_shows_spr_creator(self):
+    def test_diff_row_last_changed(self):
         # The parent SPR creator (i.e. who make the package change, rather
         # than the uploader) is shown on each difference row.
         missing_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
@@ -2280,10 +2280,11 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
         [creator_cell] = root.cssselect(
             "table.listing tbody td.last-changed")
         self.assertEqual(
-            dsd.parent_source_package_release.creator.displayname,
-            creator_cell.find(".//a").text)
+            "a moment ago by %s" % (
+                dsd.parent_source_package_release.creator.displayname,),
+            normalize_whitespace(creator_cell.text_content()))
 
-    def test_diff_row_shows_spr_creator_and_uploader_if_different(self):
+    def test_diff_row_last_changed_also_shows_uploader_if_different(self):
         # When the SPR creator and uploader are different both are named on
         # each difference row.
         missing_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
