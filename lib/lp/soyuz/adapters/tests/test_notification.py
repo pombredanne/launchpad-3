@@ -259,3 +259,4 @@ class TestNotification(TestCaseWithFactory):
 
         body = assemble_body(blamer, spr, [], archive, series, "",
                              None, "unapproved")
+        self.assertIn("Waiting for approval", body)
