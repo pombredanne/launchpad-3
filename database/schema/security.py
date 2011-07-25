@@ -172,10 +172,11 @@ def main(options):
                     node.nickname, node.connection_string))
                 reset_permissions(
                     psycopg2.connect(node.connection_string), config, options)
-            return
+            return 0
         log.warning("--cluster requested, but not a Slony-I cluster.")
     log.info("Resetting permissions on single database")
     reset_permissions(con, config, options)
+    return 0
 
 
 def list_identifiers(identifiers):
