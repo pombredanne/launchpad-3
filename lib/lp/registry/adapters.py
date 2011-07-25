@@ -9,6 +9,7 @@ __all__ = [
     'distroseries_to_distribution',
     'PollSubset',
     'productseries_to_product',
+    'sourcepackage_to_distribution',
     ]
 
 
