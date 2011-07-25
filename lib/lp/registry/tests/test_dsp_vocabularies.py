@@ -56,6 +56,22 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         self.assertEqual(project, vocabulary.context)
         self.assertEqual(None, vocabulary.distribution)
 
+    def test_contains_true(self):
+        # The vocabulary contains DSPs that have SPPH in the distro.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        spr = spph.sourcepackagerelease
+        dsp = spr.distrosourcepackage
+        vocabulary = DistributionSourcePackageVocabulary(dsp)
+        self.assertTrue(dsp in vocabulary)
+
+    def test_contains_false(self):
+        # The vocabulary does not contain DSPs without SPPH.
+        spn = self.factory.makeSourcePackageName(name='foo')
+        dsp = self.factory.makeDistributionSourcePackage(
+            sourcepackagename=spn)
+        vocabulary = DistributionSourcePackageVocabulary(dsp)
+        self.assertFalse(dsp in vocabulary)
+
     def test_toTerm_raises_error(self):
         # An error is raised for DSPs without publishing history.
         dsp = self.factory.makeDistributionSourcePackage(
@@ -155,7 +171,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         spn = self.factory.getOrMakeSourcePackageName('xorg')
         spr = self.factory.makeSourcePackageRelease(sourcepackagename=spn)
         das = self.factory.makeDistroArchSeries()
-        spph = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             sourcepackagerelease=spr, distroseries=das.distroseries)
         for name in ('xorg-common', 'xorg-server', 'xorg-video-intel'):
             bpn = self.factory.getOrMakeBinaryPackageName(name)
@@ -163,7 +179,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
                 source_package_release=spr, distroarchseries=das)
             bpr = self.factory.makeBinaryPackageRelease(
                 binarypackagename=bpn, build=bpb)
-            bpph = self.factory.makeBinaryPackagePublishingHistory(
+            self.factory.makeBinaryPackagePublishingHistory(
                 binarypackagerelease=bpr, distroarchseries=das)
         vocabulary = DistributionSourcePackageVocabulary(
             context=das.distroseries.distribution)
