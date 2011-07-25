@@ -55,6 +55,8 @@ from storm.store import (
     EmptyResultSet,
     Store,
     )
+from zope.app.form.interfaces import WidgetsError
+
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import (
@@ -87,6 +89,7 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.validation import (
     valid_upstreamtask,
+    validate_distrotask,
     validate_new_distrotask,
     )
 from canonical.launchpad.searchbuilder import (
@@ -105,6 +108,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.validators import LaunchpadValidationError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
@@ -437,6 +441,28 @@ def validate_sourcepackagename(self, attr, value):
     if not is_passthrough:
         self._syncSourcePackages(value)
     return validate_target_attribute(self, attr, value)
+
+
+def validate_target(bug, target):
+    if IDistribution.providedBy(target):
+        distribution = target
+        sourcepackagename = None
+    elif IDistributionSourcePackage.providedBy(target):
+        distribution = target.distribution
+        sourcepackagename = target.sourcepackagename
+    elif IProduct.providedBy(target):
+        distribution = None
+        sourcepackagename = None
+    else:
+        raise AssertionError("%r is not a supported target." % target)
+
+    try:
+        if distribution is not None:
+            return validate_distrotask(bug, distribution, sourcepackagename)
+        else:
+            return valid_upstreamtask(bug, target)
+    except (LaunchpadValidationError, WidgetsError) as e:
+        raise IllegalTarget(e[0])
 
 
 class BugTask(SQLBase):

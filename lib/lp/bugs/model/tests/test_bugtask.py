@@ -42,6 +42,7 @@ from lp.bugs.model.bugtask import (
     bug_target_to_key,
     build_tag_search_clause,
     IllegalTarget,
+    validate_target,
     )
 from lp.bugs.tests.bug import (
     create_old_bug,
@@ -1831,3 +1832,103 @@ class TestBugTargetKeys(TestCaseWithFactory):
     def test_no_target_for_bad_keys(self):
         self.assertRaises(
             AssertionError, bug_target_from_key, None, None, None, None, None)
+
+
+class TestValidateTarget(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_new_product_is_allowed(self):
+        # A new product not on the bug is OK.
+        p1 = self.factory.makeProduct()
+        task = self.factory.makeBugTask(target=p1)
+        p2 = self.factory.makeProduct()
+        validate_target(task.bug, p2)
+
+    def test_same_product_is_forbidden(self):
+        # A product with an existing task is not.
+        p = self.factory.makeProduct()
+        task = self.factory.makeBugTask(target=p)
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "A fix for this bug has already been requested for %s"
+            % p.displayname,
+            validate_target, task.bug, p)
+
+    def test_productseries_is_invalid(self):
+        # ProductSeries tasks aren't created directly, so asking about
+        # their validity makes no sense.
+        task = self.factory.makeBugTask()
+        self.assertRaises(
+            AssertionError,
+            validate_target, task.bug, self.factory.makeProductSeries())
+
+    def test_new_distribution_is_allowed(self):
+        # A new distribution not on the bug is OK.
+        d1 = self.factory.makeDistribution()
+        task = self.factory.makeBugTask(target=d1)
+        d2 = self.factory.makeDistribution()
+        validate_target(task.bug, d2)
+
+    def test_multiple_packageless_distribution_tasks_are_forbidden(self):
+        # A distribution with an existing task is not.
+        d = self.factory.makeDistribution()
+        task = self.factory.makeBugTask(target=d)
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "This bug has already been reported on %s." % d.name,
+            validate_target, task.bug, d)
+
+    def test_distributionsourcepackage_task_is_allowed(self):
+        # A DistributionSourcePackage task can coexist with a task for
+        # its Distribution.
+        d = self.factory.makeDistribution()
+        task = self.factory.makeBugTask(target=d)
+        dsp = self.factory.makeDistributionSourcePackage(distribution=d)
+        validate_target(task.bug, dsp)
+
+    def test_different_distributionsourcepackage_tasks_are_allowed(self):
+        # A DistributionSourcePackage task can also coexist with a task
+        # for another one.
+        dsp1 = self.factory.makeDistributionSourcePackage()
+        task = self.factory.makeBugTask(target=dsp1)
+        dsp2 = self.factory.makeDistributionSourcePackage(
+            distribution=dsp1.distribution)
+        validate_target(task.bug, dsp2)
+
+    def test_same_distributionsourcepackage_task_is_forbidden(self):
+        # But a DistributionSourcePackage task cannot coexist with a
+        # task for itself.
+        dsp = self.factory.makeDistributionSourcePackage()
+        task = self.factory.makeBugTask(target=dsp)
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "This bug has already been reported on %s (%s)."
+            % (dsp.sourcepackagename.name, dsp.distribution.name),
+            validate_target, task.bug, dsp)
+
+    def test_dsp_without_publications_disallowed(self):
+        # If a distribution has series, a DistributionSourcePackage task
+        # can only be created if the package is published in a distro
+        # archive.
+        series = self.factory.makeDistroSeries()
+        dsp = self.factory.makeDistributionSourcePackage(
+            distribution=series.distribution)
+        task = self.factory.makeBugTask()
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "Package %s not published in %s"
+            % (dsp.sourcepackagename.name, dsp.distribution.displayname),
+            validate_target, task.bug, dsp)
+
+    def test_dsp_with_publications_allowed(self):
+        # If a distribution has series, a DistributionSourcePackage task
+        # can only be created if the package is published in a distro
+        # archive.
+        series = self.factory.makeDistroSeries()
+        dsp = self.factory.makeDistributionSourcePackage(
+            distribution=series.distribution)
+        task = self.factory.makeBugTask()
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series, sourcepackagename=dsp.sourcepackagename)
+        validate_target(task.bug, dsp)

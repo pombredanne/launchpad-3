@@ -202,7 +202,7 @@ def validate_distrotask(bug, distribution, sourcepackagename=None):
             distribution.guessPublishedSourcePackageName(
                 sourcepackagename.name)
         except NotFoundError, e:
-            raise LaunchpadValidationError(e)
+            raise LaunchpadValidationError(e[0])
     new_source_package = distribution.getSourcePackage(sourcepackagename)
     if sourcepackagename is not None and (
         bug.getBugTask(new_source_package) is not None):
