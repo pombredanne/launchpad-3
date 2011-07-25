@@ -69,7 +69,7 @@
                   class="package-sets">
                 Package-sets
               </th>
-              <th>Last changed by</th>
+              <th>Last changed</th>
               <th>Latest comment</th>
             </tr>
           </thead>
@@ -145,7 +145,7 @@
                 <tal:replace replace="difference/@@/packagesets_names" />
               </td>
 
-              <td class="last-changed-by">
+              <td class="last-changed">
                 <tal:parent condition="not: view/show_derived_version">
                   <tal:published condition="parent_source_pub">
                     <span tal:attributes="title parent_source_pub/datepublished/fmt:datetime"

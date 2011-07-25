@@ -1358,7 +1358,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         view = self.makeView(dsd.derived_series)
         root = html.fromstring(view())
         [creator_cell] = root.cssselect(
-            "table.listing tbody td.last-changed-by")
+            "table.listing tbody td.last-changed")
         self.assertEqual(
             "a moment ago by %s" % (
                 dsd.source_package_release.creator.displayname,),
@@ -1375,7 +1375,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         view = self.makeView(dsd.derived_series)
         root = html.fromstring(view())
         [creator_cell] = root.cssselect(
-            "table.listing tbody td.last-changed-by")
+            "table.listing tbody td.last-changed")
         self.assertEqual(
             "a moment ago by %s (uploaded by %s)" % (
                 dsd.source_package_release.creator.displayname,
@@ -2283,7 +2283,7 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
                 principal=self.simple_user)
             root = html.fromstring(view())
         [creator_cell] = root.cssselect(
-            "table.listing tbody td.last-changed-by")
+            "table.listing tbody td.last-changed")
         self.assertEqual(
             dsd.parent_source_package_release.creator.displayname,
             creator_cell.find(".//a").text)
@@ -2303,7 +2303,7 @@ class DistroSeriesMissingPackagesPageTestCase(TestCaseWithFactory,
                 principal=self.simple_user)
             root = html.fromstring(view())
         [creator_cell] = root.cssselect(
-            "table.listing tbody td.last-changed-by")
+            "table.listing tbody td.last-changed")
         parent_spr = dsd.parent_source_package_release
         self.assertEqual(
             "a moment ago by %s (uploaded by %s)" % (
