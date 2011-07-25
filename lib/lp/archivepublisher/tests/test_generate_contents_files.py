@@ -7,8 +7,9 @@ __metaclass__ = type
 
 from optparse import OptionValueError
 import os
-from testtools.matchers import StartsWith
 from textwrap import dedent
+
+from testtools.matchers import StartsWith
 
 from canonical.config import config
 from canonical.testing.layers import (
@@ -26,6 +27,7 @@ from lp.services.log.logger import DevNullLogger
 from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.services.utils import file_exists
 from lp.testing import TestCaseWithFactory
+from lp.testing.faketransaction import FakeTransaction
 
 
 def write_file(filename, content=""):
@@ -153,6 +155,7 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
             distribution = self.makeDistro()
         script = GenerateContentsFiles(test_args=['-d', distribution.name])
         script.logger = DevNullLogger()
+        script.txn = FakeTransaction()
         if run_setup:
             script.setUp()
         else:
@@ -206,20 +209,23 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
     def test_looks_up_distro(self):
         # The script looks up and keeps the distribution named on the
         # command line.
-        distro = self.factory.makeDistribution()
+        distro = self.makeDistro()
         script = self.makeScript(distro)
         self.assertEqual(distro, script.distribution)
 
     def test_queryDistro(self):
         # queryDistro is a helper that invokes LpQueryDistro.
-        distroseries = self.factory.makeDistroSeries()
-        script = self.makeScript(distroseries.distribution)
+        distro = self.makeDistro()
+        distroseries = self.factory.makeDistroSeries(distro)
+        script = self.makeScript(distro)
         script.processOptions()
         self.assertEqual(distroseries.name, script.queryDistro('supported'))
 
     def test_getArchs(self):
         # getArchs returns a list of architectures in the distribution.
-        das = self.factory.makeDistroArchSeries()
+        distro = self.makeDistro()
+        distroseries = self.factory.makeDistroSeries(distro)
+        das = self.factory.makeDistroArchSeries(distroseries=distroseries)
         script = self.makeScript(das.distroseries.distribution)
         self.assertEqual([das.architecturetag], script.getArchs())
 
@@ -241,7 +247,7 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         os.makedirs(os.path.join(script.config.distsroot, package.suite))
         self.assertEqual([package.suite], script.getPockets())
 
-    def test_getPocket_includes_release_pocket(self):
+    def test_getPockets_includes_release_pocket(self):
         # getPockets also includes the release pocket, which is named
         # after the distroseries without a suffix.
         distro = self.makeDistro()
@@ -290,7 +296,7 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         distro = self.makeDistro()
         script = self.makeScript(distro)
         content_archive = script.content_archive
-        script.writeContentsTop()
+        script.writeContentsTop(distro.name, distro.title)
 
         contents_top = file(
             "%s/%s-misc/Contents.top" % (content_archive, distro.name)).read()
@@ -375,7 +381,7 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
         os.makedirs(os.path.join(script.config.distsroot, package.suite))
         self.assertNotEqual([], script.getPockets())
         fake_overrides(script, distroseries)
-        script.main()
+        script.process()
         self.assertTrue(file_exists(os.path.join(
             script.config.distsroot, suite,
             "Contents-%s.gz" % das.architecturetag)))
