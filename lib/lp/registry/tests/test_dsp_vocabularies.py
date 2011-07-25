@@ -56,6 +56,37 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         self.assertEqual(project, vocabulary.context)
         self.assertEqual(None, vocabulary.distribution)
 
+    def test_getDistributionAndPackageName_distro_and_package(self):
+        # getDistributionAndPackageName() returns a tuple of distribution
+        # and package name when the text contains both.
+        new_distro = self.factory.makeDistribution(name='fnord')
+        vocabulary = DistributionSourcePackageVocabulary(None)
+        distribution, package_name = vocabulary.getDistributionAndPackageName(
+            'fnord/pting')
+        self.assertEqual(new_distro, distribution)
+        self.assertEqual('pting', package_name)
+
+    def test_getDistributionAndPackageName_default_distro_and_package(self):
+        # getDistributionAndPackageName() returns a tuple of the default
+        # distribution and package name when the text is just a package name.
+        default_distro = self.factory.makeDistribution(name='fnord')
+        vocabulary = DistributionSourcePackageVocabulary(default_distro)
+        distribution, package_name = vocabulary.getDistributionAndPackageName(
+            'pting')
+        self.assertEqual(default_distro, distribution)
+        self.assertEqual('pting', package_name)
+
+    def test_getDistributionAndPackageName_bad_distro_and_package(self):
+        # getDistributionAndPackageName() returns a tuple of the default
+        # distribution and package name when the distro in the text cannot
+        # be matched to a real distro.
+        default_distro = self.factory.makeDistribution(name='fnord')
+        vocabulary = DistributionSourcePackageVocabulary(default_distro)
+        distribution, package_name = vocabulary.getDistributionAndPackageName(
+            'misspelled/pting')
+        self.assertEqual(default_distro, distribution)
+        self.assertEqual('pting', package_name)
+
     def test_contains_true(self):
         # The vocabulary contains DSPs that have SPPH in the distro.
         spph = self.factory.makeSourcePackagePublishingHistory()
