@@ -388,17 +388,19 @@ def reset_permissions(con, config, options):
         else:
             log.debug("%s not in any roles", user)
 
-    # Change ownership of all objects to OWNER
-    for obj in schema.values():
-        if obj.type in ("function", "sequence"):
-            pass # Can't change ownership of functions or sequences
-        else:
-            if obj.owner != options.owner:
-                log.info("Resetting ownership of %s", obj.fullname)
-                cur.execute("ALTER TABLE %s OWNER TO %s" % (
-                    obj.fullname, quote_identifier(options.owner)))
-
     if options.revoke:
+        # Change ownership of all objects to OWNER.
+        # We skip this in --no-revoke mode as ownership changes may
+        # block on a live system.
+        for obj in schema.values():
+            if obj.type in ("function", "sequence"):
+                pass # Can't change ownership of functions or sequences
+            else:
+                if obj.owner != options.owner:
+                    log.info("Resetting ownership of %s", obj.fullname)
+                    cur.execute("ALTER TABLE %s OWNER TO %s" % (
+                        obj.fullname, quote_identifier(options.owner)))
+
         # Revoke all privs from known groups. Don't revoke anything for
         # users or groups not defined in our security.cfg.
         table_revocations = PermissionGatherer("TABLE")
@@ -430,6 +432,7 @@ def reset_permissions(con, config, options):
         function_revocations.revoke(cur)
         sequence_revocations.revoke(cur)
     else:
+        log.info("Not resetting ownership of database objects")
         log.info("Not revoking permissions on database objects")
 
     # Set of all tables we have granted permissions on. After we have assigned
