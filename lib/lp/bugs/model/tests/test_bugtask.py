@@ -58,6 +58,7 @@ from lp.registry.interfaces.person import (
     )
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.testing import (
     ANONYMOUS,
     EventRecorder,
@@ -1930,5 +1931,23 @@ class TestValidateTarget(TestCaseWithFactory):
             distribution=series.distribution)
         task = self.factory.makeBugTask()
         self.factory.makeSourcePackagePublishingHistory(
-            distroseries=series, sourcepackagename=dsp.sourcepackagename)
+            distroseries=series, sourcepackagename=dsp.sourcepackagename,
+            archive=series.main_archive)
         validate_target(task.bug, dsp)
+
+    def test_dsp_with_only_ppa_publications_disallowed(self):
+        # If a distribution has series, a DistributionSourcePackage task
+        # can only be created if the package is published in a distro
+        # archive. PPA publications don't count.
+        series = self.factory.makeDistroSeries()
+        dsp = self.factory.makeDistributionSourcePackage(
+            distribution=series.distribution)
+        task = self.factory.makeBugTask()
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series, sourcepackagename=dsp.sourcepackagename,
+            archive=self.factory.makeArchive(purpose=ArchivePurpose.PPA))
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "Package %s not published in %s"
+            % (dsp.sourcepackagename.name, dsp.distribution.displayname),
+            validate_target, task.bug, dsp)
