@@ -3,18 +3,17 @@
 The validation interface contains different kinds of validation functions.
 
 
-== validate_new_distrotask() ==
+== validate_new_target() ==
 
-The validate_new_distrotask() function does the same checks as
-validate_distrotask(), but it does some extra checks as well.
+The validate_new_target() function does the same checks as
+validate_target(), but it does some extra checks as well.
 
 We can't add a task on just the distribution, because it doesn't
 make sense to have tasks open on just the distribution and also packages
 in that distribution on the same bug.
 
-    >>> from canonical.launchpad.interfaces.validation import (
-    ...     validate_new_distrotask)
-    >>> validate_new_distrotask(bug_two, debian, None)
+    >>> from lp.bugs.model.bugtask import validate_new_target
+    >>> validate_new_target(bug_two, debian)
     Traceback (most recent call last):
       ...
     LaunchpadValidationError: ...
@@ -23,8 +22,9 @@ If the bug already has a distribution with no package, we can't add
 another distribution task with a source package (the task with no
 package should be edited instead).
 
-    >>> validate_new_distrotask(
-    ...     ubuntu_bug_no_sourcepackage, ubuntu, alsa_utils)
+    >>> validate_new_target(
+    ...     ubuntu_bug_no_sourcepackage,
+    ...     ubuntu.getSourcePackage(alsa_utils))
     Traceback (most recent call last):
       ...
     LaunchpadValidationError: ...

@@ -88,9 +88,6 @@ from canonical.launchpad.components.decoratedresultset import (
     )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.interfaces.validation import (
-    validate_new_distrotask,
-    )
 from canonical.launchpad.searchbuilder import (
     all,
     any,
@@ -510,6 +507,56 @@ def validate_target(bug, target):
             _validate_other(bug, target)
     except (LaunchpadValidationError, WidgetsError) as e:
         raise IllegalTarget(e[0])
+
+
+def validate_new_target(bug, target):
+    """Validate a distribution bugtask to be added.
+
+    Make sure that the isn't already a distribution task without a
+    source package, or that such task is added only when the bug doesn't
+    already have any tasks for the distribution.
+
+    The same checks as `validate_target` does are also done.
+    """
+    if IDistribution.providedBy(target):
+        distribution = target
+        sourcepackagename = None
+    elif IDistributionSourcePackage.providedBy(target):
+        distribution = target.distribution
+        sourcepackagename = target.sourcepackagename
+    else:
+        raise AssertionError("%r is not a supported target." % target)
+
+    if sourcepackagename:
+        # Ensure that there isn't already a generic task open on the
+        # distribution for this bug, because if there were, that task
+        # should be reassigned to the sourcepackage, rather than a new
+        # task opened.
+        if bug.getBugTask(distribution) is not None:
+            raise LaunchpadValidationError(_(
+                    'This bug is already open on ${distribution} with no '
+                    'package specified. You should fill in a package '
+                    'name for the existing bug.',
+                    mapping={'distribution': distribution.displayname}))
+    else:
+        # Prevent having a task on only the distribution if there's at
+        # least one task already on the distribution, whether or not
+        # that task also has a source package.
+        distribution_tasks_for_bug = [
+            bugtask for bugtask
+            in shortlist(bug.bugtasks, longest_expected=50)
+            if bugtask.distribution == distribution]
+
+        if len(distribution_tasks_for_bug) > 0:
+            raise LaunchpadValidationError(_(
+                    'This bug is already on ${distribution}. Please '
+                    'specify an affected package in which the bug '
+                    'has not yet been reported.',
+                    mapping={'distribution': distribution.displayname}))
+    try:
+        validate_target(bug, distribution.getSourcePackage(sourcepackagename))
+    except IllegalTarget as e:
+        raise LaunchpadValidationError(e[0])
 
 
 class BugTask(SQLBase):
@@ -2726,7 +2773,8 @@ class BugTaskSet:
             elif distribution is not None:
                 # Make sure there's no bug task already filed against
                 # this source package in this distribution.
-                validate_new_distrotask(bug, distribution, sourcepackagename)
+                validate_new_target(
+                    bug, distribution.getSourcePackage(sourcepackagename))
                 stop_checking = True
 
         if target is None and not stop_checking:
@@ -2743,7 +2791,7 @@ class BugTaskSet:
                 target = distroseries
             elif distribution is not None and not stop_checking:
                 # Bug filed against a distribution.
-                validate_new_distrotask(bug, distribution)
+                validate_new_target(bug, distribution)
                 stop_checking = True
 
         if target is not None and not stop_checking:

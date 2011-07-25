@@ -31,9 +31,6 @@ from canonical.launchpad.browser.multistep import (
     MultiStepView,
     StepView,
     )
-from canonical.launchpad.interfaces.validation import (
-    validate_new_distrotask,
-    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
@@ -70,7 +67,10 @@ from lp.bugs.interfaces.bugwatch import (
     NoBugTrackerFound,
     UnrecognizedBugTrackerURL,
     )
-from lp.bugs.model.bugtask import validate_target
+from lp.bugs.model.bugtask import (
+    validate_new_target,
+    validate_target,
+    )
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
@@ -428,8 +428,10 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
             self.setFieldError('sourcepackagename', error)
         else:
             try:
-                validate_new_distrotask(
-                    self.context.bug, distribution, sourcepackagename)
+                target = distribution
+                if sourcepackagename:
+                    target = target.getSourcePackage(sourcepackagename)
+                validate_new_target(self.context.bug, target)
             except LaunchpadValidationError, error:
                 self.setFieldError('sourcepackagename', error.snippet())
 

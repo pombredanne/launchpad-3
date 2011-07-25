@@ -12,7 +12,6 @@ __all__ = [
     'valid_cve_sequence',
     'validate_new_team_email',
     'validate_new_person_email',
-    'validate_new_distrotask',
     'valid_password',
     'validate_date_interval',
     ]
@@ -144,53 +143,6 @@ def validate_new_person_email(email):
                              'owner': escape(owner.displayname)})
         raise LaunchpadValidationError(structured(message))
     return True
-
-
-def validate_new_distrotask(bug, distribution, sourcepackagename=None):
-    """Validate a distribution bugtask to be added.
-
-    Make sure that the isn't already a distribution task without a
-    source package, or that such task is added only when the bug doesn't
-    already have any tasks for the distribution.
-
-    The same checks as `validate_target` does are also done.
-    """
-    from canonical.launchpad.helpers import shortlist
-    from lp.bugs.model.bugtask import (
-        IllegalTarget,
-        validate_target,
-        )
-
-    if sourcepackagename:
-        # Ensure that there isn't already a generic task open on the
-        # distribution for this bug, because if there were, that task
-        # should be reassigned to the sourcepackage, rather than a new
-        # task opened.
-        if bug.getBugTask(distribution) is not None:
-            raise LaunchpadValidationError(_(
-                    'This bug is already open on ${distribution} with no '
-                    'package specified. You should fill in a package '
-                    'name for the existing bug.',
-                    mapping={'distribution': distribution.displayname}))
-    else:
-        # Prevent having a task on only the distribution if there's at
-        # least one task already on the distribution, whether or not
-        # that task also has a source package.
-        distribution_tasks_for_bug = [
-            bugtask for bugtask
-            in shortlist(bug.bugtasks, longest_expected=50)
-            if bugtask.distribution == distribution]
-
-        if len(distribution_tasks_for_bug) > 0:
-            raise LaunchpadValidationError(_(
-                    'This bug is already on ${distribution}. Please '
-                    'specify an affected package in which the bug '
-                    'has not yet been reported.',
-                    mapping={'distribution': distribution.displayname}))
-    try:
-        validate_target(bug, distribution.getSourcePackage(sourcepackagename))
-    except IllegalTarget as e:
-        raise LaunchpadValidationError(e[0])
 
 
 def valid_password(password):
