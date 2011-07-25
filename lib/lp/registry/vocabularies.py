@@ -80,6 +80,7 @@ from storm.expr import (
     With,
     )
 from storm.info import ClassAlias
+from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabularyTokenized
@@ -2056,13 +2057,14 @@ class DistributionSourcePackageVocabulary:
 
     def searchForTerms(self, query=None):
         """See `IHugeVocabulary`."""
-        if query is None:
-            return
+        if query:
+            return EmptyResultSet()
         distribution, query = self.getDistributionAndPackageName(query)
         if distribution is None:
-            # XXX sinzui 2011-07-21: This could failover to ubuntu, but
-            # that might be non-obvious.
-            return self.emptySelectResults()
+            # This could failover to ubuntu, but that is non-obvious. The
+            # Python widget must set the default distribution and the JS
+            # widget must encourage the <distro>/<package> search format.
+            return EmptyResultSet()
         search_term = unicode(query)
         store = IStore(SourcePackagePublishingHistory)
         spns = store.using(

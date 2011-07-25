@@ -164,12 +164,21 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         term = vocabulary.getTermByToken(token)
         self.assertEqual(dsp.sourcepackagename, term.value)
 
+    def test_searchForTerms_without_distribution(self):
+        # An empty result set is return if the vocabulary has no distribution
+        # and the search does not provide distribution information.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        dsp = spph.sourcepackagerelease.distrosourcepackage
+        vocabulary = DistributionSourcePackageVocabulary(dsp.name)
+        results = vocabulary.searchForTerms(dsp.name)
+        self.assertIs(0, results.count())
+
     def test_searchForTerms_None(self):
         # Searching for nothing gets you that.
         vocabulary = DistributionSourcePackageVocabulary(
             self.factory.makeDistribution())
         results = vocabulary.searchForTerms()
-        self.assertIs(None, results)
+        self.assertIs(0, results.count())
 
     def assertTermsEqual(self, expected, actual):
         # Assert two given terms are equal.
