@@ -469,39 +469,29 @@ def validate_new_target(bug, target):
     The same checks as `validate_target` does are also done.
     """
     if IDistribution.providedBy(target):
-        distribution = target
-        sourcepackagename = None
+        # Prevent having a task on only the distribution if there's at
+        # least one task already on the distribution, whether or not
+        # that task also has a source package.
+        distribution_tasks_for_bug = [
+            bugtask for bugtask
+            in shortlist(bug.bugtasks, longest_expected=50)
+            if bugtask.distribution == target]
+
+        if len(distribution_tasks_for_bug) > 0:
+            raise IllegalTarget(
+                "This bug is already on %s. Please specify an "
+                "affected package in which the bug has not yet "
+                "been reported." % target.displayname)
     elif IDistributionSourcePackage.providedBy(target):
-        distribution = target.distribution
-        sourcepackagename = target.sourcepackagename
-    else:
-        distribution = None
-
-    if distribution is not None:
-        if sourcepackagename:
-            # Ensure that there isn't already a generic task open on the
-            # distribution for this bug, because if there were, that task
-            # should be reassigned to the sourcepackage, rather than a new
-            # task opened.
-            if bug.getBugTask(distribution) is not None:
-                raise IllegalTarget(
-                    "This bug is already open on %s with no package "
-                    "specified. You should fill in a package name for "
-                    "the existing bug." % distribution.displayname)
-        else:
-            # Prevent having a task on only the distribution if there's at
-            # least one task already on the distribution, whether or not
-            # that task also has a source package.
-            distribution_tasks_for_bug = [
-                bugtask for bugtask
-                in shortlist(bug.bugtasks, longest_expected=50)
-                if bugtask.distribution == distribution]
-
-            if len(distribution_tasks_for_bug) > 0:
-                raise IllegalTarget(
-                    "This bug is already on %s. Please specify an "
-                    "affected package in which the bug has not yet "
-                    "been reported." % distribution.displayname)
+        # Ensure that there isn't already a generic task open on the
+        # distribution for this bug, because if there were, that task
+        # should be reassigned to the sourcepackage, rather than a new
+        # task opened.
+        if bug.getBugTask(target.distribution) is not None:
+            raise IllegalTarget(
+                "This bug is already open on %s with no package "
+                "specified. You should fill in a package name for "
+                "the existing bug." % target.distribution.displayname)
 
     validate_target(bug, target)
 
