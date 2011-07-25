@@ -70,7 +70,8 @@ def main():
     # status flags
     pgbouncer_down = False
     upgrade_run = False
-    fti_run = False
+    # Bug #815717
+    # fti_run = False
     security_run = False
 
     try:
@@ -91,10 +92,13 @@ def main():
             return upgrade_rc
         upgrade_run = True
 
-        fti_rc = run_script('fti.py')
-        if fti_rc != 0:
-            return fti_rc
-        fti_run = True
+        # fti.py is no longer being run on production. Updates
+        # to full text indexes need to be handled manually in db
+        # patches. Bug #815717.
+        # fti_rc = run_script('fti.py')
+        # if fti_rc != 0:
+        #     return fti_rc
+        # fti_run = True
 
         security_rc = run_script('security.py', '--cluster')
         if security_rc != 0:
@@ -123,8 +127,9 @@ def main():
             log.warning("pgbouncer is down and will need to be restarted")
         if not upgrade_run:
             log.warning("upgrade.py still needs to be run")
-        if not fti_run:
-            log.warning("fti.py still needs to be run")
+        # Bug #815717
+        # if not fti_run:
+        #     log.warning("fti.py still needs to be run")
         if not security_run:
             log.warning("security.py still needs to be run")
 
