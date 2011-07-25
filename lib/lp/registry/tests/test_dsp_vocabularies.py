@@ -147,6 +147,23 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         term = vocabulary.toTerm(spr.sourcepackagename)
         self.assertEqual(', '.join(expected_names), term.title)
 
+    def test_getTermByToken_error(self):
+        # An error is raised if the token does not match a published DSP.
+        dsp = self.factory.makeDistributionSourcePackage(
+            sourcepackagename='foo')
+        vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
+        token = '%s/%s' % (dsp.distribution.name, dsp.name)
+        self.assertRaises(LookupError, vocabulary.getTermByToken, token)        
+
+    def test_getTermByToken_token(self):
+        # The term is return if it matches a published DSP.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        dsp = spph.sourcepackagerelease.distrosourcepackage
+        vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
+        token = '%s/%s' % (dsp.distribution.name, dsp.name)
+        term = vocabulary.getTermByToken(token)
+        self.assertEqual(dsp.sourcepackagename, term.value)
+
     def test_searchForTerms_None(self):
         # Searching for nothing gets you that.
         vocabulary = DistributionSourcePackageVocabulary(
