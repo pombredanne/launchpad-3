@@ -12,14 +12,20 @@ from lp.testing import TestCaseWithFactory
 
 
 class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
-    """Test that the DistributionSourcePackageVocabulary behaves as
-    expected."""
+    """Test that the vocabulary behaves as expected."""
     layer = DatabaseFunctionalLayer
 
     def test_provides_ihugevocabulary(self):
         vocabulary = DistributionSourcePackageVocabulary(
             self.factory.makeDistribution())
         self.assertProvides(vocabulary, IHugeVocabulary)
+
+    def test_init_dsp(self):
+        dsp = self.factory.makeDistributionSourcePackage(
+            sourcepackagename='foo')
+        vocabulary = DistributionSourcePackageVocabulary(dsp)
+        self.assertEqual(dsp, vocabulary.context)
+        self.assertEqual(dsp.distribution, vocabulary.distribution)
 
     def test_toTerm_raises_error(self):
         # An error is raised for DSPs without publishing history.
