@@ -42,6 +42,7 @@ from lp.bugs.model.bugtask import (
     bug_target_to_key,
     build_tag_search_clause,
     IllegalTarget,
+    validate_new_target,
     validate_target,
     )
 from lp.bugs.tests.bug import (
@@ -1951,3 +1952,45 @@ class TestValidateTarget(TestCaseWithFactory):
             "Package %s not published in %s"
             % (dsp.sourcepackagename.name, dsp.distribution.displayname),
             validate_target, task.bug, dsp)
+
+
+class TestValidateNewTarget(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_products_are_ok(self):
+        p1 = self.factory.makeProduct()
+        task = self.factory.makeBugTask(target=p1)
+        p2 = self.factory.makeProduct()
+        validate_new_target(task.bug, p2)
+
+    def test_calls_validate_target(self):
+        p = self.factory.makeProduct()
+        task = self.factory.makeBugTask(target=p)
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "A fix for this bug has already been requested for %s"
+            % p.displayname,
+            validate_new_target, task.bug, p)
+
+    def test_package_task_with_distribution_task_forbidden(self):
+        d = self.factory.makeDistribution()
+        dsp = self.factory.makeDistributionSourcePackage(distribution=d)
+        task = self.factory.makeBugTask(target=d)
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "This bug is already open on %s with no package specified. "
+            "You should fill in a package name for the existing bug."
+            % d.displayname,
+            validate_new_target, task.bug, dsp)
+
+    def test_distribution_task_with_package_task_forbidden(self):
+        d = self.factory.makeDistribution()
+        dsp = self.factory.makeDistributionSourcePackage(distribution=d)
+        task = self.factory.makeBugTask(target=dsp)
+        self.assertRaisesWithContent(
+            IllegalTarget,
+            "This bug is already on %s. Please specify an affected "
+            "package in which the bug has not yet been reported."
+            % d.displayname,
+            validate_new_target, task.bug, d)

@@ -82,7 +82,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad import _
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
@@ -456,17 +455,15 @@ def _validate_target_distro(bug, distribution, sourcepackagename=None):
     if sourcepackagename is not None and (
         bug.getBugTask(new_source_package) is not None):
         # Ensure this distribution/sourcepackage task is unique.
-        raise IllegalTarget(_(
-                'This bug has already been reported on ${source} '
-                '(${distribution}).',
-                mapping={'source': sourcepackagename.name,
-                         'distribution': distribution.name}))
+        raise IllegalTarget(
+            'This bug has already been reported on %s (%s).' % (
+                sourcepackagename.name, distribution.name))
     elif (sourcepackagename is None and
           bug.getBugTask(distribution) is not None):
         # Don't allow two distribution tasks with no source package.
-        raise IllegalTarget(_(
-                'This bug has already been reported on ${distribution}.',
-                 mapping={'distribution': distribution.name}))
+        raise IllegalTarget(
+                'This bug has already been reported on %s.' % (
+                    distribution.name))
     else:
         # The bugtask is valid.
         pass
@@ -482,9 +479,9 @@ def _validate_target_other(bug, bug_target):
     user = getUtility(ILaunchBag).user
     params = BugTaskSearchParams(user, bug=bug)
     if not bug_target.searchTasks(params).is_empty():
-        raise IllegalTarget(_(
-                'A fix for this bug has already been requested for ${target}',
-                mapping={'target': bug_target.displayname}))
+        raise IllegalTarget(
+            "A fix for this bug has already been requested for %s"
+            % bug_target.displayname)
 
 
 def validate_target(bug, target):
@@ -504,13 +501,13 @@ def validate_target(bug, target):
         if distribution is not None:
             _validate_target_distro(bug, distribution, sourcepackagename)
         else:
-            _validate_other(bug, target)
+            _validate_target_other(bug, target)
     except (LaunchpadValidationError, WidgetsError) as e:
         raise IllegalTarget(e[0])
 
 
 def validate_new_target(bug, target):
-    """Validate a distribution bugtask to be added.
+    """Validate a bugtask target to be added.
 
     Make sure that the isn't already a distribution task without a
     source package, or that such task is added only when the bug doesn't
@@ -525,36 +522,35 @@ def validate_new_target(bug, target):
         distribution = target.distribution
         sourcepackagename = target.sourcepackagename
     else:
-        raise AssertionError("%r is not a supported target." % target)
+        distribution = None
 
-    if sourcepackagename:
-        # Ensure that there isn't already a generic task open on the
-        # distribution for this bug, because if there were, that task
-        # should be reassigned to the sourcepackage, rather than a new
-        # task opened.
-        if bug.getBugTask(distribution) is not None:
-            raise IllegalTarget(_(
-                    'This bug is already open on ${distribution} with no '
-                    'package specified. You should fill in a package '
-                    'name for the existing bug.',
-                    mapping={'distribution': distribution.displayname}))
-    else:
-        # Prevent having a task on only the distribution if there's at
-        # least one task already on the distribution, whether or not
-        # that task also has a source package.
-        distribution_tasks_for_bug = [
-            bugtask for bugtask
-            in shortlist(bug.bugtasks, longest_expected=50)
-            if bugtask.distribution == distribution]
+    if distribution is not None:
+        if sourcepackagename:
+            # Ensure that there isn't already a generic task open on the
+            # distribution for this bug, because if there were, that task
+            # should be reassigned to the sourcepackage, rather than a new
+            # task opened.
+            if bug.getBugTask(distribution) is not None:
+                raise IllegalTarget(
+                    "This bug is already open on %s with no package "
+                    "specified. You should fill in a package name for "
+                    "the existing bug." % distribution.displayname)
+        else:
+            # Prevent having a task on only the distribution if there's at
+            # least one task already on the distribution, whether or not
+            # that task also has a source package.
+            distribution_tasks_for_bug = [
+                bugtask for bugtask
+                in shortlist(bug.bugtasks, longest_expected=50)
+                if bugtask.distribution == distribution]
 
-        if len(distribution_tasks_for_bug) > 0:
-            raise IllegalTarget(_(
-                    'This bug is already on ${distribution}. Please '
-                    'specify an affected package in which the bug '
-                    'has not yet been reported.',
-                    mapping={'distribution': distribution.displayname}))
+            if len(distribution_tasks_for_bug) > 0:
+                raise IllegalTarget(
+                    "This bug is already on %s. Please specify an "
+                    "affected package in which the bug has not yet "
+                    "been reported." % distribution.displayname)
 
-    validate_target(bug, distribution.getSourcePackage(sourcepackagename))
+    validate_target(bug, target)
 
 
 class BugTask(SQLBase):
