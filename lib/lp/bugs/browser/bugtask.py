@@ -132,10 +132,7 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin,
     )
 from canonical.launchpad.interfaces.launchpad import IHasExternalBugTracker
-from canonical.launchpad.interfaces.validation import (
-    valid_upstreamtask,
-    validate_distrotask,
-    )
+from canonical.launchpad.interfaces.validation import validate_distrotask
 from canonical.launchpad.mailnotification import get_unified_diff
 from canonical.launchpad.searchbuilder import (
     all,
@@ -238,6 +235,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     ICreateQuestionFromBugTaskForm,
     IFrontPageBugTaskSearch,
+    IllegalTarget,
     INominationsReviewTableBatchNavigator,
     IPersonBugTaskSearch,
     IRemoveQuestionFromBugTaskForm,
@@ -249,6 +247,7 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.bugs.model.bugtask import validate_target
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -1394,9 +1393,9 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             self.setFieldError('product', 'Enter a project name')
         else:
             try:
-                valid_upstreamtask(bugtask.bug, new_product)
-            except WidgetsError, errors:
-                self.setFieldError('product', errors.args[0])
+                validate_target(bugtask.bug, new_product)
+            except IllegalTarget as e:
+                self.setFieldError('product', e[0])
 
     def updateContextFromData(self, data, context=None):
         """Updates the context object using the submitted form data.

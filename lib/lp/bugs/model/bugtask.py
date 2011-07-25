@@ -2702,7 +2702,7 @@ class BugTaskSet:
         if target is not None and not stop_checking:
             # Make sure there's no task for this bug already filed
             # against the target.
-            valid_upstreamtask(bug, target)
+            validate_target(bug, target)
 
         if not bug.private and bug.security_related:
             if product and product.security_contact:

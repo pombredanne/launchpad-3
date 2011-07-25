@@ -16,10 +16,7 @@ from lazr.enum import (
 from lazr.lifecycle.event import ObjectCreatedEvent
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
-from zope.app.form.interfaces import (
-    MissingInputError,
-    WidgetsError,
-    )
+from zope.app.form.interfaces import MissingInputError
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
@@ -35,7 +32,6 @@ from canonical.launchpad.browser.multistep import (
     StepView,
     )
 from canonical.launchpad.interfaces.validation import (
-    valid_upstreamtask,
     validate_new_distrotask,
     )
 from canonical.launchpad.webapp import canonical_url
@@ -62,6 +58,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IAddBugTaskForm,
     IAddBugTaskWithProductCreationForm,
+    IllegalTarget,
     valid_remote_bug_url,
     )
 from lp.bugs.interfaces.bugtracker import (
@@ -73,6 +70,7 @@ from lp.bugs.interfaces.bugwatch import (
     NoBugTrackerFound,
     UnrecognizedBugTrackerURL,
     )
+from lp.bugs.model.bugtask import validate_target
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
@@ -157,8 +155,8 @@ class ChooseProductStep(LinkPackgingMixin, AlsoAffectsStep):
         upstream = bugtask.target.upstream_product
         if upstream is not None:
             try:
-                valid_upstreamtask(bugtask.bug, upstream)
-            except WidgetsError:
+                validate_target(bugtask.bug, upstream)
+            except IllegalTarget:
                 # There is already a task for the upstream.
                 pass
             else:
@@ -173,10 +171,9 @@ class ChooseProductStep(LinkPackgingMixin, AlsoAffectsStep):
     def validateStep(self, data):
         if data.get('product'):
             try:
-                valid_upstreamtask(self.context.bug, data.get('product'))
-            except WidgetsError, errors:
-                for error in errors:
-                    self.setFieldError('product', error.snippet())
+                validate_target(self.context.bug, data.get('product'))
+            except IllegalTarget as e:
+                self.setFieldError('product', e[0])
             return
 
         entered_product = self.request.form.get(self.widgets['product'].name)
@@ -812,10 +809,9 @@ class BugAlsoAffectsProductWithProductCreationView(LinkPackgingMixin,
         self._validate(action, data)
         project = data.get('existing_product')
         try:
-            valid_upstreamtask(self.context.bug, project)
-        except WidgetsError, errors:
-            for error in errors:
-                self.setFieldError('existing_product', error.snippet())
+            validate_target(self.context.bug, project)
+        except IllegalTarget as e:
+            self.setFieldError('existing_product', e[0])
 
     @action('Use Existing Project', name='use_existing_product',
             validator=validate_existing_product)
