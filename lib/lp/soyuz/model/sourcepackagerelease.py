@@ -570,7 +570,7 @@ class SourcePackageRelease(SQLBase):
 
         queue = getUtility(ITranslationImportQueue)
 
-        only_templates=self.sourcepackage.has_sharing_translation_templates
+        only_templates = self.sourcepackage.has_sharing_translation_templates
         queue.addOrUpdateEntriesFromTarball(
             tarball, by_maintainer, importer,
             sourcepackagename=self.sourcepackagename,
