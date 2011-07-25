@@ -636,6 +636,8 @@ class Publisher(object):
                 self.archive.owner.name, self.archive.name, root_dir))
 
         for directory in (root_dir, self._config.metaroot):
+            if not os.path.exists(directory):
+                continue
             try:
                 shutil.rmtree(directory)
             except (shutil.Error, OSError), e:

@@ -601,7 +601,7 @@ Changing the description.
 Modifying a bugtask will update IBug.date_last_updated.
 
     >>> from lp.bugs.interfaces.bugtask import (
-    ...     BugTaskImportance, BugTaskStatus, IUpstreamBugTask)
+    ...     BugTaskImportance, BugTaskStatus, IBugTask)
 
     >>> firefox_task = firefox_bug.bugtasks[0]
 
@@ -614,7 +614,7 @@ Modifying a bugtask will update IBug.date_last_updated.
     New
 
     >>> bugtask_before_modification = Snapshot(
-    ...     firefox_task, providing=IUpstreamBugTask)
+    ...     firefox_task, providing=IBugTask)
 
     >>> firefox_task.transitionToImportance(
     ...     BugTaskImportance.CRITICAL, current_user())

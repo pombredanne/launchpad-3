@@ -93,9 +93,7 @@ from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
-from lp.registry.interfaces.distroseries import (
-    IDistroSeries,
-    )
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
@@ -112,6 +110,7 @@ from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
     )
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.model.queue import PackageUploadQueue
 from lp.translations.browser.distroseries import (
@@ -1028,6 +1027,20 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             return None
 
     @property
+    def specified_packagesets_filter(self):
+        """If specified, return Packagesets given in the GET form data."""
+        packageset_ids = (
+            self.request.query_string_params.get("field.packageset", []))
+        packageset_ids = set(
+            int(packageset_id) for packageset_id in packageset_ids
+            if packageset_id.isdigit())
+        packagesets = getUtility(IPackagesetSet).getBySeries(self.context)
+        packagesets = set(
+            packageset for packageset in packagesets
+            if packageset.id in packageset_ids)
+        return None if len(packagesets) == 0 else packagesets
+
+    @property
     def specified_package_type(self):
         """If specified, return the package type filter from the GET form
         data.
@@ -1059,7 +1072,8 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             IDistroSeriesDifferenceSource).getForDistroSeries(
                 self.context, difference_type=self.differences_type,
                 name_filter=self.specified_name_filter,
-                status=status, child_version_higher=child_version_higher)
+                status=status, child_version_higher=child_version_higher,
+                packagesets=self.specified_packagesets_filter)
         return BatchNavigator(differences, self.request)
 
     @cachedproperty
