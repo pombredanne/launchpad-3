@@ -341,7 +341,8 @@ class DistroSeriesDifference(StormBase):
         status=None,
         child_version_higher=False,
         parent_series=None,
-        packagesets=None):
+        packagesets=None,
+        changed_by=None):
         """See `IDistroSeriesDifferenceSource`."""
         if difference_type is None:
             difference_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
@@ -392,9 +393,36 @@ class DistroSeriesDifference(StormBase):
                         PackagesetSources.sourcepackagename_id,
                         PackagesetSources.packageset_id.is_in(set_ids)))])
 
-        differences = IStore(DistroSeriesDifference).find(
-            DistroSeriesDifference,
-            And(*conditions)).order_by(SourcePackageName.name)
+        store = IStore(DistroSeriesDifference)
+        differences = store.find(DistroSeriesDifference, And(*conditions))
+        differences = differences.order_by(SourcePackageName.name)
+
+        if changed_by is not None:
+            # Identify all DSDs referring to SPRs created by changed_by for
+            # this distroseries.
+            statuses = (
+                PackagePublishingStatus.PUBLISHED,
+                PackagePublishingStatus.PENDING,
+                )
+            # TODO: Need to distinctify this.
+            differences_changed_by_condition = And(
+                SourcePackagePublishingHistory.archiveID == (
+                    distro_series.main_archive.id),
+                SourcePackagePublishingHistory.distroseriesID == (
+                    distro_series.id),
+                SourcePackagePublishingHistory.sourcepackagereleaseID == (
+                    SourcePackageRelease.id),
+                SourcePackagePublishingHistory.status.is_in(statuses),
+                SourcePackageRelease.sourcepackagenameID == (
+                    DistroSeriesDifference.source_package_name_id),
+                SourcePackageRelease.version == (
+                    DistroSeriesDifference.source_version),
+                SourcePackageRelease.creator == changed_by,
+                DistroSeriesDifference.derived_series_id == (
+                    distro_series.id))
+            differences_changed_by = store.find(
+                DistroSeriesDifference, differences_changed_by_condition)
+            differences = differences.intersection(differences_changed_by)
 
         def eager_load(dsds):
             active_statuses = (

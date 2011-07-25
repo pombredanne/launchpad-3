@@ -1138,6 +1138,47 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
             [], dsd_source.getForDistroSeries(
                 dsd.derived_series, packagesets=(packageset, )))
 
+    def makeDistroSeriesDifferenceForUser(self, series, user):
+        dsd = self.factory.makeDistroSeriesDifference(derived_series=series)
+        removeSecurityProxy(dsd.source_package_release).creator = user
+        return dsd
+
+    def test_getForDistroSeries_filters_by_spr_creator(self):
+        # Specifiying changed_by limits the DSDs returned to those where the
+        # associated SPR was created by the given user or team.
+        megatron = self.factory.makePersonByName("Megatron")
+        alderney = self.factory.makePersonByName("Alderney")
+        bulgaria = self.factory.makePersonByName("Bulgaria")
+        # Create the derived distroseries and a DSD for each of the users
+        # above.
+        derived_distroseries = self.factory.makeDistroSeries()
+        dsd_megatron = self.makeDistroSeriesDifferenceForUser(
+            derived_distroseries, megatron)
+        dsd_alderney = self.makeDistroSeriesDifferenceForUser(
+            derived_distroseries, alderney)
+        dsd_bulgaria = self.makeDistroSeriesDifferenceForUser(
+            derived_distroseries, bulgaria)
+        # When changed_by is a person we see DSDs created only by that person.
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        self.assertContentEqual(
+            [dsd_alderney],
+            dsd_source.getForDistroSeries(
+                derived_distroseries, changed_by=alderney))
+        # When changed_by is a team we see DSDs created by any member of the
+        # team.
+        wombles = self.factory.makeTeam(members=(alderney, bulgaria))
+        self.assertContentEqual(
+            [dsd_alderney, dsd_bulgaria],
+            dsd_source.getForDistroSeries(
+                derived_distroseries, changed_by=wombles))
+        # When changed_by is not a person or team it is treated as a
+        # collection, and we see DSDs created by any person in the collection
+        # or member of a team in the collection.
+        self.assertContentEqual(
+            [dsd_alderney, dsd_bulgaria, dsd_megatron],
+            dsd_source.getForDistroSeries(
+                derived_distroseries, changed_by=(megatron, wombles)))
+
     def test_getByDistroSeriesNameAndParentSeries(self):
         # An individual difference is obtained using the name.
         ds_diff = self.factory.makeDistroSeriesDifference(
