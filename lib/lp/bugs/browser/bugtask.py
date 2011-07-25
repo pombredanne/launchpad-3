@@ -1343,7 +1343,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             self.form_fields = self.form_fields.omit('sourcepackagename')
             self.form_fields += formlib.form.Fields(Choice(
                 __name__='sourcepackagename', title=_('SourcePackageName'),
-                required=False, vocabulary='DistributionSourcePackageVocabulary'))
+                required=False, vocabulary='DistributionSourcePackage'))
 
     def _getReadOnlyFieldNames(self):
         """Return the names of fields that will be rendered read only."""
