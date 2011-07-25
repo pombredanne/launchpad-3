@@ -63,8 +63,8 @@ class DbObject(object):
 
 
 class DbSchema(dict):
-    groups = None # List of groups defined in the db
-    users = None # List of users defined in the db
+    groups = None  # List of groups defined in the db
+    users = None  # List of users defined in the db
 
     def __init__(self, con):
         super(DbSchema, self).__init__()
@@ -159,7 +159,6 @@ def main(options):
     config.read([configfile_name])
 
     con = connect(options.dbuser)
-    cur = CursorWrapper(con.cursor())
 
     if options.cluster:
         nodes = replication.helpers.get_nodes(con, 1)
@@ -394,7 +393,7 @@ def reset_permissions(con, config, options):
         # block on a live system.
         for obj in schema.values():
             if obj.type in ("function", "sequence"):
-                pass # Can't change ownership of functions or sequences
+                pass  # Can't change ownership of functions or sequences
             else:
                 if obj.owner != options.owner:
                     log.info("Resetting ownership of %s", obj.fullname)
