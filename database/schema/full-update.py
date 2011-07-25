@@ -18,11 +18,11 @@ from canonical.launchpad.scripts import (
     )
 
 from preflight import (
-    DatabasePreflight,
     KillConnectionsPreflight,
     NoConnectionCheckPreflight,
     )
-import security
+import security  # security.py script
+import upgrade  # upgrade.py script
 
 
 PGBOUNCER_INITD = ['sudo', '/etc/init.d/pgbouncer']
@@ -31,6 +31,27 @@ PGBOUNCER_INITD = ['sudo', '/etc/init.d/pgbouncer']
 def run_script(script, *extra_args):
     script_path = os.path.join(os.path.dirname(__file__), script)
     return subprocess.call([script_path] + sys.argv[1:] + list(extra_args))
+
+
+def run_upgrade(options, log):
+    """Invoke upgrade.py in-process.
+
+    It would be easier to just invoke the script, but this way we save
+    several seconds of overhead as the component architecture loads up.
+    """
+    # Fake expected command line arguments and global log
+    options.commit = True
+    options.partial = False
+    upgrade.options = options
+    upgrade.log = log
+    # Invoke the database schema upgrade process.
+    try:
+        return upgrade.main()
+    except Exception:
+        log.exception('Unhandled exception')
+        return 1
+    except SystemExit, x:
+        log.fatal("upgrade.py failed [%s]", x)
 
 
 def run_security(options, log):
@@ -52,6 +73,8 @@ def run_security(options, log):
     except Exception:
         log.exception('Unhandled exception')
         return 1
+    except SystemExit, x:
+        log.fatal("security.py failed [%s]", x)
 
 
 def main():
@@ -108,13 +131,8 @@ def main():
         if not KillConnectionsPreflight(log).check_all():
             return 100
 
-        # upgrade.py needs to be refactored before including inline,
-        # as it invokes sys.exit() on various failures. Running it
-        # in process would be nice as it will save a few seconds of
-        # runtime.
-        upgrade_rc = run_script('upgrade.py')
+        upgrade_rc = run_upgrade(options, log)
         if upgrade_rc != 0:
-            log.warning("upgrade.py run may have been partial")
             return upgrade_rc
         upgrade_run = True
 
