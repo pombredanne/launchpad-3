@@ -33,6 +33,9 @@ from lp.soyuz.interfaces.archive import (
     IArchiveSet,
     )
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.distributionjob import (
+    IDistroSeriesDifferenceJobSource,
+    )
 from lp.soyuz.interfaces.packagecloner import IPackageCloner
 from lp.soyuz.interfaces.packageset import (
     IPackagesetSet,
@@ -112,6 +115,7 @@ class InitializeDistroSeries:
 
         self.first_derivation = (
             not self.distroseries.distribution.has_published_sources)
+
         if self.first_derivation:
             # Use-case #1.
             self.derivation_parents = self.parents
@@ -210,6 +214,7 @@ class InitializeDistroSeries:
         self._copy_architectures()
         self._copy_packages()
         self._copy_packagesets()
+        self._create_dsds()
         self._set_initialized()
         transaction.commit()
 
@@ -239,6 +244,57 @@ class InitializeDistroSeries:
             self.distroseries)
         for distroseriesparent in distroseriesparents:
             distroseriesparent.initialized = True
+
+    def _has_same_parents_as_previous_series(self):
+        # Does this distroseries have the same parents as its previous
+        # series? (note that the parent's order does not matter here)
+        dsp_set = getUtility(IDistroSeriesParentSet)
+        previous_series_parents = [
+            dsp.parent_series for dsp in dsp_set.getByDerivedSeries(
+                self.distroseries.previous_series)]
+        return set(previous_series_parents) == set(self.parents)
+
+    def _create_dsds(self):
+        if not self.first_derivation:
+            if (self._has_same_parents_as_previous_series() and
+                not self.packagesets):
+                # If the parents are the same as previous_series's
+                # parents and all the packagesets are being copied,
+                # then we simply copy the DSDs from previous_series
+                # for performance reasons.
+                self._copy_dsds_from_previous_series()
+            else:
+                # Either the parents have changed (compared to
+                # previous_series's parents) or a selection only of the
+                # packagesets is being copied so we have to recompute
+                # the DSDs by creating DSD Jobs.
+                self._create_dsd_jobs()
+        else:
+            # If this is the first derivation, create the DSD Jobs.
+            self._create_dsd_jobs()
+
+    def _copy_dsds_from_previous_series(self):
+        self._store.execute("""
+            INSERT INTO DistroSeriesDifference
+                (derived_series, source_package_name, package_diff,
+                status, difference_type, parent_package_diff,
+                source_version, parent_source_version,
+                base_version, parent_series)
+            SELECT
+                %s AS derived_series, source_package_name,
+                package_diff, status,
+                difference_type, parent_package_diff, source_version,
+                parent_source_version, base_version, parent_series
+            FROM DistroSeriesDifference AS dsd
+                WHERE dsd.derived_series = %s
+            """ % sqlvalues(
+                self.distroseries.id,
+                self.distroseries.previous_series.id))
+
+    def _create_dsd_jobs(self):
+        job_source = getUtility(IDistroSeriesDifferenceJobSource)
+        for parent in self.parents:
+            job_source.massCreateForSeries(self.distroseries, parent)
 
     def _copy_configuration(self):
         self.distroseries.backports_not_automatic = any(
@@ -350,7 +406,6 @@ class InitializeDistroSeries:
                 if archive.purpose is ArchivePurpose.PRIMARY:
                     assert target_archive is not None, (
                         "Target archive doesn't exist?")
-
                 if self._use_cloner(
                     target_archive, archive, self.distroseries):
                     origin = PackageLocation(
@@ -382,11 +437,11 @@ class InitializeDistroSeries:
                         sources_published = do_copy(
                             sources, target_archive, self.distroseries,
                             pocket, include_binaries=not self.rebuild,
-                            check_permissions=False, strict_binaries=False)
+                            check_permissions=False, strict_binaries=False,
+                            close_bugs=False, create_dsd_job=False)
                         if self.rebuild:
                             for pubrec in sources_published:
                                 pubrec.createMissingBuilds()
-
                     except CannotCopy, error:
                         raise InitializationError(error)
 
@@ -472,7 +527,8 @@ class InitializeDistroSeries:
         packagesets = self._store.find(
             Packageset, DistroSeries.id.is_in(self.derivation_parent_ids))
         parent_to_child = {}
-        # Create the packagesets.
+        # Create the packagesets and any archivepermissions if we're not
+        # copying cross-distribution.
         parent_distro_ids = [
             parent.distribution.id for parent in self.derivation_parents]
         for parent_ps in packagesets:
@@ -494,8 +550,19 @@ class InitializeDistroSeries:
                     parent_ps.name, parent_ps.description,
                     new_owner, distroseries=self.distroseries,
                     related_set=parent_ps)
-
             parent_to_child[parent_ps] = child_ps
+            # Copy archivepermissions if we're not copying
+            # cross-distribution.
+            if (self.distroseries.distribution ==
+                    parent_ps.distroseries.distribution):
+                self._store.execute("""
+                    INSERT INTO Archivepermission
+                    (person, permission, archive, packageset, explicit)
+                    SELECT person, permission, %s, %s, explicit
+                    FROM Archivepermission WHERE packageset = %s
+                    """ % sqlvalues(
+                        self.distroseries.main_archive, child_ps.id,
+                        parent_ps.id))
         # Copy the relations between sets, and the contents.
         for old_series_ps, new_series_ps in parent_to_child.items():
             old_series_sets = old_series_ps.setsIncluded(

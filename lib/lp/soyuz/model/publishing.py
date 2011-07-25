@@ -35,9 +35,9 @@ from storm.expr import (
     Or,
     Sum,
     )
-from storm.zope.interfaces import ISQLObjectResultSet
 from storm.store import Store
 from storm.zope import IResultSet
+from storm.zope.interfaces import ISQLObjectResultSet
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
@@ -802,7 +802,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             section=new_section,
             archive=current.archive)
 
-    def copyTo(self, distroseries, pocket, archive, override=None):
+    def copyTo(self, distroseries, pocket, archive, override=None,
+               create_dsd_job=True):
         """See `ISourcePackagePublishingHistory`."""
         component = self.component
         section = self.section
@@ -817,7 +818,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             distroseries,
             component,
             section,
-            pocket)
+            pocket,
+            ancestor=None,
+            create_dsd_job=create_dsd_job)
 
     def getStatusSummaryForBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -1467,7 +1470,7 @@ class PublishingSet:
 
     def newSourcePublication(self, archive, sourcepackagerelease,
                              distroseries, component, section, pocket,
-                             ancestor=None):
+                             ancestor=None, create_dsd_job=True):
         """See `IPublishingSet`."""
         # Avoid circular import.
         from lp.registry.model.distributionsourcepackage import (
@@ -1485,10 +1488,12 @@ class PublishingSet:
             ancestor=ancestor)
         DistributionSourcePackage.ensure(pub)
 
-        if archive == distroseries.main_archive:
-            dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
-            dsd_job_source.createForPackagePublication(
-                distroseries, sourcepackagerelease.sourcepackagename, pocket)
+        if create_dsd_job:
+            if archive == distroseries.main_archive:
+                dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
+                dsd_job_source.createForPackagePublication(
+                    distroseries, sourcepackagerelease.sourcepackagename,
+                    pocket)
         return pub
 
     def getBuildsForSourceIds(

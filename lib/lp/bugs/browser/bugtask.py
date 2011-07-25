@@ -55,6 +55,7 @@ from math import (
     )
 from operator import attrgetter
 import re
+import transaction
 import urllib
 
 from lazr.delegates import delegates
@@ -74,7 +75,6 @@ from lazr.restful.interfaces import (
 from lazr.uri import URI
 from pytz import utc
 from simplejson import dumps
-from storm.expr import SQL
 from z3c.ptcompat import ViewPageTemplateFile
 from zope import (
     component,
@@ -237,23 +237,18 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSearch,
     IBugTaskSet,
     ICreateQuestionFromBugTaskForm,
-    IDistroBugTask,
-    IDistroSeriesBugTask,
     IFrontPageBugTaskSearch,
     INominationsReviewTableBatchNavigator,
     IPersonBugTaskSearch,
-    IProductSeriesBugTask,
     IRemoveQuestionFromBugTaskForm,
-    IUpstreamBugTask,
     IUpstreamProductBugTaskSearch,
     UNRESOLVED_BUGTASK_STATUSES,
+    UserCannotEditBugTaskStatus,
     )
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.bugs.model.bug import Bug
-from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -721,15 +716,6 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
                 series.bugtargetdisplayname)
         self.request.response.redirect(canonical_url(self.context))
 
-    def isSeriesTargetableContext(self):
-        """Is the context something that supports Series targeting?
-
-        Returns True or False.
-        """
-        return (
-            IDistroBugTask.providedBy(self.context) or
-            IDistroSeriesBugTask.providedBy(self.context))
-
     @cachedproperty
     def comments(self):
         """Return the bugtask's comments."""
@@ -1057,27 +1043,15 @@ def get_prefix(bugtask):
     keeping the field ids unique.
     """
     parts = []
-    if IUpstreamBugTask.providedBy(bugtask):
-        parts.append(bugtask.product.name)
+    parts.append(bugtask.pillar.name)
 
-    elif IProductSeriesBugTask.providedBy(bugtask):
-        parts.append(bugtask.productseries.name)
-        parts.append(bugtask.productseries.product.name)
+    series = bugtask.productseries or bugtask.distroseries
+    if series:
+        parts.append(series.name)
 
-    elif IDistroBugTask.providedBy(bugtask):
-        parts.append(bugtask.distribution.name)
-        if bugtask.sourcepackagename is not None:
-            parts.append(bugtask.sourcepackagename.name)
+    if bugtask.sourcepackagename is not None:
+        parts.append(bugtask.sourcepackagename.name)
 
-    elif IDistroSeriesBugTask.providedBy(bugtask):
-        parts.append(bugtask.distroseries.distribution.name)
-        parts.append(bugtask.distroseries.name)
-
-        if bugtask.sourcepackagename is not None:
-            parts.append(bugtask.sourcepackagename.name)
-
-    else:
-        raise AssertionError("Unknown IBugTask: %r" % bugtask)
     return '_'.join(parts)
 
 
@@ -1205,7 +1179,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                 editable_field_names.remove("importance")
         else:
             editable_field_names = set(('bugwatch', ))
-            if not IUpstreamBugTask.providedBy(self.context):
+            if not IProduct.providedBy(self.context.target):
                 #XXX: Bjorn Tillenius 2006-03-01:
                 #     Should be possible to edit the product as well,
                 #     but that's harder due to complications with bug
@@ -1391,18 +1365,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         """
         return self.context.userCanEditImportance(self.user)
 
-    def _getProductOrDistro(self):
-        """Return the product or distribution relevant to the context."""
-        bugtask = self.context
-        if IUpstreamBugTask.providedBy(bugtask):
-            return bugtask.product
-        elif IProductSeriesBugTask.providedBy(bugtask):
-            return bugtask.productseries.product
-        elif IDistroBugTask.providedBy(bugtask):
-            return bugtask.distribution
-        else:
-            return bugtask.distroseries.distribution
-
     def validate(self, data):
         """See `LaunchpadFormView`."""
         bugtask = self.context
@@ -1468,8 +1430,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         # be assigned to a milestone on a different product.
         milestone_cleared = None
         milestone_ignored = False
-        if (IUpstreamBugTask.providedBy(bugtask) and
-            (bugtask.product != new_values.get("product"))):
+        if bugtask.product and bugtask.product != new_values.get("product"):
             # We clear the milestone value if one was already set. We ignore
             # the milestone value if it was currently None, and the user tried
             # to set a milestone value while also changing the product. This
@@ -1487,6 +1448,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             # the form machinery to try and set this value back to
             # what it was!
             data_to_apply.pop('milestone', None)
+
 
         # We special case setting assignee and status, because there's
         # a workflow associated with changes to these fields.
@@ -1528,14 +1490,25 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         # happen to be the only values that changed. We explicitly verify that
         # we got a new status and/or assignee, because the form is not always
         # guaranteed to pass all the values. For example: bugtasks linked to a
-        # bug watch don't allow editting the form, and the value is missing
+        # bug watch don't allow editing the form, and the value is missing
         # from the form.
         missing = object()
         new_status = new_values.pop("status", missing)
         new_assignee = new_values.pop("assignee", missing)
         if new_status is not missing and bugtask.status != new_status:
             changed = True
-            bugtask.transitionToStatus(new_status, self.user)
+            try:
+                bugtask.transitionToStatus(new_status, self.user)
+            except UserCannotEditBugTaskStatus:
+                # We need to roll back the transaction at this point,
+                # since other changes may have been made.
+                transaction.abort()
+                self.setFieldError(
+                    'status',
+                    "Only the Bug Supervisor for %s can set the bug's "
+                    "status to %s" %
+                    (bugtask.target.displayname, new_status.title))
+                return
 
         if new_assignee is not missing and bugtask.assignee != new_assignee:
             if new_assignee is not None and new_assignee != self.user:
@@ -1654,7 +1627,7 @@ class BugTaskStatusView(LaunchpadView):
             field_names += ['milestone']
             self.bugwatch_widget = None
 
-        if not IUpstreamBugTask.providedBy(self.context):
+        if self.context.distroseries or self.context.distribution:
             field_names += ['sourcepackagename']
 
         self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
@@ -3423,9 +3396,9 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
         Returns True or False.
         """
-        bugtask = self.context
-        return (IDistroSeriesBugTask.providedBy(bugtask) or
-                IProductSeriesBugTask.providedBy(bugtask))
+        if self.context.productseries or self.context.distroseries:
+            return True
+        return False
 
     def taskLink(self):
         """Return the proper link to the bugtask whether it's editable."""
@@ -3438,14 +3411,10 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
     def _getSeriesTargetNameHelper(self, bugtask):
         """Return the short name of bugtask's targeted series."""
-        if IDistroSeriesBugTask.providedBy(bugtask):
-            return bugtask.distroseries.name.capitalize()
-        elif IProductSeriesBugTask.providedBy(bugtask):
-            return bugtask.productseries.name.capitalize()
-        else:
-            assert (
-                "Expected IDistroSeriesBugTask or IProductSeriesBugTask. "
-                "Got: %r" % bugtask)
+        series = bugtask.distroseries or bugtask.productseries
+        if not series:
+            return None
+        return series.name.capitalize()
 
     def getSeriesTargetName(self):
         """Get the series to which this task is targeted."""
@@ -3599,6 +3568,8 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             'bugtask_path': '/'.join(
                 [''] + canonical_url(self.context).split('/')[3:]),
             'prefix': get_prefix(self.context),
+            'assignee_is_team': self.context.assignee
+                and self.context.assignee.is_team,
             'assignee_vocabulary': assignee_vocabulary,
             'hide_assignee_team_selection': hide_assignee_team_selection,
             'user_can_unassign': self.context.userCanUnassign(user),

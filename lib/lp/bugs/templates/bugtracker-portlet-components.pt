@@ -28,7 +28,7 @@
                 tal:condition="component/distro_source_package"
                 tal:replace="structure component/distro_source_package/fmt:link" />
               <a class="menu-link-edit sprite edit"
-                tal:attributes="href string:${context/fmt:url}/+components/${component_group/id}/${component/id}/+edit"><span
+                tal:attributes="href context/component_group/fmt:url/+edit"><span
                   class="invisible-link">Edit component</span></a>
             </li>
           </ul>

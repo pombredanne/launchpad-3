@@ -11,6 +11,7 @@
     i18n_domain="launchpad">
     <include
         package=".browser"/>
+    <authorizations module=".security" />
 
     <!-- PackageCloner -->
 
@@ -374,6 +375,12 @@
         provides="lp.soyuz.interfaces.processor.IProcessorFamilySet">
         <allow
             interface="lp.soyuz.interfaces.processor.IProcessorFamilySet"/>
+    </securedutility>
+    <securedutility
+        class="lp.soyuz.model.processor.ProcessorSet"
+        provides="lp.soyuz.interfaces.processor.IProcessorSet">
+        <allow
+            interface="lp.soyuz.interfaces.processor.IProcessorSet"/>
     </securedutility>
     <adapter
         for="lp.soyuz.interfaces.distroarchseriesbinarypackagerelease.IDistroArchSeriesBinaryPackageRelease"
@@ -928,15 +935,21 @@
 
     <!-- PackageCopyJob -->
     <class class=".model.packagecopyjob.PackageCopyJob">
-      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
-      <allow interface=".interfaces.packagecopyjob.IPackageCopyJob"/>
-      <require permission="launchpad.Edit" set_schema=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobPublic"/>
+      <require
+          permission="launchpad.Edit"
+          set_schema=".interfaces.packagecopyjob.IPackageCopyJobPublic"
+          interface=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
     </class>
 
     <!-- PlainPackageCopyJob -->
     <class class=".model.packagecopyjob.PlainPackageCopyJob">
-      <allow interface=".interfaces.packagecopyjob.IPackageCopyJob" />
+      <allow interface=".interfaces.packagecopyjob.IPackageCopyJobPublic" />
       <allow interface=".interfaces.packagecopyjob.IPlainPackageCopyJob" />
+      <require
+          permission="launchpad.Edit"
+          set_schema=".interfaces.packagecopyjob.IPackageCopyJobPublic"
+          interface=".interfaces.packagecopyjob.IPackageCopyJobEdit"/>
     </class>
 
     <!-- PackageCopyPolicy -->

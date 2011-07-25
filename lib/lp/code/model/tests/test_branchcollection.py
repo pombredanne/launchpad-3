@@ -589,17 +589,6 @@ class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
             sorted(self.all_branches.getBranches()),
             sorted(branches.getBranches()))
 
-    def test_bazaar_experts_see_all(self):
-        # Members of the bazaar_experts team see *everything*.
-        bzr_experts = removeSecurityProxy(
-            getUtility(ILaunchpadCelebrities).bazaar_experts)
-        expert = self.factory.makePerson()
-        bzr_experts.addMember(expert, bzr_experts.teamowner)
-        branches = self.all_branches.visibleByUser(expert)
-        self.assertEqual(
-            sorted(self.all_branches.getBranches()),
-            sorted(branches.getBranches()))
-
     def test_subscribers_can_see_branches(self):
         # A person subscribed to a branch can see it, even if it's private.
         subscriber = self.factory.makePerson()

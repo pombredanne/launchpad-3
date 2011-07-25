@@ -18,8 +18,12 @@ from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.buildmaster.enums import BuildStatus
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifferenceSource,
+    )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.features.testing import FeatureFixture
 from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.component import IComponentSet
@@ -40,6 +44,12 @@ from lp.soyuz.scripts.initialize_distroseries import (
     InitializeDistroSeries,
     )
 from lp.testing import TestCaseWithFactory
+from lp.soyuz.model.distroseriesdifferencejob import (
+    FEATURE_FLAG_ENABLE_MODULE,
+    )
+from lp.soyuz.model.distroseriesdifferencejob import (
+    find_waiting_jobs
+    )
 
 
 class InitializationHelperTestCase(TestCaseWithFactory):
@@ -323,6 +333,35 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertContentEqual(
             [(u'udev', u'0.1-1'), (u'firefox', u'2.1')],
             pub_sources)
+
+    def test_intra_distro_perm_copying(self):
+        # If child.distribution equals parent.distribution, we also
+        # copy the archivepermissions.
+        parent, unused = self.setupParent()
+        uploader = self.factory.makePerson()
+        test1 = self.factory.makePackageset(
+            u'test1', u'test 1 packageset', parent.owner,
+            distroseries=parent)
+        #test1 = getUtility(IPackagesetSet).new(
+        #    u'test1', u'test 1 packageset', self.parent.owner,
+        #    distroseries=self.parent)
+        test1.addSources('udev')
+        archive_permset = getUtility(IArchivePermissionSet)
+        archive_permset.newPackagesetUploader(
+            parent.main_archive, uploader, test1)
+        # Create child series in the same distribution.
+        child = self.factory.makeDistroSeries(
+            distribution=parent.distribution,
+            previous_series=parent)
+        self._fullInitialize([parent], child=child)
+
+        # The uploader can upload to the new distroseries.
+        self.assertTrue(archive_permset.isSourceUploadAllowed(
+                parent.main_archive, 'udev', uploader,
+                distroseries=parent))
+        self.assertTrue(archive_permset.isSourceUploadAllowed(
+                child.main_archive, 'udev', uploader,
+                distroseries=child))
 
     def test_no_cross_distro_perm_copying(self):
         # No cross-distro archivepermissions copying should happen.
@@ -675,8 +714,9 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             InitializationError, self._fullInitialize,
             [self.parent1, self.parent2])
 
-    def setUpSeriesWithPreviousSeries(self, parent, previous_parents=(),
-                                      publish_in_distribution=True):
+    def setUpSeriesWithPreviousSeries(self, previous_parents=(),
+                                      publish_in_distribution=True,
+                                      same_distribution=True):
         # Helper method to create a series within an initialized
         # distribution (i.e. that has an initialized series) with a
         # 'previous_series' with parents.
@@ -684,7 +724,13 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         # Create a previous_series derived from 2 parents.
         previous_series = self._fullInitialize(previous_parents)
 
-        child = self.factory.makeDistroSeries(previous_series=previous_series)
+        if same_distribution:
+            child = self.factory.makeDistroSeries(
+                previous_series=previous_series,
+                distribution=previous_series.distribution)
+        else:
+            child = self.factory.makeDistroSeries(
+                previous_series=previous_series)
 
         # Add a publishing in another series from this distro.
         other_series = self.factory.makeDistroSeries(
@@ -701,10 +747,9 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         # the previous_series' parents.
         previous_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
         previous_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
-        parent, unused = self.setupParent()
         child = self.setUpSeriesWithPreviousSeries(
-            parent=parent,
             previous_parents=[previous_parent1, previous_parent2])
+        parent, unused = self.setupParent()
         self._fullInitialize([parent], child=child)
 
         # The parent for the derived series is the distroseries given as
@@ -730,9 +775,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         # parents of the previous series are used as parents.
         previous_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
         previous_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
-        parent, unused = self.setupParent()
         child = self.setUpSeriesWithPreviousSeries(
-            parent=parent,
             previous_parents=[previous_parent1, previous_parent2])
         # Initialize from an empty list of parents.
         self._fullInitialize([], child=child)
@@ -744,12 +787,11 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
     def test_derive_empty_parents_distribution_not_initialized(self):
         # Initializing a series with an empty parent list if the series'
         # distribution has no initialized series triggers an error.
-        parent, unused = self.setupParent()
         previous_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
         child = self.setUpSeriesWithPreviousSeries(
-            parent=parent,
             previous_parents=[previous_parent1],
-            publish_in_distribution=False)
+            publish_in_distribution=False,
+            same_distribution=False)
 
         # Initialize from an empty list of parents.
         ids = InitializeDistroSeries(child, [])
@@ -823,3 +865,142 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertFalse(
             InitializeDistroSeries._use_cloner(
                 target_archive, target_archive, distroseries))
+
+    def test__has_same_parents_as_previous_series_explicit(self):
+        # IDS._has_same_parents_as_previous_series returns True if the
+        # parents for the series to be initialized are the same as
+        # previous_series' parents.
+        prev_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        prev_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
+        child = self.setUpSeriesWithPreviousSeries(
+            previous_parents=[prev_parent1, prev_parent2])
+        # The same parents can be explicitely set.
+        ids = InitializeDistroSeries(
+            child, [prev_parent2.id, prev_parent1.id])
+
+        self.assertTrue(ids._has_same_parents_as_previous_series())
+
+    def test__has_same_parents_as_previous_series_implicit(self):
+        # IDS._has_same_parents_as_previous_series returns True if the
+        # parents for the series to be initialized are the same as
+        # previous_series' parents.
+        prev_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        prev_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
+        child = self.setUpSeriesWithPreviousSeries(
+            previous_parents=[prev_parent1, prev_parent2])
+        # If no parents are provided, the parents from previous_series
+        # will be used.
+        ids = InitializeDistroSeries(child)
+
+        self.assertTrue(ids._has_same_parents_as_previous_series())
+
+    def test_not__has_same_parents_as_previous_series(self):
+        # IDS._has_same_parents_as_previous_series returns False if the
+        # parents for the series to be initialized are *not* the same as
+        # previous_series' parents.
+        prev_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        prev_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
+        child = self.setUpSeriesWithPreviousSeries(
+            previous_parents=[prev_parent1, prev_parent2])
+        parent3 = self.factory.makeDistroSeries()
+        ids = InitializeDistroSeries(
+            child, [prev_parent2.id, prev_parent1.id, parent3.id])
+
+        self.assertFalse(ids._has_same_parents_as_previous_series())
+
+    def test_initialization_post_first_deriv_copy_dsds(self):
+        # Post-first initialization of a series with the same parents
+        # than those of the previous_series causes a copy of
+        # previous_series' DSDs.
+        prev_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        prev_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
+        child = self.setUpSeriesWithPreviousSeries(
+            previous_parents=[prev_parent1, prev_parent2])
+        self.factory.makeDistroSeriesDifference()
+        self.factory.makeDistroSeriesDifference(
+            derived_series=child.previous_series,
+            source_package_name_str=u'p1')
+        self.factory.makeDistroSeriesDifference(
+            derived_series=child.previous_series,
+            source_package_name_str=u'p2')
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        # No DSDs for the child yet.
+        self.assertEquals(0, dsd_source.getForDistroSeries(child).count())
+        self._fullInitialize([], child=child)
+
+        self.assertContentEqual(
+            [u'p1', u'p2'],
+            sorted(
+                [diff.source_package_name.name
+                    for diff in dsd_source.getForDistroSeries(child)]))
+
+    def assertWaitingJobExists(self, series, name, parent_series):
+        self._assertWaitingJobExists(series, name, parent_series)
+
+    def assertWaitingJobDoesntExist(self, series, name, parent_series):
+        self._assertWaitingJobExists(series, name, parent_series, False)
+
+    def _assertWaitingJobExists(self, series, name, parent_series,
+                                exists=True):
+        sourcepackagename = self.factory.getOrMakeSourcePackageName(name)
+        self.assertEquals(
+            1 if exists else 0,
+            len(
+                find_waiting_jobs(
+                    series, sourcepackagename, parent_series)))
+
+    def test_initialization_first_deriv_create_dsdjs(self):
+        # A first initialization of a series creates the creation
+        # of the DSDJs with all the parents.
+        parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: 'on'}))
+        child = self._fullInitialize([parent1, parent2])
+
+        self.assertWaitingJobExists(child, 'p1', parent1)
+        self.assertWaitingJobExists(child, 'p2', parent2)
+
+    def test_initialization_post_first_deriv_create_dsdjs(self):
+        # Post-first initialization of a series with different parents
+        # than those of the previous_series creates the DSDJs to
+        # compute the DSDs with the parents.
+        prev_parent1, unused = self.setupParent(packages={u'p1': u'1.2'})
+        prev_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
+        child = self.setUpSeriesWithPreviousSeries(
+            previous_parents=[prev_parent1, prev_parent2])
+        parent3, unused = self.setupParent(
+            packages={u'p2': u'2.5', u'p3': u'1.1'})
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: 'on'}))
+        self._fullInitialize(
+            [prev_parent1, prev_parent2, parent3], child=child)
+
+        self.assertWaitingJobExists(child, 'p1', prev_parent1)
+        self.assertWaitingJobExists(child, 'p2', prev_parent2)
+        self.assertWaitingJobExists(child, 'p2', parent3)
+        self.assertWaitingJobDoesntExist(child, 'p3', parent3)
+
+    def test_initialization_compute_dsds_specific_packagesets(self):
+        # Post-first initialization of a series with specific
+        # packagesets creates the DSDJs for the packages inside these
+        # packagesets.
+        prev_parent1, unused = self.setupParent(
+            packages={u'p1': u'1.2', u'p11': u'3.1'})
+        prev_parent2, unused = self.setupParent(packages={u'p2': u'1.5'})
+        child = self.setUpSeriesWithPreviousSeries(
+            previous_parents=[prev_parent1, prev_parent2])
+        test1 = getUtility(IPackagesetSet).new(
+            u'test1', u'test 1 packageset', child.previous_series.owner,
+            distroseries=child.previous_series)
+        test1.addSources('p1')
+        parent3, unused = self.setupParent(
+            packages={u'p1': u'2.5', u'p3': u'4.4'})
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: 'on'}))
+        self._fullInitialize(
+            [prev_parent1, prev_parent2, parent3], child=child,
+            packagesets=(str(test1.id),))
+
+        self.assertWaitingJobExists(child, 'p1', prev_parent1)
+        self.assertWaitingJobDoesntExist(child, 'p11', prev_parent1)
+        self.assertWaitingJobDoesntExist(child, 'p2', prev_parent2)
+        self.assertWaitingJobExists(child, 'p1', parent3)
+        self.assertWaitingJobDoesntExist(child, 'p3', parent3)
