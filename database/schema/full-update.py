@@ -86,6 +86,10 @@ def main():
         if not KillConnectionsPreflight(log).check_all():
             return 100
 
+        # upgrade.py needs to be refactored before including inline,
+        # as it invokes sys.exit() on various failures. Running it
+        # in process would be nice as it will save a few seconds of
+        # runtime.
         upgrade_rc = run_script('upgrade.py')
         if upgrade_rc != 0:
             log.warning("upgrade.py run may have been partial")
