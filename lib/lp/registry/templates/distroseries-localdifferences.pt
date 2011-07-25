@@ -151,12 +151,13 @@
                     <span tal:attributes="title parent_source_pub/datepublished/fmt:datetime"
                           tal:content="parent_source_pub/datepublished/fmt:approximatedate">2005-09-16</span>
                     <tal:creator define="spr parent_source_pub/sourcepackagerelease">
-                      by <span tal:content="structure spr/creator/fmt:link" style="white-space: nowrap" />
+                      <span class="nowrap">by <a tal:replace="structure spr/creator/fmt:link" /></span>
                     </tal:creator>
                     <tal:uploader
                         define="spr parent_source_pub/sourcepackagerelease"
                         condition="python: spr.uploader not in (None, spr.creator)">
-                      <span style="white-space: nowrap">
+                      <br />
+                      <span class="discreet nowrap">
                         (uploaded by <a tal:replace="structure spr/uploader/fmt:link" />)
                       </span>
                     </tal:uploader>
@@ -172,12 +173,13 @@
                     <span tal:attributes="title source_pub/datepublished/fmt:datetime"
                           tal:content="source_pub/datepublished/fmt:approximatedate">2005-09-16</span>
                     <tal:creator define="spr source_pub/sourcepackagerelease">
-                      by <span tal:content="structure spr/creator/fmt:link" style="white-space: nowrap" />
+                      <span class="nowrap">by <a tal:replace="structure spr/creator/fmt:link" /></span>
                     </tal:creator>
                     <tal:uploader
                         define="spr source_pub/sourcepackagerelease"
                         condition="python: spr.uploader not in (None, spr.creator)">
-                      <span style="white-space: nowrap">
+                      <br />
+                      <span class="discreet nowrap">
                         (uploaded by <a tal:replace="structure spr/uploader/fmt:link" />)
                       </span>
                     </tal:uploader>
