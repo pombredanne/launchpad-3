@@ -2034,8 +2034,11 @@ class DistributionSourcePackageVocabulary:
                 dsp = distribution.getSourcePackage(spn_or_dsp)
         if dsp and dsp.publishing_history:
             binaries = dsp.publishing_history[0].getBuiltBinaries()
-            summary = ', '.join(
-                [binary.binary_package_name for binary in binaries])
+            binary_names = [binary.binary_package_name for binary in binaries]
+            if binary_names != []:
+                summary = ', '.join(binary_names)
+            else:
+                summary = 'Not yet built.'
             token = '%s/%s' % (dsp.distribution.name, dsp.name)
             return SimpleTerm(dsp.sourcepackagename, token, summary)
         # Without SPPH (pending, published, superceeded, deleted)

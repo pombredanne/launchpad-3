@@ -59,8 +59,7 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
     def test_contains_true(self):
         # The vocabulary contains DSPs that have SPPH in the distro.
         spph = self.factory.makeSourcePackagePublishingHistory()
-        spr = spph.sourcepackagerelease
-        dsp = spr.distrosourcepackage
+        dsp = spph.sourcepackagerelease.distrosourcepackage
         vocabulary = DistributionSourcePackageVocabulary(dsp)
         self.assertTrue(dsp in vocabulary)
 
@@ -73,13 +72,52 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         self.assertFalse(dsp in vocabulary)
 
     def test_toTerm_raises_error(self):
-        # An error is raised for DSPs without publishing history.
+        # An error is raised for DSP/SPNs without publishing history.
         dsp = self.factory.makeDistributionSourcePackage(
             sourcepackagename='foo')
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         self.assertRaises(LookupError, vocabulary.toTerm, dsp.name)
 
-    def test_toTerm_built_single_binary(self):
+    def test_toTerm_spn_and_default_distribution(self):
+        # The vocabulary's distribution is used when only a SPN is passed.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        dsp = spph.sourcepackagerelease.distrosourcepackage
+        vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
+        term = vocabulary.toTerm(dsp.sourcepackagename)
+        expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
+        self.assertEqual(expected_token, term.token)
+        self.assertEqual(dsp.sourcepackagename, term.value)
+
+    def test_toTerm_spn_and_distribution(self):
+        # The distribution is used with the spn if it is passed.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        dsp = spph.sourcepackagerelease.distrosourcepackage
+        vocabulary = DistributionSourcePackageVocabulary(None)
+        term = vocabulary.toTerm(dsp.sourcepackagename, dsp.distribution)
+        expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
+        self.assertEqual(expected_token, term.token)
+        self.assertEqual(dsp.sourcepackagename, term.value)
+
+    def test_toTerm_dsp(self):
+        # The DSP's distribution is used when a DSP is passed.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        dsp = spph.sourcepackagerelease.distrosourcepackage
+        vocabulary = DistributionSourcePackageVocabulary(dsp)
+        term = vocabulary.toTerm(dsp)
+        expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
+        self.assertEqual(expected_token, term.token)
+        self.assertEqual(dsp.sourcepackagename, term.value)
+
+    def test_toTerm_unbuilt_title(self):
+        # The DSP's distribution is used with the spn if it is passed.
+        # Published, but unbuilt packages state the case in the term title.
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        dsp = spph.sourcepackagerelease.distrosourcepackage
+        vocabulary = DistributionSourcePackageVocabulary(dsp)
+        term = vocabulary.toTerm(dsp)
+        self.assertEqual('Not yet built.', term.title)
+
+    def test_toTerm_built_single_binary_title(self):
         # The binary package name appears in the term's value.
         bpph = self.factory.makeBinaryPackagePublishingHistory()
         spr = bpph.binarypackagerelease.build.source_package_release
@@ -88,11 +126,9 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
             distribution=bpph.distroseries.distribution)
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         term = vocabulary.toTerm(spr.sourcepackagename)
-        expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
-        self.assertEqual(expected_token, term.token)
         self.assertEqual(bpph.binary_package_name, term.title)
 
-    def test_toTerm_built_multiple_binary(self):
+    def test_toTerm_built_multiple_binary_title(self):
         # All of the binary package names appear in the term's value.
         spph = self.factory.makeSourcePackagePublishingHistory()
         spr = spph.sourcepackagerelease
@@ -109,8 +145,6 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         dsp = spr.distrosourcepackage
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         term = vocabulary.toTerm(spr.sourcepackagename)
-        expected_token = '%s/%s' % (dsp.distribution.name, dsp.name)
-        self.assertEqual(expected_token, term.token)
         self.assertEqual(', '.join(expected_names), term.title)
 
     def test_searchForTerms_None(self):
