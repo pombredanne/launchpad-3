@@ -38,6 +38,7 @@ from lazr.delegates import delegates
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import (
+    IJSONRequestCache,
     IWebServiceClientRequest,
     )
 import simplejson
@@ -595,6 +596,16 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     label = "Proposal to merge branch"
     schema = ClaimButton
+
+    def initialize(self):
+        super(BranchMergeProposalView, self).initialize()
+        cache = IJSONRequestCache(self.request)
+        cache.objects.update({
+            'branch_diff_link':
+                'https://%s/+loggerhead/%s/diff/' %
+                (config.launchpad.code_domain,
+                 self.context.source_branch.unique_name)
+            })
 
     @action('Claim', name='claim')
     def claim_action(self, action, data):

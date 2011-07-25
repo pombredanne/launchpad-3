@@ -62,7 +62,11 @@ class PublishDistro(LaunchpadCronScript):
 
         self.parser.add_option(
             "-d", "--distribution", dest="distribution", metavar="DISTRO",
-            default="ubuntu", help="The distribution to publish.")
+            default=None, help="The distribution to publish.")
+
+        self.parser.add_option(
+            "-a", "--all-derived", action="store_true", dest="all_derived",
+            default=False, help="Publish all Ubuntu-derived distributions.")
 
         self.parser.add_option(
             '-s', '--suite', metavar='SUITE', dest='suite', action='append',
@@ -166,83 +170,104 @@ class PublishDistro(LaunchpadCronScript):
                 "Can only specify one of partner, ppa, private-ppa, "
                 "copy-archive and primary-debug.")
 
+        if self.options.all_derived and self.options.distribution is not None:
+                raise OptionValueError(
+                    "Specify --distribution or --all-derived, but not both.")
+
         for_ppa = (self.options.ppa or self.options.private_ppa)
         if for_ppa and self.options.distsroot:
             raise OptionValueError(
                 "We should not define 'distsroot' in PPA mode!", )
 
-    def findDistro(self):
-        """Find the selected distribution."""
+    def findSelectedDistro(self):
+        """Find the `Distribution` named by the --distribution option.
+
+        Defaults to Ubuntu if no name was given.
+        """
         self.logger.debug("Finding distribution object.")
         name = self.options.distribution
+        if name is None:
+            # Default to publishing Ubuntu.
+            name = "ubuntu"
         distro = getUtility(IDistributionSet).getByName(name)
         if distro is None:
             raise OptionValueError("Distribution '%s' not found." % name)
         return distro
 
-    def findSuite(self, suite):
+    def findDerivedDistros(self):
+        """Find all Ubuntu-derived distributions."""
+        self.logger.debug("Finding derived distributions.")
+        return getUtility(IDistributionSet).getDerivedDistributions()
+
+    def findDistros(self):
+        """Find the selected distribution(s)."""
+        if self.options.all_derived:
+            return self.findDerivedDistros()
+        else:
+            return [self.findSelectedDistro()]
+
+    def findSuite(self, distribution, suite):
         """Find the named `suite` in the selected `Distribution`.
 
         :param suite: The suite name to look for.
         :return: A tuple of distroseries name and pocket.
         """
         try:
-            series, pocket = self.distribution.getDistroSeriesAndPocket(suite)
+            series, pocket = distribution.getDistroSeriesAndPocket(suite)
         except NotFoundError, e:
             raise OptionValueError(e)
         return series.name, pocket
 
-    def findAllowedSuites(self):
+    def findAllowedSuites(self, distribution):
         """Find the selected suite(s)."""
-        return set([self.findSuite(suite) for suite in self.options.suite])
+        return set([
+            self.findSuite(distribution, suite)
+            for suite in self.options.suite])
 
-    def getDebugArchive(self):
+    def getDebugArchive(self, distribution):
         """Find the debug archive for the selected distribution, as a list."""
         debug_archive = getUtility(IArchiveSet).getByDistroPurpose(
-            self.distribution, ArchivePurpose.DEBUG)
+            distribution, ArchivePurpose.DEBUG)
         if debug_archive is None:
             raise OptionValueError(
-                "Could not find DEBUG archive for %s"
-                % self.distribution.name)
+                "Could not find DEBUG archive for %s" % distribution.name)
         return [debug_archive]
 
-    def getCopyArchives(self):
+    def getCopyArchives(self, distribution):
         """Find copy archives for the selected distribution."""
         copy_archives = list(
             getUtility(IArchiveSet).getArchivesForDistribution(
-                self.distribution, purposes=[ArchivePurpose.COPY]))
+                distribution, purposes=[ArchivePurpose.COPY]))
         if copy_archives == []:
             raise LaunchpadScriptFailure("Could not find any COPY archives")
         return copy_archives
 
-    def getPPAs(self):
+    def getPPAs(self, distribution):
         """Find private package archives for the selected distribution."""
         if self.isCareful(self.options.careful_publishing):
-            return self.distribution.getAllPPAs()
+            return distribution.getAllPPAs()
         else:
-            return self.distribution.getPendingPublicationPPAs()
+            return distribution.getPendingPublicationPPAs()
 
-    def getTargetArchives(self):
+    def getTargetArchives(self, distribution):
         """Find the archive(s) selected by the script's options."""
         if self.options.partner:
-            return [self.distribution.getArchiveByComponent('partner')]
+            return [distribution.getArchiveByComponent('partner')]
         elif self.options.ppa:
-            return filter(is_ppa_public, self.getPPAs())
+            return filter(is_ppa_public, self.getPPAs(distribution))
         elif self.options.private_ppa:
-            return filter(is_ppa_private, self.getPPAs())
+            return filter(is_ppa_private, self.getPPAs(distribution))
         elif self.options.primary_debug:
-            return self.getDebugArchive()
+            return self.getDebugArchive(distribution)
         elif self.options.copy_archive:
-            return self.getCopyArchives()
+            return self.getCopyArchives(distribution)
         else:
-            return [self.distribution.main_archive]
+            return [distribution.main_archive]
 
-    def getPublisher(self, archive, allowed_suites):
+    def getPublisher(self, distribution, archive, allowed_suites):
         """Get a publisher for the given options."""
         if archive.purpose in MAIN_ARCHIVE_PURPOSES:
-            description = "%s %s" % (
-                self.distribution.name,
-                archive.displayname)
+            description = "%s %s" % (distribution.name, archive.displayname)
             # Only let the primary/partner archives override the distsroot.
             distsroot = self.options.distsroot
         else:
@@ -294,21 +319,22 @@ class PublishDistro(LaunchpadCronScript):
         """See `LaunchpadScript`."""
         self.validateOptions()
         self.logOptions()
-        self.distribution = self.findDistro()
-        allowed_suites = self.findAllowedSuites()
 
-        for archive in self.getTargetArchives():
-            publisher = self.getPublisher(archive, allowed_suites)
+        for distribution in self.findDistros():
+            allowed_suites = self.findAllowedSuites(distribution)
+            for archive in self.getTargetArchives(distribution):
+                publisher = self.getPublisher(
+                    distribution, archive, allowed_suites)
 
-            if archive.status == ArchiveStatus.DELETING:
-                work_done = self.deleteArchive(archive, publisher)
-            elif archive.publish:
-                self.publishArchive(archive, publisher)
-                work_done = True
-            else:
-                work_done = False
+                if archive.status == ArchiveStatus.DELETING:
+                    work_done = self.deleteArchive(archive, publisher)
+                elif archive.publish:
+                    self.publishArchive(archive, publisher)
+                    work_done = True
+                else:
+                    work_done = False
 
-            if work_done:
-                self.txn.commit()
+                if work_done:
+                    self.txn.commit()
 
         self.logger.debug("Ciao")

@@ -138,6 +138,18 @@ class IDistroSeriesDifferenceJobSource(IJobSource):
         # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
         # mandatory as part of multi-parent support.
 
+    def massCreateForSeries(derived_series, parent_series):
+        """Create jobs for all the publications inside the given distroseries
+            with reference to the given parent series.
+
+        :param derived_series: A `DistroSeries` that is assumed to be
+            derived from `parent_series`.
+        :param parent_series: The parent `DistroSeries`.
+
+        :return: An iterable of `DistroSeriesDifferenceJob` ids. We don't
+            return the Job themselves for performance reason.
+        """
+
     def getPendingJobsForDifferences(derived_series, distroseriesdifferences):
         """Find `DistroSeriesDifferenceJob`s for `DistroSeriesDifference`s.
 

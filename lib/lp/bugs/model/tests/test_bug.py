@@ -205,9 +205,27 @@ class TestBug(TestCaseWithFactory):
             set(subscribers), set(direct_subscribers),
             "Subscribers did not match expected value.")
 
-    def test_get_direct_subscribers_with_details(self):
-        # getDirectSubscribersWithDetails() returns both
-        # Person and BugSubscription records in one go.
+    def test_get_direct_subscribers_with_details_other_subscriber(self):
+        # getDirectSubscribersWithDetails() returns
+        # Person and BugSubscription records in one go as well as the
+        # BugSubscription.subscribed_by person.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            # Unsubscribe bug owner so it doesn't taint the result.
+            bug.unsubscribe(bug.owner, bug.owner)
+        subscriber = self.factory.makePerson()
+        subscribee = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            subscription = bug.subscribe(
+                subscribee, subscriber, level=BugNotificationLevel.LIFECYCLE)
+        self.assertContentEqual(
+            [(subscribee, subscriber, subscription)],
+            bug.getDirectSubscribersWithDetails())
+
+    def test_get_direct_subscribers_with_details_self_subscribed(self):
+        # getDirectSubscribersWithDetails() returns
+        # Person and BugSubscription records in one go as well as the
+        # BugSubscription.subscribed_by person.
         bug = self.factory.makeBug()
         with person_logged_in(bug.owner):
             # Unsubscribe bug owner so it doesn't taint the result.
@@ -216,9 +234,8 @@ class TestBug(TestCaseWithFactory):
         with person_logged_in(subscriber):
             subscription = bug.subscribe(
                 subscriber, subscriber, level=BugNotificationLevel.LIFECYCLE)
-
         self.assertContentEqual(
-            [(subscriber, subscription)],
+            [(subscriber, subscriber, subscription)],
             bug.getDirectSubscribersWithDetails())
 
     def test_get_direct_subscribers_with_details_mute_excludes(self):
