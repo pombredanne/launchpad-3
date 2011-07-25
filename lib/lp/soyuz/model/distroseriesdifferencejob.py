@@ -8,12 +8,14 @@ __all__ = [
     'DistroSeriesDifferenceJob',
     ]
 
+from storm.expr import And
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
 
+from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -34,10 +36,13 @@ from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
     )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.distributionjob import (
     DistributionJob,
     DistributionJobDerived,
     )
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
 FEATURE_FLAG_ENABLE_MODULE = u"soyuz.derived_series_jobs.enabled"
@@ -76,6 +81,57 @@ def create_job(derived_series, sourcepackagename, parent_series=None):
         metadata=make_metadata(sourcepackagename, parent_series))
     IMasterStore(DistributionJob).add(job)
     return DistroSeriesDifferenceJob(job)
+
+
+def create_multiple_jobs(derived_series, parent_series):
+    """Create a `DistroSeriesDifferenceJob` for all the source packages in
+    archive (optionally limited to the sourcepackagenames passed).
+
+    :param derived_series: A `DistroSeries` that is assumed to be derived
+        from another one.
+    :param parent_series: A `DistroSeries` that is a parent of
+        `derived_series`.
+    :param archive: A `IArchive` where to find the source packages.
+    """
+    store = IStore(SourcePackageRelease)
+    source_package_releases = store.find(
+        SourcePackageRelease,
+        And(
+            SourcePackagePublishingHistory.sourcepackagerelease ==
+                SourcePackageRelease.id,
+            SourcePackagePublishingHistory.distroseries == derived_series.id,
+            SourcePackagePublishingHistory.status.is_in(
+                active_publishing_status)))
+    nb_jobs = source_package_releases.count()
+    sourcepackagenames = source_package_releases.values(
+        SourcePackageRelease.sourcepackagenameID)
+    job_ids = Job.createMultiple(store, nb_jobs)
+
+    def composeJobInsertionTuple(derived_series, parent_series,
+                                 sourcepackagename, job_id):
+        data = (
+            derived_series.distribution.id, derived_series.id,
+            DistributionJobType.DISTROSERIESDIFFERENCE, job_id,
+            DistributionJob.serializeMetadata(
+                {'sourcepackagename': sourcepackagename,
+                 'parent_series': parent_series.id}))
+        format_string = "(%s)" % ", ".join(["%s"] * len(data))
+        return format_string % sqlvalues(*data)
+
+    job_contents = [
+        composeJobInsertionTuple(
+            derived_series, parent_series, sourcepackagename, job_id)
+        for job_id, sourcepackagename in
+            zip(job_ids, sourcepackagenames)]
+
+    store = IStore(DistributionJob)
+    result = store.execute("""
+        INSERT INTO DistributionJob (
+            distribution, distroseries, job_type, job, json_data)
+        VALUES %s
+        RETURNING id
+        """ % ", ".join(job_contents))
+    return [job_id for job_id, in result]
 
 
 def find_waiting_jobs(derived_series, sourcepackagename, parent_series=None):
@@ -173,6 +229,13 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
                 jobs.append(create_job(
                     relative, sourcepackagename, parent_series))
         return jobs
+
+    @classmethod
+    def massCreateForSeries(cls, derived_series, parent_series):
+        """See `IDistroSeriesDifferenceJobSource`."""
+        if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
+            return
+        create_multiple_jobs(derived_series, parent_series)
 
     @classmethod
     def getPendingJobsForDifferences(cls, derived_series,

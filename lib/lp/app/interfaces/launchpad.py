@@ -47,7 +47,6 @@ class ILaunchpadCelebrities(Interface):
     janitor = Attribute("The Launchpad Janitor.")
     katie = Attribute("The Debian Auto-sync user.")
     launchpad = Attribute("The Launchpad project.")
-    launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
     launchpad_developers = Attribute("The Launchpad development team.")
     obsolete_junk = Attribute("The Obsolete Junk project.")
     ppa_key_guard = Attribute("The PPA signing keys owner.")

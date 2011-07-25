@@ -6,9 +6,11 @@ __metaclass__ = type
 from datetime import timedelta
 import unittest
 
+from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from testtools.matchers import Equals
 from zope.component import getUtility
+from zope.event import notify
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
@@ -31,12 +33,16 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     BugTaskStatus,
     IBugTaskSet,
-    IUpstreamBugTask,
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     )
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
-from lp.bugs.model.bugtask import build_tag_search_clause
+from lp.bugs.model.bugtask import (
+    bug_target_from_key,
+    bug_target_to_key,
+    build_tag_search_clause,
+    IllegalTarget,
+    )
 from lp.bugs.tests.bug import (
     create_old_bug,
     )
@@ -81,18 +87,6 @@ class TestBugTaskDelta(TestCaseWithFactory):
         # getDelta() should return None when no change has been made.
         bug_task = self.factory.makeBugTask()
         self.assertEqual(bug_task.getDelta(bug_task), None)
-
-    def test_get_mismatched_delta(self):
-        # getDelta() should raise TypeError when different types of
-        # bug tasks are passed in.
-        product = self.factory.makeProduct()
-        product_bug_task = self.factory.makeBugTask(target=product)
-        distro_source_package = self.factory.makeDistributionSourcePackage()
-        distro_source_package_bug_task = self.factory.makeBugTask(
-            target=distro_source_package)
-        self.assertRaises(
-            TypeError, product_bug_task.getDelta,
-            distro_source_package_bug_task)
 
     def check_delta(self, bug_task_before, bug_task_after, **expected_delta):
         # Get a delta between one bug task and another, then compare
@@ -1156,7 +1150,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         # Helper functions for the list comprehension below.
         def _is_resolved_upstream_task(bugtask):
             return (
-                IUpstreamBugTask.providedBy(bugtask) and
+                bugtask.product is not None and
                 bugtask.status in resolved_upstream_states)
 
         def _is_resolved_bugwatch_task(bugtask):
@@ -1192,7 +1186,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         # Helper functions for the list comprehension below.
         def _is_open_upstream_task(bugtask):
             return (
-                IUpstreamBugTask.providedBy(bugtask) and
+                bugtask.product is not None and
                 bugtask.status in open_states)
 
         def _is_open_bugwatch_task(bugtask):
@@ -1216,7 +1210,7 @@ class BugTaskSearchBugsElsewhereTest(unittest.TestCase):
         Returns True if yes, otherwise False.
         """
         for bugtask in bug.bugtasks:
-            if IUpstreamBugTask.providedBy(bugtask):
+            if bugtask.product is not None:
                 return True
         return False
 
@@ -1651,3 +1645,189 @@ class TestAutoConfirmBugTasks(TestCaseWithFactory):
                 bug_task.maybeConfirm()
                 self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
                 self.assertEqual(0, len(recorder.events))
+
+
+class TestTransitionToTarget(TestCaseWithFactory):
+    """Tests for BugTask.transitionToTarget."""
+
+    layer = DatabaseFunctionalLayer
+
+    def makeAndTransition(self, old, new):
+        task = self.factory.makeBugTask(target=old)
+        p = self.factory.makePerson()
+        self.assertEqual(old, task.target)
+        old_state = Snapshot(task, providing=providedBy(task))
+        with person_logged_in(task.owner):
+            task.bug.subscribe(p, p)
+            task.transitionToTarget(new)
+            notify(ObjectModifiedEvent(task, old_state, ["target"]))
+        return task
+
+    def assertTransitionWorks(self, a, b):
+        """Check that a transition between two targets works both ways."""
+        self.assertEqual(b, self.makeAndTransition(a, b).target)
+        self.assertEqual(a, self.makeAndTransition(b, a).target)
+
+    def assertTransitionForbidden(self, a, b):
+        """Check that a transition between two targets fails both ways."""
+        self.assertRaises(IllegalTarget, self.makeAndTransition, a, b)
+        self.assertRaises(IllegalTarget, self.makeAndTransition, b, a)
+
+    def test_product_to_product_works(self):
+        self.assertTransitionWorks(
+            self.factory.makeProduct(),
+            self.factory.makeProduct())
+
+    def test_product_to_distribution_works(self):
+        self.assertTransitionWorks(
+            self.factory.makeProduct(),
+            self.factory.makeDistributionSourcePackage())
+
+    def test_product_to_package_works(self):
+        self.assertTransitionWorks(
+            self.factory.makeProduct(),
+            self.factory.makeDistributionSourcePackage())
+
+    def test_distribution_to_distribution_works(self):
+        self.assertTransitionWorks(
+            self.factory.makeDistribution(),
+            self.factory.makeDistribution())
+
+    def test_distribution_to_package_works(self):
+        distro = self.factory.makeDistribution()
+        dsp = self.factory.makeDistributionSourcePackage(distribution=distro)
+        self.assertEquals(dsp.distribution, distro)
+        self.assertTransitionWorks(distro, dsp)
+
+    def test_package_to_package_works(self):
+        distro = self.factory.makeDistribution()
+        self.assertTransitionWorks(
+            self.factory.makeDistributionSourcePackage(distribution=distro),
+            self.factory.makeDistributionSourcePackage(distribution=distro))
+
+    def test_sourcepackage_to_sourcepackage_in_same_series_works(self):
+        sp1 = self.factory.makeSourcePackage()
+        sp2 = self.factory.makeSourcePackage(distroseries=sp1.distroseries)
+        self.assertTransitionWorks(sp1, sp2)
+
+    def test_different_distros_works(self):
+        self.assertTransitionWorks(
+            self.factory.makeDistributionSourcePackage(),
+            self.factory.makeDistributionSourcePackage())
+
+    def test_cannot_transition_to_productseries(self):
+        product = self.factory.makeProduct()
+        self.assertTransitionForbidden(
+            product,
+            self.factory.makeProductSeries(product=product))
+
+    def test_cannot_transition_to_distroseries(self):
+        distro = self.factory.makeDistribution()
+        series = self.factory.makeDistroSeries(distribution=distro)
+        self.assertTransitionForbidden(distro, series)
+
+    def test_cannot_transition_to_sourcepackage(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        series = self.factory.makeDistroSeries(distribution=dsp.distribution)
+        sp = self.factory.makeSourcePackage(
+            distroseries=series, sourcepackagename=dsp.sourcepackagename)
+        self.assertTransitionForbidden(dsp, sp)
+
+    def test_cannot_transition_to_sourcepackage_in_different_series(self):
+        distro = self.factory.makeDistribution()
+        ds1 = self.factory.makeDistroSeries(distribution=distro)
+        sp1 = self.factory.makeSourcePackage(distroseries=ds1)
+        ds2 = self.factory.makeDistroSeries(distribution=distro)
+        sp2 = self.factory.makeSourcePackage(distroseries=ds2)
+        self.assertTransitionForbidden(sp1, sp2)
+
+
+class TestBugTargetKeys(TestCaseWithFactory):
+    """Tests for bug_target_to_key and bug_target_from_key."""
+
+    layer = DatabaseFunctionalLayer
+
+    def assertTargetKeyWorks(self, target, flat):
+        """Check that a target flattens to the dict and back."""
+        self.assertEqual(flat, bug_target_to_key(target))
+        self.assertEqual(target, bug_target_from_key(**flat))
+
+    def test_product(self):
+        product = self.factory.makeProduct()
+        self.assertTargetKeyWorks(
+            product,
+            dict(
+                product=product,
+                productseries=None,
+                distribution=None,
+                distroseries=None,
+                sourcepackagename=None,
+                ))
+
+    def test_productseries(self):
+        series = self.factory.makeProductSeries()
+        self.assertTargetKeyWorks(
+            series,
+            dict(
+                product=None,
+                productseries=series,
+                distribution=None,
+                distroseries=None,
+                sourcepackagename=None,
+                ))
+
+    def test_distribution(self):
+        distro = self.factory.makeDistribution()
+        self.assertTargetKeyWorks(
+            distro,
+            dict(
+                product=None,
+                productseries=None,
+                distribution=distro,
+                distroseries=None,
+                sourcepackagename=None,
+                ))
+
+    def test_distroseries(self):
+        distroseries = self.factory.makeDistroSeries()
+        self.assertTargetKeyWorks(
+            distroseries,
+            dict(
+                product=None,
+                productseries=None,
+                distribution=None,
+                distroseries=distroseries,
+                sourcepackagename=None,
+                ))
+
+    def test_distributionsourcepackage(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        self.assertTargetKeyWorks(
+            dsp,
+            dict(
+                product=None,
+                productseries=None,
+                distribution=dsp.distribution,
+                distroseries=None,
+                sourcepackagename=dsp.sourcepackagename,
+                ))
+
+    def test_sourcepackage(self):
+        sp = self.factory.makeSourcePackage()
+        self.assertTargetKeyWorks(
+            sp,
+            dict(
+                product=None,
+                productseries=None,
+                distribution=None,
+                distroseries=sp.distroseries,
+                sourcepackagename=sp.sourcepackagename,
+                ))
+
+    def test_no_key_for_non_targets(self):
+        self.assertRaises(
+            AssertionError, bug_target_to_key, self.factory.makePerson())
+
+    def test_no_target_for_bad_keys(self):
+        self.assertRaises(
+            AssertionError, bug_target_from_key, None, None, None, None, None)
