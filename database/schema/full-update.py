@@ -106,7 +106,9 @@ def main():
             return pgbouncer_rc
         pgbouncer_down = False
 
-        preflight_rc = run_script('preflight.py')
+        # We will start seeing connections as soon as pgbouncer is
+        # reenabled, so ignore them here.
+        preflight_rc = run_script('preflight.py', '--skip-connection-check')
         if preflight_rc != 0:
             return preflight_rc
 
