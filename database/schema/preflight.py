@@ -6,6 +6,13 @@
 
 import _pythonpath
 
+__all__ = [
+    'DatabasePreflight',
+    'KillConnectionsPreflight',
+    'NoConnectionCheckPreflight',
+    ]
+
+
 from datetime import timedelta
 from optparse import OptionParser
 import sys
@@ -34,7 +41,10 @@ MAX_LAG = timedelta(seconds=45)
 
 
 class DatabasePreflight:
-    def __init__(self, log, master_con):
+    def __init__(self, log):
+        master_con = connect(lp.dbuser)
+        master_con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+
         self.log = log
         self.is_replicated = replication.helpers.slony_installed(master_con)
         if self.is_replicated:
@@ -272,15 +282,12 @@ def main():
 
     log = logger(options)
 
-    master_con = connect(lp.dbuser)
-    master_con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-
     if options.kill_connections:
-        preflight_check = KillConnectionsPreflight(log, master_con)
+        preflight_check = KillConnectionsPreflight(log)
     elif options.skip_connection_check:
-        preflight_check = NoConnectionCheckPreflight(log, master_con)
+        preflight_check = NoConnectionCheckPreflight(log)
     else:
-        preflight_check = DatabasePreflight(log, master_con)
+        preflight_check = DatabasePreflight(log)
 
     if preflight_check.check_all():
         log.info('Preflight check succeeded. Good to go.')

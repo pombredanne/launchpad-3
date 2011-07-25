@@ -17,6 +17,12 @@ from canonical.launchpad.scripts import (
     logger_options,
     )
 
+from preflight import (
+    DatabasePreflight,
+    KillConnectionsPreflight,
+    NoConnectionCheckPreflight,
+    )
+
 
 PGBOUNCER_INITD = ['sudo', '/etc/init.d/pgbouncer']
 
@@ -45,9 +51,8 @@ def main():
 
     # We initially ignore open connections, as they will shortly be
     # killed.
-    preflight_rc = run_script('preflight.py', '--skip-connection-check')
-    if preflight_rc != 0:
-        return preflight_rc
+    if not NoConnectionCheckPreflight(log).check_all():
+        return 99
 
     # Confirm we can invoke PGBOUNCER_INITD
     pgbouncer_status_cmd = PGBOUNCER_INITD + ['status']
@@ -77,9 +82,8 @@ def main():
             return pgbouncer_rc
         pgbouncer_down = True
 
-        preflight_rc = run_script('preflight.py', '--kill-connections')
-        if preflight_rc != 0:
-            return preflight_rc
+        if not KillConnectionsPreflight(log).check_all():
+            return 100
 
         upgrade_rc = run_script('upgrade.py')
         if upgrade_rc != 0:
@@ -108,9 +112,8 @@ def main():
 
         # We will start seeing connections as soon as pgbouncer is
         # reenabled, so ignore them here.
-        preflight_rc = run_script('preflight.py', '--skip-connection-check')
-        if preflight_rc != 0:
-            return preflight_rc
+        if not NoConnectionCheckPreflight(log).check_all():
+            return 101
 
         log.info("All good. All done.")
         return 0
