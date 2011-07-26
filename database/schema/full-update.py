@@ -28,19 +28,15 @@ import upgrade  # upgrade.py script
 PGBOUNCER_INITD = ['sudo', '/etc/init.d/pgbouncer']
 
 
-def run_script(script, *extra_args):
-    script_path = os.path.join(os.path.dirname(__file__), script)
-    return subprocess.call([script_path] + sys.argv[1:] + list(extra_args))
-
-
 def run_pgbouncer(log, cmd):
     """Invoke the pgbouncer initscript.
 
     :param cmd: One of 'start', 'stop' or 'status'.
     """
-    assert cmd in ('start', 'stop', 'status'), (
-        'sudo access needs to be granted to new commands on staging and prod'
-        )
+    assert cmd in ('start', 'stop', 'status'), '''
+        Unrecognized command; remember any new commands need to be
+        granted sudo on staging and prod.
+        '''
     pgbouncer_rc = subprocess.call(PGBOUNCER_INITD + [cmd])
     sys.stdout.flush()
     if pgbouncer_rc != 0:
@@ -127,8 +123,6 @@ def main():
     # status flags
     pgbouncer_down = False
     upgrade_run = False
-    # Bug #815717
-    # fti_run = False
     security_run = False
 
     try:
@@ -146,14 +140,6 @@ def main():
         if upgrade_rc != 0:
             return upgrade_rc
         upgrade_run = True
-
-        # fti.py is no longer being run on production. Updates
-        # to full text indexes need to be handled manually in db
-        # patches. Bug #815717.
-        # fti_rc = run_script('fti.py')
-        # if fti_rc != 0:
-        #     return fti_rc
-        # fti_run = True
 
         security_rc = run_security(options, log)
         if security_rc != 0:
@@ -198,9 +184,6 @@ def main():
                 log.fatal("pgbouncer is down and refuses to restart")
         if not upgrade_run:
             log.warning("upgrade.py still needs to be run")
-        # Bug #815717
-        # if not fti_run:
-        #     log.warning("fti.py still needs to be run")
         if not security_run:
             log.warning("security.py still needs to be run")
 
