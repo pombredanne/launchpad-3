@@ -217,8 +217,7 @@ def define_verbosity_options(parser, default, verbose_callback,
                              quiet_callback):
     """Define the -v and -q options on `parser`."""
     parser.add_option(
-        "-v", "--verbose", dest="loglevel", default=default,
-        action="callback", callback=verbose_callback,
+        "-v", "--verbose", action="callback", callback=verbose_callback,
         help="Increase stderr verbosity. May be specified multiple times.")
     parser.add_option(
         "-q", "--quiet", action="callback", callback=quiet_callback,
@@ -287,7 +286,7 @@ def logger_options(parser, default=logging.INFO):
 
     define_verbosity_options(
         parser, default,
-        LogLevelNudger(default, True), LogLevelNudger(default, False))
+        LogLevelNudger(default, False), LogLevelNudger(default, True))
 
     debug_levels = ', '.join([
         v for k, v in sorted(logging._levelNames.items(), reverse=True)
