@@ -1417,11 +1417,11 @@ class AdminTranslationImportQueueEntry(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         if self.obj.distroseries is not None:
-            pillar = self.obj.distroseries.distribution
+            series = self.obj.distroseries
         else:
-            pillar = self.obj.productseries.product
+            series = self.obj.productseries
         return (
-            self.forwardCheckAuthenticated(user, pillar,
+            self.forwardCheckAuthenticated(user, series,
                                            'launchpad.TranslationsAdmin'))
 
 

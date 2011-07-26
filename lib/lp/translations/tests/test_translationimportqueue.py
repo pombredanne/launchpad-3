@@ -115,29 +115,29 @@ class TestCanSetStatusBase:
         # The driver gets the same permissions as the maintainer.
         driver = self.productseries.driver
         self._assertCanSetStatus(driver, self.entry,
-            #  A      B     D     F      I     NI     NR
-            [False, True, True, False, False, False, True])
+            #  A     B     D     F      I     NI    NR
+            [True, True, True, False, False, True, True])
 
     def test_canSetStatus_driver_and_uploader(self):
         # Corner case: Nothing changes if the driver is also the uploader.
         self.productseries.driver = self.uploaderperson
         self._assertCanSetStatus(self.uploaderperson, self.entry,
-            #  A      B     D     F      I     NI     NR
-            [False, True, True, False, False, False, True])
+            #  A     B     D     F      I     NI    NR
+            [True, True, True, False, False, True, True])
 
     def test_canSetStatus_product_driver(self):
         # The driver of the product, too.
         driver = self.productseries.product.driver
         self._assertCanSetStatus(driver, self.entry,
-            #  A      B     D     F      I     NI     NR
-            [False, True, True, False, False, False, True])
+            #  A      B     D     F     I     NI    NR
+            [True, True, True, False, False, True, True])
 
     def test_canSetStatus_product_driver_and_uploader(self):
         # Corner case: Nothing changes if the driver is also the uploader.
         self.productseries.product.driver = self.uploaderperson
         self._assertCanSetStatus(self.uploaderperson, self.entry,
-            #  A      B     D     F      I     NI     NR
-            [False, True, True, False, False, False, True])
+            #  A      B     D     F     I     NI    NR
+            [True, True, True, False, False, True, True])
 
     def _setUpUbuntu(self):
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
