@@ -432,9 +432,14 @@ class InitializeDistroSeries:
                 else:
                     # There is only one available pocket in an unreleased
                     # series.
-                    pocket = PackagePublishingPocket.RELEASE
+                    target_pocket = PackagePublishingPocket.RELEASE
+                    pockets_to_copy = (
+                        PackagePublishingPocket.RELEASE,
+                        PackagePublishingPocket.UPDATES,
+                        PackagePublishingPocket.SECURITY)
                     sources = archive.getPublishedSources(
-                        distroseries=parent, pocket=pocket, name=spns)
+                        distroseries=parent, pocket=pockets_to_copy,
+                        name=spns)
                     # XXX: rvb 2011-06-23 bug=801112: do_copy is atomic (all
                     # or none of the sources will be copied). This might
                     # lead to a partially initialised series if there is a
@@ -442,7 +447,7 @@ class InitializeDistroSeries:
                     try:
                         sources_published = do_copy(
                             sources, target_archive, self.distroseries,
-                            pocket, include_binaries=not self.rebuild,
+                            target_pocket, include_binaries=not self.rebuild,
                             check_permissions=False, strict_binaries=False,
                             close_bugs=False, create_dsd_job=False)
                         if self.rebuild:
