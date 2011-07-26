@@ -109,6 +109,11 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         self.assertRaises(LookupError, vocabulary.toTerm, dsp.name)
 
+    def test_toTerm_none_raises_error(self):
+        # An error is raised for SPN does not exist.
+        vocabulary = DistributionSourcePackageVocabulary(None)
+        self.assertRaises(LookupError, vocabulary.toTerm, 'non-existant')
+
     def test_toTerm_spn_and_default_distribution(self):
         # The vocabulary's distribution is used when only a SPN is passed.
         spph = self.factory.makeSourcePackagePublishingHistory()

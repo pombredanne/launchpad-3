@@ -2032,7 +2032,7 @@ class DistributionSourcePackageVocabulary:
             distribution = distribution or self.distribution
             if distribution is not None and spn_or_dsp is not None:
                 dsp = distribution.getSourcePackage(spn_or_dsp)
-        if dsp and dsp.publishing_history:
+        try:
             binaries = dsp.publishing_history[0].getBuiltBinaries()
             binary_names = [binary.binary_package_name for binary in binaries]
             if binary_names != []:
@@ -2041,9 +2041,9 @@ class DistributionSourcePackageVocabulary:
                 summary = 'Not yet built.'
             token = '%s/%s' % (dsp.distribution.name, dsp.name)
             return SimpleTerm(dsp.sourcepackagename, token, summary)
-        # Without SPPH (pending, published, superceeded, deleted)
-        # This SPN was never excepted by one of the distribution's series.
-        raise LookupError(distribution, spn_or_dsp)
+        except (IndexError, AttributeError):
+            # Either the DSP was None or there is no publishing history.
+            raise LookupError(distribution, spn_or_dsp)
 
     def getTerm(self, spn_or_dsp):
         """See `IBaseVocabulary`."""
