@@ -251,7 +251,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     def setActive(self, active):
         """See `IPOTemplate`."""
-        if not active:
+        if not active and active != self.iscurrent:
             self._removeFromSuggestivePOTemplatesCache()
         self.iscurrent = active
 
