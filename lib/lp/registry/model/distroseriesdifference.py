@@ -476,6 +476,7 @@ class DistroSeriesDifference(StormBase):
         conditions = [
             DSD.derived_series == distro_series,
             DSD.difference_type == difference_type,
+            DSD.source_package_name == SPN.id,  # For ordering.
             DSD.status.is_in(status),
             ]
 
@@ -509,18 +510,16 @@ class DistroSeriesDifference(StormBase):
                     Select(PSS.sourcepackagename_id,
                            PSS.packageset_id.is_in(set_ids))))
 
-        # Join to SourcePackageName for ordering.
-        conditions.append(DSD.source_package_name == SPN.id)
-
-        differences = IStore(DSD).find(DSD, And(*conditions))
-        differences = differences.order_by(SPN.name)
+        store = IStore(DSD)
+        columns = (DSD, SPN.name)
+        differences = store.find(columns, And(*conditions))
 
         if changed_by is not None:
             # Identify all DSDs referring to SPRs created by changed_by for
-            # this distroseries. The full set of DSDs for the given
-            # distroseries can then be discovered as the intersection between
-            # this set and the already established differences.
-            differences_changed_by_condition = And(
+            # this distroseries. The set of DSDs for the given distroseries
+            # can then be discovered as the intersection between this set and
+            # the already established differences.
+            differences_changed_by_conditions = And(
                 basic_conditions,
                 SPPH.archiveID == distro_series.main_archive.id,
                 SPPH.distroseriesID == distro_series.id,
@@ -529,12 +528,20 @@ class DistroSeriesDifference(StormBase):
                 SPR.creatorID == TP.personID,
                 SPR.sourcepackagenameID == DSD.source_package_name_id,
                 TP.teamID.is_in(person.id for person in changed_by))
-            differences_changed_by = IStore(DSD).find(
-                DSD, differences_changed_by_condition)
+            differences_changed_by = store.find(
+                columns, differences_changed_by_conditions)
             differences = differences.intersection(differences_changed_by)
 
-        return DecoratedResultSet(
-            differences, pre_iter_hook=eager_load_dsds)
+        differences = differences.order_by(SPN.name)
+
+        # Each row is (dsd, spn.name).
+        get_dsd = lambda (dsd, spn_name): dsd
+
+        def eager_load(rows):
+            dsds = map(get_dsd, rows)
+            return eager_load_dsds(dsds)
+
+        return DecoratedResultSet(differences, get_dsd, eager_load)
 
     @staticmethod
     def getByDistroSeriesNameAndParentSeries(distro_series,
