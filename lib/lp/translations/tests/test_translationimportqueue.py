@@ -101,15 +101,15 @@ class TestCanSetStatusBase:
         # The owner (maintainer) of the product gets to set Blocked as well.
         owner = self.productseries.product.owner
         self._assertCanSetStatus(owner, self.entry,
-            #  A      B     D     F      I     NI     NR
-            [False, True, True, False, False, False, True])
+            #  A     B     D     F      I     NI    NR
+            [True, True, True, False, False, True, True])
 
     def test_canSetStatus_owner_and_uploader(self):
         # Corner case: Nothing changes if the maintainer is also the uploader.
         self.productseries.product.owner = self.uploaderperson
         self._assertCanSetStatus(self.uploaderperson, self.entry,
-            #  A      B     D     F      I     NI     NR
-            [False, True, True, False, False, False, True])
+            #  A     B     D     F      I     NI    NR
+            [True, True, True, False, False, True, True])
 
     def test_canSetStatus_driver(self):
         # The driver gets the same permissions as the maintainer.

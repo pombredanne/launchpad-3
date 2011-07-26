@@ -34,7 +34,10 @@ from storm.locals import (
     Int,
     Reference,
     )
-from zope.component import getUtility
+from zope.component import (
+    getUtility,
+    queryAdapter,
+    )
 from zope.interface import implements
 
 from canonical.database.constants import (
@@ -58,6 +61,7 @@ from canonical.launchpad.interfaces.lpstorm import (
 from canonical.librarian.interfaces import ILibrarianClient
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.security import IAuthorization
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
@@ -296,35 +300,26 @@ class TranslationImportQueueEntry(SQLBase):
 
     def canAdmin(self, roles):
         """See `ITranslationImportQueueEntry`."""
-        # As a special case, the Ubuntu translation group owners can
-        # manage Ubuntu uploads.
-        if self.is_targeted_to_ubuntu:
-            group = self.distroseries.distribution.translationgroup
-            if group is not None and roles.inTeam(group.owner):
-                return True
-        # Rosetta experts and admins can administer the entry.
-        return roles.in_rosetta_experts or roles.in_admin
+        next_adapter = queryAdapter(self, IAuthorization, 'launchpad.Admin')
+        if next_adapter is None:
+            return False
+        else:
+            return next_adapter.checkAuthenticated(roles)
 
     def _canEditExcludeImporter(self, roles):
         """All people that can edit the entry except the importer."""
-        # Admin rights include edit rights.
-        if self.canAdmin(roles):
-            return True
-        # The maintainer and the drivers can edit the entry.
-        if self.productseries is not None:
-            return (roles.isOwner(self.productseries.product) or
-                    roles.isOneOfDrivers(self.productseries))
-        if self.distroseries is not None:
-            return (roles.isOwner(self.distroseries.distribution) or
-                    roles.isOneOfDrivers(self.distroseries))
-        return False
+        if roles.person.inTeam(self.importer):
+            return False
+        else:
+            return self.canEdit(roles)
 
     def canEdit(self, roles):
         """See `ITranslationImportQueueEntry`."""
-        # The importer can edit the entry.
-        if roles.inTeam(self.importer):
-            return True
-        return self._canEditExcludeImporter(roles)
+        next_adapter = queryAdapter(self, IAuthorization, 'launchpad.Edit')
+        if next_adapter is None:
+            return False
+        else:
+            return next_adapter.checkAuthenticated(roles)
 
     def canSetStatus(self, new_status, user):
         """See `ITranslationImportQueueEntry`."""
