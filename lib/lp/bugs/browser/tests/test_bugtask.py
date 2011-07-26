@@ -700,7 +700,9 @@ class TestBugTaskEditView(TestCaseWithFactory):
             'ubuntu_rabbit.importance': 'High',
             'ubuntu_rabbit.assignee.option':
                 'ubuntu_rabbit.assignee.assign_to_nobody',
-            'ubuntu_rabbit.sourcepackagename': 'mouse',
+            'ubuntu_rabbit.target': 'package',
+            'ubuntu_rabbit.target.distribution': 'ubuntu',
+            'ubuntu_rabbit.target.package': 'mouse',
             }
         view = create_initialized_view(
             bug_task_2, name='+editstatus', form=form, principal=user)
@@ -733,7 +735,8 @@ class TestBugTaskEditView(TestCaseWithFactory):
         form = {
             'bunny.status': 'In Progress',
             'bunny.assignee.option': 'bunny.assignee.assign_to_nobody',
-            'bunny.product': 'duck',
+            'bunny.target': 'product',
+            'bunny.target.product': 'duck',
             'bunny.actions.save': 'Save Changes',
             }
         view = create_initialized_view(
@@ -755,7 +758,8 @@ class TestBugTaskEditView(TestCaseWithFactory):
         form = {
             'bunny.status': 'In Progress',
             'bunny.assignee.option': 'bunny.assignee.assign_to_nobody',
-            'bunny.product': 'duck',
+            'bunny.target': 'product',
+            'bunny.target.product': 'duck',
             'bunny.milestone': milestone_id,
             'bunny.actions.save': 'Save Changes',
             }
