@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import re
 
-from testtools.matchers import LessThan
+from testtools.matchers import Equals
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login
@@ -304,34 +304,40 @@ class TestDistroSeriesTemplatesView(SeriesTemplatesViewScenario,
 
 class FauxSharedTemplate:
     """A stand-in for a template that is shared."""
+
     name = 'TEMPLATE_NAME'
-    class translationtarget:
+
+    class sourcepackage:
         has_sharing_translation_templates = True
-        class direct_packaging:
-            class productseries:
-                name = 'PRODUCT_SERIES_NAME'
-                class product:
-                    translations_usage = ServiceUsage.LAUNCHPAD
-                @staticmethod
-                def getTemplatesCollection():
-                    class TemplateCollection:
-                        @classmethod
-                        def restrictName(cls, name):
-                            return cls
 
-                        @classmethod
-                        def select(cls):
-                            return cls
-
-                        @staticmethod
-                        def one():
-                            class template:
-                                name = 'TEMPLATE_NAME'
-                            return template
-
-                    return TemplateCollection
     class sourcepackagename:
         name = 'SOURCE_PACKAGE_NAME'
+
+class FauxPackaging:
+    class productseries:
+        name = 'PRODUCT_SERIES_NAME'
+        has_current_translation_templates = True
+        @staticmethod
+        def getTemplatesCollection():
+            class TemplateCollection:
+                @classmethod
+                def restrictName(cls, name):
+                    return cls
+
+                @classmethod
+                def select(cls):
+                    return cls
+
+                @staticmethod
+                def one():
+                    class template:
+                        name = 'TEMPLATE_NAME'
+                    return template
+
+            return TemplateCollection
+
+        class product:
+            translations_usage = ServiceUsage.LAUNCHPAD
 
 
 class TestSharingColumn(TestDistroSeriesTemplatesView):
@@ -350,7 +356,7 @@ class TestSharingColumn(TestDistroSeriesTemplatesView):
         # Unshared templates result in the text "not shared" and an edit link.
         template = self._makeTemplate()
         view = self._makeView(template)
-        rendered = view._renderSharing(template)
+        rendered = view._renderSharing(template, None)
         self.assertTrue('not shared' in rendered)
         edit_link_segment = ('+source/%s/+sharing-details' %
             template.sourcepackagename.name)
@@ -358,7 +364,7 @@ class TestSharingColumn(TestDistroSeriesTemplatesView):
 
     def test_shared(self):
         view = self._makeView()
-        rendered = view._renderSharing(FauxSharedTemplate)
+        rendered = view._renderSharing(FauxSharedTemplate, FauxPackaging)
         # Shared templates are displayed with an edit link that leads to the
         # +sharing-details page...
         edit_link_segment = ('+source/%s/+sharing-details' %
@@ -368,14 +374,17 @@ class TestSharingColumn(TestDistroSeriesTemplatesView):
         template_link_segment = ('/+pots/%s' % FauxSharedTemplate.name)
         self.assertTrue(template_link_segment in rendered)
 
-
-    def test_queries(self):
+    def test_no_queries(self):
+        # All the data that's needed to render the sharing cell is passed in,
+        # no queries are executed.
         template = self._makeTemplate()
+        # Make the two template names match so they are shared.
+        removeSecurityProxy(template).name = 'TEMPLATE_NAME'
         view = self._makeView(template)
         with StormStatementRecorder() as recorder:
             assert recorder.count == 0, 'Unexpected queries have been made.'
-            rendered = view._renderSharing(template)
-        self.assertThat(recorder, HasQueryCount(LessThan(3)))
+            rendered = view._renderSharing(template, FauxPackaging)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
 
 
 

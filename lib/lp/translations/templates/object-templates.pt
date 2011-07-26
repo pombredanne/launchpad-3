@@ -86,8 +86,8 @@
         </thead>
         <tbody>
           <tal:templates
-              repeat="template view/iter_templates"
-              content="structure python:view.renderTemplateRow(template)"/>
+              repeat="data view/iter_data"
+              content="structure python:view.renderTemplateRow(*data)"/>
         </tbody>
       </table>
       </div>

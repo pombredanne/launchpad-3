@@ -30,11 +30,16 @@ import datetime
 import operator
 import os.path
 
-import pytz
+from storm.expr import (
+    And,
+    In,
+    Or,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
 from zope.security.proxy import removeSecurityProxy
+import pytz
 
 from canonical.launchpad import (
     _,
@@ -74,7 +79,10 @@ from lp.registry.browser.sourcepackage import (
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.packaging import Packaging
+from lp.registry.model.product import Product
+from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.database.collection import Collection
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -874,25 +882,24 @@ class BaseSeriesTemplatesView(LaunchpadView):
 
         self.user_is_logged_in = (self.user is not None)
 
-    def iter_templates(self):
-        return self.context.getTranslationTemplates()
-#        return self.context.getTranslationTemplates().joinOuter(Packaging,
-#            AND(POTemplate.sourcepackagename == Packaging.sourcepackagename,
-#                Packaging.distroseries == self.context.id)
-
-        import pdb;pdb.set_trace()
+    def iter_data(self):
         # TODO Figure out why the collection doesn't have security declarations.
-#        result = Collection(
-#            removeSecurityProxy(self.context.getTemplatesCollection(),
-#            tables=[SourcePackageName]))
-        result = Collection(
-            removeSecurityProxy(self.context.getTemplatesCollection()))
-        result.tables.append(SourcePackageName)
-        result.joinOuter(SourcePackageName, POTemplate.from_sourcepackagename == SourcePackageName.id)
-#        result.joinOuter(SourcePackage, POTemplate.translationtarget == SourcePackage.id)
-#        result.joinInner(Packaging, Packaging.distroseries == self.context.id)
-        return result
+        join = (removeSecurityProxy(self.context.getTemplatesCollection())
+            .joinOuter(Packaging, And(
+                Packaging.distroseries == self.context.id,
+                Packaging.sourcepackagename == POTemplate.sourcepackagenameID
+                ))
+            .joinOuter(ProductSeries,
+                ProductSeries.id == Packaging.productseriesID
+                )
+            .joinOuter(Product, And(
+                Product.id == ProductSeries.productID,
+                Or(
+                    Product._translations_usage == ServiceUsage.LAUNCHPAD,
+                    Product._translations_usage == ServiceUsage.EXTERNAL)
+                )))
 
+        return join.select(POTemplate, Packaging, ProductSeries, Product)
 
     def rowCSSClass(self, template):
         if template.iscurrent:
@@ -919,52 +926,45 @@ class BaseSeriesTemplatesView(LaunchpadView):
             text += ' (inactive)'
         return text
 
-    def _renderSharing(self, template):
+    def _renderSharing(self, template, packaging, productseries, upstream):
         """Render a link to `template`.
 
         :param template: The target `POTemplate`.
         :return: HTML for the "sharing" status of `template`.
         """
         # Build the edit link.
+        from lp.testing import StormStatementRecorder
+        recorder = StormStatementRecorder()
+        recorder.__enter__()
         escaped_source = cgi.escape(template.sourcepackagename.name)
         source_url = '+source/%s' % escaped_source
         details_url = source_url + '/+sharing-details'
         edit_link = '<a class="sprite edit" href="%s"></a>' % details_url
-
-        tt = template.translationtarget
-        templates = tt.has_sharing_translation_templates
-
-        # Get out early if we can.  Eliminates unnecessary queries.
-        if not templates:
-            return edit_link + 'not shared'
-
-#        import pdb;pdb.set_trace()
-        packaging = tt.direct_packaging
-
-        product = packaging and packaging.productseries.product
-        upstream = product and product.translations_usage in (
-            ServiceUsage.LAUNCHPAD, ServiceUsage.EXTERNAL)
+        not_shared = edit_link + 'not shared'
 
         if packaging:
-            other_side_name = (removeSecurityProxy(
-                tt.direct_packaging.productseries.getTemplatesCollection())
-                .restrictName(template.name).select().one().name)
-            name = (template.name == other_side_name)
+            # Query
+            other_side = (
+                removeSecurityProxy(productseries.getTemplatesCollection())
+                .restrictName(template.name).select().one())
+            name = other_side is not None and template.name == other_side.name
         else:
             name = None
 
         # If all the conditions are met for sharing...
-        if templates and packaging and upstream and name:
+        if packaging and upstream and name:
             # Are the conditions met for this template to be considered "shared"?
             escaped_series = cgi.escape(packaging.productseries.name)
             escaped_template = cgi.escape(template.name)
             pot_url = ('/%s/%s/+pots/%s' %
                 (escaped_source, escaped_series, escaped_template))
+            recorder.__exit__(None, None, None)
             return (edit_link + '<a href="%s">%s/%s</a>'
                 % (pot_url, escaped_source, escaped_series))
         else:
             # Otherwise just say that the template isn't shared and give them
             # a link to change the sharing.
+            recorder.__exit__(None, None, None)
             return edit_link + 'not shared'
 
     def _renderLastUpdateDate(self, template):
@@ -1070,7 +1070,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
             self._renderField(css, text, tag='th')
             for (css, text) in columns])
 
-    def renderTemplateRow(self, template):
+    def renderTemplateRow(self, template, packaging=None, productseries=None,
+            upstream=None):
         """Render HTML for an entire template row."""
         if not self.can_edit and not template.iscurrent:
             return ""
@@ -1088,7 +1089,9 @@ class BaseSeriesTemplatesView(LaunchpadView):
         ]
 
         if self.is_distroseries:
-            fields[3:3] = [('sharing', self._renderSharing(template))]
+            sharing = self._renderSharing(
+                template, packaging, productseries, upstream)
+            fields[3:3] = [('sharing', sharing)]
 
         tds = [self._renderField(*field) for field in fields]
 
