@@ -8,15 +8,15 @@ __metaclass__ = type
 
 __all__ = [
     'ProcessorFamilySetNavigation',
-    'ProcessorFamilyNavigation',
+    'ProcessorSetNavigation',
     ]
 
 
 from canonical.launchpad.webapp import Navigation
 from lp.app.errors import NotFoundError
 from lp.soyuz.interfaces.processor import (
-    IProcessorFamily,
     IProcessorFamilySet,
+    IProcessorSet,
     )
 
 
@@ -32,15 +32,9 @@ class ProcessorFamilySetNavigation(Navigation):
         return family
 
 
-class ProcessorFamilyNavigation(Navigation):
-    """IProcessorFamily navigation."""
+class ProcessorSetNavigation(Navigation):
+    """IProcessorFamilySet navigation."""
+    usedfor = IProcessorSet
 
-    usedfor = IProcessorFamily
-
-    def traverse(self, id_):
-        id_ = int(id_)
-        processors = self.processors
-        for p in processors:
-            if p.id == id_:
-                return p
-        raise NotFoundError(id_)
+    def traverse(self, name):
+        return self.context.getByName(name)

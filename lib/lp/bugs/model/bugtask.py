@@ -18,6 +18,8 @@ __all__ = [
     'get_bug_privacy_filter',
     'get_related_bugtasks_search_params',
     'search_value_to_where_condition',
+    'validate_new_target',
+    'validate_target',
     ]
 
 
@@ -85,10 +87,6 @@ from canonical.launchpad.components.decoratedresultset import (
     )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.interfaces.validation import (
-    valid_upstreamtask,
-    validate_new_distrotask,
-    )
 from canonical.launchpad.searchbuilder import (
     all,
     any,
@@ -437,6 +435,65 @@ def validate_sourcepackagename(self, attr, value):
     if not is_passthrough:
         self._syncSourcePackages(value)
     return validate_target_attribute(self, attr, value)
+
+
+def validate_target(bug, target):
+    """Validate a bugtask target against a bug's existing tasks.
+
+    Checks that no conflicting tasks already exist.
+    """
+    if bug.getBugTask(target):
+        raise IllegalTarget(
+            "A fix for this bug has already been requested for %s"
+            % target.displayname)
+
+    if IDistributionSourcePackage.providedBy(target):
+        # If the distribution has at least one series, check that the
+        # source package has been published in the distribution.
+        if (target.sourcepackagename is not None and
+            len(target.distribution.series) > 0):
+            try:
+                target.distribution.guessPublishedSourcePackageName(
+                    target.sourcepackagename.name)
+            except NotFoundError, e:
+                raise IllegalTarget(e[0])
+
+
+def validate_new_target(bug, target):
+    """Validate a bugtask target to be added.
+
+    Make sure that the isn't already a distribution task without a
+    source package, or that such task is added only when the bug doesn't
+    already have any tasks for the distribution.
+
+    The same checks as `validate_target` does are also done.
+    """
+    if IDistribution.providedBy(target):
+        # Prevent having a task on only the distribution if there's at
+        # least one task already on the distribution, whether or not
+        # that task also has a source package.
+        distribution_tasks_for_bug = [
+            bugtask for bugtask
+            in shortlist(bug.bugtasks, longest_expected=50)
+            if bugtask.distribution == target]
+
+        if len(distribution_tasks_for_bug) > 0:
+            raise IllegalTarget(
+                "This bug is already on %s. Please specify an "
+                "affected package in which the bug has not yet "
+                "been reported." % target.displayname)
+    elif IDistributionSourcePackage.providedBy(target):
+        # Ensure that there isn't already a generic task open on the
+        # distribution for this bug, because if there were, that task
+        # should be reassigned to the sourcepackage, rather than a new
+        # task opened.
+        if bug.getBugTask(target.distribution) is not None:
+            raise IllegalTarget(
+                "This bug is already open on %s with no package "
+                "specified. You should fill in a package name for "
+                "the existing bug." % target.distribution.displayname)
+
+    validate_target(bug, target)
 
 
 class BugTask(SQLBase):
@@ -1090,17 +1147,10 @@ class BugTask(SQLBase):
         lib/canonical/launchpad/browser/bugtask.py#BugTaskEditView.
         """
 
-        target_before_change = self.target
-
-        if target == target_before_change:
+        if self.target == target:
             return
 
-        if (self.milestone is not None and
-            self.milestone.target != target):
-            # If the milestone for this bugtask is set, we
-            # have to make sure that it's a milestone of the
-            # current target, or reset it to None
-            self.milestone = None
+        target_before_change = self.target
 
         # Check if any series are involved. You can't retarget series
         # tasks. Except for DistroSeries/SourcePackage tasks, which can
@@ -1126,6 +1176,8 @@ class BugTask(SQLBase):
                     "Distribution series tasks may only be retargetted "
                     "to a package within the same series.")
 
+        validate_target(self.bug, target)
+
         # Inhibit validate_target_attribute, as we can't set them all
         # atomically, but we know the final result is correct.
         self._inhibit_target_check = True
@@ -1133,6 +1185,13 @@ class BugTask(SQLBase):
             setattr(self, name, value)
         self._inhibit_target_check = False
         self.updateTargetNameCache()
+
+        if (self.milestone is not None and
+            self.milestone.target != target):
+            # If the milestone for this bugtask is set, we
+            # have to make sure that it's a milestone of the
+            # current target, or reset it to None
+            self.milestone = None
 
         # After the target has changed, we need to recalculate the maximum bug
         # heat for the new and old targets.
@@ -2664,7 +2723,8 @@ class BugTaskSet:
             elif distribution is not None:
                 # Make sure there's no bug task already filed against
                 # this source package in this distribution.
-                validate_new_distrotask(bug, distribution, sourcepackagename)
+                validate_new_target(
+                    bug, distribution.getSourcePackage(sourcepackagename))
                 stop_checking = True
 
         if target is None and not stop_checking:
@@ -2681,13 +2741,13 @@ class BugTaskSet:
                 target = distroseries
             elif distribution is not None and not stop_checking:
                 # Bug filed against a distribution.
-                validate_new_distrotask(bug, distribution)
+                validate_new_target(bug, distribution)
                 stop_checking = True
 
         if target is not None and not stop_checking:
             # Make sure there's no task for this bug already filed
             # against the target.
-            valid_upstreamtask(bug, target)
+            validate_target(bug, target)
 
         if not bug.private and bug.security_related:
             if product and product.security_contact:
