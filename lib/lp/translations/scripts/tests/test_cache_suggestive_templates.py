@@ -147,8 +147,8 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
 
     def test_disabled_template_is_removed(self):
         # A disabled template is removed from the cache immediately.
-        self._refreshCache()
         pot = self.factory.makePOTemplate()
+        self._refreshCache()
         cache_with_template = self._readCache()
 
         pot.setActive(False)
