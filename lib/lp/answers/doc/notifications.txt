@@ -302,7 +302,7 @@ Of course, if the owner unsubscribe from the question, he won't receives
 a notification.
 
     >>> login('test@canonical.com')
-    >>> ubuntu_question.unsubscribe(sample_person)
+    >>> ubuntu_question.unsubscribe(sample_person, sample_person)
     >>> message = ubuntu_question.giveInfo('A PowerMac 7200.')
 
     >>> notifications = pop_questionemailjobs()

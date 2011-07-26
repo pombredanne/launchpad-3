@@ -17,6 +17,7 @@ from lp.soyuz.adapters.notification import (
     calculate_subject,
     get_recipients,
     fetch_information,
+    is_auto_sync_upload,
     reject_changes_file,
     person_to_email,
     notify,
@@ -260,3 +261,11 @@ class TestNotification(TestCaseWithFactory):
         body = assemble_body(blamer, spr, [], archive, series, "",
                              None, "unapproved")
         self.assertIn("Waiting for approval", body)
+
+    def test__is_auto_sync_upload__no_preferred_email_for_changer(self):
+        # If changer has no preferred email address,
+        # is_auto_sync_upload should still work.
+        result = is_auto_sync_upload(
+            spr=None, bprs=None, pocket=None, changed_by_email=None)
+        self.assertFalse(result)
+        
