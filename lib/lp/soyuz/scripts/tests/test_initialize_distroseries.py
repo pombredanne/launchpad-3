@@ -59,7 +59,9 @@ class InitializationHelperTestCase(TestCaseWithFactory):
     # - initialize a child from parents.
 
     def setupParent(self, packages=None, format_selection=None,
-                    distribution=None):
+                    distribution=None,
+                    pocket=PackagePublishingPocket.RELEASE,
+                    ):
         parent = self.factory.makeDistroSeries(distribution)
         pf = getUtility(IProcessorFamilySet).getByName('x86')
         parent_das = self.factory.makeDistroArchSeries(
@@ -75,10 +77,11 @@ class InitializationHelperTestCase(TestCaseWithFactory):
         getUtility(ISourcePackageFormatSelectionSet).add(
             parent, format_selection)
         parent.backports_not_automatic = True
-        self._populate_parent(parent, parent_das, packages)
+        self._populate_parent(parent, parent_das, packages, pocket)
         return parent, parent_das
 
-    def _populate_parent(self, parent, parent_das, packages=None):
+    def _populate_parent(self, parent, parent_das, packages=None,
+                         pocket=PackagePublishingPocket.RELEASE):
         if packages is None:
             packages = {'udev': '0.1-1', 'libc6': '2.8-1',
                 'postgresql': '9.0-1', 'chromium': '3.6'}
@@ -87,8 +90,7 @@ class InitializationHelperTestCase(TestCaseWithFactory):
             spph = self.factory.makeSourcePackagePublishingHistory(
                 sourcepackagename=spn, version=packages[package],
                 distroseries=parent,
-                pocket=PackagePublishingPocket.RELEASE,
-                status=PackagePublishingStatus.PUBLISHED)
+                pocket=pocket, status=PackagePublishingStatus.PUBLISHED)
             status = BuildStatus.FULLYBUILT
             if package is 'chromium':
                 status = BuildStatus.FAILEDTOBUILD
@@ -104,8 +106,7 @@ class InitializationHelperTestCase(TestCaseWithFactory):
                 self.factory.makeBinaryPackagePublishingHistory(
                     binarypackagerelease=bpr,
                     distroarchseries=parent_das,
-                    pocket=PackagePublishingPocket.RELEASE,
-                    status=PackagePublishingStatus.PUBLISHED)
+                    pocket=pocket, status=PackagePublishingStatus.PUBLISHED)
                 self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
 
     def _fullInitialize(self, parents, child=None, previous_series=None,
@@ -173,6 +174,22 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertRaisesWithContent(
             InitializationError, "Parent series has pending builds.",
             ids.check)
+
+    def test_success_with_updates_packages(self):
+        # Initialization copies all the package from the UPDATES pocket.
+        self.parent, self.parent_das = self.setupParent(
+            pocket=PackagePublishingPocket.UPDATES)
+        child = self._fullInitialize([self.parent])
+        self.assertDistroSeriesInitializedCorrectly(
+            child, self.parent, self.parent_das)
+
+    def test_success_with_security_packages(self):
+        # Initialization copies all the package from the SECURITY pocket.
+        self.parent, self.parent_das = self.setupParent(
+            pocket=PackagePublishingPocket.SECURITY)
+        child = self._fullInitialize([self.parent])
+        self.assertDistroSeriesInitializedCorrectly(
+            child, self.parent, self.parent_das)
 
     def test_success_with_pending_builds(self):
         # If the parent series has pending builds, and the child's
