@@ -32,7 +32,7 @@
       </tal:if>
       <script type="text/javascript">
         LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
-                  'lp.bugs.subscribers_list',
+                  'lp.bugs.subscribers',
                   'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
                   function(Y) {
             Y.lp.bugs.bugtask_index.setup_bugtask_index();
@@ -44,7 +44,7 @@
                             web_link: LP.cache.context.web_link };
                 LP.cache.comment_context = LP.cache.bug;
                 Y.lp.comments.hide.setup_hide_controls();
-                var sl = new Y.lp.bugs.subscribers_list.BugSubscribersLoader({
+                var sl = new Y.lp.bugs.subscribers.createBugSubscribersLoader({
                     container_box: '#other-bug-subscribers',
                     bug: bug,
                     subscribers_details_view:
@@ -76,7 +76,7 @@
       <div id="involvement" class="portlet">
         <ul class="involvement">
           <li class="single">
-            <a tal:attributes="href string:${context/target/fmt:url}/+filebug" 
+            <a tal:attributes="href string:${context/target/fmt:url}/+filebug"
                class="sprite bugs">
               Report a bug
             </a>

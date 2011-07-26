@@ -87,6 +87,7 @@ from lp.answers.model.questionmessage import QuestionMessage
 from lp.answers.model.questionreopening import create_questionreopening
 from lp.answers.model.questionsubscription import QuestionSubscription
 from lp.app.enums import ServiceUsage
+from lp.app.errors import UserCannotUnsubscribePerson
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -527,11 +528,16 @@ class Question(SQLBase, BugLinkTargetMixin):
         Store.of(sub).flush()
         return sub
 
-    def unsubscribe(self, person):
+    def unsubscribe(self, person, unsubscribed_by):
         """See `IQuestion`."""
         # See if a relevant subscription exists, and if so, delete it.
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                if not sub.canBeUnsubscribedByUser(unsubscribed_by):
+                    raise UserCannotUnsubscribePerson(
+                        '%s does not have permission to unsubscribe %s.' % (
+                            unsubscribed_by.displayname,
+                            person.displayname))
                 store = Store.of(sub)
                 sub.destroySelf()
                 store.flush()
