@@ -5,14 +5,19 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.testing.layers import (
+    LaunchpadZopelessLayer,
+    ZopelessDatabaseLayer,
+    )
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.notification import (
+    assemble_body,
     calculate_subject,
     get_recipients,
     fetch_information,
+    is_auto_sync_upload,
     reject_changes_file,
     person_to_email,
     notify,
@@ -27,9 +32,30 @@ from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
 
 
-class TestNotification(TestCaseWithFactory):
+class TestNotificationRequiringLibrarian(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
+
+    def test_calculate_subject_customfile(self):
+        lfa = self.factory.makeLibraryFileAlias()
+        package_upload = self.factory.makePackageUpload()
+        customfile = package_upload.addCustom(
+            lfa, PackageUploadCustomFormat.DEBIAN_INSTALLER)
+        archive = self.factory.makeArchive()
+        pocket = self.factory.getAnyPocket()
+        distroseries = self.factory.makeDistroSeries()
+        expected_subject = '[PPA %s] [%s/%s] %s - (Accepted)' % (
+            get_ppa_reference(archive), distroseries.distribution.name,
+            distroseries.getSuite(pocket), lfa.filename)
+        subject = calculate_subject(
+            None, [], [customfile], archive, distroseries, pocket,
+            'accepted')
+        self.assertEqual(expected_subject, subject)
+
+
+class TestNotification(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
 
     def test_fetch_information_changes(self):
         changes = {
@@ -89,22 +115,6 @@ class TestNotification(TestCaseWithFactory):
             bpr.build.source_package_release.name, bpr.version)
         subject = calculate_subject(
             None, [bpr], [], archive, distroseries, pocket, 'accepted')
-        self.assertEqual(expected_subject, subject)
-
-    def test_calculate_subject_customfile(self):
-        lfa = self.factory.makeLibraryFileAlias()
-        package_upload = self.factory.makePackageUpload()
-        customfile = package_upload.addCustom(
-            lfa, PackageUploadCustomFormat.DEBIAN_INSTALLER)
-        archive = self.factory.makeArchive()
-        pocket = self.factory.getAnyPocket()
-        distroseries = self.factory.makeDistroSeries()
-        expected_subject = '[PPA %s] [%s/%s] %s - (Accepted)' % (
-            get_ppa_reference(archive), distroseries.distribution.name,
-            distroseries.getSuite(pocket), lfa.filename)
-        subject = calculate_subject(
-            None, [], [customfile], archive, distroseries, pocket,
-            'accepted')
         self.assertEqual(expected_subject, subject)
 
     def test_notify_bpr(self):
@@ -237,3 +247,25 @@ class TestNotification(TestCaseWithFactory):
         expected = [format_address_for_person(p)
                     for p in (blamer, maintainer)]
         self.assertEqual(expected, recipients)
+
+    def test_assemble_body_handles_no_preferred_email_for_changer(self):
+        # If changer has no preferred email address,
+        # assemble_body should still work.
+        spr = self.factory.makeSourcePackageRelease()
+        blamer = self.factory.makePerson()
+        archive = self.factory.makeArchive()
+        series = self.factory.makeDistroSeries()
+
+        spr.creator.setPreferredEmail(None)
+
+        body = assemble_body(blamer, spr, [], archive, series, "",
+                             None, "unapproved")
+        self.assertIn("Waiting for approval", body)
+
+    def test__is_auto_sync_upload__no_preferred_email_for_changer(self):
+        # If changer has no preferred email address,
+        # is_auto_sync_upload should still work.
+        result = is_auto_sync_upload(
+            spr=None, bprs=None, pocket=None, changed_by_email=None)
+        self.assertFalse(result)
+        
