@@ -386,7 +386,8 @@ our validator springs into action.
     >>> user_browser.getLink(url='evolution/+bug/3/+editstatus').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/evolution/+bug/3/+editstatus'
-    >>> user_browser.getControl('Project').value = 'alsa-utils'
+    >>> user_browser.getControl(name='evolution.target.product').value = (
+    ...     'alsa-utils')
     >>> user_browser.getControl('Save Changes').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/evolution/+bug/3/+editstatus'
