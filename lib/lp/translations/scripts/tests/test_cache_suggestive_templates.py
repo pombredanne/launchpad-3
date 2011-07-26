@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import (
