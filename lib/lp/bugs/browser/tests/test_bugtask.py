@@ -171,7 +171,8 @@ class TestBugTaskView(TestCaseWithFactory):
         transaction.commit()
         with person_logged_in(person):
             form_data = {
-                '%s.product' % product.name: product_2.name,
+                '%s.target' % product.name: 'product',
+                '%s.target.product' % product.name: product_2.name,
                 '%s.status' % product.name: BugTaskStatus.TRIAGED.title,
                 '%s.actions.save' % product.name: 'Save Changes',
                 }
