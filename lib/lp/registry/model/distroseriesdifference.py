@@ -534,14 +534,13 @@ class DistroSeriesDifference(StormBase):
 
         differences = differences.order_by(SPN.name)
 
-        # Each row is (dsd, spn.name).
-        get_dsd = lambda (dsd, spn_name): dsd
+        def pre_iter_hook(rows):
+            # Each row is (dsd, spn.name). Modify the results in place.
+            rows[:] = (dsd for (dsd, spn_name) in rows)
+            # Eager load everything to do with DSDs.
+            return eager_load_dsds(rows)
 
-        def eager_load(rows):
-            dsds = map(get_dsd, rows)
-            return eager_load_dsds(dsds)
-
-        return DecoratedResultSet(differences, get_dsd, eager_load)
+        return DecoratedResultSet(differences, pre_iter_hook=pre_iter_hook)
 
     @staticmethod
     def getByDistroSeriesNameAndParentSeries(distro_series,
