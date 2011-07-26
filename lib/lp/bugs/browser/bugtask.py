@@ -1448,7 +1448,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         # from the form.
         missing = object()
         new_target = new_values.pop("target", missing)
-        if new_target is not missing:
+        if new_target is not missing and bugtask.target != new_target:
             changed = True
             try:
                 bugtask.transitionToTarget(new_target)
@@ -1555,7 +1555,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                     object_before_modification=bugtask_before_modification,
                     edited_fields=field_names))
 
-        if bugtask.sourcepackagename is not None:
+        if bugtask.sourcepackagename is not None and 'target' in self.widgets:
             real_package_name = bugtask.sourcepackagename.name
 
             # We get entered_package_name directly from the form here, since
