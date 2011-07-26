@@ -1138,20 +1138,8 @@ class BugTask(SQLBase):
             get_property_cache(self.bug)._known_viewers = set(
                 [self.assignee.id])
 
-    def transitionToTarget(self, target):
-        """See `IBugTask`.
-
-        This method allows changing the target of some bug
-        tasks. The rules it follows are similar to the ones
-        enforced implicitly by the code in
-        lib/canonical/launchpad/browser/bugtask.py#BugTaskEditView.
-        """
-
-        if self.target == target:
-            return
-
-        target_before_change = self.target
-
+    def validateTransitionToTarget(self, target):
+        """See `IBugTask`."""
         # Check if any series are involved. You can't retarget series
         # tasks. Except for DistroSeries/SourcePackage tasks, which can
         # only be retargetted to another SourcePackage in the same
@@ -1177,6 +1165,22 @@ class BugTask(SQLBase):
                     "to a package within the same series.")
 
         validate_target(self.bug, target)
+
+    def transitionToTarget(self, target):
+        """See `IBugTask`.
+
+        This method allows changing the target of some bug
+        tasks. The rules it follows are similar to the ones
+        enforced implicitly by the code in
+        lib/canonical/launchpad/browser/bugtask.py#BugTaskEditView.
+        """
+
+        if self.target == target:
+            return
+
+        self.validateTransitionToTarget(target)
+
+        target_before_change = self.target
 
         # Inhibit validate_target_attribute, as we can't set them all
         # atomically, but we know the final result is correct.
