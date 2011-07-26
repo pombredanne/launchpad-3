@@ -345,7 +345,7 @@ class TestProductOwnerEntryImporter(TestCaseWithFactory):
         # queue, the entry importer is not updated because that would
         # cause an non-unique key for the entry.
         with person_logged_in(self.new_owner):
-            new_entry = self.import_queue.addOrUpdateEntry(
+            self.import_queue.addOrUpdateEntry(
                 u'po/sr.po', 'foo', True, self.new_owner,
                 productseries=self.product.series[0])
         with person_logged_in(self.old_owner):
