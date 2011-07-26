@@ -357,32 +357,37 @@ class DistroSeriesDifference(StormBase):
         if difference_type is None:
             difference_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
         if status is None:
-            status = (
-                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-                )
+            status = (DistroSeriesDifferenceStatus.NEEDS_ATTENTION,)
         elif isinstance(status, DBItem):
             status = (status, )
+        if IPerson.providedBy(changed_by):
+            changed_by = (changed_by,)
+
+        # Aliases, to improve readability.
+        DSD = DistroSeriesDifference
+        PSS = PackagesetSources
+        SPN = SourcePackageName
+        SPPH = SourcePackagePublishingHistory
+        SPR = SourcePackageRelease
+        TP = TeamParticipation
 
         conditions = [
-            DistroSeriesDifference.derived_series == distro_series,
-            DistroSeriesDifference.difference_type == difference_type,
-            DistroSeriesDifference.status.is_in(status),
-        ]
-
-        if parent_series:
-            conditions.append(
-               DistroSeriesDifference.parent_series == parent_series.id)
+            DSD.derived_series == distro_series,
+            DSD.difference_type == difference_type,
+            DSD.status.is_in(status),
+            ]
 
         if child_version_higher:
-            conditions.append(
-                DistroSeriesDifference.source_version >
-                    DistroSeriesDifference.parent_source_version)
+            conditions.append(DSD.source_version > DSD.parent_source_version)
+
+        if parent_series:
+            conditions.append(DSD.parent_series == parent_series.id)
 
         # Take a copy of the conditions specified thus far.
         basic_conditions = list(conditions)
 
         if name_filter:
-            name_matches = [SourcePackageName.name == name_filter]
+            name_matches = [SPN.name == name_filter]
             try:
                 packageset = getUtility(IPackagesetSet).getByName(
                     name_filter, distroseries=distro_series)
@@ -390,55 +395,40 @@ class DistroSeriesDifference(StormBase):
                 packageset = None
             if packageset is not None:
                 name_matches.append(
-                    DistroSeriesDifference.source_package_name_id.is_in(
-                        Select(
-                            PackagesetSources.sourcepackagename_id,
-                            PackagesetSources.packageset == packageset)))
+                    DSD.source_package_name_id.is_in(
+                        Select(PSS.sourcepackagename_id,
+                               PSS.packageset == packageset)))
             conditions.append(Or(*name_matches))
 
         if packagesets is not None:
             set_ids = [packageset.id for packageset in packagesets]
             conditions.append(
-                DistroSeriesDifference.source_package_name_id.is_in(
-                    Select(
-                        PackagesetSources.sourcepackagename_id,
-                        PackagesetSources.packageset_id.is_in(set_ids))))
+                DSD.source_package_name_id.is_in(
+                    Select(PSS.sourcepackagename_id,
+                           PSS.packageset_id.is_in(set_ids))))
 
         # Join to SourcePackageName for ordering.
-        conditions.append(
-            DistroSeriesDifference.source_package_name == (
-                SourcePackageName.id))
+        conditions.append(DSD.source_package_name == SPN.id)
 
-        store = IStore(DistroSeriesDifference)
-        differences = store.find(DistroSeriesDifference, And(*conditions))
-        differences = differences.order_by(SourcePackageName.name)
+        differences = IStore(DSD).find(DSD, And(*conditions))
+        differences = differences.order_by(SPN.name)
 
         if changed_by is not None:
             # Identify all DSDs referring to SPRs created by changed_by for
             # this distroseries. The full set of DSDs for the given
             # distroseries can then be discovered as the intersection between
             # this set and the already established differences.
-            if IPerson.providedBy(changed_by):
-                changed_by = (changed_by,)
             differences_changed_by_condition = And(
                 basic_conditions,
-                TeamParticipation.teamID.is_in(
-                    person.id for person in changed_by),
-                # SourcePackageRelease
-                SourcePackageRelease.creatorID == (
-                    TeamParticipation.personID),
-                SourcePackageRelease.sourcepackagenameID == (
-                    DistroSeriesDifference.source_package_name_id),
-                # SourcePackagePublishingHistory
-                SourcePackagePublishingHistory.sourcepackagereleaseID == (
-                    SourcePackageRelease.id),
-                SourcePackagePublishingHistory.status.is_in(ACTIVE_STATUSES),
-                SourcePackagePublishingHistory.archiveID == (
-                    distro_series.main_archive.id),
-                SourcePackagePublishingHistory.distroseriesID == (
-                    distro_series.id))
-            differences_changed_by = store.find(
-                DistroSeriesDifference, differences_changed_by_condition)
+                SPPH.archiveID == distro_series.main_archive.id,
+                SPPH.distroseriesID == distro_series.id,
+                SPPH.sourcepackagereleaseID == SPR.id,
+                SPPH.status.is_in(ACTIVE_STATUSES),
+                SPR.creatorID == TP.personID,
+                SPR.sourcepackagenameID == DSD.source_package_name_id,
+                TP.teamID.is_in(person.id for person in changed_by))
+            differences_changed_by = IStore(DSD).find(
+                DSD, differences_changed_by_condition)
             differences = differences.intersection(differences_changed_by)
 
         def eager_load(dsds):
