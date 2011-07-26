@@ -481,11 +481,13 @@ class DistroSeriesDifference(StormBase):
             gpgkeys = bulk.load_related(GPGKey, sprs, ("dscsigningkeyID",))
 
             # Load DistroSeriesDifferenceComment owners,
-            # SourcePackageRecipeBuild requesters and GPGKey owners.
+            # SourcePackageRecipeBuild requesters and GPGKey owners, and
+            # SourcePackageRelease creators.
             person_ids = set().union(
                 (dsdc.message.ownerID for dsdc in latest_comments),
                 (sprb.requester_id for sprb in sprbs),
-                (gpgkey.ownerID for gpgkey in gpgkeys))
+                (gpgkey.ownerID for gpgkey in gpgkeys),
+                (spr.creatorID for spr in sprs))
             uploaders = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
                 person_ids, need_validity=True)
             list(uploaders)
