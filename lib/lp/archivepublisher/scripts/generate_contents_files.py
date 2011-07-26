@@ -156,8 +156,7 @@ class GenerateContentsFiles(LaunchpadScript):
         if options is not None:
             args += options
         args.append(request)
-        query_distro = LpQueryDistro(test_args=args)
-        query_distro.logger = self.logger
+        query_distro = LpQueryDistro(test_args=args, logger=self.logger)
         query_distro.txn = self.txn
         receiver = StoreArgument()
         query_distro.runAction(presenter=receiver)
