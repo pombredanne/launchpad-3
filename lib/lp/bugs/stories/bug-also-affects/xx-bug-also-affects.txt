@@ -76,7 +76,8 @@ Ubuntu evolution, because there already is an evolution task open.
     >>> browser.getControl("Save Changes").click()
     >>> print get_feedback_messages(browser.contents)
     [...There is 1 error in the data you entered...
-     u'This bug has already been reported on evolution (ubuntu).']
+     u'A fix for this bug has already been requested for evolution in
+       Ubuntu']
 
 Now let's add a Debian task to bug 1. Since Debian doesn't use Launchpad,
 we add a bug watch as well.
@@ -131,7 +132,8 @@ It's not possible to change a bugtask to a existing one.
     'http://bugs.../ubuntu/+source/mozilla-firefox/+bug/1/+editstatus'
     >>> print get_feedback_messages(browser.contents)
     [...There is 1 error in the data you entered...
-     u'This bug has already been reported on alsa-utils (ubuntu).']
+     u'A fix for this bug has already been requested for alsa-utils in
+       Ubuntu']
 
     >>> browser.getControl('Package').value = 'pmount'
     >>> browser.getControl('Save Changes').click()
