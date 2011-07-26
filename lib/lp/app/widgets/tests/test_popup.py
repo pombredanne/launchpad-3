@@ -71,13 +71,8 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
             'field.test_valid.item', picker_widget.input_id)
         self.assertIsNone(picker_widget.extra_no_results_message)
         markup = picker_widget()
-        self.assertTextMatchesExpressionIgnoreWhitespace("""\
-            .*
-            var picker = Y\\.lp\\.app\\.picker\\.create\\('ValidTeamOwner',
-                config,
-                'field\\.test_valid.item'\\);
-            .*
-            """, markup)
+        self.assertIn("Y.lp.app.picker.create", markup)
+        self.assertIn('ValidTeamOwner', markup)
 
     def test_widget_fieldname_with_invalid_html_chars(self):
         # Check the picker widget is correctly set up for a field which has a
@@ -126,18 +121,14 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         # A vocabulary widget does not show the extra buttons by default.
         picker_widget = VocabularyPickerWidget(
             bound_field, self.vocabulary, self.request)
-        self.assertEqual('false',
-            picker_widget.config['show_assign_me_button'])
-        self.assertEqual('false',
-            picker_widget.config['show_remove_button'])
+        self.assertFalse(picker_widget.config['show_assign_me_button'])
+        self.assertFalse(picker_widget.config['show_remove_button'])
 
         # A person picker widget does show them by default.
         person_picker_widget = PersonPickerWidget(
             bound_field, self.vocabulary, self.request)
-        self.assertEqual('true',
-            person_picker_widget.config['show_assign_me_button'])
-        self.assertEqual('true',
-            person_picker_widget.config['show_remove_button'])
+        self.assertTrue(person_picker_widget.config['show_assign_me_button'])
+        self.assertTrue(person_picker_widget.config['show_remove_button'])
 
     def test_widget_personvalue_meta(self):
         # The person picker has the correct meta value for a person value.

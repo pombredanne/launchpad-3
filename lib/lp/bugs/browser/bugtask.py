@@ -132,10 +132,6 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin,
     )
 from canonical.launchpad.interfaces.launchpad import IHasExternalBugTracker
-from canonical.launchpad.interfaces.validation import (
-    valid_upstreamtask,
-    validate_distrotask,
-    )
 from canonical.launchpad.mailnotification import get_unified_diff
 from canonical.launchpad.searchbuilder import (
     all,
@@ -238,6 +234,7 @@ from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     ICreateQuestionFromBugTaskForm,
     IFrontPageBugTaskSearch,
+    IllegalTarget,
     INominationsReviewTableBatchNavigator,
     IPersonBugTaskSearch,
     IRemoveQuestionFromBugTaskForm,
@@ -249,6 +246,7 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.bugs.model.bugtask import validate_target
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -1384,15 +1382,20 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             distro = bugtask.distroseries.distribution
         else:
             distro = bugtask.distribution
-        sourcename = bugtask.sourcepackagename
         old_product = bugtask.product
 
-        if distro is not None and sourcename != data.get('sourcepackagename'):
+        new_spn = data.get('sourcepackagename')
+        if distro is not None and bugtask.sourcepackagename != new_spn:
             try:
-                validate_distrotask(
-                    bugtask.bug, distro, data.get('sourcepackagename'))
-            except LaunchpadValidationError, error:
-                self.setFieldError('sourcepackagename', str(error))
+                target = distro
+                if new_spn is not None:
+                    target = distro.getSourcePackage(new_spn)
+                validate_target(bugtask.bug, target)
+            except IllegalTarget as e:
+                # The field validator may have already set an error.
+                # Don't clobber it.
+                if not self.getFieldError('sourcepackagename'):
+                    self.setFieldError('sourcepackagename', e[0])
 
         new_product = data.get('product')
         if (old_product is None or old_product == new_product or
@@ -1406,9 +1409,9 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             self.setFieldError('product', 'Enter a project name')
         else:
             try:
-                valid_upstreamtask(bugtask.bug, new_product)
-            except WidgetsError, errors:
-                self.setFieldError('product', errors.args[0])
+                validate_target(bugtask.bug, new_product)
+            except IllegalTarget as e:
+                self.setFieldError('product', e[0])
 
     def updateContextFromData(self, data, context=None):
         """Updates the context object using the submitted form data.
@@ -1538,12 +1541,12 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                         <br /><br />
                         If this bug was assigned by mistake,
                         you may <a href="%s/+editstatus"
-                        >change the assignment</a>.""" % (
+                        >change the assignment</a>.""",
                         canonical_url(new_assignee),
                         new_assignee.displayname,
                         canonical_url(bugtask.pillar),
                         bugtask.pillar.title,
-                        canonical_url(bugtask))))
+                        canonical_url(bugtask)))
             changed = True
             bugtask.transitionToAssignee(new_assignee)
 

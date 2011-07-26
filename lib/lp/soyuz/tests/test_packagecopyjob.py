@@ -101,13 +101,21 @@ class LocalTestHelper:
 
     def runJob(self, job):
         """Helper to switch to the right DB user and run the job."""
+        # We are basically mimicking the job runner here.
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
         # Set the state to RUNNING.
         job.start()
         # Commit the RUNNING state.
         self.layer.txn.commit()
-        job.run()
+        try:
+            job.run()
+        except SuspendJobException:
+            # Re-raise this one as many tests check for its presence.
+            raise
+        except:
+            transaction.abort()
+            job.fail()
 
 
 class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
@@ -961,15 +969,20 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.layer.txn.commit()
         self.layer.switchDbUser("launchpad_main")
 
+        # Patch the job's attemptCopy() method so it just raises an
+        # exception.
+        def blow_up():
+            raise Exception("I blew up")
+        naked_job = removeSecurityProxy(job)
+        self.patch(naked_job, "attemptCopy", blow_up)
+
         # Accept the upload to release the job then run it.
         pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
             [removeSecurityProxy(job).context.id]).one()
         pu.acceptFromQueue()
         self.runJob(job)
 
-        # The copy will have failed because the requester has no permission
-        # to upload to the archive we created. The job should have set the
-        # PU status to REJECTED.
+        # The job should have set the PU status to REJECTED.
         self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
 
 

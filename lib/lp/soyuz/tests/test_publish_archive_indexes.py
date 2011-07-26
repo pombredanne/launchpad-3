@@ -3,11 +3,11 @@
 
 """Test native archive index generation for Soyuz."""
 
+import apt_pkg
+from debian.deb822 import Packages, Sources
 import os
 import tempfile
 import unittest
-
-import apt_pkg
 
 from lp.soyuz.model.publishing import IndexStanzaFields
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
@@ -59,7 +59,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
             pub_source.getIndexStanza().splitlines())
 
     def testSourceStanzaCustomFields(self):
-        """Check just-created source publication Index stanza 
+        """Check just-created source publication Index stanza
         with custom fields (Python-Version).
         """
         pub_source = self.getPubSource(
@@ -401,17 +401,16 @@ class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
 
 
 class TestIndexStanzaFieldsHelper(unittest.TestCase):
-    """Check how this auxiliary class works...
-
-    This class provides simple FIFO API for aggregating fields
-    (name & values) in a ordered way.
-
-    Provides an method to format the option in a ready-to-use string.
-    """
-
 
     def test_simple(self):
-        fields = IndexStanzaFields()
+        """Check how this auxiliary class works...
+
+        This class provides simple FIFO API for aggregating fields
+        (name & values) in a ordered way.
+
+        Provides an method to format the option in a ready-to-use string.
+        """
+        fields = IndexStanzaFields(Packages)
         fields.append('breakfast', 'coffee')
         fields.append('lunch', 'beef')
         fields.append('dinner', 'fish')
@@ -423,7 +422,7 @@ class TestIndexStanzaFieldsHelper(unittest.TestCase):
              ], fields.makeOutput().splitlines())
 
     def test_preserves_order(self):
-        fields = IndexStanzaFields()
+        fields = IndexStanzaFields(Packages)
         fields.append('one', 'um')
         fields.append('three', 'tres')
         fields.append('two', 'dois')
@@ -437,15 +436,18 @@ class TestIndexStanzaFieldsHelper(unittest.TestCase):
         # Special treatment for field named 'Files'
         # do not add a space between <name>:<value>
         # <value> will always start with a new line.
-        fields = IndexStanzaFields()
+        fields = IndexStanzaFields(Sources)
         fields.append('one', 'um')
-        fields.append('Files', '<no_sep>')
-
+        fields.append('Files', {
+            "md5sum": "foo",
+            "size": "42",
+            "name": "universe"})
         self.assertEqual(
-            ['one: um', 'Files:<no_sep>'], fields.makeOutput().splitlines())
+            ['one: um', 'Files:  foo 42 universe'],
+            fields.makeOutput().splitlines())
 
     def test_extend(self):
-        fields = IndexStanzaFields()
+        fields = IndexStanzaFields(Sources)
         fields.append('one', 'um')
         fields.extend([('three', 'tres'), ['four', 'five']])
 
