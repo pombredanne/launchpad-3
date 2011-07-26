@@ -331,6 +331,13 @@ class IPOTemplate(IRosettaStats):
         method to do that.
         """
 
+    def setActive(active):
+        """Toggle the iscurrent flag.
+
+        Takes care of updating the suggestive potempalte cache when the
+        template is disabled. 
+        """
+
     def getHeader():
         """Return an `ITranslationHeaderData` representing its header."""
 

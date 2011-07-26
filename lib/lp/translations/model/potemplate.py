@@ -244,6 +244,10 @@ class POTemplate(SQLBase, RosettaStats):
         """See `IPOTemplate`."""
         self._cached_pofiles_by_language = None
 
+    def setActive(self, active):
+        """See `IPOTemplate`."""
+        self.iscurrent = active
+
     @property
     def uses_english_msgids(self):
         """See `IPOTemplate`."""
