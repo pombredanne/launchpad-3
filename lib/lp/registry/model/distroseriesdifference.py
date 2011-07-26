@@ -424,19 +424,19 @@ class DistroSeriesDifference(StormBase):
                 basic_conditions,
                 TeamParticipation.teamID.is_in(
                     person.id for person in changed_by),
-                SourcePackagePublishingHistory.archiveID == (
-                    distro_series.main_archive.id),
-                SourcePackagePublishingHistory.distroseriesID == (
-                    distro_series.id),
+                # SourcePackageRelease
+                SourcePackageRelease.creatorID == (
+                    TeamParticipation.personID),
+                SourcePackageRelease.sourcepackagenameID == (
+                    DistroSeriesDifference.source_package_name_id),
+                # SourcePackagePublishingHistory
                 SourcePackagePublishingHistory.sourcepackagereleaseID == (
                     SourcePackageRelease.id),
                 SourcePackagePublishingHistory.status.is_in(ACTIVE_STATUSES),
-                SourcePackageRelease.sourcepackagenameID == (
-                    DistroSeriesDifference.source_package_name_id),
-                SourcePackageRelease.version == (
-                    DistroSeriesDifference.source_version),
-                SourcePackageRelease.creatorID == (
-                    TeamParticipation.personID))
+                SourcePackagePublishingHistory.archiveID == (
+                    distro_series.main_archive.id),
+                SourcePackagePublishingHistory.distroseriesID == (
+                    distro_series.id))
             differences_changed_by = store.find(
                 DistroSeriesDifference, differences_changed_by_condition)
             differences = differences.intersection(differences_changed_by)
