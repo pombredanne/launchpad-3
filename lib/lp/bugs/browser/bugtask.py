@@ -1563,7 +1563,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                     object_before_modification=bugtask_before_modification,
                     edited_fields=field_names))
 
-        if bugtask.sourcepackagename is not None and 'target' in self.widgets:
+        if bugtask.sourcepackagename and self.widgets.get('target'):
             real_package_name = bugtask.sourcepackagename.name
 
             # We get entered_package_name directly from the form here, since
