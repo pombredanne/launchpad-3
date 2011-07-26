@@ -19,6 +19,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
+from lp.testing.fakemethod import FakeMethod
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.side import (
     TranslationSide,
@@ -161,6 +162,30 @@ class TestPOTemplate(TestCaseWithFactory):
             sourcepackagename=package.sourcepackagename)
         self.assertEqual(package, template.translationtarget)
 
+    def _toggleIsCurrent(self, states):
+        """Toggle iscurrent according to states and report call count.
+
+        :param states: An array of Boolean values to set iscurrent to.
+        :returns: An array of integers representing the call count for
+            removeFromSuggestivePOTemplatesCache after each toggle.
+        """
+        patched_method = FakeMethod(result=True)
+        self.potemplate._removeFromSuggestivePOTemplatesCache = patched_method 
+        call_counts = []
+        for state in states:
+            self.potemplate.setActive(state)
+            call_counts.append(patched_method.call_count)
+        return call_counts
+
+    def test_setActive_detects_negative_edge(self):
+        # SetActive will only trigger suggestive cache removal if the flag
+        # changes from true to false.
+        # Start with a current template.
+        self.assertTrue(self.potemplate.iscurrent)
+        # The toggle sequence, contains two negative edges.
+        self.assertEqual(
+            [0, 1, 1, 1, 2],
+            self._toggleIsCurrent([True, False, False, True, False]))
 
 class EquivalenceClassTestMixin:
     """Helper for POTemplate equivalence class tests."""

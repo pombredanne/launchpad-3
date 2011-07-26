@@ -244,11 +244,15 @@ class POTemplate(SQLBase, RosettaStats):
         """See `IPOTemplate`."""
         self._cached_pofiles_by_language = None
 
+    def _removeFromSuggestivePOTemplatesCache(self):
+        """One level of indirection to make testing easier."""
+        getUtility(
+            IPOTemplateSet).removeFromSuggestivePOTemplatesCache(self)
+
     def setActive(self, active):
         """See `IPOTemplate`."""
         if not active:
-            getUtility(
-                IPOTemplateSet).removeFromSuggestivePOTemplatesCache(self)
+            self._removeFromSuggestivePOTemplatesCache()
         self.iscurrent = active
 
     @property
