@@ -216,8 +216,12 @@ class LogLevelNudger:
 def define_verbosity_options(parser, default, verbose_callback,
                              quiet_callback):
     """Define the -v and -q options on `parser`."""
+    # Only one of these specifies dest and default.  That's because
+    # that's enough to make the parser create the option value; there's
+    # no need for the other option to specify them as well.
     parser.add_option(
-        "-v", "--verbose", action="callback", callback=verbose_callback,
+        "-v", "--verbose", dest="loglevel", default=default,
+        action="callback", callback=verbose_callback,
         help="Increase stderr verbosity. May be specified multiple times.")
     parser.add_option(
         "-q", "--quiet", action="callback", callback=quiet_callback,
