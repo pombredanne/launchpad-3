@@ -118,3 +118,16 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
         self._refreshCache()
 
         self.assertEqual(cache_before, self._readCache())
+
+    def test_disabled_template_is_removed(self):
+        # A disabled template is removed from the cache immediately.
+        self._refreshCache()
+        pot = self.factory.makePOTemplate()
+        cache_with_template = self._readCache()
+
+        pot.iscurrent = False
+        cache_without_template = self._readCache()
+
+        self.assertNotEqual(cache_with_template, cache_without_template)
+        self.assertContentEqual(
+            cache_with_template, cache_without_template + [pot.id])
