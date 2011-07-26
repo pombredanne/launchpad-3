@@ -409,7 +409,7 @@ class POTMsgSet(SQLBase):
                 '(TranslationMessage.language IN %s AND NOT %s)' % (
                 quote(suggested_languages), in_use_clause))
 
-        pots = SQL('''pots AS (
+        msgsets = SQL('''msgsets AS (
                 SELECT POTMsgSet.id
                 FROM POTMsgSet
                 JOIN TranslationTemplateItem ON
@@ -437,12 +437,13 @@ class POTMsgSet(SQLBase):
         ids_query = '''
             SELECT DISTINCT ON (%(msgstrs)s)
                 TranslationMessage.id
-            FROM TranslationMessage join pots on pots.id=translationmessage.potmsgset
+            FROM TranslationMessage
+            JOIN msgsets ON msgsets.id = TranslationMessage.potmsgset
             WHERE %(where)s
             ORDER BY %(msgstrs)s, date_created DESC
             ''' % ids_query_params
 
-        result = IStore(TranslationMessage).with_(pots).find(
+        result = IStore(TranslationMessage).with_(msgsets).find(
             TranslationMessage,
             TranslationMessage.id.is_in(SQL(ids_query)))
 
