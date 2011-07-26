@@ -286,7 +286,7 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.logger.debug(
             "Processing the accepted queue into the publishing records...")
         script = ProcessAccepted(
-            test_args=[self.distribution.name], init_logging=False)
+            test_args=[self.distribution.name], logger=self.logger)
         script.txn = self.txn
         script.main()
 
@@ -295,7 +295,7 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.logger.debug("Querying which suites are pending publication...")
         query_distro = LpQueryDistro(
             test_args=['-d', self.distribution.name, "pending_suites"],
-            init_logging=False)
+            logger=self.logger)
         receiver = StoreArgument()
         query_distro.runAction(presenter=receiver)
         return receiver.argument.split()
@@ -364,7 +364,7 @@ class PublishFTPMaster(LaunchpadCronScript):
             sum([['-s', suite] for suite in suites], []))
 
         publish_distro = PublishDistro(
-            test_args=arguments, init_logging=False)
+            test_args=arguments, logger=self.logger)
         publish_distro.logger = self.logger
         publish_distro.txn = self.txn
         publish_distro.main()

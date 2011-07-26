@@ -148,8 +148,7 @@ class LaunchpadScript:
     # State for the log_unhandled_exceptions decorator.
     _log_unhandled_exceptions_level = 0
 
-    def __init__(self, name=None, dbuser=None, test_args=None,
-                 init_logging=True):
+    def __init__(self, name=None, dbuser=None, test_args=None, logger=None):
         """Construct new LaunchpadScript.
 
         Name is a short name for this script; it will be used to
@@ -161,10 +160,8 @@ class LaunchpadScript:
         Specify test_args when you want to override sys.argv.  This is
         useful in test scripts.
 
-        :param init_logging: Initialize logging based on the command-line
-            options?  Defaults to True.  But this affects global logging
-            configuration, so try to set it to False in tests or when
-            instantiating script objects from other script objects.
+        :param logger: Use this logger, instead of initializing global
+            logging.
         """
         if name is None:
             self._name = self.__class__.__name__.lower()
@@ -172,7 +169,7 @@ class LaunchpadScript:
             self._name = name
 
         self._dbuser = dbuser
-        self._init_logging = init_logging
+        self.logger = logger
 
         # The construction of the option parser is a bit roundabout, but
         # at least it's isolated here. First we build the parser, then
@@ -186,7 +183,7 @@ class LaunchpadScript:
         self.parser = OptionParser(usage=self.usage,
                                    description=description)
 
-        if init_logging:
+        if logger is None:
             scripts.logger_options(self.parser, default=self.loglevel)
             self.parser.add_option(
                 '--profile', dest='profile', metavar='FILE', help=(
@@ -203,7 +200,7 @@ class LaunchpadScript:
         self.handle_options()
 
     def handle_options(self):
-        if self._init_logging:
+        if self.logger is None:
             self.logger = scripts.logger(self.options, self.name)
 
     @property
@@ -382,8 +379,9 @@ class LaunchpadScript:
 class LaunchpadCronScript(LaunchpadScript):
     """Logs successful script runs in the database."""
 
-    def __init__(self, name=None, dbuser=None, test_args=None):
-        super(LaunchpadCronScript, self).__init__(name, dbuser, test_args)
+    def __init__(self, name=None, dbuser=None, test_args=None, logger=None):
+        super(LaunchpadCronScript, self).__init__(
+            name, dbuser, test_args=test_args, logger=logger)
 
         # self.name is used instead of the name argument, since it may have
         # have been overridden by command-line parameters or by
