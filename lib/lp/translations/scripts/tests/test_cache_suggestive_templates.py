@@ -54,6 +54,32 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
 
         self.assertEqual([], self._readCache())
 
+    def test_removeFromSuggestivePOTemplatesCache(self):
+        # It is possible to remove a template from the cache.
+        pot = self.factory.makePOTemplate()
+        self._refreshCache()
+        cache_with_template = self._readCache()
+
+        was_in_cache = self.utility.removeFromSuggestivePOTemplatesCache(pot)
+        cache_without_template = self._readCache()
+
+        self.assertTrue(was_in_cache)
+        self.assertNotEqual(cache_with_template, cache_without_template)
+        self.assertContentEqual(
+            cache_with_template, cache_without_template + [pot.id])
+
+    def test_removeFromSuggestivePOTemplatesCache_not_in_cache(self):
+        # Removing a not-cached template from the cache does nothing.
+        self._refreshCache()
+        cache_before = self._readCache()
+
+        pot = self.factory.makePOTemplate()
+
+        was_in_cache = self.utility.removeFromSuggestivePOTemplatesCache(pot)
+
+        self.assertFalse(was_in_cache)
+        self.assertEqual(cache_before, self._readCache())
+
     def test_populateSuggestivePOTemplatesCache(self):
         # The populate method fills an empty cache.
         self.utility.wipeSuggestivePOTemplatesCache()
@@ -114,7 +140,7 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
         cache_before = self._readCache()
 
         pot = self.factory.makePOTemplate()
-        pot.iscurrent = False
+        pot.setActive(False)
         self._refreshCache()
 
         self.assertEqual(cache_before, self._readCache())
@@ -125,7 +151,7 @@ class TestSuggestivePOTemplatesCache(TestCaseWithFactory):
         pot = self.factory.makePOTemplate()
         cache_with_template = self._readCache()
 
-        pot.iscurrent = False
+        pot.setActive(False)
         cache_without_template = self._readCache()
 
         self.assertNotEqual(cache_with_template, cache_without_template)
