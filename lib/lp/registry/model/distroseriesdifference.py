@@ -66,12 +66,16 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     IDistroSeriesDifferenceCommentSource,
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
-from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import (
+    IPerson,
+    IPersonSet,
+    )
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment,
     )
 from lp.registry.model.gpgkey import GPGKey
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.registry.model.teammembership import TeamParticipation
 from lp.services.database import bulk
 from lp.services.database.stormbase import StormBase
 from lp.services.messages.model.message import (
@@ -400,12 +404,15 @@ class DistroSeriesDifference(StormBase):
         if changed_by is not None:
             # Identify all DSDs referring to SPRs created by changed_by for
             # this distroseries.
+            if IPerson.providedBy(changed_by):
+                changed_by = (changed_by,)
             statuses = (
                 PackagePublishingStatus.PUBLISHED,
                 PackagePublishingStatus.PENDING,
                 )
-            # TODO: Need to distinctify this.
             differences_changed_by_condition = And(
+                TeamParticipation.teamID.is_in(
+                    person.id for person in changed_by),
                 SourcePackagePublishingHistory.archiveID == (
                     distro_series.main_archive.id),
                 SourcePackagePublishingHistory.distroseriesID == (
@@ -417,7 +424,7 @@ class DistroSeriesDifference(StormBase):
                     DistroSeriesDifference.source_package_name_id),
                 SourcePackageRelease.version == (
                     DistroSeriesDifference.source_version),
-                SourcePackageRelease.creator == changed_by,
+                SourcePackageRelease.creatorID == TeamParticipation.personID,
                 DistroSeriesDifference.derived_series_id == (
                     distro_series.id))
             differences_changed_by = store.find(
