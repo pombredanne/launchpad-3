@@ -25,6 +25,8 @@ from storm.expr import (
     And,
     Column,
     Desc,
+    Or,
+    Select,
     Table,
     )
 from storm.locals import (
@@ -65,7 +67,6 @@ from lp.registry.interfaces.distroseriesdifferencecomment import (
     )
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.person import IPersonSet
-from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment,
     )
@@ -88,7 +89,10 @@ from lp.soyuz.enums import (
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
-from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.interfaces.packageset import (
+    IPackagesetSet,
+    NoSuchPackageSet,
+    )
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
@@ -203,7 +207,7 @@ def most_recent_comments(dsds):
     return DecoratedResultSet(comments, itemgetter(0))
 
 
-def packagesets(dsds, in_parent):
+def get_packagesets(dsds, in_parent):
     """Return the packagesets for the given dsds inside the parent or
     the derived `DistroSeries`.
 
@@ -333,10 +337,11 @@ class DistroSeriesDifference(StormBase):
     def getForDistroSeries(
         distro_series,
         difference_type=None,
-        source_package_name_filter=None,
+        name_filter=None,
         status=None,
         child_version_higher=False,
-        parent_series=None):
+        parent_series=None,
+        packagesets=None):
         """See `IDistroSeriesDifferenceSource`."""
         if difference_type is None:
             difference_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
@@ -359,14 +364,33 @@ class DistroSeriesDifference(StormBase):
             conditions.extend([
                DistroSeriesDifference.parent_series == parent_series.id])
 
-        if source_package_name_filter:
-            conditions.extend([
-               SourcePackageName.name == source_package_name_filter])
+        if name_filter:
+            name_matches = [SourcePackageName.name == name_filter]
+            try:
+                packageset = getUtility(IPackagesetSet).getByName(
+                    name_filter, distroseries=distro_series)
+            except NoSuchPackageSet:
+                packageset = None
+            if packageset is not None:
+                name_matches.append(
+                    DistroSeriesDifference.source_package_name_id.is_in(
+                        Select(
+                            PackagesetSources.sourcepackagename_id,
+                            PackagesetSources.packageset == packageset)))
+            conditions.extend([Or(*name_matches)])
 
         if child_version_higher:
             conditions.extend([
                 DistroSeriesDifference.source_version >
                     DistroSeriesDifference.parent_source_version])
+
+        if packagesets is not None:
+            set_ids = [packageset.id for packageset in packagesets]
+            conditions.extend([
+                DistroSeriesDifference.source_package_name_id.is_in(
+                    Select(
+                        PackagesetSources.sourcepackagename_id,
+                        PackagesetSources.packageset_id.is_in(set_ids)))])
 
         differences = IStore(DistroSeriesDifference).find(
             DistroSeriesDifference,
@@ -410,8 +434,8 @@ class DistroSeriesDifference(StormBase):
                 ("sourcepackagereleaseID",))
 
             # Get packagesets and parent_packagesets for each DSD.
-            dsd_packagesets = packagesets(dsds, in_parent=False)
-            dsd_parent_packagesets = packagesets(dsds, in_parent=True)
+            dsd_packagesets = get_packagesets(dsds, in_parent=False)
+            dsd_parent_packagesets = get_packagesets(dsds, in_parent=True)
 
             # Cache latest messages contents (MessageChunk).
             messages = bulk.load_related(
@@ -457,11 +481,13 @@ class DistroSeriesDifference(StormBase):
             gpgkeys = bulk.load_related(GPGKey, sprs, ("dscsigningkeyID",))
 
             # Load DistroSeriesDifferenceComment owners,
-            # SourcePackageRecipeBuild requesters and GPGKey owners.
+            # SourcePackageRecipeBuild requesters and GPGKey owners, and
+            # SourcePackageRelease creators.
             person_ids = set().union(
                 (dsdc.message.ownerID for dsdc in latest_comments),
                 (sprb.requester_id for sprb in sprbs),
-                (gpgkey.ownerID for gpgkey in gpgkeys))
+                (gpgkey.ownerID for gpgkey in gpgkeys),
+                (spr.creatorID for spr in sprs))
             uploaders = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
                 person_ids, need_validity=True)
             list(uploaders)

@@ -50,12 +50,13 @@ __all__ = [
     'ZopeTestInSubProcess',
     ]
 
-from cStringIO import StringIO
 from contextlib import contextmanager
+from cStringIO import StringIO
 from datetime import (
     datetime,
     timedelta,
     )
+from fnmatch import fnmatchcase
 from inspect import (
     getargspec,
     getmro,
@@ -73,8 +74,6 @@ import tempfile
 import time
 import unittest
 
-import simplejson
-
 from bzrlib import trace
 from bzrlib.bzrdir import (
     BzrDir,
@@ -83,6 +82,7 @@ from bzrlib.bzrdir import (
 from bzrlib.transport import get_transport
 import fixtures
 import pytz
+import simplejson
 from storm.expr import Variable
 from storm.store import Store
 from storm.tracer import (
@@ -545,7 +545,7 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         The config values will be restored during test tearDown.
         """
         name = self.factory.getUniqueString()
-        body = '\n'.join(["%s: %s" % (k, v) for k, v in kwargs.iteritems()])
+        body = '\n'.join("%s: %s" % (k, v) for k, v in kwargs.iteritems())
         config.push(name, "\n[%s]\n%s\n" % (section, body))
         self.addCleanup(config.pop, name)
 
@@ -617,6 +617,17 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         return self.assertEqual(
             self._unfoldEmailHeader(expected),
             self._unfoldEmailHeader(observed))
+
+    def assertStartsWith(self, s, prefix):
+        if not s.startswith(prefix):
+            raise AssertionError(
+                'string %r does not start with %r' % (s, prefix))
+
+    def assertEndsWith(self, s, suffix):
+        """Asserts that s ends with suffix."""
+        if not s.endswith(suffix):
+            raise AssertionError(
+                'string %r does not end with %r' % (s, suffix))
 
 
 class TestCaseWithFactory(TestCase):
@@ -860,7 +871,7 @@ class YUIUnitTestCase(TestCase):
 
     def id(self):
         """Return an ID for this test based on the file path."""
-        return self.test_path
+        return os.path.relpath(self.test_path, config.root)
 
     def setUp(self):
         super(YUIUnitTestCase, self).setUp()
@@ -920,15 +931,19 @@ class YUIUnitTestCase(TestCase):
 def build_yui_unittest_suite(app_testing_path, yui_test_class):
     suite = unittest.TestSuite()
     testing_path = os.path.join(config.root, 'lib', app_testing_path)
-    unit_test_names = [
-        file_name for file_name in os.listdir(testing_path)
-        if file_name.startswith('test_') and file_name.endswith('.html')]
-    for unit_test_name in unit_test_names:
-        test_path = os.path.join(app_testing_path, unit_test_name)
+    unit_test_names = _harvest_yui_test_files(testing_path)
+    for unit_test_path in unit_test_names:
         test_case = yui_test_class()
-        test_case.initialize(test_path)
+        test_case.initialize(unit_test_path)
         suite.addTest(test_case)
     return suite
+
+
+def _harvest_yui_test_files(file_path):
+    for dirpath, dirnames, filenames in os.walk(file_path):
+        for filename in filenames:
+            if fnmatchcase(filename, "test_*.html"):
+                yield os.path.join(dirpath, filename)
 
 
 class ZopeTestInSubProcess:

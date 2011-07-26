@@ -12,7 +12,7 @@
   <tbody>
     <tal:recipe-builds repeat="build view/builds">
       <tal:build-view define="buildview nocall:build/@@+index">
-        <tr class="package-build">
+        <tr class="package-build" tal:attributes="id string:build-${build/id}">
           <td>
             <span tal:replace="structure build/image:icon" />
             <a tal:content="buildview/status"
@@ -41,7 +41,7 @@
         </tr>
         <tal:binary-builds repeat="binary buildview/binary_builds">
           <tr tal:define="binaryview nocall:binary/@@+index"
-              class="binary-build">
+              class="binary-build" tal:attributes="id string:build-${binary/id}">
             <td class="indent">
               <span tal:replace="structure binary/image:icon"/>
               <a tal:content="binary/source_package_release/title"

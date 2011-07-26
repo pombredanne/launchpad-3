@@ -36,9 +36,9 @@ from lp.registry.model.distroseriesdifference import (
     most_recent_publications,
     )
 from lp.services.propertycache import get_property_cache
-from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.packagesetsources import PackagesetSources
 from lp.testing import (
     celebrity_logged_in,
     person_logged_in,
@@ -217,7 +217,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             source_package_name_str="foonew",
             versions=dict(parent='1.0', derived='1.0'),
             status=DistroSeriesDifferenceStatus.RESOLVED)
-        new_parent_pub = self.factory.makeSourcePackagePublishingHistory(
+        # Publish package in the parent series.
+        self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename=ds_diff.source_package_name,
             distroseries=ds_diff.parent_series,
             status=PackagePublishingStatus.PENDING,
@@ -1022,6 +1023,47 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
 
         self.assertContentEqual(diffs['normal'] + diffs['ignored'], result)
 
+    def test_getForDistroSeries_matches_by_package_name(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        series = dsd.derived_series
+        package_name = dsd.source_package_name.name
+        source = getUtility(IDistroSeriesDifferenceSource)
+        self.assertContentEqual(
+            [dsd],
+            source.getForDistroSeries(series, name_filter=package_name))
+
+    def test_getForDistroSeries_matches_by_packageset_name(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        series = dsd.derived_series
+        packageset = self.factory.makePackageset(
+            distroseries=series, packages=[dsd.source_package_name])
+        packageset_name = packageset.name
+        source = getUtility(IDistroSeriesDifferenceSource)
+        self.assertContentEqual(
+            [dsd],
+            source.getForDistroSeries(series, name_filter=packageset_name))
+
+    def test_getForDistroSeries_filters_by_package_and_packageset_name(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        series = dsd.derived_series
+        other_name = self.factory.getUniqueUnicode()
+        source = getUtility(IDistroSeriesDifferenceSource)
+        self.assertContentEqual(
+            [],
+            source.getForDistroSeries(series, name_filter=other_name))
+
+    def test_getForDistroSeries_ignores_parent_packagesets(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        series = dsd.derived_series
+        packageset = self.factory.makePackageset(
+            distroseries=dsd.parent_series,
+            packages=[dsd.source_package_name])
+        packageset_name = packageset.name
+        source = getUtility(IDistroSeriesDifferenceSource)
+        self.assertContentEqual(
+            [],
+            source.getForDistroSeries(series, name_filter=packageset_name))
+
     def test_getForDistroSeries_sorted_by_package_name(self):
         # The differences are sorted by package name.
         derived_series = self.makeDerivedSeries()
@@ -1062,6 +1104,39 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
 
         self.assertContentEqual(diffs['normal'], results)
         self.assertContentEqual(diffs2['normal'], results2)
+
+    def test_getForDistroSeries_matches_packageset(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        packageset = self.factory.makePackageset(
+            distroseries=dsd.derived_series)
+        Store.of(dsd).add(PackagesetSources(
+            packageset=packageset, sourcepackagename=dsd.source_package_name))
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        self.assertContentEqual(
+            [dsd], dsd_source.getForDistroSeries(
+                dsd.derived_series, packagesets=(packageset, )))
+
+    def test_getForDistroSeries_matches_any_packageset_in_filter(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        packagesets = [
+            self.factory.makePackageset(distroseries=dsd.derived_series)
+            for counter in xrange(2)]
+        Store.of(dsd).add(PackagesetSources(
+            packageset=packagesets[0],
+            sourcepackagename=dsd.source_package_name))
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        self.assertContentEqual(
+            [dsd], dsd_source.getForDistroSeries(
+                dsd.derived_series, packagesets=packagesets))
+
+    def test_getForDistroSeries_filters_by_packageset(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        packageset = self.factory.makePackageset(
+            distroseries=dsd.derived_series)
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        self.assertContentEqual(
+            [], dsd_source.getForDistroSeries(
+                dsd.derived_series, packagesets=(packageset, )))
 
     def test_getByDistroSeriesNameAndParentSeries(self):
         # An individual difference is obtained using the name.

@@ -105,8 +105,9 @@ class TestServerAvailableResource(TestCase):
         self.assertEqual(200, request.code)
         # GET works too
         request = self.make_dummy_http_request()
-        r.render_GET(request)
+        body = r.render_GET(request)
         self.assertEqual(200, request.code)
+        self.assertTrue(body.startswith('Available\n'))
 
     def test_503_after_shutdown_starts(self):
         """
@@ -121,8 +122,9 @@ class TestServerAvailableResource(TestCase):
         self.assertEqual(503, request.code)
         # GET works too
         request = self.make_dummy_http_request()
-        r.render_GET(request)
+        body = r.render_GET(request)
         self.assertEqual(503, request.code)
+        self.assertTrue(body.startswith('Unavailable\n'))
 
 
 class TestService(service.Service):

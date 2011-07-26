@@ -17,7 +17,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.ftests import sync
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
@@ -94,7 +93,8 @@ def print_bug_affects_table(content, highlighted_only=False):
         if tr.td.table:
             # Don't print the bugtask edit form.
             continue
-        print extract_text(tr)
+        # Strip zero-width white-spaces.
+        print extract_text(tr).replace('&#8203;', '')
 
 
 def print_remote_bugtasks(content):
@@ -121,7 +121,8 @@ def print_bugs_list(content, list_id):
     bugs_list = find_tag_by_id(content, list_id).findAll(
         None, {'class': 'similar-bug'})
     for node in bugs_list:
-        print extract_text(node)
+        # Also strip zero-width spaces out.
+        print extract_text(node).replace('&#8203;', '')
 
 
 def print_bugtasks(text, show_heat=None):
@@ -227,7 +228,6 @@ def create_old_bug(
             bugtracker=external_bugtracker, remotebug='1234')
     date = datetime.now(UTC) - timedelta(days=days_old)
     removeSecurityProxy(bug).date_last_updated = date
-    sync_bugtasks([bugtask])
     return bugtask
 
 
@@ -251,15 +251,6 @@ def summarize_bugtasks(bugtasks):
             bugtask.bug.duplicateof is not None,
             bugtask.milestone is not None,
             bugtask.bug.messages.count() == 1)
-
-
-def sync_bugtasks(bugtasks):
-    """Sync the bugtask and its bug to the database."""
-    if not isinstance(bugtasks, list):
-        bugtasks = [bugtasks]
-    for bugtask in bugtasks:
-        sync(bugtask)
-        sync(bugtask.bug)
 
 
 def print_upstream_linking_form(browser):

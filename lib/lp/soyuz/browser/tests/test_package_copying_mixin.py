@@ -219,7 +219,7 @@ class TestPackageCopyingMixinIntegration(TestCaseWithFactory):
         pocket = self.factory.getAnyPocket()
         copy_asynchronously(
             [spph], archive, dest_series, pocket, include_binaries=False,
-            check_permissions=False)
+            check_permissions=False, person=self.factory.makePerson())
         self.assertEqual(None, find_spph_copy(archive, spph))
 
     def test_copy_synchronously_lists_packages(self):
@@ -243,7 +243,7 @@ class TestPackageCopyingMixinIntegration(TestCaseWithFactory):
         archive = dest_series.distribution.main_archive
         copy_asynchronously(
             [spph], archive, dest_series, pocket, include_binaries=False,
-            check_permissions=False)
+            check_permissions=False, person=self.factory.makePerson())
         jobs = list(getUtility(IPlainPackageCopyJobSource).getActiveJobs(
             archive))
         self.assertEqual(1, len(jobs))
@@ -263,7 +263,7 @@ class TestPackageCopyingMixinIntegration(TestCaseWithFactory):
         view.canCopySynchronously = FakeMethod(result=False)
         view.do_copy(
             'selected_differences', [spph], archive, dest_series, pocket,
-            False, check_permissions=False)
+            False, check_permissions=False, person=self.factory.makePerson())
         jobs = list(getUtility(IPlainPackageCopyJobSource).getActiveJobs(
             archive))
         self.assertNotEqual([], jobs)

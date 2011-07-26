@@ -110,6 +110,7 @@ from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
     )
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.model.queue import PackageUploadQueue
 from lp.translations.browser.distroseries import (
@@ -620,6 +621,12 @@ class DistroSeriesAddView(LaunchpadFormView):
     @action(_('Add Series'), name='create')
     def createAndAdd(self, action, data):
         """Create and add a new Distribution Series"""
+        # 'series' is a cached property so this won't issue 2 queries.
+        if self.context.series:
+            previous_series = self.context.series[0]
+        else:
+            previous_series = None
+        # previous_series will be None if there isn't one.
         distroseries = self.context.newSeries(
             name=data['name'],
             displayname=data['displayname'],
@@ -627,7 +634,7 @@ class DistroSeriesAddView(LaunchpadFormView):
             summary=data['summary'],
             description=u"",
             version=data['version'],
-            previous_series=None,
+            previous_series=previous_series,
             registrant=self.user)
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)
@@ -666,7 +673,8 @@ class DistroSeriesInitializeView(LaunchpadFormView):
         distribution = self.context.distribution
         is_first_derivation = not distribution.has_published_sources
         cache['is_first_derivation'] = is_first_derivation
-        if not is_first_derivation:
+        if (not is_first_derivation and
+            self.context.previous_series is not None):
             cache['previous_series'] = seriesToVocab(
                 self.context.previous_series)
             previous_parents = self.context.previous_series.getParentSeries()
@@ -689,8 +697,19 @@ class DistroSeriesInitializeView(LaunchpadFormView):
     def show_derivation_form(self):
         return (
             self.is_derived_series_feature_enabled and
+            not self.show_previous_series_empty_message and
             not self.context.isInitializing() and
             not self.context.isInitialized())
+
+    @property
+    def show_previous_series_empty_message(self):
+        # There is a problem here:
+        # The distribution already has initialized series and this
+        # distroseries has no previous_series.
+        return (
+            self.is_derived_series_feature_enabled and
+            self.context.distribution.has_published_sources and
+            self.context.previous_series is None)
 
     @property
     def show_already_initialized_message(self):
@@ -807,6 +826,8 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         super(DistroSeriesDifferenceBaseView, self).initialize()
 
     def initialize_sync_label(self, label):
+        # XXX: GavinPanella 2011-07-13 bug=809985: Good thing the app servers
+        # are running single threaded...
         self.__class__.actions.byname['actions.sync'].label = label
 
     @property
@@ -841,6 +862,8 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             SimpleTerm(diff, diff.id)
                     for diff in self.cached_differences.batch]
         diffs_vocabulary = SimpleVocabulary(terms)
+        # XXX: GavinPanella 2011-07-13 bug=809985: Good thing the app servers
+        # are running single threaded...
         choice = self.form_fields['selected_differences'].field.value_type
         choice.vocabulary = diffs_vocabulary
 
@@ -1004,6 +1027,20 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             return None
 
     @property
+    def specified_packagesets_filter(self):
+        """If specified, return Packagesets given in the GET form data."""
+        packageset_ids = (
+            self.request.query_string_params.get("field.packageset", []))
+        packageset_ids = set(
+            int(packageset_id) for packageset_id in packageset_ids
+            if packageset_id.isdigit())
+        packagesets = getUtility(IPackagesetSet).getBySeries(self.context)
+        packagesets = set(
+            packageset for packageset in packagesets
+            if packageset.id in packageset_ids)
+        return None if len(packagesets) == 0 else packagesets
+
+    @property
     def specified_package_type(self):
         """If specified, return the package type filter from the GET form
         data.
@@ -1034,8 +1071,9 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         differences = getUtility(
             IDistroSeriesDifferenceSource).getForDistroSeries(
                 self.context, difference_type=self.differences_type,
-                source_package_name_filter=self.specified_name_filter,
-                status=status, child_version_higher=child_version_higher)
+                name_filter=self.specified_name_filter,
+                status=status, child_version_higher=child_version_higher,
+                packagesets=self.specified_packagesets_filter)
         return BatchNavigator(differences, self.request)
 
     @cachedproperty
@@ -1141,7 +1179,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
             )
             for dsd in self.getUpgrades()]
         getUtility(IPlainPackageCopyJobSource).createMultiple(
-            target_distroseries, copies,
+            target_distroseries, copies, self.user,
             copy_policy=PackageCopyPolicy.MASS_SYNC)
 
         self.request.response.addInfoNotification(

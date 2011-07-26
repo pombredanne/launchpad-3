@@ -55,7 +55,7 @@ UPDATE packageset SET packagesetgroup = packagesetgroup.id
 FROM packagesetgroup WHERE packageset.name = 'lucid-' || packagesetgroup.name;
 
 -- ** PART 3 ** Add the 'packageset.distroseries' foreign key and
---              initialise it for the existing package sets.
+--              initialize it for the existing package sets.
 
 -- A package set lives in a distro series context.
 ALTER TABLE ONLY packageset ADD COLUMN distroseries integer;

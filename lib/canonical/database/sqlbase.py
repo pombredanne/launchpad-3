@@ -24,7 +24,6 @@ __all__ = [
     'quote_like',
     'quoteIdentifier',
     'quote_identifier',
-    'RandomiseOrderDescriptor',
     'reset_store',
     'rollback',
     'session_store',
@@ -343,7 +342,10 @@ class ZopelessTransactionManager(object):
             [database]
             rw_main_master: %(main_connection_string)s
             isolation_level: %(isolation_level)s
-            """ % vars())
+            """ % {
+                'isolation_level': isolation_level,
+                'main_connection_string': main_connection_string,
+                })
 
         if dbuser:
             # XXX 2009-05-07 stub bug=373252: Scripts should not be connecting
@@ -352,7 +354,7 @@ class ZopelessTransactionManager(object):
                 [launchpad]
                 dbuser: %(dbuser)s
                 auth_dbuser: launchpad_auth
-                """ % vars())
+                """ % {'dbuser': dbuser})
 
         if cls._installed is not None:
             if cls._config_overlay != overlay:
@@ -533,12 +535,15 @@ def quote(x):
 
     >>> quote(set([1,2,3]))
     '(1, 2, 3)'
+
+    >>> quote(frozenset([1,2,3]))
+    '(1, 2, 3)'
     """
     if isinstance(x, datetime):
         return "'%s'" % x
     elif ISQLBase(x, None) is not None:
         return str(x.id)
-    elif isinstance(x, set):
+    elif isinstance(x, (set, frozenset)):
         # SQLObject can't cope with sets, so convert to a list, which it
         # /does/ know how to handle.
         x = list(x)
