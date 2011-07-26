@@ -551,6 +551,8 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
     @action(_('Change'), name='change')
     def change_action(self, action, data):
         context = self.context
+        iscurrent = data.get('iscurrent', context.iscurrent)
+        context.setActive(iscurrent)
         old_description = context.description
         old_translation_domain = context.translation_domain
         self.updateContextFromData(data)
