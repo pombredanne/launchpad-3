@@ -375,7 +375,8 @@ class POTMsgSet(SQLBase):
 
         :param suggested_languages: Languages that suggestions should be found
             for.
-        :param used_languages: Languages that used messages should be found for.
+        :param used_languages: Languages that used messages should be found
+            for.
         """
         if not config.rosetta.global_suggestions_enabled:
             return []
@@ -399,7 +400,7 @@ class POTMsgSet(SQLBase):
         used_languages = used_languages - both_languages
         lang_used = []
         if both_languages:
-            lang_used.append('TranslationMessage.language IN %s' % 
+            lang_used.append('TranslationMessage.language IN %s' %
                 quote(both_languages))
         if used_languages:
             lang_used.append('(TranslationMessage.language IN %s AND %s)' % (
@@ -455,10 +456,11 @@ class POTMsgSet(SQLBase):
 
     def getExternallySuggestedTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
-        return self._getExternalTranslationMessages(suggested_languages=[language])
+        return self._getExternalTranslationMessages(
+            suggested_languages=[language])
 
     def getExternallySuggestedOrUsedTranslationMessages(self,
-        suggested_languages=(), used_languages=()):
+            suggested_languages=(), used_languages=()):
         """See `IPOTMsgSet`."""
         # This method exists because suggestions + used == all external
         # messages : its better not to do the work twice. We could use a
@@ -466,7 +468,7 @@ class POTMsgSet(SQLBase):
         # 2000, doing a single pass in python should be insignificantly
         # slower.
         result_type = namedtuple('SuggestedOrUsed', 'suggested used')
-        result = defaultdict(lambda:result_type([], []))
+        result = defaultdict(lambda: result_type([], []))
         for message in self._getExternalTranslationMessages(
             suggested_languages=suggested_languages,
             used_languages=used_languages):
