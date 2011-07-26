@@ -698,6 +698,12 @@ class IPOTemplateSet(Interface):
         :return: Number of rows deleted.
         """
 
+    def removeFromSuggestivePOTemplatesCache(potemplate):
+        """Remove the given potemplate from the suggestive-templates cache.
+
+        :return: True if the template was in the cache.
+        """
+
     def populateSuggestivePOTemplatesCache():
         """Populate suggestive-templates cache.
 

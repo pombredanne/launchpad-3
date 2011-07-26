@@ -1379,6 +1379,13 @@ class POTemplateSet:
         return IMasterStore(POTemplate).execute(
             "DELETE FROM SuggestivePOTemplate").rowcount
 
+    def removeFromSuggestivePOTemplatesCache(self, potemplate):
+        """See `IPOTemplateSet`."""
+        rowcount = IMasterStore(POTemplate).execute(
+            "DELETE FROM SuggestivePOTemplate "
+            "WHERE potemplate = %s" % sqlvalues(potemplate)).rowcount
+        return rowcount == 1
+
     def populateSuggestivePOTemplatesCache(self):
         """See `IPOTemplateSet`."""
         # XXX j.c.sackett 2010-08-30 bug=627631 Once data migration has
