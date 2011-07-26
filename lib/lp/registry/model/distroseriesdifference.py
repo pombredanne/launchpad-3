@@ -272,6 +272,108 @@ def message_chunks(messages):
     return grouped
 
 
+def eager_load_dsds(dsds):
+    """Eager load dependencies of the given `DistroSeriesDifference`s.
+
+    :param dsds: A concrete sequence (i.e. not a generator) of
+        `DistroSeriesDifference` to eager load for.
+    """
+    source_pubs = dict(
+        most_recent_publications(
+            dsds, statuses=ACTIVE_STATUSES,
+            in_parent=False, match_version=False))
+    parent_source_pubs = dict(
+        most_recent_publications(
+            dsds, statuses=ACTIVE_STATUSES,
+            in_parent=True, match_version=False))
+    source_pubs_for_release = dict(
+        most_recent_publications(
+            dsds, statuses=ACTIVE_STATUSES,
+            in_parent=False, match_version=True))
+    parent_source_pubs_for_release = dict(
+        most_recent_publications(
+            dsds, statuses=ACTIVE_STATUSES,
+            in_parent=True, match_version=True))
+
+    latest_comment_by_dsd_id = dict(
+        (comment.distro_series_difference_id, comment)
+        for comment in most_recent_comments(dsds))
+    latest_comments = latest_comment_by_dsd_id.values()
+
+    # SourcePackageReleases of the parent and source pubs are often
+    # referred to.
+    sprs = bulk.load_related(
+        SourcePackageRelease, chain(
+            source_pubs.itervalues(),
+            parent_source_pubs.itervalues(),
+            source_pubs_for_release.itervalues(),
+            parent_source_pubs_for_release.itervalues()),
+        ("sourcepackagereleaseID",))
+
+    # Get packagesets and parent_packagesets for each DSD.
+    dsd_packagesets = get_packagesets(dsds, in_parent=False)
+    dsd_parent_packagesets = get_packagesets(dsds, in_parent=True)
+
+    # Cache latest messages contents (MessageChunk).
+    messages = bulk.load_related(
+        Message, latest_comments, ['message_id'])
+    chunks = message_chunks(messages)
+    for msg in messages:
+        cache = get_property_cache(msg)
+        cache.text_contents = Message.chunks_text(
+            chunks.get(msg.id, []))
+
+    for dsd in dsds:
+        spn_id = dsd.source_package_name_id
+        cache = get_property_cache(dsd)
+        cache.source_pub = source_pubs.get(spn_id)
+        cache.parent_source_pub = parent_source_pubs.get(spn_id)
+        cache.packagesets = dsd_packagesets.get(dsd.id)
+        cache.parent_packagesets = dsd_parent_packagesets.get(dsd.id)
+        if spn_id in source_pubs_for_release:
+            spph = source_pubs_for_release[spn_id]
+            cache.source_package_release = (
+                DistroSeriesSourcePackageRelease(
+                    dsd.derived_series,
+                    spph.sourcepackagerelease))
+        else:
+            cache.source_package_release = None
+        if spn_id in parent_source_pubs_for_release:
+            spph = parent_source_pubs_for_release[spn_id]
+            cache.parent_source_package_release = (
+                DistroSeriesSourcePackageRelease(
+                    dsd.parent_series, spph.sourcepackagerelease))
+        else:
+            cache.parent_source_package_release = None
+        cache.latest_comment = latest_comment_by_dsd_id.get(dsd.id)
+
+    # SourcePackageRelease.uploader can end up getting the requester
+    # for a source package recipe build.
+    sprbs = bulk.load_related(
+        SourcePackageRecipeBuild, sprs,
+        ("source_package_recipe_build_id",))
+
+    # SourcePackageRelease.uploader can end up getting the owner of
+    # the DSC signing key.
+    gpgkeys = bulk.load_related(GPGKey, sprs, ("dscsigningkeyID",))
+
+    # Load DistroSeriesDifferenceComment owners,
+    # SourcePackageRecipeBuild requesters and GPGKey owners, and
+    # SourcePackageRelease creators.
+    person_ids = set().union(
+        (dsdc.message.ownerID for dsdc in latest_comments),
+        (sprb.requester_id for sprb in sprbs),
+        (gpgkey.ownerID for gpgkey in gpgkeys),
+        (spr.creatorID for spr in sprs))
+    uploaders = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
+        person_ids, need_validity=True)
+    list(uploaders)
+
+    # Load SourcePackageNames.
+    bulk.load_related(
+        SourcePackageName, dsds, ("source_package_name_id",))
+
+
 class DistroSeriesDifference(StormBase):
     """See `DistroSeriesDifference`."""
     implements(IDistroSeriesDifference)
@@ -431,104 +533,8 @@ class DistroSeriesDifference(StormBase):
                 DSD, differences_changed_by_condition)
             differences = differences.intersection(differences_changed_by)
 
-        def eager_load(dsds):
-            source_pubs = dict(
-                most_recent_publications(
-                    dsds, statuses=ACTIVE_STATUSES,
-                    in_parent=False, match_version=False))
-            parent_source_pubs = dict(
-                most_recent_publications(
-                    dsds, statuses=ACTIVE_STATUSES,
-                    in_parent=True, match_version=False))
-            source_pubs_for_release = dict(
-                most_recent_publications(
-                    dsds, statuses=ACTIVE_STATUSES,
-                    in_parent=False, match_version=True))
-            parent_source_pubs_for_release = dict(
-                most_recent_publications(
-                    dsds, statuses=ACTIVE_STATUSES,
-                    in_parent=True, match_version=True))
-
-            latest_comment_by_dsd_id = dict(
-                (comment.distro_series_difference_id, comment)
-                for comment in most_recent_comments(dsds))
-            latest_comments = latest_comment_by_dsd_id.values()
-
-            # SourcePackageReleases of the parent and source pubs are often
-            # referred to.
-            sprs = bulk.load_related(
-                SourcePackageRelease, chain(
-                    source_pubs.itervalues(),
-                    parent_source_pubs.itervalues(),
-                    source_pubs_for_release.itervalues(),
-                    parent_source_pubs_for_release.itervalues()),
-                ("sourcepackagereleaseID",))
-
-            # Get packagesets and parent_packagesets for each DSD.
-            dsd_packagesets = get_packagesets(dsds, in_parent=False)
-            dsd_parent_packagesets = get_packagesets(dsds, in_parent=True)
-
-            # Cache latest messages contents (MessageChunk).
-            messages = bulk.load_related(
-                Message, latest_comments, ['message_id'])
-            chunks = message_chunks(messages)
-            for msg in messages:
-                cache = get_property_cache(msg)
-                cache.text_contents = Message.chunks_text(
-                    chunks.get(msg.id, []))
-
-            for dsd in dsds:
-                spn_id = dsd.source_package_name_id
-                cache = get_property_cache(dsd)
-                cache.source_pub = source_pubs.get(spn_id)
-                cache.parent_source_pub = parent_source_pubs.get(spn_id)
-                cache.packagesets = dsd_packagesets.get(dsd.id)
-                cache.parent_packagesets = dsd_parent_packagesets.get(dsd.id)
-                if spn_id in source_pubs_for_release:
-                    spph = source_pubs_for_release[spn_id]
-                    cache.source_package_release = (
-                        DistroSeriesSourcePackageRelease(
-                            dsd.derived_series,
-                            spph.sourcepackagerelease))
-                else:
-                    cache.source_package_release = None
-                if spn_id in parent_source_pubs_for_release:
-                    spph = parent_source_pubs_for_release[spn_id]
-                    cache.parent_source_package_release = (
-                        DistroSeriesSourcePackageRelease(
-                            dsd.parent_series, spph.sourcepackagerelease))
-                else:
-                    cache.parent_source_package_release = None
-                cache.latest_comment = latest_comment_by_dsd_id.get(dsd.id)
-
-            # SourcePackageRelease.uploader can end up getting the requester
-            # for a source package recipe build.
-            sprbs = bulk.load_related(
-                SourcePackageRecipeBuild, sprs,
-                ("source_package_recipe_build_id",))
-
-            # SourcePackageRelease.uploader can end up getting the owner of
-            # the DSC signing key.
-            gpgkeys = bulk.load_related(GPGKey, sprs, ("dscsigningkeyID",))
-
-            # Load DistroSeriesDifferenceComment owners,
-            # SourcePackageRecipeBuild requesters and GPGKey owners, and
-            # SourcePackageRelease creators.
-            person_ids = set().union(
-                (dsdc.message.ownerID for dsdc in latest_comments),
-                (sprb.requester_id for sprb in sprbs),
-                (gpgkey.ownerID for gpgkey in gpgkeys),
-                (spr.creatorID for spr in sprs))
-            uploaders = getUtility(IPersonSet).getPrecachedPersonsFromIDs(
-                person_ids, need_validity=True)
-            list(uploaders)
-
-            # Load SourcePackageNames.
-            bulk.load_related(
-                SourcePackageName, dsds, ("source_package_name_id",))
-
         return DecoratedResultSet(
-            differences, pre_iter_hook=eager_load)
+            differences, pre_iter_hook=eager_load_dsds)
 
     @staticmethod
     def getByDistroSeriesNameAndParentSeries(distro_series,
