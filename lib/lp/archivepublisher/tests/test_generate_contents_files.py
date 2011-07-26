@@ -11,7 +11,6 @@ from textwrap import dedent
 
 from testtools.matchers import StartsWith
 
-from canonical.config import config
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
@@ -129,16 +128,6 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
     """Tests for the actual `GenerateContentsFiles` script."""
 
     layer = LaunchpadZopelessLayer
-
-    def makeLegacyContentArchive(self):
-        """Prepare a legacy "content archive" directory."""
-        content_archive = self.makeTemporaryDirectory()
-        config.push("content-archive", dedent("""\
-            [archivepublisher]
-            content_archive_root: %s
-            """ % content_archive))
-        self.addCleanup(config.pop, "content-archive")
-        return content_archive
 
     def makeDistro(self):
         """Create a distribution for testing.
@@ -303,59 +292,6 @@ class TestGenerateContentsFiles(TestCaseWithFactory):
 
         self.assertIn("This file maps", contents_top)
         self.assertIn(distro.title, contents_top)
-
-    def test_updateLegacyContentArchiveRoot_moves_legacy_contents(self):
-        # If updateLegacyContentArchiveRoot finds entries in the legacy
-        # content-archive directory, it moves them into their new
-        # location inside distroroot.
-        distro = self.makeDistro()
-        script = self.makeScript(distro, run_setup=False)
-        content_archive = self.makeLegacyContentArchive()
-        script.content_archive = os.path.join(
-            self.makeTemporaryDirectory(), "contents-generation")
-        old_contents_dir = os.path.join(
-            content_archive, "%s-contents" % distro.name)
-
-        marker_contents = self.writeMarkerFile(os.path.join(
-            old_contents_dir, "%s-misc" % distro.name, "Contents.top"))
-
-        script.updateLegacyContentArchiveRoot()
-
-        self.assertFalse(file_exists(old_contents_dir))
-        new_path = os.path.join(
-            script.content_archive, "%s-misc" % distro.name, "Contents.top")
-        self.assertEqual(marker_contents, file(new_path).read())
-
-    def test_updateLegacyContentArchiveRoot_is_harmless_without_config(self):
-        # If no legacy content-archive root directory is configured,
-        # that's fine.  It means that updateLegacyContentArchiveRoot has
-        # nothing to do.
-        script = self.makeScript()
-        script.updateLegacyContentArchiveRoot()
-        self.assertTrue(file_exists(script.content_archive))
-        self.assertThat(
-            script.content_archive, StartsWith(script.config.distroroot))
-
-    def test_updateLegacyContentArchiveRoot_is_harmless_without_legacy(self):
-        # If a legacy content-archive root directory is configured but
-        # it does not actually exist, updateLegacyContentArchiveRoot
-        # does nothing.
-        self.makeLegacyContentArchive()
-        script = self.makeScript()
-        script.updateLegacyContentArchiveRoot()
-        self.assertTrue(file_exists(script.content_archive))
-
-    def test_setUp_moves_legacy_content_archive(self):
-        # setUp calls updateLegacyContentArchiveRoot, which moves any
-        # legacy content-archive contents to their new location.
-        content_archive = self.makeLegacyContentArchive()
-        distro = self.makeDistro()
-        marker_dir = os.path.join(
-            content_archive, "%s-contents" % distro.name,
-            "%s-misc" % distro.name)
-        self.writeMarkerFile(os.path.join(marker_dir, "Contents.top"))
-        self.makeScript(distro, run_setup=True)
-        self.assertFalse(file_exists(marker_dir))
 
     def test_setUp_places_content_archive_in_distroroot(self):
         # The contents files are kept in subdirectories of distroroot.
