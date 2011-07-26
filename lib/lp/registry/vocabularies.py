@@ -2103,4 +2103,5 @@ class DistributionSourcePackageVocabulary:
                     SourcePackageName.name.contains_string(search_term),
                     BinaryPackageName.name.contains_string(
                         search_term))).config(distinct=True)
+        # XXX sinzui 2011-07-26: This query ignored SPN branches.
         return CountableIterator(spns.count(), spns, self.toTerm)
