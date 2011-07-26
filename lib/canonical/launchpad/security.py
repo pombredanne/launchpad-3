@@ -1911,8 +1911,8 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
         Distribution managers can also manage IDistroSeries
         """
 
-        return (AdminDistributionTranslations(
-            self.obj.distribution).checkAuthenticated(user))
+        return (user.isOneOfDrivers(self.obj) or
+                self.forwardCheckAuthenticated(user, self.obj.distribution))
 
 
 class AdminDistributionSourcePackageTranslations(
@@ -1928,7 +1928,9 @@ class AdminProductSeriesTranslations(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Is the user able to manage `IProductSeries` translations."""
 
-        return self.forwardCheckAuthenticated(user, self.obj.product)
+        return (user.isOwner(self.obj) or
+                user.isOneOfDrivers(self.obj) or
+                self.forwardCheckAuthenticated(user, self.obj.product))
 
 
 class BranchMergeProposalView(AuthorizationBase):

@@ -306,13 +306,6 @@ class TranslationImportQueueEntry(SQLBase):
         else:
             return next_adapter.checkAuthenticated(roles)
 
-    def _canEditExcludeImporter(self, roles):
-        """All people that can edit the entry except the importer."""
-        if roles.person.inTeam(self.importer):
-            return False
-        else:
-            return self.canEdit(roles)
-
     def canEdit(self, roles):
         """See `ITranslationImportQueueEntry`."""
         next_adapter = queryAdapter(self, IAuthorization, 'launchpad.Edit')
@@ -347,7 +340,7 @@ class TranslationImportQueueEntry(SQLBase):
             return roles.in_admin or roles.in_rosetta_experts
         if new_status == RosettaImportStatus.BLOCKED:
             # Importers are not allowed to set BLOCKED
-            return self._canEditExcludeImporter(roles)
+            return self.canAdmin(roles)
         # All other statuses can be set set by all authorized persons.
         return self.canEdit(roles)
 
