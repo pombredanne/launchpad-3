@@ -154,11 +154,13 @@
                       <span class="nowrap">by <a tal:replace="structure spr/creator/fmt:link" /></span>
                     </tal:creator>
                     <tal:uploader
-                        define="spr parent_source_pub/sourcepackagerelease"
-                        condition="python: spr.uploader not in (None, spr.creator)">
+                        define="uploader parent_source_pub/sourcepackagerelease/uploader;
+                                creator parent_source_pub/sourcepackagerelease/creator"
+                        condition="python: uploader not in (None, creator)">
                       <br />
                       <span class="discreet nowrap">
-                        (uploaded by <a tal:replace="structure spr/uploader/fmt:link" />)
+                        (uploaded by <a tal:attributes="href uploader/fmt:url"
+                         tal:content="uploader/fmt:displayname" />)
                       </span>
                     </tal:uploader>
                   </tal:published>
@@ -174,11 +176,13 @@
                       <span class="nowrap">by <a tal:replace="structure spr/creator/fmt:link" /></span>
                     </tal:creator>
                     <tal:uploader
-                        define="spr source_pub/sourcepackagerelease"
-                        condition="python: spr.uploader not in (None, spr.creator)">
+                        define="uploader source_pub/sourcepackagerelease/uploader;
+                                creator source_pub/sourcepackagerelease/creator"
+                        condition="python: uploader not in (None, creator)">
                       <br />
                       <span class="discreet nowrap">
-                        (uploaded by <a tal:replace="structure spr/uploader/fmt:link" />)
+                        (uploaded by <a tal:attributes="href uploader/fmt:url"
+                         tal:content="uploader/fmt:displayname" />)
                       </span>
                     </tal:uploader>
                   </tal:published>
