@@ -156,8 +156,7 @@ class GenerateContentsFiles(LaunchpadScript):
         if options is not None:
             args += options
         args.append(request)
-        query_distro = LpQueryDistro(test_args=args)
-        query_distro.logger = self.logger
+        query_distro = LpQueryDistro(test_args=args, logger=self.logger)
         query_distro.txn = self.txn
         receiver = StoreArgument()
         query_distro.runAction(presenter=receiver)
@@ -317,40 +316,6 @@ class GenerateContentsFiles(LaunchpadScript):
             for arch in archs:
                 self.updateContentsFile(suite, arch)
 
-    def updateLegacyContentArchiveRoot(self):
-        """Replace content archive root with new contents location.
-
-        If there is a legacy content_archive_root, move it to the new
-        location.
-
-        This is a temporary migration tool for the fix to bug 809211.
-        After this has run at least once on each system that needs it, for
-        each distribution archive, this method can go away.
-        """
-        content_archive_root = getattr(
-            config.archivepublisher, 'content_archive_root', None)
-        if content_archive_root is None:
-            # No legacy configuration; nothing to do.
-            return
-        old_content_dir = os.path.join(
-            content_archive_root, self.distribution.name + "-contents")
-        if not file_exists(old_content_dir):
-            # The data has already been moved (or didn't exist at all).
-            return
-        if file_exists(self.content_archive):
-            # The new contents directory has already been created.
-            # Confusing!
-            self.logger.warn(
-                "New contents directory %s has been created, "
-                "but legacy directory %s still exists.  Ignoring the latter.",
-                self.content_archive, old_content_dir)
-            return
-
-        self.logger.info(
-            "Moving legacy contents directory %s into %s.",
-            old_content_dir, self.content_archive)
-        os.rename(old_content_dir, self.content_archive)
-
     def setUp(self):
         """Prepare configuration and filesystem state for the script's work.
 
@@ -362,7 +327,6 @@ class GenerateContentsFiles(LaunchpadScript):
         self.config = getPubConfig(self.distribution.main_archive)
         self.content_archive = os.path.join(
             self.config.distroroot, "contents-generation")
-        self.updateLegacyContentArchiveRoot()
         self.setUpContentArchive()
 
     def process(self):
