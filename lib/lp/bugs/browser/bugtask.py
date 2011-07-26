@@ -1458,10 +1458,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         new_target = new_values.pop("target", missing)
         if new_target is not missing and bugtask.target != new_target:
             changed = True
-            try:
-                bugtask.transitionToTarget(new_target)
-            except IllegalTarget as e:
-                self.setFieldError('target', e.message)
+            bugtask.transitionToTarget(new_target)
 
         # Now that we've updated the bugtask we can add messages about
         # milestone changes, if there were any.
