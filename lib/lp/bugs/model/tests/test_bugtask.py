@@ -1744,6 +1744,32 @@ class TestTransitionToTarget(TestCaseWithFactory):
         sp2 = self.factory.makeSourcePackage(distroseries=ds2)
         self.assertTransitionForbidden(sp1, sp2)
 
+    def test_transition_to_same_is_noop(self):
+        p = self.factory.makeProduct()
+        self.assertTransitionWorks(p, p)
+
+    def test_validate_target_is_called(self):
+        p = self.factory.makeProduct()
+        task1 = self.factory.makeBugTask(target=p)
+        task2 = self.factory.makeBugTask(
+            bug=task1.bug, target=self.factory.makeProduct())
+        with person_logged_in(task2.owner):
+            self.assertRaisesWithContent(
+                IllegalTarget,
+                "A fix for this bug has already been requested for %s"
+                % p.displayname, task2.transitionToTarget, p)
+
+    def test_milestone_preserved_if_transition_rejected(self):
+        series = self.factory.makeProductSeries()
+        task = self.factory.makeBugTask(target=series.product)
+        milestone = self.factory.makeMilestone(product=series.product)
+        with person_logged_in(task.owner):
+            task.milestone = milestone
+            self.assertRaises(
+                IllegalTarget,
+                task.transitionToTarget, self.factory.makeSourcePackage())
+            self.assertEqual(milestone, task.milestone)
+
 
 class TestBugTargetKeys(TestCaseWithFactory):
     """Tests for bug_target_to_key and bug_target_from_key."""
