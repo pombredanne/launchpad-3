@@ -1411,7 +1411,9 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         #      the situation detected to add the notifications.
         milestone_cleared = None
         milestone_ignored = False
-        if bugtask.target != new_values.get("target"):
+        missing = object()
+        new_target = new_values.pop("target", missing)
+        if new_target is not missing and bugtask.target != new_target:
             # We clear the milestone value if one was already set. We ignore
             # the milestone value if it was currently None, and the user tried
             # to set a milestone value while also changing the product. This
@@ -1454,8 +1456,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         # guaranteed to pass all the values. For example: bugtasks linked to a
         # bug watch don't allow editing the form, and the value is missing
         # from the form.
-        missing = object()
-        new_target = new_values.pop("target", missing)
         if new_target is not missing and bugtask.target != new_target:
             changed = True
             bugtask.transitionToTarget(new_target)
