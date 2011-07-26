@@ -285,16 +285,17 @@ class PublishFTPMaster(LaunchpadCronScript):
         """Run the process-accepted script."""
         self.logger.debug(
             "Processing the accepted queue into the publishing records...")
-        script = ProcessAccepted(test_args=[self.distribution.name])
+        script = ProcessAccepted(
+            test_args=[self.distribution.name], init_logging=False)
         script.txn = self.txn
-        script.logger = self.logger
         script.main()
 
     def getDirtySuites(self):
         """Return list of suites that have packages pending publication."""
         self.logger.debug("Querying which suites are pending publication...")
         query_distro = LpQueryDistro(
-            test_args=['-d', self.distribution.name, "pending_suites"])
+            test_args=['-d', self.distribution.name, "pending_suites"],
+            init_logging=False)
         receiver = StoreArgument()
         query_distro.runAction(presenter=receiver)
         return receiver.argument.split()
@@ -362,7 +363,8 @@ class PublishFTPMaster(LaunchpadCronScript):
             args +
             sum([['-s', suite] for suite in suites], []))
 
-        publish_distro = PublishDistro(test_args=arguments)
+        publish_distro = PublishDistro(
+            test_args=arguments, init_logging=False)
         publish_distro.logger = self.logger
         publish_distro.txn = self.txn
         publish_distro.main()

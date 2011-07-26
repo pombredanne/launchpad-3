@@ -148,7 +148,8 @@ class LaunchpadScript:
     # State for the log_unhandled_exceptions decorator.
     _log_unhandled_exceptions_level = 0
 
-    def __init__(self, name=None, dbuser=None, test_args=None):
+    def __init__(self, name=None, dbuser=None, test_args=None,
+                 init_logging=True):
         """Construct new LaunchpadScript.
 
         Name is a short name for this script; it will be used to
@@ -159,6 +160,11 @@ class LaunchpadScript:
 
         Specify test_args when you want to override sys.argv.  This is
         useful in test scripts.
+
+        :param init_logging: Initialize logging based on the command-line
+            options?  Defaults to True.  But this affects global logging
+            configuration, so try to set it to False in tests or when
+            instantiating script objects from other script objects.
         """
         if name is None:
             self._name = self.__class__.__name__.lower()
@@ -166,6 +172,7 @@ class LaunchpadScript:
             self._name = name
 
         self._dbuser = dbuser
+        self._init_logging = init_logging
 
         # The construction of the option parser is a bit roundabout, but
         # at least it's isolated here. First we build the parser, then
@@ -178,11 +185,16 @@ class LaunchpadScript:
             description = self.description
         self.parser = OptionParser(usage=self.usage,
                                    description=description)
-        scripts.logger_options(self.parser, default=self.loglevel)
-        self.parser.add_option(
-            '--profile', dest='profile', metavar='FILE', help=(
-                    "Run the script under the profiler and save the "
-                    "profiling stats in FILE."))
+
+        if init_logging:
+            scripts.logger_options(self.parser, default=self.loglevel)
+            self.parser.add_option(
+                '--profile', dest='profile', metavar='FILE', help=(
+                        "Run the script under the profiler and save the "
+                        "profiling stats in FILE."))
+        else:
+            scripts.dummy_logger_options(self.parser)
+
         self.add_my_options()
         self.options, self.args = self.parser.parse_args(args=test_args)
 
@@ -191,7 +203,8 @@ class LaunchpadScript:
         self.handle_options()
 
     def handle_options(self):
-        self.logger = scripts.logger(self.options, self.name)
+        if self._init_logging:
+            self.logger = scripts.logger(self.options, self.name)
 
     @property
     def name(self):
