@@ -18,6 +18,7 @@ __all__ = [
 
 from collections import defaultdict
 from datetime import datetime
+from debian.deb822 import Packages, Sources
 import operator
 import os
 import re
@@ -35,9 +36,9 @@ from storm.expr import (
     Or,
     Sum,
     )
-from storm.zope.interfaces import ISQLObjectResultSet
 from storm.store import Store
 from storm.zope import IResultSet
+from storm.zope.interfaces import ISQLObjectResultSet
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
@@ -376,7 +377,8 @@ class ArchivePublisherBase:
 class IndexStanzaFields:
     """Store and format ordered Index Stanza fields."""
 
-    def __init__(self):
+    def __init__(self, klass):
+        self.klass = klass
         self.fields = []
 
     def append(self, name, value):
@@ -397,36 +399,33 @@ class IndexStanzaFields:
         Empty fields values will cause the exclusion of the field.
         The output order will preserve the insertion order, FIFO.
         """
-        output_lines = []
+        stanza = self.klass()
         for name, value in self.fields:
             if not value:
                 continue
 
-            # do not add separation space for the special field 'Files'
-            if name != 'Files':
-                value = ' %s' % value
+            if isinstance(value, basestring):
+                # XXX Michael Nelson 20090930 bug=436182. We have an issue
+                # in the upload parser that has
+                #   1. introduced '\n' at the end of multiple-line-spanning
+                #      fields, such as dsc_binaries, but potentially others,
+                #   2. stripped the leading space from each subsequent line
+                #      of dsc_binaries values that span multiple lines.
+                # This is causing *incorrect* Source indexes to be created.
+                # This work-around can be removed once the fix for bug 436182
+                # is in place and the tainted data has been cleaned.
+                # First, remove any trailing \n or spaces.
+                value = value.rstrip()
 
-            # XXX Michael Nelson 20090930 bug=436182. We have an issue
-            # in the upload parser that has
-            #   1. introduced '\n' at the end of multiple-line-spanning
-            #      fields, such as dsc_binaries, but potentially others,
-            #   2. stripped the leading space from each subsequent line
-            #      of dsc_binaries values that span multiple lines.
-            # This is causing *incorrect* Source indexes to be created.
-            # This work-around can be removed once the fix for bug 436182
-            # is in place and the tainted data has been cleaned.
-            # First, remove any trailing \n or spaces.
-            value = value.rstrip()
+                # Second, as we have corrupt data where subsequent lines
+                # of values spanning multiple lines are not preceded by a
+                # space, we ensure that any \n in the value that is *not*
+                # followed by a white-space character has a space inserted.
+                value = re.sub(r"\n(\S)", r"\n \1", value)
 
-            # Second, as we have corrupt data where subsequent lines
-            # of values spanning multiple lines are not preceded by a
-            # space, we ensure that any \n in the value that is *not*
-            # followed by a white-space character has a space inserted.
-            value = re.sub(r"\n(\S)", r"\n \1", value)
+            stanza[name] = value
 
-            output_lines.append('%s:%s' % (name, value))
-
-        return '\n'.join(output_lines)
+        return stanza.dump()
 
 
 class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
@@ -718,13 +717,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # Special fields preparation.
         spr = self.sourcepackagerelease
         pool_path = makePoolPath(spr.name, self.component.name)
-        files_subsection = ''.join(
-            ['\n %s %s %s' % (spf.libraryfile.content.md5,
-                              spf.libraryfile.content.filesize,
-                              spf.libraryfile.filename)
-             for spf in spr.files])
+        files_subsection = [{
+            'md5sum': spf.libraryfile.content.md5,
+            'size': spf.libraryfile.content.filesize,
+            'name': spf.libraryfile.filename} for spf in spr.files]
+
         # Filling stanza options.
-        fields = IndexStanzaFields()
+        fields = IndexStanzaFields(Sources)
         fields.append('Package', spr.name)
         fields.append('Binary', spr.dsc_binaries)
         fields.append('Version', spr.version)
@@ -1010,7 +1009,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         #  <DESCRIPTION LN>
         descr_lines = [line.lstrip() for line in bpr.description.splitlines()]
         bin_description = (
-            '%s\n %s'% (bpr.summary, '\n '.join(descr_lines)))
+            '%s\n %s' % (bpr.summary, '\n '.join(descr_lines)))
 
         # Dealing with architecturespecific field.
         # Present 'all' in every archive index for architecture
@@ -1030,7 +1029,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         elif bpr.name != spr.name:
             source = spr.name
 
-        fields = IndexStanzaFields()
+        fields = IndexStanzaFields(Packages)
         fields.append('Package', bpr.name)
         fields.append('Source', source)
         fields.append('Priority', self.priority.title.lower())
@@ -1364,6 +1363,8 @@ class PublishingSet:
             overrides = policy.calculateBinaryOverrides(
                 archive, distroseries, pocket, bpn_archtag.keys())
             for override in overrides:
+                if override.distro_arch_series is None:
+                    continue
                 bpph = bpn_archtag[
                     (override.binary_package_name,
                      override.distro_arch_series.architecturetag)]
@@ -1376,6 +1377,8 @@ class PublishingSet:
             with_overrides = dict(
                 (bpph.binarypackagerelease, (bpph.component, bpph.section,
                  bpph.priority)) for bpph in binaries)
+        if not with_overrides:
+            return list()
         return self.publishBinaries(
             archive, distroseries, pocket, with_overrides)
 

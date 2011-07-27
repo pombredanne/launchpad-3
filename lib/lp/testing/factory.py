@@ -894,6 +894,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                             restricted=False):
         """Create a new processor family.
 
+        A default processor for the family will be created with the
+        same name as the family.
+
         :param name: Name of the family (e.g. x86)
         :param title: Optional title of the family
         :param description: Optional extended description
@@ -906,11 +909,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             description = "Description of the %s processor family" % name
         if title is None:
             title = "%s and compatible processors." % name
-        family = getUtility(IProcessorFamilySet).new(name, title, description,
-            restricted=restricted)
+        family = getUtility(IProcessorFamilySet).new(
+            name, title, description, restricted=restricted)
         # Make sure there's at least one processor in the family, so that
         # other things can have a default processor.
-        self.makeProcessor(family=family)
+        self.makeProcessor(name=name, family=family)
         return family
 
     def makeProductRelease(self, milestone=None, product=None,
@@ -2069,6 +2072,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             question = target.newQuestion(
                 owner=owner, title=title, description=description)
         return question
+
+    def makeQuestionSubscription(self, question=None, person=None):
+        """Create a QuestionSubscription."""
+        if question is None:
+            question = self.makeQuestion()
+        if person is None:
+            person = self.makePerson()
+        with person_logged_in(person):
+            return question.subscribe(person)
 
     def makeFAQ(self, target=None, title=None):
         """Create and return a new, arbitrary FAQ.
