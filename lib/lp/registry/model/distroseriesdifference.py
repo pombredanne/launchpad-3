@@ -90,13 +90,13 @@ from lp.services.propertycache import (
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageDiffStatus,
-    PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.soyuz.interfaces.packageset import (
     IPackagesetSet,
     NoSuchPackageSet,
     )
+from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
@@ -108,12 +108,6 @@ from lp.soyuz.model.packageset import Packageset
 from lp.soyuz.model.packagesetsources import PackagesetSources
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-
-
-ACTIVE_STATUSES = (
-    PackagePublishingStatus.PUBLISHED,
-    PackagePublishingStatus.PENDING,
-    )
 
 
 def most_recent_publications(dsds, in_parent, statuses, match_version=False):
@@ -280,19 +274,19 @@ def eager_load_dsds(dsds):
     """
     source_pubs = dict(
         most_recent_publications(
-            dsds, statuses=ACTIVE_STATUSES,
+            dsds, statuses=active_publishing_status,
             in_parent=False, match_version=False))
     parent_source_pubs = dict(
         most_recent_publications(
-            dsds, statuses=ACTIVE_STATUSES,
+            dsds, statuses=active_publishing_status,
             in_parent=True, match_version=False))
     source_pubs_for_release = dict(
         most_recent_publications(
-            dsds, statuses=ACTIVE_STATUSES,
+            dsds, statuses=active_publishing_status,
             in_parent=False, match_version=True))
     parent_source_pubs_for_release = dict(
         most_recent_publications(
-            dsds, statuses=ACTIVE_STATUSES,
+            dsds, statuses=active_publishing_status,
             in_parent=True, match_version=True))
 
     latest_comment_by_dsd_id = dict(
@@ -524,7 +518,7 @@ class DistroSeriesDifference(StormBase):
                 SPPH.archiveID == distro_series.main_archive.id,
                 SPPH.distroseriesID == distro_series.id,
                 SPPH.sourcepackagereleaseID == SPR.id,
-                SPPH.status.is_in(ACTIVE_STATUSES),
+                SPPH.status.is_in(active_publishing_status),
                 SPR.creatorID == TP.personID,
                 SPR.sourcepackagenameID == DSD.source_package_name_id,
                 TP.teamID.is_in(person.id for person in changed_by))
@@ -717,7 +711,7 @@ class DistroSeriesDifference(StormBase):
     def _package_release(self, distro_series, version):
         pubs = distro_series.main_archive.getPublishedSources(
             name=self.source_package_name.name, version=version,
-            status=ACTIVE_STATUSES, distroseries=distro_series,
+            status=active_publishing_status, distroseries=distro_series,
             exact_match=True)
 
         # Get the most recent publication (pubs are ordered by
