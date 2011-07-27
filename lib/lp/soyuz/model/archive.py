@@ -1951,7 +1951,8 @@ class Archive(SQLBase):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         if private:
             commercial = getUtility(ILaunchpadCelebrities).commercial_admin
-            if not person.inTeam(commercial):
+            admin = getUtility(ILaunchpadCelebrities).admin
+            if not person.inTeam(commercial) and not person.inTeam(admin):
                 return '%s is not allowed to make private PPAs' % (person.name,)
         if person.isTeam() and (
             person.subscriptionpolicy in OPEN_TEAM_POLICY):

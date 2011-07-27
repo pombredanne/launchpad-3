@@ -1656,6 +1656,13 @@ class TestValidatePPA(TestCaseWithFactory):
             Archive.validatePPA(ppa_owner, self.factory.getUniqueString(),
                                 private=True))
 
+    def test_private_ppa_admin(self):
+        ppa_owner = self.factory.makeAdministrator()
+        self.assertIs(
+            None,
+            Archive.validatePPA(ppa_owner, self.factory.getUniqueString(),
+                                private=True))
+
     def test_two_ppas(self):
         ppa = self.factory.makeArchive(name='ppa')
         self.assertEqual("You already have a PPA named 'ppa'.",
