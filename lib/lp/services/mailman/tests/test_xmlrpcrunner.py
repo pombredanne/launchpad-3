@@ -11,11 +11,13 @@ import socket
 
 from Mailman import Errors
 from Mailman.Logging.Syslog import syslog
+from Mailman import mm_cfg
 from Mailman.Queue.XMLRPCRunner import (
     handle_proxy_error,
     XMLRPCRunner,
     )
 
+from canonical.config import config
 from canonical.testing.layers import (
     BaseLayer,
     DatabaseFunctionalLayer,
@@ -61,7 +63,12 @@ class TestXMLRPCRunnerTimeout(TestCase):
         # look in the dict.
         transport = proxy.__dict__['_ServerProxy__transport']
         self.assertTrue(isinstance(transport, Transport))
-        self.assertEqual(5, transport.timeout)
+        self.assertEqual(mm_cfg.XMLRPC_TIMEOUT, transport.timeout)
+        # This is a bit rickety--if the mailman config was built under a
+        # different instance that has a different timeout value, this will
+        # fail.  Removing this next assertion would probably be OK then, but
+        # I think it is nice to have.
+        self.assertEqual(config.mailman.xmlrpc_timeout, mm_cfg.XMLRPC_TIMEOUT)
 
 
 class TestXMLRPCRunnerHeatBeat(MailmanTestCase):

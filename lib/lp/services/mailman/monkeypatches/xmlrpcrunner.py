@@ -54,7 +54,7 @@ attrmap = {
 
 def get_mailing_list_api_proxy():
     return xmlrpclib.ServerProxy(
-        mm_cfg.XMLRPC_URL, transport=Transport(timeout=5))
+        mm_cfg.XMLRPC_URL, transport=Transport(timeout=mm_cfg.XMLRPC_TIMEOUT))
 
 
 class MailmanErrorUtility(ErrorReportingUtility):
