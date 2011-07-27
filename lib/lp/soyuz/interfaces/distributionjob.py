@@ -121,8 +121,7 @@ class IInitializeDistroSeriesJob(IRunnableJob):
 class IDistroSeriesDifferenceJobSource(IJobSource):
     """An `IJob` for creating `DistroSeriesDifference`s."""
 
-    def createForPackagePublication(derivedseries, sourcepackagename, pocket,
-                                    parent_series=None):
+    def createForPackagePublication(derivedseries, sourcepackagename, pocket):
         """Create jobs as appropriate for a given status publication.
 
         :param derived_series: A `DistroSeries` that is assumed to be
@@ -130,22 +129,15 @@ class IDistroSeriesDifferenceJobSource(IJobSource):
         :param sourcepackagename: A `SourcePackageName` that is being
             published in `derived_series` or `parent_series`.
         :param pocket: The `PackagePublishingPocket` for the publication.
-        :param parent_series: The parent `DistroSeries` whose version of
-            `sourcepackagename` is to be compared with that in
-            `derived_series` or all the parent series if None.
         :return: An iterable of `DistroSeriesDifferenceJob`.
         """
 
-    def massCreateForSeries(derived_series, parent_series=None):
+    def massCreateForSeries(derived_series):
         """Create jobs for all the publications inside the given distroseries
             with reference to the given parent series.
 
         :param derived_series: A `DistroSeries` that is assumed to be
             derived from `parent_series`.
-        :param parent_series: The parent `DistroSeries` whose version of
-            `sourcepackagename` is to be compared with that in
-            `derived_series` or all the parent series if None.
-
         :return: An iterable of `DistroSeriesDifferenceJob` ids. We don't
             return the Job themselves for performance reason.
         """

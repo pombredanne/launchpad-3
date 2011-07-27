@@ -192,7 +192,7 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
 
     @classmethod
     def createForPackagePublication(cls, derived_series, sourcepackagename,
-                                    pocket, parent_series=None):
+                                    pocket):
         """See `IDistroSeriesDifferenceJobSource`."""
         if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
             return
@@ -205,10 +205,7 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
             PackagePublishingPocket.PROPOSED):
             return
         jobs = []
-        if parent_series is None:
-            parent_series = derived_series.getParentSeries()
-        else:
-            parent_series = [parent_series]
+        parent_series = derived_series.getParentSeries()
         # Create jobs for DSDs between the derived_series and its
         # parents.
         for parent in parent_series:
@@ -226,16 +223,12 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
         return jobs
 
     @classmethod
-    def massCreateForSeries(cls, derived_series, parent_series=None):
+    def massCreateForSeries(cls, derived_series):
         """See `IDistroSeriesDifferenceJobSource`."""
         if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
             return
-        if parent_series is None:
-            parent_series = derived_series.getParentSeries()
-        else:
-            parent_series = [parent_series]
-        for parent in parent_series:
-            create_multiple_jobs(derived_series, parent)
+        for parent_series in derived_series.getParentSeries():
+            create_multiple_jobs(derived_series, parent_series)
 
     @classmethod
     def getPendingJobsForDifferences(cls, derived_series,

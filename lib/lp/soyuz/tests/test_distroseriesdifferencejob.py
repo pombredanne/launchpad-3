@@ -266,7 +266,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         # two jobs. One for derived_series, and the other for its child.
         self.getJobSource().createForPackagePublication(
             parent_dsp.derived_series, package,
-            PackagePublishingPocket.RELEASE, parent_dsp.parent_series)
+            PackagePublishingPocket.RELEASE)
         jobs = sum([
             find_waiting_jobs(dsp.derived_series, package, dsp.parent_series)
             for dsp in [parent_dsp, parent_dsp]],
@@ -279,8 +279,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         dsp = self.factory.makeDistroSeriesParent()
         package = self.factory.makeSourcePackageName()
         self.getJobSource().createForPackagePublication(
-            dsp.derived_series, package, PackagePublishingPocket.RELEASE,
-            dsp.parent_series)
+            dsp.derived_series, package, PackagePublishingPocket.RELEASE)
         jobs = find_waiting_jobs(
             dsp.derived_series, package, dsp.parent_series)
         self.assertEqual(
@@ -291,8 +290,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         package = self.factory.makeSourcePackageName()
         self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: ''}))
         self.getJobSource().createForPackagePublication(
-            dsp.derived_series, package, PackagePublishingPocket.RELEASE,
-            dsp.parent_series)
+            dsp.derived_series, package, PackagePublishingPocket.RELEASE)
         self.assertContentEqual(
             [],
             find_waiting_jobs(dsp.derived_series, package, dsp.parent_series))
@@ -301,11 +299,9 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         dsp = self.factory.makeDistroSeriesParent()
         package = self.factory.makeSourcePackageName()
         self.getJobSource().createForPackagePublication(
-            dsp.derived_series, package, PackagePublishingPocket.BACKPORTS,
-            dsp.parent_series)
+            dsp.derived_series, package, PackagePublishingPocket.BACKPORTS)
         self.getJobSource().createForPackagePublication(
-            dsp.derived_series, package, PackagePublishingPocket.PROPOSED,
-            dsp.parent_series)
+            dsp.derived_series, package, PackagePublishingPocket.PROPOSED)
         self.assertContentEqual(
             [],
             find_waiting_jobs(dsp.derived_series, package, dsp.parent_series))
@@ -314,8 +310,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: ''}))
         dsp = self.factory.makeDistroSeriesParent()
         spph = self.createSPPHs(dsp.derived_series, 1)[0]
-        self.getJobSource().massCreateForSeries(
-            dsp.derived_series, dsp.parent_series)
+        self.getJobSource().massCreateForSeries(dsp.derived_series)
 
         self.assertContentEqual(
             [],
@@ -392,8 +387,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         dsp = self.factory.makeDistroSeriesParent()
         package = self.factory.makeSourcePackageName()
         self.getJobSource().createForPackagePublication(
-            dsp.derived_series, package, PackagePublishingPocket.RELEASE,
-            dsp.parent_series)
+            dsp.derived_series, package, PackagePublishingPocket.RELEASE)
         # Make changes visible to the process we'll be spawning.
         transaction.commit()
         return_code, stdout, stderr = run_script(
@@ -412,8 +406,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         dsp = self.factory.makeDistroSeriesParent()
         package = self.factory.makeSourcePackageName()
         job = self.getJobSource().createForPackagePublication(
-            dsp.derived_series, package, PackagePublishingPocket.RELEASE,
-            dsp.parent_series)
+            dsp.derived_series, package, PackagePublishingPocket.RELEASE)
         job[0].start()
         job[0].run()
         # Complete the job so we can create another.
@@ -422,8 +415,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         self.assertEqual(1, find_dsd_for(dsp, package).count())
         # If we run the job again, it will not create another DSD.
         job = self.getJobSource().createForPackagePublication(
-            dsp.derived_series, package, PackagePublishingPocket.RELEASE,
-            dsp.parent_series)
+            dsp.derived_series, package, PackagePublishingPocket.RELEASE)
         job[0].start()
         job[0].run()
         self.assertEqual(1, find_dsd_for(dsp, package).count())
