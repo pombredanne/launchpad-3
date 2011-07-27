@@ -1284,7 +1284,8 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
             spph.source_package_name, spph.archive, dest_archive, dest_series,
             dest_pocket, include_binaries=include_binaries,
             package_version=spph.sourcepackagerelease.version,
-            copy_policy=PackageCopyPolicy.INSECURE)
+            copy_policy=PackageCopyPolicy.INSECURE,
+            requester=person)
 
     return structured("""
         <p>Requested sync of %s packages.</p>

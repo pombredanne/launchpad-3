@@ -25,11 +25,15 @@ else
 JS_BUILD := min
 endif
 
-JS_SOURCE_PATHS = -path './lib/lp/*/javascript/*' ! -path '*/tests/*' \
-    ! -path '*/testing/*' ! -path './lib/lp/services/*'
+define JS_LP_PATHS
+lib -path 'lib/lp/*/javascript/*' \
+! -path '*/tests/*' ! -path '*/testing/*' \
+! -path 'lib/lp/services/*'
+endef
+
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
 JS_OTHER := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
-JS_LP := $(shell find $(JS_SOURCE_PATHS) -name '*.js' ! -name '.*.js' )
+JS_LP := $(shell find $(JS_LP_PATHS) -name '*.js' ! -name '.*.js')
 JS_ALL := $(JS_YUI) $(JS_OTHER) $(JS_LP)
 JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 
@@ -164,7 +168,7 @@ ${ICING}/icon-sprites.positioning ${ICING}/icon-sprites: bin/sprite-util \
 
 jsbuild_widget_css: bin/jsbuild
 	${SHHH} bin/jsbuild \
- 	    --srcdir lib/lp/app/javascript \
+	    --srcdir lib/lp/app/javascript \
 	    --builddir $(LP_BUILT_JS_ROOT)
 
 $(JS_LP): jsbuild_widget_css
@@ -173,7 +177,7 @@ $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
 	cat $^ | $(PY) -m lp.scripts.utilities.js.jsmin > $@
 else
-	cat $^ > $@
+	awk 'FNR == 1 {print "/* " FILENAME " */"} {print}' $^ > $@
 endif
 
 jsbuild: $(PY) $(JS_OUT)
@@ -425,7 +429,9 @@ copy-certificates:
 copy-apache-config:
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
-	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' configs/development/local-launchpad-apache > /etc/apache2/sites-available/local-launchpad
+	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' \
+		configs/development/local-launchpad-apache > \
+		/etc/apache2/sites-available/local-launchpad
 	cp configs/development/local-vostok-apache \
 		/etc/apache2/sites-available/local-vostok
 	touch /var/tmp/bazaar.launchpad.dev/rewrite.log

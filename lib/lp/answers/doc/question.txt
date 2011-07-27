@@ -203,7 +203,7 @@ direct_recipients method.
 To remove a person from the subscriptions list, we use the unsubscribe()
 method.
 
-    >>> firefox_question.unsubscribe(no_priv)
+    >>> firefox_question.unsubscribe(no_priv, no_priv)
     >>> print_subscribers(firefox_question)
     Sample Person
 
