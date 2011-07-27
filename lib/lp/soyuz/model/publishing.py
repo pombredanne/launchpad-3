@@ -1496,9 +1496,8 @@ class PublishingSet:
                     pocket)
         return pub
 
-    def getBuildsForSourceIds(
-        self, source_publication_ids, archive=None, build_states=None,
-        need_build_farm_job=False):
+    def getBuildsForSourceIds(self, source_publication_ids, archive=None,
+                              build_states=None, need_build_farm_job=False):
         """See `IPublishingSet`."""
         # Import Build and DistroArchSeries locally to avoid circular
         # imports, since that Build uses SourcePackagePublishingHistory

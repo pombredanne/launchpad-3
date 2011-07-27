@@ -20,7 +20,6 @@ from debian.changelog import (
     )
 from lazr.enum import DBItem
 from sqlobject import StringCol
-from storm.exceptions import NotOneError
 from storm.expr import (
     And,
     Column,
@@ -55,7 +54,6 @@ from lp.registry.enum import (
     )
 from lp.registry.errors import (
     DistroSeriesDifferenceError,
-    MultipleParentsForDerivedSeriesError,
     NotADerivedSeriesError,
     )
 from lp.registry.interfaces.distroseriesdifference import (
@@ -302,22 +300,13 @@ class DistroSeriesDifference(StormBase):
     base_version = StringCol(dbName='base_version', notNull=False)
 
     @staticmethod
-    def new(derived_series, source_package_name, parent_series=None):
+    def new(derived_series, source_package_name, parent_series):
         """See `IDistroSeriesDifferenceSource`."""
-        # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
-        # mandatory as part of multi-parent support.
-        if parent_series is None:
-            try:
-                dsps = getUtility(IDistroSeriesParentSet)
-                dsp = dsps.getByDerivedSeries(
-                    derived_series).one()
-            except NotOneError:
-                raise MultipleParentsForDerivedSeriesError()
-            else:
-                if dsp is None:
-                    raise NotADerivedSeriesError()
-                else:
-                    parent_series = dsp.parent_series
+        dsps = getUtility(IDistroSeriesParentSet)
+        dsp = dsps.getByDerivedAndParentSeries(
+            derived_series, parent_series)
+        if dsp is None:
+            raise NotADerivedSeriesError()
 
         store = IMasterStore(DistroSeriesDifference)
         diff = DistroSeriesDifference()

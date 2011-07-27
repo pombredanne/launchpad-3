@@ -48,21 +48,15 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 FEATURE_FLAG_ENABLE_MODULE = u"soyuz.derived_series_jobs.enabled"
 
 
-def make_metadata(sourcepackagename, parent_series=None):
+def make_metadata(sourcepackagename, parent_series):
     """Return JSON metadata for a job on `sourcepackagename`."""
-    # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
-    # mandatory as part of multi-parent support.
-    if parent_series is None:
-        parent_id = None
-    else:
-        parent_id = parent_series.id
     return {
         'sourcepackagename': sourcepackagename.id,
-        'parent_series': parent_id,
+        'parent_series': parent_series.id,
     }
 
 
-def create_job(derived_series, sourcepackagename, parent_series=None):
+def create_job(derived_series, sourcepackagename, parent_series):
     """Create a `DistroSeriesDifferenceJob` for a given source package.
 
     :param derived_series: A `DistroSeries` that is assumed to be derived
@@ -73,8 +67,6 @@ def create_job(derived_series, sourcepackagename, parent_series=None):
         `derived_series`.  The difference is between the versions of
         `sourcepackagename` in `parent_series` and `derived_series`.
     """
-    # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
-    # mandatory as part of multi-parent support.
     job = DistributionJob(
         distribution=derived_series.distribution, distroseries=derived_series,
         job_type=DistributionJobType.DISTROSERIESDIFFERENCE,
@@ -85,13 +77,12 @@ def create_job(derived_series, sourcepackagename, parent_series=None):
 
 def create_multiple_jobs(derived_series, parent_series):
     """Create a `DistroSeriesDifferenceJob` for all the source packages in
-    archive (optionally limited to the sourcepackagenames passed).
+    archive.
 
     :param derived_series: A `DistroSeries` that is assumed to be derived
         from another one.
     :param parent_series: A `DistroSeries` that is a parent of
         `derived_series`.
-    :param archive: A `IArchive` where to find the source packages.
     """
     store = IStore(SourcePackageRelease)
     source_package_releases = store.find(
@@ -134,7 +125,7 @@ def create_multiple_jobs(derived_series, parent_series):
     return [job_id for job_id, in result]
 
 
-def find_waiting_jobs(derived_series, sourcepackagename, parent_series=None):
+def find_waiting_jobs(derived_series, sourcepackagename, parent_series):
     """Look for pending `DistroSeriesDifference` jobs on a package."""
     # Look for identical pending jobs.  This compares directly on
     # the metadata string.  It's fragile, but this is only an
@@ -155,18 +146,13 @@ def find_waiting_jobs(derived_series, sourcepackagename, parent_series=None):
         DistributionJob._json_data == json_metadata,
         DistributionJob.job_id.is_in(Job.ready_jobs))
 
-    # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
-    # mandatory as part of multi-parent support.
-    if parent_series is None:
-        return list(candidates)
-
     return [
         job
         for job in candidates
             if job.metadata["parent_series"] == parent_series.id]
 
 
-def may_require_job(derived_series, sourcepackagename, parent_series=None):
+def may_require_job(derived_series, sourcepackagename, parent_series):
     """Might publishing this package require a new job?
 
     Use this to determine whether to create a new
@@ -175,8 +161,6 @@ def may_require_job(derived_series, sourcepackagename, parent_series=None):
     runner some unnecessary work, but we don't expect a bit of
     unnecessary work to be a big problem.
     """
-    # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
-    # mandatory as part of multi-parent support.
     if derived_series is None:
         return False
     dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
@@ -210,8 +194,6 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
     def createForPackagePublication(cls, derived_series, sourcepackagename,
                                     pocket, parent_series=None):
         """See `IDistroSeriesDifferenceJobSource`."""
-        # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
-        # mandatory as part of multi-parent support.
         if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
             return
         # -backports and -proposed are not really part of a standard
@@ -223,19 +205,37 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
             PackagePublishingPocket.PROPOSED):
             return
         jobs = []
-        children = list(derived_series.getDerivedSeries())
-        for relative in children + [derived_series]:
-            if may_require_job(relative, sourcepackagename, parent_series):
+        if parent_series is None:
+            parent_series = derived_series.getParentSeries()
+        else:
+            parent_series = [parent_series]
+        # Create jobs for DSDs between the derived_series and its
+        # parents.
+        for parent in parent_series:
+            if may_require_job(
+                derived_series, sourcepackagename, parent):
                 jobs.append(create_job(
-                    relative, sourcepackagename, parent_series))
+                    derived_series, sourcepackagename, parent))
+        # Create jobs for DSDs between the derived_series and its
+        # children.
+        for child in derived_series.getDerivedSeries():
+            if may_require_job(
+                child, sourcepackagename, derived_series):
+                jobs.append(create_job(
+                    child, sourcepackagename, derived_series))
         return jobs
 
     @classmethod
-    def massCreateForSeries(cls, derived_series, parent_series):
+    def massCreateForSeries(cls, derived_series, parent_series=None):
         """See `IDistroSeriesDifferenceJobSource`."""
         if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
             return
-        create_multiple_jobs(derived_series, parent_series)
+        if parent_series is None:
+            parent_series = derived_series.getParentSeries()
+        else:
+            parent_series = [parent_series]
+        for parent in parent_series:
+            create_multiple_jobs(derived_series, parent)
 
     @classmethod
     def getPendingJobsForDifferences(cls, derived_series,
@@ -248,13 +248,15 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
             Job._status.is_in(Job.PENDING_STATUSES),
             DistributionJob.distroseries == derived_series)
 
-        # XXX JeroenVermeulen 2011-05-26 bug=758906: Check for parent
-        # series once it becomes available.
+        parent_series_ids = set(
+            dsd.parent_series.id for dsd in distroseriesdifferences)
         keyed_dsds = dict(
             (dsd.source_package_name.id, dsd)
             for dsd in distroseriesdifferences)
         jobs_by_dsd = {}
         for job in jobs:
+            if job.metadata["parent_series"] not in parent_series_ids:
+                continue
             dsd = keyed_dsds.get(job.metadata["sourcepackagename"])
             if dsd is not None:
                 jobs_by_dsd.setdefault(dsd, []).append(cls(job))
@@ -271,10 +273,6 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
     @property
     def parent_series(self):
         parent_id = self.metadata['parent_series']
-        if not parent_id:
-            # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
-            # mandatory as part of multi-parent support.
-            return None
         return IStore(DistroSeries).get(DistroSeries, parent_id)
 
     def passesPackagesetFilter(self):
@@ -286,12 +284,6 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
         """
         derived_series = self.derived_series
         parent_series = self.parent_series
-        # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
-        # mandatory as part of multi-parent support.
-        if parent_series is None:
-            dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
-                derived_series)
-            parent_series = dsp[0].parent_series
 
         sourcepackagename = self.sourcepackagename
         if has_package(derived_series, sourcepackagename):
@@ -316,18 +308,11 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
         spn_id = self.metadata["sourcepackagename"]
         parent_id = self.metadata["parent_series"]
         store = IMasterStore(DistroSeriesDifference)
-        # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
-        # mandatory as part of multi-parent support.
-        if parent_id is None:
-            match_parent = True
-        else:
-            match_parent = (
-                DistroSeriesDifference.parent_series_id == parent_id)
         search = store.find(
             DistroSeriesDifference,
             DistroSeriesDifference.derived_series == self.derived_series,
-            DistroSeriesDifference.source_package_name_id == spn_id,
-            match_parent)
+            DistroSeriesDifference.parent_series_id == parent_id,
+            DistroSeriesDifference.source_package_name_id == spn_id)
         return search.one()
 
     def run(self):
