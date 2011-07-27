@@ -351,9 +351,8 @@ def eager_load_dsds(dsds):
     # the DSC signing key.
     gpgkeys = bulk.load_related(GPGKey, sprs, ("dscsigningkeyID",))
 
-    # Load DistroSeriesDifferenceComment owners,
-    # SourcePackageRecipeBuild requesters and GPGKey owners, and
-    # SourcePackageRelease creators.
+    # Load DistroSeriesDifferenceComment owners, SourcePackageRecipeBuild
+    # requesters, GPGKey owners, and SourcePackageRelease creators.
     person_ids = set().union(
         (dsdc.message.ownerID for dsdc in latest_comments),
         (sprb.requester_id for sprb in sprbs),
