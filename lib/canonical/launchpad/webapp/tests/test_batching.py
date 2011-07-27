@@ -338,55 +338,27 @@ class TestStormRangeFactory(TestCaseWithFactory):
         self.assertIs(Person.id, reverse_person_id.expr)
         self.assertIs(Person.name, person_name)
 
-    def test_whereExpressionFromSortExpression__forwards_asc(self):
-        """For ascending sort order and forward slicing,
-        whereExpressionFromSortExpression() returns the WHERE clause
-        expression > memo.
+    def test_whereExpressionFromSortExpression__asc(self):
+        """For ascending sort order, whereExpressionFromSortExpression()
+        returns the WHERE clause expression > memo.
         """
         resultset = self.makeStormResultSet()
         range_factory = StormRangeFactory(resultset, self.logError)
         where_clause = range_factory.whereExpressionFromSortExpression(
-            expression=Person.id, forwards=True, memo=1)
+            expression=Person.id, memo=1)
         self.assertTrue(isinstance(where_clause, Gt))
         self.assertIs(where_clause.expr1, Person.id)
         self.assertTrue(where_clause.expr2, IntVariable)
 
-    def test_whereExpressionFromSortExpression__forwards_desc(self):
-        """For descending sort order and forward slicing,
-        whereExpressionFromSortExpression() returns the WHERE clause
-        expression < memo.
+    def test_whereExpressionFromSortExpression_desc(self):
+        """For descending sort order, whereExpressionFromSortExpression()
+        returns the WHERE clause expression < memo.
         """
         resultset = self.makeStormResultSet()
         range_factory = StormRangeFactory(resultset, self.logError)
         where_clause = range_factory.whereExpressionFromSortExpression(
-            expression=Desc(Person.id), forwards=True, memo=1)
+            expression=Desc(Person.id), memo=1)
         self.assertTrue(isinstance(where_clause, Lt))
-        self.assertIs(where_clause.expr1, Person.id)
-        self.assertTrue(where_clause.expr2, IntVariable)
-
-    def test_whereExpressionFromSortExpression__backwards_asc(self):
-        """For ascending sort order and forward slicing,
-        whereExpressionFromSortExpression() returns the WHERE clause
-        expression < memo.
-        """
-        resultset = self.makeStormResultSet()
-        range_factory = StormRangeFactory(resultset, self.logError)
-        where_clause = range_factory.whereExpressionFromSortExpression(
-            expression=Person.id, forwards=False, memo=1)
-        self.assertTrue(isinstance(where_clause, Lt))
-        self.assertIs(where_clause.expr1, Person.id)
-        self.assertTrue(where_clause.expr2, IntVariable)
-
-    def test_whereExpressionFromSortExpression__backwards_desc(self):
-        """For descending sort order and forward slicing,
-        whereExpressionFromSortExpression() returns the WHERE clause
-        expression > memo.
-        """
-        resultset = self.makeStormResultSet()
-        range_factory = StormRangeFactory(resultset, self.logError)
-        where_clause = range_factory.whereExpressionFromSortExpression(
-            expression=Desc(Person.id), forwards=False, memo=1)
-        self.assertTrue(isinstance(where_clause, Gt))
         self.assertIs(where_clause.expr1, Person.id)
         self.assertTrue(where_clause.expr2, IntVariable)
 

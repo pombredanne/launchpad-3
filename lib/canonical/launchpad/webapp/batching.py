@@ -324,30 +324,27 @@ class StormRangeFactory:
             invert_sort_expression(expression)
             for expression in self.getSortExpressions()]
 
-    def whereExpressionFromSortExpression(self, expression, forwards, memo):
+    def whereExpressionFromSortExpression(self, expression, memo):
         """Create a Storm expression to be used in the WHERE clause of the
         slice query.
         """
         if isinstance(expression, Desc):
-            forwards = not forwards
             expression = expression.expr
-        if forwards:
-            return expression > memo
-        else:
             return expression < memo
+        else:
+            return expression > memo
 
     def getSlice(self, size, endpoint_memo='', forwards=True):
         """See `IRangeFactory`."""
+        if not forwards:
+            self.resultset.order_by(*self.reverseSortOrder())
         parsed_memo = self.parseMemo(endpoint_memo)
         if parsed_memo is None:
-            if not forwards:
-                self.resultset.order_by(*self.reverseSortOrder())
             return self.resultset.config(limit=size)
         else:
             sort_expressions = self.getSortExpressions()
             where = [
-                self.whereExpressionFromSortExpression(
-                    expression, forwards, memo)
+                self.whereExpressionFromSortExpression(expression, memo)
                 for expression, memo in zip(sort_expressions, parsed_memo)]
             # From storm.zope.interfaces.IResultSet.__doc__:
             #     - C{find()}, C{group_by()} and C{having()} are really
@@ -355,6 +352,4 @@ class StormRangeFactory:
             #       for use on the model side.
             naked_result = removeSecurityProxy(self.resultset).find(*where)
             result = ProxyFactory(naked_result)
-            if not forwards:
-                result.order_by(*self.reverseSortOrder())
             return result.config(limit=size)
