@@ -1650,31 +1650,25 @@ class TestAutoConfirmBugTasks(TestCaseWithFactory):
                 self.assertEqual(0, len(recorder.events))
 
 
-class TestTransitionToTarget(TestCaseWithFactory):
-    """Tests for BugTask.transitionToTarget."""
+class TestValidateTransitionToTarget(TestCaseWithFactory):
+    """Tests for BugTask.validateTransitionToTarget."""
 
     layer = DatabaseFunctionalLayer
 
-    def makeAndTransition(self, old, new):
+    def makeAndCheckTransition(self, old, new):
         task = self.factory.makeBugTask(target=old)
-        p = self.factory.makePerson()
-        self.assertEqual(old, task.target)
-        old_state = Snapshot(task, providing=providedBy(task))
         with person_logged_in(task.owner):
-            task.bug.subscribe(p, p)
-            task.transitionToTarget(new)
-            notify(ObjectModifiedEvent(task, old_state, ["target"]))
-        return task
+            task.validateTransitionToTarget(new)
 
     def assertTransitionWorks(self, a, b):
         """Check that a transition between two targets works both ways."""
-        self.assertEqual(b, self.makeAndTransition(a, b).target)
-        self.assertEqual(a, self.makeAndTransition(b, a).target)
+        self.makeAndCheckTransition(a, b)
+        self.makeAndCheckTransition(b, a)
 
     def assertTransitionForbidden(self, a, b):
         """Check that a transition between two targets fails both ways."""
-        self.assertRaises(IllegalTarget, self.makeAndTransition, a, b)
-        self.assertRaises(IllegalTarget, self.makeAndTransition, b, a)
+        self.assertRaises(IllegalTarget, self.makeAndCheckTransition, a, b)
+        self.assertRaises(IllegalTarget, self.makeAndCheckTransition, b, a)
 
     def test_product_to_product_works(self):
         self.assertTransitionWorks(
@@ -1748,10 +1742,6 @@ class TestTransitionToTarget(TestCaseWithFactory):
         sp2 = self.factory.makeSourcePackage(distroseries=ds2)
         self.assertTransitionForbidden(sp1, sp2)
 
-    def test_transition_to_same_is_noop(self):
-        p = self.factory.makeProduct()
-        self.assertTransitionWorks(p, p)
-
     def test_validate_target_is_called(self):
         p = self.factory.makeProduct()
         task1 = self.factory.makeBugTask(target=p)
@@ -1763,7 +1753,53 @@ class TestTransitionToTarget(TestCaseWithFactory):
                 "A fix for this bug has already been requested for %s"
                 % p.displayname, task2.transitionToTarget, p)
 
+
+class TestTransitionToTarget(TestCaseWithFactory):
+    """Tests for BugTask.transitionToTarget."""
+
+    layer = DatabaseFunctionalLayer
+
+    def makeAndTransition(self, old, new):
+        task = self.factory.makeBugTask(target=old)
+        p = self.factory.makePerson()
+        self.assertEqual(old, task.target)
+        old_state = Snapshot(task, providing=providedBy(task))
+        with person_logged_in(task.owner):
+            task.bug.subscribe(p, p)
+            task.transitionToTarget(new)
+            notify(ObjectModifiedEvent(task, old_state, ["target"]))
+        return task
+
+    def assertTransitionWorks(self, a, b):
+        """Check that a transition between two targets works both ways."""
+        self.assertEqual(b, self.makeAndTransition(a, b).target)
+        self.assertEqual(a, self.makeAndTransition(b, a).target)
+
+    def assertTransitionForbidden(self, a, b):
+        """Check that a transition between two targets fails both ways."""
+        self.assertRaises(IllegalTarget, self.makeAndTransition, a, b)
+        self.assertRaises(IllegalTarget, self.makeAndTransition, b, a)
+
+    def test_transition_works(self):
+        self.assertTransitionWorks(
+            self.factory.makeProduct(),
+            self.factory.makeProduct())
+
+    def test_validation(self):
+        # validateTransitionToTarget is called before any transition.
+        product = self.factory.makeProduct()
+        self.assertTransitionForbidden(
+            product,
+            self.factory.makeProductSeries(product=product))
+
+    def test_transition_to_same_is_noop(self):
+        # While a no-op transition would normally be rejected due to
+        # task duplication, transitionToTarget short-circuits.
+        p = self.factory.makeProduct()
+        self.assertTransitionWorks(p, p)
+
     def test_milestone_preserved_if_transition_rejected(self):
+        # If validation rejects a transition, the milestone is not unset.
         series = self.factory.makeProductSeries()
         task = self.factory.makeBugTask(target=series.product)
         milestone = self.factory.makeMilestone(product=series.product)
