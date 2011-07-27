@@ -306,6 +306,9 @@ kbd {
     min-width: 1em;
     outline: 1px #666;
     }
+.nowrap {
+    white-space: nowrap;
+    }
 
 /* =========================
    Universal presentation
@@ -921,7 +924,7 @@ table.form td td {
 fieldset.collapsible {
     /* Collapsible sections
        Some page sections are hidden by default, expanded by clicking a link.
-       see launchpad.js:activateCollapsibles() */
+       see lp.js:activate_collapsibles() */
     border: none;
     margin: 0;
     padding: 16px 0 0; /* "Add a comment/attachment" form in bug reports */

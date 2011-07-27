@@ -44,7 +44,7 @@ class TestDistributionSourcePackageRelease(TestCaseWithFactory):
             build=bp_build, binarypackagename=name)
         sourcepackagename = self.sourcepackagerelease.sourcepackagename
         self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename,
+            sourcepackagename=sourcepackagename,
             sourcepackagerelease=self.sourcepackagerelease,
             distroseries=self.sourcepackagerelease.sourcepackage.distroseries,
             status=PackagePublishingStatus.PUBLISHED)
