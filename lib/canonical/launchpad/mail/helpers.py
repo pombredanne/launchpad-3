@@ -11,11 +11,6 @@ from uuid import uuid1
 
 from zope.component import getUtility
 
-from lp.bugs.interfaces.bugtask import (
-    IDistroBugTask,
-    IDistroSeriesBugTask,
-    IUpstreamBugTask,
-    )
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError,
     IWeaklyAuthenticatedPrincipal,
@@ -50,49 +45,6 @@ def get_main_body(signed_msg):
         return msg.get_payload(decode=True)
 
 
-def get_bugtask_type(bugtask):
-    """Returns the specific IBugTask interface the bugtask provides.
-
-        >>> from lp.bugs.interfaces.bugtask import (
-        ...     IUpstreamBugTask, IDistroBugTask, IDistroSeriesBugTask)
-        >>> from zope.interface import classImplementsOnly
-        >>> class BugTask:
-        ...     pass
-
-    :bugtask: has to provide a specific bugtask interface:
-
-        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
-        Traceback (most recent call last):
-        ...
-        AssertionError...
-
-    When it does, the specific interface is returned:
-
-        >>> classImplementsOnly(BugTask, IUpstreamBugTask)
-        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
-        <...IUpstreamBugTask>
-
-        >>> classImplementsOnly(BugTask, IDistroBugTask)
-        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
-        <...IDistroBugTask>
-
-        >>> classImplementsOnly(BugTask, IDistroSeriesBugTask)
-        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
-        <...IDistroSeriesBugTask>
-    """
-    bugtask_interfaces = [
-        IUpstreamBugTask,
-        IDistroBugTask,
-        IDistroSeriesBugTask,
-        ]
-    for interface in bugtask_interfaces:
-        if interface.providedBy(bugtask):
-            return interface
-    # The bugtask didn't provide any specific interface.
-    raise AssertionError(
-        'No specific bugtask interface was provided by %r' % bugtask)
-
-
 def guess_bugtask(bug, person):
     """Guess which bug task the person intended to edit.
 
@@ -102,11 +54,11 @@ def guess_bugtask(bug, person):
         return bug.bugtasks[0]
     else:
         for bugtask in bug.bugtasks:
-            if IUpstreamBugTask.providedBy(bugtask):
+            if bugtask.product:
                 # Is the person an upstream maintainer?
                 if person.inTeam(bugtask.product.owner):
                     return bugtask
-            elif IDistroBugTask.providedBy(bugtask):
+            elif bugtask.distribution:
                 # Is the person a member of the distribution?
                 if person.inTeam(bugtask.distribution.members):
                     return bugtask

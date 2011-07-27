@@ -306,6 +306,9 @@ kbd {
     min-width: 1em;
     outline: 1px #666;
     }
+.nowrap {
+    white-space: nowrap;
+    }
 
 /* =========================
    Universal presentation

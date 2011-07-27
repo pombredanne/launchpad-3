@@ -467,7 +467,11 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         except SuspendJobException:
             raise
         except:
+            # Abort work done so far, but make sure that we commit the
+            # rejection to the PackageUpload.
+            transaction.abort()
             self._rejectPackageUpload()
+            transaction.commit()
             raise
 
     def attemptCopy(self):
