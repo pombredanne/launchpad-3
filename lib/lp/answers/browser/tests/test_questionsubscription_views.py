@@ -12,7 +12,6 @@ from zope.component import getUtility
 from zope.traversing.browser import absoluteURL
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lazr.restful.interfaces import IWebServiceClientRequest
 from lp.registry.interfaces.person import IPersonSet
@@ -40,37 +39,6 @@ class QuestionPortletSubscribersWithDetailsTests(TestCaseWithFactory):
         self.assertEqual(
             view.request.response.getHeader('content-type'),
             'application/json')
-
-    def test_view_url(self):
-        # Test that IQuestion:+portlet-subscribers-details maps through to
-        # correct view via the zcml configuration.
-        question = self._makeQuestionWithNoSubscribers()
-        subscriber = self.factory.makePerson(
-            name='user', displayname='Subscriber Name')
-        subscriber_web_link = canonical_url(subscriber)
-        api_request = LaunchpadTestRequest(
-            SERVER_URL='http://answers.launchpad.dev/api/devel')
-        with person_logged_in(subscriber):
-            question.subscribe(subscriber, subscriber)
-            subscriber_self_link = absoluteURL(subscriber, api_request)
-
-        browser = self.getUserBrowser(
-            user=question.owner,
-            url=canonical_url(
-                question, view_name='+portlet-subscribers-details'))
-        expected_result = {
-            'subscriber': {
-                'name': 'user',
-                'display_name': 'Subscriber Name',
-                'is_team': False,
-                'can_edit': True,
-                'web_link': subscriber_web_link,
-                'self_link': subscriber_self_link
-                },
-            'subscription_level': "Direct",
-            }
-        self.assertEqual(
-            dumps([expected_result]), browser.contents)
 
     def _makeQuestionWithNoSubscribers(self):
         question = self.factory.makeQuestion()
