@@ -136,6 +136,13 @@
     rootsite="answers"
     />
 
+  <browser:url
+    for="lp.answers.interfaces.questionsubscription.IQuestionSubscription"
+    path_expression="string:subscriptions/${person}"
+    attribute_to_parent="question"
+    rootsite="answers"
+    />
+
   <adapter
     provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
     for="lp.answers.interfaces.question.IQuestion"
