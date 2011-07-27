@@ -888,24 +888,22 @@ class BaseSeriesTemplatesView(LaunchpadView):
         join = (removeSecurityProxy(self.context.getTemplatesCollection())
             .joinOuter(Packaging, And(
                 Packaging.distroseries == self.context.id,
-                Packaging.sourcepackagename == POTemplate.sourcepackagenameID)
-                )
+                Packaging.sourcepackagename == POTemplate.sourcepackagenameID))
             .joinOuter(ProductSeries,
-                ProductSeries.id == Packaging.productseriesID
-                )
+                ProductSeries.id == Packaging.productseriesID)
             .joinOuter(Product, And(
                 Product.id == ProductSeries.productID,
                 Or(
                     Product._translations_usage == ServiceUsage.LAUNCHPAD,
-                    Product._translations_usage == ServiceUsage.EXTERNAL)
-                ))
+                    Product._translations_usage == ServiceUsage.EXTERNAL)))
             .joinOuter(OtherTemplate, And(
                 OtherTemplate.productseriesID == ProductSeries.id,
-                OtherTemplate.name == POTemplate.name)
-                ))
+                OtherTemplate.name == POTemplate.name))
+            .joinInner(SourcePackageName,
+                SourcePackageName.id == POTemplate.sourcepackagenameID))
 
-        return join.select(
-            POTemplate, Packaging, ProductSeries, Product, OtherTemplate)
+        return join.select(POTemplate, Packaging, ProductSeries, Product,
+            OtherTemplate, SourcePackageName)
 
     def rowCSSClass(self, template):
         if template.iscurrent:
@@ -933,17 +931,14 @@ class BaseSeriesTemplatesView(LaunchpadView):
         return text
 
     def _renderSharing(self, template, packaging, productseries, upstream,
-            other_template):
+            other_template, sourcepackagename):
         """Render a link to `template`.
 
         :param template: The target `POTemplate`.
         :return: HTML for the "sharing" status of `template`.
         """
-#        from lp.testing import StormStatementRecorder
-#        recorder = StormStatementRecorder()
-#        recorder.__enter__()
         # Build the edit link.
-        escaped_source = cgi.escape(template.sourcepackagename.name)
+        escaped_source = cgi.escape(sourcepackagename.name)
         source_url = '+source/%s' % escaped_source
         details_url = source_url + '/+sharing-details'
         edit_link = '<a class="sprite edit" href="%s"></a>' % details_url
@@ -952,17 +947,15 @@ class BaseSeriesTemplatesView(LaunchpadView):
         # If all the conditions are met for sharing...
         if packaging and upstream and other_template is not None:
             # Are the conditions met for this template to be considered "shared"?
-            escaped_series = cgi.escape(packaging.productseries.name)
+            escaped_series = cgi.escape(productseries.name)
             escaped_template = cgi.escape(template.name)
             pot_url = ('/%s/%s/+pots/%s' %
                 (escaped_source, escaped_series, escaped_template))
-#            recorder.__exit__(None, None, None)
             return (edit_link + '<a href="%s">%s/%s</a>'
                 % (pot_url, escaped_source, escaped_series))
         else:
             # Otherwise just say that the template isn't shared and give them
             # a link to change the sharing.
-#            recorder.__exit__(None, None, None)
             return edit_link + 'not shared'
 
     def _renderLastUpdateDate(self, template):
@@ -1069,7 +1062,7 @@ class BaseSeriesTemplatesView(LaunchpadView):
             for (css, text) in columns])
 
     def renderTemplateRow(self, template, packaging=None, productseries=None,
-            upstream=None, other_template=None):
+            upstream=None, other_template=None, sourcepackagename=None):
         """Render HTML for an entire template row."""
         if not self.can_edit and not template.iscurrent:
             return ""
@@ -1087,9 +1080,11 @@ class BaseSeriesTemplatesView(LaunchpadView):
         ]
 
         if self.is_distroseries:
-            sharing = self._renderSharing(
-                template, packaging, productseries, upstream, other_template)
-            fields[3:3] = [('sharing', sharing)]
+            fields[3:3] = [(
+                'sharing', self._renderSharing(template, packaging,
+                    productseries, upstream, other_template,
+                    sourcepackagename)
+                )]
 
         tds = [self._renderField(*field) for field in fields]
 
