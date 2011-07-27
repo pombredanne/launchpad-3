@@ -16,7 +16,7 @@
         <a tal:condition="expandable"
            tal:attributes="href tasklink" class="bugtask-expander">
           <tal:link_text tal:replace="expander_link_text" />
-          &nbsp;
+          &#8203;
         </a>
         <tal:no_expander tal:condition="not: expandable"
                          tal:replace="expander_link_text" />
@@ -180,10 +180,15 @@
           // Set-up the expander on the bug task summary row.
           var icon_node = Y.one('tr#${row_id} a.bugtask-expander');
           var row_node = Y.one('tr#${form_row_id}');
-          var content_node = row_node.one('td form');
-          var expander = new Y.lp.app.widgets.expander.Expander(
-            icon_node, row_node, { animate_node: content_node });
-          expander.setUp();
+          if (Y.Lang.isValue(row_node)) {
+            // When no row is present, this is bug task on a project with
+            // multiple per-series tasks, so we do not need to set
+            // the expander for the descriptive parent project task.
+            var content_node = row_node.one('td form');
+            var expander = new Y.lp.app.widgets.expander.Expander(
+              icon_node, row_node, { animate_node: content_node });
+            expander.setUp();
+          }
         });
     });
   "/>

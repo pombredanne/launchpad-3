@@ -260,8 +260,8 @@ class ProcessAccepted(LaunchpadCronScript):
             help="Whether to treat this as a dry-run or not.")
 
         self.parser.add_option(
-            '--derived', action="store_true", dest="derived", default=False,
-            help="Process all Ubuntu-derived distributions.")
+            '-D', '--derived', action="store_true", dest="derived",
+            default=False, help="Process all Ubuntu-derived distributions.")
 
         self.parser.add_option(
             "--ppa", action="store_true",
@@ -285,24 +285,36 @@ class ProcessAccepted(LaunchpadCronScript):
         else:
             self.txn.commit()
 
-    def findTargetDistribution(self):
-        distro_name = self.args[0]
-        self.logger.debug("Finding distribution %s." % distro_name)
-        distribution = getUtility(IDistributionSet).getByName(distro_name)
-        if distribution is None:
+    def findNamedDistro(self, distro_name):
+        """Find the `Distribution` called `distro_name`."""
+        self.logger.debug("Finding distribution %s.", distro_name)
+        distro = getUtility(IDistributionSet).getByName(distro_name)
+        if distro is None:
             raise LaunchpadScriptFailure(
                 "Distribution '%s' not found." % distro_name)
-        return distribution
+        return distro
+
+    def findTargetDistros(self):
+        """Find the distribution(s) to process, based on arguments."""
+        if self.options.derived:
+            return getUtility(IDistributionSet).getDerivedDistributions()
+        else:
+            return [self.findNamedDistro(self.args[0])]
 
     def validateArguments(self):
-        if len(self.args) != 1:
-            raise OptionValueError(
-                "Need to be given exactly one non-option argument. "
-                "Namely the distribution to process.")
-
+        """Validate command-line arguments."""
         if self.options.ppa and self.options.copy_archives:
             raise OptionValueError(
                 "Specify only one of copy archives or ppa archives.")
+        if self.options.derived:
+            if len(self.args) != 0:
+                raise OptionValueError(
+                    "Can't combine --derived with a distribution name.")
+        else:
+            if len(self.args) != 1:
+                raise OptionValueError(
+                    "Need to be given exactly one non-option argument. "
+                    "Namely the distribution to process.")
 
     def makeTargetPolicy(self):
         """Pick and instantiate a `TargetPolicy` based on given options."""
@@ -338,36 +350,44 @@ class ProcessAccepted(LaunchpadCronScript):
                 "Successfully processed queue item %d", queue_item.id)
             return True
 
+    def processForDistro(self, distribution, target_policy):
+        """Process all queue items for a distribution.
+
+        Commits between items, except in dry-run mode.
+
+        :param distribution: The `Distribution` to process queue items for.
+        :param target_policy: The applicable `TargetPolicy`.
+        :return: A list of all successfully processed items' ids.
+        """
+        processed_queue_ids = []
+        for archive in target_policy.getTargetArchives(distribution):
+            description = target_policy.describeArchive(archive)
+            for distroseries in distribution.series:
+
+                self.logger.debug("Processing queue for %s %s" % (
+                    distroseries.name, description))
+
+                queue_items = distroseries.getPackageUploads(
+                    status=PackageUploadStatus.ACCEPTED, archive=archive)
+                for queue_item in queue_items:
+                    if self.processQueueItem(queue_item):
+                        processed_queue_ids.append(queue_item.id)
+                    # Commit even on error; we may have altered the
+                    # on-disk archive, so the partial state must
+                    # make it to the DB.
+                    self._commit()
+        return processed_queue_ids
+
     def main(self):
         """Entry point for a LaunchpadScript."""
         self.validateArguments()
         target_policy = self.makeTargetPolicy()
-        distribution = self.findTargetDistribution()
-
-        processed_queue_ids = []
         try:
-            for archive in target_policy.getTargetArchives(distribution):
-                description = target_policy.describeArchive(archive)
-                for distroseries in distribution.series:
-
-                    self.logger.debug("Processing queue for %s %s" % (
-                        distroseries.name, description))
-
-                    queue_items = distroseries.getPackageUploads(
-                        status=PackageUploadStatus.ACCEPTED, archive=archive)
-                    for queue_item in queue_items:
-                        if self.processQueueItem(queue_item):
-                            processed_queue_ids.append(queue_item.id)
-                        # Commit even on error; we may have altered the
-                        # on-disk archive, so the partial state must
-                        # make it to the DB.
-                        self._commit()
-
-            self._commit()
-
-            target_policy.postprocessSuccesses(processed_queue_ids)
-
-            self._commit()
+            for distro in self.findTargetDistros():
+                queue_ids = self.processForDistro(distro, target_policy)
+                self._commit()
+                target_policy.postprocessSuccesses(queue_ids)
+                self._commit()
 
         finally:
             self.logger.debug("Rolling back any remaining transactions.")

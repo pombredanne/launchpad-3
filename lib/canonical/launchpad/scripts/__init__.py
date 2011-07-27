@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Library functions for use in all scripts.
@@ -8,6 +8,7 @@ __metaclass__ = type
 
 __all__ = [
     'db_options',
+    'dummy_logger_options',
     'execute_zcml_for_scripts',
     'log',
     'logger',
@@ -31,6 +32,7 @@ from canonical import lp
 from canonical.config import config
 # these are intentional re-exports, apparently, used by *many* files.
 from canonical.launchpad.scripts.logger import (
+    dummy_logger_options,
     log,
     logger,
     logger_options,
@@ -126,8 +128,8 @@ def db_options(parser):
 
     dbname and dbhost are also propagated to config.database.dbname and
     config.database.dbhost. dbname, dbhost and dbuser are also propagated to
-    lp.get_dbname(), lp.dbhost and lp.dbuser. This ensures that all systems will
-    be using the requested connection details.
+    lp.get_dbname(), lp.dbhost and lp.dbuser. This ensures that all systems
+    will be using the requested connection details.
 
     To test, we first need to store the current values so we can reset them
     later.
@@ -170,7 +172,8 @@ def db_options(parser):
 
     parser.add_option(
             "-d", "--dbname", action="callback", callback=dbname_callback,
-            type="string", dest="dbname", default=config.database.rw_main_master,
+            type="string", dest="dbname",
+            default=config.database.rw_main_master,
             help="PostgreSQL database to connect to."
             )
 

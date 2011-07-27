@@ -24,6 +24,7 @@ from zope.interface import Interface
 from zope.schema import (
     Bool,
     Bytes,
+    Dict,
     Int,
     Text,
     TextLine,
@@ -53,7 +54,7 @@ class IDiff(Interface):
         Int(title=_('The number of lines in this diff.'), readonly=True))
 
     diffstat = exported(
-        Text(title=_('Statistics about this diff'), readonly=True))
+        Dict(title=_('Statistics about this diff'), readonly=True))
 
     added_lines_count = exported(
         Int(title=_('The number of lines added in this diff.'),

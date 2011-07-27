@@ -7,6 +7,7 @@ from cStringIO import StringIO
 
 from canonical.launchpad.interfaces.lpstorm import IStore
 from debian.deb822 import Changes
+from optparse import OptionValueError
 from testtools.matchers import LessThan
 
 from canonical.config import config
@@ -14,6 +15,7 @@ from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.log.logger import BufferLogger
+from lp.services.scripts.base import LaunchpadScriptFailure
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
@@ -188,6 +190,38 @@ class TestProcessAccepted(TestCaseWithFactory):
         self.getScript(['--dry-run']).main()
         self.assertEqual(
             None, IStore(PackageUpload).get(PackageUpload, upload_id))
+
+    def test_validateArguments_requires_distro_by_default(self):
+        self.assertRaises(
+            OptionValueError, ProcessAccepted(test_args=[]).validateArguments)
+
+    def test_validateArguments_requires_no_distro_for_derived_run(self):
+        ProcessAccepted(test_args=['--derived']).validateArguments()
+        # The test is that this does not raise an exception.
+        pass
+
+    def test_validateArguments_does_not_accept_distro_for_derived_run(self):
+        distro = self.factory.makeDistribution()
+        script = ProcessAccepted(test_args=['--derived', distro.name])
+        self.assertRaises(OptionValueError, script.validateArguments)
+
+    def test_findTargetDistros_finds_named_distro(self):
+        distro = self.factory.makeDistribution()
+        script = ProcessAccepted(test_args=[distro.name])
+        self.assertContentEqual([distro], script.findTargetDistros())
+
+    def test_findNamedDistro_raises_error_if_not_found(self):
+        nonexistent_distro = self.factory.getUniqueString()
+        script = ProcessAccepted(test_args=[nonexistent_distro])
+        self.assertRaises(
+            LaunchpadScriptFailure,
+            script.findNamedDistro, nonexistent_distro)
+
+    def test_findTargetDistros_for_derived_finds_derived_distro(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        script = ProcessAccepted(test_args=['--derived'])
+        self.assertIn(
+            dsp.derived_series.distribution, script.findTargetDistros())
 
 
 class TestBugsFromChangesFile(TestCaseWithFactory):

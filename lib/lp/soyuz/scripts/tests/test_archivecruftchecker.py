@@ -9,10 +9,8 @@ just-published 'ubuntutest' archive.
 
 __metaclass__ = type
 
-import os
 import shutil
-import subprocess
-import sys
+import transaction
 import unittest
 
 from zope.component import getUtility
@@ -26,22 +24,21 @@ from lp.soyuz.scripts.ftpmaster import (
     ArchiveCruftChecker,
     ArchiveCruftCheckerError,
     )
+from lp.soyuz.scripts.publishdistro import PublishDistro
+
 
 # XXX cprov 2006-05-15: {create, remove}TestArchive functions should be
 # moved to the publisher test domain as soon as we have it.
 def createTestArchive():
     """Creates a fresh test archive based on sampledata."""
-    script = os.path.join(config.root, "scripts", "publish-distro.py")
-    process = subprocess.Popen([sys.executable, script, "-C", "-q",
-                                "-d", 'ubuntutest'],
-                               stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
-    garbage = process.stderr.read()
-    garbage = process.stdout.read()
-    return process.wait()
+    script = PublishDistro(test_args=["-C", "-q", "-d", "ubuntutest"])
+    script.txn = transaction
+    script.main()
 
 
 def removeTestArchive():
+    # XXX JeroenVermeulen 2011-07-20 bug=813538: Use a temporary
+    # directory so we don't have to commit this horror.
     """Remove the entire test archive directory from the filesystem."""
     shutil.rmtree("/var/tmp/archive/")
 

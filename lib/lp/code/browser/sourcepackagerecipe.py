@@ -84,6 +84,7 @@ from lp.app.browser.launchpadform import (
 from lp.app.browser.lazrjs import (
     BooleanChoiceWidget,
     InlineEditPickerWidget,
+    InlinePersonEditPickerWidget,
     TextAreaEditorWidget,
     TextLineEditorWidget,
     )
@@ -201,7 +202,7 @@ class SourcePackageRecipeContextMenu(ContextMenu):
             has_upload = ppa.checkArchivePermission(recipe.owner)
             show_request_build = has_upload
 
-        show_request_build= (show_request_build and
+        show_request_build = (show_request_build and
             check_permission('launchpad.Edit', recipe))
         return Link(
                 '+request-daily-build', 'Build now',
@@ -262,12 +263,12 @@ class SourcePackageRecipeView(LaunchpadView):
         enhanced_picker_enabled = bool(
                     getFeatureFlag('disclosure.picker_enhancements.enabled'))
         if enhanced_picker_enabled:
-            vocabulary='UserTeamsParticipationPlusSelfSimpleDisplay'
+            vocabulary = 'UserTeamsParticipationPlusSelfSimpleDisplay'
         else:
-            vocabulary='UserTeamsParticipationPlusSelf'
+            vocabulary = 'UserTeamsParticipationPlusSelf'
         field = copy_field(
             ISourcePackageRecipe['owner'], vocabularyName=vocabulary)
-        return InlineEditPickerWidget(
+        return InlinePersonEditPickerWidget(
             self.context, field,
             format_link(self.context.owner),
             header='Change owner',

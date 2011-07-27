@@ -63,10 +63,6 @@ Next, we need to grab some values to provide for importance and status.
     >>> upstream_task.product == evolution
     True
 
-    >>> from lp.bugs.interfaces.bugtask import IUpstreamBugTask
-    >>> IUpstreamBugTask.providedBy(upstream_task)
-    True
-
   ii. Distro -- a bug that has to be fixed in a specific distro
 
     >>> ubuntu = distroset.get(1)
@@ -77,10 +73,6 @@ Next, we need to grab some values to provide for importance and status.
     >>> distro_task.distribution == a_distro
     True
 
-    >>> from lp.bugs.interfaces.bugtask import IDistroBugTask
-    >>> IDistroBugTask.providedBy(distro_task)
-    True
-
   ii. Distro Series -- a bug that has to be fixed in a specific distro
   series. These tasks are used for release management and backporting.
 
@@ -89,20 +81,6 @@ Next, we need to grab some values to provide for importance and status.
     ...     bug=bug_one, distroseries=warty, owner=mark,
     ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> distro_series_task.distroseries == warty
-    True
-
-    >>> from lp.bugs.interfaces.bugtask import IDistroSeriesBugTask
-    >>> IDistroSeriesBugTask.providedBy(distro_series_task)
-    True
-
-The created bugtasks are guaranteed to implement the correct interface.
-
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> verifyObject(IDistroSeriesBugTask, distro_series_task)
-    True
-    >>> verifyObject(IDistroBugTask, distro_task)
-    True
-    >>> verifyObject(IUpstreamBugTask, upstream_task)
     True
 
 # XXX: Brad Bollenbach 2005-02-24: See the bottom of this file for a chunk of
@@ -125,15 +103,12 @@ list.
 
   * a product series
 
-    >>> from lp.bugs.interfaces.bugtask import IProductSeriesBugTask
 
     >>> firefox = productset['firefox']
     >>> firefox_1_0 = firefox.getSeries("1.0")
 
     >>> productseries_task = bugtaskset.createTask(
     ...     owner=mark, bug=bug_one, productseries=firefox_1_0)
-    >>> IProductSeriesBugTask.providedBy(productseries_task)
-    True
 
     >>> productseries_task.target == firefox_1_0
     True
@@ -640,8 +615,8 @@ But a normal unprivileged user can't set the milestone.
     >>> print current_series_netapplet_task.sourcepackagename.name
     netapplet
 
-    >>> current_series_netapplet_task.sourcepackagename = (
-    ...     ubuntu_pmount.sourcepackagename)
+    >>> current_series_netapplet_task.transitionToTarget(
+    ...     ubuntu_pmount.development_version)
 
     >>> print generic_netapplet_task.sourcepackagename.name
     pmount
@@ -997,7 +972,7 @@ is used here.
 
     >>> thunderbird = productset.get(8)
     >>> upstream_task_id = upstream_task.id
-    >>> upstream_task.product = thunderbird
+    >>> upstream_task.transitionToTarget(thunderbird)
     >>> upstream_task.bugtargetdisplayname
     u'Mozilla Thunderbird'
 

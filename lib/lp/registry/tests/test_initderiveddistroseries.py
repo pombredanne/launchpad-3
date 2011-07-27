@@ -16,8 +16,12 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.registry.interfaces.distroseries import DerivationError
+from lp.services.features.testing import FeatureFixture
 from lp.soyuz.interfaces.distributionjob import (
     IInitializeDistroSeriesJobSource,
+    )
+from lp.soyuz.model.distroseriesdifferencejob import (
+    FEATURE_FLAG_ENABLE_MODULE,
     )
 from lp.soyuz.scripts.tests.test_initialize_distroseries import (
     InitializationHelperTestCase,
@@ -28,6 +32,7 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.fakemethod import FakeMethod
 
 
 class TestDeriveDistroSeries(TestCaseWithFactory):
@@ -71,27 +76,90 @@ class TestDeriveDistroSeriesMultipleParents(InitializationHelperTestCase):
 
     layer = LaunchpadZopelessLayer
 
-    def test_multiple_parents_binary_packages(self):
-        # An initialization from many parents (using the package copier)
-        # can happen using the same the db user the job will use
-        # ('initializedistroseries').
-        self.parent1, unused = self.setupParent(
-            packages={'p1': '0.1-1'})
-        self.parent2, unused = self.setupParent(
-            packages={'p2': '2.1'})
-        child = self.factory.makeDistroSeries()
-        transaction.commit()
-        self.layer.switchDbUser('initializedistroseries')
+    def setUpParents(self, packages1, packages2):
+        parent1, unused = self.setupParent(packages=packages1)
+        parent2, unused = self.setupParent(packages=packages2)
+        return parent1, parent2
 
-        child = self._fullInitialize(
-            [self.parent1, self.parent2], child=child)
-        pub_sources = child.main_archive.getPublishedSources(
-            distroseries=child)
+    def assertBinPackagesAndVersions(self, series, pack_versions):
+        # Helper to assert that series contains the required binaries
+        # pack_version should be of the form [(packagname1, version1), ...]
+        # e.g. [(u'p1', u'0.1-1'), (u'p2', u'2.1')])
+        pub_sources = series.main_archive.getPublishedSources(
+            distroseries=series)
         binaries = sorted(
             [(p.getBuiltBinaries()[0].binarypackagerelease.sourcepackagename,
               p.getBuiltBinaries()[0].binarypackagerelease.version)
                  for p in pub_sources])
 
-        self.assertEquals(
-            [(u'p1', u'0.1-1'), (u'p2', u'2.1')],
-            binaries)
+        self.assertEquals(pack_versions, binaries)
+
+    def test_multiple_parents_binary_packages(self):
+        # An initialization from many parents (using the package copier)
+        # can happen using the same the db user the job will use
+        # ('initializedistroseries').
+        parent1, parent2 = self.setUpParents(
+            packages1={'p1': '0.1-1'}, packages2={'p2': '2.1'})
+        child = self.factory.makeDistroSeries()
+        transaction.commit()
+        self.layer.switchDbUser('initializedistroseries')
+
+        child = self._fullInitialize(
+            [parent1, parent2], child=child)
+        self.assertBinPackagesAndVersions(
+            child,
+            [(u'p1', u'0.1-1'), (u'p2', u'2.1')])
+
+    def test_multiple_parents_dsd_flag_on(self):
+        # An initialization can happen if the flag for distroseries
+        # difference creation is on.
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
+        parent1, parent2 = self.setUpParents(
+            packages1={'p1': '0.1-1'}, packages2={'p2': '2.1'})
+        child = self.factory.makeDistroSeries()
+        transaction.commit()
+        self.layer.switchDbUser('initializedistroseries')
+
+        child = self._fullInitialize(
+            [parent1, parent2], child=child)
+        # Make sure the initialization was successful.
+        self.assertBinPackagesAndVersions(
+            child,
+            [(u'p1', u'0.1-1'), (u'p2', u'2.1')])
+        # Switch back to launchpad_main to be able to cleanup the
+        # feature flags.
+        self.layer.switchDbUser('launchpad_main')
+
+    def test_multiple_parents_do_not_close_bugs(self):
+        # The initialization does not close the bugs on the copied
+        # publications (and thus does not try to access the bug table).
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
+        parent1, parent2 = self.setUpParents(
+            packages1={'p1': '0.1-1'}, packages2={'p2': '2.1'})
+        child = self.factory.makeDistroSeries()
+        transaction.commit()
+        self.layer.switchDbUser('initializedistroseries')
+
+        # Patch close_bugs_for_sourcepublication to be able to record if
+        # the method has been called.
+        fakeCloseBugs = FakeMethod()
+        from lp.soyuz.scripts import packagecopier as packagecopier_module
+        self.patch(
+            packagecopier_module,
+            'close_bugs_for_sourcepublication',
+            fakeCloseBugs)
+
+        child = self._fullInitialize(
+            [parent1, parent2], child=child)
+        # Make sure the initialization was successful.
+        self.assertBinPackagesAndVersions(
+            child,
+            [(u'p1', u'0.1-1'), (u'p2', u'2.1')])
+        # Assert that close_bugs_for_sourcepublication has not been
+        # called.
+        self.assertEqual(
+            0,
+            fakeCloseBugs.call_count)
+        # Switch back to launchpad_main to be able to cleanup the
+        # feature flags.
+        self.layer.switchDbUser('launchpad_main')

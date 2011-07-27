@@ -128,13 +128,7 @@ from canonical.launchpad.webapp.vocabulary import (
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
-from lp.bugs.interfaces.bugtask import (
-    IBugTask,
-    IDistroBugTask,
-    IDistroSeriesBugTask,
-    IProductSeriesBugTask,
-    IUpstreamBugTask,
-    )
+from lp.bugs.interfaces.bugtask import IBugTask
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
@@ -1458,14 +1452,18 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
     @staticmethod
     def getMilestoneTarget(milestone_context):
         """Return the milestone target."""
-        if IUpstreamBugTask.providedBy(milestone_context):
-            target = milestone_context.product
-        elif IDistroBugTask.providedBy(milestone_context):
-            target = milestone_context.distribution
-        elif IDistroSeriesBugTask.providedBy(milestone_context):
-            target = milestone_context.distroseries
-        elif IProductSeriesBugTask.providedBy(milestone_context):
-            target = milestone_context.productseries.product
+        if IBugTask.providedBy(milestone_context):
+            bug_target = milestone_context.target
+            if IProduct.providedBy(bug_target):
+                target = milestone_context.product
+            elif IProductSeries.providedBy(bug_target):
+                target = milestone_context.productseries.product
+            elif (IDistribution.providedBy(bug_target) or
+                  IDistributionSourcePackage.providedBy(bug_target)):
+                target = milestone_context.distribution
+            elif (IDistroSeries.providedBy(bug_target) or
+                  ISourcePackage.providedBy(bug_target)):
+                target = milestone_context.distroseries
         elif IDistributionSourcePackage.providedBy(milestone_context):
             target = milestone_context.distribution
         elif ISourcePackage.providedBy(milestone_context):
@@ -1983,7 +1981,7 @@ class DistributionSourcePackageVocabulary:
     displayname = 'Select a package'
     step_title = 'Search'
 
-    def __init__(self, context=None):
+    def __init__(self, context):
         self.context = context
 
     def __contains__(self, obj):
@@ -1995,21 +1993,21 @@ class DistributionSourcePackageVocabulary:
     def __len__(self):
         pass
 
-    def toTerm(self, dsp):
+    def toTerm(self, spn):
         """See `IVocabulary`."""
-        # SimpleTerm(value, token=None, title=None)
+        dsp = self.context.getSourcePackage(spn)
         if dsp.publishing_history:
             binaries = dsp.publishing_history[0].getBuiltBinaries()
             summary = ', '.join(
                 [binary.binary_package_name for binary in binaries])
         else:
             summary = "Not yet built."
-        token = '%s-%s' % (dsp.distribution.name, dsp.name)
+        token = '%s/%s' % (dsp.distribution.name, dsp.name)
         return SimpleTerm(summary, token, dsp.name)
 
-    def getTerm(self, dsp):
+    def getTerm(self, spn):
         """See `IBaseVocabulary`."""
-        return self.toTerm(dsp)
+        return self.toTerm(spn)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
@@ -2059,5 +2057,4 @@ class DistributionSourcePackageVocabulary:
                     SourcePackageName.name.contains_string(search_term),
                     BinaryPackageName.name.contains_string(
                         search_term))).config(distinct=True)
-        return [
-            self.toTerm(distribution.getSourcePackage(spn)) for spn in spns]
+        return CountableIterator(spns.count(), spns, self.toTerm)
