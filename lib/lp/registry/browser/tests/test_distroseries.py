@@ -9,6 +9,7 @@ from datetime import timedelta
 import difflib
 import re
 from textwrap import TextWrapper
+from urllib import urlencode
 
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import IJSONRequestCache
@@ -2156,8 +2157,9 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         with person_logged_in(person):
             view = create_initialized_view(
                 dsd.derived_series, '+localpackagediffs', method='GET',
-                query_string='field.changed_by=%s&field.changed_by=%s' % (
-                    str(changed_by1.name), str(changed_by2.name)))
+                query_string=urlencode(
+                    {"field.changed_by": (changed_by1.name, changed_by2.name)},
+                    doseq=True))
             self.assertContentEqual(
                 [changed_by1, changed_by2],
                 view.specified_changed_by_filter)
