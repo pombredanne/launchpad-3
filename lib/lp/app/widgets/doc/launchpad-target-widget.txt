@@ -314,3 +314,17 @@ package widget to the package name.
              id="field.bugtarget.option.product"
              name="field.bugtarget" type="radio" value="product" />
     ...
+
+
+== Custom prefixes ==
+
+Setting a prefix on the widget also applies to all the subordinate widgets.
+
+    >>> widget = LaunchpadTargetWidget(
+    ...     IFrontPageBugAddForm['bugtarget'], empty_request)
+    >>> widget.setPrefix("task")
+    >>> rendered = widget()
+    >>> 'field.bugtarget' in rendered
+    False
+    >>> 'task.bugtarget' in rendered
+    True
