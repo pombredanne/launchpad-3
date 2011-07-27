@@ -25,7 +25,6 @@ from canonical.launchpad.webapp import (
     LaunchpadView,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.app.errors import UnexpectedFormData
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.date import DateWidget
@@ -254,7 +253,7 @@ class TeamMembershipEditView(LaunchpadView):
 
         assert self.context.status == TeamMembershipStatus.PROPOSED
 
-        action = self.request.form.get('editproposed')
+        self.request.form.get('editproposed')
         if self.request.form.get('decline'):
             status = TeamMembershipStatus.DECLINED
         elif self.request.form.get('approve'):
