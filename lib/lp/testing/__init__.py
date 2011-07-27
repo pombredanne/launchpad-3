@@ -51,6 +51,7 @@ __all__ = [
     'ZopeTestInSubProcess',
     ]
 
+from contextlib import contextmanager
 from cStringIO import StringIO
 from datetime import (
     datetime,
