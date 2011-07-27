@@ -188,7 +188,7 @@ An IBug.
     >>> canonical_url(getUtility(IBugSet).get(1))
     u'http://bugs.launchpad.dev/bugs/1'
 
-An IUpstreamBugTask.
+An IBugTask on a product.
 
     >>> canonical_url(getUtility(IBugTaskSet).get(2))
     u'http://bugs.launchpad.dev/firefox/+bug/1'
@@ -203,13 +203,13 @@ An IMessage on a question.
     >>> canonical_url(getUtility(IQuestionSet).get(6).messages[0])
     u'http://answers.launchpad.dev/firefox/+question/6/messages/1'
 
-An IDistroBugTask.
+An IBugTask on a distribution source package.
 
     >>> distro_task = getUtility(IBugTaskSet).get(4)
     >>> canonical_url(distro_task)
     u'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/1'
 
-An IDistroBugTask without a sourcepackage.
+An IBugTask on a distribution without a sourcepackage.
 
     >>> from canonical.launchpad.ftests import login
     >>> login("foo.bar@canonical.com")
@@ -220,13 +220,13 @@ An IDistroBugTask without a sourcepackage.
     u'http://bugs.launchpad.dev/debian/+bug/1'
     >>> distro_task.sourcepackagename = temp_spname
 
-An IDistroSeriesBugTask.
+An IBugTask on a distribution series source package.
 
     >>> distro_series_task = getUtility(IBugTaskSet).get(16)
     >>> canonical_url(distro_series_task)
     u'http://bugs.launchpad.dev/ubuntu/warty/+source/mozilla-firefox/+bug/5'
 
-An IDistroSeriesBugTask without a sourcepackage.
+An IBugTask on a distribution series without a sourcepackage.
 
     >>> temp_spname = distro_series_task.sourcepackagename
     >>> distro_series_task.sourcepackagename = None

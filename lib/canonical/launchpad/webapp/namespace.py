@@ -75,7 +75,10 @@ class JsonModelNamespaceView(view):
                 self.context, self.request)
             view = getMultiAdapter(
                 (self.context, self.request), name=defaultviewname)
+        if view is None:
+            return
         naked_view = removeSecurityProxy(view)
         naked_view.initialize()
         cache = naked_view.getCacheJSON()
+        self.request.response.setHeader('content-type', 'application/json')
         return cache

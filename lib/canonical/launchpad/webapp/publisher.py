@@ -238,20 +238,6 @@ class UserAttributeCache:
             self._user = getUtility(ILaunchBag).user
         return self._user
 
-    _is_beta = None
-
-    @property
-    def isBetaUser(self):
-        """Return True if the user is in the beta testers team."""
-        if self._is_beta is not None:
-            return self._is_beta
-
-        # We cannot import ILaunchpadCelebrities here, so we will use the
-        # hardcoded name of the beta testers team
-        self._is_beta = self.user is not None and self.user.inTeam(
-            'launchpad-beta-testers')
-        return self._is_beta
-
 
 class LaunchpadView(UserAttributeCache):
     """Base class for views in Launchpad.

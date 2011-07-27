@@ -25,10 +25,6 @@ from zope.interface import implements
 
 from canonical.config import config
 import canonical.launchpad.layers
-from canonical.launchpad.webapp.adapter import (
-    clear_request_started,
-    set_request_started,
-    )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from lp.services.propertycache import cachedproperty
@@ -71,6 +67,9 @@ class SystemErrorView(LaunchpadView):
         self.request.response.removeAllNotifications()
         if self.response_code is not None:
             self.request.response.setStatus(self.response_code)
+        if getattr(self.request, 'oopsid') is not None:
+            self.request.response.addHeader(
+                'X-Lazr-OopsId', self.request.oopsid)
         self.computeDebugOutput()
         if config.canonical.show_tracebacks:
             self.show_tracebacks = True

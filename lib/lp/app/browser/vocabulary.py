@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'HugeVocabularyJSONView',
     'IPickerEntry',
+    'get_person_picker_entry_metadata',
     ]
 
 import simplejson
@@ -63,6 +64,7 @@ class IPickerEntry(Interface):
     alt_title_link = Attribute('URL used for anchor on alt title')
     link_css = Attribute('CSS Class for links')
     badges = Attribute('List of badge img attributes')
+    metadata = Attribute('Metadata about the entry')
 
 
 class PickerEntry:
@@ -71,7 +73,7 @@ class PickerEntry:
 
     def __init__(self, description=None, image=None, css=None, alt_title=None,
                  title_link=None, alt_title_link=None, link_css='js-action',
-                 badges=None, api_uri=None):
+                 badges=None, metadata=None):
         self.description = description
         self.image = image
         self.css = css
@@ -80,6 +82,7 @@ class PickerEntry:
         self.alt_title_link = alt_title_link
         self.link_css = link_css
         self.badges = badges
+        self.metadata = metadata
 
 
 @adapter(Interface)
@@ -106,6 +109,13 @@ class DefaultPickerEntryAdapter(object):
         if extra.css is None:
             extra.css = 'sprite bullet'
         return extra
+
+
+def get_person_picker_entry_metadata(picker_entry):
+    """Return the picker entry meta for a given result value."""
+    if picker_entry is not None and IPerson.providedBy(picker_entry):
+        return "team" if picker_entry.is_team else "person"
+    return None
 
 
 @adapter(IPerson)
@@ -136,6 +146,7 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
                 except Unauthorized:
                     extra.description = '<email address hidden>'
 
+        extra.metadata = get_person_picker_entry_metadata(person)
         if enhanced_picker_enabled:
             # We will display the person's name (launchpad id) after their
             # displayname.
@@ -278,6 +289,8 @@ class HugeVocabularyJSONView:
                 entry['link_css'] = picker_entry.link_css
             if picker_entry.badges is not None:
                 entry['badges'] = picker_entry.badges
+            if picker_entry.metadata is not None:
+                entry['metadata'] = picker_entry.metadata
             result.append(entry)
 
         self.request.response.setHeader('Content-type', 'application/json')

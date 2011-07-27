@@ -557,6 +557,7 @@ class CompletePackageUpload:
         potential_icons = [
             (self.contains_source, ("Source", 'package-source')),
             (self.contains_build, ("Build", 'package-binary', "Binary")),
+            (self.package_copy_job, ("Sync", 'package-sync')),
             (self.contains_translation, ("Translation", 'translation-file')),
             (self.contains_installer, ("Installer", 'ubuntu-icon')),
             (self.contains_upgrader, ("Upgrader", 'ubuntu-icon')),
