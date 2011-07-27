@@ -212,7 +212,8 @@ class SourcePackageFacets(StandardLaunchpadFacets):
 
     def overview(self):
         text = 'Overview'
-        summary = 'General information about {0}'.format(self.context.displayname)
+        summary = 'General information about {0}'.format(
+            self.context.displayname)
         return Link('', text, summary)
 
     def bugs(self):
@@ -227,7 +228,8 @@ class SourcePackageFacets(StandardLaunchpadFacets):
 
     def translations(self):
         text = 'Translations'
-        summary = 'Translations of {0} in Launchpad'.format(self.context.displayname)
+        summary = 'Translations of {0} in Launchpad'.format(
+            self.context.displayname)
         return Link('', text, summary)
 
 
