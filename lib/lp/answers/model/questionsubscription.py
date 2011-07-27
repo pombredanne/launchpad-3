@@ -9,10 +9,16 @@ __metaclass__ = type
 
 __all__ = ['QuestionSubscription']
 
+import pytz
+
 from sqlobject import ForeignKey
-from storm.locals import Int
+from storm.locals import (
+    DateTime,
+    Int,
+    )
 from zope.interface import implements
 
+from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import SQLBase
 from lp.answers.interfaces.questionsubscription import IQuestionSubscription
 from lp.registry.interfaces.person import validate_public_person
@@ -26,6 +32,7 @@ class QuestionSubscription(SQLBase):
 
     _table = 'QuestionSubscription'
 
+    id = Int(primary=True)
     question_id = Int("question", allow_none=False)
     question = ForeignKey(
         dbName='question', foreignKey='Question', notNull=True)
@@ -35,6 +42,9 @@ class QuestionSubscription(SQLBase):
     person = ForeignKey(
         dbName='person', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
+
+    date_created = DateTime(
+        allow_none=False, default=UTC_NOW, tzinfo=pytz.UTC)
 
     def canBeUnsubscribedByUser(self, user):
         """See `IQuestionSubscription`."""

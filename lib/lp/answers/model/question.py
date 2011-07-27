@@ -530,6 +530,8 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def unsubscribe(self, person, unsubscribed_by):
         """See `IQuestion`."""
+        if person is None:
+            person = unsubscribed_by
         # See if a relevant subscription exists, and if so, delete it.
         for sub in self.subscriptions:
             if sub.person.id == person.id:
