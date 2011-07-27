@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = ['QuestionSubscription']
 
 from sqlobject import ForeignKey
+from storm.locals import Int
 from zope.interface import implements
 
 from canonical.database.sqlbase import SQLBase
@@ -25,9 +26,12 @@ class QuestionSubscription(SQLBase):
 
     _table = 'QuestionSubscription'
 
+    question_id = Int("question", allow_none=False)
     question = ForeignKey(
         dbName='question', foreignKey='Question', notNull=True)
 
+    person_id = Int(
+        "person", allow_none=False, validator=validate_public_person)
     person = ForeignKey(
         dbName='person', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)

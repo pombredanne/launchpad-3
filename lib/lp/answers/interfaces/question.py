@@ -434,7 +434,7 @@ class IQuestion(IHasOwner):
         """
 
     # subscription-related methods
-    def subscribe(person):
+    def subscribe(person, subscribed_by=None):
         """Subscribe this person to the question."""
 
     def isSubscribed(person):
@@ -447,6 +447,13 @@ class IQuestion(IHasOwner):
         """Return the persons who are subscribed to this question.
 
         :return: A list of persons sorted by displayname.
+        """
+
+    def getDirectSubscribersWithDetails():
+        """Get direct subscribers and their subscriptions for the question.
+
+        :returns: A ResultSet of tuples (Person, QuestionSubscription)
+            representing a subscriber and their question subscription.
         """
 
     def getIndirectSubscribers():

@@ -517,7 +517,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         return msg
 
     # subscriptions
-    def subscribe(self, person):
+    def subscribe(self, person, subscribed_by=None):
         """See `IQuestion`."""
         # First see if a relevant subscription exists, and if so, update it.
         for sub in self.subscriptions:
@@ -550,6 +550,18 @@ class Question(SQLBase, BugLinkTargetMixin):
         """
         return sorted(
             self.subscribers, key=operator.attrgetter('displayname'))
+
+    def getDirectSubscribersWithDetails(self):
+        """See `IQuestion`."""
+
+        # Avoid circular imports
+        from lp.registry.model.person import Person
+        results = Store.of(self).find(
+            (Person, QuestionSubscription),
+            QuestionSubscription.person_id == Person.id,
+            QuestionSubscription.question_id == self.id,
+            ).order_by(Person.displayname)
+        return results
 
     def getIndirectSubscribers(self):
         """See `IQuestion`.

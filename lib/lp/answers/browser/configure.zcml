@@ -150,12 +150,7 @@
       name="+portlet-reopenings"
       template="../templates/question-portlet-reopenings.pt"
       />
-    <browser:page
-      name="+portlet-subscribers"
-      template="../templates/question-portlet-subscribers.pt"
-      />
   </browser:pages>
-
   <browser:pages
     for="lp.answers.interfaces.question.IQuestion"
     class="canonical.launchpad.webapp.LaunchpadView"
@@ -170,6 +165,13 @@
       template="../templates/question-portlet-details.pt"
       />
   </browser:pages>
+
+  <browser:page
+      for="lp.answers.interfaces.question.IQuestion"
+      name="+portlet-subscribers-details"
+      class="
+        lp.answers.browser.questionsubscription.QuestionPortletSubscribersWithDetails"
+      permission="zope.Public"/>
 
   <browser:page
     name="+index"
