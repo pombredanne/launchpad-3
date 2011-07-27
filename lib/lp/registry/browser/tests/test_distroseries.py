@@ -2186,6 +2186,28 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
                 query_string='field.packageset=%d' % packageset.id)
             self.assertEqual(1, len(view.cached_differences.batch))
 
+    def test_search_for_changed_by(self):
+        # If changed_by is specified the query the resulting batch will only
+        # contain packages relating to those people or teams.
+        set_derived_series_ui_feature_flag(self)
+        dsd = self.factory.makeDistroSeriesDifference()
+        person = dsd.derived_series.owner
+        ironhide = self.factory.makePersonByName("Ironhide")
+        query_string = urlencode({"field.changed_by": ironhide.name})
+        # The package release is not from Ironhide so the batch will be empty.
+        with person_logged_in(person):
+            view = create_initialized_view(
+                dsd.derived_series, '+localpackagediffs', method='GET',
+                query_string=query_string)
+            self.assertEqual(0, len(view.cached_differences.batch))
+            # The batch will contain the package once Ironhide has been
+            # associated with its release.
+            removeSecurityProxy(dsd.source_package_release).creator = ironhide
+            view = create_initialized_view(
+                dsd.derived_series, '+localpackagediffs', method='GET',
+                query_string=query_string)
+            self.assertEqual(1, len(view.cached_differences.batch))
+
 
 class TestDistroSeriesNeedsPackagesView(TestCaseWithFactory):
     """Test the distroseries +needs-packaging view."""
