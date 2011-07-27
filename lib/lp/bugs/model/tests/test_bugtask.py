@@ -75,6 +75,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.matchers import HasQueryCount
 
 
@@ -1775,11 +1776,6 @@ class TestTransitionToTarget(TestCaseWithFactory):
         self.assertEqual(b, self.makeAndTransition(a, b).target)
         self.assertEqual(a, self.makeAndTransition(b, a).target)
 
-    def assertTransitionForbidden(self, a, b):
-        """Check that a transition between two targets fails both ways."""
-        self.assertRaises(IllegalTarget, self.makeAndTransition, a, b)
-        self.assertRaises(IllegalTarget, self.makeAndTransition, b, a)
-
     def test_transition_works(self):
         self.assertTransitionWorks(
             self.factory.makeProduct(),
@@ -1787,10 +1783,19 @@ class TestTransitionToTarget(TestCaseWithFactory):
 
     def test_validation(self):
         # validateTransitionToTarget is called before any transition.
-        product = self.factory.makeProduct()
-        self.assertTransitionForbidden(
-            product,
-            self.factory.makeProductSeries(product=product))
+        p = self.factory.makeProduct()
+        task = self.factory.makeBugTask(target=p)
+
+        # Patch out validateTransitionToTarget to raise an exception
+        # that we can check. Also check that the target was not changed.
+        msg = self.factory.getUniqueString()
+        removeSecurityProxy(task).validateTransitionToTarget = FakeMethod(
+            failure=IllegalTarget(msg))
+        with person_logged_in(task.owner):
+            self.assertRaisesWithContent(
+                IllegalTarget, msg,
+                task.transitionToTarget, self.factory.makeProduct())
+        self.assertEqual(p, task.target)
 
     def test_transition_to_same_is_noop(self):
         # While a no-op transition would normally be rejected due to
