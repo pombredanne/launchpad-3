@@ -164,7 +164,7 @@ will be edited.
 If the bug is targeted to a source package, that bugtask is of course
 edited.
 
-    >>> ubuntu_bugtask.sourcepackagename = ubuntu_firefox.sourcepackagename
+    >>> ubuntu_bugtask.transitionToTarget(ubuntu_firefox)
     >>> ubuntu_firefox_task = bug.setStatus(
     ...     ubuntu_firefox, BugTaskStatus.INCOMPLETE, no_priv)
     >>> ubuntu_firefox_task.target.displayname

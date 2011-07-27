@@ -794,6 +794,12 @@ class IBugTask(IHasDateCreated, IHasBug):
         value is set to None, date_assigned is also set to None.
         """
 
+    def validateTransitionToTarget(target):
+        """Check whether a transition to this target is legal.
+
+        :raises IllegalTarget: if the new target is not allowed.
+        """
+
     @mutator_for(target)
     @operation_parameters(
         target=copy_field(target))
