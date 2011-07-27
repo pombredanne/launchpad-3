@@ -429,25 +429,6 @@ class PublishFTPMaster(LaunchpadCronScript):
             os.rename(backup_dists, dists)
             os.rename(temp_dists, backup_dists)
 
-    def runCommercialCompat(self):
-        """Generate the -commercial pocket.
-
-        This is done for backwards compatibility with dapper, edgy, and
-        feisty releases.  Failure here is not fatal.
-        """
-        # XXX JeroenVermeulen 2011-03-24 bug=741683: Retire
-        # commercial-compat.sh (and this method) as soon as Dapper
-        # support ends.
-        if self.distribution.name != 'ubuntu':
-            return
-        if not config.archivepublisher.run_commercial_compat:
-            return
-
-        env = {"LPCONFIG": shell_quote(config.instance_name)}
-        self.executeShell(
-            "env %s commercial-compat.sh"
-            % compose_env_string(env, extend_PATH()))
-
     def generateListings(self):
         """Create ls-lR.gz listings."""
         self.logger.debug("Creating ls-lR.gz...")
@@ -572,13 +553,11 @@ class PublishFTPMaster(LaunchpadCronScript):
 
         self.rsyncBackupDists()
         self.publish(security_only=True)
-        self.runCommercialCompat()
         self.runFinalizeParts(security_only=True)
 
         if not self.options.security_only:
             self.rsyncBackupDists()
             self.publish(security_only=False)
-            self.runCommercialCompat()
             self.generateListings()
             self.clearEmptyDirs()
             self.runFinalizeParts(security_only=False)
