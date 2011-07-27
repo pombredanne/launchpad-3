@@ -1809,17 +1809,26 @@ class TestTransitionToTarget(TestCaseWithFactory):
         p = self.factory.makeProduct()
         self.assertTransitionWorks(p, p)
 
+    def test_milestone_unset_on_transition(self):
+        # A task's milestone is reset when its target changes.
+        product = self.factory.makeProduct()
+        task = self.factory.makeBugTask(target=product)
+        with person_logged_in(task.owner):
+            task.milestone = self.factory.makeMilestone(product=product)
+            task.transitionToTarget(self.factory.makeProduct())
+        self.assertIs(None, task.milestone)
+
     def test_milestone_preserved_if_transition_rejected(self):
         # If validation rejects a transition, the milestone is not unset.
-        series = self.factory.makeProductSeries()
-        task = self.factory.makeBugTask(target=series.product)
-        milestone = self.factory.makeMilestone(product=series.product)
+        product = self.factory.makeProduct()
+        task = self.factory.makeBugTask(target=product)
         with person_logged_in(task.owner):
-            task.milestone = milestone
+            task.milestone = milestone = self.factory.makeMilestone(
+                product=product)
             self.assertRaises(
                 IllegalTarget,
                 task.transitionToTarget, self.factory.makeSourcePackage())
-            self.assertEqual(milestone, task.milestone)
+        self.assertEqual(milestone, task.milestone)
 
 
 class TestBugTargetKeys(TestCaseWithFactory):

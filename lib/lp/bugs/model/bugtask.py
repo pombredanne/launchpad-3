@@ -1182,6 +1182,13 @@ class BugTask(SQLBase):
 
         target_before_change = self.target
 
+        if (self.milestone is not None and
+            self.milestone.target != target):
+            # If the milestone for this bugtask is set, we
+            # have to make sure that it's a milestone of the
+            # current target, or reset it to None
+            self.milestone = None
+
         # Inhibit validate_target_attribute, as we can't set them all
         # atomically, but we know the final result is correct.
         self._inhibit_target_check = True
@@ -1189,13 +1196,6 @@ class BugTask(SQLBase):
             setattr(self, name, value)
         self._inhibit_target_check = False
         self.updateTargetNameCache()
-
-        if (self.milestone is not None and
-            self.milestone.target != target):
-            # If the milestone for this bugtask is set, we
-            # have to make sure that it's a milestone of the
-            # current target, or reset it to None
-            self.milestone = None
 
         # After the target has changed, we need to recalculate the maximum bug
         # heat for the new and old targets.
