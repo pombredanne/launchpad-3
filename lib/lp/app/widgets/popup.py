@@ -17,6 +17,7 @@ from zope.app.form.browser.itemswidgets import (
 from zope.schema.interfaces import IChoice
 
 from canonical.launchpad.webapp import canonical_url
+from canonical.lazr.utils import safe_hasattr
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.vocabulary import get_person_picker_entry_metadata
 from lp.services.features import getFeatureFlag
@@ -105,6 +106,17 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
                          class="%(cssClass)s" />""" % d
 
     @property
+    def selected_value(self):
+        """ String representation of field value associated with the picker.
+
+        Default implementation is to return the 'name' attribute.
+        """
+        val = self._getFormValue()
+        if val is not None and safe_hasattr(val, 'name'):
+            return getattr(val, 'name')
+        return None
+
+    @property
     def selected_value_metadata(self):
         return None
 
@@ -116,6 +128,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
     def config(self):
         return dict(
             picker_type=self.picker_type,
+            selected_value=self.selected_value,
             selected_value_metadata=self.selected_value_metadata,
             header=self.header_text, step_title=self.step_title_text,
             extra_no_results_message=self.extra_no_results_message,
@@ -192,7 +205,7 @@ class PersonPickerWidget(VocabularyPickerWidget):
 
     include_create_team_link = False
     show_assign_me_button = True
-    show_remove_button = True
+    show_remove_button = False
 
     @property
     def picker_type(self):
