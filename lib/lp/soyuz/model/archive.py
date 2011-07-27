@@ -1947,8 +1947,12 @@ class Archive(SQLBase):
         self.enabled_restricted_families = restricted
 
     @classmethod
-    def validatePPA(self, person, proposed_name):
+    def validatePPA(self, person, proposed_name, private=False):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        if private:
+            commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+            if not person.inTeam(commercial):
+                return '%s is not allowed to make private PPAs' % (person.name,)
         if person.isTeam() and (
             person.subscriptionpolicy in OPEN_TEAM_POLICY):
             return "Open teams cannot have PPAs."
