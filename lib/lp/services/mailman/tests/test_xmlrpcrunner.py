@@ -16,11 +16,19 @@ from Mailman.Queue.XMLRPCRunner import (
     XMLRPCRunner,
     )
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    BaseLayer,
+    DatabaseFunctionalLayer,
+    )
+from lp.services.mailman.monkeypatches.xmlrpcrunner import (
+    get_mailing_list_api_proxy,
+    )
 from lp.services.mailman.testing import (
      get_mailing_list_api_test_proxy,
      MailmanTestCase,
      )
+from lp.services.xmlrpc import Transport
+from lp.testing import TestCase
 
 
 @contextmanager
@@ -39,7 +47,21 @@ def one_loop_exception(runner):
     try:
         yield
     finally:
-        runner._check_list_actions= original__check_list_actions
+        runner._check_list_actions = original__check_list_actions
+
+
+class TestXMLRPCRunnerTimeout(TestCase):
+    """Make sure that we set a timeout on our xmlrpc connections."""
+
+    layer = BaseLayer
+
+    def test_timeout_used(self):
+        proxy = get_mailing_list_api_proxy()
+        # We don't want to trigger the proxy if we misspell something, so we
+        # look in the dict.
+        transport = proxy.__dict__['_ServerProxy__transport']
+        self.assertTrue(isinstance(transport, Transport))
+        self.assertEqual(5, transport.timeout)
 
 
 class TestXMLRPCRunnerHeatBeat(MailmanTestCase):
