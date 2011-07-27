@@ -1830,6 +1830,15 @@ class TestTransitionToTarget(TestCaseWithFactory):
                 task.transitionToTarget, self.factory.makeSourcePackage())
         self.assertEqual(milestone, task.milestone)
 
+    def test_targetnamecache_updated(self):
+        new_product = self.factory.makeProduct()
+        task = self.factory.makeBugTask()
+        with person_logged_in(task.owner):
+            task.transitionToTarget(new_product)
+        self.assertEqual(
+            new_product.bugtargetdisplayname,
+            removeSecurityProxy(task).targetnamecache)
+
 
 class TestBugTargetKeys(TestCaseWithFactory):
     """Tests for bug_target_to_key and bug_target_from_key."""
