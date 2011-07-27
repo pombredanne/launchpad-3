@@ -1908,17 +1908,21 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Is the user able to manage `IDistroSeries` translations.
 
-        Distribution managers can also manage IDistroSeries
+        Distribution translation managers and distribution series drivers
+        can manage IDistroSeries translations.
         """
-
         return (user.isOneOfDrivers(self.obj) or
                 self.forwardCheckAuthenticated(user, self.obj.distribution))
 
 
-class AdminDistributionSourcePackageTranslations(
-    AdminDistroSeriesTranslations):
-    """DistributionSourcePackage objects link to a distribution, too."""
+class AdminDistributionSourcePackageTranslations(AuthorizationBase):
+    """DistributionSourcePackage objects link to a distribution."""
+    permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistributionSourcePackage
+
+    def checkAuthenticated(self, user):
+        """Distribution admins are admins for source packages as well."""
+        return self.forwardCheckAuthenticated(user, self.obj.distribution)
 
 
 class AdminProductSeriesTranslations(AuthorizationBase):
