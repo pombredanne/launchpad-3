@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for QuestionSubscription."""
@@ -25,20 +25,20 @@ from lp.services.propertycache import cachedproperty
 
 
 class QuestionPortletSubscribersWithDetails(LaunchpadView):
-    """A view that returns a JSON dump of the subscriber details for a bug."""
+    """View that returns a JSON dump of subscriber details for a question."""
 
     @cachedproperty
     def api_request(self):
         return IWebServiceClientRequest(self.request)
 
-    def direct_subscriber_data(self, bug):
+    def direct_subscriber_data(self, question):
         """Get the direct subscriber data.
 
         This method is isolated from the subscriber_data_js so that query
         count testing can be done accurately and robustly.
         """
         data = []
-        details = list(bug.getDirectSubscribersWithDetails())
+        details = list(question.getDirectSubscribersWithDetails())
         for person, subscription in details:
             can_edit = subscription.canBeUnsubscribedByUser(self.user)
             if person == self.user or (person.private and not can_edit):
@@ -67,7 +67,7 @@ class QuestionPortletSubscribersWithDetails(LaunchpadView):
         question = IQuestion(self.context)
         data = self.direct_subscriber_data(question)
 
-        others = list(question.getIndirectSubscribers())
+        others = question.getIndirectSubscribers()
         for person in others:
             if person == self.user:
                 # Skip the current user viewing the page.
