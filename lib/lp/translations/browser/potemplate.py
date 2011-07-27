@@ -30,12 +30,10 @@ import datetime
 import operator
 import os.path
 
+from storm.info import ClassAlias
 from storm.expr import (
-    Alias,
     And,
-    In,
     Or,
-    SQL,
     )
 from zope.component import getUtility
 from zope.interface import implements
@@ -886,14 +884,12 @@ class BaseSeriesTemplatesView(LaunchpadView):
 
     def iter_data(self):
         # TODO Figure out why the collection doesn't have security declarations.
-        import pdb;pdb.set_trace()
-        names = Alias(
-            SQL('SELECT name, productseries FROM POTemplate', ''))
+        OtherTemplate = ClassAlias(POTemplate)
         join = (removeSecurityProxy(self.context.getTemplatesCollection())
             .joinOuter(Packaging, And(
                 Packaging.distroseries == self.context.id,
-                Packaging.sourcepackagename == POTemplate.sourcepackagenameID
-                ))
+                Packaging.sourcepackagename == POTemplate.sourcepackagenameID)
+                )
             .joinOuter(ProductSeries,
                 ProductSeries.id == Packaging.productseriesID
                 )
@@ -902,14 +898,14 @@ class BaseSeriesTemplatesView(LaunchpadView):
                 Or(
                     Product._translations_usage == ServiceUsage.LAUNCHPAD,
                     Product._translations_usage == ServiceUsage.EXTERNAL)
-                )))
-#            .joinOuter(names,
-#                names.productseries == Packaging.productseriesID,
-#                names.name == POTemplate.name
-#                ))
+                ))
+            .joinOuter(OtherTemplate, And(
+                OtherTemplate.productseriesID == ProductSeries.id,
+                OtherTemplate.name == POTemplate.name)
+                ))
 
-
-        return join.select(POTemplate, Packaging, ProductSeries, Product)
+        return join.select(
+            POTemplate, Packaging, ProductSeries, Product, OtherTemplate)
 
     def rowCSSClass(self, template):
         if template.iscurrent:
@@ -936,12 +932,16 @@ class BaseSeriesTemplatesView(LaunchpadView):
             text += ' (inactive)'
         return text
 
-    def _renderSharing(self, template, packaging, productseries, upstream):
+    def _renderSharing(self, template, packaging, productseries, upstream,
+            other_template):
         """Render a link to `template`.
 
         :param template: The target `POTemplate`.
         :return: HTML for the "sharing" status of `template`.
         """
+#        from lp.testing import StormStatementRecorder
+#        recorder = StormStatementRecorder()
+#        recorder.__enter__()
         # Build the edit link.
         escaped_source = cgi.escape(template.sourcepackagename.name)
         source_url = '+source/%s' % escaped_source
@@ -949,27 +949,20 @@ class BaseSeriesTemplatesView(LaunchpadView):
         edit_link = '<a class="sprite edit" href="%s"></a>' % details_url
         not_shared = edit_link + 'not shared'
 
-        if packaging:
-            # Query
-            other_side = (
-                removeSecurityProxy(productseries.getTemplatesCollection())
-                .restrictName(template.name).select().one())
-            name = other_side is not None and template.name == other_side.name
-        else:
-            name = None
-
         # If all the conditions are met for sharing...
-        if packaging and upstream and name:
+        if packaging and upstream and other_template is not None:
             # Are the conditions met for this template to be considered "shared"?
             escaped_series = cgi.escape(packaging.productseries.name)
             escaped_template = cgi.escape(template.name)
             pot_url = ('/%s/%s/+pots/%s' %
                 (escaped_source, escaped_series, escaped_template))
+#            recorder.__exit__(None, None, None)
             return (edit_link + '<a href="%s">%s/%s</a>'
                 % (pot_url, escaped_source, escaped_series))
         else:
             # Otherwise just say that the template isn't shared and give them
             # a link to change the sharing.
+#            recorder.__exit__(None, None, None)
             return edit_link + 'not shared'
 
     def _renderLastUpdateDate(self, template):
@@ -1076,7 +1069,7 @@ class BaseSeriesTemplatesView(LaunchpadView):
             for (css, text) in columns])
 
     def renderTemplateRow(self, template, packaging=None, productseries=None,
-            upstream=None):
+            upstream=None, other_template=None):
         """Render HTML for an entire template row."""
         if not self.can_edit and not template.iscurrent:
             return ""
@@ -1095,7 +1088,7 @@ class BaseSeriesTemplatesView(LaunchpadView):
 
         if self.is_distroseries:
             sharing = self._renderSharing(
-                template, packaging, productseries, upstream)
+                template, packaging, productseries, upstream, other_template)
             fields[3:3] = [('sharing', sharing)]
 
         tds = [self._renderField(*field) for field in fields]
