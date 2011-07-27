@@ -1443,8 +1443,12 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
         # (generic) task, that change is reflected upon the conjoined
         # master.
         source_package_name = self.factory.makeSourcePackageName("ham")
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=self.distro.currentseries,
+            sourcepackagename=source_package_name)
         with person_logged_in(self.owner):
-            self.generic_task.sourcepackagename = source_package_name
+            self.generic_task.transitionToTarget(
+                self.distro.getSourcePackage(source_package_name))
             self.assertEqual(
                 source_package_name, self.series_task.sourcepackagename)
 
