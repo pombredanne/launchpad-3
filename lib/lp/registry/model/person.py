@@ -2742,19 +2742,14 @@ class Person(
     def createPPA(self, name=None, displayname=None, description=None,
                   private=False):
         """See `IPerson`."""
-        errors = Archive.validatePPA(self, name)
+        errors = Archive.validatePPA(self, name, private)
         if errors:
             raise PPACreationError(errors)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        ppa = getUtility(IArchiveSet).new(
+        return getUtility(IArchiveSet).new(
             owner=self, purpose=ArchivePurpose.PPA,
             distribution=ubuntu, name=name, displayname=displayname,
             description=description)
-        if private:
-            # Put this in a conditional because the security system will raise
-            # an error even if we set it to False.
-            ppa.private = True
-        return ppa
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""

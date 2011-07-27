@@ -46,10 +46,10 @@ They aren't a commercial admin, so they cannot create private PPAs.
   ...     displayname='My secret new PPA', description='Secretness!',
   ...     private=True,
   ...     )
-  HTTP/1.1 401 Unauthorized
-  Status: 401
+  HTTP/1.1 400 Bad Request
+  Status: 400
   ...
-  (<Archive at ...>, 'private', 'launchpad.Commercial')
+  ... is not allowed to make private PPAs
 
 After attempting and failing to create a private PPA, they still have the same
 single PPA they had at the beginning:
