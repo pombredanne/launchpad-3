@@ -617,6 +617,17 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
             self._unfoldEmailHeader(expected),
             self._unfoldEmailHeader(observed))
 
+    def assertStartsWith(self, s, prefix):
+        if not s.startswith(prefix):
+            raise AssertionError(
+                'string %r does not start with %r' % (s, prefix))
+
+    def assertEndsWith(self, s, suffix):
+        """Asserts that s ends with suffix."""
+        if not s.endswith(suffix):
+            raise AssertionError(
+                'string %r does not end with %r' % (s, suffix))
+
 
 class TestCaseWithFactory(TestCase):
 

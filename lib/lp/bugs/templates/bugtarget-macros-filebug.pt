@@ -349,15 +349,14 @@
             <td class="bug-already-reported-expander">
               <tal:comment condition="nothing">
                 We use zero-width space (&#8203;) to force the otherwise
-                empty span using sprite image to show up.
+                empty span using sprite image to show up. Also no whitespace
+                between tags is allowed.
               </tal:comment>
-              <span class="expander">&#8203;</span>
-              <label tal:attributes="for string:bug-already-reported-as-${bug/id};
+              <span class="expander">&#8203;</span><label
+                 tal:attributes="for string:bug-already-reported-as-${bug/id};
                                      class bugtask/image:sprite_css"
-                     tal:condition="bugtask">&#8203;</label>
-              <label class="sprite bug" tal:condition="not:bugtask">
-                &#8203;
-              </label>
+                     tal:condition="bugtask">&#8203;</label><label
+                 class="sprite bug" tal:condition="not:bugtask">&#8203;</label>
             </td>
             <td>
               <div>
