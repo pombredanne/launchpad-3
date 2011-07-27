@@ -902,6 +902,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
             .joinInner(SourcePackageName,
                 SourcePackageName.id == POTemplate.sourcepackagenameID))
 
+        # We query for SourcePackageName so it will be cached, so there is no
+        # need to include it in the results.
         return join.select(POTemplate, Packaging, ProductSeries, Product,
             OtherTemplate, SourcePackageName)
 
@@ -937,6 +939,10 @@ class BaseSeriesTemplatesView(LaunchpadView):
         :param template: The target `POTemplate`.
         :return: HTML for the "sharing" status of `template`.
         """
+        # Testing is easier if we are willing to extract the sourcepackagename
+        # from the template.
+        if sourcepackagename is None:
+            sourcepackagename = template.sourcepackagename
         # Build the edit link.
         escaped_source = cgi.escape(sourcepackagename.name)
         source_url = '+source/%s' % escaped_source
