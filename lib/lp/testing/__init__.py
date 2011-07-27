@@ -302,6 +302,7 @@ class StormStatementRecorder:
 
     def connection_raw_execute(self, ignored, raw_cursor, statement, params):
         """Increment the counter.  We don't care about the args."""
+
         raw_params = []
         for param in params:
             if isinstance(param, Variable):

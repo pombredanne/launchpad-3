@@ -73,18 +73,13 @@ from lp.app.enums import (
     )
 from lp.app.errors import NotFoundError
 from lp.registry.browser.productseries import ProductSeriesFacets
-from lp.registry.browser.sourcepackage import (
-    SourcePackageFacets,
-    SourcePackageOverviewMenu,
-    )
+from lp.registry.browser.sourcepackage import SourcePackageFacets
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.services.database.collection import Collection
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.model.potemplate import POTemplate
 from lp.translations.browser.poexportrequest import BaseExportView
@@ -885,12 +880,14 @@ class BaseSeriesTemplatesView(LaunchpadView):
         self.user_is_logged_in = (self.user is not None)
 
     def iter_data(self):
-        # TODO Figure out why the collection doesn't have security declarations.
+        # TODO Figure out why the ITranslationTemplatesCollection doesn't
+        # include joinOuter and joinInner.
         OtherTemplate = ClassAlias(POTemplate)
         join = (removeSecurityProxy(self.context.getTemplatesCollection())
             .joinOuter(Packaging, And(
                 Packaging.distroseries == self.context.id,
-                Packaging.sourcepackagename == POTemplate.sourcepackagenameID))
+                Packaging.sourcepackagename ==
+                    POTemplate.sourcepackagenameID))
             .joinOuter(ProductSeries,
                 ProductSeries.id == Packaging.productseriesID)
             .joinOuter(Product, And(
@@ -950,11 +947,9 @@ class BaseSeriesTemplatesView(LaunchpadView):
         source_url = '+source/%s' % escaped_source
         details_url = source_url + '/+sharing-details'
         edit_link = '<a class="sprite edit" href="%s"></a>' % details_url
-        not_shared = edit_link + 'not shared'
 
         # If all the conditions are met for sharing...
         if packaging and upstream and other_template is not None:
-            # Are the conditions met for this template to be considered "shared"?
             escaped_series = cgi.escape(productseries.name)
             escaped_template = cgi.escape(template.name)
             pot_url = ('/%s/%s/+pots/%s' %
