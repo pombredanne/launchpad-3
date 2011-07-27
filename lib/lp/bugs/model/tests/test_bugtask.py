@@ -1781,6 +1781,12 @@ class TestTransitionToTarget(TestCaseWithFactory):
             self.factory.makeProduct(),
             self.factory.makeProduct())
 
+    def test_target_type_transition_works(self):
+        # A transition from one type of target to another works.
+        self.assertTransitionWorks(
+            self.factory.makeProduct(),
+            self.factory.makeDistributionSourcePackage())
+
     def test_validation(self):
         # validateTransitionToTarget is called before any transition.
         p = self.factory.makeProduct()
