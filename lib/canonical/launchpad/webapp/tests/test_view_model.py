@@ -151,7 +151,7 @@ class TestJsonModelView(BrowserTestCase):
                 target_info = {}
                 target_info['title'] = "The Title"
                 cache = IJSONRequestCache(request).objects
-                cache['target_info'] =  target_info
+                cache['target_info'] = target_info
 
             def render(self):
                 request = get_current_browser_request()
