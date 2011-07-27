@@ -50,7 +50,7 @@
         </ul>
       </div>
       <div tal:replace="structure context/@@+global-actions" />
-      <div tal:replace="structure context/@@+portlet-subscribers" />
+      <!-- TODO - wire up new javascript subscribers portlet -->
     </metal:portlets>
 
     <div metal:fill-slot="main">
