@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for QuestionSubscription views."""
@@ -11,14 +11,10 @@ from testtools.matchers import Equals
 from zope.component import getUtility
 from zope.traversing.browser import absoluteURL
 
-from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lazr.restful.interfaces import IWebServiceClientRequest
-from lp.answers.browser.questionsubscription import (
-    QuestionPortletSubscribersWithDetails,
-)
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
     person_logged_in,
@@ -27,6 +23,7 @@ from lp.testing import (
     )
 from lp.testing.matchers import HasQueryCount
 from lp.testing.sampledata import ADMIN_EMAIL
+from lp.testing.views import create_view
 
 
 class QuestionPortletSubscribersWithDetailsTests(TestCaseWithFactory):
@@ -37,12 +34,11 @@ class QuestionPortletSubscribersWithDetailsTests(TestCaseWithFactory):
         question = self.factory.makeQuestion()
 
         # It works even for anonymous users, so no log-in is needed.
-        harness = LaunchpadFormHarness(
-            question, QuestionPortletSubscribersWithDetails)
-        harness.view.render()
+        view = create_view(question, '+portlet-subscribers-details')
+        view.render()
 
         self.assertEqual(
-            harness.request.response.getHeader('content-type'),
+            view.request.response.getHeader('content-type'),
             'application/json')
 
     def test_view_url(self):
@@ -85,9 +81,8 @@ class QuestionPortletSubscribersWithDetailsTests(TestCaseWithFactory):
 
     def test_data_no_subscriptions(self):
         question = self._makeQuestionWithNoSubscribers()
-        harness = LaunchpadFormHarness(
-            question, QuestionPortletSubscribersWithDetails)
-        self.assertEqual(dumps([]), harness.view.subscriber_data_js)
+        view = create_view(question, '+portlet-subscribers-details')
+        self.assertEqual(dumps([]), view.subscriber_data_js)
 
     def test_data_person_subscription(self):
         # subscriber_data_js returns JSON string of a list
@@ -98,9 +93,8 @@ class QuestionPortletSubscribersWithDetailsTests(TestCaseWithFactory):
             name='user', displayname='Subscriber Name')
         with person_logged_in(subscriber):
             question.subscribe(subscriber, subscriber)
-        harness = LaunchpadFormHarness(
-            question, QuestionPortletSubscribersWithDetails)
-        api_request = IWebServiceClientRequest(harness.request)
+        view = create_view(question, '+portlet-subscribers-details')
+        api_request = IWebServiceClientRequest(view.request)
 
         expected_result = {
             'subscriber': {
@@ -114,7 +108,7 @@ class QuestionPortletSubscribersWithDetailsTests(TestCaseWithFactory):
             'subscription_level': "Direct",
             }
         self.assertEqual(
-            dumps([expected_result]), harness.view.subscriber_data_js)
+            dumps([expected_result]), view.subscriber_data_js)
 
     def test_data_person_subscription_other_subscriber_query_count(self):
         # All subscriber data should be retrieved with a single query.
@@ -126,12 +120,11 @@ class QuestionPortletSubscribersWithDetailsTests(TestCaseWithFactory):
         with person_logged_in(subscriber):
             question.subscribe(person=subscriber,
                           subscribed_by=subscribed_by)
-        harness = LaunchpadFormHarness(
-            question, QuestionPortletSubscribersWithDetails)
+        view = create_view(question, '+portlet-subscribers-details')
         # Invoke the view method, ignoring the results.
         Store.of(question).invalidate()
         with StormStatementRecorder() as recorder:
-            harness.view.direct_subscriber_data(question)
+            view.direct_subscriber_data(question)
         self.assertThat(recorder, HasQueryCount(Equals(1)))
 
     def test_data_team_subscription(self):
@@ -144,9 +137,8 @@ class QuestionPortletSubscribersWithDetailsTests(TestCaseWithFactory):
             name='team', displayname='Team Name', owner=teamowner)
         with person_logged_in(subscriber.teamowner):
             question.subscribe(subscriber, subscriber.teamowner)
-        harness = LaunchpadFormHarness(
-            question, QuestionPortletSubscribersWithDetails)
-        api_request = IWebServiceClientRequest(harness.request)
+        view = create_view(question, '+portlet-subscribers-details')
+        api_request = IWebServiceClientRequest(view.request)
 
         expected_result = {
             'subscriber': {
@@ -160,7 +152,7 @@ class QuestionPortletSubscribersWithDetailsTests(TestCaseWithFactory):
             'subscription_level': "Direct",
             }
         self.assertEqual(
-            dumps([expected_result]), harness.view.subscriber_data_js)
+            dumps([expected_result]), view.subscriber_data_js)
 
     def test_data_team_subscription_owner_looks(self):
         # For a team subscription, subscriber_data_js has can_edit
@@ -172,9 +164,8 @@ class QuestionPortletSubscribersWithDetailsTests(TestCaseWithFactory):
             name='team', displayname='Team Name', owner=teamowner)
         with person_logged_in(subscriber.teamowner):
             question.subscribe(subscriber, subscriber.teamowner)
-            harness = LaunchpadFormHarness(
-                question, QuestionPortletSubscribersWithDetails)
-        api_request = IWebServiceClientRequest(harness.request)
+        view = create_view(question, '+portlet-subscribers-details')
+        api_request = IWebServiceClientRequest(view.request)
 
         expected_result = {
             'subscriber': {
@@ -189,7 +180,7 @@ class QuestionPortletSubscribersWithDetailsTests(TestCaseWithFactory):
             }
         with person_logged_in(subscriber.teamowner):
             self.assertEqual(
-                dumps([expected_result]), harness.view.subscriber_data_js)
+                dumps([expected_result]), view.subscriber_data_js)
 
     def test_data_team_subscription_member_looks(self):
         # For a team subscription, subscriber_data_js has can_edit
@@ -203,9 +194,8 @@ class QuestionPortletSubscribersWithDetailsTests(TestCaseWithFactory):
             members=[member])
         with person_logged_in(subscriber.teamowner):
             question.subscribe(subscriber, subscriber.teamowner)
-        harness = LaunchpadFormHarness(
-            question, QuestionPortletSubscribersWithDetails)
-        api_request = IWebServiceClientRequest(harness.request)
+        view = create_view(question, '+portlet-subscribers-details')
+        api_request = IWebServiceClientRequest(view.request)
 
         expected_result = {
             'subscriber': {
@@ -220,7 +210,7 @@ class QuestionPortletSubscribersWithDetailsTests(TestCaseWithFactory):
             }
         with person_logged_in(subscriber.teamowner):
             self.assertEqual(
-                dumps([expected_result]), harness.view.subscriber_data_js)
+                dumps([expected_result]), view.subscriber_data_js)
 
     def test_data_subscription_lp_admin(self):
         # For a subscription, subscriber_data_js has can_edit
@@ -231,9 +221,8 @@ class QuestionPortletSubscribersWithDetailsTests(TestCaseWithFactory):
             name='user', displayname='Subscriber Name')
         with person_logged_in(member):
             question.subscribe(subscriber, subscriber)
-        harness = LaunchpadFormHarness(
-            question, QuestionPortletSubscribersWithDetails)
-        api_request = IWebServiceClientRequest(harness.request)
+        view = create_view(question, '+portlet-subscribers-details')
+        api_request = IWebServiceClientRequest(view.request)
 
         expected_result = {
             'subscriber': {
@@ -251,7 +240,7 @@ class QuestionPortletSubscribersWithDetailsTests(TestCaseWithFactory):
         admin = getUtility(IPersonSet).find(ADMIN_EMAIL).any()
         with person_logged_in(admin):
             self.assertEqual(
-                dumps([expected_result]), harness.view.subscriber_data_js)
+                dumps([expected_result]), view.subscriber_data_js)
 
     def test_data_person_subscription_user_excluded(self):
         # With the subscriber logged in, he is not included in the results.
@@ -261,6 +250,5 @@ class QuestionPortletSubscribersWithDetailsTests(TestCaseWithFactory):
 
         with person_logged_in(subscriber):
             question.subscribe(subscriber, subscriber)
-            harness = LaunchpadFormHarness(
-                question, QuestionPortletSubscribersWithDetails)
-            self.assertEqual(dumps([]), harness.view.subscriber_data_js)
+            view = create_view(question, '+portlet-subscribers-details')
+            self.assertEqual(dumps([]), view.subscriber_data_js)
