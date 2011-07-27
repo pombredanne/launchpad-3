@@ -570,7 +570,10 @@ def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
     user (archive@ubuntu.com).
     """
     katie = getUtility(ILaunchpadCelebrities).katie
-    changed_by = email_to_person(changed_by_email)
+    try:
+        changed_by = email_to_person(changed_by_email)
+    except ParseMaintError:
+        return False
     return (
         spr and not bprs and changed_by == katie and
         pocket != PackagePublishingPocket.SECURITY)
