@@ -516,6 +516,18 @@ class IQuestion(IHasOwner):
         return a HTTP Error 401: Unauthorized error for non-admin callers.
         """
 
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=False))
+    @call_with(unsubscribed_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version("devel")
+    def removeAnswerContact(person, unsubscribed_by):
+        """Remove the `person` as an answer contact from the question target.
+
+        :param person: the answer contact.
+        :param unsubscribed_by: the person who removed the contact.
+        """
+
 
 # These schemas are only used by browser/question.py and should really live
 # there. See Bug #66950.
