@@ -60,6 +60,7 @@ from lp.app.errors import NotFoundError
 # that it needs a bit of redesigning here around the publication stuff.
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
+from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -1298,12 +1299,18 @@ class PackageUploadCustom(SQLBase):
                   "in MAIN_ARCHIVE_PURPOSES.")
             return
 
+        # If the distroseries is 11.10 (oneiric) or later, the valid names
+        # check is not required.  (See bug 788685.)
+        distroseries = sourcepackagerelease.upload_distroseries
+        do_names_check = Version(distroseries.version) < Version('11.10')
+
         valid_pockets = (
             PackagePublishingPocket.RELEASE, PackagePublishingPocket.SECURITY,
             PackagePublishingPocket.UPDATES, PackagePublishingPocket.PROPOSED)
-        valid_component_names = ('main', 'restricted')
+        valid_components = ('main', 'restricted')
         if (self.packageupload.pocket not in valid_pockets or
-            sourcepackagerelease.component.name not in valid_component_names):
+            (do_names_check and
+            sourcepackagerelease.component.name not in valid_components)):
             # XXX: CarlosPerelloMarin 2006-02-16 bug=31665:
             # This should be implemented using a more general rule to accept
             # different policies depending on the distribution.
