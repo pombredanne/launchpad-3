@@ -350,9 +350,9 @@ class ContainerRevision():
         text = [
             " * [[%s|r%s%s]] -- %s\n" % (
                 rev_id_url, self.top_rev.revno,
-                ' (%s)' % name if name else '',
+                ' (%s)' % name.encode('utf-8') if name else '',
                 date_str),
-            " {{{\n%s\n}}}\n" % message,
+            " {{{\n%s\n}}}\n" % message.encode('utf-8'),
             " '''Commits:'''\n ",
             commits_block,
             "\n",
