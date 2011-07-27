@@ -31,9 +31,11 @@ import operator
 import os.path
 
 from storm.expr import (
+    Alias,
     And,
     In,
     Or,
+    SQL,
     )
 from zope.component import getUtility
 from zope.interface import implements
@@ -884,6 +886,9 @@ class BaseSeriesTemplatesView(LaunchpadView):
 
     def iter_data(self):
         # TODO Figure out why the collection doesn't have security declarations.
+        import pdb;pdb.set_trace()
+        names = Alias(
+            SQL('SELECT name, productseries FROM POTemplate', ''))
         join = (removeSecurityProxy(self.context.getTemplatesCollection())
             .joinOuter(Packaging, And(
                 Packaging.distroseries == self.context.id,
@@ -898,6 +903,11 @@ class BaseSeriesTemplatesView(LaunchpadView):
                     Product._translations_usage == ServiceUsage.LAUNCHPAD,
                     Product._translations_usage == ServiceUsage.EXTERNAL)
                 )))
+#            .joinOuter(names,
+#                names.productseries == Packaging.productseriesID,
+#                names.name == POTemplate.name
+#                ))
+
 
         return join.select(POTemplate, Packaging, ProductSeries, Product)
 
@@ -933,9 +943,6 @@ class BaseSeriesTemplatesView(LaunchpadView):
         :return: HTML for the "sharing" status of `template`.
         """
         # Build the edit link.
-        from lp.testing import StormStatementRecorder
-        recorder = StormStatementRecorder()
-        recorder.__enter__()
         escaped_source = cgi.escape(template.sourcepackagename.name)
         source_url = '+source/%s' % escaped_source
         details_url = source_url + '/+sharing-details'
@@ -958,13 +965,11 @@ class BaseSeriesTemplatesView(LaunchpadView):
             escaped_template = cgi.escape(template.name)
             pot_url = ('/%s/%s/+pots/%s' %
                 (escaped_source, escaped_series, escaped_template))
-            recorder.__exit__(None, None, None)
             return (edit_link + '<a href="%s">%s/%s</a>'
                 % (pot_url, escaped_source, escaped_series))
         else:
             # Otherwise just say that the template isn't shared and give them
             # a link to change the sharing.
-            recorder.__exit__(None, None, None)
             return edit_link + 'not shared'
 
     def _renderLastUpdateDate(self, template):
