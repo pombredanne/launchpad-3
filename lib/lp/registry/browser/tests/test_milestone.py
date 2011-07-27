@@ -397,6 +397,9 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
             bug = self.factory.makeBug(distribution=self.ubuntu)
             distrosourcepackage = self.factory.makeDistributionSourcePackage(
                 distribution=self.ubuntu)
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=self.ubuntu.currentseries,
+                sourcepackagename=distrosourcepackage.sourcepackagename)
             bug.bugtasks[0].transitionToTarget(distrosourcepackage)
             bug.bugtasks[0].transitionToMilestone(
                 self.milestone, self.owner)

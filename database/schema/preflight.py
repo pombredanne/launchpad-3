@@ -6,6 +6,13 @@
 
 import _pythonpath
 
+__all__ = [
+    'DatabasePreflight',
+    'KillConnectionsPreflight',
+    'NoConnectionCheckPreflight',
+    ]
+
+
 from datetime import timedelta
 from optparse import OptionParser
 import sys
@@ -29,12 +36,22 @@ import replication.helpers
 # Ignore connections by these users.
 SYSTEM_USERS = frozenset(['postgres', 'slony', 'nagios', 'lagmon'])
 
+# Fail checks if these users are connected. If a process should not be
+# interrupted by a rollout, the database user it connects as should be
+# added here. The preflight check will fail if any of these users are
+# connected, so these systems will need to be shut down manually before
+# a database update.
+FRAGILE_USERS = frozenset(['archivepublisher'])
+
 # How lagged the cluster can be before failing the preflight check.
-MAX_LAG = timedelta(seconds=45)
+MAX_LAG = timedelta(seconds=60)
 
 
 class DatabasePreflight:
-    def __init__(self, log, master_con):
+    def __init__(self, log):
+        master_con = connect(lp.dbuser)
+        master_con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+
         self.log = log
         self.is_replicated = replication.helpers.slony_installed(master_con)
         if self.is_replicated:
@@ -118,6 +135,35 @@ class DatabasePreflight:
             self.log.info("Only system users connected to the cluster")
         return success
 
+    def check_fragile_connections(self):
+        """Fail if any FRAGILE_USERS are connected to the cluster.
+
+        If we interrupt these processes, we may have a mess to clean
+        up. If they are connected, the preflight check should fail.
+        """
+        success = True
+        for node in self.lpmain_nodes:
+            cur = node.con.cursor()
+            cur.execute("""
+                SELECT datname, usename, COUNT(*) AS num_connections
+                FROM pg_stat_activity
+                WHERE
+                    datname=current_database()
+                    AND procpid <> pg_backend_pid()
+                    AND usename IN %s
+                GROUP BY datname, usename
+                """ % sqlvalues(FRAGILE_USERS))
+            for datname, usename, num_connections in cur.fetchall():
+                self.log.fatal(
+                    "Fragile system %s running. %s has %d connections.",
+                    usename, datname, num_connections)
+                success = False
+        if success:
+            self.log.info(
+                "No fragile systems connected to the cluster (%s)"
+                % ', '.join(FRAGILE_USERS))
+        return success
+
     def check_long_running_transactions(self, max_secs=10):
         """Return False if any nodes have long running transactions open.
 
@@ -155,7 +201,6 @@ class DatabasePreflight:
         # Check replication lag on every node just in case there are
         # disagreements.
         max_lag = timedelta(seconds=-1)
-        max_lag_node = None
         for node in self.nodes:
             cur = node.con.cursor()
             cur.execute("""
@@ -165,7 +210,6 @@ class DatabasePreflight:
             dbname, lag = cur.fetchone()
             if lag > max_lag:
                 max_lag = lag
-                max_lag_node = node
             self.log.debug(
                 "%s reports database lag of %s.", dbname, lag)
         if max_lag <= MAX_LAG:
@@ -208,13 +252,17 @@ class DatabasePreflight:
             return False
 
         success = True
+        if not self.check_replication_lag():
+            success = False
+        if not self.check_can_sync():
+            success = False
+        # Do checks on open transactions last to minimize race
+        # conditions.
         if not self.check_open_connections():
             success = False
         if not self.check_long_running_transactions():
             success = False
-        if not self.check_replication_lag():
-            success = False
-        if not self.check_can_sync():
+        if not self.check_fragile_connections():
             success = False
         return success
 
@@ -237,7 +285,8 @@ class KillConnectionsPreflight(DatabasePreflight):
         for node in self.lpmain_nodes:
             cur = node.con.cursor()
             cur.execute("""
-                SELECT procpid, datname, usename, pg_terminate_backend(procpid)
+                SELECT
+                    procpid, datname, usename, pg_terminate_backend(procpid)
                 FROM pg_stat_activity
                 WHERE
                     datname=current_database()
@@ -272,15 +321,12 @@ def main():
 
     log = logger(options)
 
-    master_con = connect(lp.dbuser)
-    master_con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-
     if options.kill_connections:
-        preflight_check = KillConnectionsPreflight(log, master_con)
+        preflight_check = KillConnectionsPreflight(log)
     elif options.skip_connection_check:
-        preflight_check = NoConnectionCheckPreflight(log, master_con)
+        preflight_check = NoConnectionCheckPreflight(log)
     else:
-        preflight_check = DatabasePreflight(log, master_con)
+        preflight_check = DatabasePreflight(log)
 
     if preflight_check.check_all():
         log.info('Preflight check succeeded. Good to go.')
