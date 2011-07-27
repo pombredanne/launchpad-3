@@ -130,7 +130,8 @@ class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
 
     def overview(self):
         text = 'Overview'
-        summary = 'General information about {0}'.format(self.context.displayname)
+        summary = 'General information about {0}'.format(
+            self.context.displayname)
         return Link('', text, summary)
 
     def bugs(self):

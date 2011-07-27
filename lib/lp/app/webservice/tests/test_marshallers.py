@@ -6,13 +6,11 @@
 __metaclass__ = type
 
 import transaction
-from zope.component import getUtility
 
 from canonical.launchpad.testing.pages import (
     LaunchpadWebServiceCaller,
     webservice_for_person,
     )
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.servers import WebServiceTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.webservice.marshallers import TextFieldMarshaller
