@@ -15,6 +15,7 @@ from zope.interface import implements
 from canonical.database.sqlbase import SQLBase
 from lp.answers.interfaces.questionsubscription import IQuestionSubscription
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.role import IPersonRoles
 
 
 class QuestionSubscription(SQLBase):
@@ -30,3 +31,17 @@ class QuestionSubscription(SQLBase):
     person = ForeignKey(
         dbName='person', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
+
+    def canBeUnsubscribedByUser(self, user):
+        """See `IQuestionSubscription`."""
+        if user is None:
+            return False
+        # The people who can unsubscribe someone are:
+        # - lp admins
+        # - the person themselves
+        # - the question owner
+        # - people who can reject questions (eg target owner, answer contacts)
+        return (user.inTeam(self.question.owner) or
+                user.inTeam(self.person) or
+                IPersonRoles(user).in_admin or
+                self.question.canReject(user))

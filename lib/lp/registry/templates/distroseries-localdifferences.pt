@@ -38,7 +38,7 @@
 
       <div metal:use-macro="context/@@launchpad_form/form">
 
-      <div tal:condition="differences/batch" metal:fill-slot="widgets">
+      <div metal:fill-slot="widgets">
         <tal:navigation_top
           replace="structure differences/@@+navigation-links-upper" />
           <table class="listing">
@@ -61,13 +61,15 @@
                 <a tal:attributes="href context/fmt:url"
                    tal:content="series_name">Deriwarty</a> version
               </th>
-              <th tal:condition="view/show_parent_packagesets">
+              <th tal:condition="view/show_parent_packagesets"
+                  class="parent-package-sets">
                 Parent package-sets
               </th>
-              <th tal:condition="view/show_packagesets">
+              <th tal:condition="view/show_packagesets"
+                  class="package-sets">
                 Package-sets
               </th>
-               <th>Last uploaded</th>
+              <th>Last changed</th>
               <th>Latest comment</th>
             </tr>
           </thead>
@@ -143,26 +145,46 @@
                 <tal:replace replace="difference/@@/packagesets_names" />
               </td>
 
-              <td>
+              <td class="last-changed">
                 <tal:parent condition="not: view/show_derived_version">
                   <tal:published condition="parent_source_pub">
                     <span tal:attributes="title parent_source_pub/datepublished/fmt:datetime"
                           tal:content="parent_source_pub/datepublished/fmt:approximatedate">2005-09-16</span>
-                    <tal:signer condition="parent_source_pub/sourcepackagerelease/uploader">
-                      by <a tal:replace="structure parent_source_pub/sourcepackagerelease/uploader/fmt:link">Steph Smith</a>
-                    </tal:signer>
+                    <tal:creator define="spr parent_source_pub/sourcepackagerelease">
+                      <span class="nowrap">by <a tal:replace="structure spr/creator/fmt:link" /></span>
+                    </tal:creator>
+                    <tal:uploader
+                        define="uploader parent_source_pub/sourcepackagerelease/uploader;
+                                creator parent_source_pub/sourcepackagerelease/creator"
+                        condition="python: uploader not in (None, creator)">
+                      <br />
+                      <span class="discreet nowrap">
+                        (uploaded by <a tal:attributes="href uploader/fmt:url"
+                         tal:content="uploader/fmt:displayname" />)
+                      </span>
+                    </tal:uploader>
                   </tal:published>
                   <tal:not-published condition="not:parent_source_pub">
                     <span tal:content="difference/parent_source_version" />
                   </tal:not-published>
                 </tal:parent>
                 <tal:derived condition="view/show_derived_version">
-                  <tal:published condition="parent_source_pub">
+                  <tal:published condition="source_pub">
                     <span tal:attributes="title source_pub/datepublished/fmt:datetime"
                           tal:content="source_pub/datepublished/fmt:approximatedate">2005-09-16</span>
-                    <tal:signer condition="source_pub/sourcepackagerelease/uploader">
-                      by <a tal:replace="structure source_pub/sourcepackagerelease/uploader/fmt:link">Steph Smith</a>
-                    </tal:signer>
+                    <tal:creator define="spr source_pub/sourcepackagerelease">
+                      <span class="nowrap">by <a tal:replace="structure spr/creator/fmt:link" /></span>
+                    </tal:creator>
+                    <tal:uploader
+                        define="uploader source_pub/sourcepackagerelease/uploader;
+                                creator source_pub/sourcepackagerelease/creator"
+                        condition="python: uploader not in (None, creator)">
+                      <br />
+                      <span class="discreet nowrap">
+                        (uploaded by <a tal:attributes="href uploader/fmt:url"
+                         tal:content="uploader/fmt:displayname" />)
+                      </span>
+                    </tal:uploader>
                   </tal:published>
                   <tal:not-published condition="not:source_pub">
                     <span tal:content="difference/source_version" />
@@ -201,6 +223,18 @@ LPS.use('lp.registry.distroseriesdifferences_details', function(Y) {
 
   Y.on('domready', diff_module.setup_expandable_rows);
 });
+</script>
+<script type="text/javascript">
+  LPS.use("lp.registry.distroseries.differences", function(Y) {
+    Y.on("domready", function() {
+      var form = Y.one("form#distroseries-localdiff-search-filter");
+      var differences = Y.lp.registry.distroseries.differences;
+      // Probably only one, but check for more just in case.
+      Y.all("th.package-sets").each(function(header) {
+        differences.connect_packageset_picker(header, form);
+      });
+    });
+  });
 </script>
 
     </div>

@@ -15,7 +15,11 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from lp.services.worlddata.interfaces.country import ICountrySet
-from lp.testing import person_logged_in, TestCaseWithFactory
+from lp.testing import (
+    logout,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 from canonical.launchpad.webapp import publisher
 
@@ -79,6 +83,14 @@ class TestLaunchpadView(TestCaseWithFactory):
         json_dict = simplejson.loads(view.getCacheJSON())
         self.assertIsCanada(json_dict['context'])
         self.assertFalse('my_bool' in json_dict)
+
+    def test_getCache_anonymous_obfuscated(self):
+        request = LaunchpadTestRequest()
+        branch = self.factory.makeBranch(name='user@domain')
+        logout()
+        view = LaunchpadView(branch, request)
+        self.assertIs(None, view.user)
+        self.assertNotIn('user@domain', view.getCacheJSON())
 
 
 def test_suite():
