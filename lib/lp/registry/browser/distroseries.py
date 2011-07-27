@@ -97,6 +97,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import getFeatureFlag
@@ -1039,6 +1040,18 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             packageset for packageset in packagesets
             if packageset.id in packageset_ids)
         return None if len(packagesets) == 0 else packagesets
+
+    @property
+    def specified_changed_by_filter(self):
+        """If specified, return Persons given in the GET form data."""
+        get_person_by_name = getUtility(IPersonSet).getByName
+        changed_by_names = set(
+            self.request.query_string_params.get("field.changed_by", ()))
+        changed_by = (
+            get_person_by_name(name) for name in changed_by_names)
+        changed_by = set(
+            person for person in changed_by if person is not None)
+        return None if len(changed_by) == 0 else changed_by
 
     @property
     def specified_package_type(self):

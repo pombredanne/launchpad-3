@@ -2133,6 +2133,35 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
                 [packageset1, packageset2],
                 view.specified_packagesets_filter)
 
+    def test_specified_changed_by_filter_none_specified(self):
+        # specified_changed_by_filter is None when there are no
+        # field.changed_by parameters in the query.
+        set_derived_series_ui_feature_flag(self)
+        dsd = self.factory.makeDistroSeriesDifference()
+        person = dsd.derived_series.owner
+        with person_logged_in(person):
+            view = create_initialized_view(
+                dsd.derived_series, '+localpackagediffs', method='GET',
+                query_string='')
+            self.assertIs(None, view.specified_changed_by_filter)
+
+    def test_specified_changed_by_filter_specified(self):
+        # specified_changed_by_filter returns a collection of Person when
+        # there are field.changed_by query parameters.
+        set_derived_series_ui_feature_flag(self)
+        dsd = self.factory.makeDistroSeriesDifference()
+        person = dsd.derived_series.owner
+        changed_by1 = self.factory.makePerson()
+        changed_by2 = self.factory.makePerson()
+        with person_logged_in(person):
+            view = create_initialized_view(
+                dsd.derived_series, '+localpackagediffs', method='GET',
+                query_string='field.changed_by=%s&field.changed_by=%s' % (
+                    str(changed_by1.name), str(changed_by2.name)))
+            self.assertContentEqual(
+                [changed_by1, changed_by2],
+                view.specified_changed_by_filter)
+
     def test_search_for_packagesets(self):
         # If packagesets are supplied in the query the resulting batch will
         # only contain packages in the given packagesets.
