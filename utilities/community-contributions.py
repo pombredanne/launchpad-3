@@ -142,6 +142,7 @@ known_canonical_lp_devs = \
                               u'Guilherme Salgado',
                               u'Henning Eggers',
                               u'Herb McNew',
+                              u'Huw Wilkins',
                               u'Ian Booth',
                               u'James Henstridge',
                               u'j.c.sackett',
@@ -182,8 +183,11 @@ known_canonical_lp_devs = \
                               u'muharem {_AT_} canonical.com',
                               u'Patch Queue Manager',
                               u'Paul Hummer',
+                              u'Raphael Badin',
+                              u'Raphaël Badin',
                               u'Robert Collins',
                               u'root <root {_AT_} ubuntu>',
+                              u'rvb',
                               u'Stuart Bishop',
                               u'Steve Alexander',
                               u'Steve Kowalik',
@@ -195,6 +199,7 @@ known_canonical_lp_devs = \
                               u'Tom Berger',
                               u'ubuntu <ubuntu {_AT_} lp-dev>',
                               u'Ursula Junque',
+                              u'William Grant <william.grant {_AT_} canonical.com>',
                               )]
 
 # People known to work for Canonical but not on the Launchpad team.
@@ -218,9 +223,11 @@ known_canonical_non_lp_devs = \
                               u'John Lenton',
                               u'Kees Cook',
                               u'LaMont Jones',
+                              u'Loïc Minier',
                               u'Martin Pitt',
                               u'Martin Pool',
                               u'Matt Zimmerman',
+                              u'mbp {_AT_} sourcefrog.net',
                               u'Michael Casadevall',
                               u'Michael Vogt',
                               u'Sidnei da Silva',
@@ -258,7 +265,7 @@ merge_names_pairs = (
     (u'Adam Conrad <adconrad {_AT_} cthulhu>',
      u'Adam Conrad <adconrad {_AT_} 0c3.net>'),
     (u'James Westby <james.westby {_AT_} linaro.org>',
-     u'James Westby <james.westby {_AT_} canonical.com'),
+     u'James Westby <james.westby {_AT_} canonical.com>'),
     (u'Bryce Harrington <bryce {_AT_} canonical.com>',
      u'Bryce Harrington <bryce.harrington {_AT_} canonical.com>'),
     (u'Dustin Kirkland <kirkland {_AT_} x200>',
@@ -277,8 +284,14 @@ merge_names_pairs = (
      u'John Arbash Meinel <john {_AT_} arbash-meinel.com>'),
     (u'Martin Pool <mbp {_AT_} sourcefrog.net>',
      u'Martin Pool <mbp {_AT_} canonical.com>'),
+    (u'mbp {_AT_} sourcefrog.net',
+     u'Martin Pool <mbp {_AT_} canonical.com>'),
+    (u'mbp {_AT_} canonical.com',
+     u'Martin Pool <mbp {_AT_} canonical.com>'),
     (u'Andrea Corbellini <corbellini.andrea {_AT_} gmail.com>',
      u'Andrea Corbellini <andrea.corbellini {_AT_} beeseek.org>'),
+    (u'Luke Faraone <luke {_AT_} faraone.cc',
+     u'Luke Faraone <luke {_AT_} faraone.cc>'),
     )
 # Then put it in dictionary form with the correct encodings.
 merge_names_map = dict((wiki_encode(a), wiki_encode(b))
