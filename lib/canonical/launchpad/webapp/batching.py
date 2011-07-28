@@ -231,8 +231,9 @@ class StormRangeFactory:
 
     def getEndpointMemos(self, batch):
         """See `IRangeFactory`."""
-        lower = self.getOrderValuesFor(batch.first())
-        upper = self.getOrderValuesFor(batch.last())
+        lower = self.getOrderValuesFor(self.plain_resultset[0])
+        upper = self.getOrderValuesFor(
+            self.plain_resultset[batch.trueSize - 1])
         return (
             simplejson.dumps(lower, cls=DateTimeJSONEncoder),
             simplejson.dumps(upper, cls=DateTimeJSONEncoder),

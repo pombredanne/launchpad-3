@@ -196,10 +196,26 @@ class TestStormRangeFactory(TestCaseWithFactory):
         range_factory = StormRangeFactory(resultset)
         first, last = range_factory.getEndpointMemos(batchnav.batch)
         expected_first = simplejson.dumps(
-            range_factory.getOrderValuesFor(batchnav.batch.first()),
-            cls=DateTimeJSONEncoder)
+            [resultset[0].name], cls=DateTimeJSONEncoder)
         expected_last = simplejson.dumps(
-            range_factory.getOrderValuesFor(batchnav.batch.last()),
+            [resultset[2].name], cls=DateTimeJSONEncoder)
+        self.assertEqual(expected_first, first)
+        self.assertEqual(expected_last, last)
+
+    def test_getEndpointMemos__decorated_result_set(self):
+        # getEndpointMemos() works for DecoratedResultSet
+        # instances too.
+        resultset = self.makeDecoratedStormResultSet()
+        resultset.order_by(LibraryFileAlias.id)
+        request = LaunchpadTestRequest()
+        batchnav = BatchNavigator(
+            resultset, request, size=3, range_factory=StormRangeFactory)
+        range_factory = StormRangeFactory(resultset)
+        first, last = range_factory.getEndpointMemos(batchnav.batch)
+        expected_first = simplejson.dumps(
+            [resultset.getPlainResultSet()[0][1].id], cls=DateTimeJSONEncoder)
+        expected_last = simplejson.dumps(
+            [resultset.getPlainResultSet()[2][1].id],
             cls=DateTimeJSONEncoder)
         self.assertEqual(expected_first, first)
         self.assertEqual(expected_last, last)
@@ -399,6 +415,15 @@ class TestStormRangeFactory(TestCaseWithFactory):
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, memo, forwards=False)
         self.assertEqual(expected, list(sliced_result))
+
+    def test_getSlice__decorated_resultset(self):
+        resultset = self.makeDecoratedStormResultSet()
+        resultset.order_by(LibraryFileAlias.id)
+        all_results = list(resultset)
+        memo = simplejson.dumps([resultset.getPlainResultSet()[0][1].id])
+        range_factory = StormRangeFactory(resultset)
+        sliced_result = range_factory.getSlice(3, memo)
+        self.assertEqual(all_results[1:4], list(sliced_result))
 
 
 def test_suite():

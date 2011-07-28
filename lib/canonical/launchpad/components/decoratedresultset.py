@@ -11,8 +11,10 @@ __all__ = [
 from lazr.delegates import delegates
 from storm import Undef
 from storm.zope.interfaces import IResultSet
-from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import (
+    ProxyFactory,
+    removeSecurityProxy,
+    )
 
 
 class DecoratedResultSet(object):
@@ -175,3 +177,18 @@ class DecoratedResultSet(object):
     def getPlainResultSet(self):
         """Return the plain Storm result set."""
         return self.result_set
+
+    def find(self, *args, **kwargs):
+        """See `IResultSet`.
+
+        :return: The decorated version of the returned result set.
+        """
+        naked_result_set = removeSecurityProxy(self.result_set)
+        if naked_result_set is not self.result_set:
+            naked_new_result_set = naked_result_set.find(*args, **kwargs)
+            new_result_set = ProxyFactory(naked_new_result_set)
+        else:
+            new_result_set = self.result_set.find(*args, **kwargs)
+        return DecoratedResultSet(
+            new_result_set, self.result_decorator, self.pre_iter_hook,
+            self.slice_info)
