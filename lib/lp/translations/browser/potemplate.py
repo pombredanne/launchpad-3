@@ -479,7 +479,7 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
                     'be imported, %s will be reviewed manually by an '
                     'administrator in the coming few days.  You can track '
                     'your upload\'s status in the '
-                    '<a href="%s/+imports">Translation Import Queue</a>' %(
+                    '<a href="%s/+imports">Translation Import Queue</a>' % (
                         num, plural_s, plural_s, itthey,
                         canonical_url(self.context.translationtarget))))
                 if len(conflicts) > 0:
@@ -551,6 +551,8 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
     @action(_('Change'), name='change')
     def change_action(self, action, data):
         context = self.context
+        iscurrent = data.get('iscurrent', context.iscurrent)
+        context.setActive(iscurrent)
         old_description = context.description
         old_translation_domain = context.translation_domain
         self.updateContextFromData(data)
