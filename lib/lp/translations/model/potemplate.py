@@ -244,6 +244,17 @@ class POTemplate(SQLBase, RosettaStats):
         """See `IPOTemplate`."""
         self._cached_pofiles_by_language = None
 
+    def _removeFromSuggestivePOTemplatesCache(self):
+        """One level of indirection to make testing easier."""
+        getUtility(
+            IPOTemplateSet).removeFromSuggestivePOTemplatesCache(self)
+
+    def setActive(self, active):
+        """See `IPOTemplate`."""
+        if not active and active != self.iscurrent:
+            self._removeFromSuggestivePOTemplatesCache()
+        self.iscurrent = active
+
     @property
     def uses_english_msgids(self):
         """See `IPOTemplate`."""
@@ -1374,6 +1385,13 @@ class POTemplateSet:
         """See `IPOTemplateSet`."""
         return IMasterStore(POTemplate).execute(
             "DELETE FROM SuggestivePOTemplate").rowcount
+
+    def removeFromSuggestivePOTemplatesCache(self, potemplate):
+        """See `IPOTemplateSet`."""
+        rowcount = IMasterStore(POTemplate).execute(
+            "DELETE FROM SuggestivePOTemplate "
+            "WHERE potemplate = %s" % sqlvalues(potemplate)).rowcount
+        return rowcount == 1
 
     def populateSuggestivePOTemplatesCache(self):
         """See `IPOTemplateSet`."""

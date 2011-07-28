@@ -223,6 +223,13 @@ class TestJob(TestCaseWithFactory):
             job.status,
             JobStatus.WAITING)
 
+    def test_resume_clears_lease_expiry(self):
+        """A job that resumes should null out the lease_expiry."""
+        job = Job(_status=JobStatus.SUSPENDED)
+        job.lease_expires = UTC_NOW
+        job.resume()
+        self.assertIs(None, job.lease_expires)
+
     def test_resume_when_running(self):
         """When a job is running, attempting to resume is invalid."""
         job = Job(_status=JobStatus.RUNNING)
