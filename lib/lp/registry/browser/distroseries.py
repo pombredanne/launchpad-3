@@ -808,6 +808,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
 
     # Differences type to display. Can be overrided by sublasses.
     differences_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+    show_parent = True
     show_parent_version = True
     show_derived_version = True
     show_package_diffs = True
@@ -1252,7 +1253,8 @@ class DistroSeriesUniquePackagesView(DistroSeriesDifferenceBaseView,
     """
     page_title = 'Unique packages'
     differences_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
-    show_parent_version = False
+    show_parent = True
+    show_parent_version = False  # The DSDs are unique to the derived series.
     show_package_diffs = False
     show_packagesets = True
 
