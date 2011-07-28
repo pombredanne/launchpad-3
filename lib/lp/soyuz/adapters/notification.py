@@ -146,7 +146,8 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
         'accepted'.
     :param dry_run: If True, only log the mail.
     :param announce_from_person: If passed, use this `IPerson` as the From: in
-        announcement emails.
+        announcement emails.  If the person has no preferred email address,
+        the person is ignored and the default From: is used instead.
     """
     # If this is a binary or mixed upload, we don't send *any* emails
     # provided it's not a rejection or a security upload:
