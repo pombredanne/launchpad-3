@@ -102,7 +102,10 @@ class TestNotification(TestCaseWithFactory):
             self.assertEqual('Foo Bar <foo.bar@canonical.com>', field)
 
     def test_fetch_information_spr(self):
-        spr = self.factory.makeSourcePackageRelease(displayname=u"foø")
+        creator = self.factory.makePerson(displayname=u"foø")
+        maintainer = self.factory.makePerson(displayname=u"bær")
+        spr = self.factory.makeSourcePackageRelease(
+            creator=creator, maintainer=maintainer)
         info = fetch_information(spr, None, None)
         self.assertEqual(info['date'], spr.dateuploaded)
         self.assertEqual(info['changesfile'], spr.changelog_entry)
@@ -111,12 +114,10 @@ class TestNotification(TestCaseWithFactory):
         self.assertEqual(
             info['maintainer'], format_address_for_person(spr.maintainer))
         self.assertEqual(
-            formataddr((spr.creator.displayname,
-                        spr.creator.preferredemail.email)),
+            u"foø <%s>" % spr.creator.preferredemail.email,
             info['changedby_displayname'])
         self.assertEqual(
-            formataddr((spr.maintainer.displayname,
-                        spr.maintainer.preferredemail.email)),
+            u"bær <%s>" % spr.maintainer.preferredemail.email,
             info['maintainer_displayname'])
 
     def test_fetch_information_bprs(self):
