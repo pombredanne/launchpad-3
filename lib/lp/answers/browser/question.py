@@ -132,6 +132,14 @@ class QuestionLinksMixin:
             icon = 'mail'
         return Link('+subscribe', text, icon=icon)
 
+    def addsubscriber(self):
+        """Return the 'Subscribe someone else' Link."""
+        text = 'Subscribe someone else'
+        return Link(
+            '+addsubscriber', text, icon='add', summary=(
+                'Launchpad will email that person whenever this question '
+                'changes'))
+
     def edit(self):
         """Return a Link to the edit view."""
         text = 'Edit question'
@@ -159,7 +167,7 @@ class QuestionExtrasMenu(ApplicationMenu, QuestionLinksMixin):
     facet = 'answers'
     links = [
         'history', 'linkbug', 'unlinkbug', 'makebug', 'linkfaq',
-        'createfaq', 'edit', 'changestatus']
+        'createfaq', 'edit', 'changestatus', 'subscription', 'addsubscriber']
 
     def initialize(self):
         """Initialize the menu from the Question's state."""
@@ -821,26 +829,7 @@ class LinkFAQMixin:
         return smartquote('FAQ #%s: "%s".' % (faq.id, faq.title))
 
 
-class QuestionContextMenu(ContextMenu):
-    """Context menu of actions that can be performed upon a Question.
-
-    Currently only addsubscriber, but later editsubscription etc.
-    """
-    usedfor = IQuestion
-    links = [
-        'addsubscriber']
-
-    def addsubscriber(self):
-        """Return the 'Subscribe someone else' Link."""
-        text = 'Subscribe someone else'
-        return Link(
-            '+addsubscriber', text, icon='add', summary=(
-                'Launchpad will email that person whenever this question '
-                'changes'))
-
-
-class QuestionWorkflowView(LaunchpadFormView,
-                           LinkFAQMixin, QuestionContextMenu):
+class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
     """View managing the question workflow action, i.e. action changing
     its status.
     """
