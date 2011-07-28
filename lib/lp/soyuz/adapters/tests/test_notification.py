@@ -122,14 +122,22 @@ class TestNotification(TestCaseWithFactory):
 
     def test_fetch_information_bprs(self):
         bpr = self.factory.makeBinaryPackageRelease()
-        (changesfile, date, changedby, maintainer) = fetch_information(
-            None, [bpr], None)
+        info = fetch_information(None, [bpr], None)
         spr = bpr.build.source_package_release
-        self.assertEqual(date, spr.dateuploaded)
-        self.assertEqual(changesfile, spr.changelog_entry)
-        self.assertEqual(changedby, format_address_for_person(spr.creator))
+        self.assertEqual(info['date'], spr.dateuploaded)
+        self.assertEqual(info['changesfile'], spr.changelog_entry)
         self.assertEqual(
-            maintainer, format_address_for_person(spr.maintainer))
+            info['changedby'], format_address_for_person(spr.creator))
+        self.assertEqual(
+            info['maintainer'], format_address_for_person(spr.maintainer))
+        self.assertEqual(
+            info['changedby_displayname'],
+            formataddr((spr.creator.displayname,
+                        spr.creator.preferredemail.email)))
+        self.assertEqual(
+            info['maintainer_displayname'],
+            formataddr((spr.maintainer.displayname,
+                        spr.maintainer.preferredemail.email)))
 
     def test_calculate_subject_spr(self):
         spr = self.factory.makeSourcePackageRelease()
