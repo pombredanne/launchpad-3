@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# NOTE: The first line above must stay first; do not move the copyright
+# notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
+#
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -35,6 +39,25 @@ from lp.testing.mail_helpers import pop_notifications
 class TestNotificationRequiringLibrarian(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
+
+    def test_notify_from_unicode_names(self):
+        # People with unicode in their names should appear correctly in the
+        # email and not get smashed to ASCII or otherwise transliterated.
+        RANDOM_UNICODE = u"ø→łĸjħ"
+        creator = self.factory.makePerson(displayname=RANDOM_UNICODE)
+        spr = self.factory.makeSourcePackageRelease(creator=creator)
+        self.factory.makeSourcePackageReleaseFile(sourcepackagerelease=spr)
+        archive = self.factory.makeArchive()
+        pocket = self.factory.getAnyPocket()
+        distroseries = self.factory.makeDistroSeries()
+        distroseries.changeslist = "blah@example.com"
+        blamer = self.factory.makePerson()
+        notify(
+            blamer, spr, [], [], archive, distroseries, pocket,
+            action='accepted')
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        self.assertIn(RANDOM_UNICODE, notifications[0].get_payload()[0])
 
     def test_calculate_subject_customfile(self):
         lfa = self.factory.makeLibraryFileAlias()
