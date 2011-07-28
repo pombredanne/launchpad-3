@@ -880,10 +880,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
         self.user_is_logged_in = (self.user is not None)
 
     def iter_data(self):
-        # TODO Figure out why the ITranslationTemplatesCollection doesn't
-        # include joinOuter and joinInner.
         OtherTemplate = ClassAlias(POTemplate)
-        join = (removeSecurityProxy(self.context.getTemplatesCollection())
+        join = (self.context.getTemplatesCollection()
             .joinOuter(Packaging, And(
                 Packaging.distroseries == self.context.id,
                 Packaging.sourcepackagename ==
