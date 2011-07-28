@@ -1206,10 +1206,10 @@ class BugTargetBugListingView(LaunchpadView):
             series = self.context.distribution.series
         elif IDistribution(self.context, None):
             series = self.context.series
-        elif IProduct(self.context, None):
-            series = self.context.series
         elif IProductSeries(self.context, None):
             series = self.context.product.series
+        elif IProduct(self.context, None):
+            series = self.context.series
         else:
             raise AssertionError("series_list called with illegal context")
         return list(series)
@@ -1220,10 +1220,10 @@ class BugTargetBugListingView(LaunchpadView):
             milestone_resultset = self.context.distribution.milestones
         elif IDistribution(self.context, None):
             milestone_resultset = self.context.milestones
-        elif IProduct(self.context, None):
-            milestone_resultset = self.context.milestones
         elif IProductSeries(self.context, None):
             milestone_resultset = self.context.product.milestones
+        elif IProduct(self.context, None):
+            milestone_resultset = self.context.milestones
         else:
             raise AssertionError("milestones_list called with illegal context")
         return list(milestone_resultset)
@@ -1249,9 +1249,9 @@ class BugTargetBugListingView(LaunchpadView):
             backlink = BugSummary.distroseries_id
         elif IDistribution(self.context, None):
             backlink = BugSummary.distroseries_id
-        elif IProduct(self.context, None):
-            backlink = BugSummary.productseries_id
         elif IProductSeries(self.context, None):
+            backlink = BugSummary.productseries_id
+        elif IProduct(self.context, None):
             backlink = BugSummary.productseries_id
         else:
             raise AssertionError("illegal context %r" % self.context)
