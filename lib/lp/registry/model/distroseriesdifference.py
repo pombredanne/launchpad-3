@@ -439,15 +439,10 @@ class DistroSeriesDifference(StormBase):
         return store.add(diff)
 
     @staticmethod
-    def getForDistroSeries(
-        distro_series,
-        difference_type=None,
-        name_filter=None,
-        status=None,
-        child_version_higher=False,
-        parent_series=None,
-        packagesets=None,
-        changed_by=None):
+    def getForDistroSeries(distro_series, difference_type=None,
+                           name_filter=None, status=None,
+                           child_version_higher=False, parent_series=None,
+                           packagesets=None, changed_by=None):
         """See `IDistroSeriesDifferenceSource`."""
         if difference_type is None:
             difference_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
