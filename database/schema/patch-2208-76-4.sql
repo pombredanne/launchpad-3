@@ -3,8 +3,12 @@
 
 SET client_min_messages=ERROR;
 
-CREATE OR REPLACE FUNCTION bugsummary_rollup_journal() RETURNS VOID
+DROP FUNCTION bugsummary_rollup_journal();
+
+CREATE OR REPLACE FUNCTION bugsummary_rollup_journal(batchsize integer=NULL)
+RETURNS VOID
 LANGUAGE plpgsql VOLATILE
+CALLED ON NULL INPUT
 SECURITY DEFINER SET search_path TO public AS
 $$
 DECLARE
@@ -17,7 +21,13 @@ BEGIN
     -- BugSummaryJournal remains unlocked so nothing should be blocked.
     LOCK TABLE BugSummary IN ROW EXCLUSIVE MODE;
 
-    SELECT MAX(id) INTO max_id FROM BugSummaryJournal;
+    IF batchsize IS NULL THEN
+        SELECT MAX(id) INTO max_id FROM BugSummaryJournal;
+    ELSE
+        SELECT MAX(id) INTO max_id FROM (
+            SELECT id FROM BugSummaryJournal ORDER BY id LIMIT batchsize
+            ) AS Whatever;
+    END IF;
 
     FOR d IN
         SELECT
@@ -56,6 +66,9 @@ BEGIN
     DELETE FROM BugSummaryJournal WHERE id <= max_id;
 END;
 $$;
+
+COMMENT ON FUNCTION bugsummary_rollup_journal(integer) IS
+'Collate and migrate rows from BugSummaryJournal to BugSummary';
 
 
 CREATE OR REPLACE FUNCTION bug_summary_dec(bugsummary) RETURNS VOID
@@ -141,8 +154,6 @@ BEGIN
 END;
 $$;
 
-COMMENT ON FUNCTION bugsummary_rollup_journal() IS
-'Collate and migrate rows from BugSummaryJournal to BugSummary';
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 76, 4);
