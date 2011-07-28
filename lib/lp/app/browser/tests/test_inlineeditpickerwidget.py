@@ -45,25 +45,6 @@ class TestInlineEditPickerWidget(TestCaseWithFactory):
         widget = self.getWidget(vocabulary='UserTeamsParticipation')
         self.assertFalse(widget.config['show_search_box'])
 
-    def test_required_fields_dont_have_a_remove_link(self):
-        widget = self.getWidget(vocabulary='ValidPersonOrTeam', required=True)
-        self.assertFalse(widget.config['show_remove_button'])
-
-    def test_optional_fields_do_have_a_remove_link(self):
-        widget = self.getWidget(
-            vocabulary='ValidPersonOrTeam', required=False)
-        self.assertTrue(widget.config['show_remove_button'])
-
-    def test_assign_me_exists_if_user_in_vocabulary(self):
-        widget = self.getWidget(vocabulary='ValidPersonOrTeam', required=True)
-        login_person(self.factory.makePerson())
-        self.assertTrue(widget.config['show_assign_me_button'])
-
-    def test_assign_me_not_shown_if_user_not_in_vocabulary(self):
-        widget = self.getWidget(vocabulary='TargetPPAs', required=True)
-        login_person(self.factory.makePerson())
-        self.assertFalse(widget.config['show_assign_me_button'])
-
 
 class TestInlinePersonEditPickerWidget(TestCaseWithFactory):
 
@@ -94,3 +75,25 @@ class TestInlinePersonEditPickerWidget(TestCaseWithFactory):
         widget_value = self.factory.makeTeam()
         widget = self.getWidget(widget_value, vocabulary='ValidPersonOrTeam')
         self.assertEquals('team', widget.config['selected_value_metadata'])
+
+    def test_required_fields_dont_have_a_remove_link(self):
+        widget = self.getWidget(
+            None, vocabulary='ValidPersonOrTeam', required=True)
+        self.assertFalse(widget.config['show_remove_button'])
+
+    def test_optional_fields_do_have_a_remove_link(self):
+        widget = self.getWidget(
+            None, vocabulary='ValidPersonOrTeam', required=False)
+        self.assertTrue(widget.config['show_remove_button'])
+
+    def test_assign_me_exists_if_user_in_vocabulary(self):
+        widget = self.getWidget(
+            None, vocabulary='ValidPersonOrTeam', required=True)
+        login_person(self.factory.makePerson())
+        self.assertTrue(widget.config['show_assign_me_button'])
+
+    def test_assign_me_not_shown_if_user_not_in_vocabulary(self):
+        widget = self.getWidget(
+            None, vocabulary='TargetPPAs', required=True)
+        login_person(self.factory.makePerson())
+        self.assertFalse(widget.config['show_assign_me_button'])

@@ -23,3 +23,5 @@ class IQuestionSubscription(Interface):
     person = Attribute("The subscriber.")
     question = Attribute("The question.")
 
+    def canBeUnsubscribedByUser(user):
+        """Can the user unsubscribe the subscriber from the question?"""

@@ -600,6 +600,7 @@ class AdminProductTranslations(AuthorizationBase):
         able to change translation settings for a product.
         """
         return (user.isOwner(self.obj) or
+                user.isOneOfDrivers(self.obj) or
                 user.in_rosetta_experts or
                 user.in_admin)
 
@@ -1415,7 +1416,13 @@ class AdminTranslationImportQueueEntry(AuthorizationBase):
     usedfor = ITranslationImportQueueEntry
 
     def checkAuthenticated(self, user):
-        return self.obj.canAdmin(user)
+        if self.obj.distroseries is not None:
+            series = self.obj.distroseries
+        else:
+            series = self.obj.productseries
+        return (
+            self.forwardCheckAuthenticated(user, series,
+                                           'launchpad.TranslationsAdmin'))
 
 
 class EditTranslationImportQueueEntry(AuthorizationBase):
@@ -1426,7 +1433,9 @@ class EditTranslationImportQueueEntry(AuthorizationBase):
         """Anyone who can admin an entry, plus its owner or the owner of the
         product or distribution, can edit it.
         """
-        return self.obj.canEdit(user)
+        return (self.forwardCheckAuthenticated(
+                    user, self.obj, 'launchpad.Admin') or
+                user.inTeam(self.obj.importer))
 
 
 class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
@@ -1899,17 +1908,21 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Is the user able to manage `IDistroSeries` translations.
 
-        Distribution managers can also manage IDistroSeries
+        Distribution translation managers and distribution series drivers
+        can manage IDistroSeries translations.
         """
+        return (user.isOneOfDrivers(self.obj) or
+                self.forwardCheckAuthenticated(user, self.obj.distribution))
 
-        return (AdminDistributionTranslations(
-            self.obj.distribution).checkAuthenticated(user))
 
-
-class AdminDistributionSourcePackageTranslations(
-    AdminDistroSeriesTranslations):
-    """DistributionSourcePackage objects link to a distribution, too."""
+class AdminDistributionSourcePackageTranslations(AuthorizationBase):
+    """DistributionSourcePackage objects link to a distribution."""
+    permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistributionSourcePackage
+
+    def checkAuthenticated(self, user):
+        """Distribution admins are admins for source packages as well."""
+        return self.forwardCheckAuthenticated(user, self.obj.distribution)
 
 
 class AdminProductSeriesTranslations(AuthorizationBase):
@@ -1919,7 +1932,9 @@ class AdminProductSeriesTranslations(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Is the user able to manage `IProductSeries` translations."""
 
-        return OnlyRosettaExpertsAndAdmins(self.obj).checkAuthenticated(user)
+        return (user.isOwner(self.obj) or
+                user.isOneOfDrivers(self.obj) or
+                self.forwardCheckAuthenticated(user, self.obj.product))
 
 
 class BranchMergeProposalView(AuthorizationBase):
