@@ -215,6 +215,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
         body = assemble_body(
             blamer, spr, bprs, archive, distroseries, summarystring, changes,
             action)
+        body = body.encode("utf8")
         send_mail(
             spr, archive, recipients, subject, body, dry_run,
             changesfile_content=changesfile_content,
