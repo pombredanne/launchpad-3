@@ -223,8 +223,8 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
 
     build_and_send_mail(action, recipients)
 
-    (changesfile, date, from_addr, maintainer) = fetch_information(
-        spr, bprs, changes)
+    info = fetch_information(spr, bprs, changes)
+    from_addr = info['changedby']
     # If we're sending an acceptance notification for a non-PPA upload,
     # announce if possible. Avoid announcing backports, binary-only
     # security uploads, or autosync uploads.
@@ -253,13 +253,12 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
     """Assemble the e-mail notification body."""
     if changes is None:
         changes = {}
-    (changesfile, date, changedby, maintainer) = fetch_information(
-        spr, bprs, changes)
+    info = fetch_information(spr, bprs, changes)
     information = {
         'STATUS': ACTION_DESCRIPTIONS[action],
         'SUMMARY': summary,
-        'DATE': 'Date: %s' % date,
-        'CHANGESFILE': changesfile,
+        'DATE': 'Date: %s' % info['date'],
+        'CHANGESFILE': info['changesfile'],
         'DISTRO': distroseries.distribution.title,
         'ANNOUNCE': 'No announcement sent',
         'CHANGEDBY': '',
@@ -271,8 +270,9 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
         }
     if spr:
         information['SPR_URL'] = canonical_url(spr)
-    if changedby:
-        information['CHANGEDBY'] = '\nChanged-By: %s' % changedby
+    changedby_displayname = info['changedby_displayname']
+    if changedby_displayname:
+        information['CHANGEDBY'] = '\nChanged-By: %s' % changedby_displayname
     origin = changes.get('Origin')
     if origin:
         information['ORIGIN'] = '\nOrigin: %s' % origin
@@ -283,7 +283,7 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
         information['ANNOUNCE'] = "Announcing to %s" % (
             distroseries.changeslist)
     try:
-        changedby_person = email_to_person(changedby)
+        changedby_person = email_to_person(info['changedby'])
     except ParseMaintError:
         # Some syncs (e.g. from Debian) will involve packages whose
         # changed-by person was auto-created in LP and hence does not
@@ -291,9 +291,11 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
         changedby_person = None
     if blamer is not None and blamer != changedby_person:
         signer_signature = person_to_email(blamer)
-        if signer_signature != changedby:
+        if signer_signature != info['changedby']:
             information['SIGNER'] = '\nSigned-By: %s' % signer_signature
     # Add maintainer if present and different from changed-by.
+    maintainer = info['maintainer']
+    changedby = info['changedby']
     if maintainer and maintainer != changedby:
         information['MAINTAINER'] = '\nMaintainer: %s' % maintainer
     return get_template(archive, action) % information
@@ -435,20 +437,19 @@ def get_recipients(blamer, archive, distroseries, logger, changes=None,
     """Return a list of recipients for notification emails."""
     candidate_recipients = []
     debug(logger, "Building recipients list.")
-    (changesfile, date, changedby, maint) = fetch_information(
-        spr, bprs, changes)
+    info = fetch_information(spr, bprs, changes)
 
-    if changedby:
+    if info['changedby']:
         try:
-            changer = email_to_person(changedby)
+            changer = email_to_person(info['changedby'])
         except ParseMaintError:
             changer = None
     else:
         changer = None
 
-    if maint:
+    if info['maintainer']:
         try:
-            maintainer = email_to_person(maint)
+            maintainer = email_to_person(info['maintainer'])
         except ParseMaintError:
             maintainer = None
     else:
