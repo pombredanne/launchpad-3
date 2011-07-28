@@ -747,26 +747,26 @@ class DistroSeriesPackagesView(LaunchpadView):
 
 # A helper to create package filtering radio button vocabulary.
 NON_IGNORED = 'non-ignored'
-IGNORED = 'ignored'
 HIGHER_VERSION_THAN_PARENT = 'higher-than-parent'
 RESOLVED = 'resolved'
+ALL = 'all'
 
 DEFAULT_PACKAGE_TYPE = NON_IGNORED
 
 
 def make_package_type_vocabulary(parent_name, higher_version_option=False):
     voc = [
-        SimpleTerm(
-            NON_IGNORED, NON_IGNORED, 'Non ignored packages'),
-        SimpleTerm(IGNORED, IGNORED, 'Ignored packages'),
-        SimpleTerm(RESOLVED, RESOLVED, "Resolved package differences")]
+        SimpleTerm(NON_IGNORED, NON_IGNORED, 'Non ignored packages'),
+        SimpleTerm(RESOLVED, RESOLVED, "Resolved package differences"),
+        SimpleTerm(ALL, ALL, 'All packages'),
+        ]
     if higher_version_option:
         higher_term = SimpleTerm(
             HIGHER_VERSION_THAN_PARENT,
             HIGHER_VERSION_THAN_PARENT,
             "Ignored packages with a higher version than in %s"
                 % parent_name)
-        voc.insert(2, higher_term)
+        voc.insert(1, higher_term)
     return SimpleVocabulary(tuple(voc))
 
 
@@ -1058,10 +1058,10 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         package_type_dsd_status = {
             NON_IGNORED: (
                 DistroSeriesDifferenceStatus.NEEDS_ATTENTION,),
-            IGNORED: DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
             HIGHER_VERSION_THAN_PARENT: (
                 DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT),
             RESOLVED: DistroSeriesDifferenceStatus.RESOLVED,
+            ALL: DistroSeriesDifferenceStatus.items,
         }
 
         status = package_type_dsd_status[self.specified_package_type]

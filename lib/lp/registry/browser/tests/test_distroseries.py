@@ -50,7 +50,7 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.debversion import Version
 from lp.registry.browser.distroseries import (
     HIGHER_VERSION_THAN_PARENT,
-    IGNORED,
+    ALL,
     NON_IGNORED,
     RESOLVED,
     seriesToVocab,
@@ -1611,27 +1611,23 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertContentEqual(
             [diff2, diff1], filtered_view2.cached_differences.batch)
 
-    def test_batch_differences_packages(self):
-        # field.package_type parameter allows to list only
-        # blacklisted differences.
+    def test_batch_all_packages(self):
+        # field.package_type parameter allows to list all the
+        # differences.
         set_derived_series_ui_feature_flag(self)
         derived_series, parent_series = self._createChildAndParent()
-        blacklisted_diff = self.factory.makeDistroSeriesDifference(
-            derived_series=derived_series,
-            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
-
-        blacklisted_view = create_initialized_view(
+        # Create differences of all possible statuses.
+        diffs = []
+        for status in DistroSeriesDifferenceStatus.items:
+            diff = self.factory.makeDistroSeriesDifference(
+                derived_series=derived_series, status=status)
+            diffs.append(diff)
+        all_view = create_initialized_view(
             derived_series,
             '+localpackagediffs',
-            query_string='field.package_type=%s' % IGNORED)
-        unblacklisted_view = create_initialized_view(
-            derived_series,
-            '+localpackagediffs')
+            query_string='field.package_type=%s' % ALL)
 
-        self.assertContentEqual(
-            [blacklisted_diff], blacklisted_view.cached_differences.batch)
-        self.assertContentEqual(
-            [], unblacklisted_view.cached_differences.batch)
+        self.assertContentEqual(diffs, all_view.cached_differences.batch)
 
     def test_batch_blacklisted_differences_with_higher_version(self):
         # field.package_type parameter allows to list only
