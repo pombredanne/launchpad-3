@@ -616,8 +616,8 @@ developers not on the Launchpad team at Canonical.
 It lists all changes that have landed in the Launchpad ''devel'' \
 or ''db-devel'' trees (see the [[Trunk|trunk explanation]] for more).
 
-~-''Note for maintainers: this page is updated every 10 minutes by a \
-cron job running as kfogel on devpad (though if there are no new \
+~-''Note for maintainers: this page is updated every hour by a \
+cron job running as wgrant on devpad (though if there are no new \
 contributions, the page's timestamp won't change).  The code that \
 generates this page is \
 [[http://bazaar.launchpad.net/%7Elaunchpad-pqm/launchpad/devel/annotate/head%3A/utilities/community-contributions.py|utilities/community-contributions.py]] \
