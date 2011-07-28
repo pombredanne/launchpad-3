@@ -43,7 +43,7 @@ from lp.translations.interfaces.translations import (
 from lp.translations.model.translationpackagingjob import TranslationMergeJob
 
 
-class SourcePackageTranslationsView(TranslationsMixin,
+class SourcePackageTranslationsView(LaunchpadView, TranslationsMixin,
                                     TranslationSharingDetailsMixin):
 
     @property

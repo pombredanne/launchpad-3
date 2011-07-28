@@ -12,6 +12,7 @@ __all__ = [
 
 from canonical.launchpad.webapp import (
     ApplicationMenu,
+    LaunchpadView,
     Navigation,
     StandardLaunchpadFacets,
     )
@@ -49,7 +50,7 @@ class DistroSeriesBinaryPackageBreadcrumb(Breadcrumb):
         return self.context.binarypackagename.name
 
 
-class DistroSeriesBinaryPackageView:
+class DistroSeriesBinaryPackageView(LaunchpadView):
 
     def __init__(self, context, request):
         self.context = context
