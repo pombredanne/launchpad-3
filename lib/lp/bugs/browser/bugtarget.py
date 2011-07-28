@@ -1202,12 +1202,12 @@ class BugTargetBugListingView(LaunchpadView):
 
     @property
     def series_list(self):
-        if IDistribution(self.context, None):
+        if IDistroSeries(self.context, None):
+            series = self.context.distribution.series
+        elif IDistribution(self.context, None):
             series = self.context.series
         elif IProduct(self.context, None):
             series = self.context.series
-        elif IDistroSeries(self.context, None):
-            series = self.context.distribution.series
         elif IProductSeries(self.context, None):
             series = self.context.product.series
         else:
@@ -1216,12 +1216,12 @@ class BugTargetBugListingView(LaunchpadView):
 
     @property
     def milestones_list(self):
-        if IDistribution(self.context, None):
+        if IDistroSeries(self.context, None):
+            milestone_resultset = self.context.distribution.milestones
+        elif IDistribution(self.context, None):
             milestone_resultset = self.context.milestones
         elif IProduct(self.context, None):
             milestone_resultset = self.context.milestones
-        elif IDistroSeries(self.context, None):
-            milestone_resultset = self.context.distribution.milestones
         elif IProductSeries(self.context, None):
             milestone_resultset = self.context.product.milestones
         else:
@@ -1245,12 +1245,12 @@ class BugTargetBugListingView(LaunchpadView):
         if not series_list:
             return series_buglistings
         # This would be better as delegation not a case statement.
-        if IDistribution(self.context, None):
+        if IDistroSeries(self.context, None):
+            backlink = BugSummary.distroseries_id
+        elif IDistribution(self.context, None):
             backlink = BugSummary.distroseries_id
         elif IProduct(self.context, None):
             backlink = BugSummary.productseries_id
-        elif IDistroSeries(self.context, None):
-            backlink = BugSummary.distroseries_id
         elif IProductSeries(self.context, None):
             backlink = BugSummary.productseries_id
         else:
