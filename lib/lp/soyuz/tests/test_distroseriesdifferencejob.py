@@ -257,33 +257,47 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
             [],
             find_waiting_jobs(dsp.derived_series, package, dsp.parent_series))
 
-    def test_createForPackagedPublication_creates_jobs_for_its_child(self):
+    def assertJobsSeriesAndMetadata(self, job, series, metadata):
+        self.assertEqual(job.distroseries, series)
+        self.assertEqual(
+            (metadata[0], metadata[1]),
+            (job.metadata["sourcepackagename"],
+             job.metadata["parent_series"]))
+
+    def test_createForPackagePublication_creates_job_for_derived_series(self):
+        # A call to createForPackagePublication for the derived_series
+        # creates a job for the derived series.
         dsp = self.factory.makeDistroSeriesParent()
         parent_dsp = self.factory.makeDistroSeriesParent(
             derived_series=dsp.parent_series)
         package = self.factory.makeSourcePackageName()
-        # Create a job for the derived_series parent, which should create
-        # two jobs. One for derived_series, and the other for its child.
         self.getJobSource().createForPackagePublication(
             parent_dsp.derived_series, package,
             PackagePublishingPocket.RELEASE)
-        jobs = sum([
-            find_waiting_jobs(dsp.derived_series, package, dsp.parent_series)
-            for dsp in [parent_dsp, parent_dsp]],
-            [])
-        self.assertEqual(
-            [package.id, package.id],
-            [job.metadata["sourcepackagename"] for job in jobs])
-
-    def test_createForPackagePublication_creates_job_for_derived_series(self):
-        dsp = self.factory.makeDistroSeriesParent()
-        package = self.factory.makeSourcePackageName()
-        self.getJobSource().createForPackagePublication(
-            dsp.derived_series, package, PackagePublishingPocket.RELEASE)
         jobs = find_waiting_jobs(
             dsp.derived_series, package, dsp.parent_series)
-        self.assertEqual(
-            [package.id], [job.metadata["sourcepackagename"] for job in jobs])
+
+        self.assertEquals(len(jobs), 1)
+        self.assertJobsSeriesAndMetadata(
+            jobs[0], dsp.derived_series, [package.id, dsp.parent_series.id])
+
+    def test_createForPackagePublication_creates_job_for_parent_series(self):
+        # A call to createForPackagePublication for the derived_series
+        # creates a job for the parent series.
+        dsp = self.factory.makeDistroSeriesParent()
+        parent_dsp = self.factory.makeDistroSeriesParent(
+            derived_series=dsp.parent_series)
+        package = self.factory.makeSourcePackageName()
+        self.getJobSource().createForPackagePublication(
+            parent_dsp.derived_series, package,
+            PackagePublishingPocket.RELEASE)
+        parent_jobs = find_waiting_jobs(
+            parent_dsp.derived_series, package, parent_dsp.parent_series)
+
+        self.assertEquals(len(parent_jobs), 1)
+        self.assertJobsSeriesAndMetadata(
+            parent_jobs[0], dsp.parent_series,
+            [package.id, parent_dsp.parent_series.id])
 
     def test_createForPackagePublication_obeys_feature_flag(self):
         dsp = self.factory.makeDistroSeriesParent()
