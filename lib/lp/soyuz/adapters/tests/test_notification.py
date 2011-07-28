@@ -15,6 +15,7 @@ from canonical.testing.layers import (
     ZopelessDatabaseLayer,
     )
 from lp.archivepublisher.utils import get_ppa_reference
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.notification import (
@@ -48,8 +49,8 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         creator = self.factory.makePerson(displayname=RANDOM_UNICODE)
         spr = self.factory.makeSourcePackageRelease(creator=creator)
         self.factory.makeSourcePackageReleaseFile(sourcepackagerelease=spr)
-        archive = self.factory.makeArchive()
-        pocket = self.factory.getAnyPocket()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        pocket = PackagePublishingPocket.RELEASE
         distroseries = self.factory.makeDistroSeries()
         distroseries.changeslist = "blah@example.com"
         blamer = self.factory.makePerson()
@@ -57,8 +58,10 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
             blamer, spr, [], [], archive, distroseries, pocket,
             action='accepted')
         notifications = pop_notifications()
-        self.assertEqual(1, len(notifications))
-        self.assertIn(RANDOM_UNICODE, notifications[0].get_payload()[0])
+        self.assertEqual(2, len(notifications))
+        msg = notifications[1].get_payload(0)
+        body = msg.get_payload(decode=True)
+        self.assertIn(RANDOM_UNICODE, body)
 
     def test_calculate_subject_customfile(self):
         lfa = self.factory.makeLibraryFileAlias()
