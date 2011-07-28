@@ -2333,6 +2333,35 @@ class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory,
         self.assertContentEqual(
             [missing_diff], view.cached_differences.batch)
 
+    def test_uniquepackages_displays_parent(self):
+        # For a series derived from multiple parents, the parent for each
+        # DSD is displayed; no parent version is displayed because we're
+        # listing packages unique to the derived series.
+        set_derived_series_ui_feature_flag(self)
+        derived_series, parent_series = self._createChildAndParents()
+        missing_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+        self.factory.makeDistroSeriesDifference(
+            difference_type=missing_type,
+            derived_series=derived_series,
+            parent_series=parent_series,
+            status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION)
+        view = create_initialized_view(
+            derived_series, '+uniquepackages')
+
+        multiple_parents_display_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "Parent table header", 'th',
+                text=re.compile("^\s*Parent\s")),
+            Not(soupmatchers.Tag(
+                "Parent version table header", 'th',
+                text=re.compile("\s*Parent version\s*"))),
+            soupmatchers.Tag(
+                "Parent name", 'a',
+                attrs={'class': 'parent-name'},
+                text=re.compile("\s*%s\s*" % parent_series.displayname)),
+             )
+        self.assertThat(view.render(), multiple_parents_display_matcher)
+
     def test_uniquepackages_differences_empty(self):
         # The view is empty if there is no differences with type
         # UNIQUE_TO_DERIVED_SERIES.

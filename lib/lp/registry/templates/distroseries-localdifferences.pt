@@ -45,7 +45,7 @@
           <thead>
             <tr>
               <th>Source</th>
-              <th tal:condition="python: not(view.has_unique_parent) and view.show_parent_version">
+              <th tal:condition="python: not(view.has_unique_parent) and view.show_parent">
                 Parent
               </th>
               <th tal:condition="view/show_parent_version">
@@ -106,7 +106,7 @@
                   <span class="lowlight" tal:content="structure activity"></span>
                 </tal:activity>
               </td>
-              <td tal:condition="python: not(view.has_unique_parent) and view.show_parent_version">
+              <td tal:condition="python: not(view.has_unique_parent) and view.show_parent">
                 <a tal:attributes="href difference/parent_series/fmt:url"
                    tal:content="difference/parent_series/displayname"
                    class="parent-name">Warty</a>
