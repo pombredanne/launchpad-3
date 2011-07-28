@@ -5,6 +5,7 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from email.utils import formataddr
 from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -101,14 +102,22 @@ class TestNotification(TestCaseWithFactory):
             self.assertEqual('Foo Bar <foo.bar@canonical.com>', field)
 
     def test_fetch_information_spr(self):
-        spr = self.factory.makeSourcePackageRelease()
-        (changesfile, date, changedby, maintainer) = fetch_information(
-            spr, None, None)
-        self.assertEqual(date, spr.dateuploaded)
-        self.assertEqual(changesfile, spr.changelog_entry)
-        self.assertEqual(changedby, format_address_for_person(spr.creator))
+        spr = self.factory.makeSourcePackageRelease(displayname=u"foø")
+        info = fetch_information(spr, None, None)
+        self.assertEqual(info['date'], spr.dateuploaded)
+        self.assertEqual(info['changesfile'], spr.changelog_entry)
         self.assertEqual(
-            maintainer, format_address_for_person(spr.maintainer))
+            info['changedby'], format_address_for_person(spr.creator))
+        self.assertEqual(
+            info['maintainer'], format_address_for_person(spr.maintainer))
+        self.assertEqual(
+            formataddr((spr.creator.displayname,
+                        spr.creator.preferredemail.email)),
+            info['changedby_displayname'])
+        self.assertEqual(
+            formataddr((spr.maintainer.displayname,
+                        spr.maintainer.preferredemail.email)),
+            info['maintainer_displayname'])
 
     def test_fetch_information_bprs(self):
         bpr = self.factory.makeBinaryPackageRelease()
