@@ -120,6 +120,7 @@
   <browser:menus
     module="lp.answers.browser.question"
     classes="
+        QuestionContextMenu
         QuestionEditMenu
         QuestionExtrasMenu
         QuestionSetContextMenu" />
@@ -157,7 +158,12 @@
       name="+portlet-reopenings"
       template="../templates/question-portlet-reopenings.pt"
       />
+    <browser:page
+      name="+portlet-subscribers"
+      template="../templates/question-portlet-subscribers.pt"
+      />
   </browser:pages>
+
   <browser:pages
     for="lp.answers.interfaces.question.IQuestion"
     class="canonical.launchpad.webapp.LaunchpadView"

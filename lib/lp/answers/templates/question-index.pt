@@ -18,10 +18,22 @@
     </style>
     <script type="text/javascript">
         LPS.use('base', 'node', 'event',
-                'lp.comments.hide', function(Y) {
+                'lp.comments.hide', 'lp.answers.subscribers',
+            function(Y) {
         Y.on('domready', function() {
             LP.cache.comment_context = LP.cache.context;
             Y.lp.comments.hide.setup_hide_controls();
+
+            var question = { self_link: LP.cache.context.self_link,
+                        web_link: LP.cache.context.web_link };
+            var sl = new Y.lp.answers.subscribers.createQuestionSubscribersLoader({
+                container_box: '#other-question-subscribers',
+                question: question,
+                subscribers_details_view:
+                    '/+portlet-subscribers-details',
+                subscribe_someone_else_link: '.menu-link-addsubscriber'
+            });
+
         });
       });
     </script>
@@ -50,7 +62,7 @@
         </ul>
       </div>
       <div tal:replace="structure context/@@+global-actions" />
-      <!-- TODO - wire up new javascript subscribers portlet -->
+      <tal:subscribers replace="structure context/@@+portlet-subscribers"/>
     </metal:portlets>
 
     <div metal:fill-slot="main">

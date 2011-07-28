@@ -821,7 +821,26 @@ class LinkFAQMixin:
         return smartquote('FAQ #%s: "%s".' % (faq.id, faq.title))
 
 
-class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
+class QuestionContextMenu(ContextMenu):
+    """Context menu of actions that can be performed upon a Question.
+
+    Currently only addsubscriber, but later editsubscription etc.
+    """
+    usedfor = IQuestion
+    links = [
+        'addsubscriber']
+
+    def addsubscriber(self):
+        """Return the 'Subscribe someone else' Link."""
+        text = 'Subscribe someone else'
+        return Link(
+            '+addsubscriber', text, icon='add', summary=(
+                'Launchpad will email that person whenever this question '
+                'changes'))
+
+
+class QuestionWorkflowView(LaunchpadFormView,
+                           LinkFAQMixin, QuestionContextMenu):
     """View managing the question workflow action, i.e. action changing
     its status.
     """
