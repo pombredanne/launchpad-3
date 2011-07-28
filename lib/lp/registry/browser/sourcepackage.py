@@ -41,7 +41,6 @@ from zope.component import (
     )
 from zope.formlib.form import Fields
 from zope.interface import (
-    implementer,
     implements,
     Interface,
     )
@@ -84,7 +83,6 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.tales import CustomizableFormatter
 from lp.app.enums import ServiceUsage
-from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.registry.browser.product import ProjectAddStepOne
@@ -187,12 +185,6 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         dsp = self.context.distribution_sourcepackage
         redirection_url = canonical_url(dsp, view_name='+gethelp')
         return self.redirectSubTree(redirection_url, status=303)
-
-
-@adapter(ISourcePackage)
-@implementer(IServiceUsage)
-def distribution_from_sourcepackage(package):
-    return package.distribution
 
 
 @adapter(ISourcePackage)

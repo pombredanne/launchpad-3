@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'distribution_from_distributionsourcepackage',
     'DistributionSourcePackageAnswersMenu',
     'DistributionSourcePackageBreadcrumb',
     'DistributionSourcePackageChangelogView',
@@ -28,7 +27,6 @@ from zope.component import (
     getUtility,
     )
 from zope.interface import (
-    implementer,
     implements,
     Interface,
     )
@@ -114,12 +112,6 @@ class DistributionSourcePackageBreadcrumb(Breadcrumb):
     def text(self):
         return smartquote('"%s" package') % (
             self.context.sourcepackagename.name)
-
-
-@adapter(IDistributionSourcePackage)
-@implementer(IServiceUsage)
-def distribution_from_distributionsourcepackage(dsp):
-    return dsp.distribution
 
 
 class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
