@@ -74,7 +74,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertRaises(
             NotADerivedSeriesError, distroseriesdifference_factory.new,
-            distro_series, source_package_name)
+            distro_series, source_package_name,
+            self.factory.makeDistroSeries())
 
     def test_source_pub(self):
         # The related source pub is returned for the derived series.
@@ -836,7 +837,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # factory.makeDistroSeriesDifference() will always create
         # publications to be helpful. We don't need the help in this case.
         dsd = getUtility(IDistroSeriesDifferenceSource).new(
-            dsp.derived_series, spn)
+            dsp.derived_series, spn, dsp.parent_series)
         self.assertEqual(pd, dsd.package_diff)
 
     def _initDiffWithMultiplePendingPublications(self, versions, parent):
