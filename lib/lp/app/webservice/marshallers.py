@@ -13,7 +13,6 @@ __all__ = [
 from lazr.restful.marshallers import (
     TextFieldMarshaller as LazrTextFieldMarshaller,
     )
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 
 from lp.services.utils import obfuscate_email
