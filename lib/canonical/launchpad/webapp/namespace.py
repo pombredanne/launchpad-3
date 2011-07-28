@@ -51,7 +51,12 @@ class FormNamespaceView(view):
 
 
 class JsonModelNamespaceView(view):
-    """A namespace view to handle traversals with ++model++."""
+    """A namespace view to handle traversals with ++model++.
+
+    Use of this namespace is only guaranteed to work if it is fully populated
+    by a view's `initialize` method.  Any objects added after the call to
+    initialize will not be presented by the namespace.
+    """
 
     implements(IBrowserPublisher)
 
