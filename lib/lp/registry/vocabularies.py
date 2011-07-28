@@ -1883,6 +1883,9 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
 
         return SimpleTerm(obj, obj.name, title)
 
+    def fromInt(self, id):
+        return self.toTerm(PillarName.get(id))
+
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
         # Pillar names are always lowercase.
@@ -1892,23 +1895,33 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
     def __contains__(self, obj):
         raise NotImplementedError
 
+    def searchForTerms(self, query=None):
+        if not query:
+            return self.emptySelectResults()
+        query = ensure_unicode(query).lower()
+        store = IStore(PillarName)
+        ranked_results = store.execute(
+            Union(
+                Select(
+                    (PillarName.id, SQL('100 AS rank')),
+                    tables=[PillarName],
+                    where=And(
+                        PillarName.name == query,
+                        PillarName.active == True)),
+                Select(
+                    (PillarName.id, SQL('50 AS rank')),
+                    tables=[PillarName],
+                    where=And(
+                        PillarName.name != query, PillarName.active == True,
+                        PillarName.name.contains_string(query))),
+                limit=self._limit, order_by='rank', all=True))
+        results = [row[0] for row in list(ranked_results)]
+        return self.iterator(len(results), results, self.fromInt)
+
 
 class DistributionOrProductVocabulary(PillarVocabularyBase):
     """Active `IDistribution` or `IProduct` objects vocabulary."""
     displayname = 'Select a project'
-    _filter = """
-        -- An active product/distro.
-        ((active IS TRUE
-         AND (product IS NOT NULL OR distribution IS NOT NULL)
-        )
-        OR
-        -- Or an alias for an active product/distro.
-        (alias_for IN (
-            SELECT id FROM PillarName
-            WHERE active IS TRUE AND
-                (product IS NOT NULL OR distribution IS NOT NULL))
-        ))
-        """
 
     def __contains__(self, obj):
         if IProduct.providedBy(obj):
@@ -1921,7 +1934,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
 class DistributionOrProductOrProjectGroupVocabulary(PillarVocabularyBase):
     """Active `IProduct`, `IProjectGroup` or `IDistribution` vocabulary."""
     displayname = 'Select a project'
-    _filter = PillarName.q.active == True
+    _limit = 100
 
     def __contains__(self, obj):
         if IProduct.providedBy(obj) or IProjectGroup.providedBy(obj):
