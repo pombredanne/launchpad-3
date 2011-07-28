@@ -2355,7 +2355,7 @@ class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory,
         multiple_parents_display_matcher = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 "Parent table header", 'th',
-                text=re.compile("\s*Parent\s")),
+                text=re.compile("^\s*Parent\s")),
             Not(soupmatchers.Tag(
                 "Parent version table header", 'th',
                 text=re.compile("\s*Parent version\s*"))),
