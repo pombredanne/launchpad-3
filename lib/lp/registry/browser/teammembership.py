@@ -253,7 +253,6 @@ class TeamMembershipEditView(LaunchpadView):
 
         assert self.context.status == TeamMembershipStatus.PROPOSED
 
-        self.request.form.get('editproposed')
         if self.request.form.get('decline'):
             status = TeamMembershipStatus.DECLINED
         elif self.request.form.get('approve'):
