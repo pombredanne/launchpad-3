@@ -13,6 +13,7 @@ __all__ = [
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.utils import formataddr
 import os
 
 from zope.component import getUtility
@@ -558,6 +559,7 @@ def email_to_person(fullemail):
 
 def person_to_email(person):
     """Return a string of full name <e-mail address> given an IPerson."""
+    # This will use email.Header to encode any unicode.
     if person and person.preferredemail:
         return format_address_for_person(person)
 
@@ -581,13 +583,18 @@ def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
 
 def fetch_information(spr, bprs, changes):
     changedby = None
+    changedby_displayname = None
     maintainer = None
+    maintainer_displayname = None
+
     if changes:
         changesfile = ChangesFile.formatChangesComment(
             sanitize_string(changes.get('Changes')))
         date = changes.get('Date')
         changedby = sanitize_string(changes.get('Changed-By'))
         maintainer = sanitize_string(changes.get('Maintainer'))
+        changedby_displayname = changedby
+        maintainer_displayname = maintainer
     elif spr or bprs:
         if not spr and bprs:
             spr = bprs[0].build.source_package_release
@@ -595,9 +602,25 @@ def fetch_information(spr, bprs, changes):
         date = spr.dateuploaded
         changedby = person_to_email(spr.creator)
         maintainer = person_to_email(spr.maintainer)
+        if changedby:
+            addr = formataddr((spr.creator.displayname,
+                               spr.creator.preferredemail.email))
+            changedby_displayname = sanitize_string(addr)
+        if maintainer:
+            addr = formataddr((spr.maintainer.displayname,
+                               spr.maintainer.preferredemail.email))
+            maintainer_displayname = sanitize_string(addr)
     else:
         changesfile = date = None
-    return (changesfile, date, changedby, maintainer)
+
+    return {
+        'changesfile': changesfile,
+        'date': date,
+        'changedby': changedby,
+        'changedby_displayname': changedby_displayname,
+        'maintainer': maintainer,
+        'maintainer_displayname': maintainer_displayname,
+        }
 
 
 class LanguagePackEncountered(Exception):
