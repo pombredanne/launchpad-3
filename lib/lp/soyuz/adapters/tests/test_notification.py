@@ -87,11 +87,17 @@ class TestNotification(TestCaseWithFactory):
             'Maintainer': 'Foo Bar <foo.bar@canonical.com>',
             'Changes': ' * Foo!',
             }
-        (changesfile, date, changedby, maintainer) = fetch_information(
+        info = fetch_information(
             None, None, changes)
-        self.assertEqual('2001-01-01', date)
-        self.assertEqual(' * Foo!', changesfile)
-        for field in (changedby, maintainer):
+        self.assertEqual('2001-01-01', info['date'])
+        self.assertEqual(' * Foo!', info['changesfile'])
+        fields = [
+            info['changedby'],
+            info['maintainer'],
+            info['changedby_displayname'],
+            info['maintainer_displayname'],
+            ]
+        for field in fields:
             self.assertEqual('Foo Bar <foo.bar@canonical.com>', field)
 
     def test_fetch_information_spr(self):
