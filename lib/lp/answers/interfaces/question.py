@@ -440,7 +440,7 @@ class IQuestion(IHasOwner):
     def isSubscribed(person):
         """Return a boolean indicating whether the person is subscribed."""
 
-    def unsubscribe(person):
+    def unsubscribe(person, unsubscribed_by):
         """Remove the person's subscription to this question."""
 
     def getDirectSubscribers():

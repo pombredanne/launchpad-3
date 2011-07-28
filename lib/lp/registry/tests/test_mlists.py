@@ -18,7 +18,10 @@ import unittest
 
 import transaction
 
-from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests import (
+    login,
+    login_person,
+    )
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.scripts.mlistimport import Importer
 from canonical.testing.layers import (
@@ -442,6 +445,12 @@ class TestMailingListImportScript(BaseMailingListImportTest):
             'dperson@example.org (Dave Person)',
             'Elly Q. Person <eperson@example.org',
             )
+        # OPEN teams do not send notifications ever on joins, so test this
+        # variant with a MODERATED team.
+        login_person(self.team.teamowner)
+        self.team.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
+        transaction.commit()
+        login('foo.bar@canonical.com')
         process = self.makeProcess('--notifications')
         stdout, stderr = process.communicate()
         self.assertEqual(process.returncode, 0, stdout)
