@@ -872,12 +872,11 @@ class UnusedPOTMsgSetPruner(TunableLoop):
     """Cleans up unused POTMsgSets."""
 
     done = False
-    last_processed_id = 0
+    offset = 0
 
     def isDone(self):
         """See `TunableLoop`."""
-        return not (
-            len(self.msgset_ids_to_remove[self.last_processed_id:]) > 0)
+        return self.offset >= len(self.msgset_ids_to_remove)
 
     @cachedproperty
     def msgset_ids_to_remove(self):
@@ -911,7 +910,7 @@ class UnusedPOTMsgSetPruner(TunableLoop):
     def __call__(self, chunk_size):
         """See `TunableLoop`."""
         msgset_ids_to_remove = (
-            self.msgset_ids_to_remove[self.last_processed_id:][:chunk_size])
+            self.msgset_ids_to_remove[self.offset:][:chunk_size])
         # Remove related TranslationTemplateItems.
         store = IMasterStore(POTMsgSet)
         related_ttis = store.find(
@@ -925,7 +924,7 @@ class UnusedPOTMsgSetPruner(TunableLoop):
         related_translation_messages.remove()
         store.find(
             POTMsgSet, In(POTMsgSet.id, msgset_ids_to_remove)).remove()
-        self.last_processed_id = self.last_processed_id + chunk_size
+        self.offset = self.offset + chunk_size
         transaction.commit()
 
 
