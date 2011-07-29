@@ -126,7 +126,8 @@ def calculate_subject(spr, bprs, customfiles, archive, distroseries,
 
 def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
            summary_text=None, changes=None, changesfile_content=None,
-           changesfile_object=None, action=None, dry_run=False, logger=None):
+           changesfile_object=None, action=None, dry_run=False,
+           logger=None, announce_from_person=None):
     """Notify about
 
     :param blamer: The `IPerson` who is to blame for this notification.
@@ -145,6 +146,9 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     :param action: A string of what action to notify for, such as 'new',
         'accepted'.
     :param dry_run: If True, only log the mail.
+    :param announce_from_person: If passed, use this `IPerson` as the From: in
+        announcement emails.  If the person has no preferred email address,
+        the person is ignored and the default From: is used instead.
     """
     # If this is a binary or mixed upload, we don't send *any* emails
     # provided it's not a rejection or a security upload:
@@ -226,6 +230,11 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
 
     info = fetch_information(spr, bprs, changes)
     from_addr = info['changedby']
+    if announce_from_person is not None:
+        email = announce_from_person.preferredemail
+        if email:
+            from_addr = email.email
+
     # If we're sending an acceptance notification for a non-PPA upload,
     # announce if possible. Avoid announcing backports, binary-only
     # security uploads, or autosync uploads.

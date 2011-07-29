@@ -511,7 +511,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             series=self.target_distroseries, pocket=self.target_pocket,
             include_binaries=self.include_binaries, check_permissions=True,
             person=self.requester, overrides=[override],
-            send_email=send_email)
+            send_email=send_email, announce_from_person=self.requester)
 
         if pu is not None:
             # A PackageUpload will only exist if the copy job had to be

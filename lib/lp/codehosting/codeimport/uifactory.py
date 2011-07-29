@@ -36,8 +36,12 @@ class LoggingUIFactory(TextUIFactory):
         """
         TextUIFactory.__init__(self)
         self.interval = interval
+        self.writer = writer
         self._progress_view = LoggingTextProgressView(
             time_source, writer, interval)
+
+    def show_user_warning(self, warning_id, **message_args):
+        self.writer(self.format_user_warning(warning_id, message_args))
 
 
 class LoggingTextProgressView(TextProgressView):
