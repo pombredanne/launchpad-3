@@ -278,7 +278,12 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
         'USERS_ADDRESS': config.launchpad.users_address,
         }
     if spr:
-        information['SPR_URL'] = canonical_url(spr)
+        # Yay, circular imports.
+        from lp.soyuz.model.distroseriessourcepackagerelease import (
+            DistroSeriesSourcePackageRelease,
+            )
+        dsspr = DistroSeriesSourcePackageRelease(distroseries, spr)
+        information['SPR_URL'] = canonical_url(dsspr)
     if changedby:
         information['CHANGEDBY'] = '\nChanged-By: %s' % changedby
     origin = changes.get('Origin')
