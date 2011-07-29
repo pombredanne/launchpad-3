@@ -873,6 +873,7 @@ class UnusedPOTMsgSetPruner(TunableLoop):
 
     done = False
     offset = 0
+    maximum_chunk_size = 50000
 
     def isDone(self):
         """See `TunableLoop`."""
@@ -909,6 +910,9 @@ class UnusedPOTMsgSetPruner(TunableLoop):
 
     def __call__(self, chunk_size):
         """See `TunableLoop`."""
+        # We cast chunk_size to an int to avoid issues with slicing
+        # (DBLoopTuner passes in a float).
+        chunk_size = int(chunk_size)
         msgset_ids_to_remove = (
             self.msgset_ids_to_remove[self.offset:][:chunk_size])
         # Remove related TranslationTemplateItems.
