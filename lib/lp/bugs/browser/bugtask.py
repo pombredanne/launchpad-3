@@ -220,6 +220,7 @@ from lp.bugs.interfaces.bugnomination import (
     BugNominationStatus,
     IBugNominationSet,
     )
+from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugBlueprintSearch,
     BugBranchSearch,
@@ -3246,7 +3247,21 @@ class BugTasksAndNominationsView(LaunchpadView):
         # iteration.
         bugtasks_by_package = bug.getBugTasksByPackageName(all_bugtasks)
 
+        latest_parent = None
+
         for bugtask in all_bugtasks:
+            if ISeriesBugTarget.providedBy(bugtask.target):
+                parent = bugtask.target.bugtarget_parent
+            else:
+                latest_parent = parent = bugtask.target
+
+            if parent != latest_parent:
+                latest_parent = parent
+                bugtask_and_nomination_views.append(
+                    getMultiAdapter(
+                        (parent, self.request),
+                        name='+bugtasks-and-nominations-table-row'))
+
             conjoined_master = bugtask.getConjoinedMaster(
                 bugtasks, bugtasks_by_package)
             view = self._getTableRowView(
