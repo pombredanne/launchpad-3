@@ -1073,13 +1073,35 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
                 transaction.abort()
 
 
-class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
-    script_name = 'garbo-hourly'
+class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
+    """Run every 5 minutes.
+
+    This may become even more frequent in the future.
+
+    Jobs with low overhead can go here to distribute work more evenly.
+    """
+    script_name = 'garbo-frequently'
     tunable_loops = [
-        MirrorBugMessageOwner,
         OAuthNoncePruner,
         OpenIDConsumerNoncePruner,
         OpenIDConsumerAssociationPruner,
+        ]
+    experimental_tunable_loops = []
+
+    # 5 minmutes minus 20 seconds for cleanup. This helps ensure the
+    # script is fully terminated before the next scheduled hourly run
+    # kicks in.
+    default_abort_script_time = 60 * 5 - 20
+
+
+class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
+    """Run every hour.
+
+    Jobs we want to run fairly often but have noticable overhead go here.
+    """
+    script_name = 'garbo-hourly'
+    tunable_loops = [
+        MirrorBugMessageOwner,
         RevisionCachePruner,
         BugWatchScheduler,
         AntiqueSessionPruner,
@@ -1095,6 +1117,13 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
 
 
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
+    """Run every day.
+
+    Jobs that don't need to be run frequently.
+
+    If there is low overhead, consider putting these tasks in more
+    frequently invoked lists to distribute the work more evenly.
+    """
     script_name = 'garbo-daily'
     tunable_loops = [
         BranchJobPruner,
