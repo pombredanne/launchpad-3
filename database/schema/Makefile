@@ -128,7 +128,6 @@ create:
 	@ psql -d ${EMPTY_DBNAME} -q -c "CREATE SCHEMA todrop;"
 	@ echo "* Creating functions"
 	@ psql -d ${EMPTY_DBNAME} -f trusted.sql   | grep : | cat
-	@ psql -d ${EMPTY_DBNAME} -f testfuncs.sql | grep : | cat
 	@ echo "* Installing tsearch2 into ts2 schema"
 	@ ${PYTHON} fti.py -q --setup-only -d ${EMPTY_DBNAME}
 	@ echo "* Loading base database schema"

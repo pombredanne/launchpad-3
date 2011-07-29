@@ -55,7 +55,6 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
-from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
@@ -81,6 +80,7 @@ from lp.scripts.garbo import (
     BulkPruner,
     DailyDatabaseGarbageCollector,
     DuplicateSessionPruner,
+    FrequentDatabaseGarbageCollector,
     HourlyDatabaseGarbageCollector,
     OpenIDConsumerAssociationPruner,
     UnusedSessionPruner,
@@ -359,11 +359,22 @@ class TestGarbo(TestCaseWithFactory):
         # starting us in a known state.
         self.runDaily()
         self.runHourly()
+        self.runFrequently()
 
         # Capture garbo log output to tests can examine it.
         self.log_buffer = StringIO()
         handler = logging.StreamHandler(self.log_buffer)
         self.log.addHandler(handler)
+
+    def runFrequently(self, maximum_chunk_size=2, test_args=()):
+        transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser('garbo_daily')
+        collector = FrequentDatabaseGarbageCollector(
+            test_args=list(test_args))
+        collector._maximum_chunk_size = maximum_chunk_size
+        collector.logger = self.log
+        collector.main()
+        return collector
 
     def runDaily(self, maximum_chunk_size=2, test_args=()):
         transaction.commit()
@@ -385,10 +396,10 @@ class TestGarbo(TestCaseWithFactory):
     def test_OAuthNoncePruner(self):
         now = datetime.now(UTC)
         timestamps = [
-            now - timedelta(days=2), # Garbage
-            now - timedelta(days=1) - timedelta(seconds=60), # Garbage
-            now - timedelta(days=1) + timedelta(seconds=60), # Not garbage
-            now, # Not garbage
+            now - timedelta(days=2),  # Garbage
+            now - timedelta(days=1) - timedelta(seconds=60),  # Garbage
+            now - timedelta(days=1) + timedelta(seconds=60),  # Not garbage
+            now,  # Not garbage
             ]
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = IMasterStore(OAuthNonce)
@@ -399,14 +410,15 @@ class TestGarbo(TestCaseWithFactory):
         for timestamp in timestamps:
             store.add(OAuthNonce(
                 access_token=OAuthAccessToken.get(1),
-                request_timestamp = timestamp,
-                nonce = str(timestamp)))
+                request_timestamp=timestamp,
+                nonce=str(timestamp)))
         transaction.commit()
 
         # Make sure we have 4 nonces now.
         self.failUnlessEqual(store.find(OAuthNonce).count(), 4)
 
-        self.runHourly(maximum_chunk_size=60) # 1 minute maximum chunk size
+        self.runFrequently(
+            maximum_chunk_size=60)  # 1 minute maximum chunk size
 
         store = IMasterStore(OAuthNonce)
 
@@ -428,10 +440,10 @@ class TestGarbo(TestCaseWithFactory):
         HOURS = 60 * 60
         DAYS = 24 * HOURS
         timestamps = [
-            now - 2 * DAYS, # Garbage
-            now - 1 * DAYS - 1 * MINUTES, # Garbage
-            now - 1 * DAYS + 1 * MINUTES, # Not garbage
-            now, # Not garbage
+            now - 2 * DAYS,  # Garbage
+            now - 1 * DAYS - 1 * MINUTES,  # Garbage
+            now - 1 * DAYS + 1 * MINUTES,  # Not garbage
+            now,  # Not garbage
             ]
         LaunchpadZopelessLayer.switchDbUser('testadmin')
 
@@ -449,7 +461,7 @@ class TestGarbo(TestCaseWithFactory):
         self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 4)
 
         # Run the garbage collector.
-        self.runHourly(maximum_chunk_size=60) # 1 minute maximum chunks.
+        self.runFrequently(maximum_chunk_size=60)  # 1 minute maximum chunks.
 
         store = IMasterStore(OpenIDConsumerNonce)
 
@@ -458,7 +470,8 @@ class TestGarbo(TestCaseWithFactory):
 
         # And none of them are older than 1 day
         earliest = store.find(Min(OpenIDConsumerNonce.timestamp)).one()
-        self.failUnless(earliest >= now - 24*60*60, 'Still have old nonces')
+        self.failUnless(
+            earliest >= now - 24 * 60 * 60, 'Still have old nonces')
 
     def test_CodeImportResultPruner(self):
         now = datetime.now(UTC)
@@ -485,7 +498,7 @@ class TestGarbo(TestCaseWithFactory):
 
         new_code_import_result(now - timedelta(days=60))
         for i in range(results_to_keep_count - 1):
-            new_code_import_result(now - timedelta(days=19+i))
+            new_code_import_result(now - timedelta(days=19 + i))
 
         # Run the garbage collector
         self.runDaily()
@@ -558,7 +571,7 @@ class TestGarbo(TestCaseWithFactory):
             store.execute("""
                 INSERT INTO %s (server_url, handle, issued, lifetime)
                 VALUES (%s, %s, %d, %d)
-                """ % (table_name, str(delta), str(delta), now-10, delta))
+                """ % (table_name, str(delta), str(delta), now - 10, delta))
         transaction.commit()
 
         # Ensure that we created at least one expirable row (using the
@@ -571,7 +584,7 @@ class TestGarbo(TestCaseWithFactory):
 
         # Expire all those expirable rows, and possibly a few more if this
         # test is running slow.
-        self.runHourly()
+        self.runFrequently()
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
@@ -878,22 +891,3 @@ class TestGarbo(TestCaseWithFactory):
             """ % sqlbase.quote(template.id)).get_one()
 
         self.assertEqual(1, count)
-
-    def test_mirror_bugmessages(self):
-        # Nuke the owner in sampledata.
-        con = DatabaseLayer._db_fixture.superuser_connection()
-        try:
-            cur = con.cursor()
-            cur.execute("ALTER TABLE bugmessage "
-                "DISABLE TRIGGER bugmessage__owner__mirror")
-            cur.execute("UPDATE bugmessage set owner=NULL")
-            cur.execute("ALTER TABLE bugmessage "
-                "ENABLE TRIGGER bugmessage__owner__mirror")
-            con.commit()
-        finally:
-            con.close()
-        store = IMasterStore(BugMessage)
-        unmigrated = store.find(BugMessage, BugMessage.ownerID==None).count
-        self.assertNotEqual(0, unmigrated())
-        self.runHourly()
-        self.assertEqual(0, unmigrated())
