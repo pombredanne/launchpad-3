@@ -63,6 +63,7 @@ setup(
         'pydkim',
         'python-openid',
         'pytz',
+        'rabbitfixture',
         # This appears to be a broken indirect dependency from zope.security:
         'RestrictedPython',
         'selenium',
@@ -134,7 +135,6 @@ setup(
         'Paste',
         'PasteDeploy',
         'SimpleTal',
-        'lazr.amqp',
     ],
     url='https://launchpad.net/',
     classifiers=[
@@ -153,8 +153,6 @@ setup(
             'apiindex = lp.scripts.utilities.apiindex:main',
             'killservice = lp.scripts.utilities.killservice:main',
             'jsbuild = lp.scripts.utilities.js.jsbuild:main',
-            'jslint = lp.scripts.utilities.js.jslint:main',
-            'jssize = lp.scripts.utilities.js.jssize:main',
             'run = canonical.launchpad.scripts.runlaunchpad:start_launchpad',
             'harness = canonical.database.harness:python',
             'twistd = twisted.scripts.twistd:run',

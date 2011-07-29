@@ -25,9 +25,8 @@ are simple little functions.
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from lp.bugs.interfaces.bugtask import (
+    ...     IBugTask,
     ...     IBugTaskSet,
-    ...     IDistroBugTask,
-    ...     IUpstreamBugTask,
     ...     )
     >>> from lp.registry.interfaces.product import IProductSet
     >>> user = getUtility(ILaunchBag).user
@@ -87,7 +86,7 @@ Source package assignment edited
     ...     "distribution", "sourcepackagename", "milestone", "status",
     ...     "importance", "assignee", "bugwatch"]
     >>> old_source_package_assignment = Snapshot(
-    ...   source_package_assignment, providing=IDistroBugTask)
+    ...   source_package_assignment, providing=IBugTask)
     >>> source_package_assignment.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> source_package_assignment_edited = ObjectModifiedEvent(
@@ -135,7 +134,7 @@ Upstream product assignment edited
     ...     "product", "milestone", "status", "assignee", "bugwatch",
     ...     "importance"]
     >>> old_product_assignment = Snapshot(
-    ...     product_assignment, providing=IUpstreamBugTask)
+    ...     product_assignment, providing=IBugTask)
     >>> product_assignment.transitionToStatus(
     ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
     >>> product_assignment_edited = ObjectModifiedEvent(

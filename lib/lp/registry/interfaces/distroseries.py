@@ -360,9 +360,8 @@ class IDistroSeriesPublic(
             automatically upgrade within backports, but not into it.
             """))
 
-    # other properties
-    prior_series = Attribute(
-        "Prior series *by date* from the same distribution.")
+    def priorReleasedSeries():
+        """Prior series *by date* from the same distribution."""
 
     main_archive = exported(
         Reference(
@@ -903,6 +902,12 @@ class IDistroSeriesPublic(
     def isInitialized():
         """Has this series been initialized?"""
 
+    def getInitializationJob():
+        """Get the last `IInitializeDistroSeriesJob` for this series.
+
+        :return: `None` if no job is found or an `IInitializeDistroSeriesJob`.
+        """
+
     @operation_parameters(
         since=Datetime(
             title=_("Minimum creation timestamp"),
@@ -1068,6 +1073,18 @@ class IDistroSeriesSet(Interface):
         FROZEN.
 
         released == None will do no filtering on status.
+        """
+
+    def priorReleasedSeries(self, distribution, prior_to_date):
+        """Find distroseries for the supplied distro  released before a
+        certain date.
+
+        :param distribution: An `IDistribution` in which to search for its
+            series.
+        :param prior_to_date: A `datetime`
+
+        :return: `IResultSet` of `IDistroSeries` that were released before
+            prior_to_date, ordered in increasing order of age.
         """
 
 

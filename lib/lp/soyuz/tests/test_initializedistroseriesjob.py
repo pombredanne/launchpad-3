@@ -15,6 +15,7 @@ from canonical.testing import (
 from lp.buildmaster.enums import BuildStatus
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.enums import SourcePackageFormat
 from lp.soyuz.interfaces.distributionjob import (
     IInitializeDistroSeriesJobSource,
     InitializationCompleted,
@@ -22,6 +23,9 @@ from lp.soyuz.interfaces.distributionjob import (
     )
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet,
+    )
 from lp.soyuz.model.initializedistroseriesjob import InitializeDistroSeriesJob
 from lp.soyuz.scripts.initialize_distroseries import InitializationError
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -142,16 +146,17 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         naked_job = removeSecurityProxy(job)
         self.assertEqual((parent.id, ), naked_job.parents)
 
-    def test_getPendingJobsForDistroseries(self):
-        # Pending initialization jobs can be retrieved per distroseries.
+    def test_get(self):
+        # InitializeDistroSeriesJob.get() returns the initialization job for
+        # the given distroseries. There should only ever be one.
         parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
         another_distroseries = self.factory.makeDistroSeries()
+        self.assertIs(None, self.job_source.get(distroseries))
         self.job_source.create(distroseries, [parent.id])
         self.job_source.create(another_distroseries, [parent.id])
-        initialize_utility = getUtility(IInitializeDistroSeriesJobSource)
-        [job] = list(initialize_utility.getPendingJobsForDistroseries(
-            distroseries))
+        job = self.job_source.get(distroseries)
+        self.assertIsInstance(job, InitializeDistroSeriesJob)
         self.assertEqual(job.distroseries, distroseries)
 
 
@@ -191,6 +196,8 @@ class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
         test1.addSources('udev')
         parent.updatePackageCount()
         child = self.factory.makeDistroSeries()
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            child, SourcePackageFormat.FORMAT_1_0)
         # Make sure everything hits the database, switching db users aborts.
         transaction.commit()
         return parent, child

@@ -110,6 +110,7 @@ from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
     )
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
+from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.model.queue import PackageUploadQueue
 from lp.translations.browser.distroseries import (
@@ -620,6 +621,12 @@ class DistroSeriesAddView(LaunchpadFormView):
     @action(_('Add Series'), name='create')
     def createAndAdd(self, action, data):
         """Create and add a new Distribution Series"""
+        # 'series' is a cached property so this won't issue 2 queries.
+        if self.context.series:
+            previous_series = self.context.series[0]
+        else:
+            previous_series = None
+        # previous_series will be None if there isn't one.
         distroseries = self.context.newSeries(
             name=data['name'],
             displayname=data['displayname'],
@@ -627,7 +634,7 @@ class DistroSeriesAddView(LaunchpadFormView):
             summary=data['summary'],
             description=u"",
             version=data['version'],
-            previous_series=None,
+            previous_series=previous_series,
             registrant=self.user)
         notify(ObjectCreatedEvent(distroseries))
         self.next_url = canonical_url(distroseries)
@@ -697,7 +704,7 @@ class DistroSeriesInitializeView(LaunchpadFormView):
     @property
     def show_previous_series_empty_message(self):
         # There is a problem here:
-        # The distribution already has initialised series and this
+        # The distribution already has initialized series and this
         # distroseries has no previous_series.
         return (
             self.is_derived_series_feature_enabled and
@@ -740,26 +747,26 @@ class DistroSeriesPackagesView(LaunchpadView):
 
 # A helper to create package filtering radio button vocabulary.
 NON_IGNORED = 'non-ignored'
-IGNORED = 'ignored'
 HIGHER_VERSION_THAN_PARENT = 'higher-than-parent'
 RESOLVED = 'resolved'
+ALL = 'all'
 
 DEFAULT_PACKAGE_TYPE = NON_IGNORED
 
 
 def make_package_type_vocabulary(parent_name, higher_version_option=False):
     voc = [
-        SimpleTerm(
-            NON_IGNORED, NON_IGNORED, 'Non ignored packages'),
-        SimpleTerm(IGNORED, IGNORED, 'Ignored packages'),
-        SimpleTerm(RESOLVED, RESOLVED, "Resolved package differences")]
+        SimpleTerm(NON_IGNORED, NON_IGNORED, 'Non ignored packages'),
+        SimpleTerm(RESOLVED, RESOLVED, "Resolved package differences"),
+        SimpleTerm(ALL, ALL, 'All packages'),
+        ]
     if higher_version_option:
         higher_term = SimpleTerm(
             HIGHER_VERSION_THAN_PARENT,
             HIGHER_VERSION_THAN_PARENT,
             "Ignored packages with a higher version than in %s"
                 % parent_name)
-        voc.insert(2, higher_term)
+        voc.insert(1, higher_term)
     return SimpleVocabulary(tuple(voc))
 
 
@@ -801,6 +808,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
 
     # Differences type to display. Can be overrided by sublasses.
     differences_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+    show_parent = True
     show_parent_version = True
     show_derived_version = True
     show_package_diffs = True
@@ -819,6 +827,8 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         super(DistroSeriesDifferenceBaseView, self).initialize()
 
     def initialize_sync_label(self, label):
+        # XXX: GavinPanella 2011-07-13 bug=809985: Good thing the app servers
+        # are running single threaded...
         self.__class__.actions.byname['actions.sync'].label = label
 
     @property
@@ -853,6 +863,8 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             SimpleTerm(diff, diff.id)
                     for diff in self.cached_differences.batch]
         diffs_vocabulary = SimpleVocabulary(terms)
+        # XXX: GavinPanella 2011-07-13 bug=809985: Good thing the app servers
+        # are running single threaded...
         choice = self.form_fields['selected_differences'].field.value_type
         choice.vocabulary = diffs_vocabulary
 
@@ -1016,6 +1028,20 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             return None
 
     @property
+    def specified_packagesets_filter(self):
+        """If specified, return Packagesets given in the GET form data."""
+        packageset_ids = (
+            self.request.query_string_params.get("field.packageset", []))
+        packageset_ids = set(
+            int(packageset_id) for packageset_id in packageset_ids
+            if packageset_id.isdigit())
+        packagesets = getUtility(IPackagesetSet).getBySeries(self.context)
+        packagesets = set(
+            packageset for packageset in packagesets
+            if packageset.id in packageset_ids)
+        return None if len(packagesets) == 0 else packagesets
+
+    @property
     def specified_package_type(self):
         """If specified, return the package type filter from the GET form
         data.
@@ -1033,10 +1059,10 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         package_type_dsd_status = {
             NON_IGNORED: (
                 DistroSeriesDifferenceStatus.NEEDS_ATTENTION,),
-            IGNORED: DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
             HIGHER_VERSION_THAN_PARENT: (
                 DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT),
             RESOLVED: DistroSeriesDifferenceStatus.RESOLVED,
+            ALL: DistroSeriesDifferenceStatus.items,
         }
 
         status = package_type_dsd_status[self.specified_package_type]
@@ -1046,8 +1072,9 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         differences = getUtility(
             IDistroSeriesDifferenceSource).getForDistroSeries(
                 self.context, difference_type=self.differences_type,
-                source_package_name_filter=self.specified_name_filter,
-                status=status, child_version_higher=child_version_higher)
+                name_filter=self.specified_name_filter,
+                status=status, child_version_higher=child_version_higher,
+                packagesets=self.specified_packagesets_filter)
         return BatchNavigator(differences, self.request)
 
     @cachedproperty
@@ -1153,7 +1180,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
             )
             for dsd in self.getUpgrades()]
         getUtility(IPlainPackageCopyJobSource).createMultiple(
-            target_distroseries, copies,
+            target_distroseries, copies, self.user,
             copy_policy=PackageCopyPolicy.MASS_SYNC)
 
         self.request.response.addInfoNotification(
@@ -1226,7 +1253,8 @@ class DistroSeriesUniquePackagesView(DistroSeriesDifferenceBaseView,
     """
     page_title = 'Unique packages'
     differences_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
-    show_parent_version = False
+    show_parent = True
+    show_parent_version = False  # The DSDs are unique to the derived series.
     show_package_diffs = False
     show_packagesets = True
 

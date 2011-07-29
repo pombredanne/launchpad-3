@@ -268,8 +268,9 @@ def get_bug_tags_open_count(context_condition, user, tag_limit=0,
     The only change is that this function takes a SQL expression for limiting
     the found tags.
     :param context_condition: A Storm SQL expression, limiting the
-        used tags to a specific context. Only the BugTask table may be
-        used to choose the context.
+        used tags to a specific context. Only the BugSummary table may be
+        used to choose the context. If False then no query will be performed
+        (and {} returned).
     """
     # Circular fail.
     from lp.bugs.model.bugsummary import BugSummary
@@ -938,10 +939,12 @@ BugMessage""" % sqlvalues(self.id))
 
     def getDirectSubscribersWithDetails(self):
         """See `IBug`."""
+        SubscribedBy = ClassAlias(Person, name="subscribed_by")
         results = Store.of(self).find(
-            (Person, BugSubscription),
+            (Person, SubscribedBy, BugSubscription),
             BugSubscription.person_id == Person.id,
             BugSubscription.bug_id == self.id,
+            BugSubscription.subscribed_by_id == SubscribedBy.id,
             Not(In(BugSubscription.person_id,
                    Select(BugMute.person_id, BugMute.bug_id == self.id)))
             ).order_by(Person.displayname)
@@ -1797,6 +1800,20 @@ BugMessage""" % sqlvalues(self.id))
         store.flush()
         store.invalidate(self)
 
+    def shouldConfirmBugtasks(self):
+        """Should we try to confirm this bug's bugtasks?
+        The answer is yes if more than one user is affected."""
+        # == 2 would probably be sufficient once we have all legacy bug tasks
+        # confirmed.  For now, this is a compromise: we don't need a migration
+        # step, but we will make some unnecessary comparisons.
+        return self.users_affected_count_with_dupes > 1
+
+    def maybeConfirmBugtasks(self):
+        """Maybe try to confirm our new bugtasks."""
+        if self.shouldConfirmBugtasks():
+            for bugtask in self.bugtasks:
+                bugtask.maybeConfirm()
+
     def markUserAffected(self, user, affected=True):
         """See `IBug`."""
         bap = self._getAffectedUser(user)
@@ -1812,6 +1829,9 @@ BugMessage""" % sqlvalues(self.id))
         for dupe in self.duplicates:
             if dupe._getAffectedUser(user) is not None:
                 dupe.markUserAffected(user, affected)
+
+        if affected:
+            self.maybeConfirmBugtasks()
 
         self.updateHeat()
 
@@ -1853,12 +1873,16 @@ BugMessage""" % sqlvalues(self.id))
             # to 0 (since it's a duplicate, it shouldn't have any heat
             # at all).
             self.setHeat(0, affected_targets=affected_targets)
+            # Maybe confirm bug tasks, now that more people might be affected
+            # by this bug.
+            duplicate_of.maybeConfirmBugtasks()
         else:
             # Otherwise, recalculate this bug's heat, since it will be 0
             # from having been a duplicate. We also update the bug that
             # was previously duplicated.
             self.updateHeat(affected_targets)
-            current_duplicateof.updateHeat(affected_targets)
+            if current_duplicateof is not None:
+                current_duplicateof.updateHeat(affected_targets)
         return affected_targets
 
     def markAsDuplicate(self, duplicate_of):

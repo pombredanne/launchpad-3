@@ -53,8 +53,8 @@
       <tal:previous_series_none
         condition="view/show_previous_series_empty_message">
       <p class="error message">
-        Unable to initialise series: the distribution already has
-        initialised series and this distroseries has no previous series.
+        Unable to initialize series: the distribution already has
+        initialized series and this distroseries has no previous series.
       </p>
       </tal:previous_series_none>
 

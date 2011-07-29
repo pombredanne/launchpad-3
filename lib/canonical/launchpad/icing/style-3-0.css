@@ -306,6 +306,9 @@ kbd {
     min-width: 1em;
     outline: 1px #666;
     }
+.nowrap {
+    white-space: nowrap;
+    }
 
 /* =========================
    Universal presentation
@@ -838,7 +841,7 @@ button.overlay-close-button {
     }
 .extra-form-buttons {
     text-align: center;
-    height: 3em;
+    padding-top: 1em;
     white-space: nowrap;
     }
 .extra-form-buttons button {
@@ -921,7 +924,7 @@ table.form td td {
 fieldset.collapsible {
     /* Collapsible sections
        Some page sections are hidden by default, expanded by clicking a link.
-       see launchpad.js:activateCollapsibles() */
+       see lp.js:activate_collapsibles() */
     border: none;
     margin: 0;
     padding: 16px 0 0; /* "Add a comment/attachment" form in bug reports */

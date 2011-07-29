@@ -22,10 +22,13 @@ from lp.services.job.model.job import (
     Job,
     LeaseHeld,
     )
-from lp.testing import TestCase
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory,
+    )
 
 
-class TestJob(TestCase):
+class TestJob(TestCaseWithFactory):
     """Ensure Job behaves as intended."""
 
     layer = ZopelessDatabaseLayer
@@ -38,6 +41,12 @@ class TestJob(TestCase):
         """The default status should be WAITING."""
         job = Job()
         self.assertEqual(job.status, JobStatus.WAITING)
+
+    def test_stores_requester(self):
+        job = Job()
+        random_joe = self.factory.makePerson()
+        job.requester = random_joe
+        self.assertEqual(random_joe, job.requester)
 
     def test_createMultiple_creates_requested_number_of_jobs(self):
         job_ids = list(Job.createMultiple(IStore(Job), 3))
@@ -54,6 +63,17 @@ class TestJob(TestCase):
         store = IStore(Job)
         job = store.get(Job, Job.createMultiple(store, 1)[0])
         self.assertEqual(JobStatus.WAITING, job.status)
+
+    def test_createMultiple_sets_requester(self):
+        store = IStore(Job)
+        requester = self.factory.makePerson()
+        job = store.get(Job, Job.createMultiple(store, 1, requester)[0])
+        self.assertEqual(requester, job.requester)
+
+    def test_createMultiple_defaults_requester_to_None(self):
+        store = IStore(Job)
+        job = store.get(Job, Job.createMultiple(store, 1)[0])
+        self.assertEqual(None, job.requester)
 
     def test_start(self):
         """Job.start should update the object appropriately.
@@ -203,6 +223,13 @@ class TestJob(TestCase):
             job.status,
             JobStatus.WAITING)
 
+    def test_resume_clears_lease_expiry(self):
+        """A job that resumes should null out the lease_expiry."""
+        job = Job(_status=JobStatus.SUSPENDED)
+        job.lease_expires = UTC_NOW
+        job.resume()
+        self.assertIs(None, job.lease_expires)
+
     def test_resume_when_running(self):
         """When a job is running, attempting to resume is invalid."""
         job = Job(_status=JobStatus.RUNNING)
@@ -217,6 +244,13 @@ class TestJob(TestCase):
         """When a job is failed, attempting to resume is invalid."""
         job = Job(_status=JobStatus.FAILED)
         self.assertRaises(InvalidTransition, job.resume)
+
+    def test_is_pending(self):
+        """is_pending is True when the job can possibly complete."""
+        for status in JobStatus.items:
+            job = Job(_status=status)
+            self.assertEqual(
+                status in Job.PENDING_STATUSES, job.is_pending)
 
 
 class TestReadiness(TestCase):
