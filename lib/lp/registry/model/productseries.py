@@ -131,7 +131,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-    implements(IBugSummaryDimension, IHasBugHeat, IProductSeries, IServiceUsage)
+    implements(
+        IBugSummaryDimension, IHasBugHeat, IProductSeries, IServiceUsage,
+        ISeriesBugTarget)
 
     _table = 'ProductSeries'
 
