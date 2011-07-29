@@ -3,8 +3,6 @@
 
 """Test PackageLocation class."""
 
-import unittest
-
 from zope.component import getUtility
 
 from canonical.testing.layers import LaunchpadZopelessLayer
@@ -260,7 +258,3 @@ class TestPackageLocation(TestCaseWithFactory):
             str(location_ubuntu_packageset),
             'Primary Archive for Ubuntu Linux: '
             'hoary-RELEASE [foo-packageset]')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

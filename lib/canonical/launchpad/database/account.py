@@ -25,7 +25,6 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.helpers import ensure_unicode
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterObject,
     IMasterStore,
@@ -274,11 +273,6 @@ class AccountSet:
                               password_is_encrypted=False,
                               openid_identifier=None):
         """See `IAccountSet`."""
-        # XXX bug=628832 StuartBishop 20100903: ShipIt is sending us byte
-        # strings. Call sites should send unicode strings.
-        if isinstance(openid_identifier, str):
-            openid_identifier = openid_identifier.decode('US-ASCII')
-
         # Convert the PersonCreationRationale to an AccountCreationRationale.
         account_rationale = getattr(AccountCreationRationale, rationale.name)
         account = self.new(
@@ -293,11 +287,17 @@ class AccountSet:
     def getByEmail(self, email):
         """See `IAccountSet`."""
         store = IStore(Account)
+        try:
+            email = email.decode('US-ASCII')
+        except (UnicodeDecodeError, UnicodeEncodeError):
+            # Non-ascii email addresses are not legal, so assume there are no
+            # matching addresses in Launchpad.
+            raise LookupError(repr(email))
         account = store.find(
             Account,
             EmailAddress.account == Account.id,
             EmailAddress.email.lower()
-                == ensure_unicode(email).strip().lower()).one()
+                == email.strip().lower()).one()
         if account is None:
             raise LookupError(email)
         return account
@@ -305,10 +305,6 @@ class AccountSet:
     def getByOpenIDIdentifier(self, openid_identifier):
         """See `IAccountSet`."""
         store = IStore(Account)
-        # XXX bug=628832 StuartBishop 20100903: ShipIt is sending us byte
-        # strings. Call sites should send unicode strings.
-        if isinstance(openid_identifier, str):
-            openid_identifier = openid_identifier.decode('US-ASCII')
         account = store.find(
             Account,
             Account.id == OpenIdIdentifier.account_id,

@@ -9,8 +9,7 @@ Team Merges
 Create a member of the registry team that is not a member of the admins
 team.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
     >>> person_set = getUtility(IPersonSet)

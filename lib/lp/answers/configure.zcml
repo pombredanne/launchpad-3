@@ -67,6 +67,16 @@
           />
     </class>
 
+    <class class=".model.questionjob.QuestionEmailJob">
+      <allow interface=".interfaces.questionjob.IQuestionEmailJob"/>
+    </class>
+
+    <securedutility
+        component=".model.questionjob.QuestionEmailJob"
+        provides=".interfaces.questionjob.IQuestionEmailJobSource">
+      <allow interface=".interfaces.questionjob.IQuestionEmailJobSource"/>
+    </securedutility>
+
     <!-- QuestionSubscription -->
     <class class=".model.questionsubscription.QuestionSubscription">
         <allow
@@ -89,7 +99,7 @@
                     can_request_info can_give_info can_give_answer
                     can_confirm_answer can_reopen
                     subscriptions isSubscribed getRecipients
-                    getDirectRecipients getIndirectRecipients
+                    direct_recipients indirect_recipients
                     getDirectSubscribers getIndirectSubscribers"
       />
     <require
@@ -129,16 +139,6 @@
     <allow interface=".interfaces.questionmessage.IQuestionMessage"/>
   </class>
 
-  <class class=".model.questionsperson.QuestionsPerson">
-    <allow interface=".interfaces.questionsperson.IQuestionsPerson"/>
-  </class>
-
-  <adapter
-    for="lp.registry.interfaces.person.IPerson"
-    provides=".interfaces.questionsperson.IQuestionsPerson"
-    factory=".model.questionsperson.QuestionsPerson"
-    trusted="yes"
-    />
   <adapter
     for=".interfaces.question.IQuestion"
     provides=".interfaces.questiontarget.IQuestionTarget"
@@ -168,6 +168,11 @@
     for="lp.soyuz.interfaces.sourcepackagerelease.ISourcePackageRelease"
     provides=".interfaces.questiontarget.IQuestionTarget"
     factory=".adapters.sourcepackagerelease_to_questiontarget"
+    />
+  <adapter
+    for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+    provides=".interfaces.questiontarget.IQuestionTarget"
+    factory=".adapters.sourcepackage_to_questiontarget"
     />
 
   <adapter

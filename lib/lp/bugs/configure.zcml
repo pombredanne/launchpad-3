@@ -1,4 +1,4 @@
-<!-- Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -206,6 +206,7 @@
                     canTransitionToStatus
                     isSubscribed
                     getPackageComponent
+                    maybeConfirm
                     userCanEditImportance
                     userCanEditMilestone
                     userCanSetAnyAssignee
@@ -253,7 +254,9 @@
                     transitionToStatus
                     transitionToAssignee
                     transitionToMilestone
-                    transitionToTarget"/>
+                    transitionToTarget
+                    validateTransitionToTarget
+                    "/>
 
             <!-- XXX Brad Bollenbach 2006-09-29 bug=63000:
                  The permission checking for milestone and importance
@@ -394,6 +397,7 @@
                     getBugFilingAndSearchLinks
                     getBugsWatching
                     getLinkedPersonByName
+                    getRemoteComponentForDistroSourcePackageName
                     getRemoteComponentGroup
                     has_lp_plugin
                     id
@@ -637,11 +641,31 @@
         class=".model.bugsubscriptionfilter.BugSubscriptionFilter">
       <allow
           interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes"/>
+      <allow
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethodsPublic"/>
       <require
           permission="launchpad.Edit"
-          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethods"
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMethodsProtected"
           set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterAttributes" />
     </class>
+
+    <!-- BugMute -->
+    <class
+        class=".model.bug.BugMute">
+      <allow
+          interface=".interfaces.bug.IBugMute"/>
+    </class>
+
+    <!-- BugSubscriptionFilterMute -->
+    <class
+        class=".model.bugsubscriptionfilter.BugSubscriptionFilterMute">
+      <allow
+          interface=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMute"/>
+      <require
+          permission="launchpad.Edit"
+          set_schema=".interfaces.bugsubscriptionfilter.IBugSubscriptionFilterMute" />
+    </class>
+
 
     <!-- BugSubscriptionInfo -->
 
@@ -723,9 +747,11 @@
                     date_last_updated
                     getBugTask
                     getDirectSubscribers
+                    getDirectSubscribersWithDetails
                     getDirectSubscriptions
                     getIndirectSubscribers
                     is_complete
+                    maybeConfirmBugtasks
                     official_tags
                     who_made_private
                     date_made_private
@@ -733,6 +759,7 @@
                     personIsDirectSubscriber
                     personIsAlsoNotifiedSubscriber
                     personIsSubscribedToDuplicate
+                    shouldConfirmBugtasks
                     heat
                     heat_last_updated
                     has_patches

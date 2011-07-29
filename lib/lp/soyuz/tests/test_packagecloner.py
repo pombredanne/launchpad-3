@@ -68,7 +68,8 @@ class PackageClonerTests(TestCaseWithFactory):
         """Create a DistroSeries suitable for copying.
 
         Creates a distroseries with a DistroArchSeries and nominatedarchindep,
-        which makes it suitable for copying because it will create some builds.
+        which makes it suitable for copying because it will create some
+        builds.
         """
         distro_name = "foobuntu"
         distro = self.factory.makeDistribution(name=distro_name)
@@ -343,7 +344,6 @@ class PackageClonerTests(TestCaseWithFactory):
         # This is a processor family without a DAS in the source, so
         # we expect no builds.
         family = self.factory.makeProcessorFamily(name="armel")
-        self.factory.makeProcessor(family=family, name="armel")
         proc_families = [family]
         copy_archive, distroseries = self.makeCopyArchive(
             [package_info], proc_families=proc_families)
@@ -356,7 +356,6 @@ class PackageClonerTests(TestCaseWithFactory):
         # One of these processor families has a DAS in the source, so
         # we expect one set of builds
         family = self.factory.makeProcessorFamily(name="armel")
-        self.factory.makeProcessor(family=family, name="armel")
         proc_families = [family, ProcessorFamilySet().getByName("x86")]
         copy_archive, distroseries = self.makeCopyArchive(
             [package_info], proc_families=proc_families)
@@ -398,7 +397,6 @@ class PackageClonerTests(TestCaseWithFactory):
             copy_archive, distroseries, proc_families=proc_families)
         self.checkBuilds(copy_archive, [package_info, package_info])
 
-
     def diffArchives(self, target_archive, target_distroseries,
                      source_archive=None, source_distroseries=None):
         """Run a packageSetDiff of two archives."""
@@ -422,6 +420,7 @@ class PackageClonerTests(TestCaseWithFactory):
         expected_changed_tuples = [(e.name, e.version)
                                    for e in expected_changed]
         expected_new_tuples = [(e.name, e.version) for e in expected_new]
+
         def get_tuples(source_keys):
             tuples = []
             for source_key in source_keys:
@@ -501,7 +500,6 @@ class PackageClonerTests(TestCaseWithFactory):
         self.checkPackageDiff(
             [package_infos[0]], [package_infos[1]], diff,
             distroseries.distribution.main_archive)
-
 
     def mergeCopy(self, target_archive, target_distroseries,
                   source_archive=None, source_distroseries=None):

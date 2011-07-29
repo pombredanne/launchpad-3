@@ -38,7 +38,6 @@ from lp.code.browser.branch import (
     BranchAddView,
     BranchMirrorStatusView,
     BranchReviewerEditView,
-    BranchSparkView,
     BranchView,
     )
 from lp.code.browser.branchlisting import PersonOwnedBranchesView
@@ -46,6 +45,7 @@ from lp.code.bzr import ControlFormat
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchType,
+    BranchVisibilityRule,
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.testing import (
@@ -56,7 +56,10 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.matchers import BrowsesWithQueryLimit
+from lp.testing.matchers import (
+    BrowsesWithQueryLimit,
+    Contains,
+    )
 from lp.testing.views import create_initialized_view
 
 
@@ -664,94 +667,6 @@ class TestBranchBzrIdentity(TestCaseWithFactory):
         self.assertEqual("lp://dev/fooix", decorated_branch.bzr_identity)
 
 
-class TestBranchSparkView(TestCaseWithFactory):
-    """Tests for the BranchSparkView class."""
-
-    layer = DatabaseFunctionalLayer
-
-    def test_empty_branch(self):
-        # A branch with no commits produces...
-        branch = self.factory.makeAnyBranch()
-        view = BranchSparkView(branch, LaunchpadTestRequest())
-        json = simplejson.loads(view.render())
-        self.assertEqual(0, json['count'])
-        self.assertEqual('empty branch', json['last_commit'])
-
-    def test_content_type(self):
-        # The response has the correct (JSON) content type...
-        branch = self.factory.makeAnyBranch()
-        request = LaunchpadTestRequest()
-        view = BranchSparkView(branch, request)
-        view.render()
-        self.assertEqual(
-            request.response.getHeader('content-type'),
-            'application/json')
-
-    def test_old_commits(self):
-        # A branch with a commit older than the COMMIT_DAYS will create a list
-        # of commits that all say zero.
-        branch = self.factory.makeAnyBranch()
-        revision = self.factory.makeRevision(
-            revision_date=datetime(
-                year=2008, month=9, day=10, tzinfo=pytz.UTC))
-        branch.createBranchRevision(1, revision)
-        branch.updateScannedDetails(revision, 1)
-
-        view = BranchSparkView(branch, LaunchpadTestRequest())
-        json = simplejson.loads(view.render())
-
-        self.assertEqual(0, json['count'])
-        self.assertEqual([0] * 90, json['commits'])
-        self.assertEqual('2008-09-10', json['last_commit'])
-
-    def test_last_commit_string(self):
-        # If the last commit was very recent, we get a nicer string.
-        branch = self.factory.makeAnyBranch()
-        # Make the revision date six hours ago.
-        revision_date = datetime.now(tz=pytz.UTC) - timedelta(seconds=6*3600)
-        revision = self.factory.makeRevision(
-            revision_date=revision_date)
-        branch.createBranchRevision(1, revision)
-        branch.updateScannedDetails(revision, 1)
-
-        view = BranchSparkView(branch, LaunchpadTestRequest())
-        json = simplejson.loads(view.render())
-        self.assertEqual('6 hours ago', json['last_commit'])
-
-    def test_new_commits(self):
-        # If there are no commits for the day, there are zeros, if there are
-        # commits, then the array contains the number of commits for that day.
-        branch = self.factory.makeAnyBranch()
-        # Create a commit 5 days ago.
-        revision_date = datetime.now(tz=pytz.UTC) - timedelta(days=5)
-        revision = self.factory.makeRevision(revision_date=revision_date)
-        branch.createBranchRevision(1, revision)
-        branch.updateScannedDetails(revision, 1)
-
-        view = BranchSparkView(branch, LaunchpadTestRequest())
-        json = simplejson.loads(view.render())
-
-        self.assertEqual(1, json['count'])
-        commits = ([0] * 84) + [1, 0, 0, 0, 0, 0]
-        self.assertEqual(commits, json['commits'])
-        self.assertEqual(84, json['max_commits'])
-
-    def test_commit_for_just_now(self):
-        # A commit now should show as a commit on the last day.
-        branch = self.factory.makeAnyBranch()
-        revision_date = datetime.now(tz=pytz.UTC)
-        revision = self.factory.makeRevision(revision_date=revision_date)
-        branch.createBranchRevision(1, revision)
-        branch.updateScannedDetails(revision, 1)
-
-        view = BranchSparkView(branch, LaunchpadTestRequest())
-        json = simplejson.loads(view.render())
-
-        self.assertEqual(1, json['count'])
-        commits = ([0] * 89) + [1]
-        self.assertEqual(commits, json['commits'])
-
-
 class TestBranchProposalsVisible(TestCaseWithFactory):
     """Test that the BranchView filters out proposals the user cannot see."""
 
@@ -844,3 +759,50 @@ class TestBranchRootContext(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         root_context = IRootContext(branch)
         self.assertEqual(branch.product, root_context)
+
+
+class TestBranchEditView(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_allowed_owner_is_ok(self):
+        # A branch's owner can be changed to a team permitted by the
+        # visibility policy.
+        person = self.factory.makePerson()
+        branch = self.factory.makeProductBranch(owner=person)
+        team = self.factory.makeTeam(
+            owner=person, displayname="Permitted team")
+        branch.product.setBranchVisibilityTeamPolicy(
+            None, BranchVisibilityRule.FORBIDDEN)
+        branch.product.setBranchVisibilityTeamPolicy(
+            team, BranchVisibilityRule.PRIVATE)
+        browser = self.getUserBrowser(
+            canonical_url(branch) + '/+edit', user=person)
+        browser.getControl("Owner").displayValue = ["Permitted team"]
+        browser.getControl("Change Branch").click()
+        with person_logged_in(person):
+            self.assertEquals(team, branch.owner)
+
+    def test_forbidden_owner_is_error(self):
+        # An error is displayed if a branch's owner is changed to
+        # a value forbidden by the visibility policy.
+        product = self.factory.makeProduct(displayname='Some Product')
+        person = self.factory.makePerson()
+        branch = self.factory.makeBranch(product=product, owner=person)
+        self.factory.makeTeam(
+            owner=person, displayname="Forbidden team")
+        branch.product.setBranchVisibilityTeamPolicy(
+            None, BranchVisibilityRule.FORBIDDEN)
+        branch.product.setBranchVisibilityTeamPolicy(
+            person, BranchVisibilityRule.PRIVATE)
+        browser = self.getUserBrowser(
+            canonical_url(branch) + '/+edit', user=person)
+        browser.getControl("Owner").displayValue = ["Forbidden team"]
+        browser.getControl("Change Branch").click()
+        self.assertThat(
+            browser.contents,
+            Contains(
+                'Forbidden team is not allowed to own branches in '
+                'Some Product.'))
+        with person_logged_in(person):
+            self.assertEquals(person, branch.owner)

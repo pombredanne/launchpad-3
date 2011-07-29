@@ -15,28 +15,30 @@ __all__ = [
     'IDistroSeriesSet',
     ]
 
+import httplib
+
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     call_with,
+    error_status,
     export_as_webservice_entry,
     export_factory_operation,
     export_read_operation,
     export_write_operation,
     exported,
     LAZR_WEBSERVICE_EXPORTED,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
     rename_parameters_as,
     REQUEST_USER,
-    webservice_error,
     )
 from lazr.restful.fields import (
     CollectionField,
     Reference,
     ReferenceChoice,
     )
-from lazr.restful.interface import copy_field
 from zope.component import getUtility
 from zope.interface import (
     Attribute,
@@ -52,7 +54,6 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import IHasAppointedDriver
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.email import email_validator
@@ -73,7 +74,10 @@ from lp.registry.interfaces.milestone import (
     IMilestone,
     )
 from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.role import (
+    IHasAppointedDriver,
+    IHasOwner,
+    )
 from lp.registry.interfaces.series import (
     ISeriesMixin,
     SeriesStatus,
@@ -172,16 +176,6 @@ class DistroSeriesVersionField(UniqueField):
                 "'%s': %s" % (version, error))
 
 
-class IDistroSeriesEditRestricted(Interface):
-    """IDistroSeries properties which require launchpad.Edit."""
-
-    @rename_parameters_as(dateexpected='date_targeted')
-    @export_factory_operation(
-        IMilestone, ['name', 'dateexpected', 'summary', 'code_name'])
-    def newMilestone(name, dateexpected=None, summary=None, code_name=None):
-        """Create a new milestone for this DistroSeries."""
-
-
 class IDistroSeriesPublic(
     ISeriesMixin, IHasAppointedDriver, IHasOwner, IBugTarget,
     ISpecificationGoal, IHasMilestones, IHasOfficialBugTags,
@@ -221,34 +215,40 @@ class IDistroSeriesPublic(
             description=_("The version string for this series.")))
     distribution = exported(
         Reference(
-            Interface, # Really IDistribution, see circular import fix below.
+            Interface,  # Really IDistribution, see circular import fix below.
             title=_("Distribution"), required=True,
             description=_("The distribution for which this is a series.")))
     distributionID = Attribute('The distribution ID.')
     named_version = Attribute('The combined display name and version.')
     parent = Attribute('The structural parent of this series - the distro')
     components = Attribute("The series components.")
+    # IComponent is not exported on the api.
+    component_names = exported(List(
+        value_type=TextLine(),
+        title=_(u'The series component names'),
+        readonly=True))
     upload_components = Attribute("The series components that can be "
                                   "uploaded to.")
+    suite_names = exported(List(
+        value_type=TextLine(),
+        title=_(u'The series pocket names'),
+        readonly=True))
     sections = Attribute("The series sections.")
     status = exported(
         Choice(
             title=_("Status"), required=True,
             vocabulary=SeriesStatus))
-    is_derived_series = Bool(
-        title=u'Is this series a derived series?', readonly=True,
-        description=(u"Whether or not this series is a derived series."))
-    is_initialising = Bool(
-        title=u'Is this series initialising?', readonly=True,
-        description=(u"Whether or not this series is initialising."))
     datereleased = exported(
         Datetime(title=_("Date released")))
-    parent_series = exported(
+    previous_series = exported(
         ReferenceChoice(
             title=_("Parent series"),
             description=_("The series from which this one was branched."),
-            required=True, schema=Interface, # Really IDistroSeries, see below
+            required=True, schema=Interface,  # Really IDistroSeries
             vocabulary='DistroSeries'),
+        ("devel", dict(exported_as="previous_series")),
+        ("1.0", dict(exported_as="parent_series")),
+        ("beta", dict(exported_as="parent_series")),
         readonly=True)
     registrant = exported(
         PublicPersonChoice(
@@ -360,13 +360,12 @@ class IDistroSeriesPublic(
             automatically upgrade within backports, but not into it.
             """))
 
-    # other properties
-    previous_series = Attribute("Previous series from the same "
-        "distribution.")
+    def priorReleasedSeries():
+        """Prior series *by date* from the same distribution."""
 
     main_archive = exported(
         Reference(
-            Interface, # Really IArchive, see below for circular import fix.
+            Interface,  # Really IArchive, see below for circular import fix.
             title=_('Distribution Main Archive')))
 
     supported = exported(
@@ -414,7 +413,7 @@ class IDistroSeriesPublic(
     architectures = exported(
         CollectionField(
             title=_("All architectures in this series."),
-            value_type=Reference(schema=Interface), # IDistroArchSeries.
+            value_type=Reference(schema=Interface),  # IDistroArchSeries.
             readonly=True))
 
     enabled_architectures = Attribute(
@@ -532,17 +531,26 @@ class IDistroSeriesPublic(
     # Really IPackageUpload, patched in _schema_circular_imports.py
     @operation_returns_collection_of(Interface)
     @export_read_operation()
-    def getPackageUploads(created_since_date, status, archive, pocket,
-                          custom_type):
+    def getPackageUploads(status=None, created_since_date=None, archive=None,
+                          pocket=None, custom_type=None, name=None,
+                          version=None, exact_match=False):
         """Get package upload records for this distribution series.
 
+        :param status: Filter results by this `PackageUploadStatus`, or list
+            of statuses.
         :param created_since_date: If specified, only returns items uploaded
             since the timestamp supplied.
-        :param status: Filter results by this `PackageUploadStatus`
-        :param archive: Filter results for this `IArchive`
-        :param pocket: Filter results by this `PackagePublishingPocket`
-        :param custom_type: Filter results by this `PackageUploadCustomFormat`
-        :return: A result set containing `IPackageUpload`
+        :param archive: Filter results for this `IArchive`.
+        :param pocket: Filter results by this `PackagePublishingPocket`.
+        :param custom_type: Filter results by this
+            `PackageUploadCustomFormat`.
+        :param name: Filter results by this file name or package name.
+        :param version: Filter results by this version number string.
+        :param exact_match: If True, look for exact string matches on the
+            `name` and `version` filters.  If False, look for a substring
+            match so that e.g. a package "kspreadsheetplusplus" would match
+            the search string "spreadsheet".  Defaults to False.
+        :return: A result set containing `IPackageUpload`.
         """
 
     def getUnlinkedTranslatableSourcePackages():
@@ -778,8 +786,8 @@ class IDistroSeriesPublic(
         DistroSeriesBinaryPackage objects that match the given text.
         """
 
-    def createQueueEntry(pocket, changesfilename, changesfilecontent,
-                         archive, signingkey=None):
+    def createQueueEntry(pocket, archive, changesfilename, changesfilecontent,
+                         signingkey=None, package_copy_job=None):
         """Create a queue item attached to this distroseries.
 
         Create a new records respecting the given pocket and archive.
@@ -832,16 +840,113 @@ class IDistroSeriesPublic(
         :param format: The SourcePackageFormat to check.
         """
 
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getDerivedSeries():
+        """Get all `DistroSeries` derived from this one."""
+
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getParentSeries():
+        """Get all parent `DistroSeries`."""
+
     @operation_parameters(
-        name=copy_field(name, required=True),
-        displayname=copy_field(displayname, required=False),
-        title=copy_field(title, required=False),
-        summary=TextLine(
-            title=_("The summary of the distroseries to derive."),
+        parent_series=Reference(
+            schema=Interface,  # IDistroSeries
+            title=_("The parent series to consider."),
             required=False),
-        description=copy_field(description, required=False),
-        version=copy_field(version, required=False),
-        distribution=copy_field(distribution, required=False),
+        difference_type=Choice(
+            vocabulary=DBEnumeratedType,  # DistroSeriesDifferenceType
+            title=_("Only return differences of this type."), required=False),
+        source_package_name_filter=TextLine(
+            title=_("Only return differences for packages matching this "
+                    "name."),
+            required=False),
+        status=Choice(
+            vocabulary=DBEnumeratedType,  # DistroSeriesDifferenceStatus
+            title=_("Only return differences of this status."),
+            required=False),
+        child_version_higher=Bool(
+            title=_("Only return differences for which the child's version "
+                    "is higher than the parent's."),
+            required=False),
+        )
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getDifferencesTo(parent_series, difference_type,
+                         source_package_name_filter, status,
+                         child_version_higher):
+        """Return the differences between this series and the specified
+        parent_series (or all the parent series if parent_series is None).
+
+        :param parent_series: The parent series for which the differences
+            should be returned. All parents are considered if this is None.
+        :param difference_type: The type of the differences to return.
+        :param source_package_name_filter: A package name to use as a filter
+            for the differences.
+        :param status: The status of the differences to return.
+        :param child_version_higher: Only return differences for which the
+            child's version is higher than the parent's version.
+        """
+
+    def isDerivedSeries():
+        """Is this series a derived series?
+
+        A derived series has one or more parent series.
+        """
+
+    def isInitializing():
+        """Is this series initializing?"""
+
+    def isInitialized():
+        """Has this series been initialized?"""
+
+    def getInitializationJob():
+        """Get the last `IInitializeDistroSeriesJob` for this series.
+
+        :return: `None` if no job is found or an `IInitializeDistroSeriesJob`.
+        """
+
+    @operation_parameters(
+        since=Datetime(
+            title=_("Minimum creation timestamp"),
+            description=_(
+                "Ignore comments that are older than this."),
+            required=False),
+        source_package_name=TextLine(
+            title=_("Name of source package"),
+            description=_("Only return comments for this source package."),
+            required=False))
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getDifferenceComments(since=None, source_package_name=None):
+        """Get `IDistroSeriesDifferenceComment` items.
+
+        :param since: Ignore comments older than this timestamp.
+        :param source_package_name: Return only comments for a source package
+            with this name.
+        :return: A Storm result set of `IDistroSeriesDifferenceComment`
+            objects for this distroseries, ordered from oldest to newest
+            comment.
+        """
+
+
+class IDistroSeriesEditRestricted(Interface):
+    """IDistroSeries properties which require launchpad.Edit."""
+
+    @rename_parameters_as(dateexpected='date_targeted')
+    @export_factory_operation(
+        IMilestone, ['name', 'dateexpected', 'summary', 'code_name'])
+    def newMilestone(name, dateexpected=None, summary=None, code_name=None):
+        """Create a new milestone for this DistroSeries."""
+
+    @operation_parameters(
+        parents=List(
+            title=_("The list of parents to derive from."),
+            value_type=TextLine(),
+            required=True),
         architectures=List(
             title=_("The list of architectures to copy to the derived "
             "distroseries."), value_type=TextLine(),
@@ -854,34 +959,32 @@ class IDistroSeriesPublic(
             title=_("If binaries will be copied to the derived "
             "distroseries."),
             required=True),
+        overlays=List(
+            title=_("The list of booleans indicating, for each parent, if "
+            "the parent/child relationship should be an overlay."),
+            value_type=Bool(),
+            required=False),
+        overlay_pockets=List(
+            title=_("The list of overlay pockets."),
+            value_type=TextLine(),
+            required=False),
+        overlay_components=List(
+            title=_("The list of overlay components."),
+            value_type=TextLine(),
+            required=False),
         )
     @call_with(user=REQUEST_USER)
     @export_write_operation()
-    def deriveDistroSeries(user, name, displayname, title, summary,
-                           description, version, distribution,
-                           architectures, packagesets, rebuild):
-        """Derive a distroseries from this one.
+    def initDerivedDistroSeries(user, parents, architectures,
+                                packagesets, rebuild, overlays,
+                                overlay_pockets, overlay_components):
+        """Initialize this series from parents.
 
-        This method performs checks, can create the new distroseries if
-        necessary, and then creates a job to populate the new
-        distroseries.
+        This method performs checks and then creates a job to populate
+        the new distroseries.
 
-        :param name: The name of the new distroseries we will create if it
-            doesn't exist, or the name of the distroseries we will look
-            up, and then initialise.
-        :param displayname: The Display Name for the new distroseries.
-            If the distroseries already exists this parameter is ignored.
-        :param title: The Title for the new distroseries. If the
-            distroseries already exists this parameter is ignored.
-        :param summary: The Summary for the new distroseries. If the
-            distroseries already exists this parameter is ignored.
-        :param description: The Description for the new distroseries. If the
-            distroseries already exists this parameter is ignored.
-        :param version: The version for the new distroseries. If the
-            distroseries already exists this parameter is ignored.
-        :param distribution: The distribution the derived series will
-            belong to. If it isn't specified this distroseries'
-            distribution is used.
+        :param parents: The list of parent ids this series will derive
+            from.
         :param architectures: The architectures to copy to the derived
             series. If not specified, all of the architectures are copied.
         :param packagesets: The packagesets to copy to the derived series.
@@ -889,12 +992,13 @@ class IDistroSeriesPublic(
         :param rebuild: Whether binaries will be copied to the derived
             series. If it's true, they will not be, and if it's false, they
             will be.
+        :param overlays: A list of booleans indicating, for each parent, if
+            the parent/child relationship should be an overlay.
+        :param overlay_pockets: The list of pockets names to use for overlay
+            relationships.
+        :param overlay_components: The list of components names to use for
+            overlay relationships.
         """
-
-    @operation_returns_collection_of(Interface)
-    @export_read_operation()
-    def getDerivedSeries():
-        """Get all `DistroSeries` derived from this one."""
 
 
 class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic,
@@ -971,10 +1075,22 @@ class IDistroSeriesSet(Interface):
         released == None will do no filtering on status.
         """
 
+    def priorReleasedSeries(self, distribution, prior_to_date):
+        """Find distroseries for the supplied distro  released before a
+        certain date.
 
+        :param distribution: An `IDistribution` in which to search for its
+            series.
+        :param prior_to_date: A `datetime`
+
+        :return: `IResultSet` of `IDistroSeries` that were released before
+            prior_to_date, ordered in increasing order of age.
+        """
+
+
+@error_status(httplib.BAD_REQUEST)
 class DerivationError(Exception):
     """Raised when there is a problem deriving a distroseries."""
-    webservice_error(400) # Bad Request
     _message_prefix = "Error deriving distro series"
 
 

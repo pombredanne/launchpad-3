@@ -6,10 +6,19 @@
 __metaclass__ = type
 
 from contextlib import contextmanager
+from datetime import datetime
 import hashlib
 import itertools
+import os
 import sys
-import unittest
+
+from pytz import UTC
+from testtools.matchers import (
+    Equals,
+    GreaterThan,
+    LessThan,
+    MatchesAny,
+    )
 
 from lp.services.utils import (
     AutoDecorate,
@@ -18,12 +27,13 @@ from lp.services.utils import (
     CachingIterator,
     decorate_with,
     docstring_dedent,
+    file_exists,
     iter_split,
     run_capturing_output,
     traceback_info,
+    utc_now,
     )
 from lp.testing import TestCase
-
 
 
 class TestAutoDecorate(TestCase):
@@ -34,12 +44,14 @@ class TestAutoDecorate(TestCase):
         self.log = None
 
     def decorator_1(self, f):
+
         def decorated(*args, **kwargs):
             self.log.append(1)
             return f(*args, **kwargs)
         return decorated
 
     def decorator_2(self, f):
+
         def decorated(*args, **kwargs):
             self.log.append(2)
             return f(*args, **kwargs)
@@ -48,11 +60,12 @@ class TestAutoDecorate(TestCase):
     def test_auto_decorate(self):
         # All of the decorators passed to AutoDecorate are applied as
         # decorators in reverse order.
-
         class AutoDecoratedClass:
             __metaclass__ = AutoDecorate(self.decorator_1, self.decorator_2)
+
             def method_a(s):
                 self.log.append('a')
+
             def method_b(s):
                 self.log.append('b')
 
@@ -172,11 +185,13 @@ class TestDecorateWith(TestCase):
         # When run, a function decorated with decorated_with runs with the
         # context given to decorated_with.
         calls = []
+
         @contextmanager
         def appending_twice():
             calls.append('before')
             yield
             calls.append('after')
+
         @decorate_with(appending_twice)
         def function():
             pass
@@ -187,6 +202,7 @@ class TestDecorateWith(TestCase):
         # The original function is actually called when we call the result of
         # decoration.
         calls = []
+
         @decorate_with(self.trivialContextManager)
         def function():
             calls.append('foo')
@@ -196,6 +212,7 @@ class TestDecorateWith(TestCase):
     def test_decorate_with_call_twice(self):
         # A function decorated with decorate_with can be called twice.
         calls = []
+
         @decorate_with(self.trivialContextManager)
         def function():
             calls.append('foo')
@@ -206,6 +223,7 @@ class TestDecorateWith(TestCase):
     def test_decorate_with_arguments(self):
         # decorate_with passes through arguments.
         calls = []
+
         @decorate_with(self.trivialContextManager)
         def function(*args, **kwargs):
             calls.append((args, kwargs))
@@ -258,15 +276,56 @@ class TestRunCapturingOutput(TestCase):
     """Test `run_capturing_output`."""
 
     def test_run_capturing_output(self):
+
         def f(a, b):
             sys.stdout.write(str(a))
             sys.stderr.write(str(b))
             return a + b
+
         c, stdout, stderr = run_capturing_output(f, 3, 4)
         self.assertEqual(7, c)
         self.assertEqual('3', stdout)
         self.assertEqual('4', stderr)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestFileExists(TestCase):
+    """Tests for `file_exists`."""
+
+    def setUp(self):
+        super(TestFileExists, self).setUp()
+        self.useTempDir()
+
+    def test_finds_file(self):
+        file("a-real-file.txt", "w").write("Here I am.")
+        self.assertTrue(file_exists("a-real-file.txt"))
+
+    def test_finds_directory(self):
+        os.makedirs("a-real-directory")
+        self.assertTrue(file_exists("a-real-directory"))
+
+    def test_says_no_if_not_found(self):
+        self.assertFalse(file_exists("a-nonexistent-file.txt"))
+
+    def test_is_not_upset_by_missing_directory(self):
+        self.assertFalse(
+            file_exists("a-nonexistent-directory/a-nonexistent-file.txt"))
+
+
+class TestUTCNow(TestCase):
+    """Tests for `utc_now`."""
+
+    def test_tzinfo(self):
+        # utc_now() returns a timezone-aware timestamp with the timezone of
+        # UTC.
+        now = utc_now()
+        self.assertEqual(now.tzinfo, UTC)
+
+    def test_time_is_now(self):
+        # utc_now() returns a timestamp which is now.
+        LessThanOrEqual = lambda x: MatchesAny(LessThan(x), Equals(x))
+        GreaterThanOrEqual = lambda x: MatchesAny(GreaterThan(x), Equals(x))
+        old_now = datetime.utcnow().replace(tzinfo=UTC)
+        now = utc_now()
+        new_now = datetime.utcnow().replace(tzinfo=UTC)
+        self.assertThat(now, GreaterThanOrEqual(old_now))
+        self.assertThat(now, LessThanOrEqual(new_now))

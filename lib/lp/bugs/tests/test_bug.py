@@ -1,4 +1,4 @@
-# Copyright 2011 Canonical Ltd.  This software is licensed under the
+
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for lp.bugs.model.Bug."""
@@ -6,11 +6,24 @@
 __metaclass__ = type
 
 from lazr.lifecycle.snapshot import Snapshot
+from zope.component import getUtility
 from zope.interface import providedBy
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.interfaces.bug import(
+    CreateBugParams,
+    IBugSet,
+    )
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    UserCannotEditBugTaskAssignee,
+    UserCannotEditBugTaskImportance,
+    UserCannotEditBugTaskMilestone,
+    )
 from lp.testing import (
     person_logged_in,
     StormStatementRecorder,
@@ -27,18 +40,16 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
         self.person = self.factory.makePerson()
 
     def test_is_muted_returns_true_for_muted_users(self):
-        # Bug.isMuted() will return True if the passed to it has a
-        # BugSubscription with a BugNotificationLevel of NOTHING.
+        # Bug.isMuted() will return True if the person passed to it is muted.
         with person_logged_in(self.person):
-            subscription = self.bug.subscribe(
-                self.person, self.person, level=BugNotificationLevel.NOTHING)
+            self.bug.mute(self.person, self.person)
             self.assertEqual(True, self.bug.isMuted(self.person))
 
     def test_is_muted_returns_false_for_direct_subscribers(self):
-        # Bug.isMuted() will return False if the user has a subscription
-        # with BugNotificationLevel that's not NOTHING.
+        # Bug.isMuted() will return False if the user has a
+        # regular subscription.
         with person_logged_in(self.person):
-            subscription = self.bug.subscribe(
+            self.bug.subscribe(
                 self.person, self.person, level=BugNotificationLevel.METADATA)
             self.assertEqual(False, self.bug.isMuted(self.person))
 
@@ -48,15 +59,21 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
         with person_logged_in(self.person):
             self.assertEqual(False, self.bug.isMuted(self.person))
 
-    def test_mute_mutes_user(self):
-        # Bug.mute() adds a muted subscription for the user passed to
-        # it.
+    def test_mute_team_fails(self):
+        # Muting a subscription for an entire team doesn't work.
         with person_logged_in(self.person):
-            muted_subscription = self.bug.mute(
-                self.person, self.person)
-            self.assertEqual(
-                BugNotificationLevel.NOTHING,
-                muted_subscription.bug_notification_level)
+            team = self.factory.makeTeam(owner=self.person)
+            self.assertRaises(AssertionError,
+                              self.bug.mute, team, team)
+
+    def test_mute_mutes_user(self):
+        # Bug.mute() adds a BugMute record for the person passed to it.
+        with person_logged_in(self.person):
+            self.bug.mute(self.person, self.person)
+            naked_bug = removeSecurityProxy(self.bug)
+            bug_mute = naked_bug._getMutes(self.person).one()
+            self.assertEqual(self.bug, bug_mute.bug)
+            self.assertEqual(self.person, bug_mute.person)
 
     def test_mute_mutes_muter(self):
         # When exposed in the web API, the mute method regards the
@@ -68,14 +85,15 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
             self.assertTrue(self.bug.isMuted(self.person))
 
     def test_mute_mutes_user_with_existing_subscription(self):
-        # Bug.mute() will update an existing subscription so that it
-        # becomes muted.
+        # Bug.mute() will not touch the existing subscription.
         with person_logged_in(self.person):
-            subscription = self.bug.subscribe(self.person, self.person)
-            muted_subscription = self.bug.mute(self.person, self.person)
-            self.assertEqual(subscription, muted_subscription)
+            subscription = self.bug.subscribe(
+                self.person, self.person,
+                level=BugNotificationLevel.METADATA)
+            self.bug.mute(self.person, self.person)
+            self.assertTrue(self.bug.isMuted(self.person))
             self.assertEqual(
-                BugNotificationLevel.NOTHING,
+                BugNotificationLevel.METADATA,
                 subscription.bug_notification_level)
 
     def test_unmute_unmutes_user(self):
@@ -86,6 +104,22 @@ class TestBugSubscriptionMethods(TestCaseWithFactory):
             self.assertTrue(self.bug.isMuted(self.person))
             self.bug.unmute(self.person, self.person)
             self.assertFalse(self.bug.isMuted(self.person))
+
+    def test_unmute_returns_direct_subscription(self):
+        # Bug.unmute() returns the previously muted direct subscription, if
+        # any.
+        with person_logged_in(self.person):
+            self.bug.mute(self.person, self.person)
+            self.assertEqual(True, self.bug.isMuted(self.person))
+            self.assertEqual(None, self.bug.unmute(self.person, self.person))
+            self.assertEqual(False, self.bug.isMuted(self.person))
+            subscription = self.bug.subscribe(
+                self.person, self.person,
+                level=BugNotificationLevel.METADATA)
+            self.bug.mute(self.person, self.person)
+            self.assertEqual(True, self.bug.isMuted(self.person))
+            self.assertEqual(
+                subscription, self.bug.unmute(self.person, self.person))
 
     def test_unmute_mutes_unmuter(self):
         # When exposed in the web API, the unmute method regards the
@@ -122,7 +156,7 @@ class TestBugSnapshotting(TestCaseWithFactory):
         # optimizations that might trigger the problem again.
         with person_logged_in(self.person):
             with StormStatementRecorder() as recorder:
-                snapshot = Snapshot(self.bug, providing=providedBy(self.bug))
+                Snapshot(self.bug, providing=providedBy(self.bug))
             sql_statements = recorder.statements
         # This uses "self" as a marker to show that the attribute does not
         # exist.  We do not use hasattr because it eats exceptions.
@@ -139,3 +173,117 @@ class TestBugSnapshotting(TestCaseWithFactory):
                 [token for token in sql_tokens
                  if token.startswith('message')],
                 [])
+            self.assertEqual(
+                [token for token in sql_tokens
+                 if token.startswith('bugactivity')],
+                [])
+
+
+class TestBugCreation(TestCaseWithFactory):
+    """Tests for bug creation."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_CreateBugParams_accepts_importance(self):
+        # The importance of the initial bug task can be set using
+        # CreateBugParams
+        owner = self.factory.makePerson()
+        target = self.factory.makeProduct(owner=owner)
+        with person_logged_in(owner):
+            params = CreateBugParams(
+                owner=owner, title="A bug", comment="Nothing important.",
+                importance=BugTaskImportance.HIGH)
+            params.setBugTarget(product=target)
+            bug = getUtility(IBugSet).createBug(params)
+            self.assertEqual(
+                bug.default_bugtask.importance, params.importance)
+
+    def test_CreateBugParams_accepts_assignee(self):
+        # The assignee of the initial bug task can be set using
+        # CreateBugParams
+        owner = self.factory.makePerson()
+        target = self.factory.makeProduct(owner=owner)
+        with person_logged_in(owner):
+            params = CreateBugParams(
+                owner=owner, title="A bug", comment="Nothing important.",
+                assignee=owner)
+            params.setBugTarget(product=target)
+            bug = getUtility(IBugSet).createBug(params)
+            self.assertEqual(
+                bug.default_bugtask.assignee, params.assignee)
+
+    def test_CreateBugParams_accepts_milestone(self):
+        # The milestone of the initial bug task can be set using
+        # CreateBugParams
+        owner = self.factory.makePerson()
+        target = self.factory.makeProduct(owner=owner)
+        with person_logged_in(owner):
+            params = CreateBugParams(
+                owner=owner, title="A bug", comment="Nothing important.",
+                milestone=self.factory.makeMilestone(product=target))
+            params.setBugTarget(product=target)
+            bug = getUtility(IBugSet).createBug(params)
+            self.assertEqual(
+                bug.default_bugtask.milestone, params.milestone)
+
+    def test_CreateBugParams_accepts_status(self):
+        # The status of the initial bug task can be set using
+        # CreateBugParams
+        owner = self.factory.makePerson()
+        target = self.factory.makeProduct(owner=owner)
+        with person_logged_in(owner):
+            params = CreateBugParams(
+                owner=owner, title="A bug", comment="Nothing important.",
+                status=BugTaskStatus.TRIAGED)
+            params.setBugTarget(product=target)
+            bug = getUtility(IBugSet).createBug(params)
+            self.assertEqual(
+                bug.default_bugtask.status, params.status)
+
+    def test_CreateBugParams_rejects_not_allowed_importance_changes(self):
+        # createBug() will reject any importance value passed by users
+        # who don't have the right to set the importance.
+        person = self.factory.makePerson()
+        target = self.factory.makeProduct()
+        with person_logged_in(person):
+            params = CreateBugParams(
+                owner=person, title="A bug", comment="Nothing important.",
+                importance=BugTaskImportance.HIGH)
+            params.setBugTarget(product=target)
+            self.assertRaises(
+                UserCannotEditBugTaskImportance,
+                getUtility(IBugSet).createBug, params)
+
+    def test_CreateBugParams_rejects_not_allowed_assignee_changes(self):
+        # createBug() will reject any importance value passed by users
+        # who don't have the right to set the assignee.
+        person = self.factory.makePerson()
+        person_2 = self.factory.makePerson()
+        target = self.factory.makeProduct()
+        # Setting the target's bug supervisor means that
+        # canTransitionToAssignee() will return False for `person` if
+        # another Person is passed as `assignee`.
+        with person_logged_in(target.owner):
+            target.setBugSupervisor(target.owner, target.owner)
+        with person_logged_in(person):
+            params = CreateBugParams(
+                owner=person, title="A bug", comment="Nothing important.",
+                assignee=person_2)
+            params.setBugTarget(product=target)
+            self.assertRaises(
+                UserCannotEditBugTaskAssignee,
+                getUtility(IBugSet).createBug, params)
+
+    def test_CreateBugParams_rejects_not_allowed_milestone_changes(self):
+        # createBug() will reject any importance value passed by users
+        # who don't have the right to set the milestone.
+        person = self.factory.makePerson()
+        target = self.factory.makeProduct()
+        with person_logged_in(person):
+            params = CreateBugParams(
+                owner=person, title="A bug", comment="Nothing important.",
+                milestone=self.factory.makeMilestone(product=target))
+            params.setBugTarget(product=target)
+            self.assertRaises(
+                UserCannotEditBugTaskMilestone,
+                getUtility(IBugSet).createBug, params)

@@ -14,17 +14,18 @@ __all__ = [
     'IHasBuildRecords',
     'IncompatibleArguments',
     ]
+import httplib
 
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import (
     call_with,
+    error_status,
     export_read_operation,
     operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     rename_parameters_as,
     REQUEST_USER,
-    webservice_error,
     )
 from zope.interface import Interface
 from zope.schema import (
@@ -35,9 +36,9 @@ from zope.schema import (
 from canonical.launchpad import _
 
 
+@error_status(httplib.BAD_REQUEST)
 class IncompatibleArguments(Exception):
     """Raised when incompatible arguments are passed to a method."""
-    webservice_error(400) # Bad request.
 
 
 class IHasBuildRecords(Interface):

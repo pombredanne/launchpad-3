@@ -10,7 +10,7 @@ Users can directly see and edit milestones through the milestone views.
 
 The default url for a milestone is to the main site.
 
-    >>> from canonical.launchpad.ftests import test_tales
+    >>> from lp.testing import test_tales
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> request = LaunchpadTestRequest(SERVER_URL='http://bugs.launchpad.net')

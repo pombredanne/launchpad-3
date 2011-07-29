@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'SourcePackageTranslationsExportView',
     'SourcePackageTranslationsView',
-    'SourcePackageTranslationSharingStatus',
     ]
 
 
@@ -44,7 +43,7 @@ from lp.translations.interfaces.translations import (
 from lp.translations.model.translationpackagingjob import TranslationMergeJob
 
 
-class SourcePackageTranslationsView(TranslationsMixin,
+class SourcePackageTranslationsView(LaunchpadView, TranslationsMixin,
                                     TranslationSharingDetailsMixin):
 
     @property
@@ -145,6 +144,7 @@ class SourcePackageTranslationSharingDetailsView(LaunchpadView):
             'upstream_branch': self.upstream_branch,
             'product': self.product,
         })
+        cache.objects.update(self.context.getSharingDetailPermissions())
 
     @property
     def branch_link(self):

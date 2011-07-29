@@ -10,7 +10,7 @@ BugWatch, Message and BugMessage instances with which to work.
     >>> from canonical.config import config
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)
-    >>> from canonical.launchpad.interfaces.message import IMessageSet
+    >>> from lp.services.messages.interfaces.message import IMessageSet
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> from lp.bugs.interfaces.bug import CreateBugParams
     >>> from lp.bugs.interfaces.bugmessage import IBugMessageSet

@@ -5,9 +5,13 @@
 
 __metaclass__ = type
 
+from testtools.content import Content
+from testtools.content_type import UTF8_TEXT
+import transaction
+
 from zope.component import getUtility
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.persontransferjob import (
     IMembershipNotificationJobSource,
@@ -21,6 +25,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.testing import (
     login_person,
     person_logged_in,
+    run_script,
     TestCaseWithFactory,
     )
 from lp.testing.sampledata import ADMIN_EMAIL
@@ -28,7 +33,7 @@ from lp.testing.sampledata import ADMIN_EMAIL
 
 class MembershipNotificationJobTest(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(MembershipNotificationJobTest, self).setUp()
@@ -79,3 +84,30 @@ class MembershipNotificationJobTest(TestCaseWithFactory):
             ("<MembershipNotificationJob about "
              "~murdock in ~a-team; status=Waiting>"),
             repr(job))
+
+    def test_smoke_admining_team(self):
+        # Smoke test, primarily for DB permissions needed by queries to work
+        # with admining users and teams
+        # Check the oopses in /var/tmp/lperr.test if the assertions fail.
+        with person_logged_in(self.team.teamowner):
+            # This implicitly creates a job, but it is not the job under test.
+            admining_team = self.factory.makeTeam()
+            self.team.addMember(
+                admining_team, self.team.teamowner, force_team_add=True)
+            membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+                admining_team, self.team)
+            membership.setStatus(
+                TeamMembershipStatus.ADMIN, self.team.teamowner)
+        job = self.job_source.create(
+            self.person, self.team, self.team.teamowner,
+            TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN)
+        job_repr = repr(job)
+        transaction.commit()
+        out, err, exit_code = run_script(
+            "LP_DEBUG_SQL=1 cronscripts/process-job-source.py -vv %s" % (
+                IMembershipNotificationJobSource.getName()))
+        self.addDetail("stdout", Content(UTF8_TEXT, lambda: [out]))
+        self.addDetail("stderr", Content(UTF8_TEXT, lambda: [err]))
+        self.assertEqual(0, exit_code)
+        self.assertTrue(job_repr in err, err)
+        self.assertTrue("MembershipNotificationJob sent email" in err, err)

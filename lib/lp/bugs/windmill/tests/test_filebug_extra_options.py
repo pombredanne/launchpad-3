@@ -46,14 +46,14 @@ class TestFilebugExtras(WindmillTestCase):
 
 def _test_expander(client):
     extra_opts_form = u"//fieldset[@id='filebug-extra-options']/div"
-    form_closed = u"%s[@class='collapsed']" % extra_opts_form
-    form_opened = u"%s[@class='expanded']" % extra_opts_form
+    form_closed = u"%s[contains(@class, 'lazr-closed')]" % extra_opts_form
+    form_opened = u"%s[contains(@class, 'lazr-opened')]" % extra_opts_form
 
     # The collapsible area is collapsed and doesn't display.
-    client.asserts.assertNode(xpath=form_closed)
+    client.waits.forElement(xpath=form_closed)
 
     # Click to expand the extra options form.
     client.click(link=u'Extra options')
 
     # The collapsible area is expanded and does display.
-    client.asserts.assertNode(xpath=form_opened)
+    client.waits.forElement(xpath=form_opened)

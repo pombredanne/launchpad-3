@@ -53,7 +53,7 @@ Tracker:
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
 
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.bugs.interfaces.bugtracker import BugTrackerType
     >>> from lp.bugs.tests.externalbugtracker import (
     ...     new_bugtracker)

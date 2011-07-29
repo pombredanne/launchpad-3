@@ -23,7 +23,6 @@ import os
 from storm.store import Store
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.launchpadform import (
     action,
     LaunchpadEditFormView,
@@ -33,13 +32,13 @@ from canonical.launchpad.webapp.publisher import (
     LaunchpadView,
     )
 from canonical.lazr import ExportedFolder
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     IBugTaskSet,
     )
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
-from lp.services.features import getFeatureFlag
 
 
 class StatusCount:
@@ -72,14 +71,8 @@ def get_status_counts(workitems, status_attr, key='sortkey'):
 
 
 def add_subscribe_link(links):
-    """Based on a feature flag, add the correct link."""
-    use_advanced_features = getFeatureFlag(
-        'malone.advanced-structural-subscriptions.enabled')
-    if use_advanced_features:
-        links.append('subscribe_to_bug_mail')
-        links.append('edit_bug_mail')
-    else:
-        links.append('subscribe')
+    """Add the subscription-related links."""
+    links.extend(['subscribe_to_bug_mail', 'edit_bug_mail'])
 
 
 class MilestoneOverlayMixin:

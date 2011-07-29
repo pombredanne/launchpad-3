@@ -142,6 +142,15 @@ are available.
     >>> gentoo.has_published_binaries
     False
 
+You can use the has_published_sources property to find out if the
+distribution has any published sources.
+
+    >>> ubuntu.has_published_sources
+    True
+
+    >>> gentoo.has_published_sources
+    False
+
 
 Distribution Sorting
 --------------------
@@ -390,7 +399,7 @@ Launchpad Usage
 A distribution can specify if it uses Malone, Rosetta, or Answers
 officially. Ubuntu uses all of them:
 
-    >>> from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu.official_malone

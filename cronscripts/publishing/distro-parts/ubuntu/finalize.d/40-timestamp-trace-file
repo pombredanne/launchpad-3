@@ -1,0 +1,9 @@
+#! /bin/sh
+#
+# Timestamp the trace file, so we can track when the last archive publisher
+# run took place.
+for DIR in $ARCHIVEROOTS
+do
+    mkdir -p -- "$DIR/project/trace"
+    date -u > "$DIR/project/trace/$(hostname --fqdn)"
+done

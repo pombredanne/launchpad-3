@@ -6,7 +6,11 @@
   metal:use-macro="view/macro:page/searchless"
   i18n:domain="launchpad"
 >
-
+  <head>
+    <tal:head_epilogue metal:fill-slot="head_epilogue">
+      <meta name="robots" content="noindex,nofollow" />
+    </tal:head_epilogue>
+  </head>
   <body>
     <tal:heading metal:fill-slot="heading">
       <h1 tal:content="view/page_heading">

@@ -13,6 +13,7 @@ __all__ = [
     'BzrIdentityMixin',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'get_blacklisted_hostnames',
+    'get_db_branch_info',
     'IBranch',
     'IBranchBatchNavigator',
     'IBranchCloud',
@@ -21,14 +22,17 @@ __all__ = [
     'IBranchNavigationMenu',
     'IBranchSet',
     'user_has_special_branch_access',
+    'WrongNumberOfReviewTypeArguments',
     ]
 
 from cgi import escape
+import httplib
 import re
 
 from lazr.restful.declarations import (
     call_with,
     collection_default_content,
+    error_status,
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_destructor_operation,
@@ -66,9 +70,9 @@ from zope.schema import (
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
 from lp.code.bzr import (
     BranchFormat,
@@ -80,8 +84,8 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
+    BranchType,
     CodeReviewNotificationLevel,
-    UICreatableBranchType,
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergequeue import IBranchMergeQueue
@@ -104,6 +108,13 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.EXPERIMENTAL,
     BranchLifecycleStatus.DEVELOPMENT,
     BranchLifecycleStatus.MATURE)
+
+
+@error_status(httplib.BAD_REQUEST)
+class WrongNumberOfReviewTypeArguments(ValueError):
+    """Raised in the webservice API if `reviewers` and `review_types`
+    do not have equal length.
+    """
 
 
 def get_blacklisted_hostnames():
@@ -145,12 +156,6 @@ class BranchURIField(URIField):
 
         # Can't use super-- this derives from an old-style class
         URIField._validate(self, value)
-
-        # XXX thumper 2007-06-12:
-        # Move this validation code into IBranchSet so it can be
-        # reused in the XMLRPC code, and the Authserver.
-        # This also means we could get rid of the imports above.
-
         uri = URI(self.normalize(value))
         launchpad_domain = config.vhost.mainsite.hostname
         if uri.underDomain(launchpad_domain):
@@ -177,7 +182,7 @@ class BranchURIField(URIField):
             raise LaunchpadValidationError(structured(message))
 
         if IBranch.providedBy(self.context) and self.context.url == str(uri):
-            return # url was not changed
+            return  # url was not changed
 
         if uri.path == '/':
             message = _(
@@ -404,13 +409,13 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
             title=_("The bug-branch link objects that link this branch "
                     "to bugs."),
             readonly=True,
-            value_type=Reference(schema=Interface)) # Really IBugBranch
+            value_type=Reference(schema=Interface))  # Really IBugBranch
 
     linked_bugs = exported(
         CollectionField(
             title=_("The bugs linked to this branch."),
         readonly=True,
-        value_type=Reference(schema=Interface))) # Really IBug
+        value_type=Reference(schema=Interface)))  # Really IBug
 
     def getLinkedBugTasks(user, status_filter):
         """Return a result set for the tasks that are relevant to this branch.
@@ -425,7 +430,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
 
     @call_with(registrant=REQUEST_USER)
     @operation_parameters(
-        bug=Reference(schema=Interface)) # Really IBug
+        bug=Reference(schema=Interface))  # Really IBug
     @export_write_operation()
     @operation_for_version('beta')
     def linkBug(bug, registrant):
@@ -437,7 +442,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
 
     @call_with(user=REQUEST_USER)
     @operation_parameters(
-        bug=Reference(schema=Interface)) # Really IBug
+        bug=Reference(schema=Interface))  # Really IBug
     @export_write_operation()
     @operation_for_version('beta')
     def unlinkBug(bug, user):
@@ -452,12 +457,12 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         CollectionField(
             title=_("Specification linked to this branch."),
             readonly=True,
-            value_type=Reference(Interface)), # Really ISpecificationBranch
+            value_type=Reference(Interface)),  # Really ISpecificationBranch
         as_of="beta")
 
     @call_with(registrant=REQUEST_USER)
     @operation_parameters(
-        spec=Reference(schema=Interface)) # Really ISpecification
+        spec=Reference(schema=Interface))  # Really ISpecification
     @export_write_operation()
     @operation_for_version('beta')
     def linkSpecification(spec, registrant):
@@ -469,7 +474,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
 
     @call_with(user=REQUEST_USER)
     @operation_parameters(
-        spec=Reference(schema=Interface)) # Really ISpecification
+        spec=Reference(schema=Interface))  # Really ISpecification
     @export_write_operation()
     @operation_for_version('beta')
     def unlinkSpecification(spec, user):
@@ -494,7 +499,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         CollectionField(
             title=_("BranchSubscriptions associated to this branch."),
             readonly=True,
-            value_type=Reference(Interface))) # Really IBranchSubscription
+            value_type=Reference(Interface)))  # Really IBranchSubscription
 
     subscribers = exported(
         CollectionField(
@@ -611,7 +616,8 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         merged_revnos=List(Int(
             title=_('The target-branch revno of the merge.'))))
     @call_with(visible_by_user=REQUEST_USER)
-    @operation_returns_collection_of(Interface) # Really IBranchMergeProposal.
+    # Really IBranchMergeProposal
+    @operation_returns_collection_of(Interface)
     @export_read_operation()
     @operation_for_version('beta')
     def getMergeProposals(status=None, visible_by_user=None,
@@ -719,7 +725,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
 
     def associatedSuiteSourcePackages():
         """Return the suite source packages that this branch is linked to.
-        
+
         :return: A list of suite source packages ordered by pocket.
         """
 
@@ -768,7 +774,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         code_review_level=Choice(
             title=_("The level of code review notification emails."),
             vocabulary=CodeReviewNotificationLevel))
-    @operation_returns_entry(Interface) # Really IBranchSubscription
+    @operation_returns_entry(Interface)  # Really IBranchSubscription
     @call_with(subscribed_by=REQUEST_USER)
     @export_write_operation()
     @operation_for_version('beta')
@@ -791,7 +797,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         person=Reference(
             title=_("The person to unsubscribe"),
             schema=IPerson))
-    @operation_returns_entry(Interface) # Really IBranchSubscription
+    @operation_returns_entry(Interface)  # Really IBranchSubscription
     @export_read_operation()
     @operation_for_version('beta')
     def getSubscription(person):
@@ -987,20 +993,10 @@ class IBranchEditableAttributes(Interface):
             title=_('The last message we got when mirroring this branch.'),
             required=False, readonly=True))
 
-    # XXX: TimPenhey 2007-08-31
-    # The vocabulary set for branch_type is only used for the creation
-    # of branches through the automatically generated forms, and doesn't
-    # actually represent the complete range of real values that branch_type
-    # may actually hold.  Import branches are not created in the same
-    # way as Hosted, Mirrored or Remote branches.
-    # There are two option:
-    #   1) define a separate schema to use in the UI (sledgehammer solution)
-    #   2) work out some way to specify a restricted vocabulary in the view
-    # Personally I'd like a LAZR way to do number 2.
     branch_type = exported(
         Choice(
             title=_("Branch Type"), required=True, readonly=True,
-            vocabulary=UICreatableBranchType))
+            vocabulary=BranchType))
 
     description = exported(
         Text(
@@ -1049,10 +1045,10 @@ class IBranchEdit(Interface):
     @operation_parameters(
         project=Reference(
             title=_("The project the branch belongs to."),
-            schema=Interface, required=False), # Really IProduct
+            schema=Interface, required=False),  # Really IProduct
         source_package=Reference(
             title=_("The source package the branch belongs to."),
-            schema=Interface, required=False)) # Really ISourcePackage
+            schema=Interface, required=False))  # Really ISourcePackage
     @export_write_operation()
     @operation_for_version('beta')
     def setTarget(user, project=None, source_package=None):
@@ -1314,10 +1310,10 @@ class IBranchSet(Interface):
     @collection_default_content()
     def getBranches(limit=50, eager_load=True):
         """Return a collection of branches.
-        
-        :param eager_load: If True (the default because this is used in the 
-            web service and it needs the related objects to create links) eager
-            load related objects (products, code imports etc).
+
+        :param eager_load: If True (the default because this is used in the
+            web service and it needs the related objects to create links)
+            eager load related objects (products, code imports etc).
         """
 
 
@@ -1431,4 +1427,23 @@ def user_has_special_branch_access(user):
     if user is None:
         return False
     celebs = getUtility(ILaunchpadCelebrities)
-    return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)
+    return user.inTeam(celebs.admin)
+
+
+def get_db_branch_info(stacked_on_url, last_revision_id, control_string,
+                       branch_string, repository_string):
+    """Return a dict of branch info suitable for Branch.branchChanged.
+
+    :param stacked_on_url: The URL the branch is stacked on.
+    :param last_revision_id: The branch tip revision_id.
+    :param control_string: The control format marker as a string.
+    :param branch_string: The branch format marker as a string.
+    :param repository_string: The repository format marker as a string.
+    """
+    info = {}
+    info['stacked_on_url'] = stacked_on_url
+    info['last_revision_id'] = last_revision_id
+    info['control_format'] = ControlFormat.get_enum(control_string)
+    info['branch_format'] = BranchFormat.get_enum(branch_string)
+    info['repository_format'] = RepositoryFormat.get_enum(repository_string)
+    return info

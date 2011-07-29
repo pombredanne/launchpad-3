@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -58,7 +58,6 @@ from canonical.database.sqlbase import (
     SQLBase,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -66,6 +65,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.email import valid_email
 from lp.app.validators.name import sanitize_name
 from lp.bugs.interfaces.bugtracker import (
@@ -263,7 +263,7 @@ class BugTrackerComponentGroup(StormBase):
         return component
 
     def getComponent(self, component_name):
-        """Retrieves a component by the given name.
+        """Retrieves a component by the given name or id number.
 
         None is returned if there is no component by that name in the
         group.
@@ -271,10 +271,17 @@ class BugTrackerComponentGroup(StormBase):
 
         if component_name is None:
             return None
+        elif component_name.isdigit():
+            component_id = int(component_name)
+            return Store.of(self).find(
+                BugTrackerComponent,
+                BugTrackerComponent.id == component_id,
+                BugTrackerComponent.component_group == self.id).one()
         else:
             return Store.of(self).find(
                 BugTrackerComponent,
-                (BugTrackerComponent.name == component_name)).one()
+                BugTrackerComponent.name == component_name,
+                BugTrackerComponent.component_group == self.id).one()
 
     def addCustomComponent(self, component_name):
         """Adds a component locally that isn't synced from a remote tracker
@@ -404,7 +411,7 @@ class BugTracker(SQLBase):
             return False
 
     def getBugFilingAndSearchLinks(self, remote_product, summary=None,
-                                   description=None):
+                                   description=None, remote_component=None):
         """See `IBugTracker`."""
         bugtracker_urls = {'bug_filing_url': None, 'bug_search_url': None}
 
@@ -417,6 +424,10 @@ class BugTracker(SQLBase):
             # Turn the remote product into an empty string so that
             # quote() doesn't blow up later on.
             remote_product = ''
+
+        if remote_component is None:
+            # Ditto for remote component.
+            remote_component = ''
 
         if self in self._custom_filing_url_patterns:
             # Some bugtrackers are customised to accept different
@@ -448,11 +459,16 @@ class BugTracker(SQLBase):
         description = description.encode('utf-8')
 
         if self.bugtrackertype == BugTrackerType.SOURCEFORGE:
-            # SourceForge bug trackers use a group ID and an ATID to
-            # file a bug, rather than a product name. remote_product
-            # should be an ampersand-separated string in the form
-            # 'group_id&atid'
-            group_id, at_id = remote_product.split('&')
+            try:
+                # SourceForge bug trackers use a group ID and an ATID to
+                # file a bug, rather than a product name. remote_product
+                # should be an ampersand-separated string in the form
+                # 'group_id&atid'
+                group_id, at_id = remote_product.split('&')
+            except ValueError:
+                # If remote_product contains something that's not valid
+                # in a SourceForge context we just return early.
+                return None
 
             # If this bug tracker is the SourceForge celebrity the link
             # is to the new bug tracker rather than the old one.
@@ -475,6 +491,7 @@ class BugTracker(SQLBase):
             url_components = {
                 'base_url': base_url,
                 'remote_product': quote(remote_product),
+                'remote_component': quote(remote_component),
                 'summary': quote(summary),
                 'description': quote(description),
                 }
@@ -675,10 +692,32 @@ class BugTracker(SQLBase):
         """See `IBugTracker`."""
         component_group = None
         store = IStore(BugTrackerComponentGroup)
-        component_group = store.find(
-            BugTrackerComponentGroup,
-            name = component_group_name).one()
+        if component_group_name is None:
+            return None
+        elif component_group_name.isdigit():
+            component_group_id = int(component_group_name)
+            component_group = store.find(
+                BugTrackerComponentGroup,
+                BugTrackerComponentGroup.id == component_group_id).one()
+        else:
+            component_group = store.find(
+                BugTrackerComponentGroup,
+                BugTrackerComponentGroup.name == component_group_name).one()
         return component_group
+
+    def getRemoteComponentForDistroSourcePackageName(
+        self, distribution, sourcepackagename):
+        """See `IBugTracker`."""
+        if distribution is None:
+            return None
+        dsp = distribution.getSourcePackage(sourcepackagename)
+        if dsp is None:
+            return None
+        return Store.of(self).find(
+            BugTrackerComponent,
+            BugTrackerComponent.distribution == distribution.id,
+            BugTrackerComponent.source_package_name ==
+                dsp.sourcepackagename.id).one()
 
 
 class BugTrackerSet:
@@ -746,7 +785,7 @@ class BugTrackerSet:
         # Without context, cannot tell what store flavour is desirable.
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         if active is not None:
-            clauses = [BugTracker.active==active]
+            clauses = [BugTracker.active == active]
         else:
             clauses = []
         results = store.find(BugTracker, *clauses)

@@ -4,7 +4,10 @@
 __metaclass__ = type
 
 
+import logging
+
 from storm.locals import ClassAlias, Store
+import transaction
 
 from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.translationtemplateitem import (
@@ -81,6 +84,11 @@ class TranslationSplitter:
 
     def split(self):
         """Split the translations for the ProductSeries and SourcePackage."""
-        for upstream_item, ubuntu_item in self.findShared():
+        logger = logging.getLogger()
+        shared = enumerate(self.findShared(), 1)
+        for num, (upstream_item, ubuntu_item) in shared:
             self.splitPOTMsgSet(ubuntu_item)
             self.migrateTranslations(upstream_item.potmsgset, ubuntu_item)
+            if num % 100 == 0:
+                logger.info('%d entries split.  Committing...', num)
+                transaction.commit()

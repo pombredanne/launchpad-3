@@ -209,7 +209,7 @@ Firefox project is discovered.
 Instead of registering her new project, Sample Person decides to participate
 in the Mozilla Project.
 
-    >>> user_browser.getLink('the Mozilla Project').click()
+    >>> user_browser.getLink('The Mozilla Project').click()
     >>> print user_browser.title
     The Mozilla Project in Launchpad
 

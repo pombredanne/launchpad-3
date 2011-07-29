@@ -25,8 +25,6 @@
             1970-01-01 00:00:00
         </lp:creationDate>
         <lp:homepage tal:attributes="rdf:resource context/homepageurl" />
-        <lp:wiki tal:condition="context/wikiurl"
-                 tal:attributes="rdf:resource context/wikiurl" />
         <lp:freshmeatProject tal:condition="context/freshmeatproject"
                              tal:content="context/freshmeatproject">
             freshmeatproject

@@ -15,6 +15,9 @@ import logging
 # zope bits
 from zope.component import getUtility
 
+from canonical.database.constants import UTC_NOW
+from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
@@ -25,12 +28,11 @@ from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.scripts import debbugs
 from lp.services.scripts.base import (LaunchpadCronScript,
     LaunchpadScriptFailure)
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.message import (
+from lp.services.messages.interfaces.message import (
     InvalidEmailMessage,
     IMessageSet,
     )
-from canonical.database.constants import UTC_NOW
+
 
 # setup core values and defaults
 debbugs_location_default = '/srv/bugs-mirror.debian.org/'
@@ -40,7 +42,8 @@ class DebWatchUpdater(LaunchpadCronScript):
     loglevel = logging.WARNING
 
     def add_my_options(self):
-        self.parser.add_option('--max', action='store', type='int', dest='max',
+        self.parser.add_option(
+            '--max', action='store', type='int', dest='max',
             default=None, help="The maximum number of bugs to synchronise.")
         self.parser.add_option('--debbugs', action='store', type='string',
             dest='debbugs',
@@ -48,7 +51,8 @@ class DebWatchUpdater(LaunchpadCronScript):
             help="The location of your debbugs database.")
 
     def main(self):
-        if not os.path.exists(os.path.join(self.options.debbugs, 'index/index.db')):
+        if not os.path.exists(
+            os.path.join(self.options.debbugs, 'index/index.db')):
             raise LaunchpadScriptFailure('%s is not a debbugs db.'
                                          % self.options.debbugs)
 
@@ -67,10 +71,12 @@ class DebWatchUpdater(LaunchpadCronScript):
         debwatches = debbugs_tracker.watches
 
         previousimportset = set([b.remotebug for b in debwatches])
-        self.logger.info('%d debbugs previously imported.' % len(previousimportset))
+        self.logger.info(
+            '%d debbugs previously imported.' % len(previousimportset))
 
         target_watches = [watch for watch in debwatches if watch.needscheck]
-        self.logger.info('%d debbugs watches to syncronise.' % len(target_watches))
+        self.logger.info(
+            '%d debbugs watches to syncronise.' % len(target_watches))
 
         self.logger.info('Sorting bug watches...')
         target_watches.sort(key=lambda a: a.remotebug)
@@ -99,12 +105,14 @@ class DebWatchUpdater(LaunchpadCronScript):
         debian = getUtility(ILaunchpadCelebrities).debian
         debbugs_tracker = getUtility(ILaunchpadCelebrities).debbugs
 
-        # make sure we have tasks for all the debian package linkages, and also
-        # make sure we have updated their status and severity appropriately
+        # make sure we have tasks for all the debian package linkages, and
+        # also make sure we have updated their status and severity
+        # appropriately.
         for packagename in debian_bug.packagelist():
             try:
-                srcpkgname, binpkgname = debian.guessPackageNames(packagename)
-            except ValueError:
+                srcpkgname = debian.guessPublishedSourcePackageName(
+                    packagename)
+            except NotFoundError:
                 self.logger.error(sys.exc_value)
                 continue
             search_params = BugTaskSearchParams(user=None, bug=malone_bug,
@@ -113,8 +121,8 @@ class DebWatchUpdater(LaunchpadCronScript):
             bugtasks = bugtaskset.search(search_params)
             if len(bugtasks) == 0:
                 # we need a new task to link the bug to the debian package
-                self.logger.info('Linking %d and debian %s/%s' % (
-                    malone_bug.id, srcpkgname.name, binpkgname.name))
+                self.logger.info('Linking %d and debian %s' % (
+                    malone_bug.id, srcpkgname.name))
                 # XXX: kiko 2007-02-03:
                 # This code is completely untested and broken.
                 bugtask = malone_bug.addTask(
@@ -126,10 +134,11 @@ class DebWatchUpdater(LaunchpadCronScript):
                 assert len(bugtasks) == 1, 'Should only find a single task'
                 bugtask = bugtasks[0]
             status = bugtask.status
-            if status <> bugtask.setStatusFromDebbugs(debian_bug.status):
+            if status != bugtask.setStatusFromDebbugs(debian_bug.status):
                 waschanged = True
             severity = bugtask.severity
-            if severity <> bugtask.setSeverityFromDebbugs(debian_bug.severity):
+            if severity != bugtask.setSeverityFromDebbugs(
+                debian_bug.severity):
                 waschanged = True
 
         known_msg_ids = set([msg.rfc822msgid for msg in malone_bug.messages])
@@ -156,17 +165,18 @@ class DebWatchUpdater(LaunchpadCronScript):
             if msg is None:
                 continue
 
-            # create the link between the bug and this message
-            bugmsg = malone_bug.linkMessage(msg)
+            # Create the link between the bug and this message.
+            malone_bug.linkMessage(msg)
 
-            # ok, this is a new message for this bug, so in effect something has
-            # changed
+            # ok, this is a new message for this bug, so in effect something
+            # has changed
             waschanged = True
 
             # now we need to analyse the message for useful data
             watches = bugwatchset.fromMessage(msg, malone_bug)
             for watch in watches:
-                self.logger.info('New watch for #%s on %s' % (watch.bug.id, watch.url))
+                self.logger.info(
+                    'New watch for #%s on %s' % (watch.bug.id, watch.url))
                 waschanged = True
 
             # and also for CVE ref clues
@@ -190,7 +200,8 @@ class DebWatchUpdater(LaunchpadCronScript):
         if (len(debian_bug.mergedwith) > 0 and
             min(debian_bug.mergedwith) > debian_bug.id):
             for merged_id in debian_bug.mergedwith:
-                merged_bug = bugset.queryByRemoteBug(debbugs_tracker, merged_id)
+                merged_bug = bugset.queryByRemoteBug(
+                    debbugs_tracker, merged_id)
                 if merged_bug is not None:
                     # Bug has been imported already
                     if merged_bug.duplicateof == malone_bug:
@@ -198,11 +209,13 @@ class DebWatchUpdater(LaunchpadCronScript):
                         continue
                     elif merged_bug.duplicateof is not None:
                         # Interesting, we think it's a dup of something else
-                        self.logger.warning('Debbugs thinks #%d is a dup of #%d' % (
+                        self.logger.warning(
+                            'Debbugs thinks #%d is a dup of #%d' % (
                             merged_bug.id, merged_bug.duplicateof))
                         continue
                     # Go ahead and merge it
-                    self.logger.info("Malone #%d is a duplicate of Malone #%d" % (
+                    self.logger.info(
+                        "Malone #%d is a duplicate of Malone #%d" % (
                         merged_bug.id, malone_bug.id))
                     merged_bug.duplicateof = malone_bug.id
 
@@ -210,7 +223,7 @@ class DebWatchUpdater(LaunchpadCronScript):
                     waschanged = True
 
         # make a note of the remote watch status, if it has changed
-        if watch.remotestatus <> debian_bug.status:
+        if watch.remotestatus != debian_bug.status:
             watch.remotestatus = debian_bug.status
             waschanged = True
 
@@ -225,4 +238,3 @@ class DebWatchUpdater(LaunchpadCronScript):
 if __name__ == '__main__':
     script = DebWatchUpdater('launchpad-debbugs-sync')
     script.lock_and_run()
-

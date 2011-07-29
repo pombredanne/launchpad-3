@@ -14,10 +14,10 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces.mail import IMailHandler
-from canonical.launchpad.interfaces.message import IMessageSet
+from lp.services.messages.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.answers.interfaces.questioncollection import IQuestionSet
-from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.answers.enums import QuestionStatus
 
 
 class AnswerTrackerHandler:

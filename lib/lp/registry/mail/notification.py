@@ -24,7 +24,7 @@ from canonical.launchpad.helpers import (
     get_email_template,
     )
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
-from canonical.launchpad.interfaces.message import (
+from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     QuotaReachedError,
     )
@@ -36,7 +36,10 @@ from canonical.launchpad.mail import (
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.url import urlappend
 from lp.registry.interfaces.mailinglist import IHeldMessageDetails
-from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    TeamSubscriptionPolicy,
+    )
 from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
@@ -175,6 +178,10 @@ def notify_team_join(event):
 
     # Yes, we can have teams with no members; not even admins.
     if not admin_addrs:
+        return
+
+    # Open teams do not notify admins about new members.
+    if team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
         return
 
     replacements = {

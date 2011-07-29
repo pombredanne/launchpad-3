@@ -6,8 +6,8 @@
       i18n:domain="launchpad"
 >
   <head>
-    <style metal:fill-slot="head_epilogue"
-           type="text/css" media="screen">
+    <metal:block fill-slot="head_epilogue">
+    <style type="text/css" media="screen">
   div.confirmBox {
     margin: 0;
     padding-right: 0.5em;
@@ -16,6 +16,16 @@
     font-size: smaller;
   }
     </style>
+    <script type="text/javascript">
+        LPS.use('base', 'node', 'event',
+                'lp.comments.hide', function(Y) {
+        Y.on('domready', function() {
+            LP.cache.comment_context = LP.cache.context;
+            Y.lp.comments.hide.setup_hide_controls();
+        });
+      });
+    </script>
+    </metal:block>
   </head>
   <body>
     <metal:registering fill-slot="registering">
@@ -29,6 +39,16 @@
 
 
     <metal:portlets fill-slot="side">
+      <div id="involvement" class="portlet">
+        <ul class="involvement">
+          <li class="single">
+            <a tal:attributes="href view/new_question_url"
+               class="sprite answers">
+              Ask a question
+            </a>
+          </li>
+        </ul>
+      </div>
       <div tal:replace="structure context/@@+global-actions" />
       <div tal:replace="structure context/@@+portlet-subscribers" />
     </metal:portlets>
@@ -90,10 +110,8 @@
         </div>
       </div>
 
-
-      <tal:message repeat="message context/messages">
-      <div tal:condition="message/visible"
-           tal:replace="structure message/@@+display" />
+      <tal:message repeat="message view/visible_messages">
+      <div tal:replace="structure message/@@+display" />
       </tal:message>
 
       <div id="question"
@@ -162,21 +180,6 @@
             To post a message you must <a href="+login">log in</a>.
           </div>
         </tal:not-logged-in>
-      </div>
-
-      <div
-        class="related"
-        id="ask-your-own-question"
-        xml:lang="en" lang="en" dir="ltr"
-        tal:condition="not: view/is_question_owner"
-      >
-        <h2>Got a question of your own?</h2>
-
-        <p>For best results,
-          <a href="+addquestion"
-            tal:attributes="href view/new_question_url">ask your own question
-            separately</a>.
-        </p>
       </div>
     </div>
   </body>

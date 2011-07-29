@@ -49,7 +49,7 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWVendorIDSet,
     IHWVendorNameSet,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner
 from canonical.launchpad.webapp.errorlog import (

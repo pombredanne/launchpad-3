@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # This is the python package that defines the
@@ -12,7 +12,10 @@ from zope.component import getUtility
 
 from canonical.config import config
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
-from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    archive_suffixes,
+    )
 
 
 APT_FTPARCHIVE_PURPOSES = (ArchivePurpose.PRIMARY, ArchivePurpose.COPY)
@@ -48,10 +51,7 @@ def getPubConfig(archive):
         pubconf.distroroot = db_pubconf.root_dir
         pubconf.archiveroot = os.path.join(
             pubconf.distroroot, archive.distribution.name)
-        if archive.purpose == ArchivePurpose.PARTNER:
-            pubconf.archiveroot += '-partner'
-        elif archive.purpose == ArchivePurpose.DEBUG:
-            pubconf.archiveroot += '-debug'
+        pubconf.archiveroot += archive_suffixes[archive.purpose]
     elif archive.is_copy:
         pubconf.distroroot = db_pubconf.root_dir
         pubconf.archiveroot = os.path.join(

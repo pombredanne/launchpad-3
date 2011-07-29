@@ -165,7 +165,7 @@ For example, from the Open state:
 
 And from the Needs information state:
 
-    >>> from lp.answers.interfaces.questionenums import QuestionStatus
+    >>> from lp.answers.enums import QuestionStatus
     >>> setQuestionStatus(question, QuestionStatus.NEEDSINFO)
 
     >>> msgid =  send_question_email(

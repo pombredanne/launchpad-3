@@ -21,7 +21,7 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.database.message import (
+from lp.services.messages.model.message import (
     Message,
     MessageChunk,
     )
@@ -29,6 +29,7 @@ from lp.bugs.interfaces.bugmessage import (
     IBugMessage,
     IBugMessageSet,
     )
+from lp.registry.interfaces.person import validate_public_person
 
 
 class BugMessage(SQLBase):
@@ -46,6 +47,9 @@ class BugMessage(SQLBase):
     remote_comment_id = StringCol(notNull=False, default=None)
     # -- The index of the message is cached in the DB.
     index = IntCol(notNull=True)
+    # -- The owner, cached from the message table using triggers.
+    owner = ForeignKey(dbName='owner', foreignKey='Person',
+        storm_validator=validate_public_person, notNull=False)
 
     def __repr__(self):
         return "<BugMessage at 0x%x message=%s index=%s>" % (

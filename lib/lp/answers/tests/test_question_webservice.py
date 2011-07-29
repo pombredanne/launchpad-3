@@ -12,16 +12,64 @@ import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
+from lp.answers.errors import (
+    AddAnswerContactError,
+    FAQTargetError,
+    InvalidQuestionStateError,
+    NotAnswerContactError,
+    NotMessageOwnerError,
+    NotQuestionOwnerError,
+    QuestionTargetError,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import (
+    TestCase,
     TestCaseWithFactory,
     celebrity_logged_in,
     launchpadlib_for,
     logout,
     person_logged_in,
-    ws_object
+    ws_object,
     )
+from lp.testing.views import create_webservice_error_view
+
+
+class ErrorsTestCase(TestCase):
+    """Test answers errors are exported as HTTPErrors."""
+
+    layer = FunctionalLayer
+
+    def test_AddAnswerContactError(self):
+        error_view = create_webservice_error_view(AddAnswerContactError())
+        self.assertEqual(400, error_view.status)
+
+    def test_FAQTargetError(self):
+        error_view = create_webservice_error_view(FAQTargetError())
+        self.assertEqual(400, error_view.status)
+
+    def test_InvalidQuestionStateError(self):
+        error_view = create_webservice_error_view(InvalidQuestionStateError())
+        self.assertEqual(400, error_view.status)
+
+    def test_NotAnswerContactError(self):
+        error_view = create_webservice_error_view(NotAnswerContactError())
+        self.assertEqual(400, error_view.status)
+
+    def test_NotMessageOwnerError(self):
+        error_view = create_webservice_error_view(NotMessageOwnerError())
+        self.assertEqual(400, error_view.status)
+
+    def test_NotQuestionOwnerError(self):
+        error_view = create_webservice_error_view(NotQuestionOwnerError())
+        self.assertEqual(400, error_view.status)
+
+    def test_QuestionTargetError(self):
+        error_view = create_webservice_error_view(QuestionTargetError())
+        self.assertEqual(400, error_view.status)
 
 
 class TestQuestionRepresentation(TestCaseWithFactory):
@@ -51,8 +99,7 @@ class TestQuestionRepresentation(TestCaseWithFactory):
         # a question by id via redirect without url hacking.
         response = self.webservice.get(
             '/questions/%s' % self.question.id, 'application/xhtml+xml')
-        self.assertEqual(response.status, 301)
-
+        self.assertEqual(response.status, 200)
 
     def test_GET_xhtml_representation(self):
         # A question's xhtml representation is available on the api.
@@ -107,14 +154,6 @@ class TestSetCommentVisibility(TestCaseWithFactory):
         """Convenience function to get the api question reference."""
         # End any open lplib instance.
         logout()
-        if user is not None:
-            lp = launchpadlib_for("test", user)
-        else:
-            lp = launchpadlib_for("test")
-
-        question_entry = lp.load(
-            '/%s/+question/%d/' % (
-                self.question.target.name, self.question.id))
         lp = launchpadlib_for("test", user)
         return ws_object(lp, self.question)
 
