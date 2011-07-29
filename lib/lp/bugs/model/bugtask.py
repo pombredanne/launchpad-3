@@ -1946,55 +1946,55 @@ class BugTaskSet:
                     sqlvalues(personid=params.subscriber.id))
 
         if params.structural_subscriber is not None:
-            ssub_match_product = (
-                BugTask.productID ==
-                StructuralSubscription.productID)
-            ssub_match_productseries = (
-                BugTask.productseriesID ==
-                StructuralSubscription.productseriesID)
+            # See bug 787294 for the story that led to the query elements
+            # below.  Please change with care.
+            with_clauses.append(
+                '''ss as (SELECT * from StructuralSubscription
+                WHERE StructuralSubscription.subscriber = %s)'''
+                % sqlvalues(params.structural_subscriber))
             # Prevent circular import problems.
             from lp.registry.model.product import Product
-            ssub_match_project = And(
-                Product.projectID ==
-                StructuralSubscription.projectID,
-                BugTask.product == Product.id)
-            ssub_match_distribution = (
-                BugTask.distributionID ==
-                StructuralSubscription.distributionID)
-            ssub_match_sourcepackagename = (
-                BugTask.sourcepackagenameID ==
-                StructuralSubscription.sourcepackagenameID)
-            ssub_match_null_sourcepackagename = (
-                StructuralSubscription.sourcepackagename == None)
-            ssub_match_distribution_with_optional_package = And(
-                ssub_match_distribution, Or(
-                    ssub_match_sourcepackagename,
-                    ssub_match_null_sourcepackagename))
-            ssub_match_distribution_series = (
-                BugTask.distroseriesID ==
-                StructuralSubscription.distroseriesID)
-            ssub_match_milestone = (
-                BugTask.milestoneID ==
-                StructuralSubscription.milestoneID)
-
-            join_clause = Or(
-                ssub_match_product,
-                ssub_match_productseries,
-                ssub_match_project,
-                ssub_match_distribution_with_optional_package,
-                ssub_match_distribution_series,
-                ssub_match_milestone)
-
             join_tables.append(
                 (Product, LeftJoin(Product, And(
                                 BugTask.productID == Product.id,
                                 Product.active))))
             join_tables.append(
-                (StructuralSubscription,
-                 Join(StructuralSubscription, join_clause)))
+                (None,
+                 LeftJoin(
+                    SQL('ss ss1'),
+                    BugTask.product == SQL('ss1.product'))))
+            join_tables.append(
+                (None,
+                 LeftJoin(
+                    SQL('ss ss2'),
+                    BugTask.productseries == SQL('ss2.productseries'))))
+            join_tables.append(
+                (None,
+                 LeftJoin(
+                    SQL('ss ss3'),
+                    Product.project == SQL('ss3.project'))))
+            join_tables.append(
+                (None,
+                 LeftJoin(
+                    SQL('ss ss4'),
+                    And(BugTask.distribution == SQL('ss4.distribution'),
+                        Or(BugTask.sourcepackagename ==
+                            SQL('ss4.sourcepackagename'),
+                           SQL('ss4.sourcepackagename IS NULL'))))))
+            join_tables.append(
+                (None,
+                 LeftJoin(
+                    SQL('ss ss5'),
+                    BugTask.distroseries == SQL('ss5.distroseries'))))
+            join_tables.append(
+                (None,
+                 LeftJoin(
+                    SQL('ss ss6'),
+                    BugTask.milestone == SQL('ss6.milestone'))))
             extra_clauses.append(
-                'StructuralSubscription.subscriber = %s'
-                % sqlvalues(params.structural_subscriber))
+                "NULL_COUNT("
+                "ARRAY[ss1.id, ss2.id, ss3.id, ss4.id, ss5.id, ss6.id]"
+                ") < 6")
             has_duplicate_results = True
 
         # Remove bugtasks from deactivated products, if necessary.
@@ -2488,9 +2488,10 @@ class BugTaskSet:
         origin = [BugTask]
         already_joined = set(origin)
         for table, join in join_tables:
-            if table not in already_joined:
+            if table is None or table not in already_joined:
                 origin.append(join)
-                already_joined.add(table)
+                if table is not None:
+                    already_joined.add(table)
         for table, join in prejoin_tables:
             if table not in already_joined:
                 origin.append(join)
@@ -2544,9 +2545,11 @@ class BugTaskSet:
             [query, clauseTables, ignore, decorator, join_tables,
              has_duplicate_results, with_clause] = self.buildQuery(arg)
             origin = self.buildOrigin(join_tables, [], clauseTables)
+            localstore = store
             if with_clause:
-                store = orig_store.with_(with_clause)
-            next_result = store.using(*origin).find(inner_resultrow, query)
+                localstore = orig_store.with_(with_clause)
+            next_result = localstore.using(*origin).find(
+                inner_resultrow, query)
             resultset = resultset.union(next_result)
             # NB: assumes the decorators are all compatible.
             # This may need revisiting if e.g. searches on behalf of different
