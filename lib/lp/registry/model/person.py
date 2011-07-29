@@ -3914,10 +3914,18 @@ class PersonSet:
             naked_from_team.retractTeamMembership(team, reviewer)
         IStore(from_team).flush()
 
-    def mergeAsync(self, from_person, to_person, reviewer=None):
+    def mergeAsync(self, from_person, to_person, reviewer=None, delete=False):
         """See `IPersonSet`."""
         return getUtility(IPersonMergeJobSource).create(
-            from_person=from_person, to_person=to_person, reviewer=reviewer)
+            from_person=from_person, to_person=to_person, reviewer=reviewer,
+            delete=delete)
+
+    def delete(self, from_person, reviewer):
+        """See `IPersonSet`."""
+        # Deletes are implemented by merging into registry experts. Force
+        # the target to prevent any accidental misuse by calling code.
+        to_person = getUtility(ILaunchpadCelebrities).registry_experts
+        return self.merge(from_person, to_person, reviewer)
 
     def merge(self, from_person, to_person, reviewer=None):
         """See `IPersonSet`."""

@@ -102,7 +102,7 @@ class IPersonMergeJob(IPersonTransferJob):
 class IPersonMergeJobSource(IJobSource):
     """An interface for acquiring IPersonMergeJobs."""
 
-    def create(from_person, to_person, reviewer=None):
+    def create(from_person, to_person, reviewer=None, delete=False):
         """Create a new IPersonMergeJob.
 
         None is returned if either the from_person or to_person are already
@@ -112,6 +112,7 @@ class IPersonMergeJobSource(IJobSource):
         :param from_person: An IPerson or ITeam that is a duplicate.
         :param to_person: An IPerson or ITeam that is a master.
         :param reviewer: An IPerson who approved ITeam merger.
+        :param delete: The merge is really a deletion.
         """
 
     def find(from_person=None, to_person=None, any_person=False):
