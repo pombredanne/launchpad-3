@@ -5,6 +5,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
@@ -28,6 +29,9 @@ from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadCustomFormat,
+    )
+from lp.soyuz.model.distroseriessourcepackagerelease import (
+    DistroSeriesSourcePackageRelease,
     )
 from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
@@ -284,6 +288,20 @@ class TestNotification(TestCaseWithFactory):
         body = assemble_body(blamer, spr, [], archive, series, "",
                              None, "unapproved")
         self.assertIn("Waiting for approval", body)
+
+    def test_assemble_body_inserts_package_url_for_distro_upload(self):
+        # The email body should contain the canonical url to the package
+        # page in the target distroseries.
+        spr = self.factory.makeSourcePackageRelease()
+        blamer = self.factory.makePerson()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        series = self.factory.makeDistroSeries()
+
+        body = assemble_body(blamer, spr, [], archive, series, "",
+                             None, "unapproved")
+        dsspr = DistroSeriesSourcePackageRelease(series, spr)
+        url = canonical_url(dsspr)
+        self.assertIn(url, body)
 
     def test__is_auto_sync_upload__no_preferred_email_for_changer(self):
         # If changer has no preferred email address,
