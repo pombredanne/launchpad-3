@@ -1727,6 +1727,7 @@
         template="../templates/pillar-involvement-portlet.pt"/>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
+        class="canonical.launchpad.webapp.LaunchpadView"
         facet="overview"
         permission="zope.Public">
         <browser:page
