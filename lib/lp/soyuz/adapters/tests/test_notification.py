@@ -10,6 +10,7 @@ from canonical.testing.layers import (
     ZopelessDatabaseLayer,
     )
 from lp.archivepublisher.utils import get_ppa_reference
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.notification import (
@@ -51,6 +52,28 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
             None, [], [customfile], archive, distroseries, pocket,
             'accepted')
         self.assertEqual(expected_subject, subject)
+
+    def test_notify_from_person_override(self):
+        # notify() takes an optional from_person to override the calculated
+        # From: address in announcement emails.
+        spr = self.factory.makeSourcePackageRelease()
+        self.factory.makeSourcePackageReleaseFile(sourcepackagerelease=spr)
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        pocket = PackagePublishingPocket.RELEASE
+        distroseries = self.factory.makeDistroSeries()
+        distroseries.changeslist = "blah@example.com"
+        blamer = self.factory.makePerson()
+        from_person = self.factory.makePerson()
+        notify(
+            blamer, spr, [], [], archive, distroseries, pocket,
+            action='accepted', announce_from_person=from_person)
+        notifications = pop_notifications()
+        self.assertEqual(2, len(notifications))
+        # The first notification is to the blamer,
+        # the second is the announce list, which is the one that gets the
+        # overridden From:
+        self.assertEqual(
+            from_person.preferredemail.email, notifications[1]["From"])
 
 
 class TestNotification(TestCaseWithFactory):

@@ -841,7 +841,7 @@ button.overlay-close-button {
     }
 .extra-form-buttons {
     text-align: center;
-    height: 3em;
+    padding-top: 1em;
     white-space: nowrap;
     }
 .extra-form-buttons button {

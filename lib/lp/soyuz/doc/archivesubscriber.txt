@@ -29,13 +29,7 @@ First, create a person 'joesmith' and a team 'team_cprov':
     >>> team_cprov = factory.makeTeam(cprov, "Team Cprov")
     >>> johnsmith.join(team_cprov)
     >>> logout()
-
-Reset the test emails (after John joined team cprov):
-
     >>> from lp.testing.mail_helpers import print_emails
-    >>> print_emails()
-    From: Team Cprov <noreply@launchpad.net>
-    ...
 
 
 == Creating new subscriptions ==

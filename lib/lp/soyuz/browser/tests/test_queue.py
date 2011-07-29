@@ -236,6 +236,11 @@ class TestQueueItemsView(TestCaseWithFactory):
             view = self.makeView(upload.distroseries, queue_admin)
             html_text = view()
         self.assertIn(upload.package_name, html_text)
+        # The details section states the sync's origin and requester.
+        self.assertIn(
+            upload.package_copy_job.source_archive.displayname, html_text)
+        self.assertIn(
+            upload.package_copy_job.job.requester.displayname, html_text)
 
 
 class TestCompletePackageUpload(TestCaseWithFactory):
