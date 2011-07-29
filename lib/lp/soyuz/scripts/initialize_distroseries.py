@@ -293,8 +293,7 @@ class InitializeDistroSeries:
 
     def _create_dsd_jobs(self):
         job_source = getUtility(IDistroSeriesDifferenceJobSource)
-        for parent in self.parents:
-            job_source.massCreateForSeries(self.distroseries, parent)
+        job_source.massCreateForSeries(self.distroseries)
 
     def _copy_configuration(self):
         self.distroseries.backports_not_automatic = any(
