@@ -3,6 +3,8 @@
 
 __metaclass__ = type
 
+from testtools.testcase import ExpectedException
+
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -20,6 +22,15 @@ from lp.testing import (
 class TestBug(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def test_markAsDuplicate_None(self):
+        # Calling markAsDuplicate(None) on a bug that is not currently a
+        # duplicate works correctly, and does not raise an AttributeError.
+        bug = self.factory.makeBug()
+        with ExpectedException(AssertionError, 'AttributeError not raised'):
+            with ExpectedException(AttributeError, ''):
+                with person_logged_in(self.factory.makePerson()):
+                    bug.markAsDuplicate(None)
 
     def test_get_subscribers_for_person_unsubscribed(self):
         bug = self.factory.makeBug()
