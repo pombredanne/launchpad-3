@@ -186,6 +186,24 @@ when starting a web request.
 """
 
 
+class FeatureControllerContext(object):
+    """Install a feature controller for the duration of this context.
+
+    Intended for use with the `with` statement.
+    """
+
+    def __init__(self, controller):
+        self.controller = controller
+
+    def __enter__(self):
+        self._previous_controller = get_relevant_feature_controller()
+        install_feature_controller(self.controller)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        install_feature_controller(self._previous_controller)
+        del self._previous_controller
+
+
 def install_feature_controller(controller):
     """Install a `FeatureController` on this thread."""
     per_thread.features = controller

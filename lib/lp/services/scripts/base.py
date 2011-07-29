@@ -43,6 +43,7 @@ from canonical.launchpad.webapp.interaction import (
     )
 from canonical.lp import initZopeless
 from lp.services.features import (
+    FeatureControllerContext,
     get_relevant_feature_controller,
     install_feature_controller,
     make_script_feature_controller,
@@ -313,7 +314,7 @@ class LaunchpadScript:
         if self.options.profile:
             profiler = Profile()
 
-        with make_script_feature_controller(self.name):
+        with FeatureControllerContext(make_script_feature_controller(self.name)):
             try:
                 if profiler:
                     profiler.runcall(self.main)

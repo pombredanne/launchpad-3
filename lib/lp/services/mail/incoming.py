@@ -136,7 +136,7 @@ def _authenticateDkim(signed_message):
     signing_details = []
     try:
         # NB: if this fails with a keyword argument error, you need the
-        # python-dkim 0.3-3.2 that adds it
+        # python-dkim 0.3-3.2 that adds it.
         dkim_result = dkim.verify(
             signed_message.parsed_string, dkim_log, details=signing_details)
     except dkim.DKIMException, e:
@@ -365,7 +365,7 @@ def handleMail(trans=transaction,
             try:
                 trans.begin()
                 controller = mail_feature_controller(mail)
-                with controller:
+                with FeatureControllerContext(controller):
                     handle_one_mail(log, mail, file_alias, file_alias_url,
                         signature_timestamp_checker)
                     trans.commit()
