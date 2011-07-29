@@ -83,7 +83,7 @@ from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potranslation import POTranslation
 
 
-ONE_DAY_IN_SECONDS = 24*60*60
+ONE_DAY_IN_SECONDS = 24 * 60 * 60
 
 
 class BulkPruner(TunableLoop):
@@ -294,7 +294,7 @@ class OpenIDConsumerNoncePruner(TunableLoop):
 
     We remove all OpenIDConsumerNonce records older than 1 day.
     """
-    maximum_chunk_size = 6*60*60 # 6 hours in seconds.
+    maximum_chunk_size = 6 * 60 * 60  # 6 hours in seconds.
 
     def __init__(self, log, abort_time=None):
         super(OpenIDConsumerNoncePruner, self).__init__(log, abort_time)
@@ -600,7 +600,7 @@ class PersonPruner(TunableLoop):
         self.max_offset = self.store.execute(
             "SELECT MAX(id) FROM UnlinkedPeople").get_one()[0]
         if self.max_offset is None:
-            self.max_offset = -1 # Trigger isDone() now.
+            self.max_offset = -1  # Trigger isDone() now.
             self.log.debug("No Person records to remove.")
         else:
             self.log.info("%d Person records to remove." % self.max_offset)
@@ -771,7 +771,7 @@ class ObsoleteBugAttachmentPruner(BulkPruner):
 class OldTimeLimitedTokenDeleter(TunableLoop):
     """Delete expired url access tokens from the session DB."""
 
-    maximum_chunk_size = 24*60*60 # 24 hours in seconds.
+    maximum_chunk_size = 24 * 60 * 60  # 24 hours in seconds.
 
     def __init__(self, log, abort_time=None):
         super(OldTimeLimitedTokenDeleter, self).__init__(log, abort_time)
@@ -830,10 +830,10 @@ class SuggestiveTemplatesCacheUpdater(TunableLoop):
 
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
-    script_name = None # Script name for locking and database user. Override.
-    tunable_loops = None # Collection of TunableLoops. Override.
-    continue_on_failure = False # If True, an exception in a tunable loop
-                                # does not cause the script to abort.
+    script_name = None  # Script name for locking and database user. Override.
+    tunable_loops = None  # Collection of TunableLoops. Override.
+    continue_on_failure = False  # If True, an exception in a tunable loop
+                                 # does not cause the script to abort.
 
     # Default run time of the script in seconds. Override.
     default_abort_script_time = None
@@ -884,7 +884,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         for count in range(0, self.options.threads):
             thread = threading.Thread(
                 target=self.run_tasks_in_thread,
-                name='Worker-%d' % (count+1,),
+                name='Worker-%d' % (count + 1,),
                 args=(tunable_loops,))
             thread.start()
             threads.add(thread)
@@ -918,7 +918,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
 
     @property
     def script_timeout(self):
-        a_very_long_time = 31536000 # 1 year
+        a_very_long_time = 31536000  # 1 year
         return self.options.abort_script or a_very_long_time
 
     def get_loop_logger(self, loop_name):
@@ -931,7 +931,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         loop_logger = logging.getLogger('garbo.' + loop_name)
         for filter in loop_logger.filters:
             if isinstance(filter, PrefixFilter):
-                return loop_logger # Already have a PrefixFilter attached.
+                return loop_logger  # Already have a PrefixFilter attached.
         loop_logger.addFilter(PrefixFilter(loop_name))
         return loop_logger
 
@@ -1003,7 +1003,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
                     loop_logger.debug3(
                         "Unable to acquire lock %s. Running elsewhere?",
                         loop_lock_path)
-                    time.sleep(0.3) # Avoid spinning.
+                    time.sleep(0.3)  # Avoid spinning.
                     tunable_loops.append(tunable_loop_class)
                 # Otherwise, emit a warning and skip the task.
                 else:
