@@ -318,4 +318,3 @@ class TestNotification(TestCaseWithFactory):
         result = is_auto_sync_upload(
             spr=None, bprs=None, pocket=None, changed_by_email=None)
         self.assertFalse(result)
-        
