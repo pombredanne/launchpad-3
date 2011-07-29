@@ -1,0 +1,11 @@
+#!/bin/sh
+#
+# Remove uncompressed Packages and Sources files.
+#
+# The uncompressed versions of these files are very large and could cause
+# problems for our mirrors, so get rid of them.
+#
+# It's safe to do this since the uncompressed MD5 hashes have already been
+# computed for inclusion in the Release files.
+
+find $DISTSROOT \( -name Packages -o -name Sources \) -exec rm -f -- "{}" \;

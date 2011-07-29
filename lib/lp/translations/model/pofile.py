@@ -26,6 +26,7 @@ from sqlobject import (
 from storm.expr import (
     And,
     Coalesce,
+    Desc,
     Exists,
     Join,
     LeftJoin,
@@ -56,7 +57,6 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.interfaces import (
@@ -66,6 +66,7 @@ from canonical.launchpad.webapp.interfaces import (
     MASTER_FLAVOR,
     )
 from canonical.launchpad.webapp.publisher import canonical_url
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import validate_public_person
 from lp.services.propertycache import cachedproperty
 from lp.translations.enums import RosettaImportStatus
@@ -97,7 +98,10 @@ from lp.translations.interfaces.translationmessage import (
     )
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.model.pomsgid import POMsgID
-from lp.translations.model.potmsgset import POTMsgSet, credits_message_str
+from lp.translations.model.potmsgset import (
+    credits_message_str,
+    POTMsgSet,
+    )
 from lp.translations.model.translatablemessage import TranslatableMessage
 from lp.translations.model.translationimportqueue import collect_import_info
 from lp.translations.model.translationmessage import (
@@ -545,6 +549,9 @@ class POFile(SQLBase, POFileMixIn):
 
         Call-site will have to have appropriate clauseTables.
         """
+        # When all the code that uses this method is moved to Storm,
+        # we can replace it with _getStormClausesForPOFileMessages
+        # and then remove it.
         clauses = [
             'TranslationTemplateItem.potemplate = %s' % sqlvalues(
                 self.potemplate),
@@ -556,17 +563,33 @@ class POFile(SQLBase, POFileMixIn):
 
         return clauses
 
+    def _getStormClausesForPOFileMessages(self, current=True):
+        """Get TranslationMessages for the POFile via TranslationTemplateItem.
+        """
+        clauses = [
+            TranslationTemplateItem.potemplate == self.potemplate,
+            (TranslationTemplateItem.potmsgsetID ==
+             TranslationMessage.potmsgsetID),
+            TranslationMessage.language == self.language,
+            ]
+        if current:
+            clauses.append(TranslationTemplateItem.sequence > 0)
+
+        return clauses
+
     def getTranslationsFilteredBy(self, person):
         """See `IPOFile`."""
         assert person is not None, "You must provide a person to filter by."
-        clauses = self._getClausesForPOFileMessages(current=False)
+        clauses = self._getStormClausesForPOFileMessages(current=False)
         clauses.append(
-            'TranslationMessage.submitter = %s' % sqlvalues(person))
+            TranslationMessage.submitter == person)
 
-        return TranslationMessage.select(
-            " AND ".join(clauses),
-            clauseTables=['TranslationTemplateItem'],
-            orderBy=['sequence', '-date_created'])
+        results = Store.of(self).find(
+            TranslationMessage,
+            *clauses)
+        return results.order_by(
+            TranslationTemplateItem.sequence,
+            Desc(TranslationMessage.date_created))
 
     def _getTranslatedMessagesQuery(self):
         """Get query data for fetching all POTMsgSets with translations.

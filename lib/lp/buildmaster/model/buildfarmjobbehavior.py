@@ -36,7 +36,7 @@ from lp.services.job.interfaces.job import JobStatus
 
 
 class BuildFarmJobBehaviorBase:
-    """Ensures that all behaviors inherit the same initialisation.
+    """Ensures that all behaviors inherit the same initialization.
 
     All build-farm job behaviors should inherit from this.
     """
@@ -201,7 +201,7 @@ class IdleBuildBehavior(BuildFarmJobBehaviorBase):
 
     def __init__(self):
         """The idle behavior is special in that a buildfarmjob is not
-        specified during initialisation as it is not the result of an
+        specified during initialization as it is not the result of an
         adaption.
         """
         super(IdleBuildBehavior, self).__init__(None)

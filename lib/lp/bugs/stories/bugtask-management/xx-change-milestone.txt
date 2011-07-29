@@ -15,7 +15,7 @@ use, but the bug is not yet targeted to that milestone.
     >>> table = find_tag_by_id(owner_browser.contents, 'affected-software')
     >>> print extract_text(table)
     Affects             Status  Importance  Assigned to        Milestone
-    Mozilla Firefox ... New     Low         Mark Shuttleworth
+    ... Mozilla Firefox ... New     Low     Mark Shuttleworth
     ...
 
     >>> milestone_control = owner_browser.getControl(
@@ -33,7 +33,7 @@ Affects table, and in the selected value of the Milestone menu.
     >>> table = find_tag_by_id(owner_browser.contents, 'affected-software')
     >>> print extract_text(table)
     Affects             Status  Importance  Assigned to           Milestone
-    Mozilla Firefox ... New     Low         Mark Shuttleworth ... 1.0
+    ... Mozilla Firefox ... New     Low     Mark Shuttleworth ... 1.0
     ...
     >>> milestone_control = owner_browser.getControl(
     ...     name='firefox.milestone', index=0)
@@ -58,7 +58,7 @@ to the milestone 1.0.0. Note that milestones defined for the product itself
 are listed too.
 
     >>> milestone_control = owner_browser.getControl(
-    ...     name='1.0_firefox.milestone')
+    ...     name='firefox_1.0.milestone')
     >>> milestone_control.displayValue
     ['(no value)']
     >>> milestone_control.displayOptions
@@ -66,7 +66,7 @@ are listed too.
     >>> milestone_control.displayValue = ['Mozilla Firefox 1.0.1']
     >>> owner_browser.getControl('Save Changes', index=1).click()
     >>> milestone_control = owner_browser.getControl(
-    ...     name='1.0_firefox.milestone')
+    ...     name='firefox_1.0.milestone')
     >>> milestone_control.displayValue
     ['Mozilla Firefox 1.0.1']
 
@@ -85,9 +85,9 @@ He targets bug #1 to milestone 5.04-rc1 for Ubuntu.
     >>> table = find_tag_by_id(admin_browser.contents, 'affected-software')
     >>> print extract_text(table)
     Affects                      Status  Importance  Assigned to           Milestone
-    Mozilla Firefox          ... New     Low         Mark Shuttleworth ... 1.0
+    ... Mozilla Firefox          ... New     Low     Mark Shuttleworth ... 1.0
     ...
-    mozilla-firefox (Ubuntu) ... New     Medium
+    ... mozilla-firefox (Ubuntu) ... New     Medium
     ...
     >>> milestone_control = admin_browser.getControl(
     ...     name='ubuntu_mozilla-firefox.milestone')
@@ -100,9 +100,9 @@ He targets bug #1 to milestone 5.04-rc1 for Ubuntu.
     >>> table = find_tag_by_id(admin_browser.contents, 'affected-software')
     >>> print extract_text(table)
     Affects                      Status  Importance  Assigned to           Milestone
-    Mozilla Firefox          ... New     Low         Mark Shuttleworth ... 1.0
+    ... Mozilla Firefox      ... New     Low         Mark Shuttleworth ... 1.0
     ...
-    mozilla-firefox (Ubuntu) ... New     Medium ...                        5.04.rc1
+    ... mozilla-firefox (Ubuntu) ... New Medium ...                        5.04.rc1
     ...
     >>> milestone_control = admin_browser.getControl(
     ...     name='ubuntu_mozilla-firefox.milestone')

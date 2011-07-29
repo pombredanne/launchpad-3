@@ -1,63 +1,17 @@
-<tal:root
+<div
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  omit-tag="">
-
-<div class="portlet"
-  tal:define="subscriptions context/subscriptions">
-
-  <ul tal:define="context_menu context/menu:context">
-    <li tal:content="structure context_menu/subscription/render" />
-    <li tal:content="structure context_menu/subscribeanother/render" />
-  </ul>
-
-  <div id="portlet-subscribers" tal:condition="subscriptions">
-    <h2>Subscribers</h2>
-    <div class="portletBody">
-      <tal:comment replace="nothing">
-        This is messy, but the portlet has to convey both subscribers and
-        whether or not they are essential. Also, in the case where a person
-        can say if the subscription is essential, that subscription
-        essentiality indicator needs to be clickable to edit, otherwise not.
-        Hence all the duplication.
-      </tal:comment>
-      <div tal:repeat="subscription subscriptions"
-           class="subscriber">
-        <a tal:condition="subscription/required:launchpad.Edit"
-           tal:attributes="href subscription/fmt:url">
-          <img
-            tal:condition="not:subscription/person/is_valid_person"
-            alt="(inactive)"
-            src="/@@/person-inactive"
-            title="No longer uses Launchpad."
-          />
-          <tal:active condition="subscription/person/is_valid_person">
-            <img
-              tal:condition="subscription/essential"
-              alt="(essential)"
-              src="/@@/subscriber-essential"
-              title="Has asked to take part in all discussions of this blueprint."
-            />
-            <img
-              tal:condition="not: subscription/essential"
-              alt=""
-              src="/@@/subscriber-inessential"
-              title="Normal subscriber."
-            />
-          </tal:active>
-        </a>
-        <tal:no_edit condition="not: subscription/required:launchpad.Edit">
-           <img tal:condition="subscription/essential"
-             src="/@@/subscriber-essential" />
-           <img tal:condition="not: subscription/essential"
-             src="/@@/subscriber-inessential" />
-        </tal:no_edit>
-        <a tal:attributes="href subscription/person/fmt:url"
-           tal:content="subscription/person/fmt:displayname"
-        />
-      </div>
-    </div>
+  class="portlet vertical"
+  id="portlet-subscribers"
+  metal:define-macro="custom"
+>
+  <div class="section" tal:define="context_menu context/menu:context"
+       metal:define-slot="heading">
+    <div
+      tal:attributes="class view/current_user_subscription_class"
+      tal:content="structure context_menu/subscription/render" />
+    <div tal:content="structure context_menu/addsubscriber/render" />
   </div>
+  <div tal:replace="structure context/@@+blueprint-portlet-subscribers-content" />
 </div>
-</tal:root>

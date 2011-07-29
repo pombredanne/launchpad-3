@@ -123,6 +123,14 @@ Leading and trailing white-space is stripped from the search text.
     >>> distro_pkg_search_view.text
     'a'
 
+If there is more than one text parameter value, the last one is used.
+
+    >>> distro_pkg_search_view = create_initialized_view(
+    ...     ubuntu, name="+search",
+    ...     form={'text': ['a','b']},
+    ...     query_string='text=a&text=b')
+    >>> distro_pkg_search_view.text
+    'b'
 
 Exact matches
 .............

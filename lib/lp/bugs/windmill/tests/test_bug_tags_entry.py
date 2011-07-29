@@ -19,6 +19,7 @@ from lp.testing.windmill import (
 
 
 class TestBugTagsEntry(WindmillTestCase):
+    """XXX: Move to YUI test."""
 
     layer = BugsWindmillLayer
     suite_name = 'Bug tags entry test'
@@ -60,7 +61,7 @@ class TestBugTagsEntry(WindmillTestCase):
 
         # Test that anonymous users are prompted to log in.
 
-        client, start_url = self.getClientForAnomymous(bug)
+        client, start_url = self.getClientForAnonymous(bug)
         client.waits.sleep(milliseconds=constants.SLEEP)
         client.click(id=u'edit-tags-trigger')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)

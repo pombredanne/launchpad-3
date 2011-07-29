@@ -7,8 +7,8 @@ __metaclass__ = type
 __all__ = []
 
 from canonical.launchpad.interfaces.launchpad import IHasBug
-from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.security import (
+from lp.services.messages.interfaces.message import IMessage
+from lp.app.security import (
     AnonymousAuthorization,
     AuthorizationBase,
     )

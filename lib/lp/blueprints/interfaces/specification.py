@@ -55,6 +55,9 @@ from lp.blueprints.enums import (
     SpecificationLifecycleStatus,
     SpecificationPriority,
     )
+from lp.blueprints.interfaces.specificationsubscription import (
+    ISpecificationSubscription,
+    )
 from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications,
     ISpecificationTarget,
@@ -63,6 +66,7 @@ from lp.blueprints.interfaces.sprint import ISprint
 from lp.bugs.interfaces.buglink import IBugLinkTarget
 from lp.code.interfaces.branchlink import IHasLinkedBranches
 from lp.registry.interfaces.milestone import IMilestone
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.role import IHasOwner
 from lp.services.fields import (
@@ -185,6 +189,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
                 "The person responsible for implementing the feature."),
             vocabulary='ValidPersonOrTeam'),
         as_of="devel")
+    assigneeID = Attribute('db assignee value')
     drafter = exported(
         PublicPersonChoice(
             title=_('Drafter'), required=False,
@@ -192,6 +197,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
                     "The person responsible for drafting the specification."),
                 vocabulary='ValidPersonOrTeam'),
         as_of="devel")
+    drafterID = Attribute('db drafter value')
     approver = exported(
         PublicPersonChoice(
             title=_('Approver'), required=False,
@@ -200,6 +206,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
                 "and for reviewing the code when it's ready to be landed."),
             vocabulary='ValidPersonOrTeam'),
         as_of="devel")
+    approverID = Attribute('db approver value')
 
     priority = exported(
         Choice(
@@ -464,10 +471,22 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
     def subscription(person):
         """Return the subscription for this person to this spec, or None."""
 
-    def subscribe(person, essential=False):
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=True),
+        essential=copy_field(
+            ISpecificationSubscription['essential'], required=False))
+    @call_with(subscribed_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def subscribe(person, subscribed_by=None, essential=False):
         """Subscribe this person to the feature specification."""
 
-    def unsubscribe(person):
+    @operation_parameters(
+        person=Reference(IPerson, title=_('Person'), required=False))
+    @call_with(unsubscribed_by=REQUEST_USER)
+    @export_write_operation()
+    @operation_for_version('devel')
+    def unsubscribe(person, unsubscribed_by):
         """Remove the person's subscription to this spec."""
 
     def getSubscriptionByName(name):

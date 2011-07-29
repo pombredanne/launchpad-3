@@ -7,8 +7,7 @@ SQLObject we need to use to be sure we have the right information. Seems
 like SQLObjects are not persistent between transactions.
 
     >>> import transaction
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.karma import IKarmaActionSet
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from lp.translations.enums import RosettaImportStatus

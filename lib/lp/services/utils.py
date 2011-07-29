@@ -15,16 +15,23 @@ __all__ = [
     'compress_hash',
     'decorate_with',
     'docstring_dedent',
+    'file_exists',
     'iter_list_chunks',
     'iter_split',
+    'obfuscate_email',
+    're_email_address',
     'run_capturing_output',
     'synchronize',
     'text_delta',
     'traceback_info',
+    'utc_now',
     'value_string',
     ]
 
+from datetime import datetime
 from itertools import tee
+import os
+import re
 from StringIO import StringIO
 import string
 import sys
@@ -36,6 +43,7 @@ from fixtures import (
     MonkeyPatch,
     )
 from lazr.enum import BaseItem
+import pytz
 from twisted.python.util import mergeFunctionMetadata
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -48,6 +56,7 @@ def AutoDecorate(*decorators):
     """
 
     class AutoDecorateMetaClass(type):
+
         def __new__(cls, class_name, bases, class_dict):
             new_class_dict = {}
             for name, value in class_dict.items():
@@ -217,11 +226,15 @@ class CachingIterator:
 
 def decorate_with(context_factory, *args, **kwargs):
     """Create a decorator that runs decorated functions with 'context'."""
+
     def decorator(function):
+
         def decorated(*a, **kw):
             with context_factory(*args, **kwargs):
                 return function(*a, **kw)
+
         return mergeFunctionMetadata(function, decorated)
+
     return decorator
 
 
@@ -234,6 +247,11 @@ def docstring_dedent(s):
     # Make sure there is at least one newline so the split works.
     first, rest = (s+'\n').split('\n', 1)
     return (first + '\n' + dedent(rest)).strip()
+
+
+def file_exists(filename):
+    """Does `filename` exist?"""
+    return os.access(filename, os.F_OK)
 
 
 class CapturedOutput(Fixture):
@@ -273,3 +291,45 @@ def traceback_info(info):
     variables, and helps to avoid typos.
     """
     sys._getframe(1).f_locals["__traceback_info__"] = info
+
+
+def utc_now():
+    """Return a timezone-aware timestamp for the current time."""
+    return datetime.now(tz=pytz.UTC)
+
+
+# This is a regular expression that matches email address embedded in
+# text. It is not RFC 2821 compliant, nor does it need to be. This
+# expression strives to identify probable email addresses so that they
+# can be obfuscated when viewed by unauthenticated users. See
+# http://www.email-unlimited.com/stuff/email_address_validator.htm
+
+# localnames do not have [&?%!@<>,;:`|{}()#*^~ ] in practice
+# (regardless of RFC 2821) because they conflict with other systems.
+# See https://lists.ubuntu.com
+#     /mailman/private/launchpad-reviews/2007-June/006081.html
+
+# This verson of the re is more than 5x faster that the orginal
+# version used in ftest/test_tales.testObfuscateEmail.
+re_email_address = re.compile(r"""
+    \b[a-zA-Z0-9._/="'+-]{1,64}@  # The localname.
+    [a-zA-Z][a-zA-Z0-9-]{1,63}    # The hostname.
+    \.[a-zA-Z0-9.-]{1,251}\b      # Dot starts one or more domains.
+    """, re.VERBOSE)              # ' <- font-lock turd
+
+
+def obfuscate_email(text_to_obfuscate):
+    """Obfuscate an email address.
+
+    The email address is obfuscated as <email address hidden>.
+
+    The pattern used to identify an email address is not 2822. It strives
+    to match any possible email address embedded in the text. For example,
+    mailto:person@domain.dom and http://person:password@domain.dom both
+    match, though the http match is in fact not an email address.
+    """
+    text = re_email_address.sub(
+        r'<email address hidden>', text_to_obfuscate)
+    text = text.replace(
+        "<<email address hidden>>", "<email address hidden>")
+    return text

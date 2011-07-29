@@ -18,6 +18,7 @@ from sqlobject import (
     )
 from storm.expr import (
     And,
+    Exists,
     Or,
     Select,
     )
@@ -27,8 +28,8 @@ from zope.interface import implements
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugbranch import (
     IBugBranch,
     IBugBranchSet,
@@ -99,14 +100,15 @@ class BugBranchSet:
             # ones they may be directly or indirectly subscribed to.
             subscribed = And(
                 TeamParticipation.teamID == BugSubscription.person_id,
-                TeamParticipation.personID == user.id)
+                TeamParticipation.personID == user.id,
+                Bug.id == BugSubscription.bug_id)
 
             visible = And(
                 Bug.id == BugBranch.bugID,
                 Or(
                     Bug.private == False,
-                    Bug.id.is_in(Select(
-                        columns=[BugSubscription.bug_id],
+                    Exists(Select(
+                        columns=[True],
                         tables=[BugSubscription, TeamParticipation],
                         where=subscribed))))
 

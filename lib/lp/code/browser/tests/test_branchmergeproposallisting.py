@@ -23,8 +23,10 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
     )
+from lp.registry.model.personproduct import PersonProduct
 from lp.testing import (
     ANONYMOUS,
+    BrowserTestCase,
     login,
     login_person,
     TestCaseWithFactory,
@@ -179,6 +181,18 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         self.assertEqual(4, comment_count)
 
 
+class TestMerges(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_person_product(self):
+        """The merges view should be enabled for PersonProduct."""
+        personproduct = PersonProduct(
+            self.factory.makePerson(), self.factory.makeProduct())
+        self.getViewBrowser(personproduct, '+merges',
+                rootsite='code')
+
+
 class ActiveReviewGroupsTest(TestCaseWithFactory):
     """Tests for groupings used in for active reviews."""
 
@@ -276,9 +290,9 @@ class TestBranchMergeProposalListingItem(TestCaseWithFactory):
         # If the proposal is in needs review, the sort_key will be the
         # date_review_requested.
         bmp = self.factory.makeBranchMergeProposal(
-            date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
+            date_created=datetime(2009, 6, 1, tzinfo=pytz.UTC))
         login_person(bmp.registrant)
-        request_date = datetime(2009,7,1,tzinfo=pytz.UTC)
+        request_date = datetime(2009, 7, 1, tzinfo=pytz.UTC)
         bmp.requestReview(request_date)
         item = BranchMergeProposalListingItem(bmp, None, None)
         self.assertEqual(request_date, item.sort_key)
@@ -287,13 +301,13 @@ class TestBranchMergeProposalListingItem(TestCaseWithFactory):
         # If the proposal is approved, the sort_key will default to the
         # date_review_requested.
         bmp = self.factory.makeBranchMergeProposal(
-            date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
+            date_created=datetime(2009, 6, 1, tzinfo=pytz.UTC))
         login_person(bmp.target_branch.owner)
-        request_date = datetime(2009,7,1,tzinfo=pytz.UTC)
+        request_date = datetime(2009, 7, 1, tzinfo=pytz.UTC)
         bmp.requestReview(request_date)
         bmp.approveBranch(
             bmp.target_branch.owner, 'rev-id',
-            datetime(2009,8,1,tzinfo=pytz.UTC))
+            datetime(2009, 8, 1, tzinfo=pytz.UTC))
         item = BranchMergeProposalListingItem(bmp, None, None)
         self.assertEqual(request_date, item.sort_key)
 
@@ -301,9 +315,9 @@ class TestBranchMergeProposalListingItem(TestCaseWithFactory):
         # If the proposal is approved and the review has been bypassed, the
         # date_reviewed is used.
         bmp = self.factory.makeBranchMergeProposal(
-            date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
+            date_created=datetime(2009, 6, 1, tzinfo=pytz.UTC))
         login_person(bmp.target_branch.owner)
-        review_date = datetime(2009,8,1,tzinfo=pytz.UTC)
+        review_date = datetime(2009, 8, 1, tzinfo=pytz.UTC)
         bmp.approveBranch(
             bmp.target_branch.owner, 'rev-id', review_date)
         item = BranchMergeProposalListingItem(bmp, None, None)
@@ -312,7 +326,7 @@ class TestBranchMergeProposalListingItem(TestCaseWithFactory):
     def test_sort_key_wip(self):
         # If the proposal is a work in progress, the date_created is used.
         bmp = self.factory.makeBranchMergeProposal(
-            date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
+            date_created=datetime(2009, 6, 1, tzinfo=pytz.UTC))
         login_person(bmp.target_branch.owner)
         item = BranchMergeProposalListingItem(bmp, None, None)
         self.assertEqual(bmp.date_created, item.sort_key)
@@ -328,13 +342,13 @@ class ActiveReviewSortingTest(TestCaseWithFactory):
         product = self.factory.makeProduct()
         bmp1 = self.factory.makeBranchMergeProposal(product=product)
         login_person(bmp1.source_branch.owner)
-        bmp1.requestReview(datetime(2009,6,1,tzinfo=pytz.UTC))
+        bmp1.requestReview(datetime(2009, 6, 1, tzinfo=pytz.UTC))
         bmp2 = self.factory.makeBranchMergeProposal(product=product)
         login_person(bmp2.source_branch.owner)
-        bmp2.requestReview(datetime(2009,3,1,tzinfo=pytz.UTC))
+        bmp2.requestReview(datetime(2009, 3, 1, tzinfo=pytz.UTC))
         bmp3 = self.factory.makeBranchMergeProposal(product=product)
         login_person(bmp3.source_branch.owner)
-        bmp3.requestReview(datetime(2009,1,1,tzinfo=pytz.UTC))
+        bmp3.requestReview(datetime(2009, 1, 1, tzinfo=pytz.UTC))
         login(ANONYMOUS)
         view = create_initialized_view(
             product, name='+activereviews', rootsite='code')

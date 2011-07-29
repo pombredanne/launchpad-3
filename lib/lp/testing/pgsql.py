@@ -11,7 +11,10 @@ import atexit
 import os
 import random
 import time
+import sys
 
+from bzrlib.lock import WriteLock
+from bzrlib.errors import LockContention
 import psycopg2
 
 from canonical.config import config
@@ -220,9 +223,14 @@ rw_main_slave:  dbname=%s
             connection_parameters.append('port=%s' % self.host)
         return ' '.join(connection_parameters)
 
+    def superuser_connection(self, dbname=None):
+        if dbname is None:
+            dbname = self.dbname
+        return psycopg2.connect(self._connectionString(dbname))
+
     def generateResetSequencesSQL(self):
         """Return a SQL statement that resets all sequences."""
-        con = psycopg2.connect(self._connectionString(self.dbname))
+        con = self.superuser_connection()
         cur = con.cursor()
         try:
             return generateResetSequencesSQL(cur)
@@ -243,7 +251,7 @@ rw_main_slave:  dbname=%s
             # anyway (because they might have been incremented even if
             # nothing was committed), making sure not to disturb the
             # 'committed' flag, and we're done.
-            con = psycopg2.connect(self._connectionString(self.dbname))
+            con = self.superuser_connection()
             cur = con.cursor()
             if self.reset_sequences_sql is None:
                 resetSequences(cur)
@@ -256,35 +264,92 @@ rw_main_slave:  dbname=%s
             return
         self.dropDb()
 
-        # Create the database from the template. We might need to keep
-        # trying for a few seconds in case there are connections to the
-        # template database that are slow in dropping off.
-        attempts = 60
-        for counter in range(0, attempts):
-            con = psycopg2.connect(self._connectionString(self.template))
+        # Take out an external lock on the template to avoid causing contention
+        # and impeding other processes (pg performs poorly when performing
+        # concurrent create db from a single template).
+        pid = os.getpid()
+        start = time.time()
+        # try for up to 10 seconds:
+        debug = False
+        if debug:
+            sys.stderr.write('%0.2f starting %s\n' % (start, pid,))
+        l = None
+        lockname = '/tmp/lp.createdb.%s' % (self.template,)
+        # Wait for the external lock. Most LP tests use the DatabaseLayer which
+        # does a double-indirect: it clones the launchpad_ftest_template into a
+        # per-test runner template, so we don't have much template contention.
+        # However there are a few tests in LP which do use template1 and will
+        # contend a lot. Cloning template1 takes 0.2s on a modern machine, so
+        # even a modest 8-way server will trivially backlog on db cloning.
+        # The 30 second time is enough to deal with the backlog on the known
+        # template1 using tests.
+        while time.time() - start < 30.0:
             try:
-                con.set_isolation_level(0)
-                cur = con.cursor()
-                try:
-                    cur.execute(
-                        "CREATE DATABASE %s TEMPLATE=%s "
-                        "ENCODING='UNICODE'" % (
-                            self.dbname, self.template))
-                    # Try to ensure our cleanup gets invoked, even in
-                    # the face of adversity such as the test suite
-                    # aborting badly.
-                    atexit.register(self.dropDb)
-                    break
-                except psycopg2.DatabaseError, x:
-                    if counter == attempts - 1:
-                        raise
-                    x = str(x)
-                    if 'being accessed by other users' not in x:
-                        raise
-            finally:
-                con.close()
-            # Let the other user complete their copying of the template DB.
+                if debug:
+                    sys.stderr.write('taking %s\n' % (pid,))
+                l = WriteLock(lockname)
+                if debug:
+                    sys.stderr.write('%0.2f taken %s\n' % (time.time(), pid,))
+                break
+            except LockContention:
+                if debug:
+                    sys.stderr.write('blocked %s\n' % (pid,))
             time.sleep(random.random())
+        if l is None:
+            raise LockContention(lockname)
+        try:
+            # The clone may be delayed if gc has not disconnected other
+            # processes which have done a recent clone. So provide a spin
+            # with an exponential backoff.
+            attempts = 10
+            for counter in range(0, attempts):
+                if debug:
+                    sys.stderr.write('%0.2f connecting %s %s\n' % (
+                        time.time(), pid, self.template))
+                con = self.superuser_connection(self.template)
+                try:
+                    con.set_isolation_level(0)
+                    cur = con.cursor()
+                    try:
+                        _start = time.time()
+                        try:
+                            cur.execute(
+                                "CREATE DATABASE %s TEMPLATE=%s "
+                                "ENCODING='UNICODE'" % (
+                                    self.dbname, self.template))
+                            # Try to ensure our cleanup gets invoked, even in
+                            # the face of adversity such as the test suite
+                            # aborting badly.
+                            atexit.register(self.dropDb)
+                            if debug:
+                                sys.stderr.write('create db in %0.2fs\n' % (
+                                    time.time()-_start,))
+                            break
+                        except psycopg2.DatabaseError, x:
+                            if counter == attempts - 1:
+                                raise
+                            x = str(x)
+                            if 'being accessed by other users' not in x:
+                                raise
+                    finally:
+                        cur.close()
+                finally:
+                    con.close()
+                duration = (2**counter)*random.random()
+                if debug:
+                    sys.stderr.write(
+                        '%0.2f busy:sleeping (%d retries) %s %s %s\n' % (
+                        time.time(), counter, pid, self.template, duration))
+                # Let the server wrap up whatever was blocking the copy of the template.
+                time.sleep(duration)
+            end = time.time()
+            if debug:
+                sys.stderr.write('%0.2f (%0.2f) completed (%d retries) %s %s\n' % (
+                    end, end-start, counter, pid, self.template))
+        finally:
+            l.unlock()
+            if debug:
+                sys.stderr.write('released %s\n' % (pid,))
         ConnectionWrapper.committed = False
         ConnectionWrapper.dirty = False
         PgTestSetup._last_db = (self.template, self.dbname)
@@ -321,9 +386,9 @@ rw_main_slave:  dbname=%s
         attempts = 100
         for i in range(0, attempts):
             try:
-                con = psycopg2.connect(self._connectionString(self.template))
+                con = self.superuser_connection(self.template)
             except psycopg2.OperationalError, x:
-                if 'does not exist' in x:
+                if 'does not exist' in str(x):
                     return
                 raise
             try:

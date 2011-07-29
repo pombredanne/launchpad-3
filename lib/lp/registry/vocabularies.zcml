@@ -31,13 +31,13 @@
 
   <securedutility
       name="DistroSeriesDerivation"
-      component=".vocabularies.DistroSeriesDerivationVocabularyFactory"
+      component=".vocabularies.DistroSeriesDerivationVocabulary"
       provides="zope.schema.interfaces.IVocabularyFactory">
     <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
   </securedutility>
 
-  <class class=".vocabularies.DistroSeriesDerivationVocabularyFactory">
-    <allow interface="zope.schema.interfaces.IVocabularyTokenized"/>
+  <class class=".vocabularies.DistroSeriesDerivationVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 
@@ -266,6 +266,17 @@
     <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
+  <securedutility
+    name="UserTeamsParticipationPlusSelfSimpleDisplay"
+    component="lp.registry.vocabularies.UserTeamsParticipationPlusSelfSimpleDisplayVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="lp.registry.vocabularies.UserTeamsParticipationPlusSelfSimpleDisplayVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
 
   <securedutility
     name="AllUserTeamsParticipation"
@@ -426,6 +437,18 @@
 
   <class class="lp.registry.vocabularies.SourcePackageNameIterator">
     <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator"/>
+  </class>
+
+  <securedutility
+    name="DistributionSourcePackage"
+    component="lp.registry.vocabularies.DistributionSourcePackageVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="lp.registry.vocabularies.DistributionSourcePackageVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 </configure>

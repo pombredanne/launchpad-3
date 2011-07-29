@@ -40,6 +40,7 @@ from lp.registry.interfaces.pocket import (
     pocketsuffix,
     )
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.log.logger import BufferLogger
 from lp.soyuz.enums import (
     ArchivePurpose,
     ArchiveStatus,
@@ -144,7 +145,8 @@ class TestPublisher(TestPublisherBase):
         test_archive = getUtility(IArchiveSet).new(
             distribution=self.ubuntutest, owner=ubuntu_team,
             purpose=ArchivePurpose.PPA)
-        publisher = getPublisher(test_archive, None, self.logger)
+        logger = BufferLogger()
+        publisher = getPublisher(test_archive, None, logger)
 
         self.assertTrue(os.path.exists(publisher._config.archiveroot))
 
@@ -157,6 +159,8 @@ class TestPublisher(TestPublisherBase):
             publisher._config.distroroot, test_archive.owner.name,
             test_archive.name)
         self.assertFalse(os.path.exists(root_dir))
+        self.assertNotIn('WARNING', logger.getLogBuffer())
+        self.assertNotIn('ERROR', logger.getLogBuffer())
 
     def testPublishPartner(self):
         """Test that a partner package is published to the right place."""
@@ -883,8 +887,7 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(
             self._getReleaseFileOrigin(release_contents), 'LP-PPA-cprov')
 
-        # XXX cprov 20090427: we should write a Release file parsing for
-        # making tests less cryptic.
+        # XXX cprov 2009-04-27 bug=440014: Use a generic parser.
         release_contents = release_contents.splitlines()
         md5_header = 'MD5Sum:'
         self.assertTrue(md5_header in release_contents)

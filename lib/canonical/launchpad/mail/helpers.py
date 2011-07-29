@@ -1,27 +1,24 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
+from cStringIO import StringIO as cStringIO
 import os.path
 import re
 import time
+from uuid import uuid1
 
 from zope.component import getUtility
 
-from lp.bugs.interfaces.bugtask import (
-    IDistroBugTask,
-    IDistroSeriesBugTask,
-    IUpstreamBugTask,
-    )
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError,
     IWeaklyAuthenticatedPrincipal,
     )
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.bugs.enum import BugNotificationLevel
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 
 
@@ -48,49 +45,6 @@ def get_main_body(signed_msg):
         return msg.get_payload(decode=True)
 
 
-def get_bugtask_type(bugtask):
-    """Returns the specific IBugTask interface the bugtask provides.
-
-        >>> from lp.bugs.interfaces.bugtask import (
-        ...     IUpstreamBugTask, IDistroBugTask, IDistroSeriesBugTask)
-        >>> from zope.interface import classImplementsOnly
-        >>> class BugTask:
-        ...     pass
-
-    :bugtask: has to provide a specific bugtask interface:
-
-        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
-        Traceback (most recent call last):
-        ...
-        AssertionError...
-
-    When it does, the specific interface is returned:
-
-        >>> classImplementsOnly(BugTask, IUpstreamBugTask)
-        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
-        <...IUpstreamBugTask>
-
-        >>> classImplementsOnly(BugTask, IDistroBugTask)
-        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
-        <...IDistroBugTask>
-
-        >>> classImplementsOnly(BugTask, IDistroSeriesBugTask)
-        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
-        <...IDistroSeriesBugTask>
-    """
-    bugtask_interfaces = [
-        IUpstreamBugTask,
-        IDistroBugTask,
-        IDistroSeriesBugTask,
-        ]
-    for interface in bugtask_interfaces:
-        if interface.providedBy(bugtask):
-            return interface
-    # The bugtask didn't provide any specific interface.
-    raise AssertionError(
-        'No specific bugtask interface was provided by %r' % bugtask)
-
-
 def guess_bugtask(bug, person):
     """Guess which bug task the person intended to edit.
 
@@ -100,11 +54,11 @@ def guess_bugtask(bug, person):
         return bug.bugtasks[0]
     else:
         for bugtask in bug.bugtasks:
-            if IUpstreamBugTask.providedBy(bugtask):
+            if bugtask.product:
                 # Is the person an upstream maintainer?
                 if person.inTeam(bugtask.product.owner):
                     return bugtask
-            elif IDistroBugTask.providedBy(bugtask):
+            elif bugtask.distribution:
                 # Is the person a member of the distribution?
                 if person.inTeam(bugtask.distribution.members):
                     return bugtask
@@ -257,3 +211,20 @@ def ensure_sane_signature_timestamp(timestamp, context,
             or timestamp > ten_minutes_in_the_future):
         error_message = get_error_message(error_template, context=context)
         raise IncomingEmailError(error_message)
+
+
+def save_mail_to_librarian(raw_mail):
+    """Save the message to the librarian.
+
+    It can be referenced from errors, and also accessed by code that needs to
+    get back the exact original form.
+    """
+    # File the raw_mail in the Librarian.  We generate a filename to avoid
+    # people guessing the URL.  We don't want URLs to private bug messages to
+    # be guessable for example.
+    file_name = str(uuid1()) + '.txt'
+    file_alias = getUtility(ILibraryFileAliasSet).create(
+            file_name,
+            len(raw_mail),
+            cStringIO(raw_mail), 'message/rfc822')
+    return file_alias

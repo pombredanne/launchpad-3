@@ -62,7 +62,7 @@
   <browser:page
       for="zope.interface.Interface"
       name="+test-webservice-js"
-      template="../../../canonical/launchpad/templates/test-webservice-js.pt"
+      template="../templates/test-webservice-js.pt"
       permission="zope.Public"
       />
 
@@ -414,9 +414,6 @@
             name="+index"
             template="../templates/branch-index.pt"/>
         <browser:page
-            name="+portlet-details"
-            template="../templates/branch-portlet-details.pt"/>
-        <browser:page
             name="++bug-links"
             template="../templates/branch-bug-links.pt"/>
 
@@ -660,13 +657,6 @@
         class="lp.code.browser.branchvisibilitypolicy.RemoveBranchVisibilityTeamPolicyView"
         permission="launchpad.Commercial"
         template="../../app/templates/generic-edit.pt"/>
-    <browser:page
-        name="+spark"
-        for="lp.code.interfaces.branch.IBranch"
-        layer="lp.code.publisher.CodeLayer"
-        class="lp.code.browser.branch.BranchSparkView"
-        facet="branches"
-        permission="zope.Public"/>
     <browser:menus
         classes="
             BranchContextMenu
@@ -1196,7 +1186,7 @@
     <browser:url
         for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"
         attribute_to_parent="archive"
-        path_expression="string:+buildjob/${url_id}"
+        path_expression="string:+recipebuild/${id}"
         />
     <adapter
         for="lp.code.interfaces.sourcepackagerecipebuild.ISourcePackageRecipeBuild"

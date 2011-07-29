@@ -37,9 +37,7 @@ from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.database.constants import (
-    DEFAULT,
-    )
+from canonical.database.constants import DEFAULT
 from canonical.database.sqlbase import (
     cursor,
     quote,
@@ -47,8 +45,8 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IStore
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.propertycache import get_property_cache
 from lp.translations.interfaces.potmsgset import (
     IPOTMsgSet,
@@ -81,9 +79,7 @@ from lp.translations.model.translationmessage import (
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
     )
-from lp.translations.utilities.validate import (
-    validate_translation,
-    )
+from lp.translations.utilities.validate import validate_translation
 
 # Msgids that indicate translation credit messages, and their
 # contexts and type.
@@ -379,7 +375,8 @@ class POTMsgSet(SQLBase):
 
         :param suggested_languages: Languages that suggestions should be found
             for.
-        :param used_languages: Languages that used messages should be found for.
+        :param used_languages: Languages that used messages should be found
+            for.
         """
         if not config.rosetta.global_suggestions_enabled:
             return []
@@ -403,7 +400,7 @@ class POTMsgSet(SQLBase):
         used_languages = used_languages - both_languages
         lang_used = []
         if both_languages:
-            lang_used.append('TranslationMessage.language IN %s' % 
+            lang_used.append('TranslationMessage.language IN %s' %
                 quote(both_languages))
         if used_languages:
             lang_used.append('(TranslationMessage.language IN %s AND %s)' % (
@@ -413,7 +410,7 @@ class POTMsgSet(SQLBase):
                 '(TranslationMessage.language IN %s AND NOT %s)' % (
                 quote(suggested_languages), in_use_clause))
 
-        pots = SQL('''pots AS (
+        msgsets = SQL('''msgsets AS (
                 SELECT POTMsgSet.id
                 FROM POTMsgSet
                 JOIN TranslationTemplateItem ON
@@ -441,12 +438,13 @@ class POTMsgSet(SQLBase):
         ids_query = '''
             SELECT DISTINCT ON (%(msgstrs)s)
                 TranslationMessage.id
-            FROM TranslationMessage join pots on pots.id=translationmessage.potmsgset
+            FROM TranslationMessage
+            JOIN msgsets ON msgsets.id = TranslationMessage.potmsgset
             WHERE %(where)s
             ORDER BY %(msgstrs)s, date_created DESC
             ''' % ids_query_params
 
-        result = IStore(TranslationMessage).with_(pots).find(
+        result = IStore(TranslationMessage).with_(msgsets).find(
             TranslationMessage,
             TranslationMessage.id.is_in(SQL(ids_query)))
 
@@ -458,10 +456,11 @@ class POTMsgSet(SQLBase):
 
     def getExternallySuggestedTranslationMessages(self, language):
         """See `IPOTMsgSet`."""
-        return self._getExternalTranslationMessages(suggested_languages=[language])
+        return self._getExternalTranslationMessages(
+            suggested_languages=[language])
 
     def getExternallySuggestedOrUsedTranslationMessages(self,
-        suggested_languages=(), used_languages=()):
+            suggested_languages=(), used_languages=()):
         """See `IPOTMsgSet`."""
         # This method exists because suggestions + used == all external
         # messages : its better not to do the work twice. We could use a
@@ -469,7 +468,7 @@ class POTMsgSet(SQLBase):
         # 2000, doing a single pass in python should be insignificantly
         # slower.
         result_type = namedtuple('SuggestedOrUsed', 'suggested used')
-        result = defaultdict(lambda:result_type([], []))
+        result = defaultdict(lambda: result_type([], []))
         for message in self._getExternalTranslationMessages(
             suggested_languages=suggested_languages,
             used_languages=used_languages):

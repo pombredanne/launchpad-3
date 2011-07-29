@@ -44,7 +44,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -55,15 +54,18 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     )
 from lp.app.errors import NotFoundError
-from lp.buildmaster.enums import BuildStatus
-from lp.buildmaster.enums import BuildFarmJobType
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.buildmaster.enums import (
+    BuildFarmJobType,
+    BuildStatus,
+    )
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob,
     IBuildFarmJobOld,
     IBuildFarmJobSet,
     IBuildFarmJobSource,
     InconsistentBuildFarmJobError,
-    ISpecificBuildFarmJob,
+    ISpecificBuildFarmJobSource,
     )
 from lp.buildmaster.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.model.teammembership import TeamParticipation
@@ -351,29 +353,26 @@ class BuildFarmJob(BuildFarmJobOld, Storm):
         """See `IBuild`"""
         # Adapt ourselves based on our job type.
         try:
-            build = getAdapter(
-                self, ISpecificBuildFarmJob, self.job_type.name)
+            source = getUtility(
+                ISpecificBuildFarmJobSource, self.job_type.name)
         except ComponentLookupError:
             raise InconsistentBuildFarmJobError(
-                "No adapter was found for the build farm job type %s." % (
+                "No source was found for the build farm job type %s." % (
                     self.job_type.name))
 
-        # Since the adapters of to ISpecificBuildFarmJob proxy their
-        # results manually, we don't want the second proxy added by
-        # getAdapter above.
-        build_without_outer_proxy = removeSecurityProxy(build)
+        build = source.getByBuildFarmJob(self)
 
-        if build_without_outer_proxy is None:
+        if build is None:
             raise InconsistentBuildFarmJobError(
                 "There is no related specific job for the build farm "
                 "job with id %d." % self.id)
 
         # Just to be on the safe side, make sure the build is still
         # proxied before returning it.
-        assert isProxy(build_without_outer_proxy), (
-            "Unproxied result returned from ISpecificBuildFarmJob adapter.")
+        assert isProxy(build), (
+            "Unproxied result returned from ISpecificBuildFarmJobSource.")
 
-        return build_without_outer_proxy
+        return build
 
     def gotFailure(self):
         """See `IBuildFarmJob`."""
@@ -418,13 +417,13 @@ class BuildFarmJobSet:
                 Select(
                     Archive.id,
                     tables=(Archive,),
-                    where=(Archive.private == False)
+                    where=(Archive._private == False)
                     ),
                 Select(
                     Archive.id,
                     tables=(Archive,),
                     where=And(
-                        Archive.private == True,
+                        Archive._private == True,
                         Archive.ownerID.is_in(
                             Select(
                                 TeamParticipation.teamID,
@@ -446,7 +445,7 @@ class BuildFarmJobSet:
                         Select(
                             Archive.id,
                             tables=(Archive,),
-                            where=(Archive.private == False)
+                            where=(Archive._private == False)
                             )
                         )
                     )

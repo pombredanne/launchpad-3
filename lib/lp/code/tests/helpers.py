@@ -28,14 +28,13 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposalJobSource,
     )
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks,
+from lp.code.model.seriessourcepackagebranch import (
+    SeriesSourcePackageBranchSet
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -89,7 +88,6 @@ def make_erics_fooix_project(factory):
 
     :return: a dict of objects to put into local scope.
     """
-    result = {}
     eric = factory.makePerson(
         name='eric', displayname='Eric the Viking',
         email='eric@example.com', password='test')
@@ -135,10 +133,7 @@ def make_linked_package_branch(factory, distribution=None,
     # It is possible for the param to be None, so reset to the factory
     # generated one.
     sourcepackagename = source_package.sourcepackagename
-    # We don't care about who can make things official, so get rid of the
-    # security proxy.
-    series_set = removeSecurityProxy(getUtility(IMakeOfficialBranchLinks))
-    series_set.new(
+    SeriesSourcePackageBranchSet.new(
         distro_series, pocket, sourcepackagename, branch, branch.owner)
     return branch
 
@@ -177,9 +172,6 @@ def make_package_branches(factory, series, sourcepackagename, branch_count,
         for i in range(branch_count)]
 
     official = []
-    # We don't care about who can make things official, so get rid of the
-    # security proxy.
-    series_set = removeSecurityProxy(getUtility(IMakeOfficialBranchLinks))
     # Sort the pocket items so RELEASE is last, and thus first popped.
     pockets = sorted(PackagePublishingPocket.items, reverse=True)
     # Since there can be only one link per pocket, max out the number of
@@ -187,7 +179,7 @@ def make_package_branches(factory, series, sourcepackagename, branch_count,
     for i in range(min(official_count, len(pockets))):
         branch = branches.pop()
         pocket = pockets.pop()
-        sspb = series_set.new(
+        SeriesSourcePackageBranchSet.new(
             series, pocket, sourcepackagename, branch, branch.owner)
         official.append(branch)
 
@@ -262,9 +254,8 @@ def make_official_package_branch(factory, owner=None):
     sourcepackage = branch.sourcepackage
     suite_sourcepackage = sourcepackage.getSuiteSourcePackage(pocket)
     registrant = factory.makePerson()
-    ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
     run_with_login(
-        ubuntu_branches.teamowner,
+        suite_sourcepackage.distribution.owner,
         ICanHasLinkedBranch(suite_sourcepackage).setBranch,
         branch, registrant)
     return branch

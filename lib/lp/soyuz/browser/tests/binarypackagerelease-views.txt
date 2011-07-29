@@ -26,7 +26,7 @@ IPackageRelationshipSet. (see package-relationship.txt).
 
   >>> pmount_deps = pmount_view.depends()
 
-  >>> from canonical.launchpad.interfaces.packagerelationship import IPackageRelationshipSet
+  >>> from lp.soyuz.interfaces.packagerelationship import IPackageRelationshipSet
   >>> from canonical.launchpad.webapp.testing import verifyObject
 
   >>> verifyObject(IPackageRelationshipSet, pmount_deps)

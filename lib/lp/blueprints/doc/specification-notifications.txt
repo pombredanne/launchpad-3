@@ -63,21 +63,27 @@ notifications were sent.
 
     >>> for subscription in svg_support.subscriptions:
     ...     print subscription.person.preferredemail.email
+    andrew.bennetts@ubuntulinux.com
+    daf@canonical.com
     foo.bar@canonical.com
     robertc@robertcollins.net
-    andrew.bennetts@ubuntulinux.com
     stuart.bishop@canonical.com
-    daf@canonical.com
 
 Let's set a different approver and add a subscriber.
 
     >>> from lp.registry.interfaces.person import IPersonSet
+
+    >>> stub.test_emails = []
     >>> mark = getUtility(IPersonSet).getByEmail('mark@example.com')
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> svg_support.approver = mark
     >>> svg_support.subscribe(sample_person, sample_person, False)
     <...>
+    >>> transaction.commit()
+    >>> for fromaddr, toaddrs, message in stub.test_emails:
+    ...     print toaddrs
+    ['test@canonical.com']
 
 Now if we edit the status, a notification will be sent to all the
 previous people, and to the approver and the added subscriber:
@@ -106,7 +112,6 @@ are now subscribed.
     ['mark@example.com']
     ['robertc@robertcollins.net']
     ['stuart.bishop@canonical.com']
-    ['test@canonical.com']
     ['test@canonical.com']
 
 Now let's take a look at what the notification looks like:

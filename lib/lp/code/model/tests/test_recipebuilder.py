@@ -253,11 +253,11 @@ class TestRecipeBuilder(TestCaseWithFactory):
             job.build, distroarchseries, None)
         self.assertEqual(args["archives"], expected_archives)
 
-    def test_getById(self):
+    def test_getByID(self):
         job = self.makeJob()
         transaction.commit()
         self.assertEquals(
-            job.build, SourcePackageRecipeBuild.getById(job.build.id))
+            job.build, SourcePackageRecipeBuild.getByID(job.build.id))
 
     @run_test_with(AsynchronousDeferredRunTest)
     def test_dispatchBuildToSlave(self):

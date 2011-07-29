@@ -5,11 +5,14 @@ __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bug import BugSubscriptionInfo
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
+    feature_flags,
     login_person,
     person_logged_in,
+    set_feature_flag,
     TestCaseWithFactory,
     )
 
@@ -137,6 +140,20 @@ class TestBug(TestCaseWithFactory):
                     subscriber, subscriber, level=level)
             self.assertEqual(level, subscription.bug_notification_level)
 
+    def test_resubscribe_with_level(self):
+        # If you pass a new level to subscribe with an existing subscription,
+        # the level is set on the existing subscription.
+        bug = self.factory.makeBug()
+        subscriber = self.factory.makePerson()
+        levels = list(BugNotificationLevel.items)
+        with person_logged_in(subscriber):
+            subscription = bug.subscribe(
+                subscriber, subscriber, level=levels[-1])
+        for level in levels:
+            with person_logged_in(subscriber):
+                bug.subscribe(subscriber, subscriber, level=level)
+            self.assertEqual(level, subscription.bug_notification_level)
+
     def test_get_direct_subscribers_with_level(self):
         # It's possible to pass a level parameter to
         # getDirectSubscribers() to filter the subscribers returned.
@@ -167,7 +184,7 @@ class TestBug(TestCaseWithFactory):
 
     def test_get_direct_subscribers_default_level(self):
         # If no `level` parameter is passed to getDirectSubscribers(),
-        # the assumed `level` is BugNotification.NOTHING.
+        # the assumed `level` is BugNotification.LIFECYCLE.
         bug = self.factory.makeBug()
         # We unsubscribe the bug's owner because if we don't there will
         # be two COMMENTS-level subscribers.
@@ -182,11 +199,59 @@ class TestBug(TestCaseWithFactory):
 
         # All the subscribers should be returned by
         # getDirectSubscribers() because it defaults to returning
-        # subscribers at level NOTHING, which everything is higher than.
+        # subscribers at level LIFECYCLE, which everything is higher than.
         direct_subscribers = bug.getDirectSubscribers()
         self.assertEqual(
             set(subscribers), set(direct_subscribers),
             "Subscribers did not match expected value.")
+
+    def test_get_direct_subscribers_with_details_other_subscriber(self):
+        # getDirectSubscribersWithDetails() returns
+        # Person and BugSubscription records in one go as well as the
+        # BugSubscription.subscribed_by person.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            # Unsubscribe bug owner so it doesn't taint the result.
+            bug.unsubscribe(bug.owner, bug.owner)
+        subscriber = self.factory.makePerson()
+        subscribee = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            subscription = bug.subscribe(
+                subscribee, subscriber, level=BugNotificationLevel.LIFECYCLE)
+        self.assertContentEqual(
+            [(subscribee, subscriber, subscription)],
+            bug.getDirectSubscribersWithDetails())
+
+    def test_get_direct_subscribers_with_details_self_subscribed(self):
+        # getDirectSubscribersWithDetails() returns
+        # Person and BugSubscription records in one go as well as the
+        # BugSubscription.subscribed_by person.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            # Unsubscribe bug owner so it doesn't taint the result.
+            bug.unsubscribe(bug.owner, bug.owner)
+        subscriber = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            subscription = bug.subscribe(
+                subscriber, subscriber, level=BugNotificationLevel.LIFECYCLE)
+        self.assertContentEqual(
+            [(subscriber, subscriber, subscription)],
+            bug.getDirectSubscribersWithDetails())
+
+    def test_get_direct_subscribers_with_details_mute_excludes(self):
+        # getDirectSubscribersWithDetails excludes muted subscriptions.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            # Unsubscribe bug owner so it doesn't taint the result.
+            bug.unsubscribe(bug.owner, bug.owner)
+        subscriber = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            bug.subscribe(
+                subscriber, subscriber, level=BugNotificationLevel.LIFECYCLE)
+            bug.mute(subscriber, subscriber)
+
+        self.assertContentEqual(
+            [], bug.getDirectSubscribersWithDetails())
 
     def test_subscribers_from_dupes_uses_level(self):
         # When getSubscribersFromDuplicates() is passed a `level`
@@ -227,7 +292,7 @@ class TestBug(TestCaseWithFactory):
         subscriber = self.factory.makePerson()
         with person_logged_in(subscriber):
             bug.subscribe(
-                subscriber, subscriber, level=BugNotificationLevel.NOTHING)
+                subscriber, subscriber, level=BugNotificationLevel.LIFECYCLE)
             duplicate_bug.subscribe(
                 subscriber, subscriber, level=BugNotificationLevel.METADATA)
         duplicate_subscribers = bug.getSubscribersFromDuplicates()
@@ -242,8 +307,127 @@ class TestBug(TestCaseWithFactory):
             info = bug.getSubscriptionInfo()
         self.assertIsInstance(info, BugSubscriptionInfo)
         self.assertEqual(bug, info.bug)
-        self.assertEqual(BugNotificationLevel.NOTHING, info.level)
+        self.assertEqual(BugNotificationLevel.LIFECYCLE, info.level)
         # A level can also be specified.
         with person_logged_in(bug.owner):
             info = bug.getSubscriptionInfo(BugNotificationLevel.METADATA)
         self.assertEqual(BugNotificationLevel.METADATA, info.level)
+
+    def test_setPrivate_subscribes_person_who_makes_bug_private(self):
+        # When setPrivate(True) is called on a bug, the person who is
+        # marking the bug private is subscribed to the bug.
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            bug.setPrivate(True, person)
+            self.assertTrue(bug.personIsDirectSubscriber(person))
+
+    def test_setPrivate_does_not_subscribe_member_of_subscribed_team(self):
+        # When setPrivate(True) is called on a bug, the person who is
+        # marking the bug private will not be subscribed if they're
+        # already a member of a team which is a direct subscriber.
+        bug = self.factory.makeBug()
+        team = self.factory.makeTeam()
+        person = team.teamowner
+        with person_logged_in(person):
+            bug.subscribe(team, person)
+            bug.setPrivate(True, person)
+            self.assertFalse(bug.personIsDirectSubscriber(person))
+
+
+class TestBugAutoConfirmation(TestCaseWithFactory):
+    """Tests for auto confirming bugs"""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_shouldConfirmBugtasks_initial_False(self):
+        # After a bug is created, only one person is affected, and we should
+        # not try to confirm bug tasks.
+        bug = self.factory.makeBug()
+        self.assertFalse(bug.shouldConfirmBugtasks())
+
+    def test_shouldConfirmBugtasks_after_another_positively_affected(self):
+        # We should confirm bug tasks if the number of affected users is
+        # more than one.
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            bug.markUserAffected(person)
+        self.assertTrue(bug.shouldConfirmBugtasks())
+
+    def test_shouldConfirmBugtasks_after_another_persons_dupe(self):
+        # We should confirm bug tasks if someone else files a dupe.
+        bug = self.factory.makeBug()
+        duplicate_bug = self.factory.makeBug()
+        with person_logged_in(duplicate_bug.owner):
+            duplicate_bug.markAsDuplicate(bug)
+        self.assertTrue(bug.shouldConfirmBugtasks())
+
+    def test_shouldConfirmBugtasks_after_same_persons_dupe_False(self):
+        # We should not confirm bug tasks if same person files a dupe.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            duplicate_bug = self.factory.makeBug(owner=bug.owner)
+            duplicate_bug.markAsDuplicate(bug)
+        self.assertFalse(bug.shouldConfirmBugtasks())
+
+    def test_shouldConfirmBugtasks_honors_negatively_affected(self):
+        # We should confirm bug tasks if the number of affected users is
+        # more than one.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            bug.markUserAffected(bug.owner, False)
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            bug.markUserAffected(person)
+        self.assertFalse(bug.shouldConfirmBugtasks())
+
+    def test_markUserAffected_autoconfirms(self):
+        # markUserAffected will auto confirm if appropriate.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            bug = self.factory.makeBug()
+            person = self.factory.makePerson()
+            with person_logged_in(person):
+                bug.markUserAffected(person)
+            self.assertEqual(BugTaskStatus.CONFIRMED, bug.bugtasks[0].status)
+
+    def test_markUserAffected_does_not_autoconfirm_wrongly(self):
+        # markUserAffected will not auto confirm if incorrect.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            bug = self.factory.makeBug()
+            person = self.factory.makePerson()
+            with person_logged_in(bug.owner):
+                bug.markUserAffected(bug.owner, False)
+            with person_logged_in(person):
+                bug.markUserAffected(person)
+            self.assertEqual(BugTaskStatus.NEW, bug.bugtasks[0].status)
+
+    def test_markAsDuplicate_autoconfirms(self):
+        # markAsDuplicate will auto confirm if appropriate.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            bug = self.factory.makeBug()
+            duplicate_bug = self.factory.makeBug()
+            with person_logged_in(duplicate_bug.owner):
+                duplicate_bug.markAsDuplicate(bug)
+            self.assertEqual(BugTaskStatus.CONFIRMED, bug.bugtasks[0].status)
+
+    def test_markAsDuplicate_does_not_autoconfirm_wrongly(self):
+        # markAsDuplicate will not auto confirm if incorrect.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            bug = self.factory.makeBug()
+            with person_logged_in(bug.owner):
+                duplicate_bug = self.factory.makeBug(owner=bug.owner)
+                duplicate_bug.markAsDuplicate(bug)
+            self.assertEqual(BugTaskStatus.NEW, bug.bugtasks[0].status)

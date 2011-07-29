@@ -320,7 +320,7 @@ in the page he is viewing and submit the form to see the results.
 
     >>> print_search_results()
     Exact matches
-    the Mozilla Project
+    The Mozilla Project
     The Mozilla Project is the largest open source web browser collaborati...
     browser technology.
     Registered by Sample Person

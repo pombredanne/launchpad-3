@@ -3,24 +3,49 @@
 
 __metaclass__ = type
 
-import httplib
-
+from lazr.restfulclient.errors import BadRequest
 from zope.component import getUtility
 
-from lazr.restfulclient.errors import HTTPError
-
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import (
+    api_url,
     launchpadlib_for,
     login_person,
     logout,
     run_with_login,
     TestCaseWithFactory,
     )
+
+
+class TestBranchOperations(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_createMergeProposal_fails_if_reviewers_and_review_types_are_different_sizes(self):
+
+        source = self.factory.makeBranch(name='rock')
+        source_url = api_url(source)
+
+        target = self.factory.makeBranch(
+            owner=source.owner, product=source.product,
+            name="roll")
+        target_url = api_url(target)
+
+        lp = launchpadlib_for("test", source.owner.name)
+        source = lp.load(source_url)
+        target = lp.load(target_url)
+
+        exception = self.assertRaises(
+            BadRequest, source.createMergeProposal,
+            target_branch=target, initial_comment='Merge\nit!',
+            needs_review=True, commit_message='It was merged!\n',
+            reviewers=[source.owner.self_link], review_types=[])
+        self.assertEquals(
+            exception.content,
+            'reviewers and review_types must be equal length.')
 
 
 class TestBranchDeletes(TestCaseWithFactory):
@@ -52,17 +77,13 @@ class TestBranchDeletes(TestCaseWithFactory):
         # When trying to delete a branch that cannot be deleted, the
         # error is raised across the webservice instead of oopsing.
         login_person(self.branch_owner)
-        stacked_branch = self.factory.makeBranch(
-            stacked_on=self.branch,
-            owner=self.branch_owner)
+        self.factory.makeBranch(
+            stacked_on=self.branch, owner=self.branch_owner)
         logout()
         target_branch = self.lp.branches.getByUniqueName(
             unique_name='~jimhenson/fraggle/rock')
-        api_error = self.assertRaises(
-            HTTPError,
-            target_branch.lp_delete)
+        api_error = self.assertRaises(BadRequest, target_branch.lp_delete)
         self.assertIn('Cannot delete', api_error.content)
-        self.assertEqual(httplib.BAD_REQUEST, api_error.response.status)
 
 
 class TestSlashBranches(TestCaseWithFactory):
@@ -78,14 +99,12 @@ class TestSlashBranches(TestCaseWithFactory):
             distroseries=dev, sourcepackagename='choc', name='tip',
             owner=eric)
         dsp = self.factory.makeDistributionSourcePackage('choc', mint)
-        distro_link = ICanHasLinkedBranch(dsp)
         development_package = dsp.development_version
         suite_sourcepackage = development_package.getSuiteSourcePackage(
             PackagePublishingPocket.RELEASE)
         suite_sp_link = ICanHasLinkedBranch(suite_sourcepackage)
 
-        registrant = getUtility(
-            ILaunchpadCelebrities).ubuntu_branches.teamowner
+        registrant = suite_sourcepackage.distribution.owner
         run_with_login(
             registrant,
             suite_sp_link.setBranch, branch, registrant)

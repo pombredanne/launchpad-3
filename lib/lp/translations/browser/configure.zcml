@@ -506,7 +506,7 @@
             for="*"
             permission="launchpad.Edit"
             name="+object-reassignment"
-            template="../../../canonical/launchpad/templates/object-reassignment.pt"
+            template="../../app/templates/object-reassignment.pt"
             layer="lp.translations.publisher.TranslationsLayer"/>
         <browser:url
             for="lp.translations.interfaces.translationgroup.ITranslationGroupSet"
@@ -1058,7 +1058,7 @@
         name="+index"/>
     <browser:url
         for="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuild"
-        path_expression="string:+translation-templates-build/${build_farm_job/id}"
+        path_expression="string:+translation-templates-build/${id}"
         attribute_to_parent="branch"/>
     <browser:page
         for="lp.translations.interfaces.translationtemplatesbuild.ITranslationTemplatesBuild"

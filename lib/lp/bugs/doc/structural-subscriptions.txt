@@ -58,7 +58,7 @@ A target's parent can be retrieved using the
     >>> print ubuntu.parent_subscription_target
     None
     >>> print firefox.parent_subscription_target.displayname
-    the Mozilla Project
+    The Mozilla Project
 
     >>> ff_milestone = firefox.getMilestone('1.0')
     >>> ff_milestone.parent_subscription_target == firefox

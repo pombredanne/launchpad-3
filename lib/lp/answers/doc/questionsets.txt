@@ -67,7 +67,7 @@ By default, expired and invalid questions are not searched for.  The status
 parameter can be used to select the questions in the status you are interested
 in.
 
-    >>> from lp.answers.interfaces.questionenums import QuestionStatus
+    >>> from lp.answers.enums import QuestionStatus
     >>> for question in question_set.searchQuestions(
     ...         status=QuestionStatus.INVALID):
     ...     print question.title, question.status.title, (
@@ -123,7 +123,7 @@ When using the search_text criteria, the default is to sort the results by
 relevancy.  One can use the sort parameter to change the order.  It takes one
 of the constant defined in the QuestionSort enumeration.
 
-    >>> from lp.answers.interfaces.questionenums import QuestionSort
+    >>> from lp.answers.enums import QuestionSort
     >>> for question in question_set.searchQuestions(
     ...         search_text='firefox', sort=QuestionSort.OLDEST_FIRST):
     ...     print question.id, ascii_smash(question.title), (
@@ -179,7 +179,7 @@ we'll set those up.
     >>> login('admin@canonical.com')
     >>> firefox.answers_usage = ServiceUsage.LAUNCHPAD
     >>> ubuntu.answers_usage = ServiceUsage.LAUNCHPAD
-    >>> transaction.commit()    
+    >>> transaction.commit()
 
 This method can be used to retrieve the projects that are the most actively
 using the Answer Tracker in the last 60 days.  By active, we mean that the

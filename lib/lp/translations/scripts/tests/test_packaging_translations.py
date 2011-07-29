@@ -6,6 +6,7 @@
 
 from textwrap import dedent
 
+from testtools.matchers import MatchesRegex
 import transaction
 
 from canonical.launchpad.scripts.tests import run_script
@@ -30,11 +31,14 @@ class TestMergeTranslations(TestCaseWithFactory):
         retcode, stdout, stderr = run_script(
             'cronscripts/run_jobs.py', ['packaging_translations'],
             expect_returncode=0)
-        self.assertEqual(dedent("""\
+        matcher = MatchesRegex(dedent("""\
             INFO    Creating lockfile: /var/lock/launchpad-jobcronscript.lock
             INFO    Running synchronously.
+            INFO    Merging .* and .* in Ubuntu Distroseries.*
             INFO    Deleted POTMsgSets: 1.  TranslationMessages: 1.
+            INFO    Splitting .* and .* in Ubuntu Distroseries.*
             INFO    Ran 1 TranslationMergeJob jobs.
             INFO    Ran 1 TranslationSplitJob jobs.
-            """), stderr)
+            """))
+        self.assertThat(stderr, matcher)
         self.assertEqual('', stdout)

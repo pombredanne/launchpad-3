@@ -39,7 +39,7 @@
           <p tal:condition="not: view/similar_bugs">
             No similar bug reports were found.
           </p>
-          <div id="bug_reporting_form" tal:condition="not: view/similar_bugs">
+          <div id="bug-reporting-form" tal:condition="not: view/similar_bugs">
             <metal:form use-macro="context/@@launchpad_form/form">
               <metal:widgets metal:fill-slot="widgets">
                 <table class="form">

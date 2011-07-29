@@ -49,7 +49,6 @@ from canonical.launchpad.helpers import (
     is_english_variant,
     preferred_or_request_languages,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
     canonical_url,
     Link,
@@ -62,13 +61,13 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 from lp.answers.browser.faqcollection import FAQCollectionMenu
+from lp.answers.enums import QuestionStatus
 from lp.answers.interfaces.faqcollection import IFAQCollection
 from lp.answers.interfaces.questioncollection import (
     IQuestionCollection,
     IQuestionSet,
     ISearchableByQuestionOwner,
     )
-from lp.answers.interfaces.questionenums import QuestionStatus
 from lp.answers.interfaces.questiontarget import (
     IQuestionTarget,
     ISearchQuestionsForm,
@@ -81,6 +80,7 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
@@ -166,7 +166,7 @@ class QuestionCollectionOpenCountView:
     """View used to render the number of open questions.
 
     This view is used to render the number of open questions on
-    each ISourcePackageRelease on the person-packages-templates.pt.
+    each IDistributionSourcePackage on the person-packages-templates.pt.
     It is simpler to define generic view and an adapter (since
     SourcePackageRelease does not provide IQuestionCollection), than
     to write a specific view for that template.
@@ -450,7 +450,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             "can't call matching_faqs_url when matching_faqs_count == 0")
         collection = IFAQCollection(self.context)
         return canonical_url(collection) + '/+faqs?' + urlencode({
-            'field.search_text': self.search_text,
+            'field.search_text': self.search_text.encode('utf-8'),
             'field.actions.search': 'Search',
             })
 
@@ -464,9 +464,9 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         """
         self.search_params = dict(self.getDefaultFilter())
         self.search_params.update(**data)
-        if self.search_params.get('search_text', None) is not None:
-            self.search_params['search_text'] = (
-                self.search_params['search_text'].strip())
+        search_text = self.search_params.get('search_text', None)
+        if search_text is not None:
+            self.search_params['search_text'] = search_text.strip()
 
     def searchResults(self):
         """Return the questions corresponding to the search."""
@@ -738,12 +738,12 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         replacements = {'context': self.context.displayname}
         if want_to_be_answer_contact:
             self._updatePreferredLanguages(self.user)
-            if self.context.addAnswerContact(self.user):
+            if self.context.addAnswerContact(self.user, self.user):
                 response.addNotification(
                     _('You have been added as an answer contact for '
                       '$context.', mapping=replacements))
         else:
-            if self.context.removeAnswerContact(self.user):
+            if self.context.removeAnswerContact(self.user, self.user):
                 response.addNotification(
                     _('You have been removed as an answer contact for '
                       '$context.', mapping=replacements))
@@ -752,12 +752,12 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             replacements['teamname'] = team.displayname
             if team in answer_contact_teams:
                 self._updatePreferredLanguages(team)
-                if self.context.addAnswerContact(team):
+                if self.context.addAnswerContact(team, self.user):
                     response.addNotification(
                         _('$teamname has been added as an answer contact '
                           'for $context.', mapping=replacements))
             else:
-                if self.context.removeAnswerContact(team):
+                if self.context.removeAnswerContact(team, self.user):
                     response.addNotification(
                         _('$teamname has been removed as an answer contact '
                           'for $context.', mapping=replacements))

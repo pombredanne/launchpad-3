@@ -38,13 +38,12 @@ from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import smartquote
-from lp.answers.interfaces.questiontarget import IQuestionTarget
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
 from lp.bugs.model.bug import (
     Bug,
     BugSet,
-    get_bug_tags_open_count,
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -140,8 +139,8 @@ class DistributionSourcePackage(BugTargetBase,
     """
 
     implements(
-        IDistributionSourcePackage, IHasBugHeat, IHasCustomLanguageCodes,
-        IQuestionTarget)
+        IBugSummaryDimension, IDistributionSourcePackage, IHasBugHeat,
+        IHasCustomLanguageCodes)
 
     bug_reporting_guidelines = DistributionSourcePackageProperty(
         'bug_reporting_guidelines')
@@ -351,7 +350,7 @@ class DistributionSourcePackage(BugTargetBase,
             Archive,
             Archive.distribution == self.distribution,
             Archive._enabled == True,
-            Archive.private == False,
+            Archive._private == False,
             SourcePackagePublishingHistory.archive == Archive.id,
             (SourcePackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED),
@@ -474,11 +473,13 @@ class DistributionSourcePackage(BugTargetBase,
         """See `IDistributionSourcePackage`."""
         return not self.__eq__(other)
 
-    def _getBugTaskContextWhereClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See `BugTargetBase`."""
-        return (
-            "BugTask.distribution = %d AND BugTask.sourcepackagename = %d" % (
-            self.distribution.id, self.sourcepackagename.id))
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return And(
+            BugSummary.distribution == self.distribution,
+            BugSummary.sourcepackagename == self.sourcepackagename),
 
     def _customizeSearchParams(self, search_params):
         """Customize `search_params` for this distribution source package."""
@@ -487,13 +488,6 @@ class DistributionSourcePackage(BugTargetBase,
     def getUsedBugTags(self):
         """See `IBugTarget`."""
         return self.distribution.getUsedBugTags()
-
-    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
-        """See `IBugTarget`."""
-        return get_bug_tags_open_count(
-            And(BugTask.distribution == self.distribution,
-                BugTask.sourcepackagename == self.sourcepackagename),
-            user, wanted_tags=wanted_tags)
 
     def _getOfficialTagClause(self):
         return self.distribution._getOfficialTagClause()
@@ -509,12 +503,6 @@ class DistributionSourcePackage(BugTargetBase,
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
         return BugSet().createBug(bug_params)
-
-    def _getBugTaskContextClause(self):
-        """See `BugTargetBase`."""
-        return (
-            'BugTask.distribution = %s AND BugTask.sourcepackagename = %s' %
-                sqlvalues(self.distribution, self.sourcepackagename))
 
     def composeCustomLanguageCodeMatch(self):
         """See `HasCustomLanguageCodesMixin`."""

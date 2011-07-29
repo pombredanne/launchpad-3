@@ -1,0 +1,33 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+  <head>
+  <title>Test page for branch diff JavaScript unit tests</title>
+
+  <!-- YUI and test setup -->
+  <script type="text/javascript"
+          src="../../../../canonical/launchpad/icing/yui/yui/yui.js">
+  </script>
+  <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
+  <script type="text/javascript"
+          src="../../../app/javascript/testing/testrunner.js"></script>
+
+  <script type="text/javascript" src="../../../app/javascript/client.js"></script>
+  <script type="text/javascript"
+    src="../../../app/javascript/overlay/overlay.js"></script>
+
+  <!-- The module under test -->
+  <script type="text/javascript" src="../branchmergeproposal.diff.js"></script>
+
+  <!-- The test suite -->
+  <script type="text/javascript" src="test_branchdiff.js"></script>
+  </head>
+
+<body class="yui3-skin-sam">
+    <div id="test-diff-popup">
+        <a class="diff-link" href="non-url">Test link for testing popup</a>
+        <a class="api-ref" style="display:none;"
+          href="/~foobar/example/branch/">api</a>
+    </div>
+</body>
+</html>

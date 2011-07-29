@@ -31,10 +31,7 @@ from storm.store import (
     )
 from zope.component import getUtility
 from zope.interface import implements
-from zope.security.proxy import (
-    ProxyFactory,
-    removeSecurityProxy,
-    )
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import (
@@ -54,7 +51,6 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterObject,
     ISlaveStore,
@@ -72,6 +68,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from lp.app.browser.tales import DurationFormatterAPI
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.enums import (
     BuildFarmJobType,
@@ -104,24 +101,6 @@ from lp.soyuz.model.queue import (
     PackageUpload,
     PackageUploadBuild,
     )
-
-
-def get_binary_build_for_build_farm_job(build_farm_job):
-    """Factory method to returning a binary for a build farm job."""
-    store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-    find_spec = (BinaryPackageBuild, PackageBuild, BuildFarmJob)
-    resulting_tuple = store.find(
-        find_spec,
-        BinaryPackageBuild.package_build == PackageBuild.id,
-        PackageBuild.build_farm_job == BuildFarmJob.id,
-        BuildFarmJob.id == build_farm_job.id).one()
-
-    if resulting_tuple is None:
-        return None
-
-    # We specifically return a proxied BinaryPackageBuild so that we can
-    # be sure it has the correct proxy.
-    return ProxyFactory(resulting_tuple[0])
 
 
 class BinaryPackageBuild(PackageBuildDerived, SQLBase):
@@ -838,12 +817,24 @@ class BinaryPackageBuildSet:
 
         return BinaryPackageBuild.select(query, clauseTables=clauseTables)
 
-    def getByBuildID(self, id):
+    def getByID(self, id):
         """See `IBinaryPackageBuildSet`."""
         try:
             return BinaryPackageBuild.get(id)
         except SQLObjectNotFound, e:
             raise NotFoundError(str(e))
+
+    def getByBuildFarmJob(self, build_farm_job):
+        """See `ISpecificBuildFarmJobSource`."""
+        find_spec = (BinaryPackageBuild, PackageBuild, BuildFarmJob)
+        resulting_tuple = Store.of(build_farm_job).find(
+            find_spec,
+            BinaryPackageBuild.package_build == PackageBuild.id,
+            PackageBuild.build_farm_job == BuildFarmJob.id,
+            BuildFarmJob.id == build_farm_job.id).one()
+        if resulting_tuple is None:
+            return None
+        return resulting_tuple[0]
 
     def getPendingBuildsForArchSet(self, archseries):
         """See `IBinaryPackageBuildSet`."""

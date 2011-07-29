@@ -1,4 +1,4 @@
-<!-- Copyright 2010 Canonical Ltd.  This software is licensed under the
+<!-- Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
      GNU Affero General Public License version 3 (see the file LICENSE).
 -->
 
@@ -107,6 +107,12 @@
             template="../templates/bugtarget-filebug-inline-form.pt"
             facet="bugs"
             permission="launchpad.AnyPerson"/>
+        <browser:page
+            for="lp.bugs.interfaces.bugtarget.IHasBugs"
+            class="lp.bugs.browser.bugtarget.FileBugReportingGuidelines"
+            template="../templates/bugtarget-filebug-guidelines.pt"
+            permission="launchpad.AnyPerson"
+            name="+filebug-reporting-guidelines"/>
         <browser:page
             name="+manage-official-tags"
             for="lp.bugs.interfaces.bugtarget.IOfficialBugTagTargetRestricted"
@@ -527,6 +533,12 @@
         </browser:pages>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
+            class="lp.bugs.browser.bug.BugSubscriptionPortletView"
+            permission="launchpad.View"
+            name="+portlet-subscription"
+            template="../templates/bug-portlet-subscription.pt"/>
+        <browser:page
+            for="lp.bugs.interfaces.bug.IBug"
             class="lp.bugs.browser.bug.BugView"
             permission="launchpad.View"
             name="+portlet-subscribers"
@@ -623,9 +635,6 @@
             class="lp.bugs.browser.bugtask.BugTaskView"
             permission="launchpad.View"
             template="../templates/bugtask-index.pt"/>
-        <browser:defaultView
-            for="lp.bugs.interfaces.bugtask.IUpstreamBugTask"
-            name="+index"/>
         <browser:page
             name="+choose-affected-product"
             for="lp.bugs.interfaces.bugtask.IBugTask"
@@ -643,25 +652,17 @@
             class="lp.bugs.browser.bugalsoaffects.BugAlsoAffectsDistroMetaView"
             permission="launchpad.AnyPerson"/>
         <browser:page
-            name="+edit-form"
-            for="lp.bugs.interfaces.bugtask.IUpstreamBugTask"
-            class="lp.bugs.browser.bugtask.BugTaskEditView"
-            permission="launchpad.Edit"
-            template="../templates/bugtask-edit-form.pt">
-                </browser:page>
-        <browser:page
-            name="+edit-form"
-            for="lp.bugs.interfaces.bugtask.IProductSeriesBugTask"
-            class="lp.bugs.browser.bugtask.BugTaskEditView"
-            permission="launchpad.Edit"
-            template="../templates/bugtask-edit-form.pt">
-                </browser:page>
-        <browser:page
             name="+editstatus"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bugtask.BugTaskEditView"
             permission="launchpad.Edit"
             template="../templates/bugtask-edit.pt"/>
+        <browser:page
+            name="+edit-form"
+            for="lp.bugs.interfaces.bugtask.IBugTask"
+            class="lp.bugs.browser.bugtask.BugTaskEditView"
+            permission="launchpad.Edit"
+            template="../templates/bugtask-edit-form.pt" />
         <browser:page
             name="+viewstatus"
             for="lp.bugs.interfaces.bugtask.IBugTask"
@@ -673,26 +674,6 @@
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bugtask.BugTaskListingView"
             permission="launchpad.View">
-                </browser:page>
-        <browser:defaultView
-            for="lp.bugs.interfaces.bugtask.IDistroBugTask"
-            name="+index"/>
-        <browser:page
-            name="+edit-form"
-            for="lp.bugs.interfaces.bugtask.IDistroBugTask"
-            class="lp.bugs.browser.bugtask.BugTaskEditView"
-            permission="launchpad.Edit"
-            template="../templates/bugtask-edit-form.pt">
-                </browser:page>
-        <browser:defaultView
-            for="lp.bugs.interfaces.bugtask.IDistroSeriesBugTask"
-            name="+index"/>
-        <browser:page
-            name="+edit-form"
-            for="lp.bugs.interfaces.bugtask.IDistroSeriesBugTask"
-            class="lp.bugs.browser.bugtask.BugTaskEditView"
-            permission="launchpad.Edit"
-            template="../templates/bugtask-edit-form.pt">
                 </browser:page>
         <browser:page
             for="lp.bugs.interfaces.bugtask.IBugTask"
@@ -807,6 +788,12 @@
             path_expression="name"
             attribute_to_parent="component_group"
             rootsite="bugs"/>
+        <browser:page
+            name="+edit"
+            for="lp.bugs.interfaces.bugtracker.IBugTrackerComponent"
+            class="lp.bugs.browser.bugtracker.BugTrackerEditComponentView"
+            permission="launchpad.AnyPerson"
+            template="../../app/templates/generic-edit.pt"/>
         <browser:pages
             for="lp.bugs.interfaces.bugtracker.IBugTracker"
             class="lp.bugs.browser.bugtracker.BugTrackerView"
@@ -817,6 +804,9 @@
             <browser:page
                 name="+portlet-details"
                 template="../templates/bugtracker-portlet-details.pt"/>
+            <browser:page
+                name="+portlet-components"
+                template="../templates/bugtracker-portlet-components.pt"/>
             <browser:page
                 name="+portlet-projects"
                 template="../templates/bugtracker-portlet-projects.pt"/>
@@ -862,6 +852,7 @@
             name="+index"/>
         <browser:pages
             for="lp.bugs.interfaces.bugtracker.IRemoteBug"
+            class="canonical.launchpad.webapp.LaunchpadView"
             permission="zope.Public">
             <browser:page
                 name="+index"
@@ -1064,20 +1055,15 @@
         </browser:pages>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
-            name="+bug-portlet-subscribers-content"
-            class="lp.bugs.browser.bugsubscription.BugPortletSubcribersContents"
-            template="../templates/bug-portlet-subscribers-content.pt"
+            name="+bug-portlet-subscribers-details"
+            class="
+              lp.bugs.browser.bugsubscription.BugPortletSubscribersWithDetails"
             permission="zope.Public"/>
         <browser:page
-            for="lp.bugs.interfaces.bug.IBug"
-            name="+bug-portlet-dupe-subscribers-content"
-            class="lp.bugs.browser.bugsubscription.BugPortletDuplicateSubcribersContents"
-            template="../templates/bug-portlet-dupe-subscribers-content.pt"
-            permission="zope.Public"/>
-        <browser:page
-            for="lp.bugs.interfaces.bug.IBug"
-            name="+bug-portlet-subscribers-ids"
-            class="lp.bugs.browser.bugsubscription.BugPortletSubcribersIds"
+            for="lp.bugs.interfaces.bugtask.IBugTask"
+            name="+bug-portlet-subscribers-details"
+            class="
+              lp.bugs.browser.bugsubscription.BugPortletSubscribersWithDetails"
             permission="zope.Public"/>
         <browser:navigation
             module="lp.bugs.browser.bug"
@@ -1232,5 +1218,25 @@
 
     <!-- Widgets -->
     <include package=".widgets"/>
+
+    <!-- batching -->
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ITableBatchNavigator"
+        name="+table-view"
+        template="../templates/bugs-listing-table.pt"
+        permission="zope.Public" />
+
+    <browser:page
+        for="canonical.launchpad.webapp.interfaces.ITableBatchNavigator"
+        name="+table-view-without-navlinks"
+        template="../templates/bugs-listing-table-without-navlinks.pt"
+        permission="zope.Public" />
+
+    <browser:page
+        for="lp.bugs.interfaces.bugtask.INominationsReviewTableBatchNavigator"
+        class="lp.bugs.browser.bugtask.NominationsReviewTableBatchNavigatorView"
+        name="+table-view-without-navlinks"
+        template="../templates/bugs-listing-nominations-table-without-navlinks.pt"
+        permission="zope.Public" />
 
 </configure>

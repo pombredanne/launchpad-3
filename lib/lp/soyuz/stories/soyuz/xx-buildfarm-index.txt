@@ -22,7 +22,7 @@ containing the build queue status summary for each build domain.
     frog  386        Disabled
     Official distributions build status
     Processor  Builders  Queue
-    386        1         1 job (a minute)
+    386        1         1 job (1 minute)
     PPA build status
     Processor  Builders  Queue
     386        0         empty
@@ -32,7 +32,7 @@ corresponding 'Build' page.
 
     >>> print anon_browser.getLink(
     ...     'i386 build of mozilla-firefox 0.9').url
-    http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+buildjob/8
+    http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/8
 
 The build status portlets contain the number of builds waiting
 in queue and the sum of their 'estimated_duration' for each
@@ -44,7 +44,7 @@ supported processor on each separated build domain, 'official'
     ...     find_tag_by_id(anon_browser.contents, 'official-queue-status'))
     Official distributions build status
     Processor  Builders  Queue
-    386        1         1 job (a minute)
+    386        1         1 job (1 minute)
 
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'ppa-queue-status',))
@@ -77,7 +77,7 @@ the corresponding portlet with their estimated duration as well.
     ...     find_tag_by_id(anon_browser.contents, 'ppa-queue-status'))
     PPA build status
     Processor  Builders  Queue
-    386        0         1 job (a minute)
+    386        0         1 job (1 minute)
 
 If the archive for the build does not require virtual builders, then
 the pending job will appear in the 'official' queue. Since the build
@@ -99,7 +99,7 @@ record already exists, we must manually set it to non-virtualized too.
     ...     find_tag_by_id(anon_browser.contents, 'official-queue-status'))
     Official distributions build status
     Processor  Builders  Queue
-    386        1         2 jobs (two minutes)
+    386        1         2 jobs (2 minutes)
 
 From this page, users with the appropriate permission can register new
 builders.

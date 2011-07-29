@@ -4,7 +4,10 @@
 """Helper functions for running external commands."""
 
 __metaclass__ = type
-__all__ = ['run_script']
+__all__ = [
+    'run_command',
+    'run_script',
+    ]
 
 import subprocess
 import sys
@@ -48,4 +51,3 @@ def run_script(script, args=None, input=None):
         interpreter_args.extend(args)
 
     return run_command(sys.executable, interpreter_args, input)
-

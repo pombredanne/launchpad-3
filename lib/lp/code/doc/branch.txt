@@ -201,8 +201,7 @@ order.
     >>> make_new_scanned_branch('oldest')
     >>> make_new_scanned_branch('middling')
     >>> make_new_scanned_branch('young')
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     >>> make_new_scanned_branch(
     ...     'imported', owner=vcs_imports, branch_type=BranchType.IMPORTED)

@@ -8,10 +8,10 @@ __all__ = [
     "IDistributionJob",
     "IDistroSeriesDifferenceJob",
     "IDistroSeriesDifferenceJobSource",
-    "IInitialiseDistroSeriesJob",
-    "IInitialiseDistroSeriesJobSource",
-    "ISyncPackageJob",
-    "ISyncPackageJobSource",
+    "IInitializeDistroSeriesJob",
+    "IInitializeDistroSeriesJobSource",
+    "InitializationCompleted",
+    "InitializationPending",
 ]
 
 from lazr.enum import (
@@ -23,10 +23,8 @@ from zope.interface import (
     Interface,
     )
 from zope.schema import (
-    Bool,
     Int,
     Object,
-    TextLine,
     )
 
 from canonical.launchpad import _
@@ -40,7 +38,7 @@ from lp.services.job.interfaces.job import (
 
 
 class IDistributionJob(Interface):
-    """A Job that initialises acts on a distribution."""
+    """A Job that initializes acts on a distribution."""
 
     id = Int(
         title=_('DB ID'), required=True, readonly=True,
@@ -65,17 +63,11 @@ class IDistributionJob(Interface):
 
 class DistributionJobType(DBEnumeratedType):
 
-    INITIALISE_SERIES = DBItem(1, """
-        Initialise a Distro Series.
+    INITIALIZE_SERIES = DBItem(1, """
+        Initialize a Distro Series.
 
-        This job initialises a given distro series, creating builds, and
+        This job initializes a given distro series, creating builds, and
         populating the archive from the parent distroseries.
-        """)
-
-    SYNC_PACKAGE = DBItem(2, """
-        Synchronize a single package from another distribution.
-
-        This job copies a single package, optionally including binaries.
         """)
 
     DISTROSERIESDIFFERENCE = DBItem(3, """
@@ -86,74 +78,81 @@ class DistributionJobType(DBEnumeratedType):
         """)
 
 
-class IInitialiseDistroSeriesJobSource(IJobSource):
-    """An interface for acquiring IInitialiseDistroSeriesJobs."""
+class InitializationPending(Exception):
+    """The initialization of the distroseries has already been scheduled.
 
-    def create(distroseries, arches, packagesets, rebuild):
-        """Create a new initialisation job for a distroseries."""
+    :ivar job: The `InitializeDistroSeriesJob` that's already scheduled.
+    """
 
-    def getPendingJobsForDistroseries(distroseries):
-        """Retrieve pending initialisation jobs for a distroseries.
+    def __init__(self, job):
+        super(InitializationPending, self).__init__()
+        self.job = job
+
+
+class InitializationCompleted(Exception):
+    """The initialization of the distroseries has already been done.
+
+    :ivar job: The `InitializeDistroSeriesJob` that's already scheduled.
+    """
+
+    def __init__(self, job):
+        super(InitializationCompleted, self).__init__()
+        self.job = job
+
+
+class IInitializeDistroSeriesJobSource(IJobSource):
+    """An interface for acquiring IInitializeDistroSeriesJobs."""
+
+    def create(parents, arches, packagesets, rebuild, overlay,
+               overlay_pockets, overlay_components):
+        """Create a new initialization job for a distroseries."""
+
+    def get(distroseries):
+        """Retrieve the initialization job for a distroseries, if any.
+
+        :return: `None` or an `IInitializeDistroSeriesJob`.
         """
 
 
-class ISyncPackageJobSource(IJobSource):
-    """An interface for acquiring IISyncPackageJobs."""
-
-    def create(source_archive, target_archive, distroseries, pocket,
-        source_package_name, version, include_binaries):
-        """Create a new sync package job."""
-
-    def getActiveJobs(archive):
-        """Retrieve all active sync jobs for an archive."""
-
-
-class IInitialiseDistroSeriesJob(IRunnableJob):
+class IInitializeDistroSeriesJob(IRunnableJob):
     """A Job that performs actions on a distribution."""
-
-
-class ISyncPackageJob(IRunnableJob):
-    """A Job that synchronizes packages."""
-
-    pocket = Int(
-            title=_('Target package publishing pocket'), required=True,
-            readonly=True,
-            )
-
-    source_archive = Int(
-            title=_('Source Archive ID'), required=True, readonly=True,
-            )
-
-    target_archive = Int(
-            title=_('Target Archive ID'), required=True, readonly=True,
-            )
-
-    source_package_name = TextLine(
-            title=_("Source Package Name"),
-            required=True, readonly=True)
-
-    source_package_version = TextLine(
-            title=_("Source Package Version"),
-            required=True, readonly=True)
-
-    include_binaries = Bool(
-            title=_("Copy binaries"),
-            required=False, readonly=True)
-
-
-class IDistroSeriesDifferenceJob(IRunnableJob):
-        """A Job that performs actions related to DSDs."""
 
 
 class IDistroSeriesDifferenceJobSource(IJobSource):
     """An `IJob` for creating `DistroSeriesDifference`s."""
 
-    def createForPackagePublication(distroseries, sourcepackagename, pocket):
+    def createForPackagePublication(derivedseries, sourcepackagename, pocket):
         """Create jobs as appropriate for a given status publication.
 
-        :param distroseries: A `DistroSeries` that is assumed to be
-            derived from another one.
+        :param derived_series: A `DistroSeries` that is assumed to be
+            derived from `parent_series`.
         :param sourcepackagename: A `SourcePackageName` that is being
-            published in `distroseries`.
+            published in `derived_series` or `parent_series`.
         :param pocket: The `PackagePublishingPocket` for the publication.
+        :return: An iterable of `DistroSeriesDifferenceJob`.
         """
+
+    def massCreateForSeries(derived_series):
+        """Create jobs for all the publications inside the given distroseries
+            with reference to the given parent series.
+
+        :param derived_series: A `DistroSeries` that is assumed to be
+            derived from `parent_series`.
+        :return: An iterable of `DistroSeriesDifferenceJob` ids. We don't
+            return the Job themselves for performance reason.
+        """
+
+    def getPendingJobsForDifferences(derived_series, distroseriesdifferences):
+        """Find `DistroSeriesDifferenceJob`s for `DistroSeriesDifference`s.
+
+        :param derived_series: The derived `DistroSeries` that the
+            differences (and jobs) must be for.
+        :param distroseriesdifferences:
+            An iterable of `DistroSeriesDifference`s.
+        :return: A dict mapping each of `distroseriesdifferences` that has
+            pending jobs to a list of its jobs.
+        """
+
+
+class IDistroSeriesDifferenceJob(IRunnableJob):
+    """A `Job` that performs actions related to `DistroSeriesDifference`s."""

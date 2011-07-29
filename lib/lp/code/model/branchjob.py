@@ -41,6 +41,7 @@ from lazr.enum import (
 import simplejson
 from sqlobject import (
     ForeignKey,
+    SQLObjectNotFound,
     StringCol,
     )
 from storm.expr import (
@@ -54,11 +55,11 @@ from zope.interface import (
     classProvides,
     implements,
     )
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp import (
     canonical_url,
     errorlog,
@@ -102,6 +103,7 @@ from lp.codehosting.vfs import (
     get_rw_server,
     )
 from lp.registry.interfaces.productseries import IProductSeriesSet
+from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
@@ -170,6 +172,7 @@ class BranchJobType(DBEnumeratedType):
 
         This job scans a branch for new revisions.
         """)
+
 
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
@@ -250,6 +253,18 @@ class BranchJobDerived(BaseRunnableJob):
                 Job.id.is_in(Job.ready_jobs)))
         return (cls(job) for job in jobs)
 
+    @classmethod
+    def get(cls, key):
+        """Return the instance of this class whose key is supplied.
+
+        :raises: SQLObjectNotFound
+        """
+        instance = IStore(BranchJob).get(BranchJob, key)
+        if instance is None or instance.job_type != cls.class_job_type:
+            raise SQLObjectNotFound(
+                'No occurrence of %s has key %s' % (cls.__name__, key))
+        return cls(instance)
+
     def getOopsVars(self):
         """See `IRunnableJob`."""
         vars = BaseRunnableJob.getOopsVars(self)
@@ -312,6 +327,7 @@ class BranchScanJob(BranchJobDerived):
 
     classProvides(IBranchScanJobSource)
     class_job_type = BranchJobType.SCAN_BRANCH
+    memory_limit = 2 * (1024 ** 3)
     server = None
 
     @classmethod
@@ -365,7 +381,7 @@ class BranchUpgradeJob(BranchJobDerived):
         yield
         server.stop_server()
 
-    def run(self):
+    def run(self, _check_transaction=False):
         """See `IBranchUpgradeJob`."""
         # Set up the new branch structure
         upgrade_branch_path = tempfile.mkdtemp()
@@ -376,10 +392,13 @@ class BranchUpgradeJob(BranchJobDerived):
                 self.branch.getInternalBzrUrl())
             source_branch_transport.clone('.bzr').copy_tree_to_transport(
                 upgrade_transport.clone('.bzr'))
+            transaction.commit()
             upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
 
-            # Perform the upgrade.
-            upgrade(upgrade_branch.base)
+            # No transactions are open so the DB connection won't be killed.
+            with TransactionFreeOperation():
+                # Perform the upgrade.
+                upgrade(upgrade_branch.base)
 
             # Re-open the branch, since its format has changed.
             upgrade_branch = BzrBranch.open_from_transport(
@@ -941,7 +960,7 @@ class RosettaUploadJob(BranchJobDerived):
                 file_names, changed_files, uploader = iter_info
                 for upload_file_name, upload_file_content in changed_files:
                     if len(upload_file_content) == 0:
-                        continue # Skip empty files
+                        continue  # Skip empty files
                     entry = translation_import_queue.addOrUpdateEntry(
                         upload_file_name, upload_file_content,
                         True, uploader, productseries=series)

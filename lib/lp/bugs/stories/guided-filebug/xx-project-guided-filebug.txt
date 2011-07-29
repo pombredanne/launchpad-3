@@ -13,14 +13,15 @@ The ProjectGroup filebug page is like a Product's filebug page, except
 that it also asks for a Product. Only Products that are using Bugs are
 shown in the list of options.
 
-    >>> user_browser.getControl('Project').options
+    >>> user_browser.getControl('Project', index=0).options
     ['evolution']
 
 After we selected a product and entered a summary, we get presented with
 a list of possible duplicates.
 
-    >>> user_browser.getControl('Project').value = ['evolution']
-    >>> user_browser.getControl('Summary').value = 'Evolution crashes'
+    >>> user_browser.getControl('Project', index=0).value = ['evolution']
+    >>> user_browser.getControl('Summary', index=0).value = (
+    ...     'Evolution crashes')
     >>> user_browser.getControl('Continue').click()
 
     >>> print find_main_content(user_browser.contents).renderContents()
@@ -47,8 +48,9 @@ subscribe to it instead of filing a new bug. This also loosely implies a
 "me too" vote.
 
     >>> user_browser.open("http://bugs.launchpad.dev/gnome/+filebug")
-    >>> user_browser.getControl('Project').value = ['evolution']
-    >>> user_browser.getControl('Summary').value = 'Evolution crashes'
+    >>> user_browser.getControl('Project', index=0).value = ['evolution']
+    >>> user_browser.getControl('Summary', index=0).value = (
+    ...     'Evolution crashes')
     >>> user_browser.getControl('Continue').click()
 
 As before, we get a list of similar bugs to choose from, including the
@@ -84,8 +86,8 @@ different in the user agent.
 
 Submitting some distinctive details...
 
-    >>> user_browser.getControl('Project').value = ['evolution']
-    >>> user_browser.getControl('Summary').value = (
+    >>> user_browser.getControl('Project', index=0).value = ['evolution']
+    >>> user_browser.getControl('Summary', index=0).value = (
     ...     'Faznambutron dumps core unless clenching')
     >>> user_browser.getControl('Continue').click()
 
@@ -219,8 +221,7 @@ If we set up an external bug tracker for Testy Product, this will be
 reflected in the Test Group's filebug page.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 
     >>> login('admin@canonical.com')
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu

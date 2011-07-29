@@ -67,11 +67,9 @@ from canonical.launchpad.interfaces.launchpad import (
     IWebServiceApplication,
     )
 from canonical.launchpad.interfaces.oauth import (
-    ClockSkew,
     IOAuthConsumerSet,
     IOAuthSignedRequest,
-    NonceAlreadyUsed,
-    TimestampOrderingError,
+    TokenException,
     )
 import canonical.launchpad.layers
 from canonical.launchpad.webapp.authentication import (
@@ -1025,7 +1023,7 @@ class LaunchpadAccessLogger(CommonAccessLogger):
 
 
 http = wsgi.ServerType(
-    ZServerTracelogServer, # subclass of WSGIHTTPServer
+    ZServerTracelogServer,  # subclass of WSGIHTTPServer
     WSGIPublisherApplication,
     LaunchpadAccessLogger,
     8080,
@@ -1039,7 +1037,7 @@ pmhttp = wsgi.ServerType(
     True)
 
 debughttp = wsgi.ServerType(
-    ZServerTracelogServer, # subclass of WSGIHTTPServer
+    ZServerTracelogServer,  # subclass of WSGIHTTPServer
     WSGIPublisherApplication,
     LaunchpadAccessLogger,
     8082,
@@ -1047,7 +1045,7 @@ debughttp = wsgi.ServerType(
     requestFactory=DebugLayerRequestFactory)
 
 privatexmlrpc = wsgi.ServerType(
-    ZServerTracelogServer, # subclass of WSGIHTTPServer
+    ZServerTracelogServer,  # subclass of WSGIHTTPServer
     WSGIPublisherApplication,
     LaunchpadAccessLogger,
     8080,
@@ -1092,7 +1090,7 @@ class FeedsPublication(LaunchpadBrowserPublication):
         interface or redirect to some other url.
         """
         # LaunchpadImageFolder is imported here to avoid an import loop.
-        from canonical.launchpad.browser.launchpad import LaunchpadImageFolder
+        from lp.app.browser.launchpad import LaunchpadImageFolder
         result = super(FeedsPublication, self).traverseName(request, ob, name)
         if len(request.stepstogo) == 0:
             # The url has been fully traversed. Now we can check that
@@ -1208,6 +1206,14 @@ class WebServicePublication(WebServicePublicationMixin,
 
         Web service requests are authenticated using OAuth, except for the
         one made using (presumably) JavaScript on the /api override path.
+
+        Raises a variety of token errors (ClockSkew, NonceAlreadyUsed,
+        TimestampOrderingError, TokenException) which have a webservice error
+        status of Unauthorized - 401.  All of these exceptions represent
+        errors on the part of the client.
+
+        Raises Unauthorized directly in the case where the consumer is None
+        for a non-anonymous request as it may represent a server error.
         """
         # Use the regular HTTP authentication, when the request is not
         # on the API virtual host but comes through the path_override on
@@ -1235,8 +1241,7 @@ class WebServicePublication(WebServicePublicationMixin,
             anonymous_request = True
             consumer_key = request.getHeader('User-Agent', '')
             if consumer_key == '':
-                raise Unauthorized(
-                    'Anonymous requests must provide a User-Agent.')
+                consumer_key = 'anonymous client'
             consumer = consumers.getByKey(consumer_key)
 
         if consumer is None:
@@ -1251,7 +1256,7 @@ class WebServicePublication(WebServicePublicationMixin,
                 # transactions committed so that we can keep track of
                 # the OAuth nonces and prevent replay attacks.
                 if consumer_key == '' or consumer_key is None:
-                    raise Unauthorized("No consumer key specified.")
+                    raise TokenException("No consumer key specified.")
                 consumer = consumers.new(consumer_key, '')
             else:
                 # An unknown consumer can never make a non-anonymous
@@ -1271,19 +1276,16 @@ class WebServicePublication(WebServicePublicationMixin,
             return auth_utility.unauthenticatedPrincipal()
         token = consumer.getAccessToken(token_key)
         if token is None:
-            raise Unauthorized('Unknown access token (%s).' % token_key)
+            raise TokenException('Unknown access token (%s).' % token_key)
         nonce = form.get('oauth_nonce')
         timestamp = form.get('oauth_timestamp')
-        try:
-            token.checkNonceAndTimestamp(nonce, timestamp)
-        except (NonceAlreadyUsed, TimestampOrderingError, ClockSkew), e:
-            raise Unauthorized('Invalid nonce/timestamp: %s' % e)
+        token.checkNonceAndTimestamp(nonce, timestamp)
         if token.permission == OAuthPermission.UNAUTHORIZED:
-            raise Unauthorized('Unauthorized token (%s).' % token.key)
+            raise TokenException('Unauthorized token (%s).' % token.key)
         elif token.is_expired:
-            raise Unauthorized('Expired token (%s).' % token.key)
+            raise TokenException('Expired token (%s).' % token.key)
         elif not check_oauth_signature(request, consumer, token):
-            raise Unauthorized('Invalid signature.')
+            raise TokenException('Invalid signature.')
         else:
             # Everything is fine, let's return the principal.
             pass
@@ -1530,7 +1532,8 @@ def register_launchpad_request_publication_factories():
     # len(factories)+1.
     for priority, factory in enumerate(factories):
         publisher_factory_registry.register(
-            "*", "*", factory.vhost_name, len(factories)-priority+1, factory)
+            "*", "*", factory.vhost_name, len(factories) - priority + 1,
+            factory)
 
     # Register a catch-all "not found" handler at the lowest priority.
     publisher_factory_registry.register(

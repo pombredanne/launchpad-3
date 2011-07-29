@@ -38,7 +38,7 @@ Passing only suite, request retry on all failed states:
   0
   >>> print stderr
   DEBUG   Intitialising connection.
-  INFO    Initialising Build Mass-Retry for 'The Hoary Hedgehog Release/RELEASE'
+  INFO    Initializing Build Mass-Retry for 'The Hoary Hedgehog Release/RELEASE'
   INFO    Processing builds in 'Failed to build'
   INFO    Processing builds in 'Dependency wait'
   INFO    Retrying i386 build of libstdc++ b8p in ubuntu hoary RELEASE (12)
@@ -54,7 +54,7 @@ and set it to SUPERSEDED.
   >>> from lp.soyuz.interfaces.binarypackagebuild import (
   ...     IBinaryPackageBuildSet)
   >>> from lp.soyuz.enums import PackagePublishingStatus
-  >>> build = getUtility(IBinaryPackageBuildSet).getByBuildID(12)
+  >>> build = getUtility(IBinaryPackageBuildSet).getByID(12)
   >>> pub = removeSecurityProxy(build.current_source_publication)
 
 Let's mark the build from the previous run superseded.
@@ -75,7 +75,7 @@ A new run doesn't pick it up.
   0
   >>> print stderr
   DEBUG   Intitialising connection.
-  INFO    Initialising Build Mass-Retry for 'The Hoary Hedgehog Release/RELEASE'
+  INFO    Initializing Build Mass-Retry for 'The Hoary Hedgehog Release/RELEASE'
   INFO    Processing builds in 'Failed to build'
   INFO    Processing builds in 'Dependency wait'
   DEBUG   Skipping superseded i386 build of libstdc++ b8p in ubuntu hoary RELEASE (12)
@@ -99,7 +99,7 @@ nothing is done:
   0
   >>> print stderr
   DEBUG   Intitialising connection.
-  INFO    Initialising Build Mass-Retry for 'The Hoary Hedgehog Release for hppa (hppa)/RELEASE'
+  INFO    Initializing Build Mass-Retry for 'The Hoary Hedgehog Release for hppa (hppa)/RELEASE'
   INFO    Processing builds in 'Failed to build'
   INFO    Processing builds in 'Dependency wait'
   INFO    Processing builds in 'Chroot problem'
@@ -119,7 +119,7 @@ Selecting only a specific failed state:
   0
   >>> print stderr
   DEBUG   Intitialising connection.
-  INFO    Initialising Build Mass-Retry for 'The Hoary Hedgehog Release/RELEASE'
+  INFO    Initializing Build Mass-Retry for 'The Hoary Hedgehog Release/RELEASE'
   INFO    Processing builds in 'Failed to build'
   INFO    Success.
   INFO    Dry-run.

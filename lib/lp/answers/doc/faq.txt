@@ -199,7 +199,7 @@ Answer contacts can also edit FAQs:
     >>> from lp.services.worlddata.interfaces.language import ILanguageSet
     >>> no_priv = getUtility(ILaunchBag).user
     >>> no_priv.addLanguage(getUtility(ILanguageSet)['en'])
-    >>> firefox.addAnswerContact(no_priv)
+    >>> firefox.addAnswerContact(no_priv, no_priv)
     True
 
     >>> from canonical.launchpad.webapp.authorization import clear_cache
@@ -281,9 +281,6 @@ answered by the FAQ:
 
     # Flush the faq attribute change.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(fnord_question)
-
     >>> for question in firefox_faq.related_questions:
     ...     print question.title
     Are there Fnords on the web?
@@ -301,7 +298,6 @@ A FAQ can be linked to multiple question:
     >>> print other_question.status.title
     Answered
 
-    >>> syncUpdate(other_question)
     >>> for question in firefox_faq.related_questions:
     ...     print question.title
     Firefox loses focus and gets stuck
@@ -317,7 +313,6 @@ again:
 
 After this, only the original question will remain linked to the FAQ.
 
-    >>> syncUpdate(other_question)
     >>> for question in firefox_faq.related_questions:
     ...     print question.title
     Are there Fnords on the web?
@@ -343,7 +338,7 @@ And it is not allowed to call linkFAQ() when the FAQ is already linked:
     ...     no_priv, firefox_faq, 'See the FAQ.')
     Traceback (most recent call last):
       ...
-    AssertionError: cannot call linkFAQ() with already linked FAQ
+    FAQTargetError: Cannot call linkFAQ() with already linked FAQ.
 
 A FAQ can be linked to a 'solved' question, in which case, the status is
 not changed.

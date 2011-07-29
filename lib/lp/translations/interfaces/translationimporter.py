@@ -46,7 +46,7 @@ class TranslationFormatBaseError(TranslationImportExportBaseException):
     """Base exception for errors in translation format files."""
 
     def __init__(self, filename=None, line_number=None, message=None):
-        """Initialise the exception information.
+        """Initialize the exception information.
 
         :param filename: The file name that is being parsed.
         :param line_number: The line number where the error was found.

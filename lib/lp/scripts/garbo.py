@@ -56,6 +56,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
+from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugwatch import BugWatchActivity
 from lp.bugs.scripts.checkwatches.scheduler import (
@@ -118,7 +119,7 @@ class BulkPruner(TunableLoop):
     target_table_key = 'id'
 
     # SQL type of the target_table_key. May be overridden.
-    target_table_key_type = 'integer'
+    target_table_key_type = 'id integer'
 
     # An SQL query returning a list of ids to remove from target_table.
     # The query must return a single column named 'id' and should not
@@ -163,9 +164,9 @@ class BulkPruner(TunableLoop):
         """See `ITunableLoop`."""
         result = self.store.execute("""
             DELETE FROM %s
-            WHERE %s IN (
-                SELECT id FROM
-                cursor_fetch('%s', %d) AS f(id %s))
+            WHERE (%s) IN (
+                SELECT * FROM
+                cursor_fetch('%s', %d) AS f(%s))
             """
             % (
                 self.target_table_name, self.target_table_key,
@@ -215,7 +216,7 @@ class SessionPruner(BulkPruner):
 
     target_table_class = SessionData
     target_table_key = 'client_id'
-    target_table_key_type = 'text'
+    target_table_key_type = 'id text'
 
 
 class AntiqueSessionPruner(SessionPruner):
@@ -277,9 +278,13 @@ class OAuthNoncePruner(BulkPruner):
 
     We remove all OAuthNonce records older than 1 day.
     """
+    target_table_key = 'access_token, request_timestamp, nonce'
+    target_table_key_type = (
+        'access_token integer, request_timestamp timestamp without time zone,'
+        ' nonce text')
     target_table_class = OAuthNonce
     ids_to_prune_query = """
-        SELECT id FROM OAuthNonce
+        SELECT access_token, request_timestamp, nonce FROM OAuthNonce
         WHERE request_timestamp
             < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - CAST('1 day' AS interval)
         """
@@ -679,6 +684,36 @@ class BranchJobPruner(BulkPruner):
         """
 
 
+class MirrorBugMessageOwner(TunableLoop):
+    """Mirror BugMessage.owner from Message.
+
+    Only needed until they are all set, after that triggers will maintain it.
+    """
+
+    # Test migration did 3M in 2 hours, so 5000 is ~ 10 seconds - and thats the
+    # max we want to hold a DB lock open for.
+    minimum_chunk_size = 1000
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(MirrorBugMessageOwner, self).__init__(log, abort_time)
+        self.store = IMasterStore(BugMessage)
+        self.isDone = IMasterStore(BugMessage).find(
+            BugMessage, BugMessage.ownerID==None).is_empty
+
+    def __call__(self, chunk_size):
+        """See `ITunableLoop`."""
+        transaction.begin()
+        updated = self.store.execute("""update bugmessage set
+            owner=message.owner from message where
+            bugmessage.message=message.id and bugmessage.id in
+                (select id from bugmessage where owner is NULL limit %s);"""
+            % int(chunk_size)
+            ).rowcount
+        self.log.debug("Updated %s bugmessages." % updated)
+        transaction.commit()
+
+
 class BugHeatUpdater(TunableLoop):
     """A `TunableLoop` for bug heat calculations."""
 
@@ -1041,6 +1076,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
 class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-hourly'
     tunable_loops = [
+        MirrorBugMessageOwner,
         OAuthNoncePruner,
         OpenIDConsumerNoncePruner,
         OpenIDConsumerAssociationPruner,

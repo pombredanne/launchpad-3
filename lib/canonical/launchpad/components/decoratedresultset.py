@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -37,9 +37,14 @@ class DecoratedResultSet(object):
     def __init__(self, result_set, result_decorator=None, pre_iter_hook=None,
                  slice_info=False):
         """
+        Wrap `result_set` in a decorator.
+
+        The decorator will act as a result set where a result row `self[x]`
+        is really `result_decorator(result_set[x])`.
+
         :param result_set: The original result set to be decorated.
-        :param result_decorator: The method with which individual results
-            will be passed through before being returned.
+        :param result_decorator: A transformation function that individual
+            results will be passed through.
         :param pre_iter_hook: The method to be called (with the 'result_set')
             immediately before iteration starts. The return value of the hook
             is ignored.
