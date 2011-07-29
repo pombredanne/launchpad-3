@@ -171,6 +171,7 @@ import threading
 
 
 __all__ = [
+    'FeatureControllerContext',
     'get_relevant_feature_controller',
     'getFeatureFlag',
     'install_feature_controller',
