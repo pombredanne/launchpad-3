@@ -32,6 +32,7 @@ from lp.registry.interfaces.distroseriesdifference import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseriesdifference import (
+    get_comment_with_status_change,
     most_recent_comments,
     most_recent_publications,
     )
@@ -463,7 +464,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             ds_diff.derived_series.main_archive)
 
         with person_logged_in(admin):
-            ds_diff.blacklist()
+            ds_diff.blacklist(admin)
 
         self.assertEqual(
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
@@ -476,7 +477,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             ds_diff.derived_series.main_archive)
 
         with person_logged_in(admin):
-            ds_diff.blacklist(all=True)
+            ds_diff.blacklist(admin, all=True)
 
         self.assertEqual(
             DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS,
@@ -490,7 +491,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             ds_diff.derived_series.main_archive)
 
         with person_logged_in(admin):
-            ds_diff.unblacklist()
+            ds_diff.unblacklist(admin)
 
         self.assertEqual(
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
@@ -513,11 +514,64 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         admin = self.factory.makeArchiveAdmin(
             ds_diff.derived_series.main_archive)
         with person_logged_in(admin):
-            ds_diff.unblacklist()
+            ds_diff.unblacklist(admin)
 
         self.assertEqual(
             DistroSeriesDifferenceStatus.RESOLVED,
             ds_diff.status)
+
+    def test_get_comment_with_status_change(self):
+        # Test the new comment string created to describe a status
+        # change.
+        old_status = DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS
+        new_status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        new_comment = get_comment_with_status_change(
+            old_status, new_status, 'simple comment')
+
+        self.assertEqual(
+            'Ignored: %s => %s\n\nsimple comment' % (
+                old_status.title, new_status.title),
+            new_comment)
+
+    def assertDSDComment(self, ds_diff, dsd_comment, comment_string):
+        self.assertEqual(
+            dsd_comment,
+            ds_diff.latest_comment)
+        self.assertEqual(
+            comment_string,
+            ds_diff.latest_comment.message.text_contents)
+
+    def test_unblacklist_creates_comment(self):
+        old_status = DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            status=old_status,
+            source_package_name_str="foo")
+        admin = self.factory.makeArchiveAdmin(
+            ds_diff.derived_series.main_archive)
+        with person_logged_in(admin):
+            dsd_comment = ds_diff.unblacklist(
+                admin, "Ok now")
+        new_status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        expected_comment = 'Ignored: %s => %s\n\nOk now' % (
+                old_status.title, new_status.title)
+
+        self.assertDSDComment(ds_diff, dsd_comment, expected_comment)
+
+    def test_blacklist_creates_comment(self):
+        old_status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            status=old_status,
+            source_package_name_str="foo")
+        admin = self.factory.makeArchiveAdmin(
+            ds_diff.derived_series.main_archive)
+        with person_logged_in(admin):
+            dsd_comment = ds_diff.blacklist(
+                admin, True, "Wait until version 2.1")
+        new_status = DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS
+        expected_comment = 'Ignored: %s => %s\n\nWait until version 2.1' % (
+                old_status.title, new_status.title)
+
+        self.assertDSDComment(ds_diff, dsd_comment, expected_comment)
 
     def test_source_package_name_unique_for_derived_series(self):
         # We cannot create two differences for the same derived series
