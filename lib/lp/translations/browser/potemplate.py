@@ -880,6 +880,18 @@ class BaseSeriesTemplatesView(LaunchpadView):
         self.user_is_logged_in = (self.user is not None)
 
     def iter_data(self):
+        # If this is not a distroseries, then the query is much simpler.
+        if not self.is_distroseries:
+            potemplateset = getUtility(IPOTemplateSet)
+            # The "shape" of the data returned by POTemplateSubset isn't quite
+            # right so we have to run it through zip first.
+            return zip(potemplateset.getSubset(
+                productseries=self.productseries,
+                distroseries=self.distroseries,
+                ordered_by_names=True))
+
+        # Otherwise we have to do more work, primarily for the "sharing"
+        # column.
         OtherTemplate = ClassAlias(POTemplate)
         join = (self.context.getTemplatesCollection()
             .joinOuter(Packaging, And(
@@ -899,8 +911,6 @@ class BaseSeriesTemplatesView(LaunchpadView):
             .joinInner(SourcePackageName,
                 SourcePackageName.id == POTemplate.sourcepackagenameID))
 
-        # We query for SourcePackageName so it will be cached, so there is no
-        # need to include it in the results.
         return join.select(POTemplate, Packaging, ProductSeries, Product,
             OtherTemplate, SourcePackageName)
 
