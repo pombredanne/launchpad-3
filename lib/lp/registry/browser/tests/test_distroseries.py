@@ -1386,9 +1386,16 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertContentEqual([dsd], view.getUpgrades())
 
     def enableDerivedSeriesSyncFeature(self):
+        """Enable the feature flag for derived-series sync."""
         self.useFixture(
             FeatureFixture(
                 {u'soyuz.derived_series_sync.enabled': u'on'}))
+
+    def enableDerivedSeriesUpgradeFeature(self):
+        """Enable the feature flag for derived-series upgrade."""
+        self.useFixture(
+            FeatureFixture(
+                {u'soyuz.derived_series_upgrade.enabled': u'on'}))
 
     @with_celebrity_logged_in("admin")
     def test_upgrades_offered_only_with_feature_flag(self):
@@ -1397,13 +1404,13 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         view = self.makeView()
         self.makePackageUpgrade(view.context)
         self.assertFalse(view.canUpgrade())
-        self.enableDerivedSeriesSyncFeature()
+        self.enableDerivedSeriesUpgradeFeature()
         self.assertTrue(view.canUpgrade())
 
     def test_upgrades_are_offered_if_appropriate(self):
         # The "Upgrade Packages" button will only be shown to privileged
         # users.
-        self.enableDerivedSeriesSyncFeature()
+        self.enableDerivedSeriesUpgradeFeature()
         dsd = self.makePackageUpgrade()
         view = self.makeView(dsd.derived_series)
         with celebrity_logged_in("admin"):
@@ -1417,7 +1424,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
     def test_upgrades_offered_only_if_available(self):
         # If there are no upgrades, the "Upgrade Packages" button won't
         # be shown.
-        self.enableDerivedSeriesSyncFeature()
+        self.enableDerivedSeriesUpgradeFeature()
         view = self.makeView()
         self.assertFalse(view.canUpgrade())
         self.makePackageUpgrade(view.context)
@@ -1428,7 +1435,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         # There won't be an "Upgrade Packages" button once feature
         # freeze has occurred.  Mass updates would not make sense after
         # that point.
-        self.enableDerivedSeriesSyncFeature()
+        self.enableDerivedSeriesUpgradeFeature()
         upgradeable = {}
         for status in SeriesStatus.items:
             dsd = self.makePackageUpgrade()

@@ -1189,7 +1189,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
 
     def canUpgrade(self, action=None):
         """Should the form offer a packages upgrade?"""
-        if getFeatureFlag("soyuz.derived_series_sync.enabled") is None:
+        if getFeatureFlag("soyuz.derived_series_upgrade.enabled") is None:
             return False
         elif self.context.status not in UPGRADABLE_SERIES_STATUSES:
             # A feature freeze precludes blanket updates.
