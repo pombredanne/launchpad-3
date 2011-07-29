@@ -1054,6 +1054,7 @@ class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         OAuthNoncePruner,
         OpenIDConsumerNoncePruner,
         OpenIDConsumerAssociationPruner,
+        AntiqueSessionPruner,
         ]
     experimental_tunable_loops = []
 
@@ -1072,7 +1073,6 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     tunable_loops = [
         RevisionCachePruner,
         BugWatchScheduler,
-        AntiqueSessionPruner,
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
