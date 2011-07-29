@@ -6,6 +6,9 @@
 
 <div class="portlet" id="subscribers">
   <h2>Subscribers</h2>
+  <div id="current_user_subscription" tal:define="menu context/menu:answers">
+    <div tal:content="structure menu/subscription/render" />
+  </div>
   <div tal:define="menu context/menu:answers">
     <div tal:content="structure menu/addsubscriber/render" />
   </div>

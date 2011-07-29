@@ -24,16 +24,7 @@
             LP.cache.comment_context = LP.cache.context;
             Y.lp.comments.hide.setup_hide_controls();
 
-            var question = { self_link: LP.cache.context.self_link,
-                        web_link: LP.cache.context.web_link };
-            var sl = new Y.lp.answers.subscribers.createQuestionSubscribersLoader({
-                container_box: '#other-question-subscribers',
-                question: question,
-                subscribers_details_view:
-                    '/+portlet-subscribers-details',
-                subscribe_someone_else_link: '.menu-link-addsubscriber'
-            });
-
+            new Y.lp.answers.subscribers.createQuestionSubscribersLoader();
         });
       });
     </script>

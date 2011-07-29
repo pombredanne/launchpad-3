@@ -41,9 +41,8 @@ class QuestionPortletSubscribersWithDetails(LaunchpadView):
         details = list(question.getDirectSubscribersWithDetails())
         for person, subscription in details:
             can_edit = subscription.canBeUnsubscribedByUser(self.user)
-            if person == self.user or (person.private and not can_edit):
-                # Skip the current user viewing the page,
-                # and private teams user is not a member of.
+            if person.private and not can_edit:
+                # Skip private teams user is not a member of.
                 continue
 
             subscriber = {
