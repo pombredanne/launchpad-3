@@ -12,7 +12,8 @@ __all__ = [
     'BugCommentView',
     'BugCommentXHTMLRepresentation',
     'build_comments_from_chunks',
-    'group_comments_with_activity', ]
+    'group_comments_with_activity',
+    ]
 
 from datetime import (
     datetime,
