@@ -1863,7 +1863,8 @@ BugMessage""" % sqlvalues(self.id))
             # from having been a duplicate. We also update the bug that
             # was previously duplicated.
             self.updateHeat(affected_targets)
-            current_duplicateof.updateHeat(affected_targets)
+            if current_duplicateof is not None:
+                current_duplicateof.updateHeat(affected_targets)
         return affected_targets
 
     def markAsDuplicate(self, duplicate_of):

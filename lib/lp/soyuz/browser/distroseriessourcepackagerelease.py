@@ -10,6 +10,7 @@ __all__ = [
 
 from canonical.launchpad.webapp import (
     ApplicationMenu,
+    LaunchpadView,
     Navigation,
     stepthrough,
     )
@@ -49,7 +50,7 @@ class DistroSeriesSourcePackageReleaseNavigation(Navigation):
         return None
 
 
-class DistroSeriesSourcePackageReleaseView:
+class DistroSeriesSourcePackageReleaseView(LaunchpadView):
 
     def __init__(self, context, request):
         self.context = context
