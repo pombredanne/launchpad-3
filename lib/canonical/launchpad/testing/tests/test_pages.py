@@ -4,6 +4,7 @@
 """Test that creating page test stories from files and directories work."""
 __metaclass__ = type
 
+from operator import methodcaller
 import os
 import shutil
 import tempfile
@@ -29,10 +30,7 @@ class TestMakeStoryTest(unittest.TestCase):
         shutil.rmtree(self.tempdir)
 
     def test_dir_construction_and_trivial_running(self):
-        test_filename = os.path.join(self.tempdir, '10-foo.txt')
-        test_file = open(test_filename, 'wt')
-        test_file.close()
-        test_filename = os.path.join(self.tempdir, '20-bar.txt')
+        test_filename = os.path.join(self.tempdir, 'xx-foo.txt')
         test_file = open(test_filename, 'wt')
         test_file.close()
         test_filename = os.path.join(self.tempdir, 'xx-bar.txt')
@@ -42,22 +40,8 @@ class TestMakeStoryTest(unittest.TestCase):
         # module's path.
         suite = PageTestSuite(os.path.basename(self.tempdir))
         self.failUnless(isinstance(suite, unittest.TestSuite))
-        bar_test, story = iter_suite_tests(suite)
+        tests = list(iter_suite_tests(suite))
 
-        # The unnumbered file appears as an independent test.
-        self.assertEqual(os.path.basename(bar_test.id()), 'xx-bar.txt')
-
-        # The two numbered tests become a story, which appears as a
-        # single test case rather than a test suite.
-        self.failIf(isinstance(story, unittest.TestSuite))
-        self.failUnless(isinstance(story, unittest.TestCase))
-        result = unittest.TestResult()
-        story.run(result)
-        self.assertEqual(2, result.testsRun)
-        self.assertEqual([], result.failures)
-        self.assertEqual([], result.errors)
-
-
-def test_suite():
-    suite = unittest.TestLoader().loadTestsFromName(__name__)
-    return suite
+        # Each unnumbered file appears as an independent test.
+        ids = set(map(os.path.basename, map(methodcaller('id'), tests)))
+        self.assertEqual(set(['xx-bar.txt', 'xx-foo.txt']), ids)

@@ -65,12 +65,12 @@ from canonical.launchpad import helpers
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -243,6 +243,17 @@ class POTemplate(SQLBase, RosettaStats):
     def clearPOFileCache(self):
         """See `IPOTemplate`."""
         self._cached_pofiles_by_language = None
+
+    def _removeFromSuggestivePOTemplatesCache(self):
+        """One level of indirection to make testing easier."""
+        getUtility(
+            IPOTemplateSet).removeFromSuggestivePOTemplatesCache(self)
+
+    def setActive(self, active):
+        """See `IPOTemplate`."""
+        if not active and active != self.iscurrent:
+            self._removeFromSuggestivePOTemplatesCache()
+        self.iscurrent = active
 
     @property
     def uses_english_msgids(self):
@@ -1374,6 +1385,13 @@ class POTemplateSet:
         """See `IPOTemplateSet`."""
         return IMasterStore(POTemplate).execute(
             "DELETE FROM SuggestivePOTemplate").rowcount
+
+    def removeFromSuggestivePOTemplatesCache(self, potemplate):
+        """See `IPOTemplateSet`."""
+        rowcount = IMasterStore(POTemplate).execute(
+            "DELETE FROM SuggestivePOTemplate "
+            "WHERE potemplate = %s" % sqlvalues(potemplate)).rowcount
+        return rowcount == 1
 
     def populateSuggestivePOTemplatesCache(self):
         """See `IPOTemplateSet`."""

@@ -388,7 +388,6 @@ And this is for a person:
 >>> check("/~name16/+related-software")
 >>> check("/~name16/+editsshkeys", auth=True)
 >>> check("/~name16/+editpgpkeys", auth=True)
->>> check("/~name16/+editwikinames", auth=True)
 >>> check("/~name16/+editjabberids", auth=True)
 >>> check("/~name16/+codesofconduct", auth=True)
 >>> check("/~name16/+edithomepage", auth=True)
@@ -445,7 +444,6 @@ Check redirects of Unicode URLs works
 Icing resources.
 
 >>> from lp.app.versioninfo import revno
->>> check("/+icing/lazr/build/lazr.js")
 >>> check("/+icing-contrib/rev%s/JSONScriptRequest.js" % revno)
 >>> check("/+icing-contrib/rev%s/json2.js" % revno)
 

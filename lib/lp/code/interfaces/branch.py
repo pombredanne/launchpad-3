@@ -26,6 +26,7 @@ __all__ = [
     ]
 
 from cgi import escape
+import httplib
 import re
 
 from lazr.restful.declarations import (
@@ -69,9 +70,9 @@ from zope.schema import (
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.launchpad.webapp.menu import structured
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
 from lp.code.bzr import (
     BranchFormat,
@@ -109,7 +110,7 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.MATURE)
 
 
-@error_status(400)
+@error_status(httplib.BAD_REQUEST)
 class WrongNumberOfReviewTypeArguments(ValueError):
     """Raised in the webservice API if `reviewers` and `review_types`
     do not have equal length.
@@ -1426,7 +1427,7 @@ def user_has_special_branch_access(user):
     if user is None:
         return False
     celebs = getUtility(ILaunchpadCelebrities)
-    return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)
+    return user.inTeam(celebs.admin)
 
 
 def get_db_branch_info(stacked_on_url, last_revision_id, control_string,

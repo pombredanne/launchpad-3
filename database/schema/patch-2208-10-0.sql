@@ -3,7 +3,7 @@
 
 SET client_min_messages=ERROR;
 
--- The `InitialiseDistroSeriesJob` table captures the data required for an ifp job.
+-- The `InitializeDistroSeriesJob` table captures the data required for an ifp job.
 
 CREATE TABLE DistributionJob (
     id serial PRIMARY KEY,

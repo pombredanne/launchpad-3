@@ -1,11 +1,11 @@
 <fieldset id="related-branches"
               xmlns:tal="http://xml.zope.org/namespaces/tal"
-              class="collapsible collapsed" style="width: 60em"
+              class="collapsible" style="width: 60em"
               tal:define="seriesBranches view/related_series_branch_info;
                           packageBranches view/related_package_branch_info"
               tal:condition="python: seriesBranches or packageBranches">
-  <legend>Related Branches</legend>
-  <div class="extra-options">
+  <legend>Related branches</legend>
+  <div class="extra-options unseen">
 
     <div tal:condition="packageBranches" id="related-package-branches">
       <h2>Source package branches</h2>

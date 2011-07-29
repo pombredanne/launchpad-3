@@ -4,14 +4,15 @@
 __metaclass__ = type
 
 import os.path
+
 import transaction
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.services.tarfile_helpers import LaunchpadWriteTarFile
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
@@ -100,43 +101,43 @@ class TestCanSetStatusBase:
         # The owner (maintainer) of the product gets to set Blocked as well.
         owner = self.productseries.product.owner
         self._assertCanSetStatus(owner, self.entry,
-            #  A      B     D     F      I     NI     NR
-            [False, True, True, False, False, False, True])
+            #  A     B     D     F      I     NI    NR
+            [True, True, True, False, False, True, True])
 
     def test_canSetStatus_owner_and_uploader(self):
         # Corner case: Nothing changes if the maintainer is also the uploader.
         self.productseries.product.owner = self.uploaderperson
         self._assertCanSetStatus(self.uploaderperson, self.entry,
-            #  A      B     D     F      I     NI     NR
-            [False, True, True, False, False, False, True])
+            #  A     B     D     F      I     NI    NR
+            [True, True, True, False, False, True, True])
 
     def test_canSetStatus_driver(self):
         # The driver gets the same permissions as the maintainer.
         driver = self.productseries.driver
         self._assertCanSetStatus(driver, self.entry,
-            #  A      B     D     F      I     NI     NR
-            [False, True, True, False, False, False, True])
+            #  A     B     D     F      I     NI    NR
+            [True, True, True, False, False, True, True])
 
     def test_canSetStatus_driver_and_uploader(self):
         # Corner case: Nothing changes if the driver is also the uploader.
         self.productseries.driver = self.uploaderperson
         self._assertCanSetStatus(self.uploaderperson, self.entry,
-            #  A      B     D     F      I     NI     NR
-            [False, True, True, False, False, False, True])
+            #  A     B     D     F      I     NI    NR
+            [True, True, True, False, False, True, True])
 
     def test_canSetStatus_product_driver(self):
         # The driver of the product, too.
         driver = self.productseries.product.driver
         self._assertCanSetStatus(driver, self.entry,
-            #  A      B     D     F      I     NI     NR
-            [False, True, True, False, False, False, True])
+            #  A      B     D     F     I     NI    NR
+            [True, True, True, False, False, True, True])
 
     def test_canSetStatus_product_driver_and_uploader(self):
         # Corner case: Nothing changes if the driver is also the uploader.
         self.productseries.product.driver = self.uploaderperson
         self._assertCanSetStatus(self.uploaderperson, self.entry,
-            #  A      B     D     F      I     NI     NR
-            [False, True, True, False, False, False, True])
+            #  A      B     D     F     I     NI    NR
+            [True, True, True, False, False, True, True])
 
     def _setUpUbuntu(self):
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -344,7 +345,7 @@ class TestProductOwnerEntryImporter(TestCaseWithFactory):
         # queue, the entry importer is not updated because that would
         # cause an non-unique key for the entry.
         with person_logged_in(self.new_owner):
-            new_entry = self.import_queue.addOrUpdateEntry(
+            self.import_queue.addOrUpdateEntry(
                 u'po/sr.po', 'foo', True, self.new_owner,
                 productseries=self.product.series[0])
         with person_logged_in(self.old_owner):

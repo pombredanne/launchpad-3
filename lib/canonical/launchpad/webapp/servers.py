@@ -1090,7 +1090,7 @@ class FeedsPublication(LaunchpadBrowserPublication):
         interface or redirect to some other url.
         """
         # LaunchpadImageFolder is imported here to avoid an import loop.
-        from canonical.launchpad.browser.launchpad import LaunchpadImageFolder
+        from lp.app.browser.launchpad import LaunchpadImageFolder
         result = super(FeedsPublication, self).traverseName(request, ob, name)
         if len(request.stepstogo) == 0:
             # The url has been fully traversed. Now we can check that

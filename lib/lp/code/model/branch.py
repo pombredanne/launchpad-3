@@ -63,13 +63,11 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities,
-    IPrivacy,
-    )
+from canonical.launchpad.interfaces.launchpad import IPrivacy
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp import urlappend
 from lp.app.errors import UserCannotUnsubscribePerson
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams,
     IBugTaskSet,
@@ -423,11 +421,8 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         target = BranchMergeProposalGetter.activeProposalsForBranches(
             self, target_branch)
-        if target.count() > 0:
-            raise BranchMergeProposalExists(
-                'There is already a branch merge proposal registered for '
-                'branch %s to land on %s that is still active.'
-                % (self.displayname, target_branch.displayname))
+        for existing_proposal in target:
+            raise BranchMergeProposalExists(existing_proposal)
 
         if date_created is None:
             date_created = UTC_NOW
@@ -1061,12 +1056,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def destroySelfBreakReferences(self):
         """See `IBranch`."""
-        try:
-            return self.destroySelf(break_references=True)
-        except CannotDeleteBranch, e:
-            # Reraise and expose exception here so that the webservice_error
-            # is propogated.
-            raise CannotDeleteBranch(e.message)
+        return self.destroySelf(break_references=True)
 
     def _deleteBranchSubscriptions(self):
         """Delete subscriptions for this branch prior to deleting branch."""
@@ -1291,13 +1281,15 @@ class ClearOfficialPackageBranch(DeletionOperation):
     """Deletion operation that clears an official package branch."""
 
     def __init__(self, sspb):
+        # The affected object is really the sourcepackage.
         DeletionOperation.__init__(
-            self, sspb, _('Branch is officially linked to a source package.'))
+            self, sspb.sourcepackage,
+            _('Branch is officially linked to a source package.'))
+        # But we'll need the pocket info.
+        self.pocket = sspb.pocket
 
     def __call__(self):
-        package = self.affected_object.sourcepackage
-        pocket = self.affected_object.pocket
-        package.setBranch(pocket, None, None)
+        self.affected_object.setBranch(self.pocket, None, None)
 
 
 class DeleteCodeImport(DeletionOperation):

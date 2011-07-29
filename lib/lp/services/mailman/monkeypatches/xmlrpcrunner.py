@@ -39,6 +39,7 @@ from Mailman.Queue.sbcache import get_switchboard
 # XXX sinzui 2008-08-15 bug=258423:
 # We should be importing from lazr.errorlog.
 from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+from lp.services.xmlrpc import Transport
 
 
 COMMASPACE = ', '
@@ -52,7 +53,8 @@ attrmap = {
 
 
 def get_mailing_list_api_proxy():
-    return xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
+    return xmlrpclib.ServerProxy(
+        mm_cfg.XMLRPC_URL, transport=Transport(timeout=mm_cfg.XMLRPC_TIMEOUT))
 
 
 class MailmanErrorUtility(ErrorReportingUtility):
@@ -313,20 +315,17 @@ class XMLRPCRunner(Runner):
                 # See if the case is changing.
                 current_address = mlist.getMemberCPAddress(address)
                 future_address = key_to_case_preserved[address]
-                # pylint: disable-msg=W0331
-                if current_address <> future_address:
+                if current_address != future_address:
                     mlist.changeMemberAddress(address, future_address)
                     found_updates.append('%s -> %s' %
                                          (address, future_address))
                 # flags are ignored for now.
                 realname, flags, status = member_map[future_address]
-                # pylint: disable-msg=W0331
-                if realname <> mlist.getMemberName(address):
+                if realname != mlist.getMemberName(address):
                     mlist.setMemberName(address, realname)
                     found_updates.append('%s new name: %s' %
                                          (address, realname))
-                # pylint: disable-msg=W0331
-                if status <> mlist.getDeliveryStatus(address):
+                if status != mlist.getDeliveryStatus(address):
                     mlist.setDeliveryStatus(address, status)
                     found_updates.append('%s new status: %s' %
                                          (address, status))
@@ -341,10 +340,9 @@ class XMLRPCRunner(Runner):
     def _get_subscriptions(self):
         """Get the latest subscription information."""
         # First, calculate the names of the active mailing lists.
-        # pylint: disable-msg=W0331
         lists = sorted(list_name
                        for list_name in Utils.list_names()
-                       if list_name <> mm_cfg.MAILMAN_SITE_LIST)
+                       if list_name != mm_cfg.MAILMAN_SITE_LIST)
         # Batch the subscription requests in order to reduce the possibility
         # of timeouts in the XMLRPC server.  Note that we cannot eliminate
         # timeouts, which will cause an entire batch to fail.  To reduce the

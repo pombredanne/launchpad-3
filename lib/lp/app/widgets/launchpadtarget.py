@@ -23,7 +23,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.schema import Choice
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     IMultiLineWidgetLayout,
@@ -32,6 +31,7 @@ from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.registry.interfaces.distribution import IDistribution
@@ -48,12 +48,11 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
 
     template = ViewPageTemplateFile('templates/launchpad-target.pt')
     default_option = "package"
+    _widgets_set_up = False
 
-    def __init__(self, field, request):
-        # Shut off the pylint warning about not calling __init__()
-        # on a Mixin class.
-        # pylint: disable-msg=W0231
-        BrowserWidget.__init__(self, field, request)
+    def setUpSubWidgets(self):
+        if self._widgets_set_up:
+            return
         fields = [
             Choice(
                 __name__='product', title=u'Project',
@@ -71,6 +70,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
         for field in fields:
             setUpWidget(
                 self, field.__name__, field, IInputWidget, prefix=self.name)
+        self._widgets_set_up = True
 
     def setUpOptions(self):
         """Set up options to be rendered."""
@@ -101,6 +101,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
 
     def getInputValue(self):
         """See zope.app.form.interfaces.IInputWidget."""
+        self.setUpSubWidgets()
         form_value = self.request.form_ng.getOne(self.name)
         if form_value == 'product':
             try:
@@ -135,8 +136,9 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                 if package_name is None:
                     return distribution
                 try:
-                    source_name, binary_name = distribution.guessPackageNames(
-                        package_name.name)
+                    source_name = (
+                        distribution.guessPublishedSourcePackageName(
+                            package_name.name))
                 except NotFoundError:
                     raise LaunchpadValidationError(
                         "There is no package name '%s' published in %s"
@@ -149,6 +151,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
 
     def setRenderedValue(self, value):
         """See IWidget."""
+        self.setUpSubWidgets()
         if IProduct.providedBy(value):
             self.default_option = 'product'
             self.product_widget.setRenderedValue(value)
@@ -173,5 +176,6 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
 
     def __call__(self):
         """See zope.app.form.interfaces.IBrowserWidget."""
+        self.setUpSubWidgets()
         self.setUpOptions()
         return self.template()

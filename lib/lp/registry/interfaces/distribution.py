@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -22,16 +22,19 @@ __all__ = [
 
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
+    call_with,
     collection_default_content,
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_operation_as,
     export_read_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
     rename_parameters_as,
+    REQUEST_USER,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -53,10 +56,6 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import (
-    IHasAppointedDriver,
-    IHasDrivers,
-    )
 from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.app.errors import NameLookupFailed
 from lp.app.interfaces.headings import IRootContext
@@ -85,7 +84,11 @@ from lp.registry.interfaces.milestone import (
     IHasMilestones,
     )
 from lp.registry.interfaces.pillar import IPillar
-from lp.registry.interfaces.role import IHasOwner
+from lp.registry.interfaces.role import (
+    IHasAppointedDriver,
+    IHasDrivers,
+    IHasOwner,
+    )
 from lp.services.fields import (
     Description,
     IconImageUpload,
@@ -157,7 +160,7 @@ class IDistributionPublic(
         Summary(
             title=_("Summary"),
             description=_(
-                "A short paragraph to introduce the the goals and highlights "
+                "A short paragraph to introduce the goals and highlights "
                 "of the distribution."),
             required=True))
     homepage_content = exported(
@@ -340,6 +343,11 @@ class IDistributionPublic(
                       "on disk."),
         readonly=True, required=False)
 
+    has_published_sources = Bool(
+        title=_("Has Published Sources"),
+        description=_("True if this distribution has sources published."),
+        readonly=True, required=False)
+
     def getArchiveIDList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().
 
@@ -384,6 +392,38 @@ class IDistributionPublic(
 
         :param name_or_version: The `IDistroSeries.name` or
             `IDistroSeries.version`.
+        """
+
+    # This API is specifically for Ensemble's Principia.  It does not scale
+    # well to distributions of Ubuntu's scale, and is not intended for it.
+    # Therefore, this should probably never be exposed for a webservice
+    # version other than "devel".
+    @operation_parameters(
+        since=Datetime(
+            title=_("Time of last change"),
+            description=_(
+                "Return branches that have new tips since this timestamp."),
+            required=False))
+    @call_with(user=REQUEST_USER)
+    @export_operation_as(name="getBranchTips")
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getBranchTips(user=None, since=None):
+        """Return a list of branches which have new tips since a date.
+
+        Each branch information is a tuple of (branch_unique_name,
+        tip_revision, (official_series*)).
+
+        So for each branch in the distribution, you'll get the branch unique
+        name, the revision id of tip, and if the branch is official for some
+        series, the list of series name.
+
+        :param: user: If specified, shows the branches visible to that user.
+            if not specified, only branches visible to the anonymous user are
+            shown.
+
+        :param since: If specified, limits results to branches modified since
+            that date and time.
         """
 
     @operation_parameters(
@@ -562,14 +602,21 @@ class IDistributionPublic(
         Raises NotFoundError if it fails to find the named file.
         """
 
-    def guessPackageNames(pkgname):
-        """Try and locate source and binary package name objects that
-        are related to the provided name --  which could be either a
-        source or a binary package name. Returns a tuple of
-        (sourcepackagename, binarypackagename) based on the current
-        publishing status of these binary / source packages. Raises
-        NotFoundError if it fails to find any package published with
-        that name in the distribution.
+    def guessPublishedSourcePackageName(pkgname):
+        """Return the "published" SourcePackageName related to pkgname.
+
+        If pkgname corresponds to a source package that was published in
+        any of the distribution series, that's the SourcePackageName that is
+        returned.
+
+        If there is any official source package branch linked, then that
+        source package name is returned.
+
+        Otherwise, try to find a published binary package name and then return
+        the source package name from which it comes from.
+
+        :raises NotFoundError: when pkgname doesn't correspond to either a
+            published source or binary package name in this distribution.
         """
 
     def getAllPPAs():
@@ -712,6 +759,13 @@ class IDistributionSet(Interface):
             its keys being `IDistribution` and its values a list of
             `ISourcePackageName`.
         :return: A dict as per `IDistribution.getCurrentSourceReleases`
+        """
+
+    def getDerivedDistributions():
+        """Find derived distributions.
+
+        :return: An iterable of all derived distributions (not including
+            Ubuntu, even if it is technically derived from Debian).
         """
 
 

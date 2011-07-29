@@ -556,7 +556,7 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         self.protocolversion = '1.0'
         self.slave = BuildDSlave(config)
         self._builders = {}
-        print "Initialised"
+        print "Initialized"
 
     def registerBuilder(self, builderclass, buildertag):
         self._builders[buildertag] = builderclass

@@ -5,34 +5,32 @@
 
 __metaclass__ = type
 
-import unittest
 from datetime import (
     datetime,
     timedelta,
     )
-from pytz import utc
+import unittest
 from urlparse import urlunsplit
 
+from lazr.lifecycle.snapshot import Snapshot
+from pytz import utc
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
-
-from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.scripts.garbo import BugWatchActivityPruner
 from canonical.launchpad.webapp import urlsplit
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import (
     BugTaskImportance,
     BugTaskStatus,
@@ -53,6 +51,7 @@ from lp.bugs.model.bugwatch import (
     )
 from lp.bugs.scripts.checkwatches.scheduler import MAX_SAMPLE_SIZE
 from lp.registry.interfaces.person import IPersonSet
+from lp.scripts.garbo import BugWatchActivityPruner
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
     login_person,

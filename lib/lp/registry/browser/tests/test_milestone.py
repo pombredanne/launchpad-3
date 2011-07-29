@@ -14,9 +14,9 @@ from testtools.matchers import (
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.testing import (
     ANONYMOUS,
@@ -397,6 +397,9 @@ class TestDistributionMilestoneIndexQueryCount(TestQueryCountBase):
             bug = self.factory.makeBug(distribution=self.ubuntu)
             distrosourcepackage = self.factory.makeDistributionSourcePackage(
                 distribution=self.ubuntu)
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=self.ubuntu.currentseries,
+                sourcepackagename=distrosourcepackage.sourcepackagename)
             bug.bugtasks[0].transitionToTarget(distrosourcepackage)
             bug.bugtasks[0].transitionToMilestone(
                 self.milestone, self.owner)

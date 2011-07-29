@@ -177,6 +177,9 @@ special = {
         '../doc/soyuz-set-of-uploads.txt',
         layer=LaunchpadZopelessLayer,
         ),
+    'package-relationship.txt': LayeredDocFileSuite(
+        '../doc/package-relationship.txt',
+        stdout_logging=False, layer=None),
     'publishing.txt': LayeredDocFileSuite(
         '../doc/publishing.txt',
         setUp=setUp,

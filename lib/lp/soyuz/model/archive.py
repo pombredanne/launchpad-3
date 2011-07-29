@@ -59,16 +59,17 @@ from canonical.launchpad.components.decoratedresultset import (
     )
 from canonical.launchpad.components.tokens import (
     create_unique_token_for_table,
+    create_token,
     )
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
     LibraryFileContent,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import (
     ISlaveStore,
     IStore,
     )
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
     IStoreSelector,
@@ -76,6 +77,7 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.url import urlappend
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.name import valid_name
 from lp.archivepublisher.debversion import Version
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
@@ -87,6 +89,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.buildmaster.interfaces.packagebuild import IPackageBuildSet
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.buildmaster.model.packagebuild import PackageBuild
+from lp.registry.errors import NoSuchDistroSeries
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -99,6 +102,8 @@ from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.registry.model.teammembership import TeamParticipation
+from lp.services.database.bulk import load_related
+from lp.services.features import getFeatureFlag
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.propertycache import (
     cachedproperty,
@@ -107,11 +112,12 @@ from lp.services.propertycache import (
 from lp.soyuz.adapters.archivedependencies import expand_dependencies
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
+    archive_suffixes,
     ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
     ArchiveSubscriberStatus,
-    archive_suffixes,
+    PackageCopyPolicy,
     PackagePublishingStatus,
     PackageUploadStatus,
     )
@@ -125,14 +131,16 @@ from lp.soyuz.interfaces.archive import (
     CannotSwitchPrivacy,
     CannotUploadToPocket,
     CannotUploadToPPA,
+    ComponentNotFound,
     default_name_by_purpose,
-    DistroSeriesNotFound,
+    ForbiddenByFeatureFlag,
     FULL_COMPONENT_SUPPORT,
     IArchive,
     IArchiveSet,
     IDistributionArchive,
     InsufficientUploadRights,
     InvalidComponent,
+    InvalidExternalDependencies,
     InvalidPocketForPartnerArchive,
     InvalidPocketForPPA,
     IPPA,
@@ -143,6 +151,7 @@ from lp.soyuz.interfaces.archive import (
     NoTokensForTeams,
     PocketNotFound,
     VersionRequiresName,
+    validate_external_dependencies,
     )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
@@ -160,6 +169,7 @@ from lp.soyuz.interfaces.component import (
     IComponent,
     IComponentSet,
     )
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.interfaces.publishing import (
@@ -195,6 +205,15 @@ from lp.soyuz.model.queue import (
     )
 from lp.soyuz.model.section import Section
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.soyuz.scripts.packagecopier import check_copy_permissions
+
+
+def storm_validate_external_dependencies(archive, attr, value):
+    assert attr == 'external_dependencies'
+    errors = validate_external_dependencies(value)
+    if len(errors) > 0:
+        raise InvalidExternalDependencies(errors)
+    return value
 
 
 class Archive(SQLBase):
@@ -259,7 +278,7 @@ class Archive(SQLBase):
 
     publish = BoolCol(dbName='publish', notNull=True, default=True)
 
-    private = BoolCol(dbName='private', notNull=True, default=False,
+    _private = BoolCol(dbName='private', notNull=True, default=False,
                       storm_validator=_validate_archive_privacy)
 
     require_virtualized = BoolCol(
@@ -306,7 +325,8 @@ class Archive(SQLBase):
     # Launchpad and should be re-examined in October 2010 to see if it
     # is still relevant.
     external_dependencies = StringCol(
-        dbName='external_dependencies', notNull=False, default=None)
+        dbName='external_dependencies', notNull=False, default=None,
+        storm_validator=storm_validate_external_dependencies)
 
     commercial = BoolCol(
         dbName='commercial', notNull=True, default=False)
@@ -322,6 +342,22 @@ class Archive(SQLBase):
             alsoProvides(self, IPPA)
         else:
             alsoProvides(self, IDistributionArchive)
+
+    # Note: You may safely ignore lint when it complains about this
+    # declaration.  As of Python 2.6, this is a perfectly valid way
+    # of adding a setter
+    @property
+    def private(self):
+        return self._private
+
+    @private.setter
+    def private(self, private):
+        self._private = private
+        if private:
+            if not self.buildd_secret:
+                self.buildd_secret = create_token(20)
+        else:
+            self.buildd_secret = None
 
     @property
     def title(self):
@@ -482,19 +518,24 @@ class Archive(SQLBase):
             ]
 
         if name is not None:
-            if exact_match:
-                storm_clauses.append(SourcePackageName.name==name)
-            else:
+            if type(name) in (str, unicode):
+                if exact_match:
+                    storm_clauses.append(SourcePackageName.name == name)
+                else:
+                    clauses.append(
+                        "SourcePackageName.name LIKE '%%%%' || %s || '%%%%'"
+                        % quote_like(name))
+            elif len(name) != 0:
                 clauses.append(
-                    "SourcePackageName.name LIKE '%%%%' || %s || '%%%%'"
-                    % quote_like(name))
+                    "SourcePackageName.name IN %s"
+                    % sqlvalues(name))
 
         if version is not None:
             if name is None:
                 raise VersionRequiresName(
                     "The 'version' parameter can be used only together with"
                     " the 'name' parameter.")
-            storm_clauses.append(SourcePackageRelease.version==version)
+            storm_clauses.append(SourcePackageRelease.version == version)
         else:
             orderBy.insert(1, Desc(SourcePackageRelease.version))
 
@@ -513,8 +554,13 @@ class Archive(SQLBase):
                     distroseries.id)
 
         if pocket is not None:
+            try:
+                pockets = tuple(pocket)
+            except TypeError:
+                pockets = (pocket,)
             storm_clauses.append(
-                SourcePackagePublishingHistory.pocket==pocket)
+                "SourcePackagePublishingHistory.pocket IN %s " %
+                   sqlvalues(pockets))
 
         if created_since_date is not None:
             clauses.append(
@@ -529,6 +575,7 @@ class Archive(SQLBase):
             *orderBy)
         if not eager_load:
             return resultset
+
         # Its not clear that this eager load is necessary or sufficient, it
         # replaces a prejoin that had pathological query plans.
         def eager_load(rows):
@@ -609,7 +656,7 @@ class Archive(SQLBase):
         clauseTables = ['SourcePackageRelease', 'SourcePackageName']
 
         order_const = "SourcePackageRelease.version"
-        desc_version_order = SQLConstant(order_const+" DESC")
+        desc_version_order = SQLConstant(order_const + " DESC")
         orderBy = ['SourcePackageName.name', desc_version_order,
                    '-SourcePackagePublishingHistory.id']
 
@@ -910,13 +957,12 @@ class Archive(SQLBase):
                           source_package_name, dep_name):
         """See `IArchive`."""
         deps = expand_dependencies(
-            self, distro_arch_series.distroseries, pocket, component,
-            source_package_name)
+            self, distro_arch_series, pocket, component, source_package_name)
         archive_clause = Or([And(
             BinaryPackagePublishingHistory.archiveID == archive.id,
             BinaryPackagePublishingHistory.pocket == pocket,
             Component.name.is_in(components))
-            for (archive, pocket, components) in deps])
+            for (archive, not_used, pocket, components) in deps])
 
         store = ISlaveStore(BinaryPackagePublishingHistory)
         return store.find(
@@ -954,7 +1000,14 @@ class Archive(SQLBase):
         a_dependency = self.getArchiveDependency(dependency)
         if a_dependency is not None:
             raise ArchiveDependencyError(
-                "Only one dependency record per archive is supported.")
+                "This dependency is already registered.")
+        if not check_permission('launchpad.View', dependency):
+            raise ArchiveDependencyError(
+                "You don't have permission to use this dependency.")
+            return
+        if dependency.private and not self.private:
+            raise ArchiveDependencyError(
+                "Public PPAs cannot depend on private ones.")
 
         if dependency.is_ppa:
             if pocket is not PackagePublishingPocket.RELEASE:
@@ -969,6 +1022,15 @@ class Archive(SQLBase):
         return ArchiveDependency(
             archive=self, dependency=dependency, pocket=pocket,
             component=component)
+
+    def _addArchiveDependency(self, dependency, pocket, component=None):
+        """See `IArchive`."""
+        if isinstance(component, basestring):
+            try:
+                component = getUtility(IComponentSet)[component]
+            except NotFoundError as e:
+                raise ComponentNotFound(e)
+        return self.addArchiveDependency(dependency, pocket, component)
 
     def getPermissions(self, user, item, perm_type):
         """See `IArchive`."""
@@ -1456,19 +1518,102 @@ class Archive(SQLBase):
             sources, to_pocket, to_series, include_binaries,
             person=person)
 
-    def syncSource(self, source_name, version, from_archive, to_pocket,
-                   to_series=None, include_binaries=False, person=None):
-        """See `IArchive`."""
+    def _validateAndFindSource(self, from_archive, source_name, version):
         # Check to see if the source package exists, and raise a useful error
         # if it doesn't.
         getUtility(ISourcePackageNameSet)[source_name]
         # Find and validate the source package version required.
         source = from_archive.getPublishedSources(
             name=source_name, version=version, exact_match=True).first()
+        return source
+
+    def syncSource(self, source_name, version, from_archive, to_pocket,
+                   to_series=None, include_binaries=False, person=None):
+        """See `IArchive`."""
+        source = self._validateAndFindSource(
+            from_archive, source_name, version)
 
         self._copySources(
             [source], to_pocket, to_series, include_binaries,
             person=person)
+
+    def _checkCopyPackageFeatureFlags(self):
+        """Prevent copyPackage(s) if these conditions are not met."""
+        if not getFeatureFlag(u"soyuz.copypackage.enabled"):
+            raise ForbiddenByFeatureFlag
+        if (self.is_ppa and 
+            not getFeatureFlag(u"soyuz.copypackageppa.enabled")):
+            # We have no way of giving feedback about failed jobs yet,
+            # so this is disabled for now.
+            raise ForbiddenByFeatureFlag(
+                "Not enabled for copying to PPAs yet.")
+
+    def copyPackage(self, source_name, version, from_archive, to_pocket,
+                    person, to_series=None, include_binaries=False):
+        """See `IArchive`."""
+        self._checkCopyPackageFeatureFlags()
+
+        # Asynchronously copy a package using the job system.
+        pocket = self._text_to_pocket(to_pocket)
+        series = self._text_to_series(to_series)
+        # Upload permission checks, this will raise CannotCopy as
+        # necessary.
+        sourcepackagename = getUtility(ISourcePackageNameSet)[source_name]
+        check_copy_permissions(
+            person, self, series, pocket, [sourcepackagename])
+
+        self._validateAndFindSource(from_archive, source_name, version)
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        job_source.create(
+            package_name=source_name, source_archive=from_archive,
+            target_archive=self, target_distroseries=series,
+            target_pocket=pocket,
+            package_version=version, include_binaries=include_binaries,
+            copy_policy=PackageCopyPolicy.INSECURE, requester=person)
+
+    def copyPackages(self, source_names, from_archive, to_pocket,
+                     person, to_series=None, include_binaries=None):
+        """See `IArchive`."""
+        self._checkCopyPackageFeatureFlags()
+
+        sources = self._collectLatestPublishedSources(
+            from_archive, source_names)
+        if not sources:
+            raise CannotCopy(
+                "None of the supplied package names are published")
+
+        # Bulk-load the sourcepackagereleases so that the list
+        # comprehension doesn't generate additional queries. The
+        # sourcepackagenames themselves will already have been loaded when
+        # generating the list of source publications in "sources".
+        load_related(
+            SourcePackageRelease, sources, ["sourcepackagereleaseID"])
+        sourcepackagenames = [source.sourcepackagerelease.sourcepackagename
+                              for source in sources]
+
+        # Now do a mass check of permissions.
+        pocket = self._text_to_pocket(to_pocket)
+        series = self._text_to_series(to_series)
+        check_copy_permissions(
+            person, self, series, pocket, sourcepackagenames)
+
+        # If we get this far then we can create the PackageCopyJob.
+        copy_tasks = []
+        for source in sources:
+            task = (
+                source.sourcepackagerelease.sourcepackagename.name,
+                source.sourcepackagerelease.version,
+                from_archive,
+                self,
+                PackagePublishingPocket.RELEASE
+                )
+            copy_tasks.append(task)
+
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        job_source.createMultiple(
+            series, copy_tasks, person,
+            copy_policy=PackageCopyPolicy.INSECURE,
+            include_binaries=include_binaries)
 
     def _collectLatestPublishedSources(self, from_archive, source_names):
         """Private helper to collect the latest published sources for an
@@ -1477,6 +1622,9 @@ class Archive(SQLBase):
         :raises NoSuchSourcePackageName: If any of the source_names do not
             exist.
         """
+        # XXX bigjools bug=810421
+        # This code is inefficient.  It should try to bulk load all the
+        # sourcepackagenames and publications instead of iterating.
         sources = []
         for name in source_names:
             # Check to see if the source package exists. This will raise
@@ -1493,6 +1641,27 @@ class Archive(SQLBase):
                 sources.append(first_source)
         return sources
 
+    def _text_to_series(self, to_series):
+        if to_series is not None:
+            result = getUtility(IDistroSeriesSet).queryByName(
+                self.distribution, to_series)
+            if result is None:
+                raise NoSuchDistroSeries(to_series)
+            series = result
+        else:
+            series = None
+
+        return series
+
+    def _text_to_pocket(self, to_pocket):
+        # Convert the to_pocket string to its enum.
+        try:
+            pocket = PackagePublishingPocket.items[to_pocket.upper()]
+        except KeyError:
+            raise PocketNotFound(to_pocket.upper())
+
+        return pocket
+
     def _copySources(self, sources, to_pocket, to_series=None,
                      include_binaries=False, person=None):
         """Private helper function to copy sources to this archive.
@@ -1502,12 +1671,8 @@ class Archive(SQLBase):
         """
         # Circular imports.
         from lp.soyuz.scripts.packagecopier import do_copy
-        # Convert the to_pocket string to its enum.
-        try:
-            pocket = PackagePublishingPocket.items[to_pocket.upper()]
-        except KeyError, error:
-            raise PocketNotFound(error)
 
+        pocket = self._text_to_pocket(to_pocket)
         # Fail immediately if the destination pocket is not Release and
         # this archive is a PPA.
         if self.is_ppa and pocket != PackagePublishingPocket.RELEASE:
@@ -1515,14 +1680,7 @@ class Archive(SQLBase):
                 "Destination pocket must be 'release' for a PPA.")
 
         # Now convert the to_series string to a real distroseries.
-        if to_series is not None:
-            result = getUtility(IDistroSeriesSet).queryByName(
-                self.distribution, to_series)
-            if result is None:
-                raise DistroSeriesNotFound(to_series)
-            series = result
-        else:
-            series = None
+        series = self._text_to_series(to_series)
 
         # Perform the copy, may raise CannotCopy. Don't do any further
         # permission checking: this method is protected by
@@ -1782,9 +1940,25 @@ class Archive(SQLBase):
     enabled_restricted_families = property(_getEnabledRestrictedFamilies,
                                            _setEnabledRestrictedFamilies)
 
+    def enableRestrictedFamily(self, family):
+        """See `IArchive`."""
+        restricted = set(self.enabled_restricted_families)
+        restricted.add(family)
+        self.enabled_restricted_families = restricted
+
     @classmethod
-    def validatePPA(self, person, proposed_name):
+    def validatePPA(self, person, proposed_name, private=False):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        if private:
+            # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
+            # which says that one needs 'launchpad.Commercial' permission to
+            # set 'private', and the logic in `AdminByCommercialTeamOrAdmins`
+            # which determines who is granted launchpad.Commercial
+            # permissions.
+            commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+            admin = getUtility(ILaunchpadCelebrities).admin
+            if not person.inTeam(commercial) and not person.inTeam(admin):
+                return '%s is not allowed to make private PPAs' % (person.name,)
         if person.isTeam() and (
             person.subscriptionpolicy in OPEN_TEAM_POLICY):
             return "Open teams cannot have PPAs."
@@ -2176,7 +2350,7 @@ class ArchiveSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         return store.find(
             Archive,
-            Archive.private == True,
+            Archive._private == True,
             Archive.purpose == ArchivePurpose.PPA)
 
     def getCommercialPPAs(self):
@@ -2204,7 +2378,7 @@ class ArchiveSet:
         if name is not None:
             extra_exprs.append(Archive.name == name)
 
-        public_archive = And(Archive.private == False,
+        public_archive = And(Archive._private == False,
                              Archive._enabled == True)
 
         if user is not None:

@@ -55,24 +55,38 @@ assigned. This allows people to register a sprint and have a team of people
 who then take charge of the agenda.
 
 In the case above, the spec ended up "proposed". Now we will nominate a spec
-to the Paris summit, for which Sample Person is the driver. This time, if we
+to the Rome summit, for which Sample Person is the driver. This time, if we
 nominate the spec as Sample Person, it should end up approved immediately.
 
 It's VERY IMPORTANT that this test pass because we cannot test this in
 doctests, since it depends on Browser View code to work (the database
 classes don't know about their own permissions and security).
 
-  >>> browser.open('http://blueprints.launchpad.dev/kubuntu/+spec/kde-desktopfile-langpacks')
-  >>> 'Approved for the meeting agenda' in browser.contents
-  False
-  >>> browser.getLink('Propose for sprint').click()
-  >>> sprint_field = browser.getControl(name='field.sprint')
-  >>> sprint_field.value = ['paris']
-  >>> browser.getControl('Continue').click()
-  >>> 'paris' in browser.contents
-  True
-  >>> 'Approved for the meeting agenda' in browser.contents
-  True
+    >>> import datetime as dt
+    >>> from pytz import UTC
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login('test@canonical.com')
+    >>> rome_sprint = factory.makeSprint(name='rome')
+    >>> rome_sprint.time_ends = dt.datetime.now(UTC) + dt.timedelta(30)
+    >>> rome_sprint.time_starts = dt.datetime.now(UTC) + dt.timedelta(20)
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> rome_sprint.driver = sample_person
+    >>> logout()
+
+    >>> browser.open(
+    ...     'http://blueprints.launchpad.dev/'
+    ...     'kubuntu/+spec/kde-desktopfile-langpacks')
+    >>> 'Approved for the meeting agenda' in browser.contents
+    False
+    >>> browser.getLink('Propose for sprint').click()
+    >>> sprint_field = browser.getControl(name='field.sprint')
+    >>> sprint_field.value = ['rome']
+    >>> browser.getControl('Continue').click()
+    >>> 'rome' in browser.contents
+    True
+    >>> 'Approved for the meeting agenda' in browser.contents
+    True
 
 Now, if we change our mind, we can go and decline the spec.
 
@@ -85,7 +99,7 @@ Now go and change that and verify.
 
   >>> browser.getLink('Approved').click()
   >>> browser.url
-  'http://.../kubuntu/+spec/kde-desktopfile-langpacks/paris'
+  'http://.../kubuntu/+spec/kde-desktopfile-langpacks/rome'
   >>> back_link = browser.getLink('KDE Desktop File Language Packs')
   >>> back_link.url
   'http://blueprints.launchpad.dev/kubuntu/+spec/kde-desktopfile-langpacks'

@@ -11,11 +11,11 @@ from urllib import quote
 from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.testing.pages import find_tag_by_id
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.app.enums import ServiceUsage
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.testing import (
     login_person,
     person_logged_in,
@@ -218,8 +218,7 @@ class QuestionSetViewTestCase(TestCaseWithFactory):
         self.assertIsNot(
             None, content.find(True, id=target_widget.show_widget_id))
         text = str(content)
-        picker_script = (
-            "Y.lp.app.picker.create('DistributionOrProductOrProjectGroup'")
-        self.assertIn(picker_script, text)
+        picker_vocab = "DistributionOrProductOrProjectGroup"
+        self.assertIn(picker_vocab, text)
         focus_script = "setFocusByName('field.search_text')"
         self.assertIn(focus_script, text)

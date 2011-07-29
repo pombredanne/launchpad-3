@@ -16,7 +16,6 @@ from email.utils import (
 import logging
 import re
 import sys
-from uuid import uuid1
 
 import dkim
 import dns.exception
@@ -32,11 +31,13 @@ from canonical.launchpad.interfaces.gpghandler import (
     GPGVerificationError,
     IGPGHandler,
     )
-from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
 from canonical.launchpad.interfaces.mailbox import IMailBox
 from canonical.launchpad.mail.commands import get_error_message
-from canonical.launchpad.mail.helpers import ensure_sane_signature_timestamp
+from canonical.launchpad.mail.helpers import (
+    ensure_sane_signature_timestamp,
+    save_mail_to_librarian,
+    )
 from canonical.launchpad.mailnotification import (
     send_process_error_notification,
     )
@@ -115,7 +116,7 @@ def _isDkimDomainTrusted(domain):
 
 
 def _authenticateDkim(signed_message):
-    """"Attempt DKIM authentication of email; return True if known authentic
+    """Attempt DKIM authentication of email; return True if known authentic
 
     :param signed_message: ISignedMessage
     """
@@ -340,12 +341,18 @@ def handleMail(trans=transaction,
     try:
         for mail_id, raw_mail in mailbox.items():
             log.info("Processing mail %s" % mail_id)
+            trans.begin()
             try:
-                file_alias = save_mail_to_librarian(trans, log, raw_mail)
+                file_alias = save_mail_to_librarian(raw_mail)
                 # Let's save the url of the file alias, otherwise we might not
                 # be able to access it later if we get a DB exception.
                 file_alias_url = file_alias.http_url
                 log.debug('Uploaded mail to librarian %s' % (file_alias_url,))
+                # If something goes wrong when handling the mail, the
+                # transaction will be aborted. Therefore we need to commit the
+                # transaction now, to ensure that the mail gets stored in the
+                # Librarian.
+                trans.commit()
             except UploadFailed:
                 # Something went wrong in the Librarian. It could be that it's
                 # not running, but not necessarily. Log the error and skip the
@@ -385,9 +392,12 @@ def handleMail(trans=transaction,
                 log.exception(
                     "An exception was raised inside the handler:\n%s"
                     % (file_alias_url,))
+                # Delete the troublesome email before attempting to send the
+                # OOPS in case something goes wrong.  Retrying probably
+                # wouldn't work and we'd get stuck on the bad message.
+                mailbox.delete(mail_id)
                 _send_email_oops(trans, log, mail,
                     "Unhandled exception", file_alias_url)
-                mailbox.delete(mail_id)
     finally:
         log.info("Closing the mail box.")
         mailbox.close()
@@ -414,24 +424,8 @@ def _send_email_oops(trans, log, mail, error_msg, file_alias_url):
     trans.commit()
 
 
-def save_mail_to_librarian(trans, log, raw_mail):
-    """Save the message to the librarian, for reference from errors."""
-    trans.begin()
-    # File the raw_mail in the Librarian
-    file_name = str(uuid1()) + '.txt'
-    file_alias = getUtility(ILibraryFileAliasSet).create(
-            file_name, len(raw_mail),
-            cStringIO(raw_mail), 'message/rfc822')
-    # If something goes wrong when handling the mail, the
-    # transaction will be aborted. Therefore we need to commit the
-    # transaction now, to ensure that the mail gets stored in the
-    # Librarian.
-    trans.commit()
-    return file_alias
-
-
 def handle_one_mail(log, mail, file_alias, file_alias_url,
-    signature_timestamp_checker):
+                    signature_timestamp_checker):
     """Process one message.
 
     Returns None when the message has either been successfully processed, or

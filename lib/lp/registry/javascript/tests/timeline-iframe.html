@@ -3,47 +3,22 @@
   <head>
   <title>Launchpad TimelineGraph Widget</title>
 
-  <!-- YUI 3.0 Setup -->
-  <script type="text/javascript" src="../../../../canonical/launchpad/icing/yui/yui/yui.js"></script>
-  <link rel="stylesheet" href="../../../../canonical/launchpad/icing/yui/cssreset/reset.css"/>
-  <link rel="stylesheet" href="../../../../canonical/launchpad/icing/yui/cssfonts/fonts.css"/>
-  <link rel="stylesheet" href="../../../../canonical/launchpad/icing/yui/cssbase/base.css"/>
+  <!-- YUI and test setup -->
+  <script type="text/javascript"
+          src="../../../../canonical/launchpad/icing/yui/yui/yui.js">
+  </script>
+  <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
+  <script type="text/javascript"
+          src="../../../app/javascript/testing/testrunner.js"></script>
 
   <!-- The module under test -->
   <script type="text/javascript" src="../timeline.js"></script>
 
   <!-- The test suite -->
   <script type="text/javascript" src="timeline.js"></script>
-  <style>
-  /* Taken and customized from testlogger.css */
-  #log .yui-console-content { width:44em }
-  #log .yui-console .yui-console-bd { height:100%}
-  #log .yui-console .yui-console-controls { display:none; }
-  #log .yui-console .yui-console-hd { display:none; }
-  #log .yui-console .yui-console-ft { position:absolute;top:0em; }
-
-  #log .yui-console-entry-src { display:none; }
-
-  #log .yui-console-entry-pass .yui-console-entry-cat {
-      background-color: green;
-      font-weight: bold;
-      color: white;
-  }
-  #log .yui-console-entry-fail .yui-console-entry-cat {
-      background-color: red;
-      font-weight: bold;
-      color: white;
-  }
-  #log .yui-console-entry-ignore .yui-console-entry-cat {
-      background-color: #666;
-      font-weight: bold;
-      color: white;
-  }
-  </style>
 </head>
 <body class="yui3-skin-sam">
   <div id="timeline_example">
   </div>
-  <div id="log"></div>
 </body>
 </html>

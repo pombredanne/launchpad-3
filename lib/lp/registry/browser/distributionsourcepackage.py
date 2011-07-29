@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'distribution_from_distributionsourcepackage',
     'DistributionSourcePackageAnswersMenu',
     'DistributionSourcePackageBreadcrumb',
     'DistributionSourcePackageChangelogView',
@@ -28,7 +27,6 @@ from zope.component import (
     getUtility,
     )
 from zope.interface import (
-    implementer,
     implements,
     Interface,
     )
@@ -60,6 +58,10 @@ from lp.answers.browser.questiontarget import (
     )
 from lp.answers.enums import QuestionStatus
 from lp.app.browser.tales import CustomizableFormatter
+from lp.app.browser.stringformatter import (
+    extract_bug_numbers,
+    extract_email_addresses,
+    )
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
@@ -78,8 +80,6 @@ from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.sourcepackagerelease import (
-    extract_bug_numbers,
-    extract_email_addresses,
     linkify_changelog,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
@@ -114,17 +114,27 @@ class DistributionSourcePackageBreadcrumb(Breadcrumb):
             self.context.sourcepackagename.name)
 
 
-@adapter(IDistributionSourcePackage)
-@implementer(IServiceUsage)
-def distribution_from_distributionsourcepackage(dsp):
-    return dsp.distribution
-
-
 class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
                                       StandardLaunchpadFacets):
 
     usedfor = IDistributionSourcePackage
     enable_only = ['overview', 'bugs', 'answers', 'branches']
+
+    def overview(self):
+        text = 'Overview'
+        summary = 'General information about {0}'.format(
+            self.context.displayname)
+        return Link('', text, summary)
+
+    def bugs(self):
+        text = 'Bugs'
+        summary = 'Bugs reported about {0}'.format(self.context.displayname)
+        return Link('', text, summary)
+
+    def branches(self):
+        text = 'Code'
+        summary = 'Branches for {0}'.format(self.context.displayname)
+        return Link('', text, summary)
 
 
 class DistributionSourcePackageLinksMixin:
@@ -260,7 +270,7 @@ class DistributionSourcePackageActionMenu(
         return Link('+changelog', text, icon="info")
 
 
-class DistributionSourcePackageBaseView:
+class DistributionSourcePackageBaseView(LaunchpadView):
     """Common features to all `DistributionSourcePackage` views."""
 
     def releases(self):
@@ -616,7 +626,7 @@ class DistributionSourcePackageEditView(LaunchpadEditFormView):
     cancel_url = next_url
 
 
-class DistributionSourcePackageHelpView:
+class DistributionSourcePackageHelpView(LaunchpadView):
     """A View to show Answers help."""
 
     page_title = 'Help and support options'

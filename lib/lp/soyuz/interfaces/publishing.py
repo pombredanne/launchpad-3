@@ -83,6 +83,7 @@ class PoolFileOverwriteError(Exception):
     requires manual intervention in the archive.
     """
 
+
 class MissingSymlinkInPool(Exception):
     """Raised when there is a missing symlink in pool.
 
@@ -127,7 +128,7 @@ class ICanPublishPackages(Interface):
     def publish(diskpool, log, archive, pocket, careful=False):
         """Publish associated publishing records targeted for a given pocket.
 
-        Require an initialised diskpool instance and a logger instance.
+        Require an initialized diskpool instance and a logger instance.
         Require an 'archive' which will restrict the publications.
         'careful' argument would cause the 'republication' of all published
         records if True (system will DTRT checking hash of all
@@ -589,14 +590,15 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         `IBinaryPackagePublishingHistory`.
         """
 
-    def copyTo(distroseries, pocket, archive, policy=None):
+    def copyTo(distroseries, pocket, archive, overrides=None):
         """Copy this publication to another location.
 
         :param distroseries: The `IDistroSeries` to copy the source
             publication into.
         :param pocket: The `PackagePublishingPocket` to copy into.
         :param archive: The `IArchive` to copy the source publication into.
-        :param policy: The `IOverridePolicy` to apply to the copy.
+        :param overrides: A tuple of override data as returned from a
+            `IOverridePolicy`
 
         :return: a `ISourcePackagePublishingHistory` record representing the
             source in the destination location.
@@ -947,7 +949,8 @@ class IPublishingSet(Interface):
         """
 
     def newSourcePublication(archive, sourcepackagerelease, distroseries,
-                             component, section, pocket, ancestor):
+                             component, section, pocket, ancestor,
+                             create_dsd_job=True):
         """Create a new `SourcePackagePublishingHistory`.
 
         :param archive: An `IArchive`
@@ -958,6 +961,8 @@ class IPublishingSet(Interface):
         :param pocket: A `PackagePublishingPocket`
         :param ancestor: A `ISourcePackagePublishingHistory` for the previous
             version of this publishing record
+        :param create_dsd_job: A boolean indicating whether or not a dsd job
+             should be created for the new source publication.
 
         datecreated will be UTC_NOW.
         status will be PackagePublishingStatus.PENDING

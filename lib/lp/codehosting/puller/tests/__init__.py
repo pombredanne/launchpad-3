@@ -12,8 +12,10 @@ from StringIO import StringIO
 
 from bzrlib import urlutils
 from bzrlib.tests import (
-    HttpServer,
     TestCaseWithTransport,
+    )
+from bzrlib.tests.http_server import (
+    HttpServer,
     )
 from bzrlib.tests.http_server import (
     TestingHTTPServer,
@@ -208,6 +210,6 @@ class PullerBranchTestCase(TestCaseWithTransport, TestCaseWithFactory,
         # tests, and the default behaviour of the HttpServer is to use daemon
         # threads and let the garbage collector get them, however this causes
         # issues with the test runner.
-        self.addCleanup(http_server._http_thread.join)
+        self.addCleanup(http_server._server_thread.join)
         self.addCleanup(http_server.stop_server)
         return http_server.get_url().rstrip('/')

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Update the interface schema values due to circular imports.
@@ -112,6 +112,10 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWSubmissionDevice,
     IHWVendorID,
     )
+from lp.registry.enum import (
+    DistroSeriesDifferenceStatus,
+    DistroSeriesDifferenceType,
+    )
 from lp.registry.interfaces.commercialsubscription import (
     ICommercialSubscription,
     )
@@ -160,7 +164,11 @@ from lp.registry.interfaces.projectgroup import (
     IProjectGroup,
     IProjectGroupSet,
     )
-from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackage import (
+    ISourcePackage,
+    ISourcePackageEdit,
+    ISourcePackagePublic,
+    )
 from lp.registry.interfaces.ssh import ISSHKey
 from lp.registry.interfaces.teammembership import ITeamMembership
 from lp.registry.interfaces.wikiname import IWikiName
@@ -192,6 +200,7 @@ from lp.soyuz.interfaces.packageset import (
     IPackageset,
     IPackagesetSet,
     )
+from lp.soyuz.interfaces.processor import IProcessorFamily
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
     ISourcePackagePublishingHistory,
@@ -226,9 +235,9 @@ IBranch['getSubscription'].queryTaggedValue(
 IBranch['landing_candidates'].value_type.schema = IBranchMergeProposal
 IBranch['landing_targets'].value_type.schema = IBranchMergeProposal
 IBranch['linkBug'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema= IBug
+    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema = IBug
 IBranch['linkSpecification'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema= ISpecification
+    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema = ISpecification
 IBranch['product'].schema = IProduct
 
 patch_plain_parameter_type(
@@ -243,9 +252,9 @@ IBranch['subscribe'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranchSubscription
 IBranch['subscriptions'].value_type.schema = IBranchSubscription
 IBranch['unlinkBug'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema= IBug
+    LAZR_WEBSERVICE_EXPORTED)['params']['bug'].schema = IBug
 IBranch['unlinkSpecification'].queryTaggedValue(
-    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema= ISpecification
+    LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema = ISpecification
 
 patch_entry_return_type(IBranch, '_createMergeProposal', IBranchMergeProposal)
 patch_plain_parameter_type(
@@ -316,17 +325,17 @@ IHasBuildRecords['getBuildRecords'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
         'return_type'].value_type.schema = IBinaryPackageBuild
 
-ISourcePackage['distroseries'].schema = IDistroSeries
-ISourcePackage['productseries'].schema = IProductSeries
-ISourcePackage['getBranch'].queryTaggedValue(
+ISourcePackagePublic['distroseries'].schema = IDistroSeries
+ISourcePackagePublic['productseries'].schema = IProductSeries
+ISourcePackagePublic['getBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
         'params']['pocket'].vocabulary = PackagePublishingPocket
-ISourcePackage['getBranch'].queryTaggedValue(
+ISourcePackagePublic['getBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = IBranch
-ISourcePackage['setBranch'].queryTaggedValue(
+ISourcePackageEdit['setBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
         'params']['pocket'].vocabulary = PackagePublishingPocket
-ISourcePackage['setBranch'].queryTaggedValue(
+ISourcePackageEdit['setBranch'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['branch'].schema = IBranch
 patch_reference_property(ISourcePackage, 'distribution', IDistribution)
 
@@ -369,6 +378,8 @@ patch_reference_property(
 # IArchive apocalypse.
 patch_reference_property(IArchive, 'distribution', IDistribution)
 patch_collection_property(IArchive, 'dependencies', IArchiveDependency)
+patch_collection_property(
+    IArchive, 'enabled_restricted_families', IProcessorFamily)
 patch_collection_return_type(
     IArchive, 'getPermissionsForPerson', IArchivePermission)
 patch_collection_return_type(
@@ -393,6 +404,9 @@ patch_entry_return_type(IArchive, 'newComponentUploader', IArchivePermission)
 patch_entry_return_type(IArchive, 'newQueueAdmin', IArchivePermission)
 patch_plain_parameter_type(IArchive, 'syncSources', 'from_archive', IArchive)
 patch_plain_parameter_type(IArchive, 'syncSource', 'from_archive', IArchive)
+patch_plain_parameter_type(IArchive, 'copyPackage', 'from_archive', IArchive)
+patch_plain_parameter_type(
+    IArchive, 'copyPackages', 'from_archive', IArchive)
 patch_entry_return_type(IArchive, 'newSubscription', IArchiveSubscriber)
 patch_plain_parameter_type(
     IArchive, 'getArchiveDependency', 'dependency', IArchive)
@@ -426,6 +440,16 @@ patch_plain_parameter_type(
     IArchive, 'getUploadersForPackageset', 'packageset', IPackageset)
 patch_plain_parameter_type(
     IArchive, 'deletePackagesetUploader', 'packageset', IPackageset)
+patch_plain_parameter_type(
+    IArchive, 'removeArchiveDependency', 'dependency', IArchive)
+patch_plain_parameter_type(
+    IArchive, '_addArchiveDependency', 'dependency', IArchive)
+patch_choice_parameter_type(
+    IArchive, '_addArchiveDependency', 'pocket', PackagePublishingPocket)
+patch_entry_return_type(
+    IArchive, '_addArchiveDependency', IArchiveDependency)
+patch_plain_parameter_type(
+    IArchive, 'enableRestrictedFamily', 'family', IProcessorFamily)
 
 
 # IBuildFarmJob
@@ -482,10 +506,22 @@ patch_plain_parameter_type(
 patch_collection_return_type(
     IDistroSeries, 'getPackageUploads', IPackageUpload)
 patch_reference_property(IDistroSeries, 'previous_series', IDistroSeries)
-patch_plain_parameter_type(
-    IDistroSeries, 'deriveDistroSeries', 'distribution', IDistribution)
 patch_collection_return_type(
     IDistroSeries, 'getDerivedSeries', IDistroSeries)
+patch_collection_return_type(
+    IDistroSeries, 'getParentSeries', IDistroSeries)
+patch_plain_parameter_type(
+    IDistroSeries, 'getDifferencesTo', 'parent_series', IDistroSeries)
+patch_choice_parameter_type(
+    IDistroSeries, 'getDifferencesTo', 'status', DistroSeriesDifferenceStatus)
+patch_choice_parameter_type(
+    IDistroSeries, 'getDifferencesTo', 'difference_type',
+    DistroSeriesDifferenceType)
+patch_collection_return_type(
+    IDistroSeries, 'getDifferencesTo', IDistroSeriesDifference)
+patch_collection_return_type(
+    IDistroSeries, 'getDifferenceComments', IDistroSeriesDifferenceComment)
+
 
 # IDistroSeriesDifference
 patch_reference_property(
@@ -610,6 +646,9 @@ patch_entry_return_type(
     IBugTracker, 'addRemoteComponentGroup', IBugTrackerComponentGroup)
 patch_collection_return_type(
     IBugTracker, 'getAllRemoteComponentGroups', IBugTrackerComponentGroup)
+patch_entry_return_type(
+    IBugTracker, 'getRemoteComponentForDistroSourcePackageName',
+    IBugTrackerComponent)
 
 ## IBugTrackerComponent
 patch_reference_property(
@@ -841,9 +880,9 @@ patch_entry_explicit_version(IDistroArchSeries, 'beta')
 # IDistroSeries
 patch_entry_explicit_version(IDistroSeries, 'beta')
 patch_operations_explicit_version(
-    IDistroSeries, 'beta', "deriveDistroSeries", "getDerivedSeries",
-    "getDistroArchSeries", "getPackageUploads", "getSourcePackage",
-    "newMilestone")
+    IDistroSeries, 'beta', "initDerivedDistroSeries", "getDerivedSeries",
+    "getParentSeries", "getDistroArchSeries", "getPackageUploads",
+    "getSourcePackage", "newMilestone")
 
 # IDistroSeriesDifference
 patch_entry_explicit_version(IDistroSeriesDifference, 'beta')
@@ -865,7 +904,7 @@ patch_entry_explicit_version(IHWDBApplication, 'beta')
 patch_operations_explicit_version(
     IHWDBApplication, 'beta', "deviceDriverOwnersAffectedByBugs", "devices",
     "drivers", "hwInfoByBugRelatedUsers", "numDevicesInSubmissions",
-    "numOwnersOfDevice", "numSubmissionsWithDevice", "vendorIDs")
+    "numOwnersOfDevice", "numSubmissionsWithDevice", "search", "vendorIDs")
 
 # IHWDevice
 patch_entry_explicit_version(IHWDevice, 'beta')

@@ -513,8 +513,7 @@ submissions...
 
 ...as well as for the janitor.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> janitor = getUtility(ILaunchpadCelebrities).janitor
     >>> new_submissions = hw_submission_set.getByStatus(
     ...     HWSubmissionProcessingStatus.SUBMITTED, user=janitor)

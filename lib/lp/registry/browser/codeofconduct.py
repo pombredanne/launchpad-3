@@ -220,7 +220,7 @@ class SignedCodeOfConductView:
         self.request = request
 
 
-class SignedCodeOfConductAdminView:
+class SignedCodeOfConductAdminView(LaunchpadView):
     """Admin Console for SignedCodeOfConduct Entries."""
 
     def __init__(self, context, request):

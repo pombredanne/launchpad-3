@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from lazr.lifecycle.snapshot import Snapshot
 import soupmatchers
+from testtools import ExpectedException
 from testtools.matchers import (
     MatchesAny,
     Not,
@@ -14,13 +15,20 @@ from testtools.matchers import (
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
+    ZopelessDatabaseLayer,
     )
+from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.errors import NoSuchDistroSeries
-from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distribution import (
+    IDistribution,
+    IDistributionSet,
+    )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.tests.test_distroseries import (
@@ -34,15 +42,13 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import Provides
 from lp.testing.views import create_initialized_view
 
 
 class TestDistribution(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
-
-    def setUp(self):
-        super(TestDistribution, self).setUp('foo.bar@canonical.com')
 
     def test_distribution_repr_ansii(self):
         # Verify that ANSI displayname is ascii safe.
@@ -58,6 +64,127 @@ class TestDistribution(TestCaseWithFactory):
             name="distro", displayname=u'\u0170-distro')
         ignore, displayname, name = repr(distro).rsplit(' ', 2)
         self.assertEqual("'\\u0170-distro'", displayname)
+
+    def test_guessPublishedSourcePackageName_no_distro_series(self):
+        # Distribution without a series raises NotFoundError
+        distro = self.factory.makeDistribution()
+        with ExpectedException(NotFoundError, '.*has no series.*'):
+            distro.guessPublishedSourcePackageName('package')
+
+    def test_guessPublishedSourcePackageName_invalid_name(self):
+        # Invalid name raises a NotFoundError
+        distro = self.factory.makeDistribution()
+        with ExpectedException(NotFoundError, "'Invalid package name.*"):
+            distro.guessPublishedSourcePackageName('a*package')
+
+    def test_guessPublishedSourcePackageName_nothing_published(self):
+        distroseries = self.factory.makeDistroSeries()
+        with ExpectedException(NotFoundError, "'Unknown package:.*"):
+            distroseries.distribution.guessPublishedSourcePackageName(
+                'a-package')
+
+    def test_guessPublishedSourcePackageName_ignored_removed(self):
+        # Removed binary package are ignored.
+        distroseries = self.factory.makeDistroSeries()
+        self.factory.makeBinaryPackagePublishingHistory(
+            archive=distroseries.main_archive,
+            binarypackagename='binary-package', dateremoved=UTC_NOW)
+        with ExpectedException(NotFoundError, ".*Binary package.*"):
+            distroseries.distribution.guessPublishedSourcePackageName(
+                'binary-package')
+
+    def test_guessPublishedSourcePackageName_sourcepackage_name(self):
+        distroseries = self.factory.makeDistroSeries()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, sourcepackagename='my-package')
+        self.assertEquals(
+            spph.sourcepackagerelease.sourcepackagename,
+            distroseries.distribution.guessPublishedSourcePackageName(
+                'my-package'))
+
+    def test_guessPublishedSourcePackageName_binarypackage_name(self):
+        distroseries = self.factory.makeDistroSeries()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, sourcepackagename='my-package')
+        self.factory.makeBinaryPackagePublishingHistory(
+            archive=distroseries.main_archive,
+            binarypackagename='binary-package',
+            source_package_release=spph.sourcepackagerelease)
+        self.assertEquals(
+            spph.sourcepackagerelease.sourcepackagename,
+            distroseries.distribution.guessPublishedSourcePackageName(
+                'binary-package'))
+
+    def test_guessPublishedSourcePackageName_exlude_ppa(self):
+        # Package published in PPAs are not considered to be part of the
+        # distribution.
+        distroseries = self.factory.makeUbuntuDistroSeries()
+        ppa_archive = self.factory.makeArchive()
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, sourcepackagename='my-package',
+            archive=ppa_archive)
+        with ExpectedException(NotFoundError, ".*not published in.*"):
+            distroseries.distribution.guessPublishedSourcePackageName(
+                'my-package')
+
+    def test_guessPublishedSourcePackageName_exlude_other_distro(self):
+        # Published source package are only found in the distro
+        # in which they were published.
+        distroseries1 = self.factory.makeDistroSeries()
+        distroseries2 = self.factory.makeDistroSeries()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries1, sourcepackagename='my-package')
+        self.assertEquals(
+            spph.sourcepackagerelease.sourcepackagename,
+            distroseries1.distribution.guessPublishedSourcePackageName(
+                'my-package'))
+        with ExpectedException(NotFoundError, ".*not published in.*"):
+            distroseries2.distribution.guessPublishedSourcePackageName(
+                'my-package')
+
+    def test_guessPublishedSourcePackageName_looks_for_source_first(self):
+        # If both a binary and source package name shares the same name,
+        # the source package will be returned (and the one from the unrelated
+        # binary).
+        distroseries = self.factory.makeDistroSeries()
+        my_spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, sourcepackagename='my-package')
+        self.factory.makeBinaryPackagePublishingHistory(
+            archive=distroseries.main_archive,
+            binarypackagename='my-package', sourcepackagename='other-package')
+        self.assertEquals(
+            my_spph.sourcepackagerelease.sourcepackagename,
+            distroseries.distribution.guessPublishedSourcePackageName(
+                'my-package'))
+
+    def test_guessPublishedSourcePackageName_uses_latest(self):
+        # If multiple binaries match, it will return the source of the latest
+        # one published.
+        distroseries = self.factory.makeDistroSeries()
+        self.factory.makeBinaryPackagePublishingHistory(
+            archive=distroseries.main_archive,
+            sourcepackagename='old-source-name',
+            binarypackagename='my-package')
+        self.factory.makeBinaryPackagePublishingHistory(
+            archive=distroseries.main_archive,
+            sourcepackagename='new-source-name',
+            binarypackagename='my-package')
+        self.assertEquals(
+            'new-source-name',
+            distroseries.distribution.guessPublishedSourcePackageName(
+                'my-package').name)
+
+    def test_guessPublishedSourcePackageName_official_package_branch(self):
+        # It consider that a sourcepackage that has an official package
+        # branch is published.
+        sourcepackage = self.factory.makeSourcePackage(
+            sourcepackagename='my-package')
+        self.factory.makeRelatedBranchesForSourcePackage(
+            sourcepackage=sourcepackage)
+        self.assertEquals(
+            'my-package',
+            sourcepackage.distribution.guessPublishedSourcePackageName(
+                'my-package').name)
 
 
 class TestDistributionCurrentSourceReleases(
@@ -300,3 +427,43 @@ class DistroRegistrantTestCase(TestCaseWithFactory):
         self.assertNotEqual(distribution.owner, distribution.registrant)
         self.assertEqual(distribution.owner, self.owner)
         self.assertEqual(distribution.registrant, self.registrant)
+
+
+class DistributionSet(TestCaseWithFactory):
+    """Test case for `IDistributionSet`."""
+
+    layer = ZopelessDatabaseLayer
+
+    def test_implements_interface(self):
+        self.assertThat(
+            getUtility(IDistributionSet), Provides(IDistributionSet))
+
+    def test_getDerivedDistributions_finds_derived_distro(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        derived_distro = dsp.derived_series.distribution
+        distroset = getUtility(IDistributionSet)
+        self.assertIn(derived_distro, distroset.getDerivedDistributions())
+
+    def test_getDerivedDistributions_ignores_nonderived_distros(self):
+        distroset = getUtility(IDistributionSet)
+        nonderived_distro = self.factory.makeDistribution()
+        self.assertNotIn(
+            nonderived_distro, distroset.getDerivedDistributions())
+
+    def test_getDerivedDistributions_ignores_ubuntu_even_if_derived(self):
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.factory.makeDistroSeriesParent(
+            derived_series=ubuntu.currentseries)
+        distroset = getUtility(IDistributionSet)
+        self.assertNotIn(ubuntu, distroset.getDerivedDistributions())
+
+    def test_getDerivedDistribution_finds_each_distro_just_once(self):
+        # Derived distros are not duplicated in the output of
+        # getDerivedDistributions, even if they have multiple parents and
+        # multiple derived series.
+        dsp = self.factory.makeDistroSeriesParent()
+        distro = dsp.derived_series.distribution
+        other_series = self.factory.makeDistroSeries(distribution=distro)
+        self.factory.makeDistroSeriesParent(derived_series=other_series)
+        distroset = getUtility(IDistributionSet)
+        self.assertEqual(1, len(list(distroset.getDerivedDistributions())))

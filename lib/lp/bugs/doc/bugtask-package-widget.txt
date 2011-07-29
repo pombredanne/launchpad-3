@@ -18,13 +18,13 @@ a distribution task to work with.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.bugs.interfaces.bug import IBugSet
-    >>> from lp.bugs.interfaces.bugtask import IDistroBugTask
+    >>> from lp.bugs.interfaces.bugtask import IBugTask
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> ubuntu_task = bug_one.bugtasks[-2]
     >>> ubuntu_task.distribution.name
     u'ubuntu'
 
-    >>> package_field = IDistroBugTask['sourcepackagename'].bind(ubuntu_task)
+    >>> package_field = IBugTask['sourcepackagename'].bind(ubuntu_task)
 
     >>> request = LaunchpadTestRequest(
     ...     form={'field.sourcepackagename': 'evolution'})
@@ -49,13 +49,13 @@ package name, the corresponding SourcePackageName is returned.
     u'linux-source-2.6.15'
 
 For some distribution we don't know exactly which source packages it
-contains, so IDistribution.guessPackageNames will return a
+contains, so IDistribution.guessPublishedSourcePackageName will raise a
 NotFoundError.
 
     >>> debian_task = bug_one.bugtasks[-1]
     >>> debian_task.distribution.name
     u'debian'
-    >>> debian_task.distribution.guessPackageNames('evolution')
+    >>> debian_task.distribution.guessPublishedSourcePackageName('evolution')
     Traceback (most recent call last):
     ...
     NotFoundError...
@@ -63,7 +63,7 @@ NotFoundError.
 At that point we'll fallback to the vocabulary, so a SourcePackageName
 will still be returned.
 
-    >>> package_field = IDistroBugTask['sourcepackagename'].bind(debian_task)
+    >>> package_field = IBugTask['sourcepackagename'].bind(debian_task)
     >>> request = LaunchpadTestRequest(
     ...     form={'field.sourcepackagename': 'evolution'})
     >>> widget = BugTaskSourcePackageNameWidget(

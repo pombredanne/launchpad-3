@@ -14,7 +14,6 @@ __all__ = [
     'canonical_url',
     'canonical_url_iterator',
     'get_current_browser_request',
-    'HTTP_MOVED_PERMANENTLY',
     'nearest',
     'Navigation',
     'rootObject',
@@ -26,6 +25,8 @@ __all__ = [
     'UserAttributeCache',
     ]
 
+import httplib
+import simplejson
 
 from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
@@ -51,7 +52,14 @@ from zope.security.checker import (
     )
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
+from lazr.restful import (
+    EntryResource,
+    ResourceJSONEncoder,
+    )
 from lazr.restful.declarations import error_status
+from lazr.restful.interfaces import IJSONRequestCache
+
+from lazr.restful.tales import WebLayerAPI
 
 from canonical.launchpad.layers import (
     LaunchpadLayer,
@@ -74,12 +82,10 @@ from canonical.lazr.utils import get_current_browser_request
 from lp.app.errors import NotFoundError
 from lp.services.encoding import is_ascii_only
 
-# HTTP Status code constants - define as appropriate.
-HTTP_MOVED_PERMANENTLY = 301
 
 # Monkeypatch NotFound to always avoid generating OOPS
 # from NotFound in web service calls.
-error_status(404)(NotFound)
+error_status(httplib.NOT_FOUND)(NotFound)
 
 
 class DecoratorAdvisor:
@@ -232,20 +238,6 @@ class UserAttributeCache:
             self._user = getUtility(ILaunchBag).user
         return self._user
 
-    _is_beta = None
-
-    @property
-    def isBetaUser(self):
-        """Return True if the user is in the beta testers team."""
-        if self._is_beta is not None:
-            return self._is_beta
-
-        # We cannot import ILaunchpadCelebrities here, so we will use the
-        # hardcoded name of the beta testers team
-        self._is_beta = self.user is not None and self.user.inTeam(
-            'launchpad-beta-testers')
-        return self._is_beta
-
 
 class LaunchpadView(UserAttributeCache):
     """Base class for views in Launchpad.
@@ -260,7 +252,6 @@ class LaunchpadView(UserAttributeCache):
     - render()     <-- used to render the page.  override this if you have
                        many templates not set via zcml, or you want to do
                        rendering from Python.
-    - isBetaUser   <-- whether the logged-in user is a beta tester
     """
 
     def __init__(self, context, request):
@@ -356,6 +347,17 @@ class LaunchpadView(UserAttributeCache):
                     type(info_message))
 
     info_message = property(_getInfoMessage, _setInfoMessage)
+
+    def getCacheJSON(self):
+        if self.user is not None:
+            cache = dict(IJSONRequestCache(self.request).objects)
+        else:
+            cache = dict()
+        if WebLayerAPI(self.context).is_entry:
+            cache['context'] = self.context
+        return simplejson.dumps(
+            cache, cls=ResourceJSONEncoder,
+            media_type=EntryResource.JSON_TYPE)
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):

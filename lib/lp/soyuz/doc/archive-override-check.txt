@@ -32,7 +32,7 @@ history" in the sampledata to test those tools properly.
   0
   >>> print stderr
   DEBUG   Acquiring lock
-  DEBUG   Initialising connection.
+  DEBUG   Initializing connection.
   DEBUG   Considering: ubuntu/warty/RELEASE/CURRENT.
   DEBUG   ... published sources
   DEBUG   Rolling back any remaining transactions.

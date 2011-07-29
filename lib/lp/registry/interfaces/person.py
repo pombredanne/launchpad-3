@@ -1214,7 +1214,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     # @operation_parameters(team=copy_field(ITeamMembership['team']))
     # @export_read_operation()
     def inTeam(team):
-        """Is this person is a member or the owner of `team`?
+        """Is this person is a member of `team`?
 
         Returns `True` when you ask if an `IPerson` (or an `ITeam`,
         since it inherits from `IPerson`) is a member of himself
@@ -1400,16 +1400,20 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
     @operation_parameters(
         name=TextLine(required=True, constraint=name_validator),
         displayname=TextLine(required=False),
-        description=TextLine(required=False))
+        description=TextLine(required=False),
+        private=Bool(required=False),
+        )
     @export_factory_operation(Interface, [])  # Really IArchive.
     @operation_for_version("beta")
-    def createPPA(name=None, displayname=None, description=None):
+    def createPPA(name=None, displayname=None, description=None, private=False):
         """Create a PPA.
 
         :param name: A string with the name of the new PPA to create. If
             not specified, defaults to 'ppa'.
         :param displayname: The displayname for the new PPA.
         :param description: The description for the new PPA.
+        :param private: Whether or not to create a private PPA. Defaults to
+            False, which means the PPA will be public.
         :raises: `PPACreationError` if an error is encountered
 
         :return: a PPA `IArchive` record.

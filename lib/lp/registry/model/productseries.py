@@ -43,13 +43,14 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
-from lp.app.enums import (
-    service_uses_launchpad)
-from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    IServiceUsage,
+    )
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
@@ -61,11 +62,11 @@ from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
     )
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
 from lp.bugs.interfaces.bugtarget import IHasBugHeat
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     get_bug_tags,
-    get_bug_tags_open_count,
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -127,7 +128,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-    implements(IHasBugHeat, IProductSeries, IServiceUsage)
+    implements(IBugSummaryDimension, IHasBugHeat, IProductSeries, IServiceUsage)
 
     _table = 'ProductSeries'
 
@@ -445,18 +446,15 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         """See IBugTarget."""
         return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
-        """See IBugTarget."""
-        return get_bug_tags_open_count(
-            BugTask.productseries == self, user, wanted_tags=wanted_tags)
-
     def createBug(self, bug_params):
         """See IBugTarget."""
         raise NotImplementedError('Cannot file a bug against a productseries')
 
-    def _getBugTaskContextClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
-        return 'BugTask.productseries = %s' % sqlvalues(self)
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return BugSummary.productseries_id == self.id
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""

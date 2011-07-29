@@ -7,24 +7,21 @@ __metaclass__ = type
 
 import unittest
 
-from storm.locals import Store
-import transaction
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
     ObjectDeletedEvent,
     )
+from storm.locals import Store
+import transaction
 from zope.component import getUtility
+from zope.security.checker import canAccess
 from zope.security.interfaces import Unauthorized
-from zope.security.proxy import removeSecurityProxy
+from zope.security.management import checkPermission
 
-from canonical.launchpad.ftests import (
-    login_person,
-    logout,
-    )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.code.interfaces.seriessourcepackagebranch import (
-    IMakeOfficialBranchLinks,
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.code.model.seriessourcepackagebranch import (
+    SeriesSourcePackageBranchSet,
     )
 from lp.registry.interfaces.distribution import NoPartnerArchive
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -48,15 +45,6 @@ class TestSourcePackage(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        person = self.factory.makePerson()
-        ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-        removeSecurityProxy(ubuntu_branches).addMember(
-            person, ubuntu_branches.teamowner)
-        login_person(person)
-        self.addCleanup(logout)
-
     def test_path(self):
         sourcepackage = self.factory.makeSourcePackage()
         self.assertEqual(
@@ -79,7 +67,7 @@ class TestSourcePackage(TestCaseWithFactory):
         sourcepackage = self.factory.makeSourcePackage()
         registrant = self.factory.makePerson()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        getUtility(IMakeOfficialBranchLinks).new(
+        SeriesSourcePackageBranchSet.new(
             sourcepackage.distroseries, PackagePublishingPocket.RELEASE,
             sourcepackage.sourcepackagename, branch, registrant)
         official_branch = sourcepackage.getBranch(
@@ -92,7 +80,8 @@ class TestSourcePackage(TestCaseWithFactory):
         pocket = PackagePublishingPocket.RELEASE
         registrant = self.factory.makePerson()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        sourcepackage.setBranch(pocket, branch, registrant)
+        with person_logged_in(sourcepackage.distribution.owner):
+            sourcepackage.setBranch(pocket, branch, registrant)
         self.assertEqual(branch, sourcepackage.getBranch(pocket))
 
     def test_change_branch_once_set(self):
@@ -104,8 +93,9 @@ class TestSourcePackage(TestCaseWithFactory):
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
         new_branch = self.factory.makePackageBranch(
             sourcepackage=sourcepackage)
-        sourcepackage.setBranch(pocket, branch, registrant)
-        sourcepackage.setBranch(pocket, new_branch, registrant)
+        with person_logged_in(sourcepackage.distribution.owner):
+            sourcepackage.setBranch(pocket, branch, registrant)
+            sourcepackage.setBranch(pocket, new_branch, registrant)
         self.assertEqual(new_branch, sourcepackage.getBranch(pocket))
 
     def test_unsetBranch(self):
@@ -115,8 +105,9 @@ class TestSourcePackage(TestCaseWithFactory):
         pocket = PackagePublishingPocket.RELEASE
         registrant = self.factory.makePerson()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        sourcepackage.setBranch(pocket, branch, registrant)
-        sourcepackage.setBranch(pocket, None, registrant)
+        with person_logged_in(sourcepackage.distribution.owner):
+            sourcepackage.setBranch(pocket, branch, registrant)
+            sourcepackage.setBranch(pocket, None, registrant)
         self.assertIs(None, sourcepackage.getBranch(pocket))
 
     def test_linked_branches(self):
@@ -125,7 +116,8 @@ class TestSourcePackage(TestCaseWithFactory):
         pocket = PackagePublishingPocket.RELEASE
         registrant = self.factory.makePerson()
         branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        sourcepackage.setBranch(pocket, branch, registrant)
+        with person_logged_in(sourcepackage.distribution.owner):
+            sourcepackage.setBranch(pocket, branch, registrant)
         self.assertEqual(
             [(pocket, branch)], list(sourcepackage.linked_branches))
 
@@ -270,7 +262,7 @@ class TestSourcePackage(TestCaseWithFactory):
         store = Store.of(packaging)
         with person_logged_in(packaging.owner):
             packaging.sourcepackage.deletePackaging()
-        result = store.find(Packaging, Packaging.id==packaging_id)
+        result = store.find(Packaging, Packaging.id == packaging_id)
         self.assertIs(None, result.one())
 
     def test_setPackaging__new(self):
@@ -469,8 +461,9 @@ class TestSourcePackage(TestCaseWithFactory):
             'user_can_change_branch': False,
             'user_can_change_translation_usage': False,
             'user_can_change_translations_autoimport_mode': False}
-        self.assertEqual(
-            expected, sourcepackage.getSharingDetailPermissions())
+        with person_logged_in(self.factory.makePerson()):
+            self.assertEqual(
+                expected, sourcepackage.getSharingDetailPermissions())
 
     def test_getSharingDetailPermissions_no_user(self):
         sourcepackage = self.factory.makeSourcePackage()
@@ -479,7 +472,6 @@ class TestSourcePackage(TestCaseWithFactory):
             'user_can_change_branch': False,
             'user_can_change_translation_usage': False,
             'user_can_change_translations_autoimport_mode': False}
-        logout()
         self.assertEqual(
             expected, sourcepackage.getSharingDetailPermissions())
 
@@ -518,17 +510,98 @@ class TestSourcePackageWebService(WebServiceTestCase):
 
 
 class TestSourcePackageSecurity(TestCaseWithFactory):
-    """Tests for source package branch linking security."""
+    """Tests for source package security."""
 
     layer = DatabaseFunctionalLayer
 
+    def test_admins_have_launchpad_Edit(self):
+        admin = self.factory.makeAdministrator()
+        sourcepackage = self.factory.makeSourcePackage()
+        with person_logged_in(admin):
+            self.assertTrue(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Administrators should have launchpad.Edit on source "
+                "packages.")
+
+    def test_distro_owner_have_launchpad_Edit(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        with person_logged_in(sourcepackage.distribution.owner):
+            self.assertTrue(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Distribution owner should have launchpad.Edit on source "
+                "packages.")
+
+    def test_uploader_has_launchpad_edit(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        uploader = self.factory.makePerson()
+        archive = sourcepackage.get_default_archive()
+        with person_logged_in(sourcepackage.distribution.main_archive.owner):
+            archive.newPackageUploader(uploader, sourcepackage.name)
+        with person_logged_in(uploader):
+            self.assertTrue(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Uploader to the package should have launchpad.Edit on "
+                "source packages.")
+
+    def test_uploader_has_launchpad_edit_on_obsolete_series(self):
+        obsolete_series = self.factory.makeDistroRelease(
+            status=SeriesStatus.OBSOLETE)
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=obsolete_series)
+        uploader = self.factory.makePerson()
+        archive = sourcepackage.get_default_archive()
+        with person_logged_in(sourcepackage.distribution.main_archive.owner):
+            archive.newPackageUploader(uploader, sourcepackage.name)
+        with person_logged_in(uploader):
+            self.assertTrue(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Uploader to the package should have launchpad.Edit on "
+                "source packages in an OBSOLETE series.")
+
+    def test_uploader_have_launchpad_edit_on_current_series(self):
+        current_series = self.factory.makeDistroRelease(
+            status=SeriesStatus.CURRENT)
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=current_series)
+        uploader = self.factory.makePerson()
+        archive = sourcepackage.get_default_archive()
+        with person_logged_in(sourcepackage.distribution.main_archive.owner):
+            archive.newPackageUploader(uploader, sourcepackage.name)
+        with person_logged_in(uploader):
+            self.assertTrue(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Uploader to the package should have launchpad.Edit on "
+                "source packages in a CURRENT series.")
+
+    def test_uploader_have_launchpad_edit_on_supported_series(self):
+        supported_series = self.factory.makeDistroRelease(
+            status=SeriesStatus.SUPPORTED)
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=supported_series)
+        uploader = self.factory.makePerson()
+        archive = sourcepackage.get_default_archive()
+        with person_logged_in(sourcepackage.distribution.main_archive.owner):
+            archive.newPackageUploader(uploader, sourcepackage.name)
+        with person_logged_in(uploader):
+            self.assertTrue(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Uploader to the package should have launchpad.Edit on "
+                "source packages in a SUPPORTED series.")
+
+    def test_john_doe_cannot_edit(self):
+        sourcepackage = self.factory.makeSourcePackage()
+        john_doe = self.factory.makePerson()
+        with person_logged_in(john_doe):
+            self.failIf(
+                checkPermission('launchpad.Edit', sourcepackage),
+                "Random user shouldn't have launchpad.Edit on source "
+                "packages.")
+
     def test_cannot_setBranch(self):
         sourcepackage = self.factory.makeSourcePackage()
-        pocket = PackagePublishingPocket.RELEASE
-        registrant = self.factory.makePerson()
-        branch = self.factory.makePackageBranch(sourcepackage=sourcepackage)
-        self.assertRaises(
-            Unauthorized, sourcepackage.setBranch, pocket, branch, registrant)
+        self.failIf(
+            canAccess(sourcepackage, 'setBranch'),
+            "setBranch should only be available to admins and uploaders")
 
 
 class TestSourcePackageViews(TestCaseWithFactory):

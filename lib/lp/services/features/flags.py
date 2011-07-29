@@ -26,6 +26,8 @@ value_domain_info = sorted([
      'The flag value is set to the given floating point number.'),
     ('int',
      "An integer."),
+    ('space delimited',
+     'Space-delimited strings.')
     ])
 
 # Data for generating web-visible feature flag documentation.
@@ -38,6 +40,14 @@ value_domain_info = sorted([
 # NOTE: "default behaviour" does not specify a default value.  It
 # merely documents the code's behaviour if no value is specified.
 flag_info = sorted([
+    ('bugs.bugtracker_components.enabled',
+     'boolean',
+     ('Enables the display of bugtracker components.'),
+     ''),
+    ('code.ajax_revision_diffs.enabled',
+     'boolean',
+     ("Offer expandable inline diffs for branch revisions."),
+     ''),
     ('code.branchmergequeue',
      'boolean',
      'Enables merge queue pages and lists them on branch pages.',
@@ -53,14 +63,6 @@ flag_info = sorted([
     ('mail.dkim_authentication.disabled',
      'boolean',
      'Disable DKIM authentication checks on incoming mail.',
-     ''),
-    ('malone.advanced-subscriptions.enabled',
-     'boolean',
-     'Enables advanced bug subscription features.',
-     ''),
-    ('malone.advanced-structural-subscriptions.enabled',
-     'boolean',
-     'Enables advanced structural subscriptions',
      ''),
     ('malone.disable_targetnamesearch',
      'boolean',
@@ -78,11 +80,11 @@ flag_info = sorted([
      'int',
      "How many package syncs may be done directly in a web request.",
      '100'),
-    ('soyuz.derived-series-ui.enabled',
+    ('soyuz.derived_series_ui.enabled',
      'boolean',
      'Enables derivative distributions pages.',
      ''),
-    ('soyuz.derived-series-sync.enabled',
+    ('soyuz.derived_series_sync.enabled',
      'boolean',
      'Enables syncing of packages on derivative distributions pages.',
      ''),
@@ -106,6 +108,22 @@ flag_info = sorted([
      'boolean',
      ('Enables the display of extra details in the person picker.'),
      ''),
+    ('disclosure.person_affiliation_rank.enabled',
+     'boolean',
+     ('Enables ranking by pillar affiliation in the person picker.'),
+     ''),
+    ('bugs.autoconfirm.enabled_distribution_names',
+     'space delimited',
+     ('Enables auto-confirming bugtasks for distributions (and their '
+      'series and packages).  Use the default domain.  Specify a single '
+      'asterisk ("*") to enable for all distributions.'),
+     'None are enabled'),
+    ('bugs.autoconfirm.enabled_product_names',
+     'space delimited',
+     ('Enables auto-confirming bugtasks for products (and their '
+      'series).  Use the default domain.  Specify a single '
+      'asterisk ("*") to enable for all products.'),
+     'None are enabled'),
     ])
 
 # The set of all flag names that are documented.

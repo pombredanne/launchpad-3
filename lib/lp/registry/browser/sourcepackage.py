@@ -41,7 +41,6 @@ from zope.component import (
     )
 from zope.formlib.form import Fields
 from zope.interface import (
-    implementer,
     implements,
     Interface,
     )
@@ -62,9 +61,6 @@ from canonical.launchpad import (
 from canonical.launchpad.browser.multistep import (
     MultiStepView,
     StepView,
-    )
-from canonical.launchpad.browser.packagerelationship import (
-    relationship_builder,
     )
 from canonical.launchpad.webapp import (
     ApplicationMenu,
@@ -87,7 +83,6 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.tales import CustomizableFormatter
 from lp.app.enums import ServiceUsage
-from lp.app.interfaces.launchpad import IServiceUsage
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.registry.browser.product import ProjectAddStepOne
@@ -101,6 +96,7 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.services.worlddata.interfaces.country import ICountry
+from lp.soyuz.browser.packagerelationship import relationship_builder
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 
@@ -192,12 +188,6 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
 
 @adapter(ISourcePackage)
-@implementer(IServiceUsage)
-def distribution_from_sourcepackage(package):
-    return package.distribution
-
-
-@adapter(ISourcePackage)
 class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
     implements(IBreadcrumb)
@@ -211,6 +201,28 @@ class SourcePackageFacets(StandardLaunchpadFacets):
 
     usedfor = ISourcePackage
     enable_only = ['overview', 'bugs', 'branches', 'translations']
+
+    def overview(self):
+        text = 'Overview'
+        summary = 'General information about {0}'.format(
+            self.context.displayname)
+        return Link('', text, summary)
+
+    def bugs(self):
+        text = 'Bugs'
+        summary = 'Bugs reported about {0}'.format(self.context.displayname)
+        return Link('', text, summary)
+
+    def branches(self):
+        text = 'Code'
+        summary = 'Branches for {0}'.format(self.context.displayname)
+        return Link('', text, summary)
+
+    def translations(self):
+        text = 'Translations'
+        summary = 'Translations of {0} in Launchpad'.format(
+            self.context.displayname)
+        return Link('', text, summary)
 
 
 class SourcePackageOverviewMenu(ApplicationMenu):
@@ -426,7 +438,7 @@ class SourcePackageRemoveUpstreamView(ReturnToReferrerMixin,
                 'The packaging link has already been deleted.')
 
 
-class SourcePackageView:
+class SourcePackageView(LaunchpadView):
     """A view for (distro series) source packages."""
 
     def initialize(self):

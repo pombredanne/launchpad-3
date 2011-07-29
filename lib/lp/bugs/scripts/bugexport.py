@@ -16,7 +16,7 @@ except ImportError:
     import cElementTree as ET
 
 from zope.component import getUtility
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
 from lp.bugs.browser.bugtask import get_comments_for_bugtask

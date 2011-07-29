@@ -365,7 +365,7 @@ and the bug watch will be added without any confirmation needed:
     bugzilla.somewhere.org/bugs/: 84
 
 The bug watch got linked to the created task, and all the bug task's
-attributes got initialised to Unknown. The bugtask will be synced with
+attributes got initialized to Unknown. The bugtask will be synced with
 the bug watch's status later.
 
     >>> alsa_task = bug_four.bugtasks[0]
@@ -558,22 +558,23 @@ project in question.
 IAddBugTaskForm Interface Definition
 ====================================
 
-IAddBugTaskForm, which is used as the schema for the views tested above, has
-some attributes which are identical to those of IUpstreamBugTask and
-IDistroBugTask. However, we must ensure that IAddBugTask defines its own
-attributes rather than borrowing those of IUpstreamBugTask and IDistroBugTask,
-since doing so has produced OOPSes (bug 129406).
+IAddBugTaskForm, which is used as the schema for the views tested above,
+has some attributes which are identical to those of IBugTask However, we
+must ensure that IAddBugTask defines its own attributes rather than
+borrowing those of IBugTask, since doing so has produced OOPSes (bug
+129406).
 
     >>> from lp.bugs.interfaces.bugtask import (
-    ...     IAddBugTaskForm, IDistroBugTask, IUpstreamBugTask)
-    >>> IAddBugTaskForm['product'] is IUpstreamBugTask['product']
+    ...     IAddBugTaskForm,
+    ...     IBugTask,
+    ...     )
+    >>> IAddBugTaskForm['product'] is IBugTask['product']
     False
 
-    >>> IAddBugTaskForm['distribution'] is IDistroBugTask['distribution']
+    >>> IAddBugTaskForm['distribution'] is IBugTask['distribution']
     False
 
-    >>> (IAddBugTaskForm['sourcepackagename'] is
-    ...     IDistroBugTask['sourcepackagename'])
+    >>> IAddBugTaskForm['sourcepackagename'] is IBugTask['sourcepackagename']
     False
 
 
