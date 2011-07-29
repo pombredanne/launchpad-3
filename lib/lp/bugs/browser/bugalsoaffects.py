@@ -45,7 +45,6 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.email import email_validator
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.app.widgets.popup import SearchForUpstreamPopupWidget
@@ -86,7 +85,6 @@ from lp.registry.interfaces.product import (
     IProductSet,
     License,
     )
-from lp.registry.vocabularies import DistributionSourcePackageVocabulary
 from lp.services.features import getFeatureFlag
 from lp.services.fields import StrippedTextLine
 from lp.services.propertycache import cachedproperty

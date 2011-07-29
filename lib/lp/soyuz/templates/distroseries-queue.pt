@@ -239,6 +239,23 @@
       </tr>
     </tal:copy>
 
+    <tal:sync condition="packageupload/package_copy_job">
+      <tr>
+        <td />
+        <td tal:condition="view/availableActions" />
+        <td colspan="7">
+          Sync from
+          <tal:archive
+            content="packageupload/package_copy_job/source_archive/displayname">
+            Primary Archive for Ubuntu
+          </tal:archive>,
+          requested by
+          <tal:requester
+            content="structure packageupload/package_copy_job/job/requester/fmt:link" />
+        </td>
+      </tr>
+    </tal:sync>
+
     <tal:upload condition="not: packageupload/pending_delayed_copy">
       <tr tal:repeat="file packageupload/source_files">
         <td/>

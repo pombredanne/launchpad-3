@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'distribution_from_distributionsourcepackage',
     'DistributionSourcePackageAnswersMenu',
     'DistributionSourcePackageBreadcrumb',
     'DistributionSourcePackageChangelogView',
@@ -28,7 +27,6 @@ from zope.component import (
     getUtility,
     )
 from zope.interface import (
-    implementer,
     implements,
     Interface,
     )
@@ -124,7 +122,8 @@ class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
 
     def overview(self):
         text = 'Overview'
-        summary = 'General information about {0}'.format(self.context.displayname)
+        summary = 'General information about {0}'.format(
+            self.context.displayname)
         return Link('', text, summary)
 
     def bugs(self):
@@ -271,7 +270,7 @@ class DistributionSourcePackageActionMenu(
         return Link('+changelog', text, icon="info")
 
 
-class DistributionSourcePackageBaseView:
+class DistributionSourcePackageBaseView(LaunchpadView):
     """Common features to all `DistributionSourcePackage` views."""
 
     def releases(self):
@@ -627,7 +626,7 @@ class DistributionSourcePackageEditView(LaunchpadEditFormView):
     cancel_url = next_url
 
 
-class DistributionSourcePackageHelpView:
+class DistributionSourcePackageHelpView(LaunchpadView):
     """A View to show Answers help."""
 
     page_title = 'Help and support options'

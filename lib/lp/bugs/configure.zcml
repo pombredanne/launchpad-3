@@ -254,7 +254,9 @@
                     transitionToStatus
                     transitionToAssignee
                     transitionToMilestone
-                    transitionToTarget"/>
+                    transitionToTarget
+                    validateTransitionToTarget
+                    "/>
 
             <!-- XXX Brad Bollenbach 2006-09-29 bug=63000:
                  The permission checking for milestone and importance

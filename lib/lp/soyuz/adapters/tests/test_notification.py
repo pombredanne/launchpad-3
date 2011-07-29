@@ -1,6 +1,11 @@
+# -*- coding: utf-8 -*-
+# NOTE: The first line above must stay first; do not move the copyright
+# notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
+#
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from email.utils import formataddr
 from storm.store import Store
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -10,6 +15,7 @@ from canonical.testing.layers import (
     ZopelessDatabaseLayer,
     )
 from lp.archivepublisher.utils import get_ppa_reference
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.log.logger import BufferLogger
 from lp.soyuz.adapters.notification import (
@@ -36,6 +42,27 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
+    def test_notify_from_unicode_names(self):
+        # People with unicode in their names should appear correctly in the
+        # email and not get smashed to ASCII or otherwise transliterated.
+        RANDOM_UNICODE = u"Loïc"
+        creator = self.factory.makePerson(displayname=RANDOM_UNICODE)
+        spr = self.factory.makeSourcePackageRelease(creator=creator)
+        self.factory.makeSourcePackageReleaseFile(sourcepackagerelease=spr)
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        pocket = PackagePublishingPocket.RELEASE
+        distroseries = self.factory.makeDistroSeries()
+        distroseries.changeslist = "blah@example.com"
+        blamer = self.factory.makePerson()
+        notify(
+            blamer, spr, [], [], archive, distroseries, pocket,
+            action='accepted')
+        notifications = pop_notifications()
+        self.assertEqual(2, len(notifications))
+        msg = notifications[1].get_payload(0)
+        body = msg.get_payload(decode=True)
+        self.assertIn("Loïc", body)
+
     def test_calculate_subject_customfile(self):
         lfa = self.factory.makeLibraryFileAlias()
         package_upload = self.factory.makePackageUpload()
@@ -52,6 +79,28 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
             'accepted')
         self.assertEqual(expected_subject, subject)
 
+    def test_notify_from_person_override(self):
+        # notify() takes an optional from_person to override the calculated
+        # From: address in announcement emails.
+        spr = self.factory.makeSourcePackageRelease()
+        self.factory.makeSourcePackageReleaseFile(sourcepackagerelease=spr)
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        pocket = PackagePublishingPocket.RELEASE
+        distroseries = self.factory.makeDistroSeries()
+        distroseries.changeslist = "blah@example.com"
+        blamer = self.factory.makePerson()
+        from_person = self.factory.makePerson()
+        notify(
+            blamer, spr, [], [], archive, distroseries, pocket,
+            action='accepted', announce_from_person=from_person)
+        notifications = pop_notifications()
+        self.assertEqual(2, len(notifications))
+        # The first notification is to the blamer,
+        # the second is the announce list, which is the one that gets the
+        # overridden From:
+        self.assertEqual(
+            from_person.preferredemail.email, notifications[1]["From"])
+
 
 class TestNotification(TestCaseWithFactory):
 
@@ -64,33 +113,56 @@ class TestNotification(TestCaseWithFactory):
             'Maintainer': 'Foo Bar <foo.bar@canonical.com>',
             'Changes': ' * Foo!',
             }
-        (changesfile, date, changedby, maintainer) = fetch_information(
+        info = fetch_information(
             None, None, changes)
-        self.assertEqual('2001-01-01', date)
-        self.assertEqual(' * Foo!', changesfile)
-        for field in (changedby, maintainer):
+        self.assertEqual('2001-01-01', info['date'])
+        self.assertEqual(' * Foo!', info['changesfile'])
+        fields = [
+            info['changedby'],
+            info['maintainer'],
+            info['changedby_displayname'],
+            info['maintainer_displayname'],
+            ]
+        for field in fields:
             self.assertEqual('Foo Bar <foo.bar@canonical.com>', field)
 
     def test_fetch_information_spr(self):
-        spr = self.factory.makeSourcePackageRelease()
-        (changesfile, date, changedby, maintainer) = fetch_information(
-            spr, None, None)
-        self.assertEqual(date, spr.dateuploaded)
-        self.assertEqual(changesfile, spr.changelog_entry)
-        self.assertEqual(changedby, format_address_for_person(spr.creator))
+        creator = self.factory.makePerson(displayname=u"foø")
+        maintainer = self.factory.makePerson(displayname=u"bær")
+        spr = self.factory.makeSourcePackageRelease(
+            creator=creator, maintainer=maintainer)
+        info = fetch_information(spr, None, None)
+        self.assertEqual(info['date'], spr.dateuploaded)
+        self.assertEqual(info['changesfile'], spr.changelog_entry)
         self.assertEqual(
-            maintainer, format_address_for_person(spr.maintainer))
+            info['changedby'], format_address_for_person(spr.creator))
+        self.assertEqual(
+            info['maintainer'], format_address_for_person(spr.maintainer))
+        self.assertEqual(
+            u"foø <%s>" % spr.creator.preferredemail.email,
+            info['changedby_displayname'])
+        self.assertEqual(
+            u"bær <%s>" % spr.maintainer.preferredemail.email,
+            info['maintainer_displayname'])
 
     def test_fetch_information_bprs(self):
         bpr = self.factory.makeBinaryPackageRelease()
-        (changesfile, date, changedby, maintainer) = fetch_information(
-            None, [bpr], None)
+        info = fetch_information(None, [bpr], None)
         spr = bpr.build.source_package_release
-        self.assertEqual(date, spr.dateuploaded)
-        self.assertEqual(changesfile, spr.changelog_entry)
-        self.assertEqual(changedby, format_address_for_person(spr.creator))
+        self.assertEqual(info['date'], spr.dateuploaded)
+        self.assertEqual(info['changesfile'], spr.changelog_entry)
         self.assertEqual(
-            maintainer, format_address_for_person(spr.maintainer))
+            info['changedby'], format_address_for_person(spr.creator))
+        self.assertEqual(
+            info['maintainer'], format_address_for_person(spr.maintainer))
+        self.assertEqual(
+            info['changedby_displayname'],
+            formataddr((spr.creator.displayname,
+                        spr.creator.preferredemail.email)))
+        self.assertEqual(
+            info['maintainer_displayname'],
+            formataddr((spr.maintainer.displayname,
+                        spr.maintainer.preferredemail.email)))
 
     def test_calculate_subject_spr(self):
         spr = self.factory.makeSourcePackageRelease()
@@ -268,4 +340,3 @@ class TestNotification(TestCaseWithFactory):
         result = is_auto_sync_upload(
             spr=None, bprs=None, pocket=None, changed_by_email=None)
         self.assertFalse(result)
-        

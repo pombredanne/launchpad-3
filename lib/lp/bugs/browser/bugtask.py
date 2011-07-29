@@ -86,7 +86,6 @@ from zope.app.form.interfaces import (
     IDisplayWidget,
     IInputWidget,
     InputErrors,
-    WidgetsError,
     )
 from zope.app.form.utility import (
     setUpWidget,
@@ -182,7 +181,6 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     IServiceUsage,
     )
-from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.bug import (
@@ -267,10 +265,7 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
-from lp.registry.vocabularies import (
-    DistributionSourcePackageVocabulary,
-    MilestoneVocabulary,
-    )
+from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.features import getFeatureFlag
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
@@ -1463,7 +1458,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             # the form machinery to try and set this value back to
             # what it was!
             data_to_apply.pop('milestone', None)
-
 
         # We special case setting assignee and status, because there's
         # a workflow associated with changes to these fields.
@@ -3583,6 +3577,8 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             'bugtask_path': '/'.join(
                 [''] + canonical_url(self.context).split('/')[3:]),
             'prefix': get_prefix(self.context),
+            'assignee_value': self.context.assignee
+                and self.context.assignee.name,
             'assignee_is_team': self.context.assignee
                 and self.context.assignee.is_team,
             'assignee_vocabulary': assignee_vocabulary,

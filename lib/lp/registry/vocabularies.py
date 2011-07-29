@@ -2012,9 +2012,8 @@ class DistributionSourcePackageVocabulary:
         pass
 
     def getDistributionAndPackageName(self, text):
-        # XXX sinzui 2011-07-21: match the toTerm() format, but also
-        # use it to select a distribution. Maybe this should also split on
-        # a the first space.
+        "Return the distribution and package name from the parsed text."
+        # Match the toTerm() format, but also use it to select a distribution.
         distribution = None
         if '/' in text:
             distro_name, text = text.split('/', 1)
@@ -2033,7 +2032,7 @@ class DistributionSourcePackageVocabulary:
             distribution = distribution or self.distribution
             if distribution is not None and spn_or_dsp is not None:
                 dsp = distribution.getSourcePackage(spn_or_dsp)
-        if dsp and dsp.publishing_history:
+        try:
             binaries = dsp.publishing_history[0].getBuiltBinaries()
             binary_names = [binary.binary_package_name for binary in binaries]
             if binary_names != []:
@@ -2042,9 +2041,9 @@ class DistributionSourcePackageVocabulary:
                 summary = 'Not yet built.'
             token = '%s/%s' % (dsp.distribution.name, dsp.name)
             return SimpleTerm(dsp.sourcepackagename, token, summary)
-        # Without SPPH (pending, published, superceeded, deleted)
-        # This SPN was never excepted by one of the distribution's series.
-        raise LookupError(distribution, spn_or_dsp)
+        except (IndexError, AttributeError):
+            # Either the DSP was None or there is no publishing history.
+            raise LookupError(distribution, spn_or_dsp)
 
     def getTerm(self, spn_or_dsp):
         """See `IBaseVocabulary`."""
@@ -2104,4 +2103,5 @@ class DistributionSourcePackageVocabulary:
                     SourcePackageName.name.contains_string(search_term),
                     BinaryPackageName.name.contains_string(
                         search_term))).config(distinct=True)
+        # XXX sinzui 2011-07-26: This query ignored SPN branches.
         return CountableIterator(spns.count(), spns, self.toTerm)

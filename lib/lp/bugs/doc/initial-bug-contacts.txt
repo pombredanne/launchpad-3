@@ -132,8 +132,7 @@ when a subscriber to the new package is already subscribed to the bug:
     >>> old_state = Snapshot(
     ...     bug_one_in_ubuntu_firefox, providing=IBugTask)
 
-    >>> bug_one_in_ubuntu_firefox.sourcepackagename = (
-    ...     ubuntu_pmount.sourcepackagename)
+    >>> bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu_pmount)
 
     >>> source_package_changed = ObjectModifiedEvent(
     ...     bug_one_in_ubuntu_firefox, old_state,
@@ -225,7 +224,7 @@ package to None.
     >>> old_state = Snapshot(
     ...     bug_one_in_ubuntu_firefox, providing=IBugTask)
 
-    >>> bug_one_in_ubuntu_firefox.sourcepackagename = None
+    >>> bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu)
 
     >>> source_package_changed = ObjectModifiedEvent(
     ...     bug_one_in_ubuntu_firefox, old_state, ["sourcepackagename"])
@@ -252,8 +251,7 @@ add such a team as a subscriber.
     >>> old_state = Snapshot(
     ...     bug_one_in_ubuntu_firefox, providing=IBugTask)
 
-    >>> bug_one_in_ubuntu_firefox.sourcepackagename = (
-    ...     ubuntu_pmount.sourcepackagename)
+    >>> bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu_pmount)
 
     >>> source_package_changed = ObjectModifiedEvent(
     ...     bug_one_in_ubuntu_firefox, old_state, ["sourcepackagename"])
@@ -286,8 +284,7 @@ and then the bug gets reassigned to mozilla firefox:
     >>> old_state = Snapshot(
     ...     bug_one_in_ubuntu_firefox, providing=IBugTask)
 
-    >>> bug_one_in_ubuntu_firefox.sourcepackagename = (
-    ...     ubuntu_firefox.sourcepackagename)
+    >>> bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu_firefox)
 
     >>> source_package_changed = ObjectModifiedEvent(
     ...     bug_one_in_ubuntu_firefox, old_state,
@@ -335,7 +332,7 @@ Bar gets subscribed to the bug in the process:
 
     >>> old_state = Snapshot(bug_two_in_ubuntu, providing=IBugTask)
 
-    >>> bug_two_in_ubuntu.product = mozilla_firefox
+    >>> bug_two_in_ubuntu.transitionToTarget(mozilla_firefox)
 
     >>> product_changed = ObjectModifiedEvent(
     ...     bug_two_in_ubuntu, old_state, ["id", "title", "product"])
