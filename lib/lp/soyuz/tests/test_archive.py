@@ -1624,7 +1624,7 @@ class TestComponents(TestCaseWithFactory):
             set(archive.getComponentsForUploader(person)))
 
 
-class TestvalidatePPA(TestCaseWithFactory):
+class TestValidatePPA(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -1638,6 +1638,30 @@ class TestvalidatePPA(TestCaseWithFactory):
         self.assertEqual(
             'A PPA cannot have the same name as its distribution.',
             Archive.validatePPA(ppa_owner, 'ubuntu'))
+
+    def test_private_ppa_non_commercial_admin(self):
+        ppa_owner = self.factory.makePerson()
+        self.assertEqual(
+            '%s is not allowed to make private PPAs' % (ppa_owner.name,),
+            Archive.validatePPA(ppa_owner, self.factory.getUniqueString(),
+                                private=True))
+
+    def test_private_ppa_commercial_admin(self):
+        ppa_owner = self.factory.makePerson()
+        with celebrity_logged_in('admin'):
+            comm = getUtility(ILaunchpadCelebrities).commercial_admin
+            comm.addMember(ppa_owner, comm.teamowner)
+        self.assertIs(
+            None,
+            Archive.validatePPA(ppa_owner, self.factory.getUniqueString(),
+                                private=True))
+
+    def test_private_ppa_admin(self):
+        ppa_owner = self.factory.makeAdministrator()
+        self.assertIs(
+            None,
+            Archive.validatePPA(ppa_owner, self.factory.getUniqueString(),
+                                private=True))
 
     def test_two_ppas(self):
         ppa = self.factory.makeArchive(name='ppa')

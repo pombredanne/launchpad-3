@@ -124,11 +124,12 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         self.assertFalse(picker_widget.config['show_assign_me_button'])
         self.assertFalse(picker_widget.config['show_remove_button'])
 
-        # A person picker widget does show them by default.
+        # A person picker widget does the assign button by default.
         person_picker_widget = PersonPickerWidget(
             bound_field, self.vocabulary, self.request)
         self.assertTrue(person_picker_widget.config['show_assign_me_button'])
-        self.assertTrue(person_picker_widget.config['show_remove_button'])
+        # But not the remove button.
+        self.assertFalse(person_picker_widget.config['show_remove_button'])
 
     def test_widget_personvalue_meta(self):
         # The person picker has the correct meta value for a person value.

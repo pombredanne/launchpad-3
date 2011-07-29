@@ -182,6 +182,7 @@ class Job(SQLBase):
         if self.status is not JobStatus.SUSPENDED:
             raise InvalidTransition(self._status, JobStatus.WAITING)
         self._set_status(JobStatus.WAITING)
+        self.lease_expires = None
 
 
 Job.ready_jobs = Select(

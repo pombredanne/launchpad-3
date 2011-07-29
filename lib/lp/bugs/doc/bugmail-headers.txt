@@ -53,9 +53,12 @@ sourcepackage (we have to login to be allowed to set attributes on these tasks):
 
     >>> login("foo.bar@canonical.com")
 
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> debian = getUtility(IDistributionSet)['debian']
+    >>> warty = getUtility(IDistributionSet)['ubuntu'].getSeries('warty')
     >>> mozilla_firefox_packagename = debian_firefox_bugtask.sourcepackagename
-    >>> debian_firefox_bugtask.sourcepackagename = None
-    >>> warty_firefox_bugtask.sourcepackagename = None
+    >>> debian_firefox_bugtask.transitionToTarget(debian)
+    >>> warty_firefox_bugtask.transitionToTarget(warty)
 
     >>> debian_firefox_bugtask.asEmailHeaderValue()
     u'distribution=debian; sourcepackage=None; component=None;
