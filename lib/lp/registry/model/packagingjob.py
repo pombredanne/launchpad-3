@@ -16,6 +16,10 @@ from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
+from storm.expr import (
+    And,
+    Or,
+    )
 from storm.locals import (
     Int,
     Reference,
@@ -35,7 +39,7 @@ from lp.services.job.interfaces.job import (
     JobStatus,
     )
 from lp.services.job.model.job import Job
-
+from lp.translations.model.potemplate import POTemplate
 
 class PackagingJobType(DBEnumeratedType):
     """Types of Packaging Job."""
@@ -80,8 +84,12 @@ class PackagingJob(StormBase):
 
     sourcepackagename = Reference(sourcepackagename_id, SourcePackageName.id)
 
+    potemplate_id = Int('potemplate')
+
+    potemplate = Reference(potemplate_id, POTemplate.id)
+
     def __init__(self, job, job_type, productseries, distroseries,
-                 sourcepackagename):
+                 sourcepackagename, potemplate=None):
         """"Constructor.
 
         :param job: The `Job` to use for storing basic job state.
@@ -94,6 +102,7 @@ class PackagingJob(StormBase):
         self.distroseries = distroseries
         self.sourcepackagename = sourcepackagename
         self.productseries = productseries
+        self.potemplate = potemplate
 
 
 class RegisteredSubclass(type):
@@ -141,16 +150,18 @@ class PackagingJobDerived:
         self.job = job
 
     @classmethod
-    def create(cls, productseries, distroseries, sourcepackagename):
+    def create(cls, productseries, distroseries, sourcepackagename,
+               potemplate=None):
         """"Create a TranslationMergeJob backed by a PackageJob.
 
         :param productseries: The ProductSeries side of the Packaging.
         :param distroseries: The distroseries of the Packaging sourcepackage.
         :param sourcepackagename: The name of the Packaging sourcepackage.
+        :param potemplate: POTemplate to restrict to (if any).
         """
         context = PackagingJob(
             Job(), cls.class_job_type, productseries,
-            distroseries, sourcepackagename)
+            distroseries, sourcepackagename, potemplate)
         return cls(context)
 
     @classmethod
@@ -183,15 +194,20 @@ class PackagingJobDerived:
         return (cls._subclass[job.job_type](job) for job in jobs)
 
     @classmethod
-    def getNextJobStatus(cls, packaging):
+    def getNextJobStatus(cls, packaging, potemplate=None):
         """Return the status of the next job to run."""
         store = IStore(PackagingJob)
+        if potemplate is not None:
+            potemplate_clause = PackagingJob.potemplate_id == potemplate.id
+        else:
+            potemplate_clause = 1 == 1
         result = store.find(
             Job, Job.id == PackagingJob.job_id,
             PackagingJob.distroseries_id == packaging.distroseries.id,
             PackagingJob.sourcepackagename_id ==
                 packaging.sourcepackagename.id,
             PackagingJob.productseries_id == packaging.productseries.id,
+            potemplate_clause,
             PackagingJob.job_type == cls.class_job_type,
             Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]))
         result.order_by(PackagingJob.id)
