@@ -1867,8 +1867,7 @@ class DistroSeriesDerivationVocabulary:
 class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
     """Active `IPillar` objects vocabulary."""
     displayname = 'Needs to be overridden'
-    _table = PillarName
-    _orderBy = 'name'
+    _limit = 100
 
     def toTerm(self, obj):
         """See `IVocabulary`."""
@@ -1934,7 +1933,6 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
 class DistributionOrProductOrProjectGroupVocabulary(PillarVocabularyBase):
     """Active `IProduct`, `IProjectGroup` or `IDistribution` vocabulary."""
     displayname = 'Select a project'
-    _limit = 100
 
     def __contains__(self, obj):
         if IProduct.providedBy(obj) or IProjectGroup.providedBy(obj):
