@@ -525,7 +525,7 @@ class CopyChecker:
 def do_copy(sources, archive, series, pocket, include_binaries=False,
             allow_delayed_copies=True, person=None, check_permissions=True,
             overrides=None, send_email=False, strict_binaries=True,
-            close_bugs=True, create_dsd_job=True):
+            close_bugs=True, create_dsd_job=True, announce_from_person=None):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
@@ -557,6 +557,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         override must be for the corresponding source in the sources list.
         Overrides will be ignored for delayed copies.
     :param send_email: Should we notify for the copy performed?
+    :param announce_from_person: If send_email is True,
+        then send announcement emails with this person as the From:
     :param strict_binaries: If 'include_binaries' is True then setting this
         to True will make the copy fail if binaries cannot be also copied.
     :param close_bugs: A boolean indicating whether or not bugs on the
@@ -616,7 +618,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                 notify(
                     person, source.sourcepackagerelease, [], [], archive,
                     destination_series, pocket, changes=None,
-                    action='accepted')
+                    action='accepted',
+                    announce_from_person=announce_from_person)
 
         overrides_index += 1
         copies.extend(sub_copies)
