@@ -80,6 +80,7 @@ from lp.scripts.garbo import (
     BulkPruner,
     DailyDatabaseGarbageCollector,
     DuplicateSessionPruner,
+    FrequentDatabaseGarbageCollector,
     HourlyDatabaseGarbageCollector,
     OpenIDConsumerAssociationPruner,
     UnusedSessionPruner,
@@ -358,11 +359,22 @@ class TestGarbo(TestCaseWithFactory):
         # starting us in a known state.
         self.runDaily()
         self.runHourly()
+        self.runFrequently()
 
         # Capture garbo log output to tests can examine it.
         self.log_buffer = StringIO()
         handler = logging.StreamHandler(self.log_buffer)
         self.log.addHandler(handler)
+
+    def runFrequently(self, maximum_chunk_size=2, test_args=()):
+        transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser('garbo_daily')
+        collector = FrequentDatabaseGarbageCollector(
+            test_args=list(test_args))
+        collector._maximum_chunk_size = maximum_chunk_size
+        collector.logger = self.log
+        collector.main()
+        return collector
 
     def runDaily(self, maximum_chunk_size=2, test_args=()):
         transaction.commit()
@@ -405,7 +417,8 @@ class TestGarbo(TestCaseWithFactory):
         # Make sure we have 4 nonces now.
         self.failUnlessEqual(store.find(OAuthNonce).count(), 4)
 
-        self.runHourly(maximum_chunk_size=60)  # 1 minute maximum chunk size
+        self.runFrequently(
+            maximum_chunk_size=60)  # 1 minute maximum chunk size
 
         store = IMasterStore(OAuthNonce)
 
@@ -448,7 +461,7 @@ class TestGarbo(TestCaseWithFactory):
         self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 4)
 
         # Run the garbage collector.
-        self.runHourly(maximum_chunk_size=60)  # 1 minute maximum chunks.
+        self.runFrequently(maximum_chunk_size=60)  # 1 minute maximum chunks.
 
         store = IMasterStore(OpenIDConsumerNonce)
 
@@ -571,7 +584,7 @@ class TestGarbo(TestCaseWithFactory):
 
         # Expire all those expirable rows, and possibly a few more if this
         # test is running slow.
-        self.runHourly()
+        self.runFrequently()
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
