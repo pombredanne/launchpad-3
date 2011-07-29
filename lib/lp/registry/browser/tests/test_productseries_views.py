@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
+    BrowserTestCase,
     TestCaseWithFactory,
     person_logged_in
     )
@@ -29,3 +30,13 @@ class TestProductSeriesHelp(TestCaseWithFactory):
         with person_logged_in(person):
             view = create_initialized_view(series, '+code-summary')
             self.assertThat(view(), Contains(branch_url))
+
+
+class TestWithBrowser(BrowserTestCase):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_timeline_graph(self):
+        """Test that rendering the graph does not raise an exception."""
+        productseries = self.factory.makeProductSeries()
+        self.getViewBrowser(productseries, view_name='+timeline-graph')
