@@ -448,8 +448,15 @@ unchanged value.
     http://.../debian/+milestone/3.1
 
 We can change the task's target. Here we change the task's target from
-the mozilla-firefox package to alsa-utils.
+the mozilla-firefox package to alsa-utils. Only published packages can
+have tasks, so we first add a publication.
 
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> login('admin@canonical.com')
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+    >>> ignored = factory.makeSourcePackagePublishingHistory(
+    ...     distroseries=debian.currentseries, sourcepackagename='evolution')
+    >>> logout()
     >>> print webservice.named_post(
     ...     task['self_link'], 'transitionToTarget',
     ...     target=webservice.getAbsoluteUrl('/debian/+source/evolution'))
@@ -526,7 +533,6 @@ target, we reset it in order to avoid data inconsistencies.
 We can change a distribution task to a task with a package from the same
 distribution.
 
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> login('foo.bar@canonical.com')
     >>> distro_bugtask = factory.makeBugTask(
     ...     target=getUtility(IDistributionSet).getByName('ubuntu'))

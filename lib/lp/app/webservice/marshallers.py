@@ -13,9 +13,10 @@ __all__ = [
 from lazr.restful.marshallers import (
     TextFieldMarshaller as LazrTextFieldMarshaller,
     )
-from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.component import getUtility
 
 from lp.services.utils import obfuscate_email
+from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 
 class TextFieldMarshaller(LazrTextFieldMarshaller):
@@ -26,7 +27,7 @@ class TextFieldMarshaller(LazrTextFieldMarshaller):
 
         Return the value as is.
         """
-        if (value is not None and
-                IUnauthenticatedPrincipal.providedBy(self.request.principal)):
+
+        if (value is not None and getUtility(ILaunchBag).user is None):
             return obfuscate_email(value)
         return value

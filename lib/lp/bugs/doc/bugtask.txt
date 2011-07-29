@@ -615,8 +615,8 @@ But a normal unprivileged user can't set the milestone.
     >>> print current_series_netapplet_task.sourcepackagename.name
     netapplet
 
-    >>> current_series_netapplet_task.sourcepackagename = (
-    ...     ubuntu_pmount.sourcepackagename)
+    >>> current_series_netapplet_task.transitionToTarget(
+    ...     ubuntu_pmount.development_version)
 
     >>> print generic_netapplet_task.sourcepackagename.name
     pmount
@@ -972,7 +972,7 @@ is used here.
 
     >>> thunderbird = productset.get(8)
     >>> upstream_task_id = upstream_task.id
-    >>> upstream_task.product = thunderbird
+    >>> upstream_task.transitionToTarget(thunderbird)
     >>> upstream_task.bugtargetdisplayname
     u'Mozilla Thunderbird'
 

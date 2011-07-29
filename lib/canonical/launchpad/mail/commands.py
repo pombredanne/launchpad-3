@@ -643,7 +643,7 @@ class AffectsEmailCommand(EmailCommand):
             if bugtask is not None:
                 bugtask_before_edit = Snapshot(
                     bugtask, providing=IBugTask)
-                bugtask.sourcepackagename = bug_target.sourcepackagename
+                bugtask.transitionToTarget(bug_target)
                 event = ObjectModifiedEvent(
                     bugtask, bugtask_before_edit, ['sourcepackagename'])
 

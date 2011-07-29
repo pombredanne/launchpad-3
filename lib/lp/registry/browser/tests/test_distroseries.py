@@ -50,7 +50,7 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.debversion import Version
 from lp.registry.browser.distroseries import (
     HIGHER_VERSION_THAN_PARENT,
-    IGNORED,
+    ALL,
     NON_IGNORED,
     RESOLVED,
     seriesToVocab,
@@ -1611,27 +1611,23 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertContentEqual(
             [diff2, diff1], filtered_view2.cached_differences.batch)
 
-    def test_batch_differences_packages(self):
-        # field.package_type parameter allows to list only
-        # blacklisted differences.
+    def test_batch_all_packages(self):
+        # field.package_type parameter allows to list all the
+        # differences.
         set_derived_series_ui_feature_flag(self)
         derived_series, parent_series = self._createChildAndParent()
-        blacklisted_diff = self.factory.makeDistroSeriesDifference(
-            derived_series=derived_series,
-            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
-
-        blacklisted_view = create_initialized_view(
+        # Create differences of all possible statuses.
+        diffs = []
+        for status in DistroSeriesDifferenceStatus.items:
+            diff = self.factory.makeDistroSeriesDifference(
+                derived_series=derived_series, status=status)
+            diffs.append(diff)
+        all_view = create_initialized_view(
             derived_series,
             '+localpackagediffs',
-            query_string='field.package_type=%s' % IGNORED)
-        unblacklisted_view = create_initialized_view(
-            derived_series,
-            '+localpackagediffs')
+            query_string='field.package_type=%s' % ALL)
 
-        self.assertContentEqual(
-            [blacklisted_diff], blacklisted_view.cached_differences.batch)
-        self.assertContentEqual(
-            [], unblacklisted_view.cached_differences.batch)
+        self.assertContentEqual(diffs, all_view.cached_differences.batch)
 
     def test_batch_blacklisted_differences_with_higher_version(self):
         # field.package_type parameter allows to list only
@@ -2336,6 +2332,35 @@ class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory,
 
         self.assertContentEqual(
             [missing_diff], view.cached_differences.batch)
+
+    def test_uniquepackages_displays_parent(self):
+        # For a series derived from multiple parents, the parent for each
+        # DSD is displayed; no parent version is displayed because we're
+        # listing packages unique to the derived series.
+        set_derived_series_ui_feature_flag(self)
+        derived_series, parent_series = self._createChildAndParents()
+        missing_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+        self.factory.makeDistroSeriesDifference(
+            difference_type=missing_type,
+            derived_series=derived_series,
+            parent_series=parent_series,
+            status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION)
+        view = create_initialized_view(
+            derived_series, '+uniquepackages')
+
+        multiple_parents_display_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "Parent table header", 'th',
+                text=re.compile("^\s*Parent\s")),
+            Not(soupmatchers.Tag(
+                "Parent version table header", 'th',
+                text=re.compile("\s*Parent version\s*"))),
+            soupmatchers.Tag(
+                "Parent name", 'a',
+                attrs={'class': 'parent-name'},
+                text=re.compile("\s*%s\s*" % parent_series.displayname)),
+             )
+        self.assertThat(view.render(), multiple_parents_display_matcher)
 
     def test_uniquepackages_differences_empty(self):
         # The view is empty if there is no differences with type

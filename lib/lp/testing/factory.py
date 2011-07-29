@@ -2068,7 +2068,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner = target.owner
         if description is None:
             description = self.getUniqueString('description')
-        with person_logged_in(target.owner):
+        with person_logged_in(owner):
             question = target.newQuestion(
                 owner=owner, title=title, description=description)
         return question

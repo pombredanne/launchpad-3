@@ -58,7 +58,10 @@ from lp.app.errors import (
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.helpers import get_widget_template
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
-from lp.app.widgets.popup import VocabularyPickerWidget
+from lp.app.widgets.popup import (
+    PersonPickerWidget,
+    VocabularyPickerWidget,
+    )
 from lp.app.widgets.textwidgets import (
     StrippedTextWidget,
     URIWidget,
@@ -90,7 +93,7 @@ class BugTaskAssigneeWidget(Widget):
         #
         # See zope.app.form.interfaces.IInputWidget.
         self.required = False
-        self.assignee_chooser_widget = VocabularyPickerWidget(
+        self.assignee_chooser_widget = PersonPickerWidget(
             context, context.vocabulary, request)
         self.setUpNames()
 

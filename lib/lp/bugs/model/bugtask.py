@@ -1138,6 +1138,34 @@ class BugTask(SQLBase):
             get_property_cache(self.bug)._known_viewers = set(
                 [self.assignee.id])
 
+    def validateTransitionToTarget(self, target):
+        """See `IBugTask`."""
+        # Check if any series are involved. You can't retarget series
+        # tasks. Except for DistroSeries/SourcePackage tasks, which can
+        # only be retargetted to another SourcePackage in the same
+        # DistroSeries, or the DistroSeries.
+        interfaces = set(providedBy(target))
+        interfaces.update(providedBy(self.target))
+        if IProductSeries in interfaces:
+            raise IllegalTarget(
+                "Series tasks may only be created by approving nominations.")
+        elif interfaces.intersection((IDistroSeries, ISourcePackage)):
+            series = set()
+            for potential_target in (target, self.target):
+                if IDistroSeries.providedBy(potential_target):
+                    series.add(potential_target)
+                elif ISourcePackage.providedBy(potential_target):
+                    series.add(potential_target.distroseries)
+                else:
+                    series = set()
+                    break
+            if len(series) != 1:
+                raise IllegalTarget(
+                    "Distribution series tasks may only be retargetted "
+                    "to a package within the same series.")
+
+        validate_target(self.bug, target)
+
     def transitionToTarget(self, target):
         """See `IBugTask`.
 
@@ -1147,6 +1175,11 @@ class BugTask(SQLBase):
         lib/canonical/launchpad/browser/bugtask.py#BugTaskEditView.
         """
 
+        if self.target == target:
+            return
+
+        self.validateTransitionToTarget(target)
+
         target_before_change = self.target
 
         if (self.milestone is not None and
@@ -1155,22 +1188,6 @@ class BugTask(SQLBase):
             # have to make sure that it's a milestone of the
             # current target, or reset it to None
             self.milestone = None
-
-        # Check if any series are involved. You can't retarget series
-        # tasks. Except for SourcePackage tasks, which can only be
-        # retargetted to another SourcePackage in the same DistroSeries.
-        interfaces = set(providedBy(target))
-        interfaces.update(providedBy(self.target))
-        if interfaces.intersection((IProductSeries, IDistroSeries)):
-            raise IllegalTarget(
-                "Series tasks may only be created by approving nominations.")
-        elif ISourcePackage in interfaces:
-            if (not ISourcePackage.providedBy(target) or
-                not ISourcePackage.providedBy(self.target) or
-                target.distroseries != self.target.distroseries):
-                raise IllegalTarget(
-                    "Series source package tasks may only be retargetted "
-                    "to another source package in the same series.")
 
         # Inhibit validate_target_attribute, as we can't set them all
         # atomically, but we know the final result is correct.

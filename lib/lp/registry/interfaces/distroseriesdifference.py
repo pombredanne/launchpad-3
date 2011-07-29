@@ -272,7 +272,7 @@ class IDistroSeriesDifference(IDistroSeriesDifferencePublic,
 class IDistroSeriesDifferenceSource(Interface):
     """A utility of this interface can be used to create differences."""
 
-    def new(derived_series, source_package_name, parent_series=None):
+    def new(derived_series, source_package_name, parent_series):
         """Create an `IDistroSeriesDifference`.
 
         :param derived_series: The distribution series which was derived
@@ -283,8 +283,7 @@ class IDistroSeriesDifferenceSource(Interface):
             package with a difference.
         :type source_package_name: `ISourcePackageName`.
         :param parent_series: The distribution series which has the derived
-            series as a child. If there is only one parent, it does not need
-            to be specified.
+            series as a child.
         :type parent_series: `IDistroSeries`.
         :raises NotADerivedSeriesError: When the passed distro series
             is not a derived series.
@@ -298,7 +297,8 @@ class IDistroSeriesDifferenceSource(Interface):
         status=None,
         child_version_higher=False,
         parent_series=None,
-        packagesets=None):
+        packagesets=None,
+        changed_by=None):
         """Return differences for the derived distro series sorted by
         package name.
 
@@ -322,6 +322,9 @@ class IDistroSeriesDifferenceSource(Interface):
             parent series if this parameter is None.
         :type distro_series: `IDistroSeries`.
         :param packagesets: Optional iterable of `Packageset` to filter by.
+        :param changed_by: An optional `Person` (an individual or a team) or a
+            collection of `Person`s. The results are limited to only those
+            changes made by the given people.
         :return: A result set of `IDistroSeriesDifference`.
         """
 
