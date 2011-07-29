@@ -51,6 +51,10 @@ class TestDistroSeries(BugTargetBugFilingDuplicateSearchAlwaysOn,
         super(TestDistroSeries, self).setUp()
         self.bugtarget = self.factory.makeDistroSeries()
 
+    def test_bugtarget_parent(self):
+        self.assertEqual(
+            self.bugtarget.distribution, self.bugtarget.bugtarget_parent)
+
 
 class TestProjectGroup(BugTargetBugFilingDuplicateSearchAlwaysOn,
                        TestCaseWithFactory):
@@ -137,6 +141,10 @@ class TestProductSeries(BugTargetBugFilingDuplicateSearchInherited,
         self.bugtarget = self.factory.makeProductSeries(
             product=self.bugtarget_parent)
 
+    def test_bugtarget_parent(self):
+        self.assertEqual(
+            self.bugtarget_parent, self.bugtarget.bugtarget_parent)
+
 
 class TestSourcePackage(BugTargetBugFilingDuplicateSearchInherited,
                        TestCaseWithFactory):
@@ -154,3 +162,7 @@ class TestSourcePackage(BugTargetBugFilingDuplicateSearchInherited,
         self.bugtarget = self.factory.makeSourcePackage(
             distroseries=distroseries)
         self.bugtarget_parent = self.bugtarget.distribution_sourcepackage
+
+    def test_bugtarget_parent(self):
+        self.assertEqual(
+            self.bugtarget_parent, self.bugtarget.bugtarget_parent)

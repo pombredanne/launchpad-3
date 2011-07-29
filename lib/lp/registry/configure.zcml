@@ -205,6 +205,8 @@
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
+            interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
+        <allow
             interface="lp.soyuz.interfaces.queue.IHasQueueItems"/>
         <allow
             interface="lp.soyuz.interfaces.publishing.ICanPublishPackages"/>
@@ -1399,6 +1401,8 @@
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
+        <allow
+            interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
         <require
             permission="launchpad.Edit"
             set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
@@ -1601,6 +1605,8 @@
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
+        <allow
+            interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
         <allow
             interface="lp.soyuz.interfaces.buildrecords.IHasBuildRecords"/>
         <require
