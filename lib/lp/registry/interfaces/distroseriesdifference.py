@@ -272,7 +272,7 @@ class IDistroSeriesDifference(IDistroSeriesDifferencePublic,
 class IDistroSeriesDifferenceSource(Interface):
     """A utility of this interface can be used to create differences."""
 
-    def new(derived_series, source_package_name, parent_series=None):
+    def new(derived_series, source_package_name, parent_series):
         """Create an `IDistroSeriesDifference`.
 
         :param derived_series: The distribution series which was derived
@@ -283,8 +283,7 @@ class IDistroSeriesDifferenceSource(Interface):
             package with a difference.
         :type source_package_name: `ISourcePackageName`.
         :param parent_series: The distribution series which has the derived
-            series as a child. If there is only one parent, it does not need
-            to be specified.
+            series as a child.
         :type parent_series: `IDistroSeries`.
         :raises NotADerivedSeriesError: When the passed distro series
             is not a derived series.
