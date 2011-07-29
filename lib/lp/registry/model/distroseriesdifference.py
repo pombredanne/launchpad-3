@@ -367,6 +367,16 @@ def eager_load_dsds(dsds):
         SourcePackageName, dsds, ("source_package_name_id",))
 
 
+def get_comment_with_status_change(status, new_status, comment):
+    # Create a new comment string with the description of the status
+    # change and the given comment string.
+    new_comment = "Ignored: %s => %s" % (
+        status.title, new_status.title)
+    if comment is not None:
+        new_comment = "%s\n\n%s" % (new_comment, comment)
+    return new_comment
+
+
 class DistroSeriesDifference(StormBase):
     """See `DistroSeriesDifference`."""
     implements(IDistroSeriesDifference)
@@ -439,15 +449,10 @@ class DistroSeriesDifference(StormBase):
         return store.add(diff)
 
     @staticmethod
-    def getForDistroSeries(
-        distro_series,
-        difference_type=None,
-        name_filter=None,
-        status=None,
-        child_version_higher=False,
-        parent_series=None,
-        packagesets=None,
-        changed_by=None):
+    def getForDistroSeries(distro_series, difference_type=None,
+                           name_filter=None, status=None,
+                           child_version_higher=False, parent_series=None,
+                           packagesets=None, changed_by=None):
         """See `IDistroSeriesDifferenceSource`."""
         if difference_type is None:
             difference_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
@@ -901,17 +906,29 @@ class DistroSeriesDifference(StormBase):
             DSDComment.distro_series_difference == self)
         return comments.order_by(Desc(DSDComment.id))
 
-    def blacklist(self, all=False):
+    def _getCommentWithStatusChange(self, new_status, comment=None):
+        return get_comment_with_status_change(
+            self.status, new_status, comment)
+
+    def blacklist(self, commenter, all=False, comment=None):
         """See `IDistroSeriesDifference`."""
         if all:
-            self.status = DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS
+            new_status = DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS
         else:
-            self.status = DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT
+            new_status = DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT
+        new_comment = self._getCommentWithStatusChange(new_status, comment)
+        dsd_comment = self.addComment(commenter, new_comment)
+        self.status = new_status
+        return dsd_comment
 
-    def unblacklist(self):
+    def unblacklist(self, commenter, comment=None):
         """See `IDistroSeriesDifference`."""
-        self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        new_status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        new_comment = self._getCommentWithStatusChange(new_status, comment)
+        self.status = new_status
+        dsd_comment = self.addComment(commenter, new_comment)
         self.update(manual=True)
+        return dsd_comment
 
     def requestPackageDiffs(self, requestor):
         """See `IDistroSeriesDifference`."""
