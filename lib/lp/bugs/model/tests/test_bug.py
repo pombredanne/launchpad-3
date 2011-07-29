@@ -19,8 +19,8 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.matchers import (
-    Equals,
     HasQueryCount,
+    LessThan,
     )
 
 
@@ -373,9 +373,9 @@ class TestBug(TestCaseWithFactory):
             # We check that the query count is low, since that's
             # part of the point of the way that linked_branches is
             # implemented. If we try eager-loading all the linked
-            # branches the query count jumps to 10, which is not
+            # branches the query count jumps up by 6, which is not
             # what we want.
-            self.assertThat(recorder, HasQueryCount(Equals(6)))
+            self.assertThat(recorder, HasQueryCount(LessThan(7)))
         self.assertContentEqual(public_branches, linked_branches)
         self.assertNotIn(private_branch, linked_branches)
 

@@ -25,6 +25,7 @@ from lazr.enum import DBEnumeratedType
 
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
+    accessor_for,
     call_with,
     export_as_webservice_entry,
     export_factory_operation,
@@ -306,11 +307,12 @@ class IBug(IPrivacy, IHasLinkedBranches):
             readonly=True)))
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
-    linked_branches = CollectionField(
+    linked_branches = exported(
+        CollectionField(
             title=_("Branches associated with this bug, usually "
             "branches on which this bug is being fixed."),
             value_type=Reference(schema=IBugBranch),
-            readonly=True)
+            readonly=True))
     tags = exported(List(
         title=_("Tags"),
         description=_("Space-separated keywords for classifying "
@@ -429,8 +431,8 @@ class IBug(IPrivacy, IHasLinkedBranches):
 
     official_tags = Attribute("The official bug tags relevant to this bug.")
 
+    @accessor_for(linked_branches)
     @call_with(user=REQUEST_USER)
-    @export_operation_as('linked_branches')
     @export_read_operation()
     @operation_for_version('beta')
     def getVisibleLinkedBranches(user):

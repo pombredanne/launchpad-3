@@ -372,6 +372,8 @@ class Bug(SQLBase):
     questions = SQLRelatedJoin('Question', joinColumn='bug',
         otherColumn='question', intermediateTable='QuestionBug',
         orderBy='-datecreated')
+    linked_branches = SQLMultipleJoin(
+        'BugBranch', joinColumn='bug', orderBy='id')
     date_last_message = UtcDateTimeCol(default=None)
     number_of_duplicates = IntCol(notNull=True, default=0)
     message_count = IntCol(notNull=True, default=0)
@@ -1334,9 +1336,6 @@ BugMessage""" % sqlvalues(self.id))
                 BugBranch,
                 BugBranch.bug == self,
                 In(BugBranch.branchID, branch_ids))
-
-    linked_branches = SQLMultipleJoin(
-        'BugBranch', joinColumn='bug', orderBy='id')
 
     @cachedproperty
     def has_cves(self):
