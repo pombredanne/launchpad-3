@@ -24,6 +24,10 @@ from storm.locals import (
     Storm,
     )
 from storm.store import Store
+from testtools.matchers import (
+    Equals,
+    GreaterThan,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -891,3 +895,23 @@ class TestGarbo(TestCaseWithFactory):
             """ % sqlbase.quote(template.id)).get_one()
 
         self.assertEqual(1, count)
+
+    def test_BugSummaryJournalRollup(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+        # Generate a load of entries in BugSummaryJournal.
+        store.execute("UPDATE BugTask SET status=42")
+
+        # We only need a few to test.
+        num_rows = store.execute(
+            "SELECT COUNT(*) FROM BugSummaryJournal").get_one()[0]
+        self.assertThat(num_rows, GreaterThan(10))
+
+        self.runFrequently()
+
+        # We just care that the rows have been removed. The bugsummary
+        # tests confirm that the rollup stored method is working correctly.
+        num_rows = store.execute(
+            "SELECT COUNT(*) FROM BugSummaryJournal").get_one()[0]
+        self.assertThat(num_rows, Equals(0))
