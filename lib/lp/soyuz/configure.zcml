@@ -181,6 +181,7 @@
                 is_delayed_copy
                 isPPA
                 package_copy_job
+                package_copy_job_id
                 package_name
                 package_version
                 section_name

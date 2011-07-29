@@ -139,7 +139,7 @@ class AdminMergeBaseView(ValidatingMergeView):
                 naked_email.personID = self.target_person.id
                 naked_email.accountID = self.target_person.accountID
                 naked_email.status = EmailAddressStatus.NEW
-        job = getUtility(IPersonSet).mergeAsync(
+        getUtility(IPersonSet).mergeAsync(
             self.dupe_person, self.target_person, reviewer=self.user)
         self.request.response.addInfoNotification(self.merge_message)
         self.next_url = self.success_url
@@ -214,7 +214,6 @@ class AdminTeamMergeView(AdminMergeBaseView):
 
         super(AdminTeamMergeView, self).validate(data)
         dupe_team = data['dupe_person']
-        target_team = data['target_person']
         # We cannot merge the teams if there is a mailing list on the
         # duplicate person, unless that mailing list is purged.
         if self.hasMailingList(dupe_team):
@@ -342,19 +341,18 @@ class FinishedPeopleMergeRequestView(LaunchpadView):
             return ''
 
 
-class RequestPeopleMergeMultipleEmailsView:
+class RequestPeopleMergeMultipleEmailsView(LaunchpadView):
     """Merge request view when dupe account has multiple email addresses."""
 
     label = 'Merge Launchpad accounts'
     page_title = label
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        super(RequestPeopleMergeMultipleEmailsView, self).__init__(
+            context, request)
         self.form_processed = False
         self.dupe = None
         self.notified_addresses = []
-        self.user = getUtility(ILaunchBag).user
 
     def processForm(self):
         dupe = self.request.form.get('dupe')
