@@ -153,7 +153,8 @@
     <subscriber
         for="lp.registry.interfaces.packaging.IPackaging
              lazr.lifecycle.interfaces.IObjectEvent"
-        handler="lp.registry.model.packagingjob.schedule_job" />
+        handler="
+        lp.translations.model.translationtemplatejob.schedule_packaging_job" />
     <facet
         facet="translations">
 
