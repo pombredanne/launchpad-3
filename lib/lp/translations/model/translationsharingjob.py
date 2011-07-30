@@ -144,7 +144,7 @@ class TranslationSharingJobDerived:
 
     @classmethod
     def create(cls, productseries, distroseries, sourcepackagename):
-        """"Create a TranslationMergeJob backed by a PackageJob.
+        """"Create a TranslationPackagingJob backed by TranslationSharingJob.
 
         :param productseries: The ProductSeries side of the Packaging.
         :param distroseries: The distroseries of the Packaging sourcepackage.
