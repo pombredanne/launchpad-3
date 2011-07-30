@@ -195,7 +195,12 @@ class TranslationSharingJobDerived:
             a `TranslationSharingJob` for.
         :param event: The event itself.
         """
-        if 'name' not in event.edited_fields:
+        if ('name' not in event.edited_fields and
+            'productseries' not in event.edited_fields and
+            'distroseries' not in event.edited_fields and
+            'sourcepackagename' not in event.edited_fields):
+            # Ignore changes to POTemplates that are neither renames,
+            # nor moves to a different package/project.
             return
         for event_type, job_classes in cls._event_types.iteritems():
             if not event_type.providedBy(event):

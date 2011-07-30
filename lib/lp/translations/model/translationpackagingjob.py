@@ -41,7 +41,10 @@ from lp.translations.translationmerger import (
     TransactionManager,
     TranslationMerger,
     )
-from lp.translations.utilities.translationsplitter import TranslationSplitter
+from lp.translations.utilities.translationsplitter import (
+    TranslationSplitter,
+    TranslationTemplateMover,
+    )
 
 
 class TranslationPackagingJob(TranslationSharingJobDerived, BaseRunnableJob):
@@ -141,5 +144,7 @@ class TranslationTemplateChangeJob(TranslationPackagingJob):
     def run(self):
         """See `IRunnableJob`."""
         logger = logging.getLogger()
-        logger.info("TEMPLATE CHANGE!")
+        logger.info("Sanitizing translations for '%s'" % (
+                self.potemplate.displayname))
+        TranslationTemplateMover(self.potemplate).split()
 
