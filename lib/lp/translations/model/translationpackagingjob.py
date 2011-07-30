@@ -102,7 +102,7 @@ class TranslationMergeJob(TranslationPackagingJob):
 
 
 class TranslationSplitJob(TranslationPackagingJob):
-    """Job for merging translations between a product and sourcepackage."""
+    """Job for splitting translations between a product and sourcepackage."""
 
     implements(IRunnableJob)
 

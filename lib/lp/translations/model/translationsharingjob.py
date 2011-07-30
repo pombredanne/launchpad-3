@@ -153,9 +153,9 @@ class TranslationSharingJobDerived:
         self.job = job
 
     @classmethod
-    def create(cls, productseries, distroseries, sourcepackagename,
-               potemplate=None):
-        """"Create a TranslationMergeJob backed by a PackageJob.
+    def create(cls, productseries=None, distroseries=None,
+               sourcepackagename=None, potemplate=None):
+        """"Create a TranslationPackagingJob backed by TranslationSharingJob.
 
         :param productseries: The ProductSeries side of the Packaging.
         :param distroseries: The distroseries of the Packaging sourcepackage.
