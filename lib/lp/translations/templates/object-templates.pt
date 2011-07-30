@@ -6,6 +6,14 @@
 >
   <body>
     <tal:head_epilogue metal:fill-slot="head_epilogue">
+      <script type="text/javascript">
+        LPS.use('lp.translations.sourcepackage_sharing_details', function(Y) {
+          Y.on('domready', function() {
+              Y.lp.translations.sourcepackage_sharing_details.prepare(
+                LP.cache);
+          });
+        });
+      </script>
       <style type="text/css">
         .inactive_links a{
           background: none;
@@ -78,8 +86,8 @@
         </thead>
         <tbody>
           <tal:templates
-              repeat="template view/iter_templates"
-              content="structure python:view.renderTemplateRow(template)"/>
+              repeat="data view/iter_data"
+              content="structure python:view.renderTemplateRow(*data)"/>
         </tbody>
       </table>
       </div>
