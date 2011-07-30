@@ -72,7 +72,7 @@ class PickerEntry:
     implements(IPickerEntry)
 
     def __init__(self, description=None, image=None, css=None, alt_title=None,
-                 title_link=None, alt_title_link=None, link_css='js-action',
+                 title_link=None, alt_title_link=None, link_css='new-window',
                  badges=None, metadata=None):
         self.description = description
         self.image = image
