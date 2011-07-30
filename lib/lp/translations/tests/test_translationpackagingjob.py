@@ -14,9 +14,9 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.registry.interfaces.packaging import IPackagingUtil
-from lp.translations.model.translationtemplatejob import (
-    TranslationTemplateJob,
-    TranslationTemplateJobDerived,
+from lp.translations.model.translationsharingjob import (
+    TranslationSharingJob,
+    TranslationSharingJobDerived,
     )
 from lp.services.job.interfaces.job import (
     IRunnableJob,
@@ -108,12 +108,12 @@ class JobFinder:
         self.job_type = job_class.class_job_type
 
     def find(self):
-        return list(TranslationTemplateJobDerived.iterReady([
-            TranslationTemplateJob.productseries_id == self.productseries.id,
-            (TranslationTemplateJob.sourcepackagename_id ==
+        return list(TranslationSharingJobDerived.iterReady([
+            TranslationSharingJob.productseries_id == self.productseries.id,
+            (TranslationSharingJob.sourcepackagename_id ==
              self.sourcepackagename.id),
-            TranslationTemplateJob.distroseries_id == self.distroseries.id,
-            TranslationTemplateJob.job_type == self.job_type,
+            TranslationSharingJob.distroseries_id == self.distroseries.id,
+            TranslationSharingJob.job_type == self.job_type,
             ]))
 
 

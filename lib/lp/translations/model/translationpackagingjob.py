@@ -31,10 +31,10 @@ from lp.services.job.runner import BaseRunnableJob
 from lp.translations.interfaces.translationpackagingjob import (
     ITranslationPackagingJobSource,
     )
-from lp.translations.model.translationtemplatejob import (
-    TranslationTemplateJob,
-    TranslationTemplateJobDerived,
-    TranslationTemplateJobType,
+from lp.translations.model.translationsharingjob import (
+    TranslationSharingJob,
+    TranslationSharingJobDerived,
+    TranslationSharingJobType,
     )
 from lp.translations.translationmerger import (
     TransactionManager,
@@ -43,7 +43,7 @@ from lp.translations.translationmerger import (
 from lp.translations.utilities.translationsplitter import TranslationSplitter
 
 
-class TranslationPackagingJob(TranslationTemplateJobDerived, BaseRunnableJob):
+class TranslationPackagingJob(TranslationSharingJobDerived, BaseRunnableJob):
     """Iterate through all Translation job types."""
 
     classProvides(ITranslationPackagingJobSource)
@@ -52,7 +52,7 @@ class TranslationPackagingJob(TranslationTemplateJobDerived, BaseRunnableJob):
 
     @staticmethod
     def _register_subclass(cls):
-        TranslationTemplateJobDerived._register_subclass(cls)
+        TranslationSharingJobDerived._register_subclass(cls)
         job_type = getattr(cls, 'class_job_type', None)
         if job_type is not None:
             cls._translation_packaging_job_types.append(job_type)
@@ -71,7 +71,7 @@ class TranslationPackagingJob(TranslationTemplateJobDerived, BaseRunnableJob):
     @classmethod
     def iterReady(cls):
         """See `IJobSource`."""
-        clause = TranslationTemplateJob.job_type.is_in(
+        clause = TranslationSharingJob.job_type.is_in(
             cls._translation_packaging_job_types)
         return super(TranslationPackagingJob, cls).iterReady([clause])
 
@@ -81,7 +81,7 @@ class TranslationMergeJob(TranslationPackagingJob):
 
     implements(IRunnableJob)
 
-    class_job_type = TranslationTemplateJobType.PACKAGING_MERGE
+    class_job_type = TranslationSharingJobType.PACKAGING_MERGE
 
     create_on_event = IObjectCreatedEvent
 
@@ -106,7 +106,7 @@ class TranslationSplitJob(TranslationPackagingJob):
 
     implements(IRunnableJob)
 
-    class_job_type = TranslationTemplateJobType.PACKAGING_SPLIT
+    class_job_type = TranslationSharingJobType.PACKAGING_SPLIT
 
     create_on_event = IObjectDeletedEvent
 

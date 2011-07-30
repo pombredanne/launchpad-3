@@ -154,7 +154,7 @@
         for="lp.registry.interfaces.packaging.IPackaging
              lazr.lifecycle.interfaces.IObjectEvent"
         handler="
-        lp.translations.model.translationtemplatejob.schedule_packaging_job" />
+        lp.translations.model.translationsharingjob.schedule_packaging_job" />
     <facet
         facet="translations">
 
