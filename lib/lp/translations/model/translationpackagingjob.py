@@ -17,6 +17,7 @@ import logging
 from lazr.lifecycle.interfaces import (
     IObjectCreatedEvent,
     IObjectDeletedEvent,
+    IObjectModifiedEvent,
     )
 import transaction
 from zope.interface import (
@@ -117,3 +118,28 @@ class TranslationSplitJob(TranslationPackagingJob):
             'Splitting %s and %s', self.productseries.displayname,
             self.sourcepackage.displayname)
         TranslationSplitter(self.productseries, self.sourcepackage).split()
+
+
+class TranslationTemplateChangeJob(TranslationPackagingJob):
+    """Job for merging/splitting translations when template is changed."""
+
+    implements(IRunnableJob)
+
+    class_job_type = TranslationSharingJobType.TEMPLATE_CHANGE
+
+    create_on_event = IObjectModifiedEvent
+
+    @classmethod
+    def forPOTemplate(cls, potemplate):
+        """Create a TranslationTemplateChangeJob for a POTemplate.
+
+        :param potemplate: The `POTemplate` to create the job for.
+        :return: A `TranslationTemplateChangeJob`.
+        """
+        return cls.create(potemplate=potemplate)
+
+    def run(self):
+        """See `IRunnableJob`."""
+        logger = logging.getLogger()
+        logger.info("TEMPLATE CHANGE!")
+

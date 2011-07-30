@@ -59,6 +59,12 @@ class TranslationSharingJobType(DBEnumeratedType):
         Split translations between productseries and sourcepackage.
         """)
 
+    TEMPLATE_CHANGE = DBItem(2, """
+        Split/merge translations for a single translation template.
+
+        Split/merge translations for a single translation template.
+        """)
+
 
 class TranslationSharingJob(StormBase):
     """Base class for jobs related to a packaging."""
@@ -182,6 +188,22 @@ class TranslationSharingJobDerived:
                 job_class.forPackaging(packaging)
 
     @classmethod
+    def schedulePOTemplateJob(cls, potemplate, event):
+        """Event subscriber to create a TranslationSharingJob on events.
+
+        :param potemplate: The `POTemplate` to create
+            a `TranslationSharingJob` for.
+        :param event: The event itself.
+        """
+        if 'name' not in event.edited_fields:
+            return
+        for event_type, job_classes in cls._event_types.iteritems():
+            if not event_type.providedBy(event):
+                continue
+            for job_class in job_classes:
+                job_class.forPOTemplate(potemplate)
+
+    @classmethod
     def iterReady(cls, extra_clauses):
         """See `IJobSource`.
 
@@ -224,3 +246,4 @@ class TranslationSharingJobDerived:
 
 #make accessible to zcml
 schedule_packaging_job = TranslationSharingJobDerived.schedulePackagingJob
+schedule_potemplate_job = TranslationSharingJobDerived.schedulePOTemplateJob
