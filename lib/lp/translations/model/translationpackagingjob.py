@@ -147,4 +147,6 @@ class TranslationTemplateChangeJob(TranslationPackagingJob):
         logger.info("Sanitizing translations for '%s'" % (
                 self.potemplate.displayname))
         TranslationTemplateMover(self.potemplate).split()
+        tm = TransactionManager(transaction.manager, False)
+        TranslationMerger.mergeModifiedTemplates(self.potemplate, tm)
 
