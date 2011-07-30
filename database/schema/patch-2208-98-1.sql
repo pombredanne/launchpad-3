@@ -14,7 +14,7 @@ ALTER TABLE PackagingJob
   ADD CONSTRAINT translationtemplatejob_valid_link CHECK (
     -- If there is a template, it is the template being moved.
     (potemplate IS NOT NULL AND productseries IS NULL AND
-     distroseries IS NULL AND sourcepackagename IS NULL)
+     distroseries IS NULL AND sourcepackagename IS NULL) OR
     -- If there is no template, we need all of productseries, distroseries
     -- and sourcepackagename because we are moving translations between
     -- a productseries and a source package.
