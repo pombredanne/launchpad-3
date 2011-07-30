@@ -3914,13 +3914,25 @@ class PersonSet:
             naked_from_team.retractTeamMembership(team, reviewer)
         IStore(from_team).flush()
 
-    def mergeAsync(self, from_person, to_person, reviewer=None):
+    def mergeAsync(self, from_person, to_person, reviewer=None, delete=False):
         """See `IPersonSet`."""
         return getUtility(IPersonMergeJobSource).create(
-            from_person=from_person, to_person=to_person, reviewer=reviewer)
+            from_person=from_person, to_person=to_person, reviewer=reviewer,
+            delete=delete)
+
+    def delete(self, from_person, reviewer):
+        """See `IPersonSet`."""
+        # Deletes are implemented by merging into registry experts. Force
+        # the target to prevent any accidental misuse by calling code.
+        to_person = getUtility(ILaunchpadCelebrities).registry_experts
+        return self._merge(from_person, to_person, reviewer, True)
 
     def merge(self, from_person, to_person, reviewer=None):
         """See `IPersonSet`."""
+        return self._merge(from_person, to_person, reviewer)
+
+    def _merge(self, from_person, to_person, reviewer, delete=False):
+        """Helper for merge and delete methods."""
         # since we are doing direct SQL manipulation, make sure all
         # changes have been flushed to the database
         store = Store.of(from_person)
@@ -4153,6 +4165,10 @@ class PersonSet:
             store.execute("""
                 UPDATE OpenIdIdentifier SET account=%s WHERE account=%s
                 """ % sqlvalues(to_person.accountID, from_person.accountID))
+
+        if delete:
+            # We don't notify anyone about deletes.
+            return
 
         # Inform the user of the merge changes.
         if to_person.isTeam():
