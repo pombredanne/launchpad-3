@@ -1461,7 +1461,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
             Date: %s
             Changed-By: Foo Bar <foo.bar@canonical.com>
-            http://launchpad.dev/ubuntutest/breezy-autotest/+source/foo/1.0-2
+            http://launchpad.dev/ubuntutest/nobby/+source/foo/1.0-2
             """ % source.sourcepackagerelease.dateuploaded)
         self.assertIn(expected_text, notification.as_string())
         self.assertIn(expected_text, announcement.as_string())
