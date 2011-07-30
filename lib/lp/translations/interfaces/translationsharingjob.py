@@ -11,7 +11,7 @@ from canonical.launchpad import _
 from lp.services.job.interfaces.job import IJob
 
 
-class ITranslationTemplateJob(IJob):
+class ITranslationSharingJob(IJob):
 
     productseries = Attribute(_("The productseries of the Packaging."))
 
