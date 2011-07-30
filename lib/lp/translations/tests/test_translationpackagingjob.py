@@ -14,7 +14,7 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.registry.interfaces.packaging import IPackagingUtil
-from lp.registry.model.packagingjob import (
+from lp.translations.model.translationtemplatejob import (
     TranslationTemplateJob,
     TranslationTemplateJobDerived,
     )

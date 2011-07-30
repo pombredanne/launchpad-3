@@ -31,7 +31,7 @@ from lp.services.job.runner import BaseRunnableJob
 from lp.translations.interfaces.translationpackagingjob import (
     ITranslationPackagingJobSource,
     )
-from lp.registry.model.packagingjob import (
+from lp.translations.model.translationtemplatejob import (
     TranslationTemplateJob,
     TranslationTemplateJobDerived,
     TranslationTemplateJobType,
@@ -81,7 +81,7 @@ class TranslationMergeJob(TranslationPackagingJob):
 
     implements(IRunnableJob)
 
-    class_job_type = TranslationTemplateJobType.TRANSLATION_MERGE
+    class_job_type = TranslationTemplateJobType.PACKAGING_MERGE
 
     create_on_event = IObjectCreatedEvent
 
@@ -106,7 +106,7 @@ class TranslationSplitJob(TranslationPackagingJob):
 
     implements(IRunnableJob)
 
-    class_job_type = TranslationTemplateJobType.TRANSLATION_SPLIT
+    class_job_type = TranslationTemplateJobType.PACKAGING_SPLIT
 
     create_on_event = IObjectDeletedEvent
 

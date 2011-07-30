@@ -25,7 +25,6 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import (
     IStore,
     )
-from lp.registry.interfaces.packagingjob import ITranslationTemplateJob
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -35,18 +34,21 @@ from lp.services.job.interfaces.job import (
     JobStatus,
     )
 from lp.services.job.model.job import Job
+from lp.translations.interfaces.translationtemplatejob import (
+    ITranslationTemplateJob,
+    )
 
 
 class TranslationTemplateJobType(DBEnumeratedType):
-    """Types of Packaging Job."""
+    """Types of translation template (POTemplate) Job."""
 
-    TRANSLATION_MERGE = DBItem(0, """
+    PACKAGING_MERGE = DBItem(0, """
         Merge translations betweeen productseries and sourcepackage.
 
         Merge translations betweeen productseries and sourcepackage.
         """)
 
-    TRANSLATION_SPLIT = DBItem(1, """
+    PACKAGING_SPLIT = DBItem(1, """
         Split translations between productseries and sourcepackage.
 
         Split translations between productseries and sourcepackage.
@@ -104,7 +106,7 @@ class RegisteredSubclass(type):
 
 
 class TranslationTemplateJobDerived:
-    """Base class for specialized Packaging Job types."""
+    """Base class for specialized TranslationTemplate Job types."""
 
     __metaclass__ = RegisteredSubclass
 
@@ -204,4 +206,4 @@ class TranslationTemplateJobDerived:
 
 
 #make accessible to zcml
-schedule_job = TranslationTemplateJobDerived.scheduleJob
+schedule_packaging_job = TranslationTemplateJobDerived.scheduleJob
