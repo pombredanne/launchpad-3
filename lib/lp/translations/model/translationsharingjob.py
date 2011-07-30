@@ -168,7 +168,7 @@ class TranslationSharingJobDerived:
         return cls(context)
 
     @classmethod
-    def scheduleJob(cls, packaging, event):
+    def schedulePackagingJob(cls, packaging, event):
         """Event subscriber to create a TranslationSharingJob on events.
 
         :param packaging: The `Packaging` to create a `TranslationMergeJob`
@@ -223,4 +223,4 @@ class TranslationSharingJobDerived:
 
 
 #make accessible to zcml
-schedule_packaging_job = TranslationSharingJobDerived.scheduleJob
+schedule_packaging_job = TranslationSharingJobDerived.schedulePackagingJob
