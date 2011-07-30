@@ -61,6 +61,7 @@ class IPickerEntry(Interface):
     css = Attribute('CSS Class')
     alt_title = Attribute('Alternative title')
     title_link = Attribute('URL used for anchor on title')
+    details = Attribute('Optional information about the entry')
     alt_title_link = Attribute('URL used for anchor on alt title')
     link_css = Attribute('CSS Class for links')
     badges = Attribute('List of badge img attributes')
@@ -72,13 +73,14 @@ class PickerEntry:
     implements(IPickerEntry)
 
     def __init__(self, description=None, image=None, css=None, alt_title=None,
-                 title_link=None, alt_title_link=None,
+                 title_link=None, details=None, alt_title_link=None,
                  link_css='sprite new-window', badges=None, metadata=None):
         self.description = description
         self.image = image
         self.css = css
         self.alt_title = alt_title
         self.title_link = title_link
+        self.details = details
         self.alt_title_link = alt_title_link
         self.link_css = link_css
         self.badges = badges
@@ -162,11 +164,7 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
                     [IRCNicknameFormatterAPI(ircid).displayname()
                     for ircid in person.ircnicknames])
             if irc_nicks:
-                if extra.description:
-                    extra.description = ("%s (%s)" %
-                        (extra.description, irc_nicks))
-                else:
-                    extra.description = "%s" % irc_nicks
+                    extra.details = irc_nicks
 
         return extra
 
