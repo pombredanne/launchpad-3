@@ -407,7 +407,6 @@ class TranslationMerger:
         self.mergeTranslationMessages()
         self.tm.endTransaction()
 
-
     def __init__(self, potemplates, tm):
         """Constructor.
 

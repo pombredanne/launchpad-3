@@ -149,4 +149,3 @@ class TranslationTemplateChangeJob(TranslationPackagingJob):
         TranslationTemplateSplitter(self.potemplate).split()
         tm = TransactionManager(transaction.manager, False)
         TranslationMerger.mergeModifiedTemplates(self.potemplate, tm)
-

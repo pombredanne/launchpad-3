@@ -16,10 +16,6 @@ from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
-from storm.expr import (
-    And,
-    Or,
-    )
 from storm.locals import (
     Int,
     Reference,
@@ -224,13 +220,9 @@ class TranslationSharingJobDerived:
         return (cls._subclass[job.job_type](job) for job in jobs)
 
     @classmethod
-    def getNextJobStatus(cls, packaging, potemplate=None):
+    def getNextJobStatus(cls, packaging):
         """Return the status of the next job to run."""
         store = IStore(TranslationSharingJob)
-        if potemplate is not None:
-            potemplate_clause = PackagingJob.potemplate_id == potemplate.id
-        else:
-            potemplate_clause = True
         result = store.find(
             Job, Job.id == TranslationSharingJob.job_id,
             (TranslationSharingJob.distroseries_id ==
@@ -239,7 +231,6 @@ class TranslationSharingJobDerived:
                 packaging.sourcepackagename.id,
             (TranslationSharingJob.productseries_id ==
              packaging.productseries.id),
-            potemplate_clause,
             TranslationSharingJob.job_type == cls.class_job_type,
             Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]))
         result.order_by(TranslationSharingJob.id)

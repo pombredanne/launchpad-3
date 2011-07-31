@@ -8,12 +8,10 @@ import logging
 
 from storm.expr import (
     And,
-    Exists,
     Join,
     LeftJoin,
     Not,
     Or,
-    Select,
     )
 from storm.locals import (
     ClassAlias,
@@ -154,6 +152,10 @@ class TranslationTemplateSplitter(TranslationSplitterBase):
             ]
 
         if self.potemplate.productseries is not None:
+            # If the template is now in a product, we look for all
+            # effectively sharing templates that are in *different*
+            # products, or that are in a sourcepackage which is not
+            # linked (through Packaging table) with this product.
             ps = self.potemplate.productseries
             productseries_join = LeftJoin(
                 ProductSeries,
@@ -161,16 +163,26 @@ class TranslationTemplateSplitter(TranslationSplitterBase):
             packaging_join = LeftJoin(
                 Packaging,
                 And(Packaging.productseriesID == ps.id,
-                    Packaging.sourcepackagenameID == OtherTemplate.sourcepackagenameID,
+                    (Packaging.sourcepackagenameID ==
+                     OtherTemplate.sourcepackagenameID),
                     Packaging.distroseriesID == OtherTemplate.distroseriesID
                     ))
             tables.extend([productseries_join, packaging_join])
+            # Template should not be sharing if...
             other_clauses = Or(
+                # The name is different, or...
                 OtherTemplate.name != self.potemplate.name,
+                # It's in a different product, or...
                 And(Not(ProductSeries.id == None),
                     ProductSeries.productID != ps.productID),
+                # There is no link between this product series and
+                # a source package the template is in.
                 Packaging.id == None)
         else:
+            # If the template is now in a source package, we look for all
+            # effectively sharing templates that are in *different*
+            # distributions or source packages, or that are in a product
+            # which is not linked with this source package.
             ds = self.potemplate.distroseries
             spn = self.potemplate.sourcepackagename
             distroseries_join = LeftJoin(
@@ -183,11 +195,16 @@ class TranslationTemplateSplitter(TranslationSplitterBase):
                     Packaging.productseriesID == OtherTemplate.productseriesID
                     ))
             tables.extend([distroseries_join, packaging_join])
+            # Template should not be sharing if...
             other_clauses = Or(
+                # The name is different, or...
                 OtherTemplate.name != self.potemplate.name,
+                # It's in a different distribution or source package, or...
                 And(Not(DistroSeries.id == None),
                     Or(DistroSeries.distributionID != ds.distributionID,
                        OtherTemplate.sourcepackagenameID != spn.id)),
+                # There is no link between this source package and
+                # a product the template is in.
                 Packaging.id == None)
 
         return store.using(*tables).find(
