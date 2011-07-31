@@ -43,7 +43,7 @@ from lp.translations.translationmerger import (
     )
 from lp.translations.utilities.translationsplitter import (
     TranslationSplitter,
-    TranslationTemplateMover,
+    TranslationTemplateSplitter,
     )
 
 
@@ -146,7 +146,7 @@ class TranslationTemplateChangeJob(TranslationPackagingJob):
         logger = logging.getLogger()
         logger.info("Sanitizing translations for '%s'" % (
                 self.potemplate.displayname))
-        TranslationTemplateMover(self.potemplate).split()
+        TranslationTemplateSplitter(self.potemplate).split()
         tm = TransactionManager(transaction.manager, False)
         TranslationMerger.mergeModifiedTemplates(self.potemplate, tm)
 

@@ -6,9 +6,24 @@ __metaclass__ = type
 
 import logging
 
-from storm.locals import ClassAlias, Store
+from storm.expr import (
+    And,
+    Exists,
+    Join,
+    LeftJoin,
+    Not,
+    Or,
+    Select,
+    )
+from storm.locals import (
+    ClassAlias,
+    Store,
+    )
 import transaction
 
+from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.packaging import Packaging
+from lp.registry.model.productseries import ProductSeries
 from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
@@ -130,14 +145,53 @@ class TranslationTemplateSplitter(TranslationSplitterBase):
         OtherItem = ClassAlias(TranslationTemplateItem, 'OtherItem')
         OtherTemplate = ClassAlias(POTemplate, 'OtherTemplate')
 
-        return store.find(
+        tables = [
+            OtherTemplate,
+            Join(OtherItem, OtherItem.potemplateID == OtherTemplate.id),
+            Join(ThisItem,
+                 And(ThisItem.potmsgsetID == OtherItem.potmsgsetID,
+                     ThisItem.potemplateID == self.potemplate.id)),
+            ]
+
+        if self.potemplate.productseries is not None:
+            ps = self.potemplate.productseries
+            productseries_join = LeftJoin(
+                ProductSeries,
+                ProductSeries.id == OtherTemplate.productseriesID)
+            packaging_join = LeftJoin(
+                Packaging,
+                And(Packaging.productseriesID == ps.id,
+                    Packaging.sourcepackagenameID == OtherTemplate.sourcepackagenameID,
+                    Packaging.distroseriesID == OtherTemplate.distroseriesID
+                    ))
+            tables.extend([productseries_join, packaging_join])
+            other_clauses = Or(
+                OtherTemplate.name != self.potemplate.name,
+                And(Not(ProductSeries.id == None),
+                    ProductSeries.productID != ps.productID),
+                Packaging.id == None)
+        else:
+            ds = self.potemplate.distroseries
+            spn = self.potemplate.sourcepackagename
+            distroseries_join = LeftJoin(
+                DistroSeries,
+                DistroSeries.id == OtherTemplate.distroseriesID)
+            packaging_join = LeftJoin(
+                Packaging,
+                And(Packaging.distroseriesID == ds.id,
+                    Packaging.sourcepackagenameID == spn.id,
+                    Packaging.productseriesID == OtherTemplate.productseriesID
+                    ))
+            tables.extend([distroseries_join, packaging_join])
+            other_clauses = Or(
+                OtherTemplate.name != self.potemplate.name,
+                And(Not(DistroSeries.id == None),
+                    Or(DistroSeries.distributionID != ds.distributionID,
+                       OtherTemplate.sourcepackagenameID != spn.id)),
+                Packaging.id == None)
+
+        return store.using(*tables).find(
             (OtherItem, ThisItem),
-            ThisItem.potemplateID == self.potemplate.id,
-            ThisItem.potmsgsetID == OtherItem.potmsgsetID,
-            OtherTemplate.id == OtherItem.potemplateID,
             OtherTemplate.id != self.potemplate.id,
-            # And they are not sharing.
-            OtherTemplate.name != self.potemplate.name,
-            #Or(And(OtherTemplate.productseries is not None,
-            #       self.potemplate.productseries is not None,
-        )
+            other_clauses,
+            )
