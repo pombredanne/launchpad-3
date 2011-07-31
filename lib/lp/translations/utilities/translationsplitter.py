@@ -16,6 +16,21 @@ from lp.translations.model.translationtemplateitem import (
 
 
 class TranslationSplitterBase:
+    """Base class for translation splitting jobs."""
+
+    @staticmethod
+    def splitPOTMsgSet(ubuntu_item):
+        """Split the POTMsgSet for TranslationTemplateItem.
+
+        The specified `TranslationTemplateItem` will have a new `POTMsgSet`
+        that is a clone of the old one.  All other TranslationTemplateItems
+        will continue to use the old POTMsgSet.
+
+        :param ubuntu_item: The `TranslationTemplateItem` to use.
+        """
+        new_potmsgset = ubuntu_item.potmsgset.clone()
+        ubuntu_item.potmsgset = new_potmsgset
+        return new_potmsgset
 
     @staticmethod
     def migrateTranslations(upstream_msgset, ubuntu_item):
@@ -34,28 +49,14 @@ class TranslationSplitterBase:
             elif not message.is_diverged:
                 message.clone(ubuntu_item.potmsgset)
 
-    @staticmethod
-    def splitPOTMsgSet(ubuntu_item):
-        """Split the POTMsgSet for TranslationTemplateItem.
-
-        The specified `TranslationTemplateItem` will have a new `POTMsgSet`
-        that is a clone of the old one.  All other TranslationTemplateItems
-        will continue to use the old POTMsgSet.
-
-        :param ubuntu_item: The `TranslationTemplateItem` to use.
-        """
-        new_potmsgset = ubuntu_item.potmsgset.clone()
-        ubuntu_item.potmsgset = new_potmsgset
-        return new_potmsgset
-
     def split(self):
         """Split the translations for the ProductSeries and SourcePackage."""
         logger = logging.getLogger()
         shared = enumerate(self.findShared(), 1)
         total = 0
-        for num, (other_item, this_item) in shared:
-            self.splitPOTMsgSet(this_item)
-            self.migrateTranslations(other_item.potmsgset, this_item)
+        for num, (upstream_item, ubuntu_item) in shared:
+            self.splitPOTMsgSet(ubuntu_item)
+            self.migrateTranslations(upstream_item.potmsgset, ubuntu_item)
             if num % 100 == 0:
                 logger.info('%d entries split.  Committing...', num)
                 transaction.commit()
@@ -103,12 +104,12 @@ class TranslationSplitter(TranslationSplitterBase):
         )
 
 
-class TranslationTemplateMover(TranslationSplitterBase):
-    """Split translations for a productseries, sourcepackage pair.
+class TranslationTemplateSplitter(TranslationSplitterBase):
+    """Split translations for an extracted potemplate.
 
-    If a productseries and sourcepackage were linked in error, and then
-    unlinked, they may still share some translations.  This class breaks those
-    associations.
+    When a POTemplate is removed from a set of sharing templates,
+    it keeps sharing POTMsgSets with other templates.  This class
+    removes those associations.
     """
 
     def __init__(self, potemplate):
@@ -128,6 +129,7 @@ class TranslationTemplateMover(TranslationSplitterBase):
         ThisItem = ClassAlias(TranslationTemplateItem, 'ThisItem')
         OtherItem = ClassAlias(TranslationTemplateItem, 'OtherItem')
         OtherTemplate = ClassAlias(POTemplate, 'OtherTemplate')
+
         return store.find(
             (OtherItem, ThisItem),
             ThisItem.potemplateID == self.potemplate.id,
