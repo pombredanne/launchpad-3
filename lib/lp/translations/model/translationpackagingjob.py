@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'TranslationMergeJob',
     'TranslationSplitJob',
+    'TranslationTemplateChangeJob',
     ]
 
 import logging

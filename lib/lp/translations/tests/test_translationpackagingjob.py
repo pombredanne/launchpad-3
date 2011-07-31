@@ -36,6 +36,7 @@ from lp.translations.model.translationpackagingjob import (
     TranslationMergeJob,
     TranslationPackagingJob,
     TranslationSplitJob,
+    TranslationTemplateChangeJob,
     )
 from lp.translations.tests.test_translationsplitter import (
     make_shared_potmsgset,
@@ -101,20 +102,31 @@ def count_translations(job):
 
 class JobFinder:
 
-    def __init__(self, productseries, sourcepackage, job_class):
-        self.productseries = productseries
-        self.sourcepackagename = sourcepackage.sourcepackagename
-        self.distroseries = sourcepackage.distroseries
+    def __init__(self, productseries, sourcepackage, job_class,
+                 potemplate=None):
+        if potemplate is None:
+            self.productseries = productseries
+            self.sourcepackagename = sourcepackage.sourcepackagename
+            self.distroseries = sourcepackage.distroseries
+        else:
+            self.potemplate = potemplate
         self.job_type = job_class.class_job_type
 
     def find(self):
-        return list(TranslationSharingJobDerived.iterReady([
-            TranslationSharingJob.productseries_id == self.productseries.id,
-            (TranslationSharingJob.sourcepackagename_id ==
-             self.sourcepackagename.id),
-            TranslationSharingJob.distroseries_id == self.distroseries.id,
-            TranslationSharingJob.job_type == self.job_type,
-            ]))
+        if self.potemplate is None:
+            return list(TranslationSharingJobDerived.iterReady([
+              TranslationSharingJob.productseries_id == self.productseries.id,
+              (TranslationSharingJob.sourcepackagename_id ==
+               self.sourcepackagename.id),
+              TranslationSharingJob.distroseries_id == self.distroseries.id,
+              TranslationSharingJob.job_type == self.job_type,
+              ]))
+        else:
+            return list(
+                TranslationSharingJobDerived.iterReady([
+                    TranslationSharingJob.potemplate_id == self.potemplate.id,
+                    TranslationSharingJob.job_type == self.job_type,
+                    ]))
 
 
 class TestTranslationPackagingJob(TestCaseWithFactory):
@@ -275,3 +287,19 @@ class TestTranslationSplitJob(TestCaseWithFactory):
                 packaging.distroseries)
         (job,) = finder.find()
         self.assertIsInstance(job, TranslationSplitJob)
+
+
+class TestTranslationTemplateChangeJob(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_modifyPOTemplate_makes_job(self):
+        """Creating a Packaging should make a TranslationMergeJob."""
+        potemplate = self.factory.makePOTemplate()
+        finder = JobFinder(
+            None, None, TranslationTemplateChangeJob, potemplate)
+        self.assertEqual([], finder.find())
+        with person_logged_in(potemplate.owner):
+            potemplate.name = self.factory.getUniqueString()
+        (job,) = finder.find()
+        self.assertIsInstance(job, TranslationTemplateChangeJob)
