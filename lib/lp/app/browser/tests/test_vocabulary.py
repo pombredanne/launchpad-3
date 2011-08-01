@@ -9,10 +9,12 @@ from datetime import datetime
 
 import pytz
 
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.vocabulary import IPickerEntry
+from lp.registry.interfaces.irc import IIrcIDSet
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -77,7 +79,11 @@ class PersonPickerEntryAdapterTestCase(TestCaseWithFactory):
         creation_date = datetime(
             2005, 01, 30, 0, 0, 0, 0, pytz.timezone('UTC'))
         removeSecurityProxy(person).datecreated = creation_date
+        getUtility(IIrcIDSet).new(person, 'eg.dom', 'snarf')
+        getUtility(IIrcIDSet).new(person, 'ex.dom', 'pting')
         entry = IPickerEntry(person).getPickerEntry(
             None, enhanced_picker_enabled=True)
         self.assertEqual('http://launchpad.dev/~snarf', entry.alt_title_link)
-        self.assertEqual(['Member since 2005-01-30'], entry.details)
+        self.assertEqual(
+            ['snarf on eg.dom, pting on ex.dom', 'Member since 2005-01-30'],
+            entry.details)
