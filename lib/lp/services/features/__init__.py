@@ -207,6 +207,7 @@ class UseFeatureController(Fixture):
         self.controller = controller
 
     def setUp(self):
+        super(UseFeatureController, self).setUp()
         self.addCleanup(
             install_feature_controller, get_relevant_feature_controller())
         install_feature_controller(self.controller)
