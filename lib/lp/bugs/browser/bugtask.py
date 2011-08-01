@@ -1578,14 +1578,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                     {'entered_package': entered_package_name,
                      'real_package': real_package_name})
 
-        if (bugtask_before_modification.sourcepackagename !=
-            bugtask.sourcepackagename):
-            # The source package was changed, so tell the user that we've
-            # subscribed the new bug supervisors.
-            self.request.response.addNotification(
-                "The bug supervisor for %s has been subscribed to this bug."
-                 % (bugtask.bugtargetdisplayname))
-
     @action('Save Changes', name='save')
     def save_action(self, action, data):
         """Update the bugtask with the form data."""

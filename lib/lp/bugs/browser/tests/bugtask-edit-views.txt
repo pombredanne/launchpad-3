@@ -64,8 +64,6 @@ changed to the corresponding source package.
     ...     print notification.message
     'linux-2.6.12' is a binary package. This bug has been assigned to
     its source package 'linux-source-2.6.15' instead.
-    The bug supervisor for linux-source-2.6.15 (Ubuntu) has been
-    subscribed to this bug.
 
     >>> # The sampledata is bad -- the original thunderbird task should
     >>> # not exist, as there is no publication. Create one so we can
