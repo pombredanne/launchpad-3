@@ -705,7 +705,8 @@ class TestBugTaskEditView(TestCaseWithFactory):
             bug_task_2, name='+editstatus', form=form, principal=user)
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
-            'This bug has already been reported on mouse (ubuntu).',
+            'A fix for this bug has already been requested for mouse in '
+            'Ubuntu',
             view.errors[0])
 
     def setUpRetargetMilestone(self):

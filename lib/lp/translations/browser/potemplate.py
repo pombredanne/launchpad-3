@@ -30,11 +30,16 @@ import datetime
 import operator
 import os.path
 
-import pytz
+from storm.info import ClassAlias
+from storm.expr import (
+    And,
+    Or,
+    )
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
 from zope.security.proxy import removeSecurityProxy
+import pytz
 
 from canonical.launchpad import (
     _,
@@ -60,15 +65,23 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
-from lp.app.browser.tales import DateTimeFormatterAPI
 from canonical.lazr.utils import smartquote
-from lp.app.enums import service_uses_launchpad
+from lp.app.browser.tales import DateTimeFormatterAPI
+from lp.app.enums import (
+    service_uses_launchpad,
+    ServiceUsage,
+    )
 from lp.app.errors import NotFoundError
 from lp.registry.browser.productseries import ProductSeriesFacets
 from lp.registry.browser.sourcepackage import SourcePackageFacets
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.model.packaging import Packaging
+from lp.registry.model.product import Product
+from lp.registry.model.productseries import ProductSeries
+from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.translations.model.potemplate import POTemplate
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
 from lp.translations.browser.translationsharing import (
@@ -479,7 +492,7 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
                     'be imported, %s will be reviewed manually by an '
                     'administrator in the coming few days.  You can track '
                     'your upload\'s status in the '
-                    '<a href="%s/+imports">Translation Import Queue</a>' %(
+                    '<a href="%s/+imports">Translation Import Queue</a>' % (
                         num, plural_s, plural_s, itthey,
                         canonical_url(self.context.translationtarget))))
                 if len(conflicts) > 0:
@@ -551,6 +564,8 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
     @action(_('Change'), name='change')
     def change_action(self, action, data):
         context = self.context
+        iscurrent = data.get('iscurrent', context.iscurrent)
+        context.setActive(iscurrent)
         old_description = context.description
         old_translation_domain = context.translation_domain
         self.updateContextFromData(data)
@@ -850,6 +865,8 @@ class BaseSeriesTemplatesView(LaunchpadView):
     can_admin = None
 
     def initialize(self, series, is_distroseries=True):
+        self._template_name_cache = {}
+        self._packaging_cache = {}
         self.is_distroseries = is_distroseries
         if is_distroseries:
             self.distroseries = series
@@ -862,12 +879,40 @@ class BaseSeriesTemplatesView(LaunchpadView):
 
         self.user_is_logged_in = (self.user is not None)
 
-    def iter_templates(self):
-        potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(
-            productseries=self.productseries,
-            distroseries=self.distroseries,
-            ordered_by_names=True)
+    def iter_data(self):
+        # If this is not a distroseries, then the query is much simpler.
+        if not self.is_distroseries:
+            potemplateset = getUtility(IPOTemplateSet)
+            # The "shape" of the data returned by POTemplateSubset isn't quite
+            # right so we have to run it through zip first.
+            return zip(potemplateset.getSubset(
+                productseries=self.productseries,
+                distroseries=self.distroseries,
+                ordered_by_names=True))
+
+        # Otherwise we have to do more work, primarily for the "sharing"
+        # column.
+        OtherTemplate = ClassAlias(POTemplate)
+        join = (self.context.getTemplatesCollection()
+            .joinOuter(Packaging, And(
+                Packaging.distroseries == self.context.id,
+                Packaging.sourcepackagename ==
+                    POTemplate.sourcepackagenameID))
+            .joinOuter(ProductSeries,
+                ProductSeries.id == Packaging.productseriesID)
+            .joinOuter(Product, And(
+                Product.id == ProductSeries.productID,
+                Or(
+                    Product._translations_usage == ServiceUsage.LAUNCHPAD,
+                    Product._translations_usage == ServiceUsage.EXTERNAL)))
+            .joinOuter(OtherTemplate, And(
+                OtherTemplate.productseriesID == ProductSeries.id,
+                OtherTemplate.name == POTemplate.name))
+            .joinInner(SourcePackageName,
+                SourcePackageName.id == POTemplate.sourcepackagenameID))
+
+        return join.select(POTemplate, Packaging, ProductSeries, Product,
+            OtherTemplate, SourcePackageName)
 
     def rowCSSClass(self, template):
         if template.iscurrent:
@@ -893,6 +938,36 @@ class BaseSeriesTemplatesView(LaunchpadView):
         if not template.iscurrent:
             text += ' (inactive)'
         return text
+
+    def _renderSharing(self, template, packaging, productseries, upstream,
+            other_template, sourcepackagename):
+        """Render a link to `template`.
+
+        :param template: The target `POTemplate`.
+        :return: HTML for the "sharing" status of `template`.
+        """
+        # Testing is easier if we are willing to extract the sourcepackagename
+        # from the template.
+        if sourcepackagename is None:
+            sourcepackagename = template.sourcepackagename
+        # Build the edit link.
+        escaped_source = cgi.escape(sourcepackagename.name)
+        source_url = '+source/%s' % escaped_source
+        details_url = source_url + '/+sharing-details'
+        edit_link = '<a class="sprite edit" href="%s"></a>' % details_url
+
+        # If all the conditions are met for sharing...
+        if packaging and upstream and other_template is not None:
+            escaped_series = cgi.escape(productseries.name)
+            escaped_template = cgi.escape(template.name)
+            pot_url = ('/%s/%s/+pots/%s' %
+                (escaped_source, escaped_series, escaped_template))
+            return (edit_link + '<a href="%s">%s/%s</a>'
+                % (pot_url, escaped_source, escaped_series))
+        else:
+            # Otherwise just say that the template isn't shared and give them
+            # a link to change the sharing.
+            return edit_link + 'not shared'
 
     def _renderLastUpdateDate(self, template):
         """Render a template's "last updated" column."""
@@ -980,6 +1055,7 @@ class BaseSeriesTemplatesView(LaunchpadView):
             actions_header = "Actions"
         else:
             actions_header = None
+
         columns = [
             ('priority_column', "Priority"),
             ('sourcepackage_column', sourcepackage_header),
@@ -988,11 +1064,16 @@ class BaseSeriesTemplatesView(LaunchpadView):
             ('lastupdate_column', "Updated"),
             ('actions_column', actions_header),
             ]
+
+        if self.is_distroseries:
+            columns[3:3] = [('sharing', "Shared with")]
+
         return '\n'.join([
             self._renderField(css, text, tag='th')
             for (css, text) in columns])
 
-    def renderTemplateRow(self, template):
+    def renderTemplateRow(self, template, packaging=None, productseries=None,
+            upstream=None, other_template=None, sourcepackagename=None):
         """Render HTML for an entire template row."""
         if not self.can_edit and not template.iscurrent:
             return ""
@@ -1008,6 +1089,13 @@ class BaseSeriesTemplatesView(LaunchpadView):
             ('lastupdate_column', self._renderLastUpdateDate(template)),
             ('actions_column', self._renderActionsColumn(template, base_url)),
         ]
+
+        if self.is_distroseries:
+            fields[3:3] = [(
+                'sharing', self._renderSharing(template, packaging,
+                    productseries, upstream, other_template,
+                    sourcepackagename)
+                )]
 
         tds = [self._renderField(*field) for field in fields]
 

@@ -293,8 +293,7 @@ class InitializeDistroSeries:
 
     def _create_dsd_jobs(self):
         job_source = getUtility(IDistroSeriesDifferenceJobSource)
-        for parent in self.parents:
-            job_source.massCreateForSeries(self.distroseries, parent)
+        job_source.massCreateForSeries(self.distroseries)
 
     def _copy_configuration(self):
         self.distroseries.backports_not_automatic = any(
@@ -309,9 +308,10 @@ class InitializeDistroSeries:
                 sqlvalues(self.arches))
         self._store.execute("""
             INSERT INTO DistroArchSeries
-            (distroseries, processorfamily, architecturetag, owner, official)
+            (distroseries, processorfamily, architecturetag, owner, official,
+             supports_virtualized)
             SELECT %s, processorfamily, architecturetag, %s,
-                bool_and(official)
+                bool_and(official), bool_or(supports_virtualized)
             FROM DistroArchSeries WHERE enabled = TRUE %s
             GROUP BY processorfamily, architecturetag
             """ % (sqlvalues(self.distroseries, self.distroseries.owner)
@@ -344,27 +344,33 @@ class InitializeDistroSeries:
         self._copy_publishing_records(distroarchseries_lists)
         self._copy_packaging_links()
 
-    @classmethod
-    def _use_cloner(cls, target_archive, archive, distroseries):
+    def _use_cloner(self, target_archive, archive):
         """Returns True if it's safe to use the packagecloner (as opposed
         to using the packagecopier).
         We use two different ways to copy packages:
          - the packagecloner: fast but not conflict safe.
          - the packagecopier: slow but performs lots of checks to
          avoid creating conflicts.
-        1a. If the archives are different and the target archive is
-            empty use the cloner.
-        1b. If the archives are the same and the target series is
-            empty use the cloner.
+        1. We'll use the cloner:
+        If this is not a first initialization.
+        And If:
+            1.a If the archives are different and the target archive is
+                empty use the cloner.
+            Or
+            1.b. If the archives are the same and the target series is
+                empty use the cloner.
         2.  Otherwise use the copier.
         """
+        if self.first_derivation:
+            return False
+
         target_archive_empty = target_archive.getPublishedSources().is_empty()
         case_1a = (target_archive != archive and
                    target_archive_empty)
         case_1b = (target_archive == archive and
                    (target_archive_empty or
                     target_archive.getPublishedSources(
-                        distroseries=distroseries).is_empty()))
+                        distroseries=self.distroseries).is_empty()))
         return case_1a or case_1b
 
     def _copy_publishing_records(self, distroarchseries_lists):
@@ -406,8 +412,7 @@ class InitializeDistroSeries:
                 if archive.purpose is ArchivePurpose.PRIMARY:
                     assert target_archive is not None, (
                         "Target archive doesn't exist?")
-                if self._use_cloner(
-                    target_archive, archive, self.distroseries):
+                if self._use_cloner(target_archive, archive):
                     origin = PackageLocation(
                         archive, parent.distribution, parent,
                         PackagePublishingPocket.RELEASE)
@@ -426,9 +431,14 @@ class InitializeDistroSeries:
                 else:
                     # There is only one available pocket in an unreleased
                     # series.
-                    pocket = PackagePublishingPocket.RELEASE
+                    target_pocket = PackagePublishingPocket.RELEASE
+                    pockets_to_copy = (
+                        PackagePublishingPocket.RELEASE,
+                        PackagePublishingPocket.UPDATES,
+                        PackagePublishingPocket.SECURITY)
                     sources = archive.getPublishedSources(
-                        distroseries=parent, pocket=pocket, name=spns)
+                        distroseries=parent, pocket=pockets_to_copy,
+                        name=spns)
                     # XXX: rvb 2011-06-23 bug=801112: do_copy is atomic (all
                     # or none of the sources will be copied). This might
                     # lead to a partially initialised series if there is a
@@ -436,12 +446,13 @@ class InitializeDistroSeries:
                     try:
                         sources_published = do_copy(
                             sources, target_archive, self.distroseries,
-                            pocket, include_binaries=not self.rebuild,
+                            target_pocket, include_binaries=not self.rebuild,
                             check_permissions=False, strict_binaries=False,
                             close_bugs=False, create_dsd_job=False)
                         if self.rebuild:
                             for pubrec in sources_published:
-                                pubrec.createMissingBuilds()
+                                pubrec.createMissingBuilds(
+                                   list(self.distroseries.architectures))
                     except CannotCopy, error:
                         raise InitializationError(error)
 

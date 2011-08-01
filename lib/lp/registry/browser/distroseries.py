@@ -97,6 +97,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
+from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import getFeatureFlag
@@ -747,26 +748,26 @@ class DistroSeriesPackagesView(LaunchpadView):
 
 # A helper to create package filtering radio button vocabulary.
 NON_IGNORED = 'non-ignored'
-IGNORED = 'ignored'
 HIGHER_VERSION_THAN_PARENT = 'higher-than-parent'
 RESOLVED = 'resolved'
+ALL = 'all'
 
 DEFAULT_PACKAGE_TYPE = NON_IGNORED
 
 
 def make_package_type_vocabulary(parent_name, higher_version_option=False):
     voc = [
-        SimpleTerm(
-            NON_IGNORED, NON_IGNORED, 'Non ignored packages'),
-        SimpleTerm(IGNORED, IGNORED, 'Ignored packages'),
-        SimpleTerm(RESOLVED, RESOLVED, "Resolved package differences")]
+        SimpleTerm(NON_IGNORED, NON_IGNORED, 'Non ignored packages'),
+        SimpleTerm(RESOLVED, RESOLVED, "Resolved package differences"),
+        SimpleTerm(ALL, ALL, 'All packages'),
+        ]
     if higher_version_option:
         higher_term = SimpleTerm(
             HIGHER_VERSION_THAN_PARENT,
             HIGHER_VERSION_THAN_PARENT,
             "Ignored packages with a higher version than in %s"
                 % parent_name)
-        voc.insert(2, higher_term)
+        voc.insert(1, higher_term)
     return SimpleVocabulary(tuple(voc))
 
 
@@ -808,6 +809,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
 
     # Differences type to display. Can be overrided by sublasses.
     differences_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+    show_parent = True
     show_parent_version = True
     show_derived_version = True
     show_package_diffs = True
@@ -1041,6 +1043,18 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         return None if len(packagesets) == 0 else packagesets
 
     @property
+    def specified_changed_by_filter(self):
+        """If specified, return Persons given in the GET form data."""
+        get_person_by_name = getUtility(IPersonSet).getByName
+        changed_by_names = set(
+            self.request.query_string_params.get("field.changed_by", ()))
+        changed_by = (
+            get_person_by_name(name) for name in changed_by_names)
+        changed_by = set(
+            person for person in changed_by if person is not None)
+        return None if len(changed_by) == 0 else changed_by
+
+    @property
     def specified_package_type(self):
         """If specified, return the package type filter from the GET form
         data.
@@ -1058,10 +1072,10 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         package_type_dsd_status = {
             NON_IGNORED: (
                 DistroSeriesDifferenceStatus.NEEDS_ATTENTION,),
-            IGNORED: DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
             HIGHER_VERSION_THAN_PARENT: (
                 DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT),
             RESOLVED: DistroSeriesDifferenceStatus.RESOLVED,
+            ALL: DistroSeriesDifferenceStatus.items,
         }
 
         status = package_type_dsd_status[self.specified_package_type]
@@ -1073,7 +1087,8 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
                 self.context, difference_type=self.differences_type,
                 name_filter=self.specified_name_filter,
                 status=status, child_version_higher=child_version_higher,
-                packagesets=self.specified_packagesets_filter)
+                packagesets=self.specified_packagesets_filter,
+                changed_by=self.specified_changed_by_filter)
         return BatchNavigator(differences, self.request)
 
     @cachedproperty
@@ -1189,7 +1204,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
 
     def canUpgrade(self, action=None):
         """Should the form offer a packages upgrade?"""
-        if getFeatureFlag("soyuz.derived_series_sync.enabled") is None:
+        if getFeatureFlag("soyuz.derived_series_upgrade.enabled") is None:
             return False
         elif self.context.status not in UPGRADABLE_SERIES_STATUSES:
             # A feature freeze precludes blanket updates.
@@ -1252,7 +1267,8 @@ class DistroSeriesUniquePackagesView(DistroSeriesDifferenceBaseView,
     """
     page_title = 'Unique packages'
     differences_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
-    show_parent_version = False
+    show_parent = True
+    show_parent_version = False  # The DSDs are unique to the derived series.
     show_package_diffs = False
     show_packagesets = True
 

@@ -2068,10 +2068,19 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner = target.owner
         if description is None:
             description = self.getUniqueString('description')
-        with person_logged_in(target.owner):
+        with person_logged_in(owner):
             question = target.newQuestion(
                 owner=owner, title=title, description=description)
         return question
+
+    def makeQuestionSubscription(self, question=None, person=None):
+        """Create a QuestionSubscription."""
+        if question is None:
+            question = self.makeQuestion()
+        if person is None:
+            person = self.makePerson()
+        with person_logged_in(person):
+            return question.subscribe(person)
 
     def makeFAQ(self, target=None, title=None):
         """Create and return a new, arbitrary FAQ.
