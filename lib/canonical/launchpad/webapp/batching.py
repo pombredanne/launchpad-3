@@ -202,7 +202,7 @@ class StormRangeFactory:
             self.plain_resultset = resultset
         self.error_cb = error_cb
 
-    def getSortExpressions(self):
+    def getOrderBy(self):
         """Return the order_by expressions of the result set."""
         return removeSecurityProxy(self.plain_resultset)._order_by
 
@@ -212,7 +212,7 @@ class StormRangeFactory:
         sort_values = []
         if not zope_isinstance(row, tuple):
             row = (row, )
-        sort_expressions = self.getSortExpressions()
+        sort_expressions = self.getOrderBy()
         if sort_expressions is Undef:
             raise StormRangeFactoryError(
                 'StormRangeFactory requires a sorted result set.')
@@ -221,7 +221,7 @@ class StormRangeFactory:
                 expression = expression.expr
             if not zope_isinstance(expression, PropertyColumn):
                 raise StormRangeFactoryError(
-                    'StormRangeFactory supports only sorting by '
+                    'StormRangeFactory only supports sorting by '
                     'PropertyColumn, not by %r.' % expression)
             class_instance_found = False
             for row_part in row:
@@ -275,7 +275,7 @@ class StormRangeFactory:
                 'memo must be the JSON representation of a list.')
             return None
 
-        sort_expressions = self.getSortExpressions()
+        sort_expressions = self.getOrderBy()
         if len(sort_expressions) != len(parsed_memo):
             self.reportError(
                 'Invalid number of elements in memo string. '
@@ -331,7 +331,7 @@ class StormRangeFactory:
 
         return [
             invert_sort_expression(expression)
-            for expression in self.getSortExpressions()]
+            for expression in self.getOrderBy()]
 
     def andClausesForLeadingColumns(self, limits):
         def plain_expression(expression):
@@ -389,7 +389,7 @@ class StormRangeFactory:
         Which variant is more efficient is yet unknown; it may
         differ between different queries.
         """
-        sort_expressions = self.getSortExpressions()
+        sort_expressions = self.getOrderBy()
         where = self.whereExpressions(zip(sort_expressions, memo))
         where = reduce(Or, where)
         # From storm.zope.interfaces.IResultSet.__doc__:

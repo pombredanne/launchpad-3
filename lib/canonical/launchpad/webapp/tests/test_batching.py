@@ -167,7 +167,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
             str(exception))
 
     def test_DatetimeJSONEncoder(self):
-        # DateTimeJSONEncoder represents Pytjon datetime objects as strings
+        # DateTimeJSONEncoder represents Python datetime objects as strings
         # where the value is represented in the ISO time format.
         self.assertEqual(
             '"2011-07-25T00:00:00"',
