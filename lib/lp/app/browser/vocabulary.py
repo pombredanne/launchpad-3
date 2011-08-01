@@ -61,7 +61,7 @@ class IPickerEntry(Interface):
     css = Attribute('CSS Class')
     alt_title = Attribute('Alternative title')
     title_link = Attribute('URL used for anchor on title')
-    details = Attribute('Optional information about the entry')
+    details = Attribute('An optional list of information about the entry')
     alt_title_link = Attribute('URL used for anchor on alt title')
     link_css = Attribute('CSS Class for links')
     badges = Attribute('List of badge img attributes')
@@ -164,7 +164,7 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
                     [IRCNicknameFormatterAPI(ircid).displayname()
                     for ircid in person.ircnicknames])
             if irc_nicks:
-                    extra.details = irc_nicks
+                    extra.details = [irc_nicks]
 
         return extra
 
