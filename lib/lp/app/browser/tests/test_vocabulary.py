@@ -53,6 +53,14 @@ class PersonPickerEntryAdapterTestCase(TestCaseWithFactory):
         entry = IPickerEntry(person).getPickerEntry(None)
         self.assertEqual('<email address hidden>', entry.description)
 
+    def test_PersonPickerEntryAdapter_no_email_logged_in(self):
+        # Teams without email address have no desriptions.
+        team = self.factory.makeTeam()
+        observer = self.factory.makePerson()
+        login_person(observer)
+        entry = IPickerEntry(team).getPickerEntry(None)
+        self.assertEqual(None, entry.description)
+
     def test_PersonPickerEntryAdapter_logged_in(self):
         # Logged in users can see visible email addresses.
         observer = self.factory.makePerson()
