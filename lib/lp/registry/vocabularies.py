@@ -1899,13 +1899,11 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
             return self.emptySelectResults()
         query = ensure_unicode(query).lower()
         store = IStore(PillarName)
-        equal_clauses = [PillarName.name == query, PillarName.active == True]
+        equal_clauses = [PillarName.name == query]
         like_clauses = [
-            PillarName.name != query, PillarName.active == True,
-            PillarName.name.contains_string(query)]
-        if self._filter:
-            equal_clauses.append(self._filter)
-            like_clauses.append(self._filter)
+            PillarName.name != query, PillarName.name.contains_string(query)]
+        equal_clauses.extend(self._filter)
+        like_clauses.extend(self._filter)
         ranked_results = store.execute(
             Union(
                 Select(
@@ -1924,7 +1922,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
 class DistributionOrProductVocabulary(PillarVocabularyBase):
     """Active `IDistribution` or `IProduct` objects vocabulary."""
     displayname = 'Select a project'
-    _filter = PillarName.project == None
+    _filter = [PillarName.project == None, PillarName.active == True]
 
     def __contains__(self, obj):
         if IProduct.providedBy(obj):
@@ -1937,6 +1935,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
 class DistributionOrProductOrProjectGroupVocabulary(PillarVocabularyBase):
     """Active `IProduct`, `IProjectGroup` or `IDistribution` vocabulary."""
     displayname = 'Select a project'
+    _filter = [PillarName.active == True]
 
     def __contains__(self, obj):
         if IProduct.providedBy(obj) or IProjectGroup.providedBy(obj):
