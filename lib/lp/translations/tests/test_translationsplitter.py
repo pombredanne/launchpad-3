@@ -164,11 +164,11 @@ class TestTranslationTemplateSplitterBase:
         return [(tti1.potmsgset, tti1.potemplate)
                 for tti1, tti2 in splitter.findShared()]
 
-    def setUpSharingTemplates(self):
+    def setUpSharingTemplates(self, other_side=False):
         """Sets up two sharing templates with one sharing message and
         one non-sharing message in each template."""
         template1 = self.makePOTemplate()
-        template2 = self.makeSharingTemplate(template1)
+        template2 = self.makeSharingTemplate(template1, other_side)
 
         shared_potmsgset = self.factory.makePOTMsgSet(template1, sequence=1)
         shared_potmsgset.setSequence(template2, 1)
@@ -181,7 +181,7 @@ class TestTranslationTemplateSplitterBase:
     def makePOTemplate(self):
         raise NotImplementedError('Subclasses should implement this.')
 
-    def makeSharingTemplate(self, template):
+    def makeSharingTemplate(self, template, other_side=False):
         raise NotImplementedError('Subclasses should implement this.')
 
     def test_findShared_renamed(self):
@@ -227,6 +227,23 @@ class TestTranslationTemplateSplitterBase:
             [(shared_potmsgset, template1)],
             self.getPOTMsgSetAndTemplateToSplit(splitter))
 
+    def test_findShared_moved_to_nonsharing_target(self):
+        """Shared POTMsgSets are included for a template moved elsewhere."""
+        template1, template2, shared_potmsgset = self.setUpSharingTemplates(
+            other_side=True)
+
+        splitter = TranslationTemplateSplitter(template2)
+        self.assertContentEqual([], splitter.findShared())
+
+        # Move the template to a different distribution entirely.
+        sourcepackage = self.factory.makeSourcePackage()
+        template2.distroseries = sourcepackage.distroseries
+        template2.sourcepackagename = sourcepackage.sourcepackagename
+        template2.productseries = None
+        self.assertContentEqual(
+            [(shared_potmsgset, template1)],
+            self.getPOTMsgSetAndTemplateToSplit(splitter))
+
 
 class TestProductTranslationTemplateSplitter(
     TestCaseWithFactory, TestTranslationTemplateSplitterBase):
@@ -236,11 +253,21 @@ class TestProductTranslationTemplateSplitter(
             name='template',
             side=TranslationSide.UPSTREAM)
 
-    def makeSharingTemplate(self, template):
-        product = template.productseries.product
-        other_series = self.factory.makeProductSeries(product=product)
-        return self.factory.makePOTemplate(name='template',
-                                           productseries=other_series)
+    def makeSharingTemplate(self, template, other_side=False):
+        if other_side:
+            template2 = self.factory.makePOTemplate(
+                name='template',
+                side=TranslationSide.UBUNTU)
+            self.factory.makePackagingLink(
+                productseries=template.productseries,
+                distroseries=template2.distroseries,
+                sourcepackagename=template2.sourcepackagename)
+            return template2
+        else:
+            product = template.productseries.product
+            other_series = self.factory.makeProductSeries(product=product)
+            return self.factory.makePOTemplate(name='template',
+                                               productseries=other_series)
 
 
 class TestDistributionTranslationTemplateSplitter(
@@ -251,13 +278,23 @@ class TestDistributionTranslationTemplateSplitter(
             name='template',
             side=TranslationSide.UBUNTU)
 
-    def makeSharingTemplate(self, template):
-        distro = template.distroseries.distribution
-        other_series = self.factory.makeDistroRelease(distribution=distro)
-        return self.factory.makePOTemplate(
-            name='template',
-            distroseries=other_series,
-            sourcepackagename=template.sourcepackagename)
+    def makeSharingTemplate(self, template, other_side=False):
+        if other_side:
+            template2 = self.factory.makePOTemplate(
+                name='template',
+                side=TranslationSide.UPSTREAM)
+            self.factory.makePackagingLink(
+                productseries=template2.productseries,
+                distroseries=template.distroseries,
+                sourcepackagename=template.sourcepackagename)
+            return template2
+        else:
+            distro = template.distroseries.distribution
+            other_series = self.factory.makeDistroRelease(distribution=distro)
+            return self.factory.makePOTemplate(
+                name='template',
+                distroseries=other_series,
+                sourcepackagename=template.sourcepackagename)
 
     def test_findShared_moved_sourcepackage(self):
         """Shared POTMsgSets are included for a template moved to
