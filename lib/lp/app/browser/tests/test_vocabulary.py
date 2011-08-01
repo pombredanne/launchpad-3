@@ -95,3 +95,14 @@ class PersonPickerEntryAdapterTestCase(TestCaseWithFactory):
             None, enhanced_picker_enabled=True)
         self.assertEqual('http://launchpad.dev/~fnord', entry.alt_title_link)
         self.assertEqual(['Team members: 1'], entry.details)
+
+    def test_PersonPickerEntryAdapter_enhanced_picker_enabled_badges(self):
+        # The enhanced person picker provides affilliation information.
+        person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
+        project = self.factory.makeProduct(name='fnord', owner=person)
+        bugtask = self.factory.makeBugTask(target=project)
+        entry = IPickerEntry(person).getPickerEntry(
+            bugtask, enhanced_picker_enabled=True)
+        self.assertEqual(1, len(entry.badges))
+        self.assertEqual('/@@/product-badge', entry.badges[0]['url'])
+        self.assertEqual('Affiliated with Fnord', entry.badges[0]['alt'])
