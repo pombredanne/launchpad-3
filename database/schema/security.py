@@ -134,10 +134,10 @@ class CursorWrapper(object):
     def execute(self, cmd, params=None):
         cmd = cmd.encode('utf8')
         if params is None:
-            log.debug2('%s' % (cmd, ))
+            log.debug3('%s' % (cmd, ))
             return self.__dict__['_cursor'].execute(cmd)
         else:
-            log.debug2('%s [%r]' % (cmd, params))
+            log.debug3('%s [%r]' % (cmd, params))
             return self.__dict__['_cursor'].execute(cmd, params)
 
     def __getattr__(self, key):
@@ -342,14 +342,14 @@ def reset_permissions(con, config, options):
             if username in schema.principals:
                 if type_ == 'group':
                     if options.revoke:
-                        log.debug("Revoking membership of %s role", username)
+                        log.debug2("Revoking membership of %s role", username)
                         cur.execute("REVOKE %s FROM %s" % (
                             quote_identifier(username), all_users))
                 else:
                     # Note - we don't drop the user because it might own
                     # objects in other databases. We need to ensure they are
                     # not superusers though!
-                    log.debug("Resetting role options of %s role.", username)
+                    log.debug2("Resetting role options of %s role.", username)
                     cur.execute(
                         "ALTER ROLE %s WITH %s" % (
                             quote_identifier(username),
@@ -380,12 +380,12 @@ def reset_permissions(con, config, options):
         if user.endswith('_ro'):
             groups = ['%s_ro' % group for group in groups]
         if groups:
-            log.debug("Adding %s to %s roles", user, ', '.join(groups))
+            log.debug2("Adding %s to %s roles", user, ', '.join(groups))
             for group in groups:
                 cur.execute(r"""ALTER GROUP %s ADD USER %s""" % (
                     quote_identifier(group), quote_identifier(user)))
         else:
-            log.debug("%s not in any roles", user)
+            log.debug2("%s not in any roles", user)
 
     if options.revoke:
         # Change ownership of all objects to OWNER.
@@ -467,7 +467,7 @@ def reset_permissions(con, config, options):
             else:
                 who_ro = quote_identifier('%s_ro' % username)
 
-            log.debug(
+            log.debug2(
                 "Granting %s on %s to %s", perm, obj.fullname, who)
             if obj.type == 'function':
                 function_permissions.add(perm, obj.fullname, who)
