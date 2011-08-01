@@ -332,4 +332,14 @@ class TestTranslationTemplateChangeJob(TestCaseWithFactory):
         self.becomeDbUser('rosettaadmin')
         job.run()
 
-        #self.assertEqual(
+        # New POTMsgSet is now different from the old one (it's been split),
+        # but matches the target potmsgset (it's been merged into it).
+        new_potmsgset = potemplate.getPOTMsgSets()[0]
+        self.assertNotEqual(potmsgset, new_potmsgset)
+        self.assertEqual(target_potmsgset, new_potmsgset)
+
+        # Translations have been merged as well.
+        self.assertContentEqual(
+            [tm.translations for tm in potmsgset.getAllTranslationMessages()],
+            [tm.translations
+             for tm in new_potmsgset.getAllTranslationMessages()])
