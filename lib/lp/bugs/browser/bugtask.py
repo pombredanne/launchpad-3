@@ -1408,8 +1408,9 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         # product, we'll clear out the milestone value, to avoid
         # violating DB constraints that ensure an upstream task can't
         # be assigned to a milestone on a different product.
-        # XXX: This should be done in transitionToTarget instead, and
-        #      the situation detected to add the notifications.
+        # This is also done by transitionToTarget, but do it here so we
+        # can display notifications and remove the milestone from the
+        # submitted data.
         milestone_cleared = None
         milestone_ignored = False
         missing = object()
@@ -1433,14 +1434,10 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             # what it was!
             data_to_apply.pop('milestone', None)
 
-        # We special case setting assignee and status, because there's
-        # a workflow associated with changes to these fields.
-        if "assignee" in data_to_apply:
-            del data_to_apply["assignee"]
-        if "status" in data_to_apply:
-            del data_to_apply["status"]
-        if "target" in data_to_apply:
-            del data_to_apply["target"]
+        # We special case setting target, status and assignee, because
+        # there's a workflow associated with changes to these fields.
+        for manual_field in ('target', 'status', 'assignee'):
+            data_to_apply.pop(manual_field, None)
 
         # We grab the comment_on_change field before we update bugtask so as
         # to avoid problems accessing the field if the user has changed the
