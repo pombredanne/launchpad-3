@@ -633,11 +633,7 @@ class ObjectFormatterAPI:
     def public_private_css(self):
         """Return the CSS class that represents the object's privacy."""
         privacy = IPrivacy(self._context, None)
-        if (privacy is None and
-            hasattr(self._context, 'private') and
-            self._context.private):
-                return 'private'
-        elif privacy is not None and privacy.private:
+        if privacy is not None and privacy.private:
             return 'private'
         else:
             return 'public'

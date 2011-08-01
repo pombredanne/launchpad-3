@@ -54,7 +54,7 @@
           Y.on("domready", function () {
               if (Y.one(document.body).hasClass('private')) {
                   var config = {
-                      notification_text: 'This merge proposal involves private branches',
+                      notification_text: 'This merge proposal is for a private branch',
                       hidden: true
                   };
                   Y.lp.app.privacy.setup_privacy_notification(config);
@@ -216,7 +216,7 @@
   conf = <tal:status-config replace="view/status_config" />
   <!--
   LPS.use('io-base', 'lp.code.branchmergeproposal.reviewcomment',
-          'lp.code.branchmergeproposal.status', 'lp.app.comment', 
+          'lp.code.branchmergeproposal.status', 'lp.app.comment',
           'lp.app.widgets.expander', 'lp.code.branch.revisionexpander', function(Y) {
 
     Y.on('load', function() {
