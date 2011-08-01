@@ -28,7 +28,10 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.matchers import HasQueryCount
+from lp.testing.matchers import (
+    Contains,
+    HasQueryCount,
+    )
 
 
 class TestDistroSeriesDerivationVocabulary(TestCaseWithFactory):
@@ -257,13 +260,6 @@ class TestDistroSeriesDifferencesVocabulary(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        super(TestDistroSeriesDifferencesVocabulary, self).setUp()
-        self.all_distroseries = getUtility(IDistroSeriesSet).search()
-        self.all_series_with_arch = [
-            series for series in self.all_distroseries
-            if series.architecturecount != 0]
-
     def test_registration(self):
         # DistroSeriesDifferencesVocabulary is registered as a named utility
         # for IVocabularyFactory.
@@ -315,3 +311,10 @@ class TestDistroSeriesDifferencesVocabulary(TestCaseWithFactory):
         self.assertContentEqual(
             (dsd for dsd in dsds if dsd.derived_series == distroseries1),
             (term.value for term in vocabulary))
+
+    def test_contains(self):
+        # The vocabulary can be tested for membership.
+        difference = self.factory.makeDistroSeriesDifference()
+        vocabulary = DistroSeriesDifferencesVocabulary(
+            difference.derived_series)
+        self.assertThat(vocabulary, Contains(difference))

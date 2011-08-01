@@ -1896,7 +1896,7 @@ class DistroSeriesDifferencesVocabulary:
 
     def __contains__(self, value):
         """See `IVocabulary`."""
-        # TODO
+        return value.derived_series == self.distroseries
 
     def getTerm(self, value):
         """See `IVocabulary`."""
