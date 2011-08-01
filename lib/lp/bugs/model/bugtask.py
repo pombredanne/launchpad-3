@@ -2697,9 +2697,7 @@ class BugTaskSet:
             omit_dupes=True, exclude_conjoined_tasks=True)
         return self.search(params)
 
-    def createTask(self, bug, owner, product=None, productseries=None,
-                   distribution=None, distroseries=None,
-                   sourcepackagename=None,
+    def createTask(self, bug, owner, target,
                    status=IBugTask['status'].default,
                    importance=IBugTask['importance'].default,
                    assignee=None, milestone=None):
@@ -2713,54 +2711,19 @@ class BugTaskSet:
         if not milestone:
             milestone = None
 
-        # Raise a WidgetError if this product bugtask already exists.
-        target = None
-        stop_checking = False
-        if sourcepackagename is not None:
-            # A source package takes precedence over the distro series
-            # or distribution in which the source package is found.
-            if distroseries is not None:
-                # We'll need to make sure there's no bug task already
-                # filed against this source package in this
-                # distribution series.
-                target = distroseries.getSourcePackage(sourcepackagename)
-            elif distribution is not None:
-                # Make sure there's no bug task already filed against
-                # this source package in this distribution.
-                validate_new_target(
-                    bug, distribution.getSourcePackage(sourcepackagename))
-                stop_checking = True
+        # Make sure there's no task for this bug already filed
+        # against the target.
+        validate_new_target(bug, target)
 
-        if target is None and not stop_checking:
-            # This task is not being filed against a source package. Find
-            # the prospective target.
-            if productseries is not None:
-                # Bug filed against a product series.
-                target = productseries
-            elif product is not None:
-                # Bug filed against a product.
-                target = product
-            elif distroseries is not None:
-                # Bug filed against a distro series.
-                target = distroseries
-            elif distribution is not None and not stop_checking:
-                # Bug filed against a distribution.
-                validate_new_target(bug, distribution)
-                stop_checking = True
-
-        if target is not None and not stop_checking:
-            # Make sure there's no task for this bug already filed
-            # against the target.
-            validate_target(bug, target)
+        target_key = bug_target_to_key(target)
 
         if not bug.private and bug.security_related:
+            product = target_key['product']
+            distribution = target_key['distribution']
             if product and product.security_contact:
                 bug.subscribe(product.security_contact, owner)
             elif distribution and distribution.security_contact:
                 bug.subscribe(distribution.security_contact, owner)
-
-        assert (product or productseries or distribution or distroseries), (
-            'Got no bugtask target.')
 
         non_target_create_params = dict(
             bug=bug,
@@ -2769,24 +2732,21 @@ class BugTaskSet:
             assignee=assignee,
             owner=owner,
             milestone=milestone)
-        bugtask = BugTask(
-            product=product,
-            productseries=productseries,
-            distribution=distribution,
-            distroseries=distroseries,
-            sourcepackagename=sourcepackagename,
-            **non_target_create_params)
+        create_params = non_target_create_params.copy()
+        create_params.update(target_key)
+        bugtask = BugTask(**create_params)
 
-        if distribution:
+        if target_key['distribution']:
             # Create tasks for accepted nominations if this is a source
             # package addition.
             accepted_nominations = [
-                nomination for nomination in bug.getNominations(distribution)
+                nomination for nomination in
+                bug.getNominations(target_key['distribution'])
                 if nomination.isApproved()]
             for nomination in accepted_nominations:
                 accepted_series_task = BugTask(
                     distroseries=nomination.distroseries,
-                    sourcepackagename=sourcepackagename,
+                    sourcepackagename=target_key['sourcepackagename'],
                     **non_target_create_params)
                 accepted_series_task.updateTargetNameCache()
 

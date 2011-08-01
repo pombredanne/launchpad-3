@@ -365,8 +365,7 @@ class TestQueueTool(TestQueueBase, TestCase):
         ubuntu_bar = ubuntu.getSourcePackage('bar')
         the_bug = getUtility(IBugSet).get(the_bug_id)
         bugtask = getUtility(IBugTaskSet).createTask(
-            bug=the_bug, owner=bugtask_owner, distribution=ubuntu,
-            sourcepackagename=ubuntu_bar.sourcepackagename)
+            the_bug, bugtask_owner, ubuntu_bar)
 
         LaunchpadZopelessLayer.txn.commit()
         LaunchpadZopelessLayer.switchDbUser(self.dbuser)

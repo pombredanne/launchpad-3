@@ -156,7 +156,7 @@ def create_task_from_strings(bug, owner, product, watchurl=None):
     bug = getUtility(IBugSet).get(bug)
     product = getUtility(IProductSet).getByName(product)
     owner = getUtility(IPersonSet).getByName(owner)
-    task = getUtility(IBugTaskSet).createTask(bug, owner, product=product)
+    task = getUtility(IBugTaskSet).createTask(bug, owner, product)
     if watchurl:
         [watch] = getUtility(IBugWatchSet).fromText(watchurl, bug, owner)
         task.bugwatch = watch

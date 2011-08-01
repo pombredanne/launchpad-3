@@ -45,7 +45,7 @@ Simply opening a bug elsewhere won't increase the count.
 
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> elsewhere = getUtility(IBugTaskSet).createTask(
-    ...     bug, owner=getUtility(ILaunchBag).user, product=evolution)
+    ...     bug, getUtility(ILaunchBag).user, evolution)
     >>> get_view().bugs_fixed_elsewhere_count
     0
 
@@ -88,7 +88,7 @@ Only bugs that the user has permission to view are included in the count.
     True
 
     >>> another_elsewhere = getUtility(IBugTaskSet).createTask(
-    ...     another_bug, owner=getUtility(ILaunchBag).user, product=evolution)
+    ...     another_bug, getUtility(ILaunchBag).user, evolution)
     >>> another_elsewhere.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
 

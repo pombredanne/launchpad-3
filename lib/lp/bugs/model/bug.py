@@ -1184,8 +1184,7 @@ BugMessage""" % sqlvalues(self.id))
 
     def addTask(self, owner, target):
         """See `IBug`."""
-        new_task = getUtility(IBugTaskSet).createTask(
-            self, owner=owner, **bug_target_to_key(target))
+        new_task = getUtility(IBugTaskSet).createTask(self, owner, target)
 
         # When a new task is added the bug's heat becomes relevant to the
         # target's max_bug_heat.
@@ -2507,15 +2506,15 @@ class BugSet:
         # Create the task on a product if one was passed.
         if params.product:
             getUtility(IBugTaskSet).createTask(
-                bug=bug, product=params.product, owner=params.owner,
-                status=params.status)
+                bug, params.owner, params.product, status=params.status)
 
         # Create the task on a source package name if one was passed.
         if params.distribution:
+            target = params.distribution
+            if params.sourcepackagename:
+                target = target.getSourcePackage(params.sourcepackagename)
             getUtility(IBugTaskSet).createTask(
-                bug=bug, distribution=params.distribution,
-                sourcepackagename=params.sourcepackagename,
-                owner=params.owner, status=params.status)
+                bug, params.owner, target, status=params.status)
 
         bug_task = bug.default_bugtask
         if params.assignee:
