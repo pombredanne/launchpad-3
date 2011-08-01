@@ -52,7 +52,10 @@ from canonical.launchpad.webapp.interaction import (
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.librarian.interfaces import UploadFailed
 from lp.registry.interfaces.person import IPerson
-from lp.services.features import getFeatureFlag
+from lp.services.features import (
+    getFeatureFlag,
+    UseFeatureController,
+    )
 from lp.services.mail.handlers import mail_handlers
 from lp.services.mail.sendmail import do_paranoid_envelope_to_validation
 from lp.services.mail.signedmessage import signed_message_from_string
@@ -372,7 +375,7 @@ def handleMail(trans=transaction,
             try:
                 trans.begin()
                 controller = mail_feature_controller(mail)
-                with FeatureControllerContext(controller):
+                with UseFeatureController(controller):
                     handle_one_mail(log, mail, file_alias, file_alias_url,
                         signature_timestamp_checker)
                     trans.commit()

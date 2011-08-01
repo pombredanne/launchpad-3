@@ -189,8 +189,7 @@ class FeatureController():
     The controller is then supposed to be held in a thread-local and reused
     for the duration of the request.
 
-    An instance may be used as a context, in which case it will be installed
-    and uninstalled for the thread.
+    These should typically be used via a UseFeatureController fixture.
 
     @see: U{https://dev.launchpad.net/LEP/FeatureFlags}
     """

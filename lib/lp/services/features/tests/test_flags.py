@@ -11,7 +11,7 @@ import os
 from canonical.testing import layers
 from lp.services.features import (
     active_feature_controller,
-    FeatureControllerContext,
+    UseFeatureController,
     getFeatureFlag,
     install_feature_controller,
     )
@@ -119,7 +119,7 @@ class TestFeatureFlags(TestCase):
         # the start-of-request handler will do something like this:
         controller, call_log = self.makeControllerInScopes(
             ['default', 'beta_user'])
-        with FeatureControllerContext(controller):
+        with UseFeatureController(controller):
             # then application code can simply ask without needing a context
             # object
             self.assertEqual(u'4.0', getFeatureFlag('ui.icing'))
