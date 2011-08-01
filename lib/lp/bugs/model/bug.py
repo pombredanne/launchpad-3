@@ -106,7 +106,6 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
-    ILaunchBag,
     IStoreSelector,
     MAIN_STORE,
     )
@@ -167,7 +166,6 @@ from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtarget import OfficialBugTag
 from lp.bugs.model.bugtask import (
     BugTask,
-    bug_target_to_key,
     bugtask_sort_key,
     )
 from lp.bugs.model.bugwatch import BugWatch
@@ -178,9 +176,6 @@ from lp.bugs.model.structuralsubscription import (
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage,
-    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
     IPersonSet,
