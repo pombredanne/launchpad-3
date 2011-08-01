@@ -156,7 +156,7 @@ class TestTranslationSplitter(TestCaseWithFactory):
         )
 
 
-class TestTranslationTemplateSplitter(TestCaseWithFactory):
+class TestTranslationTemplateSplitterBase:
 
     layer = ZopelessDatabaseLayer
 
@@ -165,15 +165,10 @@ class TestTranslationTemplateSplitter(TestCaseWithFactory):
                 for tti1, tti2 in splitter.findShared()]
 
     def makePOTemplate(self):
-        return self.factory.makePOTemplate(
-            name='template',
-            side=TranslationSide.UPSTREAM)
+        raise NotImplementedError('Subclasses should implement this.')
 
     def makeSharingTemplate(self, template):
-        product = template.productseries.product
-        other_series = self.factory.makeProductSeries(product=product)
-        return self.factory.makePOTemplate(name='template',
-                                           productseries=other_series)
+        raise NotImplementedError('Subclasses should implement this.')
 
     def test_findShared_renamed(self):
         """Shared POTMsgSets are included for a renamed template."""
@@ -241,3 +236,35 @@ class TestTranslationTemplateSplitter(TestCaseWithFactory):
         self.assertContentEqual(
             [(shared_potmsgset, template1)],
             self.getPOTMsgSetAndTemplateToSplit(splitter))
+
+
+class TestProductTranslationTemplateSplitter(
+    TestCaseWithFactory, TestTranslationTemplateSplitterBase):
+
+    def makePOTemplate(self):
+        return self.factory.makePOTemplate(
+            name='template',
+            side=TranslationSide.UPSTREAM)
+
+    def makeSharingTemplate(self, template):
+        product = template.productseries.product
+        other_series = self.factory.makeProductSeries(product=product)
+        return self.factory.makePOTemplate(name='template',
+                                           productseries=other_series)
+
+
+class TestDistributionTranslationTemplateSplitter(
+    TestCaseWithFactory, TestTranslationTemplateSplitterBase):
+
+    def makePOTemplate(self):
+        return self.factory.makePOTemplate(
+            name='template',
+            side=TranslationSide.UBUNTU)
+
+    def makeSharingTemplate(self, template):
+        distro = template.distroseries.distribution
+        other_series = self.factory.makeDistroRelease(distribution=distro)
+        return self.factory.makePOTemplate(
+            name='template',
+            distroseries=other_series,
+            sourcepackagename=template.sourcepackagename)
