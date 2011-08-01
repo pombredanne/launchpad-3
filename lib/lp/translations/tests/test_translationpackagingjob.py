@@ -8,12 +8,17 @@ __metaclass__ = type
 
 import transaction
 from zope.component import getUtility
+from zope.event import notify
+
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.registry.interfaces.packaging import IPackagingUtil
+from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.model.translationsharingjob import (
     TranslationSharingJob,
     TranslationSharingJobDerived,
@@ -108,6 +113,7 @@ class JobFinder:
             self.productseries = productseries
             self.sourcepackagename = sourcepackage.sourcepackagename
             self.distroseries = sourcepackage.distroseries
+            self.potemplate = None
         else:
             self.potemplate = potemplate
         self.job_type = job_class.class_job_type
@@ -300,7 +306,10 @@ class TestTranslationTemplateChangeJob(TestCaseWithFactory):
             None, None, TranslationTemplateChangeJob, potemplate)
         self.assertEqual([], finder.find())
         with person_logged_in(potemplate.owner):
+            snapshot = Snapshot(potemplate, providing=IPOTemplate)
             potemplate.name = self.factory.getUniqueString()
+            notify(ObjectModifiedEvent(potemplate, snapshot, ["name"]))
+
         (job,) = finder.find()
         self.assertIsInstance(job, TranslationTemplateChangeJob)
 
