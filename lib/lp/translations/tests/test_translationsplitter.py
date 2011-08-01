@@ -164,14 +164,9 @@ class TestTranslationTemplateSplitterBase:
         return [(tti1.potmsgset, tti1.potemplate)
                 for tti1, tti2 in splitter.findShared()]
 
-    def makePOTemplate(self):
-        raise NotImplementedError('Subclasses should implement this.')
-
-    def makeSharingTemplate(self, template):
-        raise NotImplementedError('Subclasses should implement this.')
-
-    def test_findShared_renamed(self):
-        """Shared POTMsgSets are included for a renamed template."""
+    def setUpSharingTemplates(self):
+        """Sets up two sharing templates with one sharing message and
+        one non-sharing message in each template."""
         template1 = self.makePOTemplate()
         template2 = self.makeSharingTemplate(template1)
 
@@ -181,6 +176,17 @@ class TestTranslationTemplateSplitterBase:
         # POTMsgSets appearing in only one of the templates are not returned.
         unshared_message1 = self.factory.makePOTMsgSet(template1, sequence=2)
         unshared_message2 = self.factory.makePOTMsgSet(template2, sequence=2)
+        return template1, template2, shared_potmsgset
+
+    def makePOTemplate(self):
+        raise NotImplementedError('Subclasses should implement this.')
+
+    def makeSharingTemplate(self, template):
+        raise NotImplementedError('Subclasses should implement this.')
+
+    def test_findShared_renamed(self):
+        """Shared POTMsgSets are included for a renamed template."""
+        template1, template2, shared_potmsgset = self.setUpSharingTemplates()
 
         splitter = TranslationTemplateSplitter(template2)
         self.assertContentEqual([], splitter.findShared())
@@ -192,15 +198,7 @@ class TestTranslationTemplateSplitterBase:
 
     def test_findShared_moved_product(self):
         """Shared POTMsgSets are included for a template moved elsewhere."""
-        template1 = self.makePOTemplate()
-        template2 = self.makeSharingTemplate(template1)
-
-        shared_potmsgset = self.factory.makePOTMsgSet(template1, sequence=1)
-        shared_potmsgset.setSequence(template2, 1)
-
-        # POTMsgSets appearing in only one of the templates are not returned.
-        unshared_message1 = self.factory.makePOTMsgSet(template1, sequence=2)
-        unshared_message2 = self.factory.makePOTMsgSet(template2, sequence=2)
+        template1, template2, shared_potmsgset = self.setUpSharingTemplates()
 
         splitter = TranslationTemplateSplitter(template2)
         self.assertContentEqual([], splitter.findShared())
@@ -215,15 +213,7 @@ class TestTranslationTemplateSplitterBase:
 
     def test_findShared_moved_distribution(self):
         """Shared POTMsgSets are included for a template moved elsewhere."""
-        template1 = self.makePOTemplate()
-        template2 = self.makeSharingTemplate(template1)
-
-        shared_potmsgset = self.factory.makePOTMsgSet(template1, sequence=1)
-        shared_potmsgset.setSequence(template2, 1)
-
-        # POTMsgSets appearing in only one of the templates are not returned.
-        unshared_message1 = self.factory.makePOTMsgSet(template1, sequence=2)
-        unshared_message2 = self.factory.makePOTMsgSet(template2, sequence=2)
+        template1, template2, shared_potmsgset = self.setUpSharingTemplates()
 
         splitter = TranslationTemplateSplitter(template2)
         self.assertContentEqual([], splitter.findShared())
@@ -272,15 +262,7 @@ class TestDistributionTranslationTemplateSplitter(
     def test_findShared_moved_sourcepackage(self):
         """Shared POTMsgSets are included for a template moved to
         a different source package inside the same distroseries."""
-        template1 = self.makePOTemplate()
-        template2 = self.makeSharingTemplate(template1)
-
-        shared_potmsgset = self.factory.makePOTMsgSet(template1, sequence=1)
-        shared_potmsgset.setSequence(template2, 1)
-
-        # POTMsgSets appearing in only one of the templates are not returned.
-        unshared_message1 = self.factory.makePOTMsgSet(template1, sequence=2)
-        unshared_message2 = self.factory.makePOTMsgSet(template2, sequence=2)
+        template1, template2, shared_potmsgset = self.setUpSharingTemplates()
 
         splitter = TranslationTemplateSplitter(template2)
         self.assertContentEqual([], splitter.findShared())
