@@ -268,3 +268,28 @@ class TestDistributionTranslationTemplateSplitter(
             name='template',
             distroseries=other_series,
             sourcepackagename=template.sourcepackagename)
+
+    def test_findShared_moved_sourcepackage(self):
+        """Shared POTMsgSets are included for a template moved to
+        a different source package inside the same distroseries."""
+        template1 = self.makePOTemplate()
+        template2 = self.makeSharingTemplate(template1)
+
+        shared_potmsgset = self.factory.makePOTMsgSet(template1, sequence=1)
+        shared_potmsgset.setSequence(template2, 1)
+
+        # POTMsgSets appearing in only one of the templates are not returned.
+        unshared_message1 = self.factory.makePOTMsgSet(template1, sequence=2)
+        unshared_message2 = self.factory.makePOTMsgSet(template2, sequence=2)
+
+        splitter = TranslationTemplateSplitter(template2)
+        self.assertContentEqual([], splitter.findShared())
+
+        # Move the template to a different source package inside the
+        # same distroseries.
+        sourcepackage = self.factory.makeSourcePackage(
+            distroseries=template2.distroseries)
+        template2.sourcepackagename = sourcepackage.sourcepackagename
+        self.assertContentEqual(
+            [(shared_potmsgset, template1)],
+            self.getPOTMsgSetAndTemplateToSplit(splitter))
