@@ -10,7 +10,6 @@ import os
 
 from canonical.testing import layers
 from lp.services.features import (
-    active_feature_controller,
     UseFeatureController,
     getFeatureFlag,
     install_feature_controller,
