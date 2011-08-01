@@ -309,7 +309,7 @@ class IDistroSeriesDifferenceSource(Interface):
     def getForDistroSeries(distro_series, difference_type=None,
                            name_filter=None, status=None,
                            child_version_higher=False, parent_series=None,
-                           packagesets=None):
+                           packagesets=None, changed_by=None):
         """Return differences for the derived distro series sorted by
         package name.
 
@@ -333,6 +333,9 @@ class IDistroSeriesDifferenceSource(Interface):
             parent series if this parameter is None.
         :type distro_series: `IDistroSeries`.
         :param packagesets: Optional iterable of `Packageset` to filter by.
+        :param changed_by: An optional `Person` (an individual or a team) or a
+            collection of `Person`s. The results are limited to only those
+            changes made by the given people.
         :return: A result set of `IDistroSeriesDifference`.
         """
 

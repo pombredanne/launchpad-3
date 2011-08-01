@@ -88,6 +88,10 @@ flag_info = sorted([
      'boolean',
      'Enables syncing of packages on derivative distributions pages.',
      ''),
+    ('soyuz.derived_series_upgrade.enabled',
+     'boolean',
+     'Enables mass-upgrade of packages on derivative distributions pages.',
+     ''),
     ('soyuz.derived_series_jobs.enabled',
      'boolean',
      "Compute package differences for derived distributions.",
@@ -188,6 +192,8 @@ class FeatureController():
 
     The controller is then supposed to be held in a thread-local and reused
     for the duration of the request.
+
+    These should typically be used via a UseFeatureController fixture.
 
     @see: U{https://dev.launchpad.net/LEP/FeatureFlags}
     """

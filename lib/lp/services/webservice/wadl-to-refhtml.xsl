@@ -507,11 +507,14 @@
                 <xsl:text>/+commercialsubscription/</xsl:text>
                 <var>&lt;commercial_subscription.id&gt;</var>
             </xsl:when>
-            <xsl:otherwise>
-                <xsl:message>Unknown entry URL:
-                    <xsl:value-of select="@id" />
-                </xsl:message>
-            </xsl:otherwise>
+            <!-- XXX: GavinPanella 2011-07-29 bug=735543: A bug exists
+                 to do something more sensible here. For now, no one
+                 cares, so let's shut this up. -->
+            <!-- <xsl:otherwise> -->
+            <!--     <xsl:message>Unknown entry URL: -->
+            <!--         <xsl:value-of select="@id" /> -->
+            <!--     </xsl:message> -->
+            <!-- </xsl:otherwise> -->
         </xsl:choose>
     </xsl:template>
     <!-- We start here. -->

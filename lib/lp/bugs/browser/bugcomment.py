@@ -333,6 +333,13 @@ class BugCommentView(LaunchpadView):
         return 'Comment %d for bug %d' % (
             self.comment.index, self.context.bug.id)
 
+    @property
+    def privacy_notice_classes(self):
+        if not self.context.bug.private:
+            return 'hidden'
+        else:
+            return ''
+
 
 class BugCommentBoxViewMixin:
     """A class which provides proxied Librarian URLs for bug attachments."""
