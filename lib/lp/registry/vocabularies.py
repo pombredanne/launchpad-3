@@ -139,6 +139,9 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifference,
+    )
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
@@ -1896,7 +1899,9 @@ class DistroSeriesDifferencesVocabulary:
 
     def __contains__(self, value):
         """See `IVocabulary`."""
-        return value.derived_series == self.distroseries
+        return (
+            IDistroSeriesDifference.providedBy(value) and
+            value.derived_series == self.distroseries)
 
     def getTerm(self, value):
         """See `IVocabulary`."""

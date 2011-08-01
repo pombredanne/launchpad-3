@@ -11,7 +11,10 @@ from datetime import (
     )
 
 from pytz import utc
-from testtools.matchers import Equals
+from testtools.matchers import (
+    Equals,
+    Not,
+    )
 from zope.component import getUtility
 from zope.schema.interfaces import (
     ITokenizedTerm,
@@ -316,12 +319,26 @@ class TestDistroSeriesDifferencesVocabulary(TestCaseWithFactory):
             (dsd for dsd in dsds if dsd.derived_series == distroseries1),
             (term.value for term in vocabulary))
 
-    def test_contains(self):
+    def test_contains_difference(self):
         # The vocabulary can be tested for membership.
         difference = self.factory.makeDistroSeriesDifference()
         vocabulary = DistroSeriesDifferencesVocabulary(
             difference.derived_series)
         self.assertThat(vocabulary, Contains(difference))
+
+    def test_does_not_contain_difference(self):
+        # The vocabulary can be tested for non-membership.
+        difference = self.factory.makeDistroSeriesDifference()
+        vocabulary = DistroSeriesDifferencesVocabulary(
+            self.factory.makeDistroSeries())
+        self.assertThat(vocabulary, Not(Contains(difference)))
+
+    def test_does_not_contain_something_else(self):
+        # The vocabulary can be tested for non-membership of something that's
+        # not a DistroSeriesDifference.
+        distroseries = self.factory.makeDistroSeries()
+        vocabulary = DistroSeriesDifferencesVocabulary(distroseries)
+        self.assertThat(vocabulary, Not(Contains("foobar")))
 
     def test_size(self):
         # The vocabulary can report its size.
