@@ -9,6 +9,7 @@ from datetime import timedelta
 import difflib
 import re
 from textwrap import TextWrapper
+from urllib import urlencode
 
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import IJSONRequestCache
@@ -50,7 +51,7 @@ from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.debversion import Version
 from lp.registry.browser.distroseries import (
     HIGHER_VERSION_THAN_PARENT,
-    IGNORED,
+    ALL,
     NON_IGNORED,
     RESOLVED,
     seriesToVocab,
@@ -1386,9 +1387,16 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertContentEqual([dsd], view.getUpgrades())
 
     def enableDerivedSeriesSyncFeature(self):
+        """Enable the feature flag for derived-series sync."""
         self.useFixture(
             FeatureFixture(
                 {u'soyuz.derived_series_sync.enabled': u'on'}))
+
+    def enableDerivedSeriesUpgradeFeature(self):
+        """Enable the feature flag for derived-series upgrade."""
+        self.useFixture(
+            FeatureFixture(
+                {u'soyuz.derived_series_upgrade.enabled': u'on'}))
 
     @with_celebrity_logged_in("admin")
     def test_upgrades_offered_only_with_feature_flag(self):
@@ -1397,13 +1405,13 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         view = self.makeView()
         self.makePackageUpgrade(view.context)
         self.assertFalse(view.canUpgrade())
-        self.enableDerivedSeriesSyncFeature()
+        self.enableDerivedSeriesUpgradeFeature()
         self.assertTrue(view.canUpgrade())
 
     def test_upgrades_are_offered_if_appropriate(self):
         # The "Upgrade Packages" button will only be shown to privileged
         # users.
-        self.enableDerivedSeriesSyncFeature()
+        self.enableDerivedSeriesUpgradeFeature()
         dsd = self.makePackageUpgrade()
         view = self.makeView(dsd.derived_series)
         with celebrity_logged_in("admin"):
@@ -1417,7 +1425,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
     def test_upgrades_offered_only_if_available(self):
         # If there are no upgrades, the "Upgrade Packages" button won't
         # be shown.
-        self.enableDerivedSeriesSyncFeature()
+        self.enableDerivedSeriesUpgradeFeature()
         view = self.makeView()
         self.assertFalse(view.canUpgrade())
         self.makePackageUpgrade(view.context)
@@ -1428,7 +1436,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         # There won't be an "Upgrade Packages" button once feature
         # freeze has occurred.  Mass updates would not make sense after
         # that point.
-        self.enableDerivedSeriesSyncFeature()
+        self.enableDerivedSeriesUpgradeFeature()
         upgradeable = {}
         for status in SeriesStatus.items:
             dsd = self.makePackageUpgrade()
@@ -1611,27 +1619,23 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertContentEqual(
             [diff2, diff1], filtered_view2.cached_differences.batch)
 
-    def test_batch_differences_packages(self):
-        # field.package_type parameter allows to list only
-        # blacklisted differences.
+    def test_batch_all_packages(self):
+        # field.package_type parameter allows to list all the
+        # differences.
         set_derived_series_ui_feature_flag(self)
         derived_series, parent_series = self._createChildAndParent()
-        blacklisted_diff = self.factory.makeDistroSeriesDifference(
-            derived_series=derived_series,
-            status=DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT)
-
-        blacklisted_view = create_initialized_view(
+        # Create differences of all possible statuses.
+        diffs = []
+        for status in DistroSeriesDifferenceStatus.items:
+            diff = self.factory.makeDistroSeriesDifference(
+                derived_series=derived_series, status=status)
+            diffs.append(diff)
+        all_view = create_initialized_view(
             derived_series,
             '+localpackagediffs',
-            query_string='field.package_type=%s' % IGNORED)
-        unblacklisted_view = create_initialized_view(
-            derived_series,
-            '+localpackagediffs')
+            query_string='field.package_type=%s' % ALL)
 
-        self.assertContentEqual(
-            [blacklisted_diff], blacklisted_view.cached_differences.batch)
-        self.assertContentEqual(
-            [], unblacklisted_view.cached_differences.batch)
+        self.assertContentEqual(diffs, all_view.cached_differences.batch)
 
     def test_batch_blacklisted_differences_with_higher_version(self):
         # field.package_type parameter allows to list only
@@ -2155,6 +2159,59 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
                 query_string='field.packageset=%d' % packageset.id)
             self.assertEqual(1, len(view.cached_differences.batch))
 
+    def test_specified_changed_by_filter_none_specified(self):
+        # specified_changed_by_filter is None when there are no
+        # field.changed_by parameters in the query.
+        set_derived_series_ui_feature_flag(self)
+        dsd = self.factory.makeDistroSeriesDifference()
+        person = dsd.derived_series.owner
+        with person_logged_in(person):
+            view = create_initialized_view(
+                dsd.derived_series, '+localpackagediffs', method='GET',
+                query_string='')
+            self.assertIs(None, view.specified_changed_by_filter)
+
+    def test_specified_changed_by_filter_specified(self):
+        # specified_changed_by_filter returns a collection of Person when
+        # there are field.changed_by query parameters.
+        set_derived_series_ui_feature_flag(self)
+        dsd = self.factory.makeDistroSeriesDifference()
+        person = dsd.derived_series.owner
+        changed_by1 = self.factory.makePerson()
+        changed_by2 = self.factory.makePerson()
+        with person_logged_in(person):
+            query_string = urlencode(
+                {"field.changed_by": (changed_by1.name, changed_by2.name)},
+                doseq=True)
+            view = create_initialized_view(
+                dsd.derived_series, '+localpackagediffs', method='GET',
+                query_string=query_string)
+            self.assertContentEqual(
+                [changed_by1, changed_by2],
+                view.specified_changed_by_filter)
+
+    def test_search_for_changed_by(self):
+        # If changed_by is specified the query the resulting batch will only
+        # contain packages relating to those people or teams.
+        set_derived_series_ui_feature_flag(self)
+        dsd = self.factory.makeDistroSeriesDifference()
+        person = dsd.derived_series.owner
+        ironhide = self.factory.makePersonByName("Ironhide")
+        query_string = urlencode({"field.changed_by": ironhide.name})
+        # The package release is not from Ironhide so the batch will be empty.
+        with person_logged_in(person):
+            view = create_initialized_view(
+                dsd.derived_series, '+localpackagediffs', method='GET',
+                query_string=query_string)
+            self.assertEqual(0, len(view.cached_differences.batch))
+            # The batch will contain the package once Ironhide has been
+            # associated with its release.
+            removeSecurityProxy(dsd.source_package_release).creator = ironhide
+            view = create_initialized_view(
+                dsd.derived_series, '+localpackagediffs', method='GET',
+                query_string=query_string)
+            self.assertEqual(1, len(view.cached_differences.batch))
+
 
 class TestDistroSeriesNeedsPackagesView(TestCaseWithFactory):
     """Test the distroseries +needs-packaging view."""
@@ -2336,6 +2393,35 @@ class DistroSerieUniquePackageDiffsTestCase(TestCaseWithFactory,
 
         self.assertContentEqual(
             [missing_diff], view.cached_differences.batch)
+
+    def test_uniquepackages_displays_parent(self):
+        # For a series derived from multiple parents, the parent for each
+        # DSD is displayed; no parent version is displayed because we're
+        # listing packages unique to the derived series.
+        set_derived_series_ui_feature_flag(self)
+        derived_series, parent_series = self._createChildAndParents()
+        missing_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+        self.factory.makeDistroSeriesDifference(
+            difference_type=missing_type,
+            derived_series=derived_series,
+            parent_series=parent_series,
+            status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION)
+        view = create_initialized_view(
+            derived_series, '+uniquepackages')
+
+        multiple_parents_display_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                "Parent table header", 'th',
+                text=re.compile("^\s*Parent\s")),
+            Not(soupmatchers.Tag(
+                "Parent version table header", 'th',
+                text=re.compile("\s*Parent version\s*"))),
+            soupmatchers.Tag(
+                "Parent name", 'a',
+                attrs={'class': 'parent-name'},
+                text=re.compile("\s*%s\s*" % parent_series.displayname)),
+             )
+        self.assertThat(view.render(), multiple_parents_display_matcher)
 
     def test_uniquepackages_differences_empty(self):
         # The view is empty if there is no differences with type
