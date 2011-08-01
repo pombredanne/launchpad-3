@@ -529,7 +529,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             old_status, new_status, 'simple comment')
 
         self.assertEqual(
-            'Ignored: %s => %s\n\nsimple comment' % (
+            'simple comment\n\nIgnored: %s => %s' % (
                 old_status.title, new_status.title),
             new_comment)
 
@@ -552,7 +552,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             dsd_comment = ds_diff.unblacklist(
                 admin, "Ok now")
         new_status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
-        expected_comment = 'Ignored: %s => %s\n\nOk now' % (
+        expected_comment = 'Ok now\n\nIgnored: %s => %s' % (
                 old_status.title, new_status.title)
 
         self.assertDSDComment(ds_diff, dsd_comment, expected_comment)
@@ -568,7 +568,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             dsd_comment = ds_diff.blacklist(
                 admin, True, "Wait until version 2.1")
         new_status = DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS
-        expected_comment = 'Ignored: %s => %s\n\nWait until version 2.1' % (
+        expected_comment = 'Wait until version 2.1\n\nIgnored: %s => %s' % (
                 old_status.title, new_status.title)
 
         self.assertDSDComment(ds_diff, dsd_comment, expected_comment)

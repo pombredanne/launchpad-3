@@ -373,7 +373,7 @@ def get_comment_with_status_change(status, new_status, comment):
     new_comment = "Ignored: %s => %s" % (
         status.title, new_status.title)
     if comment:
-        new_comment = "%s\n\n%s" % (new_comment, comment)
+        new_comment = "%s\n\n%s" % (comment, new_comment)
     return new_comment
 
 
