@@ -318,3 +318,10 @@ class TestDistroSeriesDifferencesVocabulary(TestCaseWithFactory):
         vocabulary = DistroSeriesDifferencesVocabulary(
             difference.derived_series)
         self.assertThat(vocabulary, Contains(difference))
+
+    def test_size(self):
+        # The vocabulary can report its size.
+        difference = self.factory.makeDistroSeriesDifference()
+        vocabulary = DistroSeriesDifferencesVocabulary(
+            difference.derived_series)
+        self.assertEqual(1, len(vocabulary))

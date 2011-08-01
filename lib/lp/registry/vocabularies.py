@@ -1887,7 +1887,7 @@ class DistroSeriesDifferencesVocabulary:
 
     def __len__(self):
         """See `IIterableVocabulary`."""
-        return self.searchParents().count()
+        return self.searchForDifferences().count()
 
     def __iter__(self):
         """See `IIterableVocabulary`."""
