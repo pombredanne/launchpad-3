@@ -1612,7 +1612,7 @@ class Archive(SQLBase):
         job_source = getUtility(IPlainPackageCopyJobSource)
         job_source.createMultiple(
             series, copy_tasks, person,
-            copy_policy=PackageCopyPolicy.INSECURE,
+            copy_policy=PackageCopyPolicy.MASS_SYNC,
             include_binaries=include_binaries)
 
     def _collectLatestPublishedSources(self, from_archive, source_names):
@@ -1947,8 +1947,18 @@ class Archive(SQLBase):
         self.enabled_restricted_families = restricted
 
     @classmethod
-    def validatePPA(self, person, proposed_name):
+    def validatePPA(self, person, proposed_name, private=False):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        if private:
+            # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
+            # which says that one needs 'launchpad.Commercial' permission to
+            # set 'private', and the logic in `AdminByCommercialTeamOrAdmins`
+            # which determines who is granted launchpad.Commercial
+            # permissions.
+            commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+            admin = getUtility(ILaunchpadCelebrities).admin
+            if not person.inTeam(commercial) and not person.inTeam(admin):
+                return '%s is not allowed to make private PPAs' % (person.name,)
         if person.isTeam() and (
             person.subscriptionpolicy in OPEN_TEAM_POLICY):
             return "Open teams cannot have PPAs."

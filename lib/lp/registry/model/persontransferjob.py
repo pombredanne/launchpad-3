@@ -45,6 +45,7 @@ from canonical.launchpad.mail import (
     )
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import canonical_url
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.enum import PersonTransferJobType
 from lp.registry.interfaces.person import (
     IPerson,
@@ -345,14 +346,20 @@ class PersonMergeJob(PersonTransferJobDerived):
     class_job_type = PersonTransferJobType.MERGE
 
     @classmethod
-    def create(cls, from_person, to_person, reviewer=None):
+    def create(cls, from_person, to_person, reviewer=None, delete=False):
         """See `IPersonMergeJobSource`."""
-        if from_person.is_merge_pending or to_person.is_merge_pending:
+        if (from_person.is_merge_pending or 
+            (not delete and to_person.is_merge_pending)):
             return None
         if from_person.is_team:
             metadata = {'reviewer': reviewer.id}
         else:
             metadata = {}
+        metadata['delete'] = bool(delete)
+        if metadata['delete']:
+            # Ideally not needed, but the DB column is not-null at the moment
+            # and this minor bit of friction isn't worth changing that over.
+            to_person = getUtility(ILaunchpadCelebrities).registry_experts
         return super(PersonMergeJob, cls).create(
             minor_person=from_person, major_person=to_person,
             metadata=metadata)
@@ -412,16 +419,27 @@ class PersonMergeJob(PersonTransferJobDerived):
         to_person_name = self.to_person.name
 
         from canonical.launchpad.scripts import log
-        log.debug(
-            "%s is about to merge ~%s into ~%s", self.log_name,
-            from_person_name, to_person_name)
-        getUtility(IPersonSet).merge(
-            from_person=self.from_person, to_person=self.to_person,
-            reviewer=self.reviewer)
-
-        log.debug(
-            "%s has merged ~%s into ~%s", self.log_name,
-            from_person_name, to_person_name)
+        personset = getUtility(IPersonSet)
+        if self.metadata['delete']:
+            log.debug(
+                "%s is about to delete ~%s", self.log_name,
+                from_person_name)
+            personset.delete(
+                from_person=self.from_person,
+                reviewer=self.reviewer)
+            log.debug(
+                "%s has deleted ~%s", self.log_name,
+                from_person_name)
+        else:
+            log.debug(
+                "%s is about to merge ~%s into ~%s", self.log_name,
+                from_person_name, to_person_name)
+            personset.merge(
+                from_person=self.from_person, to_person=self.to_person,
+                reviewer=self.reviewer)
+            log.debug(
+                "%s has merged ~%s into ~%s", self.log_name,
+                from_person_name, to_person_name)
 
     def __repr__(self):
         return (
