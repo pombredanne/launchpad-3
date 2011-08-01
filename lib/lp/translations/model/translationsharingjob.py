@@ -191,7 +191,6 @@ class TranslationSharingJobDerived:
             a `TranslationSharingJob` for.
         :param event: The event itself.
         """
-        import pdb; pdb.set_trace()
         if ('name' not in event.edited_fields and
             'productseries' not in event.edited_fields and
             'distroseries' not in event.edited_fields and
