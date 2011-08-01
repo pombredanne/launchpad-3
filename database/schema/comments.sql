@@ -1676,6 +1676,7 @@ COMMENT ON COLUMN DistroSeries.registrant IS 'The user who registered this distr
 COMMENT ON COLUMN DistroSeries.driver IS 'This is a person or team who can act as a driver for this specific release - note that the distribution drivers can also set goals for any release.';
 COMMENT ON COLUMN DistroSeries.changeslist IS 'The email address (name name) of the changes announcement list for this distroseries. If NULL, no announcement mail will be sent.';
 COMMENT ON COLUMN DistroSeries.defer_translation_imports IS 'Don''t accept PO imports for this release just now.';
+COMMENT ON COLUMN DistroSeries.include_long_descriptions IS 'Include long descriptions in Packages rather than in Translation-en.';
 
 
 -- DistroArchSeries

@@ -25,6 +25,9 @@ from contrib.glock import (
 import multiprocessing
 from psycopg2 import IntegrityError
 import pytz
+from storm.expr import (
+    In,
+    )
 from storm.locals import (
     Max,
     Min,
@@ -74,6 +77,7 @@ from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
 from lp.services.log.logger import PrefixFilter
+from lp.services.propertycache import cachedproperty
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LOCK_PATH,
@@ -82,6 +86,11 @@ from lp.services.scripts.base import (
 from lp.services.session.model import SessionData
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potranslation import POTranslation
+from lp.translations.model.potmsgset import POTMsgSet
+from lp.translations.model.translationmessage import TranslationMessage
+from lp.translations.model.translationtemplateitem import (
+    TranslationTemplateItem,
+    )
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
@@ -859,6 +868,70 @@ class SuggestiveTemplatesCacheUpdater(TunableLoop):
         self.done = True
 
 
+class UnusedPOTMsgSetPruner(TunableLoop):
+    """Cleans up unused POTMsgSets."""
+
+    done = False
+    offset = 0
+    maximum_chunk_size = 50000
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return self.offset >= len(self.msgset_ids_to_remove)
+
+    @cachedproperty
+    def msgset_ids_to_remove(self):
+        """Return the IDs of the POTMsgSets to remove."""
+        query = """
+            -- Get all POTMsgSet IDs which are obsolete (sequence == 0)
+            -- and are not used (sequence != 0) in any other template.
+            SELECT DISTINCT POTMsgSet
+              FROM TranslationTemplateItem tti
+              WHERE sequence=0 AND
+              NOT EXISTS(
+                SELECT id
+                  FROM TranslationTemplateItem
+                  WHERE potmsgset = tti.potmsgset AND
+                  sequence != 0)
+            UNION
+            -- Get all POTMsgSet IDs which are not referenced
+            -- by any of the templates (they must have TTI rows for that).
+            (SELECT POTMsgSet.id
+              FROM POTMsgSet
+             EXCEPT
+             SELECT potmsgset
+               FROM TranslationTemplateItem)
+            LIMIT 50000;
+            """
+        store = IMasterStore(POTMsgSet)
+        results = store.execute(query)
+        ids_to_remove = [id for (id,) in results.get_all()]
+        return ids_to_remove
+
+    def __call__(self, chunk_size):
+        """See `TunableLoop`."""
+        # We cast chunk_size to an int to avoid issues with slicing
+        # (DBLoopTuner passes in a float).
+        chunk_size = int(chunk_size)
+        msgset_ids_to_remove = (
+            self.msgset_ids_to_remove[self.offset:][:chunk_size])
+        # Remove related TranslationTemplateItems.
+        store = IMasterStore(POTMsgSet)
+        related_ttis = store.find(
+            TranslationTemplateItem,
+            In(TranslationTemplateItem.potmsgsetID, msgset_ids_to_remove))
+        related_ttis.remove()
+        # Remove related TranslationMessages.
+        related_translation_messages = store.find(
+            TranslationMessage,
+            In(TranslationMessage.potmsgsetID, msgset_ids_to_remove))
+        related_translation_messages.remove()
+        store.find(
+            POTMsgSet, In(POTMsgSet.id, msgset_ids_to_remove)).remove()
+        self.offset = self.offset + chunk_size
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None # Script name for locking and database user. Override.
@@ -1108,6 +1181,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         RevisionAuthorEmailLinker,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
+        UnusedPOTMsgSetPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,
