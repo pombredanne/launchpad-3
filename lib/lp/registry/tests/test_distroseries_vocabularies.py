@@ -20,7 +20,10 @@ from canonical.database.sqlbase import flush_database_caches
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distroseries import IDistroSeriesSet
-from lp.registry.vocabularies import DistroSeriesDerivationVocabulary
+from lp.registry.vocabularies import (
+    DistroSeriesDerivationVocabulary,
+    DistroSeriesDifferencesVocabulary,
+    )
 from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
@@ -47,9 +50,8 @@ class TestDistroSeriesDerivationVocabulary(TestCaseWithFactory):
             getUtility(IVocabularyFactory, name="DistroSeriesDerivation"),
             DistroSeriesDerivationVocabulary)
 
-    def test_interfaces(self):
-        # DistroSeriesDerivationVocabulary instances provide
-        # IVocabulary and IVocabularyTokenized.
+    def test_interface(self):
+        # DistroSeriesDerivationVocabulary instances provide IHugeVocabulary.
         distroseries = self.factory.makeDistroSeries()
         vocabulary = DistroSeriesDerivationVocabulary(distroseries)
         self.assertProvides(vocabulary, IHugeVocabulary)
@@ -248,3 +250,29 @@ class TestDistroSeriesDerivationVocabulary(TestCaseWithFactory):
         self.assertContentEqual(
             expected_distroseries,
             observed_distroseries)
+
+
+class TestDistroSeriesDifferencesVocabulary(TestCaseWithFactory):
+    """Tests for `DistroSeriesDifferencesVocabulary`."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistroSeriesDifferencesVocabulary, self).setUp()
+        self.all_distroseries = getUtility(IDistroSeriesSet).search()
+        self.all_series_with_arch = [
+            series for series in self.all_distroseries
+            if series.architecturecount != 0]
+
+    def test_registration(self):
+        # DistroSeriesDifferencesVocabulary is registered as a named utility
+        # for IVocabularyFactory.
+        self.assertEqual(
+            getUtility(IVocabularyFactory, name="DistroSeriesDifferences"),
+            DistroSeriesDifferencesVocabulary)
+
+    def test_interface(self):
+        # DistroSeriesDifferencesVocabulary instances provide IHugeVocabulary.
+        distroseries = self.factory.makeDistroSeries()
+        vocabulary = DistroSeriesDifferencesVocabulary(distroseries)
+        self.assertProvides(vocabulary, IHugeVocabulary)

@@ -33,6 +33,7 @@ __all__ = [
     'DistributionSourcePackageVocabulary',
     'DistributionVocabulary',
     'DistroSeriesDerivationVocabulary',
+    'DistroSeriesDifferencesVocabulary',
     'DistroSeriesVocabulary',
     'FeaturedProjectVocabulary',
     'FilteredDistroSeriesVocabulary',
@@ -194,9 +195,7 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.distroarchseries import DistroArchSeries
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory,
-    )
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -1801,6 +1800,117 @@ class DistroSeriesDerivationVocabulary:
         return dict((term.token, term) for term in self.terms)
 
     def getTermByToken(self, token):
+        try:
+            return self.terms_by_token[token]
+        except KeyError:
+            raise LookupError(token)
+
+    def toTerm(self, series):
+        """Return the term for a parent series."""
+        title = "%s: %s" % (series.distribution.displayname, series.title)
+        return SimpleTerm(series, series.id, title)
+
+    def searchForTerms(self, query=None):
+        """See `IHugeVocabulary`."""
+        results = self.searchParents(query)
+        return CountableIterator(len(results), results, self.toTerm)
+
+    @cachedproperty
+    def terms(self):
+        return self.searchParents()
+
+    def find_terms(self, *where):
+        """Return a `tuple` of terms matching the given criteria.
+
+        The terms are returned in order. The `Distribution`s related to those
+        terms are preloaded at the same time.
+        """
+        query = IStore(DistroSeries).find(
+            (DistroSeries, Distribution),
+            DistroSeries.distribution == Distribution.id,
+            *where)
+        query = query.order_by(
+            Distribution.displayname,
+            Desc(DistroSeries.date_created)).config(distinct=True)
+        return [series for (series, distribution) in query]
+
+    def searchParents(self, query=None):
+        """See `IHugeVocabulary`."""
+        parent = ClassAlias(DistroSeries, "parent")
+        child = ClassAlias(DistroSeries, "child")
+        where = []
+        if query is not None:
+            term = '%' + query.lower() + '%'
+            search = Or(
+                    DistroSeries.title.lower().like(term),
+                    DistroSeries.description.lower().like(term),
+                    DistroSeries.summary.lower().like(term))
+            where.append(search)
+        parent_distributions = list(IStore(DistroSeries).find(
+            parent.distributionID, And(
+                parent.distributionID != self.distribution.id,
+                child.distributionID == self.distribution.id,
+                child.id == DistroSeriesParent.derived_series_id,
+                parent.id == DistroSeriesParent.parent_series_id)))
+        if parent_distributions != []:
+            where.append(
+                DistroSeries.distributionID.is_in(parent_distributions))
+            return self.find_terms(where)
+        else:
+            # Select only the series with architectures setup in LP.
+            where.append(
+                DistroSeries.id == DistroArchSeries.distroseriesID)
+            where.append(
+                DistroSeries.distribution != self.distribution)
+            return self.find_terms(where)
+
+
+class DistroSeriesDifferencesVocabulary:
+    """A vocabulary source for differences relating to a series.
+
+    Specifically, all `DistroSeriesDifference`s relating to a derived series.
+    """
+
+    implements(IHugeVocabulary)
+
+    displayname = "Choose a difference"
+    step_title = 'Search'
+
+    def __init__(self, context):
+        """Create a new vocabulary for the context.
+
+        :type context: `IDistroSeries`.
+        """
+        assert IDistroSeries.providedBy(context)
+        self.distroseries = context
+
+    def __len__(self):
+        """See `IIterableVocabulary`."""
+        return self.searchParents().count()
+
+    def __iter__(self):
+        """See `IIterableVocabulary`."""
+        for series in self.searchParents():
+            yield self.toTerm(series)
+
+    def __contains__(self, value):
+        """See `IVocabulary`."""
+        if not IDistroSeries.providedBy(value):
+            return False
+        return value.id in [parent.id for parent in self.searchParents()]
+
+    def getTerm(self, value):
+        """See `IVocabulary`."""
+        if value not in self:
+            raise LookupError(value)
+        return self.toTerm(value)
+
+    def terms_by_token(self):
+        """Mapping of terms by token."""
+        return dict((term.token, term) for term in self.terms)
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
         try:
             return self.terms_by_token[token]
         except KeyError:
