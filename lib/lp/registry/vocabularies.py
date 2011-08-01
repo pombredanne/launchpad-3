@@ -1914,7 +1914,7 @@ class DistroSeriesDifferencesVocabulary:
     @staticmethod
     def toTerm(dsd):
         """Return the term for a `DistroSeriesDifference`."""
-        return SimpleTerm(dsd, dsd.id, dsd.source_package_name.name)
+        return SimpleTerm(dsd, dsd.id)
 
     def searchForTerms(self, query=None):
         """See `IHugeVocabulary`."""

@@ -281,4 +281,37 @@ class TestDistroSeriesDifferencesVocabulary(TestCaseWithFactory):
         # The vocabulary is empty for a non-derived series.
         distroseries = self.factory.makeDistroSeries()
         vocabulary = DistroSeriesDifferencesVocabulary(distroseries)
-        self.assertEqual([], list(vocabulary))
+        self.assertContentEqual([], vocabulary)
+
+    def test_derived_distroseries(self):
+        # The vocabulary contains all DSDs for a derived series.
+        distroseries = self.factory.makeDistroSeries()
+        dsds = [
+            self.factory.makeDistroSeriesDifference(
+                derived_series=distroseries),
+            self.factory.makeDistroSeriesDifference(
+                derived_series=distroseries),
+            ]
+        vocabulary = DistroSeriesDifferencesVocabulary(distroseries)
+        self.assertContentEqual(
+            dsds, (term.value for term in vocabulary))
+
+    def test_derived_distroseries_not_other_distroseries(self):
+        # The vocabulary contains all DSDs for a derived series and not for
+        # another series.
+        distroseries1 = self.factory.makeDistroSeries()
+        distroseries2 = self.factory.makeDistroSeries()
+        dsds = [
+            self.factory.makeDistroSeriesDifference(
+                derived_series=distroseries1),
+            self.factory.makeDistroSeriesDifference(
+                derived_series=distroseries1),
+            self.factory.makeDistroSeriesDifference(
+                derived_series=distroseries2),
+            self.factory.makeDistroSeriesDifference(
+                derived_series=distroseries2),
+            ]
+        vocabulary = DistroSeriesDifferencesVocabulary(distroseries1)
+        self.assertContentEqual(
+            (dsd for dsd in dsds if dsd.derived_series == distroseries1),
+            (term.value for term in vocabulary))
