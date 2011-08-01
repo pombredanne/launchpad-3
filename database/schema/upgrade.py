@@ -353,19 +353,20 @@ def apply_patches_replicated():
                 subscribe set (
                     id=@holding_set, provider=@master_node,
                     receiver=@node%d_node, forward=yes);
+                wait for event (
+                    origin=@master_node, confirmed=all,
+                    wait on=@master_node, timeout=0);
                 echo 'Waiting for sync';
                 sync (id=@master_node);
                 wait for event (
                     origin=@master_node, confirmed=ALL,
-                    wait on=@master_node, timeout=0
-                    );
+                    wait on=@master_node, timeout=0);
                 """ % (slave_node.node_id, slave_node.node_id))
 
         print >> outf, dedent("""\
             echo 'Merging holding set to lpmain';
             merge set (
-                id=@lpmain_set, add id=@holding_set, origin=@master_node
-                );
+                id=@lpmain_set, add id=@holding_set, origin=@master_node);
             """)
 
         # Execute the script and sync.
@@ -421,8 +422,10 @@ def apply_patches_replicated():
                 exit 1;
                 }
             """ % sql.name)
+        log.info("Generated slonik(1) script to drop tables. Invoking.")
         if not replication.helpers.execute_slonik(sk.getvalue()):
             log.fatal("Aborting.")
+        log.info("slonik(1) script to drop tables completed.")
         sql.close()
 
     # Now drop sequences. We don't do this at the same time as the tables,
@@ -465,10 +468,10 @@ def apply_patches_replicated():
                 exit 1;
                 }
             """ % sql.name)
-        log.info("Generated slonik(1) script to drop stuff. Invoking.")
+        log.info("Generated slonik(1) script to drop sequences. Invoking.")
         if not replication.helpers.execute_slonik(sk.getvalue()):
             log.fatal("Aborting.")
-        log.info("slonik(1) script to drop stuff completed.")
+        log.info("slonik(1) script to drop sequences completed.")
     log.info("Waiting for final sync.")
     replication.helpers.sync(timeout=0)
 
