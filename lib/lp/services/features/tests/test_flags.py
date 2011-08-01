@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for feature flags."""
@@ -10,6 +10,7 @@ import os
 
 from canonical.testing import layers
 from lp.services.features import (
+    UseFeatureController,
     getFeatureFlag,
     install_feature_controller,
     )
@@ -117,13 +118,10 @@ class TestFeatureFlags(TestCase):
         # the start-of-request handler will do something like this:
         controller, call_log = self.makeControllerInScopes(
             ['default', 'beta_user'])
-        install_feature_controller(controller)
-        try:
+        with UseFeatureController(controller):
             # then application code can simply ask without needing a context
             # object
             self.assertEqual(u'4.0', getFeatureFlag('ui.icing'))
-        finally:
-            install_feature_controller(None)
 
     def test_threadGetFlagNoContext(self):
         # If there is no context, please don't crash. workaround for the root
