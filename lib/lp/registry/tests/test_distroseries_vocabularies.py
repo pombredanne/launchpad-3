@@ -347,3 +347,18 @@ class TestDistroSeriesDifferencesVocabulary(TestCaseWithFactory):
             difference.derived_series)
         term = vocabulary.getTermByToken(str(difference.id))
         self.assertEqual(difference, term.value)
+
+    def test_getTermByToken_not_found(self):
+        # LookupError is raised when the token cannot be found.
+        distroseries = self.factory.makeDistroSeries()
+        difference = self.factory.makeDistroSeriesDifference()
+        vocabulary = DistroSeriesDifferencesVocabulary(distroseries)
+        self.assertRaises(
+            LookupError, vocabulary.getTermByToken, str(difference.id))
+
+    def test_getTermByToken_invalid(self):
+        # LookupError is raised when the token is not valid (i.e. a string
+        # containing only digits).
+        distroseries = self.factory.makeDistroSeries()
+        vocabulary = DistroSeriesDifferencesVocabulary(distroseries)
+        self.assertRaises(LookupError, vocabulary.getTermByToken, "foobar")

@@ -1906,10 +1906,13 @@ class DistroSeriesDifferencesVocabulary:
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        try:
-            difference = IStore(DistroSeriesDifference).get(
-                DistroSeriesDifference, int(token))
-        except KeyError:
+        if not token.isdigit():
+            raise LookupError(token)
+        difference = IStore(DistroSeriesDifference).get(
+            DistroSeriesDifference, int(token))
+        if difference is None:
+            raise LookupError(token)
+        elif difference.derived_series != self.distroseries:
             raise LookupError(token)
         else:
             return self.toTerm(difference)
