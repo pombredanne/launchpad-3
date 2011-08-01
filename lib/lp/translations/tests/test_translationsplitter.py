@@ -245,6 +245,26 @@ class TestTranslationTemplateSplitterBase:
             [(shared_potmsgset, template1)],
             self.getPOTMsgSetAndTemplateToSplit(splitter))
 
+    def test_split_messages(self):
+        """Splitting messages works properly."""
+        template1, template2, shared_potmsgset = self.setUpSharingTemplates()
+
+        splitter = TranslationTemplateSplitter(template2)
+        self.assertContentEqual([], splitter.findShared())
+
+        # Move the template to a different product entirely.
+        template2.productseries = self.factory.makeProduct().development_focus
+        template2.distroseries = None
+        template2.sourcepackagename = None
+
+        other_item, this_item = splitter.findShared()[0]
+
+        splitter.split()
+
+        self.assertNotEqual(other_item.potmsgset, this_item.potmsgset)
+        self.assertEqual(shared_potmsgset, other_item.potmsgset)
+        self.assertNotEqual(shared_potmsgset, this_item.potmsgset)
+
 
 class TestProductTranslationTemplateSplitter(
     TestCaseWithFactory, TestTranslationTemplateSplitterBase):
