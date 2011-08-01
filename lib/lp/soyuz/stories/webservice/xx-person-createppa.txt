@@ -30,3 +30,31 @@
   Status: 400 Bad Request
   ...
   A PPA cannot have the same name as its distribution.
+
+== Creating private PPAs ==
+
+Our PPA owner now has a single PPA.
+
+  >>> print_self_link_of_entries(webservice.get(
+  ...     ppa_owner['ppas_collection_link']).jsonBody())
+  http://api.launchpad.dev/beta/~.../+archive/ppa
+
+They aren't a commercial admin, so they cannot create private PPAs.
+
+  >>> print ppa_owner_webservice.named_post(
+  ...     ppa_owner['self_link'], 'createPPA', {}, name='whatever',
+  ...     displayname='My secret new PPA', description='Secretness!',
+  ...     private=True,
+  ...     )
+  HTTP/1.1 400 Bad Request
+  Status: 400
+  ...
+  ... is not allowed to make private PPAs
+
+After attempting and failing to create a private PPA, they still have the same
+single PPA they had at the beginning:
+
+  >>> print_self_link_of_entries(webservice.get(
+  ...     ppa_owner['ppas_collection_link']).jsonBody())
+  http://api.launchpad.dev/beta/~.../+archive/ppa
+

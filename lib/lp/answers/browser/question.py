@@ -361,7 +361,7 @@ class QuestionSubscriptionView(LaunchpadView):
                     _("You have subscribed to this question."))
                 modified_fields.add('subscribers')
             elif newsub == 'Unsubscribe':
-                self.context.unsubscribe(self.user)
+                self.context.unsubscribe(self.user, self.user)
                 response.addNotification(
                     _("You have unsubscribed from this question."))
                 modified_fields.add('subscribers')

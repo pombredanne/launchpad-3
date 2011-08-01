@@ -247,6 +247,7 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.bugs.model.bugtask import validate_target
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -1513,12 +1514,12 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                         <br /><br />
                         If this bug was assigned by mistake,
                         you may <a href="%s/+editstatus"
-                        >change the assignment</a>.""" % (
+                        >change the assignment</a>.""",
                         canonical_url(new_assignee),
                         new_assignee.displayname,
                         canonical_url(bugtask.pillar),
                         bugtask.pillar.title,
-                        canonical_url(bugtask))))
+                        canonical_url(bugtask)))
             changed = True
             bugtask.transitionToAssignee(new_assignee)
 
@@ -3555,6 +3556,8 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             'bugtask_path': '/'.join(
                 [''] + canonical_url(self.context).split('/')[3:]),
             'prefix': get_prefix(self.context),
+            'assignee_value': self.context.assignee
+                and self.context.assignee.name,
             'assignee_is_team': self.context.assignee
                 and self.context.assignee.is_team,
             'assignee_vocabulary': assignee_vocabulary,

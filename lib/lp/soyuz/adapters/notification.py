@@ -13,6 +13,7 @@ __all__ = [
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from email.utils import formataddr
 import os
 
 from zope.component import getUtility
@@ -125,7 +126,8 @@ def calculate_subject(spr, bprs, customfiles, archive, distroseries,
 
 def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
            summary_text=None, changes=None, changesfile_content=None,
-           changesfile_object=None, action=None, dry_run=False, logger=None):
+           changesfile_object=None, action=None, dry_run=False,
+           logger=None, announce_from_person=None):
     """Notify about
 
     :param blamer: The `IPerson` who is to blame for this notification.
@@ -144,6 +146,9 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     :param action: A string of what action to notify for, such as 'new',
         'accepted'.
     :param dry_run: If True, only log the mail.
+    :param announce_from_person: If passed, use this `IPerson` as the From: in
+        announcement emails.  If the person has no preferred email address,
+        the person is ignored and the default From: is used instead.
     """
     # If this is a binary or mixed upload, we don't send *any* emails
     # provided it's not a rejection or a security upload:
@@ -214,6 +219,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
         body = assemble_body(
             blamer, spr, bprs, archive, distroseries, summarystring, changes,
             action)
+        body = body.encode("utf8")
         send_mail(
             spr, archive, recipients, subject, body, dry_run,
             changesfile_content=changesfile_content,
@@ -222,8 +228,13 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
 
     build_and_send_mail(action, recipients)
 
-    (changesfile, date, from_addr, maintainer) = fetch_information(
-        spr, bprs, changes)
+    info = fetch_information(spr, bprs, changes)
+    from_addr = info['changedby']
+    if announce_from_person is not None:
+        email = announce_from_person.preferredemail
+        if email:
+            from_addr = email.email
+
     # If we're sending an acceptance notification for a non-PPA upload,
     # announce if possible. Avoid announcing backports, binary-only
     # security uploads, or autosync uploads.
@@ -252,13 +263,12 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
     """Assemble the e-mail notification body."""
     if changes is None:
         changes = {}
-    (changesfile, date, changedby, maintainer) = fetch_information(
-        spr, bprs, changes)
+    info = fetch_information(spr, bprs, changes)
     information = {
         'STATUS': ACTION_DESCRIPTIONS[action],
         'SUMMARY': summary,
-        'DATE': 'Date: %s' % date,
-        'CHANGESFILE': changesfile,
+        'DATE': 'Date: %s' % info['date'],
+        'CHANGESFILE': info['changesfile'],
         'DISTRO': distroseries.distribution.title,
         'ANNOUNCE': 'No announcement sent',
         'CHANGEDBY': '',
@@ -269,9 +279,15 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
         'USERS_ADDRESS': config.launchpad.users_address,
         }
     if spr:
-        information['SPR_URL'] = canonical_url(spr)
-    if changedby:
-        information['CHANGEDBY'] = '\nChanged-By: %s' % changedby
+        # Yay, circular imports.
+        from lp.soyuz.model.distroseriessourcepackagerelease import (
+            DistroSeriesSourcePackageRelease,
+            )
+        dsspr = DistroSeriesSourcePackageRelease(distroseries, spr)
+        information['SPR_URL'] = canonical_url(dsspr)
+    changedby_displayname = info['changedby_displayname']
+    if changedby_displayname:
+        information['CHANGEDBY'] = '\nChanged-By: %s' % changedby_displayname
     origin = changes.get('Origin')
     if origin:
         information['ORIGIN'] = '\nOrigin: %s' % origin
@@ -282,7 +298,7 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
         information['ANNOUNCE'] = "Announcing to %s" % (
             distroseries.changeslist)
     try:
-        changedby_person = email_to_person(changedby)
+        changedby_person = email_to_person(info['changedby'])
     except ParseMaintError:
         # Some syncs (e.g. from Debian) will involve packages whose
         # changed-by person was auto-created in LP and hence does not
@@ -290,9 +306,11 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
         changedby_person = None
     if blamer is not None and blamer != changedby_person:
         signer_signature = person_to_email(blamer)
-        if signer_signature != changedby:
+        if signer_signature != info['changedby']:
             information['SIGNER'] = '\nSigned-By: %s' % signer_signature
     # Add maintainer if present and different from changed-by.
+    maintainer = info['maintainer']
+    changedby = info['changedby']
     if maintainer and maintainer != changedby:
         information['MAINTAINER'] = '\nMaintainer: %s' % maintainer
     return get_template(archive, action) % information
@@ -434,20 +452,19 @@ def get_recipients(blamer, archive, distroseries, logger, changes=None,
     """Return a list of recipients for notification emails."""
     candidate_recipients = []
     debug(logger, "Building recipients list.")
-    (changesfile, date, changedby, maint) = fetch_information(
-        spr, bprs, changes)
+    info = fetch_information(spr, bprs, changes)
 
-    if changedby:
+    if info['changedby']:
         try:
-            changer = email_to_person(changedby)
+            changer = email_to_person(info['changedby'])
         except ParseMaintError:
             changer = None
     else:
         changer = None
 
-    if maint:
+    if info['maintainer']:
         try:
-            maintainer = email_to_person(maint)
+            maintainer = email_to_person(info['maintainer'])
         except ParseMaintError:
             maintainer = None
     else:
@@ -558,6 +575,7 @@ def email_to_person(fullemail):
 
 def person_to_email(person):
     """Return a string of full name <e-mail address> given an IPerson."""
+    # This will use email.Header to encode any unicode.
     if person and person.preferredemail:
         return format_address_for_person(person)
 
@@ -570,7 +588,10 @@ def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
     user (archive@ubuntu.com).
     """
     katie = getUtility(ILaunchpadCelebrities).katie
-    changed_by = email_to_person(changed_by_email)
+    try:
+        changed_by = email_to_person(changed_by_email)
+    except ParseMaintError:
+        return False
     return (
         spr and not bprs and changed_by == katie and
         pocket != PackagePublishingPocket.SECURITY)
@@ -578,13 +599,18 @@ def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
 
 def fetch_information(spr, bprs, changes):
     changedby = None
+    changedby_displayname = None
     maintainer = None
+    maintainer_displayname = None
+
     if changes:
         changesfile = ChangesFile.formatChangesComment(
             sanitize_string(changes.get('Changes')))
         date = changes.get('Date')
         changedby = sanitize_string(changes.get('Changed-By'))
         maintainer = sanitize_string(changes.get('Maintainer'))
+        changedby_displayname = changedby
+        maintainer_displayname = maintainer
     elif spr or bprs:
         if not spr and bprs:
             spr = bprs[0].build.source_package_release
@@ -592,9 +618,25 @@ def fetch_information(spr, bprs, changes):
         date = spr.dateuploaded
         changedby = person_to_email(spr.creator)
         maintainer = person_to_email(spr.maintainer)
+        if changedby:
+            addr = formataddr((spr.creator.displayname,
+                               spr.creator.preferredemail.email))
+            changedby_displayname = sanitize_string(addr)
+        if maintainer:
+            addr = formataddr((spr.maintainer.displayname,
+                               spr.maintainer.preferredemail.email))
+            maintainer_displayname = sanitize_string(addr)
     else:
         changesfile = date = None
-    return (changesfile, date, changedby, maintainer)
+
+    return {
+        'changesfile': changesfile,
+        'date': date,
+        'changedby': changedby,
+        'changedby_displayname': changedby_displayname,
+        'maintainer': maintainer,
+        'maintainer_displayname': maintainer_displayname,
+        }
 
 
 class LanguagePackEncountered(Exception):

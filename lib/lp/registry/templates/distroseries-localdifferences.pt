@@ -45,7 +45,7 @@
           <thead>
             <tr>
               <th>Source</th>
-              <th tal:condition="python: not(view.has_unique_parent) and view.show_parent_version">
+              <th tal:condition="python: not(view.has_unique_parent) and view.show_parent">
                 Parent
               </th>
               <th tal:condition="view/show_parent_version">
@@ -69,7 +69,7 @@
                   class="package-sets">
                 Package-sets
               </th>
-              <th>Last changed</th>
+              <th class="last-changed">Last changed</th>
               <th>Latest comment</th>
             </tr>
           </thead>
@@ -106,7 +106,7 @@
                   <span class="lowlight" tal:content="structure activity"></span>
                 </tal:activity>
               </td>
-              <td tal:condition="python: not(view.has_unique_parent) and view.show_parent_version">
+              <td tal:condition="python: not(view.has_unique_parent) and view.show_parent">
                 <a tal:attributes="href difference/parent_series/fmt:url"
                    tal:content="difference/parent_series/displayname"
                    class="parent-name">Warty</a>
@@ -154,11 +154,13 @@
                       <span class="nowrap">by <a tal:replace="structure spr/creator/fmt:link" /></span>
                     </tal:creator>
                     <tal:uploader
-                        define="spr parent_source_pub/sourcepackagerelease"
-                        condition="python: spr.uploader not in (None, spr.creator)">
+                        define="uploader parent_source_pub/sourcepackagerelease/uploader;
+                                creator parent_source_pub/sourcepackagerelease/creator"
+                        condition="python: uploader not in (None, creator)">
                       <br />
                       <span class="discreet nowrap">
-                        (uploaded by <a tal:replace="structure spr/uploader/fmt:link" />)
+                        (uploaded by <a tal:attributes="href uploader/fmt:url"
+                         tal:content="uploader/fmt:displayname" />)
                       </span>
                     </tal:uploader>
                   </tal:published>
@@ -174,11 +176,13 @@
                       <span class="nowrap">by <a tal:replace="structure spr/creator/fmt:link" /></span>
                     </tal:creator>
                     <tal:uploader
-                        define="spr source_pub/sourcepackagerelease"
-                        condition="python: spr.uploader not in (None, spr.creator)">
+                        define="uploader source_pub/sourcepackagerelease/uploader;
+                                creator source_pub/sourcepackagerelease/creator"
+                        condition="python: uploader not in (None, creator)">
                       <br />
                       <span class="discreet nowrap">
-                        (uploaded by <a tal:replace="structure spr/uploader/fmt:link" />)
+                        (uploaded by <a tal:attributes="href uploader/fmt:url"
+                         tal:content="uploader/fmt:displayname" />)
                       </span>
                     </tal:uploader>
                   </tal:published>
@@ -228,6 +232,9 @@ LPS.use('lp.registry.distroseriesdifferences_details', function(Y) {
       // Probably only one, but check for more just in case.
       Y.all("th.package-sets").each(function(header) {
         differences.connect_packageset_picker(header, form);
+      });
+      Y.all("th.last-changed").each(function(header) {
+        differences.connect_last_changed_picker(header, form);
       });
     });
   });

@@ -24,7 +24,10 @@ from lp.registry.interfaces.distroseriesdifference import (
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features.testing import FeatureFixture
-from lp.soyuz.enums import SourcePackageFormat
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    SourcePackageFormat,
+    )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import (
@@ -38,18 +41,16 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     )
 from lp.soyuz.model.component import ComponentSelection
 from lp.soyuz.model.distroarchseries import DistroArchSeries
+from lp.soyuz.model.distroseriesdifferencejob import (
+    FEATURE_FLAG_ENABLE_MODULE,
+    find_waiting_jobs,
+    )
 from lp.soyuz.model.section import SectionSelection
 from lp.soyuz.scripts.initialize_distroseries import (
     InitializationError,
     InitializeDistroSeries,
     )
 from lp.testing import TestCaseWithFactory
-from lp.soyuz.model.distroseriesdifferencejob import (
-    FEATURE_FLAG_ENABLE_MODULE,
-    )
-from lp.soyuz.model.distroseriesdifferencejob import (
-    find_waiting_jobs
-    )
 
 
 class InitializationHelperTestCase(TestCaseWithFactory):
@@ -58,7 +59,9 @@ class InitializationHelperTestCase(TestCaseWithFactory):
     # - initialize a child from parents.
 
     def setupParent(self, packages=None, format_selection=None,
-                    distribution=None):
+                    distribution=None,
+                    pocket=PackagePublishingPocket.RELEASE,
+                    ):
         parent = self.factory.makeDistroSeries(distribution)
         pf = getUtility(IProcessorFamilySet).getByName('x86')
         parent_das = self.factory.makeDistroArchSeries(
@@ -74,10 +77,11 @@ class InitializationHelperTestCase(TestCaseWithFactory):
         getUtility(ISourcePackageFormatSelectionSet).add(
             parent, format_selection)
         parent.backports_not_automatic = True
-        self._populate_parent(parent, parent_das, packages)
+        self._populate_parent(parent, parent_das, packages, pocket)
         return parent, parent_das
 
-    def _populate_parent(self, parent, parent_das, packages=None):
+    def _populate_parent(self, parent, parent_das, packages=None,
+                         pocket=PackagePublishingPocket.RELEASE):
         if packages is None:
             packages = {'udev': '0.1-1', 'libc6': '2.8-1',
                 'postgresql': '9.0-1', 'chromium': '3.6'}
@@ -86,8 +90,7 @@ class InitializationHelperTestCase(TestCaseWithFactory):
             spph = self.factory.makeSourcePackagePublishingHistory(
                 sourcepackagename=spn, version=packages[package],
                 distroseries=parent,
-                pocket=PackagePublishingPocket.RELEASE,
-                status=PackagePublishingStatus.PUBLISHED)
+                pocket=pocket, status=PackagePublishingStatus.PUBLISHED)
             status = BuildStatus.FULLYBUILT
             if package is 'chromium':
                 status = BuildStatus.FAILEDTOBUILD
@@ -103,8 +106,7 @@ class InitializationHelperTestCase(TestCaseWithFactory):
                 self.factory.makeBinaryPackagePublishingHistory(
                     binarypackagerelease=bpr,
                     distroarchseries=parent_das,
-                    pocket=PackagePublishingPocket.RELEASE,
-                    status=PackagePublishingStatus.PUBLISHED)
+                    pocket=pocket, status=PackagePublishingStatus.PUBLISHED)
                 self.factory.makeBinaryPackageFile(binarypackagerelease=bpr)
 
     def _fullInitialize(self, parents, child=None, previous_series=None,
@@ -172,6 +174,22 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertRaisesWithContent(
             InitializationError, "Parent series has pending builds.",
             ids.check)
+
+    def test_success_with_updates_packages(self):
+        # Initialization copies all the package from the UPDATES pocket.
+        self.parent, self.parent_das = self.setupParent(
+            pocket=PackagePublishingPocket.UPDATES)
+        child = self._fullInitialize([self.parent])
+        self.assertDistroSeriesInitializedCorrectly(
+            child, self.parent, self.parent_das)
+
+    def test_success_with_security_packages(self):
+        # Initialization copies all the package from the SECURITY pocket.
+        self.parent, self.parent_das = self.setupParent(
+            pocket=PackagePublishingPocket.SECURITY)
+        child = self._fullInitialize([self.parent])
+        self.assertDistroSeriesInitializedCorrectly(
+            child, self.parent, self.parent_das)
 
     def test_success_with_pending_builds(self):
         # If the parent series has pending builds, and the child's
@@ -803,68 +821,84 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
              ".").format(child=child),
              ids.check)
 
+    def createDistroSeriesWithPublication(self, distribution=None):
+        # Create a distroseries with a publication in the DEBUG archive.
+        distroseries = self.factory.makeDistroSeries(
+            distribution=distribution)
+        # Publish a package in another archive in distroseries' distribution.
+        debug_archive = self.factory.makeArchive(
+            distribution=distroseries.distribution,
+            purpose=ArchivePurpose.DEBUG)
+
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, archive=debug_archive)
+        return distroseries
+
     def test_copy_method_diff_archive_empty_target(self):
         # If the archives are different and the target archive is
         # empty: use the cloner.
-        archive = self.factory.makeArchive()
-        distroseries = self.factory.makeDistroSeries()
+        distroseries = self.createDistroSeriesWithPublication()
+        parent = self.factory.makeDistroSeries()
         target_archive = distroseries.main_archive
 
+        ids = InitializeDistroSeries(distroseries, [parent.id])
         self.assertTrue(
-            InitializeDistroSeries._use_cloner(
-                target_archive, archive, distroseries))
+            ids._use_cloner(
+                target_archive, parent.main_archive))
 
-    def test_copy_method_same_archive_empty_series(self):
-        # If the archives are the same and the target series is
-        # empty: use the cloner.
+    def test_copy_method_first_derivation(self):
+        # If this is a first derivation: do not use the copier.
+        parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
         target_archive = distroseries.main_archive
-
-        self.assertTrue(
-            InitializeDistroSeries._use_cloner(
-                target_archive, target_archive, distroseries))
-
-    def test_copy_method_same_archive_empty_series_non_empty_archive(self):
-        # If the archives are the same and the target series is
-        # empty (another series in the same distribution
-        # might not be empty): use the cloner.
-        distroseries = self.factory.makeDistroSeries()
-        other_distroseries = self.factory.makeDistroSeries(
-            distribution=distroseries.distribution)
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=other_distroseries)
-        target_archive = distroseries.main_archive
-
-        self.assertTrue(
-            InitializeDistroSeries._use_cloner(
-                target_archive, target_archive, distroseries))
-
-    def test_copy_method_diff_archive_non_empty_target(self):
-        # If the archives are different and the target archive is
-        # *not* empty: don't use the cloner.
-        archive = self.factory.makeArchive()
-        distroseries = self.factory.makeDistroSeries()
-        target_archive = distroseries.main_archive
-        other_distroseries = self.factory.makeDistroSeries(
-            distribution=distroseries.distribution)
-        self.factory.makeSourcePackagePublishingHistory(
-            distroseries=other_distroseries)
+        ids = InitializeDistroSeries(distroseries, [parent.id])
 
         self.assertFalse(
-            InitializeDistroSeries._use_cloner(
-                target_archive, archive, distroseries))
+            ids._use_cloner(target_archive, target_archive))
+
+    def test_copy_method_same_archive_empty_series_non_empty_archive(self):
+        # In a post-first derivation, if the archives are the same and the
+        # target series is empty (another series in the same distribution
+        # might not be empty): use the cloner.
+        parent = self.factory.makeDistroSeries()
+        distroseries = self.createDistroSeriesWithPublication()
+        other_distroseries = self.factory.makeDistroSeries(
+            distribution=distroseries.distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=other_distroseries)
+        target_archive = distroseries.main_archive
+        ids = InitializeDistroSeries(distroseries, [parent.id])
+
+        self.assertTrue(
+            ids._use_cloner(target_archive, target_archive))
+
+    def test_copy_method_diff_archive_non_empty_target(self):
+        # In a post-first derivation, if the archives are different and the
+        # target archive is *not* empty: don't use the cloner.
+        parent = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
+        target_archive = distroseries.main_archive
+        other_distroseries = self.factory.makeDistroSeries(
+            distribution=distroseries.distribution)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=other_distroseries)
+        ids = InitializeDistroSeries(distroseries, [parent.id])
+
+        self.assertFalse(
+            ids._use_cloner(target_archive, parent.main_archive))
 
     def test_copy_method_same_archive_non_empty_series(self):
-        # If the archives are the same and the target series is
-        # *not* empty: don't use the cloner.
+        # In a post-first derivation, if the archives are the same and the
+        # target series is *not* empty: don't use the cloner.
+        parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
         self.factory.makeSourcePackagePublishingHistory(
             distroseries=distroseries)
         target_archive = distroseries.main_archive
 
+        ids = InitializeDistroSeries(distroseries, [parent.id])
         self.assertFalse(
-            InitializeDistroSeries._use_cloner(
-                target_archive, target_archive, distroseries))
+            ids._use_cloner(target_archive, target_archive))
 
     def test__has_same_parents_as_previous_series_explicit(self):
         # IDS._has_same_parents_as_previous_series returns True if the

@@ -181,6 +181,7 @@
                 is_delayed_copy
                 isPPA
                 package_copy_job
+                package_copy_job_id
                 package_name
                 package_version
                 section_name
@@ -405,6 +406,12 @@
             permission="launchpad.Edit"
             interface="lp.soyuz.interfaces.archive.IArchiveEdit"
             set_attributes="description displayname publish status"/>
+        <!--
+           NOTE: The 'private' permission controls who can turn a public
+           archive into a private one, and vice versa. The logic that says this
+           requires launchpad.Commercial permissions is duplicated in
+           IArchive.validatePPA.
+          -->
         <require
             permission="launchpad.Commercial"
 	    interface="lp.soyuz.interfaces.archive.IArchiveCommercial"
