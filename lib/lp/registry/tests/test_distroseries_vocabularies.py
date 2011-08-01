@@ -13,7 +13,10 @@ from datetime import (
 from pytz import utc
 from testtools.matchers import Equals
 from zope.component import getUtility
-from zope.schema.interfaces import IVocabularyFactory
+from zope.schema.interfaces import (
+    ITokenizedTerm,
+    IVocabularyFactory,
+    )
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_caches
@@ -31,6 +34,7 @@ from lp.testing import (
 from lp.testing.matchers import (
     Contains,
     HasQueryCount,
+    Provides,
     )
 
 
@@ -325,3 +329,21 @@ class TestDistroSeriesDifferencesVocabulary(TestCaseWithFactory):
         vocabulary = DistroSeriesDifferencesVocabulary(
             difference.derived_series)
         self.assertEqual(1, len(vocabulary))
+
+    def test_getTerm(self):
+        # A term can be obtained from a given value.
+        difference = self.factory.makeDistroSeriesDifference()
+        vocabulary = DistroSeriesDifferencesVocabulary(
+            difference.derived_series)
+        term = vocabulary.getTerm(difference)
+        self.assertThat(term, Provides(ITokenizedTerm))
+        self.assertEqual(difference, term.value)
+        self.assertEqual(str(difference.id), term.token)
+
+    def test_getTermByToken(self):
+        # A term can be obtained from a given token.
+        difference = self.factory.makeDistroSeriesDifference()
+        vocabulary = DistroSeriesDifferencesVocabulary(
+            difference.derived_series)
+        term = vocabulary.getTermByToken(str(difference.id))
+        self.assertEqual(difference, term.value)
