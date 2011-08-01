@@ -174,8 +174,8 @@ class TestTranslationTemplateSplitterBase:
         shared_potmsgset.setSequence(template2, 1)
 
         # POTMsgSets appearing in only one of the templates are not returned.
-        unshared_message1 = self.factory.makePOTMsgSet(template1, sequence=2)
-        unshared_message2 = self.factory.makePOTMsgSet(template2, sequence=2)
+        self.factory.makePOTMsgSet(template1, sequence=2)
+        self.factory.makePOTMsgSet(template2, sequence=2)
         return template1, template2, shared_potmsgset
 
     def makePOTemplate(self):
@@ -197,7 +197,7 @@ class TestTranslationTemplateSplitterBase:
             self.getPOTMsgSetAndTemplateToSplit(splitter))
 
     def test_findShared_moved_product(self):
-        """Shared POTMsgSets are included for a template moved elsewhere."""
+        """Moving a template to a different product splits its messages."""
         template1, template2, shared_potmsgset = self.setUpSharingTemplates()
 
         splitter = TranslationTemplateSplitter(template2)
@@ -212,7 +212,7 @@ class TestTranslationTemplateSplitterBase:
             self.getPOTMsgSetAndTemplateToSplit(splitter))
 
     def test_findShared_moved_distribution(self):
-        """Shared POTMsgSets are included for a template moved elsewhere."""
+        """Moving a template to a different distribution gets it split."""
         template1, template2, shared_potmsgset = self.setUpSharingTemplates()
 
         splitter = TranslationTemplateSplitter(template2)
@@ -228,7 +228,8 @@ class TestTranslationTemplateSplitterBase:
             self.getPOTMsgSetAndTemplateToSplit(splitter))
 
     def test_findShared_moved_to_nonsharing_target(self):
-        """Shared POTMsgSets are included for a template moved elsewhere."""
+        """Moving a template to a target not sharing with the existing
+        upstreams and source package gets it split."""
         template1, template2, shared_potmsgset = self.setUpSharingTemplates(
             other_side=True)
 
@@ -247,6 +248,7 @@ class TestTranslationTemplateSplitterBase:
 
 class TestProductTranslationTemplateSplitter(
     TestCaseWithFactory, TestTranslationTemplateSplitterBase):
+    """Templates in a product get split appropriately."""
 
     def makePOTemplate(self):
         return self.factory.makePOTemplate(
@@ -272,6 +274,7 @@ class TestProductTranslationTemplateSplitter(
 
 class TestDistributionTranslationTemplateSplitter(
     TestCaseWithFactory, TestTranslationTemplateSplitterBase):
+    """Templates in a distribution get split appropriately."""
 
     def makePOTemplate(self):
         return self.factory.makePOTemplate(
@@ -297,8 +300,7 @@ class TestDistributionTranslationTemplateSplitter(
                 sourcepackagename=template.sourcepackagename)
 
     def test_findShared_moved_sourcepackage(self):
-        """Shared POTMsgSets are included for a template moved to
-        a different source package inside the same distroseries."""
+        """Moving a template to a different source package gets it split."""
         template1, template2, shared_potmsgset = self.setUpSharingTemplates()
 
         splitter = TranslationTemplateSplitter(template2)
