@@ -73,8 +73,8 @@ class PersonPickerEntryAdapterTestCase(TestCaseWithFactory):
         self.assertEqual('sprite person', entry.css)
         self.assertEqual('sprite new-window', entry.link_css)
 
-    def test_PersonPickerEntryAdapter_enhanced_picker_enabled(self):
-        # The enhanced person picker provides  more information.
+    def test_PersonPickerEntryAdapter_enhanced_picker_enabled_user(self):
+        # The enhanced person picker provides more information for users.
         person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
         creation_date = datetime(
             2005, 01, 30, 0, 0, 0, 0, pytz.timezone('UTC'))
@@ -87,3 +87,11 @@ class PersonPickerEntryAdapterTestCase(TestCaseWithFactory):
         self.assertEqual(
             ['snarf on eg.dom, pting on ex.dom', 'Member since 2005-01-30'],
             entry.details)
+
+    def test_PersonPickerEntryAdapter_enhanced_picker_enabled_team(self):
+        # The enhanced person picker provides more information for teams.
+        team = self.factory.makeTeam(email='fnord@eg.dom', name='fnord')
+        entry = IPickerEntry(team).getPickerEntry(
+            None, enhanced_picker_enabled=True)
+        self.assertEqual('http://launchpad.dev/~fnord', entry.alt_title_link)
+        self.assertEqual(['Team members: 1'], entry.details)
