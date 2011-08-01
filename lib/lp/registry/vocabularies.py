@@ -1867,10 +1867,13 @@ class DistroSeriesDerivationVocabulary:
 class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
     """Active `IPillar` objects vocabulary."""
     displayname = 'Needs to be overridden'
+    _table = PillarName
     _limit = 100
 
     def toTerm(self, obj):
         """See `IVocabulary`."""
+        if type(obj) == int:
+            return self.toTerm(PillarName.get(obj))
         if IPillarName.providedBy(obj):
             assert obj.active, 'Inactive object %s %d' % (
                     obj.__class__.__name__, obj.id)
@@ -1881,9 +1884,6 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
         title = '%s (%s)' % (obj.title, obj.__class__.__name__)
 
         return SimpleTerm(obj, obj.name, title)
-
-    def fromInt(self, id):
-        return self.toTerm(PillarName.get(id))
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
@@ -1899,28 +1899,32 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
             return self.emptySelectResults()
         query = ensure_unicode(query).lower()
         store = IStore(PillarName)
+        equal_clauses = [PillarName.name == query, PillarName.active == True]
+        like_clauses = [
+            PillarName.name != query, PillarName.active == True,
+            PillarName.name.contains_string(query)]
+        if self._filter:
+            equal_clauses.append(self._filter)
+            like_clauses.append(self._filter)
         ranked_results = store.execute(
             Union(
                 Select(
                     (PillarName.id, SQL('100 AS rank')),
                     tables=[PillarName],
-                    where=And(
-                        PillarName.name == query,
-                        PillarName.active == True)),
+                    where=And(*equal_clauses)),
                 Select(
                     (PillarName.id, SQL('50 AS rank')),
                     tables=[PillarName],
-                    where=And(
-                        PillarName.name != query, PillarName.active == True,
-                        PillarName.name.contains_string(query))),
+                    where=And(*like_clauses)),
                 limit=self._limit, order_by='rank', all=True))
         results = [row[0] for row in list(ranked_results)]
-        return self.iterator(len(results), results, self.fromInt)
+        return self.iterator(len(results), results, self.toTerm)
 
 
 class DistributionOrProductVocabulary(PillarVocabularyBase):
     """Active `IDistribution` or `IProduct` objects vocabulary."""
     displayname = 'Select a project'
+    _filter = PillarName.project == None
 
     def __contains__(self, obj):
         if IProduct.providedBy(obj):

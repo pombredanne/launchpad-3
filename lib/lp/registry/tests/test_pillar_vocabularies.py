@@ -18,7 +18,7 @@ from lp.testing import (
 
 
 class TestPillarVocabularyBase(TestCaseWithFactory):
-    """Test that the ProductVocabulary behaves as expected."""
+    """Test that the PillarVocabulary behaves as expected."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
@@ -48,11 +48,11 @@ class TestPillarVocabularyBase(TestCaseWithFactory):
             self.vocabulary.getTermByToken, 'does-notexist')
 
     def test_order_by_name(self):
-        # Results are ordered by name.
+        # Results are ordered by rank, with exact matches first.
         terms = self.vocabulary.searchForTerms('snark')
         result = [term.value for term in terms]
         self.assertEqual(
-            [self.project_group, self.product, self.distribution], result)
+            [self.product, self.distribution, self.project_group], result)
 
 
 class TestDistributionOrProductVocabulary(TestCaseWithFactory):
@@ -106,7 +106,7 @@ class TestDistributionOrProductOrProjectGroupVocabulary(TestCaseWithFactory):
             self.product.active = False
         terms = self.vocabulary.searchForTerms('snark')
         result = [term.value for term in terms]
-        self.assertEqual([self.project_group, self.distribution], result)
+        self.assertEqual([self.distribution, self.project_group], result)
         self.assertFalse(self.product in self.vocabulary)
 
     def test_inactive_product_groups_are_excluded(self):
