@@ -167,6 +167,7 @@ from lp.bugs.model.bugsubscription import BugSubscription
 from lp.bugs.model.bugtarget import OfficialBugTag
 from lp.bugs.model.bugtask import (
     BugTask,
+    bug_target_to_key,
     bugtask_sort_key,
     )
 from lp.bugs.model.bugwatch import BugWatch
@@ -1183,33 +1184,8 @@ BugMessage""" % sqlvalues(self.id))
 
     def addTask(self, owner, target):
         """See `IBug`."""
-        product = None
-        product_series = None
-        distribution = None
-        distro_series = None
-        source_package_name = None
-
-        # Turn `target` into something more useful.
-        if IProduct.providedBy(target):
-            product = target
-        if IProductSeries.providedBy(target):
-            product_series = target
-        if IDistribution.providedBy(target):
-            distribution = target
-        if IDistroSeries.providedBy(target):
-            distro_series = target
-        if IDistributionSourcePackage.providedBy(target):
-            distribution = target.distribution
-            source_package_name = target.sourcepackagename
-        if ISourcePackage.providedBy(target):
-            distro_series = target.distroseries
-            source_package_name = target.sourcepackagename
-
         new_task = getUtility(IBugTaskSet).createTask(
-            self, owner=owner, product=product,
-            productseries=product_series, distribution=distribution,
-            distroseries=distro_series,
-            sourcepackagename=source_package_name)
+            self, owner=owner, **bug_target_to_key(target))
 
         # When a new task is added the bug's heat becomes relevant to the
         # target's max_bug_heat.
