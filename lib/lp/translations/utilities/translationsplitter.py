@@ -177,7 +177,8 @@ class TranslationTemplateSplitter(TranslationSplitterBase):
                     ProductSeries.productID != ps.productID),
                 # There is no link between this product series and
                 # a source package the template is in.
-                Packaging.id == None)
+                And(Not(OtherTemplate.distroseriesID == None),
+                    Packaging.id == None))
         else:
             # If the template is now in a source package, we look for all
             # effectively sharing templates that are in *different*
@@ -205,7 +206,8 @@ class TranslationTemplateSplitter(TranslationSplitterBase):
                        OtherTemplate.sourcepackagenameID != spn.id)),
                 # There is no link between this source package and
                 # a product the template is in.
-                Packaging.id == None)
+                And(Not(OtherTemplate.productseriesID == None),
+                    Packaging.id == None))
 
         return store.using(*tables).find(
             (OtherItem, ThisItem),

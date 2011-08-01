@@ -13,6 +13,7 @@ from lp.translations.interfaces.side import (
     )
 from lp.translations.utilities.translationsplitter import (
     TranslationSplitter,
+    TranslationTemplateSplitter,
     )
 
 
@@ -153,3 +154,90 @@ class TestTranslationSplitter(TestCaseWithFactory):
             upstream_item.potmsgset.getAllTranslationMessages().count(),
             ubuntu_item.potmsgset.getAllTranslationMessages().count(),
         )
+
+
+class TestTranslationTemplateSplitter(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def getPOTMsgSetAndTemplateToSplit(self, splitter):
+        return [(tti1.potmsgset, tti1.potemplate)
+                for tti1, tti2 in splitter.findShared()]
+
+    def makePOTemplate(self):
+        return self.factory.makePOTemplate(
+            name='template',
+            side=TranslationSide.UPSTREAM)
+
+    def makeSharingTemplate(self, template):
+        product = template.productseries.product
+        other_series = self.factory.makeProductSeries(product=product)
+        return self.factory.makePOTemplate(name='template',
+                                           productseries=other_series)
+
+    def test_findShared_renamed(self):
+        """Shared POTMsgSets are included for a renamed template."""
+        template1 = self.makePOTemplate()
+        template2 = self.makeSharingTemplate(template1)
+
+        shared_potmsgset = self.factory.makePOTMsgSet(template1, sequence=1)
+        shared_potmsgset.setSequence(template2, 1)
+
+        # POTMsgSets appearing in only one of the templates are not returned.
+        unshared_message1 = self.factory.makePOTMsgSet(template1, sequence=2)
+        unshared_message2 = self.factory.makePOTMsgSet(template2, sequence=2)
+
+        splitter = TranslationTemplateSplitter(template2)
+        self.assertContentEqual([], splitter.findShared())
+
+        template2.name = 'renamed'
+        self.assertContentEqual(
+            [(shared_potmsgset, template1)],
+            self.getPOTMsgSetAndTemplateToSplit(splitter))
+
+    def test_findShared_moved_product(self):
+        """Shared POTMsgSets are included for a template moved elsewhere."""
+        template1 = self.makePOTemplate()
+        template2 = self.makeSharingTemplate(template1)
+
+        shared_potmsgset = self.factory.makePOTMsgSet(template1, sequence=1)
+        shared_potmsgset.setSequence(template2, 1)
+
+        # POTMsgSets appearing in only one of the templates are not returned.
+        unshared_message1 = self.factory.makePOTMsgSet(template1, sequence=2)
+        unshared_message2 = self.factory.makePOTMsgSet(template2, sequence=2)
+
+        splitter = TranslationTemplateSplitter(template2)
+        self.assertContentEqual([], splitter.findShared())
+
+        # Move the template to a different product entirely.
+        template2.productseries = self.factory.makeProduct().development_focus
+        template2.distroseries = None
+        template2.sourcepackagename = None
+        self.assertContentEqual(
+            [(shared_potmsgset, template1)],
+            self.getPOTMsgSetAndTemplateToSplit(splitter))
+
+    def test_findShared_moved_distribution(self):
+        """Shared POTMsgSets are included for a template moved elsewhere."""
+        template1 = self.makePOTemplate()
+        template2 = self.makeSharingTemplate(template1)
+
+        shared_potmsgset = self.factory.makePOTMsgSet(template1, sequence=1)
+        shared_potmsgset.setSequence(template2, 1)
+
+        # POTMsgSets appearing in only one of the templates are not returned.
+        unshared_message1 = self.factory.makePOTMsgSet(template1, sequence=2)
+        unshared_message2 = self.factory.makePOTMsgSet(template2, sequence=2)
+
+        splitter = TranslationTemplateSplitter(template2)
+        self.assertContentEqual([], splitter.findShared())
+
+        # Move the template to a different distribution entirely.
+        sourcepackage = self.factory.makeSourcePackage()
+        template2.distroseries = sourcepackage.distroseries
+        template2.sourcepackagename = sourcepackage.sourcepackagename
+        template2.productseries = None
+        self.assertContentEqual(
+            [(shared_potmsgset, template1)],
+            self.getPOTMsgSetAndTemplateToSplit(splitter))
