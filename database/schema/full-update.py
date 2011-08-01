@@ -137,11 +137,12 @@ def main():
         if not KillConnectionsPreflight(log).check_all():
             return 100
 
-        log.info("Preflight succeeded. Starting upgrade.")
+        log.info("Preflight check succeeded. Starting upgrade.")
         upgrade_rc = run_upgrade(options, log)
         if upgrade_rc != 0:
             return upgrade_rc
         upgrade_run = True
+        log.info("Database patches applied. Stored procedures updated.")
 
         security_rc = run_security(options, log)
         if security_rc != 0:
