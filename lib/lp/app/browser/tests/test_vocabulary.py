@@ -35,7 +35,7 @@ class PersonPickerEntryAdapterTestCase(TestCaseWithFactory):
         entry = IPickerEntry(person).getPickerEntry(None)
         self.assertEqual('<email address hidden>', entry.description)
 
-    def test_PersonPickerEntryAdapter_email_logged_in(self):
+    def test_PersonPickerEntryAdapter_visible_email_logged_in(self):
         # Logged in users can see visible email addresses.
         observer = self.factory.makePerson()
         login_person(observer)
@@ -44,7 +44,7 @@ class PersonPickerEntryAdapterTestCase(TestCaseWithFactory):
         self.assertEqual('snarf@eg.dom', entry.description)
 
     def test_PersonPickerEntryAdapter_hidden_email_logged_in(self):
-        # Logged in users can see visible email addresses.
+        # Logged in users cannot see hidden email addresses.
         person = self.factory.makePerson(email='snarf@eg.dom')
         login_person(person)
         person.hide_email_addresses = True
@@ -62,3 +62,14 @@ class PersonPickerEntryAdapterTestCase(TestCaseWithFactory):
         entry = IPickerEntry(person).getPickerEntry(None)
         self.assertEqual('sprite person', entry.css)
         self.assertEqual('sprite new-window', entry.link_css)
+
+    def test_PersonPickerEntryAdapter_enhanced_picker_enabled(self):
+        # The enhanced person picker provides  more information.
+        person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
+        creation_date = datetime(
+            2005, 01, 30, 0, 0, 0, 0, pytz.timezone('UTC'))
+        removeSecurityProxy(person).datecreated = creation_date
+        entry = IPickerEntry(person).getPickerEntry(
+            None, enhanced_picker_enabled=True)
+        self.assertEqual('http://launchpad.dev/~snarf', entry.alt_title_link)
+        self.assertEqual(['Member since 2005-01-30'], entry.details)

@@ -32,6 +32,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.app.browser.tales import (
+    DateTimeFormatterAPI,
     IRCNicknameFormatterAPI,
     ObjectImageDisplayAPI,
     )
@@ -156,6 +157,7 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
             # We will linkify the person's name so it can be clicked to open
             # the page for that person.
             extra.alt_title_link = canonical_url(person, rootsite='mainsite')
+            extra.details = []
             # We will display the person's irc nick(s) after their email
             # address in the description text.
             irc_nicks = None
@@ -164,7 +166,14 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
                     [IRCNicknameFormatterAPI(ircid).displayname()
                     for ircid in person.ircnicknames])
             if irc_nicks:
-                    extra.details = [irc_nicks]
+                    extra.details.append(irc_nicks)
+            if person.is_team:
+                extra.details.append(
+                    'Team members: %s' % person.all_member_count)
+            else:
+                extra.details.append(
+                    'Member since %s' % DateTimeFormatterAPI(
+                        person.datecreated).date())
 
         return extra
 
