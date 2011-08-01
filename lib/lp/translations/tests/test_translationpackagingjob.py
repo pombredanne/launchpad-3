@@ -303,3 +303,33 @@ class TestTranslationTemplateChangeJob(TestCaseWithFactory):
             potemplate.name = self.factory.getUniqueString()
         (job,) = finder.find()
         self.assertIsInstance(job, TranslationTemplateChangeJob)
+
+    def test_splits_and_merges(self):
+        """Changing a template makes the translations split and then
+        re-merged in the new target sharing set."""
+        potemplate = self.factory.makePOTemplate(name='template')
+        other_ps = self.factory.makeProductSeries(
+            product=potemplate.productseries.product)
+        old_shared = self.factory.makePOTemplate(name='template',
+                                                 productseries=other_ps)
+        new_shared = self.factory.makePOTemplate(name='renamed',
+                                                 productseries=other_ps)
+
+        # Set up shared POTMsgSets and translations.
+        potmsgset = self.factory.makePOTMsgSet(potemplate, sequence=1)
+        potmsgset.setSequence(old_shared, 1)
+        self.factory.makeCurrentTranslationMessage(potmsgset=potmsgset)
+
+        # This is the identical English message in the new_shared template.
+        target_potmsgset = self.factory.makePOTMsgSet(
+            new_shared, sequence=1, singular=potmsgset.singular_text)
+
+        # Rename the template and confirm that messages are now shared
+        # with new_shared instead of old_shared.
+        potemplate.name = 'renamed'
+        job = TranslationTemplateChangeJob.create(potemplate=potemplate)
+
+        self.becomeDbUser('rosettaadmin')
+        job.run()
+
+        #self.assertEqual(
