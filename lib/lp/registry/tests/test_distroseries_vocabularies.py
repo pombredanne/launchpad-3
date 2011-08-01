@@ -276,3 +276,9 @@ class TestDistroSeriesDifferencesVocabulary(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         vocabulary = DistroSeriesDifferencesVocabulary(distroseries)
         self.assertProvides(vocabulary, IHugeVocabulary)
+
+    def test_non_derived_distroseries(self):
+        # The vocabulary is empty for a non-derived series.
+        distroseries = self.factory.makeDistroSeries()
+        vocabulary = DistroSeriesDifferencesVocabulary(distroseries)
+        self.assertEqual([], list(vocabulary))

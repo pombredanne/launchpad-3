@@ -168,6 +168,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.distroseriesparent import DistroSeriesParent
 from lp.registry.model.featuredproject import FeaturedProject
 from lp.registry.model.karma import KarmaCategory
@@ -1890,24 +1891,18 @@ class DistroSeriesDifferencesVocabulary:
 
     def __iter__(self):
         """See `IIterableVocabulary`."""
-        for series in self.searchParents():
-            yield self.toTerm(series)
+        for difference in self.searchForDifferences():
+            yield self.toTerm(difference)
 
     def __contains__(self, value):
         """See `IVocabulary`."""
-        if not IDistroSeries.providedBy(value):
-            return False
-        return value.id in [parent.id for parent in self.searchParents()]
+        # TODO
 
     def getTerm(self, value):
         """See `IVocabulary`."""
         if value not in self:
             raise LookupError(value)
         return self.toTerm(value)
-
-    def terms_by_token(self):
-        """Mapping of terms by token."""
-        return dict((term.token, term) for term in self.terms)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
@@ -1916,64 +1911,22 @@ class DistroSeriesDifferencesVocabulary:
         except KeyError:
             raise LookupError(token)
 
-    def toTerm(self, series):
-        """Return the term for a parent series."""
-        title = "%s: %s" % (series.distribution.displayname, series.title)
-        return SimpleTerm(series, series.id, title)
+    @staticmethod
+    def toTerm(dsd):
+        """Return the term for a `DistroSeriesDifference`."""
+        return SimpleTerm(dsd, dsd.id, dsd.source_package_name.name)
 
     def searchForTerms(self, query=None):
         """See `IHugeVocabulary`."""
-        results = self.searchParents(query)
-        return CountableIterator(len(results), results, self.toTerm)
+        results = self.searchForDifferences()
+        return CountableIterator(results.count(), results, self.toTerm)
 
-    @cachedproperty
-    def terms(self):
-        return self.searchParents()
+    def searchForDifferences(self):
+        """The set of `DistroSeriesDifference`s related to the context.
 
-    def find_terms(self, *where):
-        """Return a `tuple` of terms matching the given criteria.
-
-        The terms are returned in order. The `Distribution`s related to those
-        terms are preloaded at the same time.
+        :return: `IResultSet` yielding `IDistroSeriesDifference`.
         """
-        query = IStore(DistroSeries).find(
-            (DistroSeries, Distribution),
-            DistroSeries.distribution == Distribution.id,
-            *where)
-        query = query.order_by(
-            Distribution.displayname,
-            Desc(DistroSeries.date_created)).config(distinct=True)
-        return [series for (series, distribution) in query]
-
-    def searchParents(self, query=None):
-        """See `IHugeVocabulary`."""
-        parent = ClassAlias(DistroSeries, "parent")
-        child = ClassAlias(DistroSeries, "child")
-        where = []
-        if query is not None:
-            term = '%' + query.lower() + '%'
-            search = Or(
-                    DistroSeries.title.lower().like(term),
-                    DistroSeries.description.lower().like(term),
-                    DistroSeries.summary.lower().like(term))
-            where.append(search)
-        parent_distributions = list(IStore(DistroSeries).find(
-            parent.distributionID, And(
-                parent.distributionID != self.distribution.id,
-                child.distributionID == self.distribution.id,
-                child.id == DistroSeriesParent.derived_series_id,
-                parent.id == DistroSeriesParent.parent_series_id)))
-        if parent_distributions != []:
-            where.append(
-                DistroSeries.distributionID.is_in(parent_distributions))
-            return self.find_terms(where)
-        else:
-            # Select only the series with architectures setup in LP.
-            where.append(
-                DistroSeries.id == DistroArchSeries.distroseriesID)
-            where.append(
-                DistroSeries.distribution != self.distribution)
-            return self.find_terms(where)
+        return DistroSeriesDifference.getForDistroSeries(self.distroseries)
 
 
 class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
