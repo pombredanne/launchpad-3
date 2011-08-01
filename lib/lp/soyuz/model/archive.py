@@ -1612,7 +1612,7 @@ class Archive(SQLBase):
         job_source = getUtility(IPlainPackageCopyJobSource)
         job_source.createMultiple(
             series, copy_tasks, person,
-            copy_policy=PackageCopyPolicy.INSECURE,
+            copy_policy=PackageCopyPolicy.MASS_SYNC,
             include_binaries=include_binaries)
 
     def _collectLatestPublishedSources(self, from_archive, source_names):

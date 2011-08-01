@@ -805,3 +805,9 @@ class ITranslationTemplatesCollection(Interface):
 
     def select(*args):
         """Return a ResultSet for this collection with values set to args."""
+
+    def joinInner(cls, *conditions):
+        """Inner-join `cls` into the query."""
+
+    def joinOuter(cls, *conditions):
+        """Outer-join `cls` into the query."""

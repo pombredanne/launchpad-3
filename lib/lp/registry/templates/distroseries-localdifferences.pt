@@ -69,7 +69,7 @@
                   class="package-sets">
                 Package-sets
               </th>
-              <th>Last changed</th>
+              <th class="last-changed">Last changed</th>
               <th>Latest comment</th>
             </tr>
           </thead>
@@ -232,6 +232,9 @@ LPS.use('lp.registry.distroseriesdifferences_details', function(Y) {
       // Probably only one, but check for more just in case.
       Y.all("th.package-sets").each(function(header) {
         differences.connect_packageset_picker(header, form);
+      });
+      Y.all("th.last-changed").each(function(header) {
+        differences.connect_last_changed_picker(header, form);
       });
     });
   });

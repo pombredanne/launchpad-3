@@ -2199,7 +2199,7 @@ class TestSyncSource(TestCaseWithFactory):
             target_distroseries=Equals(to_series),
             target_pocket=Equals(to_pocket),
             include_binaries=Equals(False),
-            copy_policy=Equals(PackageCopyPolicy.INSECURE)))
+            copy_policy=Equals(PackageCopyPolicy.MASS_SYNC)))
 
     def test_copyPackages_with_multiple_packages(self):
         (source, source_archive, source_name, target_archive, to_pocket,
