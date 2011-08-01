@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,7 +9,11 @@ import lazr.batchnavigator
 from lazr.batchnavigator.interfaces import IRangeFactory
 import simplejson
 from storm import Undef
-from storm.expr import Desc
+from storm.expr import (
+    And,
+    Desc,
+    Or,
+    )
 from storm.properties import PropertyColumn
 from storm.zope.interfaces import IResultSet
 from zope.component import adapts
@@ -175,6 +179,10 @@ class StormRangeFactory:
           store.find(Bug, Bug.id < 10)
 
       works.
+
+    Note: This factory assumes that the result set is fully sorted,
+    i.e. that the set of the column values used for sorting is
+    distinct for each result row.
     """
     implements(IRangeFactory)
 
@@ -325,15 +333,72 @@ class StormRangeFactory:
             invert_sort_expression(expression)
             for expression in self.getSortExpressions()]
 
-    def whereExpressionFromSortExpression(self, expression, memo):
-        """Create a Storm expression to be used in the WHERE clause of the
-        slice query.
+    def andClausesForLeadingColumns(self, limits):
+        def plain_expression(expression):
+            # Strip a possible Desc from an expression.
+            if isinstance(expression, Desc):
+                return expression.expr
+            else:
+                return expression
+        return [plain_expression(column) == memo for column, memo in limits]
+
+    def whereExpressions(self, limits):
+        """Generate WHERE expressions for the given sort columns and
+        memos values.
+
+        :return: A list of where expressions which should be OR-ed
+        :param limits: A sequence of (column, mem_value) tuples.
+
+        Note that the result set may be ordered by more than one column.
+        Given the sort columns c[1], c[2] ... c[N] and assuming ascending
+        sorting, we must look for all rows where
+          * c[1] == memo[1], c[2] == memo[2] ... c[N-1] == memo[N-1] and
+            c[N] > memo[N]
+          * c[1] == memo[1], c[2] == memo[2] ... c[N-2] == memo[N-2] and
+            c[N-1] > memo[N-1]
+          ...
+          * c[1] == memo[1], c[2] > memo[2]
+          * c[1] > memo[1]
         """
-        if isinstance(expression, Desc):
-            expression = expression.expr
-            return expression < memo
+        start = limits[:-1]
+        last_expression, last_memo = limits[-1]
+        if isinstance(last_expression, Desc):
+            last_expression = last_expression.expr
+            last_limit = last_expression < last_memo
         else:
-            return expression > memo
+            last_limit = last_expression > last_memo
+        if len(start) > 0:
+            clauses = self.andClausesForLeadingColumns(start)
+            clauses.append(last_limit)
+            clause_for_last_column = reduce(And, clauses)
+            return [clause_for_last_column] + self.whereExpressions(start)
+        else:
+            return [last_limit]
+
+    def getSliceFromMemo(self, size, memo):
+        """Return a result set for the given memo values.
+
+        Note that at least two other implementatians are possible:
+        Instead of OR-combining the expressions returned by
+        whereExpressions(), these expressions could be used for
+        separate SELECTs which are then merged with UNION ALL.
+
+        We could also issue separate Storm queries for each
+        expression and combine the results here.
+
+        Which variant is more efficient is yet unknown; it may
+        differ between different queries.
+        """
+        sort_expressions = self.getSortExpressions()
+        where = self.whereExpressions(zip(sort_expressions, memo))
+        where = reduce(Or, where)
+        # From storm.zope.interfaces.IResultSet.__doc__:
+        #     - C{find()}, C{group_by()} and C{having()} are really
+        #       used to configure result sets, so are mostly intended
+        #       for use on the model side.
+        naked_result = removeSecurityProxy(self.resultset).find(where)
+        result = ProxyFactory(naked_result)
+        return result.config(limit=size)
 
     def getSlice(self, size, endpoint_memo='', forwards=True):
         """See `IRangeFactory`."""
@@ -343,14 +408,4 @@ class StormRangeFactory:
         if parsed_memo is None:
             return self.resultset.config(limit=size)
         else:
-            sort_expressions = self.getSortExpressions()
-            where = [
-                self.whereExpressionFromSortExpression(expression, memo)
-                for expression, memo in zip(sort_expressions, parsed_memo)]
-            # From storm.zope.interfaces.IResultSet.__doc__:
-            #     - C{find()}, C{group_by()} and C{having()} are really
-            #       used to configure result sets, so are mostly intended
-            #       for use on the model side.
-            naked_result = removeSecurityProxy(self.resultset).find(*where)
-            result = ProxyFactory(naked_result)
-            return result.config(limit=size)
+            return self.getSliceFromMemo(size, parsed_memo)
