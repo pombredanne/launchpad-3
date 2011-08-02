@@ -20,6 +20,7 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.vocabulary import IPickerEntry
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.irc import IIrcIDSet
+from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
@@ -137,10 +138,56 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
             MissingInputError, "('search_text', '', None)", view.__call__)
 
     def test_vocabulary_name_unknown_error(self):
-        form = {
-            'name': 'snarf',
-            'search_text': 'pting',
-            }
+        form = dict(name='snarf', search_text='pting')
         view = self.create_vocabulary_view(form)
         self.assertRaisesWithContent(
             UnexpectedFormData, "Unknown vocabulary 'snarf'", view.__call__)
+
+    def test_json_entries(self):
+        feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
+        flags = FeatureFixture(feature_flag)
+        flags.setUp()
+        self.addCleanup(flags.cleanUp)
+        form = dict(name='ValidPersonOrTeam', search_text='guadamen')
+        view = self.create_vocabulary_view(form)
+        result = simplejson.loads(view())
+        expected = {
+            "alt_title": "guadamen",
+            "alt_title_link": "http://launchpad.dev/~guadamen",
+            "api_uri": "/~guadamen",
+            "css": "sprite team",
+            "details": ['Team members: 11'],
+            "link_css": "sprite new-window",
+            "metadata": "team",
+            "title": "GuadaMen",
+            "value": "guadamen"
+            }
+        self.assertTrue('entries' in result)
+        self.assertContentEqual(
+            expected.items(), result['entries'][0].items())
+
+    def test_default_batch_size(self):
+        form = dict(name='ValidPersonOrTeam', search_text='admin')
+        view = self.create_vocabulary_view(form)
+        result = simplejson.loads(view())
+        self.assertEqual(6, result['total_size'])
+        self.assertEqual(5, len(result['entries']))
+
+    def test_batch_size(self):
+        form = dict(
+            name='ValidPersonOrTeam', search_text='admin',
+            start='0', batch='1')
+        view = self.create_vocabulary_view(form)
+        result = simplejson.loads(view())
+        self.assertEqual(6, result['total_size'])
+        self.assertEqual(1, len(result['entries']))
+
+    def test_start_and_offset(self):
+        form = dict(
+            name='ValidPersonOrTeam', search_text='admin',
+            start='1', batch='1')
+        view = self.create_vocabulary_view(form)
+        result = simplejson.loads(view())
+        self.assertEqual(6, result['total_size'])
+        self.assertEqual(1, len(result['entries']))
+        self.assertEqual('name16', result['entries'][0]['value'])
