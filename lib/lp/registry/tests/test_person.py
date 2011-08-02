@@ -60,6 +60,7 @@ from lp.registry.interfaces.person import (
     PersonCreationRationale,
     PersonVisibility,
     )
+from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.karma import (
     KarmaCategory,
@@ -754,6 +755,17 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         account.date_created = date_created
         account.openid_identifier = openid_identifier
         return account
+
+    def test_delete_no_notifications(self):
+        team = self.factory.makeTeam()
+        owner = team.teamowner
+        transaction.commit()
+        reconnect_stores('IPersonMergeJobSource')
+        team = reload_object(team)
+        owner = reload_object(owner)
+        self.person_set.delete(team, owner)
+        notifications = getUtility(IPersonNotificationSet).getNotificationsToSend()
+        self.assertEqual(0, notifications.count())
 
     def test_openid_identifiers(self):
         # Verify that OpenId Identifiers are merged.

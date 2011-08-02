@@ -106,6 +106,17 @@
 
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
+  <tal:if condition="request/features/bugs.private_notification.enabled">
+    <script type="text/javascript">
+      var privacy_notification_enabled = true;
+    </script>
+  </tal:if>
+  <tal:if condition="not:request/features/bugs.private_notification.enabled">
+    <script type="text/javascript">
+      var privacy_notification_enabled = false;
+    </script>
+  </tal:if>
+
   <script id="base-layout-load-scripts" type="text/javascript">
     LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', 'lp.app.longpoll', function(Y) {
         Y.on('load', function(e) {
