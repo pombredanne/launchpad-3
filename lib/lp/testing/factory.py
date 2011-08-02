@@ -2050,7 +2050,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     makeBlueprint = makeSpecification
 
     def makeQuestion(self, target=None, title=None,
-                     owner=None, description=None):
+                     owner=None, description=None, language=None):
         """Create and return a new, arbitrary Question.
 
         :param target: The IQuestionTarget to make the question on. If one is
@@ -2059,6 +2059,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             arbitrary title is created.
         :param owner: The owner of the question. If one is not provided, the
             question target owner will be used.
+        :param description: The question description.
+        :param language: The question language. If one is not provided, then
+            English will be used.
         """
         if target is None:
             target = self.makeProduct()
@@ -2070,7 +2073,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             description = self.getUniqueString('description')
         with person_logged_in(target.owner):
             question = target.newQuestion(
-                owner=owner, title=title, description=description)
+                owner=owner, title=title, description=description,
+                language=language)
         return question
 
     def makeQuestionSubscription(self, question=None, person=None):

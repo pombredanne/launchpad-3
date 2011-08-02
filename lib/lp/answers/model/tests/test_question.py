@@ -3,7 +3,10 @@
 
 __metaclass__ = type
 
+from zope.component import getUtility
+
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -54,3 +57,45 @@ class TestQuestionDirectSubscribers(TestCaseWithFactory):
         self.assertContentEqual(
             [(subscriber, subscription)],
             question.getDirectSubscribersWithDetails())
+
+
+class TestQuestionInDirectSubscribers(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_answerContactIsIndirectSubscriber(self):
+        # Question answer contacts are indirect subscribers to questions.
+        person = self.factory.makePerson()
+        person.addLanguage(getUtility(ILanguageSet)['en'])
+        question = self.factory.makeQuestion()
+        with person_logged_in(question.owner):
+            question.target.addAnswerContact(person, person)
+
+        # Check the results.
+        self.assertEqual([person], question.getIndirectSubscribers())
+
+    def test_assigneeIsIndirectSubscriber(self):
+        # Question assignees are indirect subscribers to questions.
+        person = self.factory.makePerson()
+        question = self.factory.makeQuestion()
+        with person_logged_in(question.owner):
+            question.assignee = person
+
+        # Check the results.
+        self.assertEqual([person], question.getIndirectSubscribers())
+
+    def test_answerContactIsIndirectSubscriberCorrectLanguage(self):
+        # Question answer contacts are indirect subscribers to questions and
+        # are filtered according to the question's language.
+        english_person = self.factory.makePerson()
+        english_person.addLanguage(getUtility(ILanguageSet)['en'])
+        spanish = getUtility(ILanguageSet)['es']
+        spanish_person = self.factory.makePerson()
+        spanish_person.addLanguage(spanish)
+        question = self.factory.makeQuestion(language=spanish)
+        with person_logged_in(question.owner):
+            question.target.addAnswerContact(english_person, english_person)
+            question.target.addAnswerContact(spanish_person, spanish_person)
+
+        # Check the results.
+        self.assertEqual([spanish_person], question.getIndirectSubscribers())
