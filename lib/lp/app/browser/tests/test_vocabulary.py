@@ -6,12 +6,16 @@
 __metaclass__ = type
 
 from datetime import datetime
+from urllib import urlencode
 
 import pytz
+import simplejson
 
+from zope.app.form.interfaces import MissingInputError
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.vocabulary import IPickerEntry
 from lp.registry.interfaces.irc import IIrcIDSet
@@ -19,6 +23,7 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.views import create_view
 
 
 class PersonPickerEntryAdapterTestCase(TestCaseWithFactory):
@@ -106,3 +111,21 @@ class PersonPickerEntryAdapterTestCase(TestCaseWithFactory):
         self.assertEqual(1, len(entry.badges))
         self.assertEqual('/@@/product-badge', entry.badges[0]['url'])
         self.assertEqual('Affiliated with Fnord', entry.badges[0]['alt'])
+
+
+class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    @staticmethod
+    def create_vocabulary_view(form, context=None):
+        if context is None:
+            context = getUtility(ILaunchpadRoot)
+        query_string = urlencode(form)
+        return create_view(
+            context, '+huge-vocabulary', form=form, query_string=query_string)
+
+    def test_name_field_missing_error(self):
+        view = self.create_vocabulary_view({})
+        self.assertRaisesWithContent(
+            MissingInputError, "('name', '', None)", view.__call__)
