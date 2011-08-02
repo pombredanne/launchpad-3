@@ -80,8 +80,22 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
             distroseries, [parent1.id, parent2.id], arches, packagesets,
             rebuild, overlays, overlay_pockets, overlay_components)
 
+        expected = ("<InitializeDistroSeriesJob for "
+            "distribution: {distroseries.distribution.name}, "
+            "distroseries: {distroseries.name}, "
+            "parent[overlay?/pockets/components]: "
+            "{parent1.name}[True/[u'Updates']/[u'main']],"
+            "{parent2.name}[False/[u'Release']/[u'universe']], "
+            "architectures: (u'i386', u'amd64'), "
+            "packagesets: [u'{packageset1.name}', u'{packageset2.name}'], "
+            "rebuild: False>".format(
+                distroseries=distroseries,
+                parent1=parent1,
+                parent2=parent2,
+                packageset1=packageset1,
+                packageset2=packageset2))
         self.assertEqual(
-            "foo",
+            expected,
             repr(job)
         )
 
