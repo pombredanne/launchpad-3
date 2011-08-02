@@ -209,14 +209,3 @@ class QuestionPortletSubscribersWithDetailsTests(TestCaseWithFactory):
         with person_logged_in(admin):
             self.assertEqual(
                 dumps([expected_result]), view.subscriber_data_js)
-
-    def test_data_person_subscription_user_excluded(self):
-        # With the subscriber logged in, he is not included in the results.
-        question = self._makeQuestionWithNoSubscribers()
-        subscriber = self.factory.makePerson(
-            name='a-person', displayname='Subscriber Name')
-
-        with person_logged_in(subscriber):
-            question.subscribe(subscriber, subscriber)
-            view = create_view(question, '+portlet-subscribers-details')
-            self.assertEqual(dumps([]), view.subscriber_data_js)
