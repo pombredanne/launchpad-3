@@ -43,6 +43,23 @@ class LoggingUIFactory(TextUIFactory):
     def show_user_warning(self, warning_id, **message_args):
         self.writer(self.format_user_warning(warning_id, message_args))
 
+    def show_warning(self, msg):
+        if isinstance(msg, unicode):
+            msg = msg.encode("utf-8")
+        self.writer("warning: " + msg)
+
+    def get_username(self):
+        return None
+
+    def note(self, msg):
+        self.writer(msg)
+
+    def show_error(self, msg):
+        self.writer("ERROR: " + msg)
+
+    def confirm_action(self, prompt, confirmation_id, prompt_kwargs):
+        return True
+
 
 class LoggingTextProgressView(TextProgressView):
     """Support class for `LoggingUIFactory`. """

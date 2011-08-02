@@ -98,6 +98,40 @@ class TestLoggingUIFactory(TestCase):
              'hi 3/10'],
             self.messages)
 
+    def test_note(self):
+        factory = self.makeLoggingUIFactory()
+        factory.note("Banja Luka")
+        self.assertEqual(["Banja Luka"], self.messages)
+
+    def test_show_error(self):
+        factory = self.makeLoggingUIFactory()
+        factory.show_error("Exploding Peaches")
+        self.assertEqual(["ERROR: Exploding Peaches"], self.messages)
+
+    def test_confirm_action(self):
+        factory = self.makeLoggingUIFactory()
+        self.assertTrue(factory.confirm_action(
+            "How are you %(when)s?", "wellness", {"when": "today"}))
+
+    def test_show_message(self):
+        factory = self.makeLoggingUIFactory()
+        factory.show_message("Peaches")
+        self.assertEqual(["Peaches"], self.messages)
+
+    def test_get_username(self):
+        factory = self.makeLoggingUIFactory()
+        self.assertIs(None, factory.get_username())
+
+    def test_show_warning(self):
+        factory = self.makeLoggingUIFactory()
+        factory.show_warning("Peaches")
+        self.assertEqual(["warning: Peaches"], self.messages)
+
+    def test_show_warning_unicode(self):
+        factory = self.makeLoggingUIFactory()
+        factory.show_warning(u"Peach\xeas")
+        self.assertEqual(["warning: Peach\xc3\xaas"], self.messages)
+
     def test_user_warning(self):
         factory = self.makeLoggingUIFactory()
         factory.show_user_warning('cross_format_fetch',
