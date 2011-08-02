@@ -736,7 +736,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
                 "Did not find expected marker for %s."
                 % archive.purpose.title)
 
-    def test_publish_transparently_reraises_exception(self):
+    def test_publish_reraises_exception(self):
         # If an Exception comes up while publishing, it bubbles up out
         # of the publish method even though the method must intercept
         # it for its own purposes.
@@ -746,7 +746,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         failure = MoonPhaseError(self.factory.getUniqueString())
         script = self.makeScript()
         script.publishAllUploads = FakeMethod(failure=failure)
-        script.recoverArchiveWorkingDir = FakeMethod()
         script.setUp()
         try:
             script.publish()
@@ -761,7 +760,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         failure = KeyboardInterrupt(self.factory.getUniqueString())
         script = self.makeScript()
         script.publishAllUploads = FakeMethod(failure=failure)
-        script.recoverArchiveWorkingDir = FakeMethod()
         script.setUp()
         try:
             script.publish()
