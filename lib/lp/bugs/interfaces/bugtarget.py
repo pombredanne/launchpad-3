@@ -18,6 +18,7 @@ __all__ = [
     'IOfficialBugTagTarget',
     'IOfficialBugTagTargetPublic',
     'IOfficialBugTagTargetRestricted',
+    'ISeriesBugTarget',
     ]
 
 
@@ -455,3 +456,10 @@ class IOfficialBugTag(Interface):
         schema=IOfficialBugTagTarget,
         description=
             u'The distribution or product having this official bug tag.')
+
+
+class ISeriesBugTarget(Interface):
+    """An `IBugTarget` which is a series."""
+
+    bugtarget_parent = Attribute(
+        "Non-series parent of this series bug target.")

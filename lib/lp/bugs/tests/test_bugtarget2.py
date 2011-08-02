@@ -8,6 +8,7 @@ __metaclass__ = type
 from zope.security.interfaces import ForbiddenAttribute
 
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
@@ -50,6 +51,11 @@ class TestDistroSeries(BugTargetBugFilingDuplicateSearchAlwaysOn,
     def setUp(self):
         super(TestDistroSeries, self).setUp()
         self.bugtarget = self.factory.makeDistroSeries()
+
+    def test_bugtarget_parent(self):
+        self.assertTrue(ISeriesBugTarget.providedBy(self.bugtarget))
+        self.assertEqual(
+            self.bugtarget.distribution, self.bugtarget.bugtarget_parent)
 
 
 class TestProjectGroup(BugTargetBugFilingDuplicateSearchAlwaysOn,
@@ -119,7 +125,8 @@ class BugTargetBugFilingDuplicateSearchInherited:
         # If enable_bugfiling_duplicate_search is changed for the parent
         # object, it is changed for the bug traget too.
         with person_logged_in(self.bug_supervisor):
-            self.bugtarget_parent.enable_bugfiling_duplicate_search = False
+            parent = self.bugtarget.bugtarget_parent
+            parent.enable_bugfiling_duplicate_search = False
         self.assertFalse(self.bugtarget.enable_bugfiling_duplicate_search)
 
 
@@ -132,10 +139,14 @@ class TestProductSeries(BugTargetBugFilingDuplicateSearchInherited,
     def setUp(self):
         super(TestProductSeries, self).setUp()
         self.bug_supervisor = self.factory.makePerson()
-        self.bugtarget_parent = self.factory.makeProduct(
-            bug_supervisor=self.bug_supervisor)
         self.bugtarget = self.factory.makeProductSeries(
-            product=self.bugtarget_parent)
+            product=self.factory.makeProduct(
+                bug_supervisor=self.bug_supervisor))
+
+    def test_bugtarget_parent(self):
+        self.assertTrue(ISeriesBugTarget.providedBy(self.bugtarget))
+        self.assertEqual(
+            self.bugtarget.product, self.bugtarget.bugtarget_parent)
 
 
 class TestSourcePackage(BugTargetBugFilingDuplicateSearchInherited,
@@ -153,4 +164,9 @@ class TestSourcePackage(BugTargetBugFilingDuplicateSearchInherited,
             distribution=distribution)
         self.bugtarget = self.factory.makeSourcePackage(
             distroseries=distroseries)
-        self.bugtarget_parent = self.bugtarget.distribution_sourcepackage
+
+    def test_bugtarget_parent(self):
+        self.assertTrue(ISeriesBugTarget.providedBy(self.bugtarget))
+        self.assertEqual(
+            self.bugtarget.distribution_sourcepackage,
+            self.bugtarget.bugtarget_parent)
