@@ -33,6 +33,7 @@ __all__ = [
     'DistributionSourcePackageVocabulary',
     'DistributionVocabulary',
     'DistroSeriesDerivationVocabulary',
+    'DistroSeriesDifferencesVocabulary',
     'DistroSeriesVocabulary',
     'FeaturedProjectVocabulary',
     'FilteredDistroSeriesVocabulary',
@@ -138,6 +139,9 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifference,
+    )
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
@@ -167,6 +171,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.distroseriesparent import DistroSeriesParent
 from lp.registry.model.featuredproject import FeaturedProject
 from lp.registry.model.karma import KarmaCategory
@@ -194,9 +199,7 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.distroarchseries import DistroArchSeries
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory,
-    )
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -1864,6 +1867,77 @@ class DistroSeriesDerivationVocabulary:
             where.append(
                 DistroSeries.distribution != self.distribution)
             return self.find_terms(where)
+
+
+class DistroSeriesDifferencesVocabulary:
+    """A vocabulary source for differences relating to a series.
+
+    Specifically, all `DistroSeriesDifference`s relating to a derived series.
+    """
+
+    implements(IHugeVocabulary)
+
+    displayname = "Choose a difference"
+    step_title = 'Search'
+
+    def __init__(self, context):
+        """Create a new vocabulary for the context.
+
+        :type context: `IDistroSeries`.
+        """
+        assert IDistroSeries.providedBy(context)
+        self.distroseries = context
+
+    def __len__(self):
+        """See `IIterableVocabulary`."""
+        return self.searchForDifferences().count()
+
+    def __iter__(self):
+        """See `IIterableVocabulary`."""
+        for difference in self.searchForDifferences():
+            yield self.toTerm(difference)
+
+    def __contains__(self, value):
+        """See `IVocabulary`."""
+        return (
+            IDistroSeriesDifference.providedBy(value) and
+            value.derived_series == self.distroseries)
+
+    def getTerm(self, value):
+        """See `IVocabulary`."""
+        if value not in self:
+            raise LookupError(value)
+        return self.toTerm(value)
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        if not token.isdigit():
+            raise LookupError(token)
+        difference = IStore(DistroSeriesDifference).get(
+            DistroSeriesDifference, int(token))
+        if difference is None:
+            raise LookupError(token)
+        elif difference.derived_series != self.distroseries:
+            raise LookupError(token)
+        else:
+            return self.toTerm(difference)
+
+    @staticmethod
+    def toTerm(dsd):
+        """Return the term for a `DistroSeriesDifference`."""
+        return SimpleTerm(dsd, dsd.id)
+
+    def searchForTerms(self, query=None):
+        """See `IHugeVocabulary`."""
+        results = self.searchForDifferences()
+        return CountableIterator(results.count(), results, self.toTerm)
+
+    def searchForDifferences(self):
+        """The set of `DistroSeriesDifference`s related to the context.
+
+        :return: `IResultSet` yielding `IDistroSeriesDifference`.
+        """
+        return DistroSeriesDifference.getForDistroSeries(self.distroseries)
 
 
 class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):

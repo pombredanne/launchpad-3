@@ -792,7 +792,7 @@ class IDifferencesFormSchema(Interface):
 
     selected_differences = List(
         title=_('Selected differences'),
-        value_type=Choice(vocabulary=SimpleVocabulary([])),
+        value_type=Choice(vocabulary="DistroSeriesDifferences"),
         description=_("Select the differences for syncing."),
         required=True)
 
@@ -859,15 +859,6 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         self.form_fields = (
             self.setupPackageFilterRadio() +
             self.form_fields)
-        check_permission('launchpad.Edit', self.context)
-        terms = [
-            SimpleTerm(diff, diff.id)
-                    for diff in self.cached_differences.batch]
-        diffs_vocabulary = SimpleVocabulary(terms)
-        # XXX: GavinPanella 2011-07-13 bug=809985: Good thing the app servers
-        # are running single threaded...
-        choice = self.form_fields['selected_differences'].field.value_type
-        choice.vocabulary = diffs_vocabulary
 
     def _sync_sources(self, action, data):
         """Synchronise packages from the parent series to this one."""

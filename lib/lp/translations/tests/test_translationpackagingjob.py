@@ -14,7 +14,10 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.registry.interfaces.packaging import IPackagingUtil
-from lp.registry.model.packagingjob import PackagingJob, PackagingJobDerived
+from lp.translations.model.translationsharingjob import (
+    TranslationSharingJob,
+    TranslationSharingJobDerived,
+    )
 from lp.services.job.interfaces.job import (
     IRunnableJob,
     JobStatus,
@@ -56,7 +59,7 @@ def make_translation_merge_job(factory, not_ubuntu=False):
         potemplate=package_potemplate, language=upstream_pofile.language)
     package_potmsgset = factory.makePOTMsgSet(
         package_pofile.potemplate, singular)
-    package = factory.makeCurrentTranslationMessage(
+    factory.makeCurrentTranslationMessage(
         pofile=package_pofile, potmsgset=package_potmsgset,
         translations=upstream.translations)
     productseries = upstream_pofile.potemplate.productseries
@@ -105,11 +108,12 @@ class JobFinder:
         self.job_type = job_class.class_job_type
 
     def find(self):
-        return list(PackagingJobDerived.iterReady([
-            PackagingJob.productseries_id == self.productseries.id,
-            PackagingJob.sourcepackagename_id == self.sourcepackagename.id,
-            PackagingJob.distroseries_id == self.distroseries.id,
-            PackagingJob.job_type == self.job_type,
+        return list(TranslationSharingJobDerived.iterReady([
+            TranslationSharingJob.productseries_id == self.productseries.id,
+            (TranslationSharingJob.sourcepackagename_id ==
+             self.sourcepackagename.id),
+            TranslationSharingJob.distroseries_id == self.distroseries.id,
+            TranslationSharingJob.job_type == self.job_type,
             ]))
 
 
@@ -177,7 +181,7 @@ class TestTranslationMergeJob(TestCaseWithFactory):
     def test_getNextJobStatus(self):
         """Should find next packaging job."""
         #suppress job creation.
-        with EventRecorder() as recorder:
+        with EventRecorder():
             packaging = self.factory.makePackagingLink()
         self.assertIs(None, TranslationMergeJob.getNextJobStatus(packaging))
         TranslationMergeJob.forPackaging(packaging)
@@ -188,15 +192,13 @@ class TestTranslationMergeJob(TestCaseWithFactory):
     def test_getNextJobStatus_wrong_packaging(self):
         """Jobs on wrong packaging should be ignored."""
         #suppress job creation.
-        with EventRecorder() as recorder:
+        with EventRecorder():
             packaging = self.factory.makePackagingLink()
         self.factory.makePackagingLink(
             productseries=packaging.productseries)
         self.assertIs(None, TranslationMergeJob.getNextJobStatus(packaging))
         self.factory.makePackagingLink()
-        other_packaging = self.factory.makePackagingLink(
-            distroseries=packaging.distroseries)
-        other_packaging = self.factory.makePackagingLink(
+        self.factory.makePackagingLink(
             distroseries=packaging.distroseries)
         self.assertIs(None, TranslationMergeJob.getNextJobStatus(packaging))
         TranslationMergeJob.create(
@@ -208,16 +210,16 @@ class TestTranslationMergeJob(TestCaseWithFactory):
     def test_getNextJobStatus_wrong_type(self):
         """Only TranslationMergeJobs should result."""
         #suppress job creation.
-        with EventRecorder() as recorder:
+        with EventRecorder():
             packaging = self.factory.makePackagingLink()
-        job = TranslationSplitJob.forPackaging(packaging)
+        TranslationSplitJob.forPackaging(packaging)
         self.assertIs(
             None, TranslationMergeJob.getNextJobStatus(packaging))
 
     def test_getNextJobStatus_status(self):
         """Only RUNNING and WAITING jobs should influence status."""
         #suppress job creation.
-        with EventRecorder() as recorder:
+        with EventRecorder():
             packaging = self.factory.makePackagingLink()
         job = TranslationMergeJob.forPackaging(packaging)
         job.start()
@@ -234,11 +236,11 @@ class TestTranslationMergeJob(TestCaseWithFactory):
 
     def test_getNextJobStatus_order(self):
         """Status should order by id."""
-        with EventRecorder() as recorder:
+        with EventRecorder():
             packaging = self.factory.makePackagingLink()
         job = TranslationMergeJob.forPackaging(packaging)
         job.start()
-        job2 = TranslationMergeJob.forPackaging(packaging)
+        TranslationMergeJob.forPackaging(packaging)
         self.assertEqual(JobStatus.RUNNING,
             TranslationMergeJob.getNextJobStatus(packaging))
 

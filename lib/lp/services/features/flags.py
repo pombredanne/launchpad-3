@@ -193,6 +193,8 @@ class FeatureController():
     The controller is then supposed to be held in a thread-local and reused
     for the duration of the request.
 
+    These should typically be used via a UseFeatureController fixture.
+
     @see: U{https://dev.launchpad.net/LEP/FeatureFlags}
     """
 

@@ -161,7 +161,7 @@ class TestMilestoneDeleteView(TestCaseWithFactory):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product)
         master_bugtask = getUtility(IBugTaskSet).createTask(
-            bug, productseries=product.development_focus, owner=product.owner)
+            bug, product.owner, product.development_focus)
         milestone = self.factory.makeMilestone(
             productseries=product.development_focus)
         login_person(product.owner)

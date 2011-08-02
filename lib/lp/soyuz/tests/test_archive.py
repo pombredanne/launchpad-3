@@ -2202,12 +2202,13 @@ class TestSyncSource(TestCaseWithFactory):
             copy_policy=Equals(PackageCopyPolicy.MASS_SYNC)))
 
     def test_copyPackages_with_multiple_packages(self):
+        # PENDING and PUBLISHED packages should both be copied.
         (source, source_archive, source_name, target_archive, to_pocket,
          to_series, version) = self._setup_copy_data()
         sources = [source]
         sources.append(self.factory.makeSourcePackagePublishingHistory(
             archive=source_archive,
-            status=PackagePublishingStatus.PUBLISHED))
+            status=PackagePublishingStatus.PENDING))
         sources.append(self.factory.makeSourcePackagePublishingHistory(
             archive=source_archive,
             status=PackagePublishingStatus.PUBLISHED))
