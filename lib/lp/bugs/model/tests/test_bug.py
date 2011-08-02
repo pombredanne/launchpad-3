@@ -1,7 +1,10 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
+
+from storm.store import Store
+from testtools.matchers import Equals
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.enum import BugNotificationLevel
@@ -13,8 +16,10 @@ from lp.testing import (
     login_person,
     person_logged_in,
     set_feature_flag,
+    StormStatementRecorder,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import HasQueryCount
 
 
 class TestBug(TestCaseWithFactory):
@@ -115,6 +120,42 @@ class TestBug(TestCaseWithFactory):
         with person_logged_in(member):
             bug.subscribe(team, member)
         self.assertTrue(team in bug.getDirectSubscribers())
+
+    def test_get_direct_subscribers_query_count(self):
+        bug = self.factory.makeBug()
+        # Make lots of subscribers.
+        for i in xrange(10):
+            subscriber = self.factory.makePerson()
+            with person_logged_in(subscriber):
+                bug.subscribe(subscriber, subscriber)
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
+        Store.of(bug).flush()
+        with StormStatementRecorder() as recorder:
+            subscribers = list(bug.getDirectSubscribers())
+            self.assertThat(len(subscribers), Equals(10 + 1))
+            self.assertThat(recorder, HasQueryCount(Equals(1)))
+
+    def test_mark_as_duplicate_query_count(self):
+        bug = self.factory.makeBug()
+        # Make lots of duplicate bugs.
+        previous_dup = None
+        for i in xrange(10):
+            dup = self.factory.makeBug()
+            # Make lots of subscribers.
+            for i in xrange(10):
+                subscriber = self.factory.makePerson()
+                with person_logged_in(subscriber):
+                    dup.subscribe(subscriber, subscriber)
+            if previous_dup is not None:
+                with person_logged_in(previous_dup.owner):
+                    previous_dup.markAsDuplicate(dup)
+            previous_dup = dup
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
+        with person_logged_in(bug.owner):
+            Store.of(bug).flush()
+            with StormStatementRecorder() as recorder:
+                previous_dup.markAsDuplicate(bug)
+                self.assertThat(recorder, HasQueryCount(Equals(1)))
 
     def test_get_subscribers_from_duplicates_with_private_team(self):
         product = self.factory.makeProduct()
