@@ -17,7 +17,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.browser.vocabulary import IPickerEntry
+from lp.app.browser.vocabulary import (
+    IPickerEntry,
+    MAX_DESCRIPTION_LENGTH,
+    )
 from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.services.features.testing import FeatureFixture
@@ -144,6 +147,7 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
             UnexpectedFormData, "Unknown vocabulary 'snarf'", view.__call__)
 
     def test_json_entries(self):
+        # The results are JSON encoded.
         feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
         flags = FeatureFixture(feature_flag)
         flags.setUp()
@@ -166,7 +170,22 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
         self.assertContentEqual(
             expected.items(), result['entries'][0].items())
 
+    def test_max_description_size(self):
+        # Descriptions over 120 characters are truncated and ellipsised.
+        email = 'pting-' * 19 + '@example.dom'
+        person = self.factory.makePerson(name='pting', email=email)
+        login_person(person)
+        form = dict(name='ValidPersonOrTeam', search_text='pting')
+        view = self.create_vocabulary_view(form)
+        result = simplejson.loads(view())
+        expected = (email[:MAX_DESCRIPTION_LENGTH - 3] + '...')
+        self.assertEqual(
+            'pting', result['entries'][0]['value'])
+        self.assertEqual(
+            expected, result['entries'][0]['description'])
+
     def test_default_batch_size(self):
+        # The results are batched.
         form = dict(name='ValidPersonOrTeam', search_text='admin')
         view = self.create_vocabulary_view(form)
         result = simplejson.loads(view())
@@ -174,6 +193,7 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
         self.assertEqual(5, len(result['entries']))
 
     def test_batch_size(self):
+        # A The batch size can be specified with the batch param.
         form = dict(
             name='ValidPersonOrTeam', search_text='admin',
             start='0', batch='1')
@@ -182,7 +202,8 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
         self.assertEqual(6, result['total_size'])
         self.assertEqual(1, len(result['entries']))
 
-    def test_start_and_offset(self):
+    def test_start_offset(self):
+        # The offset of the batch is specified with the start param.
         form = dict(
             name='ValidPersonOrTeam', search_text='admin',
             start='1', batch='1')
