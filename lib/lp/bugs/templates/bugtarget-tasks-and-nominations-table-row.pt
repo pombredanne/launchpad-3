@@ -1,6 +1,4 @@
-<tal:bugtarget
-  xmlns:tal="http://xml.zope.org/namespaces/tal"
-  xmlns:metal="http://xml.zope.org/namespaces/metal">
+<tal:bugtarget xmlns:tal="http://xml.zope.org/namespaces/tal">
   <tr style="opacity: 0.5">
     <td></td>
     <td>
