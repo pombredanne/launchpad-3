@@ -686,10 +686,6 @@ class Question(SQLBase, BugLinkTargetMixin):
         message = self.messages[comment_number].message
         message.visible = visible
 
-    def removeAnswerContact(self, person, unsubscribed_by):
-        """See `IQuestion`."""
-        return self.target.removeAnswerContact(person, unsubscribed_by)
-
 
 class QuestionSet:
     """The set of questions in the Answer Tracker."""
