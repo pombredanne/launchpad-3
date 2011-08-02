@@ -496,8 +496,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         product_bar = self.factory.makeProduct(name="bar")
         foo_bug = self.factory.makeBug(product=product_foo)
         bugtask_set = getUtility(IBugTaskSet)
-        bugtask_set.createTask(
-            bug=foo_bug, owner=foo_bug.owner, product=product_bar)
+        bugtask_set.createTask(foo_bug, foo_bug.owner, product_bar)
 
         removeSecurityProxy(product_bar).active = False
 
