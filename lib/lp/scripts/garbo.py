@@ -885,23 +885,22 @@ class UnusedPOTMsgSetPruner(TunableLoop):
         query = """
             -- Get all POTMsgSet IDs which are obsolete (sequence == 0)
             -- and are not used (sequence != 0) in any other template.
-            SELECT DISTINCT POTMsgSet
+            SELECT POTMsgSet
               FROM TranslationTemplateItem tti
               WHERE sequence=0 AND
               NOT EXISTS(
                 SELECT id
                   FROM TranslationTemplateItem
-                  WHERE potmsgset = tti.potmsgset AND
-                  sequence != 0)
+                  WHERE potmsgset = tti.potmsgset AND sequence != 0)
             UNION
             -- Get all POTMsgSet IDs which are not referenced
             -- by any of the templates (they must have TTI rows for that).
             (SELECT POTMsgSet.id
-              FROM POTMsgSet
-             EXCEPT
-             SELECT potmsgset
-               FROM TranslationTemplateItem)
-            LIMIT 50000;
+               FROM POTMsgSet
+               LEFT OUTER JOIN TranslationTemplateItem
+                 ON TranslationTemplateItem.potmsgset = POTMsgSet.id
+               WHERE
+                 TranslationTemplateItem.potmsgset IS NULL);
             """
         store = IMasterStore(POTMsgSet)
         results = store.execute(query)
