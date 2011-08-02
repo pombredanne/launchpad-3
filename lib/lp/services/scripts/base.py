@@ -43,6 +43,7 @@ from canonical.launchpad.webapp.interaction import (
     )
 from canonical.lp import initZopeless
 from lp.services.features import (
+    UseFeatureController,
     get_relevant_feature_controller,
     install_feature_controller,
     make_script_feature_controller,
@@ -148,7 +149,7 @@ class LaunchpadScript:
     # State for the log_unhandled_exceptions decorator.
     _log_unhandled_exceptions_level = 0
 
-    def __init__(self, name=None, dbuser=None, test_args=None):
+    def __init__(self, name=None, dbuser=None, test_args=None, logger=None):
         """Construct new LaunchpadScript.
 
         Name is a short name for this script; it will be used to
@@ -159,6 +160,9 @@ class LaunchpadScript:
 
         Specify test_args when you want to override sys.argv.  This is
         useful in test scripts.
+
+        :param logger: Use this logger, instead of initializing global
+            logging.
         """
         if name is None:
             self._name = self.__class__.__name__.lower()
@@ -166,6 +170,7 @@ class LaunchpadScript:
             self._name = name
 
         self._dbuser = dbuser
+        self.logger = logger
 
         # The construction of the option parser is a bit roundabout, but
         # at least it's isolated here. First we build the parser, then
@@ -178,11 +183,16 @@ class LaunchpadScript:
             description = self.description
         self.parser = OptionParser(usage=self.usage,
                                    description=description)
-        scripts.logger_options(self.parser, default=self.loglevel)
-        self.parser.add_option(
-            '--profile', dest='profile', metavar='FILE', help=(
-                    "Run the script under the profiler and save the "
-                    "profiling stats in FILE."))
+
+        if logger is None:
+            scripts.logger_options(self.parser, default=self.loglevel)
+            self.parser.add_option(
+                '--profile', dest='profile', metavar='FILE', help=(
+                        "Run the script under the profiler and save the "
+                        "profiling stats in FILE."))
+        else:
+            scripts.dummy_logger_options(self.parser)
+
         self.add_my_options()
         self.options, self.args = self.parser.parse_args(args=test_args)
 
@@ -191,7 +201,8 @@ class LaunchpadScript:
         self.handle_options()
 
     def handle_options(self):
-        self.logger = scripts.logger(self.options, self.name)
+        if self.logger is None:
+            self.logger = scripts.logger(self.options, self.name)
 
     @property
     def name(self):
@@ -313,23 +324,20 @@ class LaunchpadScript:
         if self.options.profile:
             profiler = Profile()
 
-        original_feature_controller = get_relevant_feature_controller()
-        install_feature_controller(make_script_feature_controller(self.name))
-        try:
-            if profiler:
-                profiler.runcall(self.main)
+        with UseFeatureController(make_script_feature_controller(self.name)):
+            try:
+                if profiler:
+                    profiler.runcall(self.main)
+                else:
+                    self.main()
+            except LaunchpadScriptFailure, e:
+                self.logger.error(str(e))
+                sys.exit(e.exit_status)
+            except SilentLaunchpadScriptFailure, e:
+                sys.exit(e.exit_status)
             else:
-                self.main()
-        except LaunchpadScriptFailure, e:
-            self.logger.error(str(e))
-            sys.exit(e.exit_status)
-        except SilentLaunchpadScriptFailure, e:
-            sys.exit(e.exit_status)
-        else:
-            date_completed = datetime.datetime.now(UTC)
-            self.record_activity(date_started, date_completed)
-        finally:
-            install_feature_controller(original_feature_controller)
+                date_completed = datetime.datetime.now(UTC)
+                self.record_activity(date_started, date_completed)
         if profiler:
             profiler.dump_stats(self.options.profile)
 
@@ -369,8 +377,9 @@ class LaunchpadScript:
 class LaunchpadCronScript(LaunchpadScript):
     """Logs successful script runs in the database."""
 
-    def __init__(self, name=None, dbuser=None, test_args=None):
-        super(LaunchpadCronScript, self).__init__(name, dbuser, test_args)
+    def __init__(self, name=None, dbuser=None, test_args=None, logger=None):
+        super(LaunchpadCronScript, self).__init__(
+            name, dbuser, test_args=test_args, logger=logger)
 
         # self.name is used instead of the name argument, since it may have
         # have been overridden by command-line parameters or by

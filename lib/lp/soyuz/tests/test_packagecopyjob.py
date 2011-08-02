@@ -101,9 +101,21 @@ class LocalTestHelper:
 
     def runJob(self, job):
         """Helper to switch to the right DB user and run the job."""
+        # We are basically mimicking the job runner here.
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
-        job.run()
+        # Set the state to RUNNING.
+        job.start()
+        # Commit the RUNNING state.
+        self.layer.txn.commit()
+        try:
+            job.run()
+        except SuspendJobException:
+            # Re-raise this one as many tests check for its presence.
+            raise
+        except:
+            transaction.abort()
+            job.fail()
 
 
 class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
@@ -804,6 +816,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEquals(2, len(emails))
         self.assertIn("requester@example.com", emails[0]['To'])
         self.assertIn("changes@example.com", emails[1]['To'])
+        self.assertEqual("requester@example.com", emails[1]['From'])
 
     def test_findMatchingDSDs_matches_all_DSDs_for_job(self):
         # findMatchingDSDs finds matching DSDs for any of the packages
@@ -925,6 +938,53 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
                 self.makeJob(dsd, copy_policy=policy))
             self.assertEqual(
                 policy, naked_job.getPolicyImplementation().enum_value)
+
+    def test_rejects_PackageUpload_when_job_fails(self):
+        # If a PCJ with a PU fails when running then we need to ensure the
+        # PU gets rejected.
+        target_archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PRIMARY)
+        source_archive = self.factory.makeArchive()
+        source_pub = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename="copyme",
+            version="1.0",
+            archive=source_archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
+        job = job_source.create(
+            package_name="copyme",
+            package_version="1.0",
+            source_archive=source_archive,
+            target_archive=target_archive,
+            target_distroseries=source_pub.distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False,
+            requester=requester)
+
+        # Run the job so it gains a PackageUpload.
+        self.assertRaises(SuspendJobException, self.runJob, job)
+        # Simulate the job runner suspending after getting a
+        # SuspendJobException
+        job.suspend()
+        self.layer.txn.commit()
+        self.layer.switchDbUser("launchpad_main")
+
+        # Patch the job's attemptCopy() method so it just raises an
+        # exception.
+        def blow_up():
+            raise Exception("I blew up")
+        naked_job = removeSecurityProxy(job)
+        self.patch(naked_job, "attemptCopy", blow_up)
+
+        # Accept the upload to release the job then run it.
+        pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            [removeSecurityProxy(job).context.id]).one()
+        pu.acceptFromQueue()
+        self.runJob(job)
+
+        # The job should have set the PU status to REJECTED.
+        self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
 
 
 class TestPlainPackageCopyJobPermissions(TestCaseWithFactory):

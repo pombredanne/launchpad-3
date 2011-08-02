@@ -26,6 +26,8 @@ value_domain_info = sorted([
      'The flag value is set to the given floating point number.'),
     ('int',
      "An integer."),
+    ('space delimited',
+     'Space-delimited strings.')
     ])
 
 # Data for generating web-visible feature flag documentation.
@@ -41,6 +43,10 @@ flag_info = sorted([
     ('bugs.bugtracker_components.enabled',
      'boolean',
      ('Enables the display of bugtracker components.'),
+     ''),
+    ('code.ajax_revision_diffs.enabled',
+     'boolean',
+     ("Offer expandable inline diffs for branch revisions."),
      ''),
     ('code.branchmergequeue',
      'boolean',
@@ -82,6 +88,10 @@ flag_info = sorted([
      'boolean',
      'Enables syncing of packages on derivative distributions pages.',
      ''),
+    ('soyuz.derived_series_upgrade.enabled',
+     'boolean',
+     'Enables mass-upgrade of packages on derivative distributions pages.',
+     ''),
     ('soyuz.derived_series_jobs.enabled',
      'boolean',
      "Compute package differences for derived distributions.",
@@ -106,6 +116,18 @@ flag_info = sorted([
      'boolean',
      ('Enables ranking by pillar affiliation in the person picker.'),
      ''),
+    ('bugs.autoconfirm.enabled_distribution_names',
+     'space delimited',
+     ('Enables auto-confirming bugtasks for distributions (and their '
+      'series and packages).  Use the default domain.  Specify a single '
+      'asterisk ("*") to enable for all distributions.'),
+     'None are enabled'),
+    ('bugs.autoconfirm.enabled_product_names',
+     'space delimited',
+     ('Enables auto-confirming bugtasks for products (and their '
+      'series).  Use the default domain.  Specify a single '
+      'asterisk ("*") to enable for all products.'),
+     'None are enabled'),
     ])
 
 # The set of all flag names that are documented.
@@ -170,6 +192,8 @@ class FeatureController():
 
     The controller is then supposed to be held in a thread-local and reused
     for the duration of the request.
+
+    These should typically be used via a UseFeatureController fixture.
 
     @see: U{https://dev.launchpad.net/LEP/FeatureFlags}
     """

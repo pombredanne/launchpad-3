@@ -48,6 +48,22 @@
       padding-bottom: 10px;
     }
   </style>
+  <tal:if condition="request/features/bugs.private_notification.enabled">
+  <script>
+      LPS.use('base', 'node', 'lp.app.privacy', function(Y) {
+          Y.on("domready", function () {
+              if (Y.one(document.body).hasClass('private')) {
+                  var config = {
+                      notification_text: 'This merge proposal is for a private branch',
+                      hidden: true
+                  };
+                  Y.lp.app.privacy.setup_privacy_notification(config);
+                  Y.lp.app.privacy.display_privacy_notification(false);
+              }
+          });
+      });
+  </script>
+  </tal:if>
 </metal:block>
 
 <tal:registering metal:fill-slot="registering">
@@ -200,7 +216,8 @@
   conf = <tal:status-config replace="view/status_config" />
   <!--
   LPS.use('io-base', 'lp.code.branchmergeproposal.reviewcomment',
-          'lp.code.branchmergeproposal.status', 'lp.app.comment', function(Y) {
+          'lp.code.branchmergeproposal.status', 'lp.app.comment',
+          'lp.app.widgets.expander', 'lp.code.branch.revisionexpander', function(Y) {
 
     Y.on('load', function() {
         var logged_in = LP.links['me'] !== undefined;
@@ -219,6 +236,15 @@
         (new Y.lp.code.branchmergeproposal.reviewcomment.NumberToggle()
             ).render();
       }, window);
+
+    Y.on('domready', function() {
+        Y.lp.app.widgets.expander.createByCSS(
+            '.revision-group-diff',
+            '.expander-icon',
+            '.expander-content',
+            false,
+            Y.lp.code.branch.revisionexpander.bmp_diff_loader);
+    });
   });
   -->
 <tal:script replace="structure string:&lt;/script&gt;" />

@@ -58,13 +58,9 @@ Next, we need to grab some values to provide for importance and status.
 
     >>> evolution = productset.get(5)
     >>> upstream_task = bugtaskset.createTask(
-    ...     bug=bug_one, product=evolution, owner=mark,
+    ...     bug_one, mark, evolution,
     ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> upstream_task.product == evolution
-    True
-
-    >>> from lp.bugs.interfaces.bugtask import IUpstreamBugTask
-    >>> IUpstreamBugTask.providedBy(upstream_task)
     True
 
   ii. Distro -- a bug that has to be fixed in a specific distro
@@ -72,13 +68,9 @@ Next, we need to grab some values to provide for importance and status.
     >>> ubuntu = distroset.get(1)
     >>> a_distro = factory.makeDistribution(name='tubuntu')
     >>> distro_task = bugtaskset.createTask(
-    ...     bug=bug_one, distribution=a_distro, owner=mark,
+    ...     bug_one, mark, a_distro,
     ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> distro_task.distribution == a_distro
-    True
-
-    >>> from lp.bugs.interfaces.bugtask import IDistroBugTask
-    >>> IDistroBugTask.providedBy(distro_task)
     True
 
   ii. Distro Series -- a bug that has to be fixed in a specific distro
@@ -86,23 +78,9 @@ Next, we need to grab some values to provide for importance and status.
 
     >>> warty = distoseriesset.get(1)
     >>> distro_series_task = bugtaskset.createTask(
-    ...     bug=bug_one, distroseries=warty, owner=mark,
+    ...     bug_one, mark, warty,
     ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> distro_series_task.distroseries == warty
-    True
-
-    >>> from lp.bugs.interfaces.bugtask import IDistroSeriesBugTask
-    >>> IDistroSeriesBugTask.providedBy(distro_series_task)
-    True
-
-The created bugtasks are guaranteed to implement the correct interface.
-
-    >>> from canonical.launchpad.webapp.testing import verifyObject
-    >>> verifyObject(IDistroSeriesBugTask, distro_series_task)
-    True
-    >>> verifyObject(IDistroBugTask, distro_task)
-    True
-    >>> verifyObject(IUpstreamBugTask, upstream_task)
     True
 
 # XXX: Brad Bollenbach 2005-02-24: See the bottom of this file for a chunk of
@@ -125,15 +103,11 @@ list.
 
   * a product series
 
-    >>> from lp.bugs.interfaces.bugtask import IProductSeriesBugTask
 
     >>> firefox = productset['firefox']
     >>> firefox_1_0 = firefox.getSeries("1.0")
 
-    >>> productseries_task = bugtaskset.createTask(
-    ...     owner=mark, bug=bug_one, productseries=firefox_1_0)
-    >>> IProductSeriesBugTask.providedBy(productseries_task)
-    True
+    >>> productseries_task = bugtaskset.createTask(bug_one, mark, firefox_1_0)
 
     >>> productseries_task.target == firefox_1_0
     True
@@ -350,13 +324,11 @@ demonstrate.
     ...     BugTaskImportance.CRITICAL, ubuntu.owner)
 
     >>> current_series_ubuntu_task = bugtaskset.createTask(
-    ...     bug=ubuntu_bug, owner=launchbag.user,
-    ...     distroseries=ubuntu.currentseries)
+    ...     ubuntu_bug, launchbag.user, ubuntu.currentseries)
 
     >>> current_series_netapplet_task = bugtaskset.createTask(
-    ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
-    ...     distroseries=ubuntu.currentseries,
-    ...     sourcepackagename=ubuntu_netapplet.sourcepackagename)
+    ...     ubuntu_netapplet_bug, launchbag.user,
+    ...     ubuntu_netapplet.development_version)
 
 (The attributes were synched with the generic task.)
 
@@ -393,12 +365,11 @@ We'll also add some product and productseries tasks.
     trunk
 
     >>> generic_alsa_utils_task = bugtaskset.createTask(
-    ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
-    ...     product=alsa_utils)
+    ...     ubuntu_netapplet_bug, launchbag.user, alsa_utils)
 
     >>> devel_focus_alsa_utils_task = bugtaskset.createTask(
-    ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
-    ...     productseries=alsa_utils.getSeries("trunk"))
+    ...     ubuntu_netapplet_bug, launchbag.user,
+    ...     alsa_utils.getSeries("trunk"))
 
 A conjoined bugtask involves a master and slave in the conjoined
 relationship. The slave is the generic product or distribution task; the
@@ -454,8 +425,7 @@ focus, doesn't have any conjoined masters or slaves.
     >>> alsa_utils.development_focus == alsa_utils_stable
     False
     >>> stable_netapplet_task = bugtaskset.createTask(
-    ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
-    ...     productseries=alsa_utils_stable)
+    ...     ubuntu_netapplet_bug, launchbag.user, alsa_utils_stable)
     >>> stable_netapplet_task.conjoined_master is None
     True
     >>> stable_netapplet_task.conjoined_slave is None
@@ -465,9 +435,8 @@ focus, doesn't have any conjoined masters or slaves.
     >>> warty == ubuntu.currentseries
     False
     >>> warty_netapplet_task = bugtaskset.createTask(
-    ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
-    ...     distroseries=warty,
-    ...     sourcepackagename=ubuntu_netapplet.sourcepackagename)
+    ...     ubuntu_netapplet_bug, launchbag.user,
+    ...     warty.getSourcePackage(ubuntu_netapplet.sourcepackagename))
     >>> warty_netapplet_task.conjoined_master is None
     True
     >>> warty_netapplet_task.conjoined_slave is None
@@ -481,9 +450,8 @@ conjoined master or slave.
     True
 
     >>> gentoo_netapplet_task = bugtaskset.createTask(
-    ...     bug=ubuntu_netapplet_bug, owner=launchbag.user,
-    ...     distribution=gentoo,
-    ...     sourcepackagename=ubuntu_netapplet.sourcepackagename)
+    ...     ubuntu_netapplet_bug, launchbag.user,
+    ...     gentoo.getSourcePackage(ubuntu_netapplet.sourcepackagename))
     >>> gentoo_netapplet_task.conjoined_master is None
     True
     >>> gentoo_netapplet_task.conjoined_slave is None
@@ -640,8 +608,8 @@ But a normal unprivileged user can't set the milestone.
     >>> print current_series_netapplet_task.sourcepackagename.name
     netapplet
 
-    >>> current_series_netapplet_task.sourcepackagename = (
-    ...     ubuntu_pmount.sourcepackagename)
+    >>> current_series_netapplet_task.transitionToTarget(
+    ...     ubuntu_pmount.development_version)
 
     >>> print generic_netapplet_task.sourcepackagename.name
     pmount
@@ -990,14 +958,14 @@ is used here.
 
     >>> netapplet = productset.get(11)
     >>> upstream_task = bugtaskset.createTask(
-    ...     bug=bug_one, product=netapplet, owner=mark,
+    ...     bug_one, mark, netapplet,
     ...     status=STATUS_NEW, importance=IMPORTANCE_MEDIUM)
     >>> upstream_task.bugtargetdisplayname
     u'NetApplet'
 
     >>> thunderbird = productset.get(8)
     >>> upstream_task_id = upstream_task.id
-    >>> upstream_task.product = thunderbird
+    >>> upstream_task.transitionToTarget(thunderbird)
     >>> upstream_task.bugtargetdisplayname
     u'Mozilla Thunderbird'
 
@@ -1056,10 +1024,7 @@ targetnamecache updated.
     0
 
     >>> bugtaskset.createTask(
-    ...     bug=new_bug, owner=mark,
-    ...     distribution=ubuntu,
-    ...     sourcepackagename=(
-    ...         sourcepackagenameset.queryByName('mozilla-firefox')))
+    ...     new_bug, mark, ubuntu.getSourcePackage('mozilla-firefox'))
     <BugTask ...>
 
     >>> new_bug.addNomination(mark, ubuntu.currentseries).approve(mark)
@@ -1072,10 +1037,7 @@ The first task has been created and successfully nominated to Hoary.
     mozilla-firefox (Ubuntu Hoary)
 
     >>> bugtaskset.createTask(
-    ...     bug=new_bug, owner=mark,
-    ...     distribution=ubuntu,
-    ...     sourcepackagename=(
-    ...         sourcepackagenameset.queryByName('alsa-utils')))
+    ...     new_bug, mark, ubuntu.getSourcePackage('alsa-utils'))
     <BugTask ...>
 
 The second task has been created and has also been successfully

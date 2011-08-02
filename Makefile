@@ -177,7 +177,7 @@ $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
 	cat $^ | $(PY) -m lp.scripts.utilities.js.jsmin > $@
 else
-	cat $^ > $@
+	awk 'FNR == 1 {print "/* " FILENAME " */"} {print}' $^ > $@
 endif
 
 jsbuild: $(PY) $(JS_OUT)

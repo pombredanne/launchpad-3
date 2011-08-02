@@ -1624,7 +1624,7 @@ class TestComponents(TestCaseWithFactory):
             set(archive.getComponentsForUploader(person)))
 
 
-class TestvalidatePPA(TestCaseWithFactory):
+class TestValidatePPA(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -1638,6 +1638,30 @@ class TestvalidatePPA(TestCaseWithFactory):
         self.assertEqual(
             'A PPA cannot have the same name as its distribution.',
             Archive.validatePPA(ppa_owner, 'ubuntu'))
+
+    def test_private_ppa_non_commercial_admin(self):
+        ppa_owner = self.factory.makePerson()
+        self.assertEqual(
+            '%s is not allowed to make private PPAs' % (ppa_owner.name,),
+            Archive.validatePPA(ppa_owner, self.factory.getUniqueString(),
+                                private=True))
+
+    def test_private_ppa_commercial_admin(self):
+        ppa_owner = self.factory.makePerson()
+        with celebrity_logged_in('admin'):
+            comm = getUtility(ILaunchpadCelebrities).commercial_admin
+            comm.addMember(ppa_owner, comm.teamowner)
+        self.assertIs(
+            None,
+            Archive.validatePPA(ppa_owner, self.factory.getUniqueString(),
+                                private=True))
+
+    def test_private_ppa_admin(self):
+        ppa_owner = self.factory.makeAdministrator()
+        self.assertIs(
+            None,
+            Archive.validatePPA(ppa_owner, self.factory.getUniqueString(),
+                                private=True))
 
     def test_two_ppas(self):
         ppa = self.factory.makeArchive(name='ppa')
@@ -1939,6 +1963,32 @@ class TestGetPublishedSources(TestCaseWithFactory):
             [filtered_source.sourcepackagerelease.name for filtered_source in
             filtered_sources])
 
+    def test_getPublishedSources_multi_pockets(self):
+        # Passing an iterable of pockets should return publications
+        # with any of them in.
+        distroseries =  self.factory.makeDistroSeries()
+        pockets = [
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.UPDATES,
+            PackagePublishingPocket.BACKPORTS,
+            ]
+        for pocket in pockets:
+            self.factory.makeSourcePackagePublishingHistory(
+                sourcepackagename=pocket.name.lower(),
+                distroseries=distroseries,
+                archive=distroseries.main_archive,
+                pocket=pocket)
+        required_pockets = [
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.UPDATES,
+            ]
+        filtered = distroseries.main_archive.getPublishedSources(
+            pocket=required_pockets)
+
+        self.assertContentEqual(
+            [PackagePublishingPocket.RELEASE, PackagePublishingPocket.UPDATES],
+            [source.pocket for source in filtered])
+
 
 class TestSyncSourceFeatureFlag(TestCaseWithFactory):
 
@@ -1947,7 +1997,7 @@ class TestSyncSourceFeatureFlag(TestCaseWithFactory):
     def test_copyPackage_requires_feature_flag(self):
         # Ensure feature is off.
         self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": ''}))
-        archive = self.factory.makeArchive()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         self.assertRaises(
             ForbiddenByFeatureFlag,
             archive.copyPackage,
@@ -1956,7 +2006,27 @@ class TestSyncSourceFeatureFlag(TestCaseWithFactory):
     def test_copyPackages_requires_feature_flag(self):
         # Ensure feature is off.
         self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": ''}))
-        archive = self.factory.makeArchive()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        self.assertRaises(
+            ForbiddenByFeatureFlag,
+            archive.copyPackages,
+            None, None, None, None, None)
+
+    def test_copyPackage_to_ppa_requires_feature_flag(self):
+        # Ensure feature is off.
+        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": 'on'}))
+        self.useFixture(FeatureFixture({u"soyuz.copypackageppa.enabled": ''}))
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertRaises(
+            ForbiddenByFeatureFlag,
+            archive.copyPackage,
+            None, None, None, None, None)
+
+    def test_copyPackages_to_ppa_requires_feature_flag(self):
+        # Ensure feature is off.
+        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": 'on'}))
+        self.useFixture(FeatureFixture({u"soyuz.copypackageppa.enabled": ''}))
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         self.assertRaises(
             ForbiddenByFeatureFlag,
             archive.copyPackages,
@@ -1969,7 +2039,10 @@ class TestSyncSource(TestCaseWithFactory):
 
     def setUp(self):
         super(TestSyncSource, self).setUp()
-        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled": 'on'}))
+        self.useFixture(FeatureFixture({
+            u"soyuz.copypackage.enabled": 'on',
+            u"soyuz.copypackageppa.enabled": 'on',
+            }))
 
     def test_security_team_can_copy_to_primary(self):
         # A member of ubuntu-security can use syncSource on any package
@@ -2126,15 +2199,16 @@ class TestSyncSource(TestCaseWithFactory):
             target_distroseries=Equals(to_series),
             target_pocket=Equals(to_pocket),
             include_binaries=Equals(False),
-            copy_policy=Equals(PackageCopyPolicy.INSECURE)))
+            copy_policy=Equals(PackageCopyPolicy.MASS_SYNC)))
 
     def test_copyPackages_with_multiple_packages(self):
+        # PENDING and PUBLISHED packages should both be copied.
         (source, source_archive, source_name, target_archive, to_pocket,
          to_series, version) = self._setup_copy_data()
         sources = [source]
         sources.append(self.factory.makeSourcePackagePublishingHistory(
             archive=source_archive,
-            status=PackagePublishingStatus.PUBLISHED))
+            status=PackagePublishingStatus.PENDING))
         sources.append(self.factory.makeSourcePackagePublishingHistory(
             archive=source_archive,
             status=PackagePublishingStatus.PUBLISHED))

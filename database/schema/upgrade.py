@@ -10,14 +10,13 @@ Apply all outstanding schema patches to an existing launchpad database
 __metaclass__ = type
 
 # pylint: disable-msg=W0403
-import _pythonpath # Sort PYTHONPATH
+import _pythonpath  # Sort PYTHONPATH
 
 from cStringIO import StringIO
 import glob
 import os.path
 from optparse import OptionParser
 import re
-import sys
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
 
@@ -101,7 +100,7 @@ FIX_PATCH_TIMES_POST_SQL = dedent("""\
 
 def to_seconds(td):
     """Convert a timedelta to seconds."""
-    return td.days * (24*60*60) + td.seconds + td.microseconds/1000000.0
+    return td.days * (24 * 60 * 60) + td.seconds + td.microseconds / 1000000.0
 
 
 def report_patch_times(con, todays_patches):
@@ -249,6 +248,7 @@ def apply_patches_replicated():
     # Execute the script with slonik.
     if not replication.helpers.execute_slonik(outf.getvalue()):
         log.fatal("Aborting.")
+        raise SystemExit(4)
 
     # Cleanup our temporary files - they applied successfully.
     for temporary_file in temporary_files:
@@ -348,8 +348,8 @@ def apply_patches_replicated():
             print >> outf, dedent("""\
                 echo 'Subscribing holding set to @node%d_node.';
                 subscribe set (
-                    id=@holding_set,
-                    provider=@master_node, receiver=@node%d_node, forward=yes);
+                    id=@holding_set, provider=@master_node,
+                    receiver=@node%d_node, forward=yes);
                 echo 'Waiting for sync';
                 sync (id=@master_node);
                 wait for event (
@@ -475,11 +475,11 @@ def get_patchlist(con):
         m = re.search('patch-(\d+)-(\d+)-(\d).sql$', patch_file)
         if m is None:
             log.fatal('Invalid patch filename %s' % repr(patch_file))
-            sys.exit(1)
+            raise SystemExit(1)
 
         major, minor, patch = [int(i) for i in m.groups()]
         if (major, minor, patch) in dbpatches:
-            continue # This patch has already been applied
+            continue  # This patch has already been applied
         log.debug("Found patch %d.%d.%d -- %s" % (
             major, minor, patch, patch_file
             ))
@@ -504,7 +504,7 @@ def apply_patch(con, major, minor, patch, patch_file):
     if (major, minor, patch) not in applied_patches(con):
         log.fatal("%s failed to update LaunchpadDatabaseRevision correctly"
                 % patch_file)
-        sys.exit(2)
+        raise SystemExit(2)
 
     # Commit changes if we allow partial updates.
     if options.commit and options.partial:
@@ -523,7 +523,7 @@ def apply_other(con, script, no_commit=False):
         # environment.
         log.fatal(
             "Last non-whitespace character of %s must be a semicolon", script)
-        sys.exit(3)
+        raise SystemExit(3)
     cur.execute(sql)
 
     if not no_commit and options.commit and options.partial:

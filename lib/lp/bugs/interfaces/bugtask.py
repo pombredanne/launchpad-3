@@ -25,14 +25,10 @@ __all__ = [
     'IBugTaskSearch',
     'IBugTaskSet',
     'ICreateQuestionFromBugTaskForm',
-    'IDistroBugTask',
-    'IDistroSeriesBugTask',
     'IFrontPageBugTaskSearch',
     'INominationsReviewTableBatchNavigator',
     'IPersonBugTaskSearch',
-    'IProductSeriesBugTask',
     'IRemoveQuestionFromBugTaskForm',
-    'IUpstreamBugTask',
     'IUpstreamProductBugTaskSearch',
     'IllegalRelatedBugTasksParams',
     'IllegalTarget',
@@ -798,6 +794,12 @@ class IBugTask(IHasDateCreated, IHasBug):
         value is set to None, date_assigned is also set to None.
         """
 
+    def validateTransitionToTarget(target):
+        """Check whether a transition to this target is legal.
+
+        :raises IllegalTarget: if the new target is not allowed.
+        """
+
     @mutator_for(target)
     @operation_parameters(
         target=copy_field(target))
@@ -830,9 +832,6 @@ class IBugTask(IHasDateCreated, IHasBug):
 
     def getDelta(old_task):
         """Compute the delta from old_task to this task.
-
-        old_task and this task are either both IDistroBugTask's or both
-        IUpstreamBugTask's, otherwise a TypeError is raised.
 
         Returns an IBugTaskDelta or None if there were no changes between
         old_task and this task.
@@ -1075,41 +1074,6 @@ class IBugTaskDelta(Interface):
     statusexplanation = Attribute("The new value of the status notes.")
     bugwatch = Attribute("The bugwatch which governs this task.")
     milestone = Attribute("The milestone for which this task is scheduled.")
-
-
-class IUpstreamBugTask(IBugTask):
-    """A bug needing fixing in a product."""
-    # XXX Brad Bollenbach 2006-08-03 bugs=55089:
-    # This interface should be renamed.
-    product = Choice(title=_('Project'), required=True, vocabulary='Product')
-
-
-class IDistroBugTask(IBugTask):
-    """A bug needing fixing in a distribution, possibly a specific package."""
-    sourcepackagename = Choice(
-        title=_("Source Package Name"), required=False,
-        description=_("The source package in which the bug occurs. "
-        "Leave blank if you are not sure."),
-        vocabulary='SourcePackageName')
-    distribution = Choice(
-        title=_("Distribution"), required=True, vocabulary='Distribution')
-
-
-class IDistroSeriesBugTask(IBugTask):
-    """A bug needing fixing in a distrorelease, or a specific package."""
-    sourcepackagename = Choice(
-        title=_("Source Package Name"), required=True,
-        vocabulary='SourcePackageName')
-    distroseries = Choice(
-        title=_("Series"), required=True,
-        vocabulary='DistroSeries')
-
-
-class IProductSeriesBugTask(IBugTask):
-    """A bug needing fixing a productseries."""
-    productseries = Choice(
-        title=_("Series"), required=True,
-        vocabulary='ProductSeries')
 
 
 class BugTaskSearchParams:
@@ -1544,10 +1508,8 @@ class IBugTaskSet(Interface):
         :return: A list of tuples containing (status_id, count).
         """
 
-    def createTask(bug, product=None, productseries=None, distribution=None,
-                   distroseries=None, sourcepackagename=None, status=None,
-                   importance=None, assignee=None, owner=None,
-                   milestone=None):
+    def createTask(bug, owner, target, status=None, importance=None,
+                   assignee=None, milestone=None):
         """Create a bug task on a bug and return it.
 
         If the bug is public, bug supervisors will be automatically
@@ -1555,8 +1517,6 @@ class IBugTaskSet(Interface):
 
         If the bug has any accepted series nominations for a supplied
         distribution, series tasks will be created for them.
-
-        Exactly one of product, distribution or distroseries must be provided.
         """
 
     def findExpirableBugTasks(min_days_old, user, bug=None, target=None,

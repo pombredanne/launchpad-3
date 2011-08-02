@@ -496,8 +496,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         product_bar = self.factory.makeProduct(name="bar")
         foo_bug = self.factory.makeBug(product=product_foo)
         bugtask_set = getUtility(IBugTaskSet)
-        bugtask_set.createTask(
-            bug=foo_bug, owner=foo_bug.owner, product=product_bar)
+        bugtask_set.createTask(foo_bug, foo_bug.owner, product_bar)
 
         removeSecurityProxy(product_bar).active = False
 
@@ -705,7 +704,8 @@ class TestBugTaskEditView(TestCaseWithFactory):
             bug_task_2, name='+editstatus', form=form, principal=user)
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
-            'This bug has already been reported on mouse (ubuntu).',
+            'A fix for this bug has already been requested for mouse in '
+            'Ubuntu',
             view.errors[0])
 
     def setUpRetargetMilestone(self):

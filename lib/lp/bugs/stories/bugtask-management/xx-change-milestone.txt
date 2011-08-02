@@ -58,7 +58,7 @@ to the milestone 1.0.0. Note that milestones defined for the product itself
 are listed too.
 
     >>> milestone_control = owner_browser.getControl(
-    ...     name='1.0_firefox.milestone')
+    ...     name='firefox_1.0.milestone')
     >>> milestone_control.displayValue
     ['(no value)']
     >>> milestone_control.displayOptions
@@ -66,7 +66,7 @@ are listed too.
     >>> milestone_control.displayValue = ['Mozilla Firefox 1.0.1']
     >>> owner_browser.getControl('Save Changes', index=1).click()
     >>> milestone_control = owner_browser.getControl(
-    ...     name='1.0_firefox.milestone')
+    ...     name='firefox_1.0.milestone')
     >>> milestone_control.displayValue
     ['Mozilla Firefox 1.0.1']
 
