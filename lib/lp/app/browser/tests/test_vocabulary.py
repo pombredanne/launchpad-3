@@ -129,3 +129,8 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
         view = self.create_vocabulary_view({})
         self.assertRaisesWithContent(
             MissingInputError, "('name', '', None)", view.__call__)
+
+    def test_search_text_field_missing_error(self):
+        view = self.create_vocabulary_view({'name': 'ValidPerson'})
+        self.assertRaisesWithContent(
+            MissingInputError, "('search_text', '', None)", view.__call__)
