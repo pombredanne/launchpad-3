@@ -42,7 +42,8 @@ class LoggingUIFactory(NoninteractiveUIFactory):
             time_source, lambda m: logger.info("%s", m), interval)
 
     def show_user_warning(self, warning_id, **message_args):
-        self.logger.warning("%s", self.format_user_warning(warning_id, message_args))
+        self.logger.warning(
+            "%s", self.format_user_warning(warning_id, message_args))
 
     def show_warning(self, msg):
         if isinstance(msg, unicode):

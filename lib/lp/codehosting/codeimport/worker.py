@@ -601,7 +601,7 @@ class PullingImportWorker(ImportWorker):
     def _doImport(self):
         self._logger.info("Starting job.")
         saved_factory = bzrlib.ui.ui_factory
-        bzrlib.ui.ui_factory = LoggingUIFactory(self._logger)
+        bzrlib.ui.ui_factory = LoggingUIFactory(logger=self._logger)
         try:
             self._logger.info(
                 "Getting exising bzr branch from central store.")
@@ -634,9 +634,11 @@ class PullingImportWorker(ImportWorker):
             except Exception, e:
                 if e.__class__ in self.unsupported_feature_exceptions:
                     self._logger.info(
-                        "Unable to import branch because of limitations in Bazaar.")
+                        "Unable to import branch because of limitations in "
+                        "Bazaar.")
                     self._logger.info(str(e))
-                    return CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE
+                    return (
+                        CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE)
                 elif e.__class__ in self.invalid_branch_exceptions:
                     self._logger.info("Branch invalid: %s", e(str))
                     return CodeImportWorkerExitCode.FAILURE_INVALID

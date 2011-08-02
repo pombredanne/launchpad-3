@@ -68,7 +68,8 @@ class TestLoggingUIFactory(TestCase):
         self.fake_time.advance(factory.interval / 2)
         bar2 = factory.nested_progress_bar()
         bar2.update("there")
-        self.assertEqual('INFO hi\nINFO hi:there\n', self.logger.getLogBuffer())
+        self.assertEqual(
+            'INFO hi\nINFO hi:there\n', self.logger.getLogBuffer())
 
     def test_update_with_count_formats_nicely(self):
         # When more details are passed to update, they are formatted nicely.
@@ -112,7 +113,8 @@ class TestLoggingUIFactory(TestCase):
     def test_show_error(self):
         factory = self.makeLoggingUIFactory()
         factory.show_error("Exploding Peaches")
-        self.assertEqual("ERROR Exploding Peaches\n", self.logger.getLogBuffer())
+        self.assertEqual(
+            "ERROR Exploding Peaches\n", self.logger.getLogBuffer())
 
     def test_confirm_action(self):
         factory = self.makeLoggingUIFactory()
@@ -132,7 +134,8 @@ class TestLoggingUIFactory(TestCase):
     def test_get_password(self):
         factory = self.makeLoggingUIFactory()
         self.assertIs(
-            None, factory.get_password("How is your %(drink)s", drink="coffee"))
+            None,
+            factory.get_password("How is your %(drink)s", drink="coffee"))
 
     def test_show_warning(self):
         factory = self.makeLoggingUIFactory()
@@ -142,7 +145,8 @@ class TestLoggingUIFactory(TestCase):
     def test_show_warning_unicode(self):
         factory = self.makeLoggingUIFactory()
         factory.show_warning(u"Peach\xeas")
-        self.assertEqual("WARNING Peach\xc3\xaas\n", self.logger.getLogBuffer())
+        self.assertEqual(
+            "WARNING Peach\xc3\xaas\n", self.logger.getLogBuffer())
 
     def test_user_warning(self):
         factory = self.makeLoggingUIFactory()
@@ -162,4 +166,3 @@ class TestLoggingUIFactory(TestCase):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-
