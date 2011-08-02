@@ -1908,14 +1908,15 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
         ranked_results = store.execute(
             Union(
                 Select(
-                    (PillarName.id, SQL('100 AS rank')),
+                    (PillarName.id, PillarName.name, SQL('100 AS rank')),
                     tables=[PillarName],
                     where=And(*equal_clauses)),
                 Select(
-                    (PillarName.id, SQL('50 AS rank')),
+                    (PillarName.id, PillarName.name, SQL('50 AS rank')),
                     tables=[PillarName],
                     where=And(*like_clauses)),
-                limit=self._limit, order_by='rank', all=True))
+                limit=self._limit, order_by=(
+                    Desc(SQL('rank')), PillarName.name), all=True))
         results = [row[0] for row in list(ranked_results)]
         return self.iterator(len(results), results, self.toTerm)
 

@@ -52,7 +52,7 @@ class TestPillarVocabularyBase(TestCaseWithFactory):
         terms = self.vocabulary.searchForTerms('snark')
         result = [term.value for term in terms]
         self.assertEqual(
-            [self.product, self.distribution, self.project_group], result)
+            [self.project_group, self.product, self.distribution], result)
 
 
 class TestDistributionOrProductVocabulary(TestCaseWithFactory):
@@ -106,7 +106,7 @@ class TestDistributionOrProductOrProjectGroupVocabulary(TestCaseWithFactory):
             self.product.active = False
         terms = self.vocabulary.searchForTerms('snark')
         result = [term.value for term in terms]
-        self.assertEqual([self.distribution, self.project_group], result)
+        self.assertEqual([self.project_group, self.distribution], result)
         self.assertFalse(self.product in self.vocabulary)
 
     def test_inactive_product_groups_are_excluded(self):
