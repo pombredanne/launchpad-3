@@ -534,11 +534,12 @@ class Bugzilla:
             if re.match(r'^deb\d+$', bug.alias):
                 watch = self.bugwatchset.createBugWatch(
                     lp_bug, lp_bug.owner, self.debbugs, bug.alias[3:])
-                target = self.debian
+                debtarget = self.debian
                 if target['sourcepackagename']:
-                    target.getSourcePackage(target['sourcepackagename'])
+                    debtarget = debtarget.getSourcePackage(
+                        target['sourcepackagename'])
                 debtask = self.bugtaskset.createTask(
-                    lp_bug, lp_bug.owner, target)
+                    lp_bug, lp_bug.owner, debtarget)
                 debtask.datecreated = bug.creation_ts
                 debtask.bugwatch = watch
             else:
