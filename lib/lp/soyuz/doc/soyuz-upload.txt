@@ -41,9 +41,9 @@ Now, let's create a subprocess running the poppy FTP server. It won't
 call the upload processing tool. We'll do that ourselves in our test,
 so that we can control what's going on.
 
-    >>> from lp.poppy.tests.helpers import PoppyTestSetup, SoyuzUploadError
-    >>> poppy = PoppyTestSetup(incoming_dir)
-    >>> poppy.startPoppy()
+    >>> from lp.poppy.tests.test_poppy import PoppyTac
+    >>> poppy = PoppyTac(incoming_dir)
+    >>> poppy.setUp()
 
 Connect to the server and login. We'll keep trying to connect until
 the server dies or the connection succeeds.
@@ -52,16 +52,16 @@ the server dies or the connection succeeds.
     >>> ftp = ftplib.FTP()
     >>> while True:
     ...    try:
-    ...        reply = ftp.connect("localhost", 3421)
+    ...        reply = ftp.connect("localhost", 2121)
     ...    except socket.error:
     ...        if not poppy.alive:
-    ...            raise SoyuzUploadError('Server can not start.')
+    ...            raise Exception('Server can not start.')
     ...    else:
     ...        break
     >>> ftp.login("anonymous", "")
-    '230 Login Successful.'
+    '230 Anonymous login ok, access restrictions apply.'
     >>> ftp.cwd("/")
-    '250 CWD command successful.'
+    '250 Requested File Action Completed OK'
 
 
 Good.. let's send all packages we have in the test directory to
@@ -88,8 +88,8 @@ session.
     >>> for changes_filepath in changes:
     ...
     ...     if not ftp.sock:
-    ...         assert ftp.connect("localhost", 3421).startswith("220 ")
-    ...         assert ftp.login("anonymous", "") == '230 Login Successful.'
+    ...         assert ftp.connect("localhost", 2121).startswith("220 ")
+    ...         assert ftp.login("anonymous", "").startswith("230 ")
     ...
     ...     tf = parse_tagfile(changes_filepath)
     ...
@@ -108,9 +108,16 @@ session.
     ...     ignore = ftp.cwd("ubuntutest")
     ...
     ...     for filepath in send_filepaths:
-    ...         reply = ftp.storbinary(
-    ...              "STOR %s" % os.path.basename(filepath), open(filepath))
-    ...         assert reply == '226 Transfer successful.'
+    ...         try:
+    ...             reply = ftp.storbinary(
+    ...                 "STOR %s" % os.path.basename(filepath),
+    ...                 open(filepath))
+    ...             assert reply == '226 Transfer Complete.'
+    ...         except ftplib.error_perm as e:
+    ...             # Our changes files aren't signed, so poppy-sftp will
+    ...             # complain. But let them through anyway.
+    ...             if not e[0].startswith('550 Changes file must be signed'):
+    ...                 raise
     ...
     ...     uploads.append(send_filepaths)
     ...
@@ -121,18 +128,6 @@ what we were expecting to have uploaded.
 
     >>> package_names
     ['drdsl', 'etherwake']
-
-We create a set of the filenames we expect to see in the FTP server
-process output, and wait until all of them have been shown.
-
-This is a little bit tricky because we won't simply try to read
-the process output in a blocking way, since any failure in the
-FTP process would block automated tests. Instead, we define a
-timeout between output data. If the process doesn't provide new
-data in the given number seconds, we report a failure.
-
-    >>> poppy.verify_output(
-    ...     ['ubuntutest', 'ubuntutest', 'ubuntutest'])
 
 At that point we must have a bunch of directories in the upload
 base directory named <TIMESTAMP>-XXXXXX, each one as a result of
@@ -182,7 +177,7 @@ of these files match the uploaded ones.
 Right, that's all we need from the FTP server. We don't need it anymore,
 so we'll just kill the process.
 
-    >>> status = poppy.killPoppy()
+    >>> status = poppy.cleanUp()
 
 Finally, we'll just create an entirely empty upload folder. We rely for
 our tests on a poppy-like naming system, ie. that the upload folder
