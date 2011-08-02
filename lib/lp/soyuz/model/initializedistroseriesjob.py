@@ -16,6 +16,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
+from lp.registry.model.distroseries import DistroSeries
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.distributionjob import (
@@ -29,6 +30,7 @@ from lp.soyuz.model.distributionjob import (
     DistributionJob,
     DistributionJobDerived,
     )
+from lp.soyuz.model.packageset import Packageset
 from lp.soyuz.scripts.initialize_distroseries import InitializeDistroSeries
 
 
@@ -83,6 +85,31 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
             DistributionJob.job_type == cls.class_job_type,
             DistributionJob.distroseries_id == distroseries.id).one()
         return None if distribution_job is None else cls(distribution_job)
+
+    def __repr__(self):
+        """Returns an informative representation of the job."""
+        # This code assumes the job is referentially intact with good data,
+        # or it will blow up.
+        parts = "%s for" % self.__class__.__name__
+        parts += " distribution: %s" % self.distribution.name
+        parts += ", distroseries: %s" % self.distroseries.name
+        parts += ", parent[overlay?/pockets/components]: "
+        parents = []
+        for i in range(len(self.parents)):
+            series = DistroSeries.get(self.parents[i])
+            parents.append("%s[%s/%s/%s]" % (
+                series.name,
+                self.overlays[i],
+                self.overlay_pockets[i],
+                self.overlay_components[i]))
+        parts += ",".join(parents)
+        pkgsets = [
+            IStore(Packageset).get(Packageset, int(pkgsetid)).name
+            for pkgsetid in  self.packagesets]
+        parts += ", architectures: %s" % (self.arches,)
+        parts += ", packagesets: %s" % pkgsets
+        parts += ", rebuild: %s" % self.rebuild
+        return "<%s>" % parts
 
     @property
     def parents(self):
