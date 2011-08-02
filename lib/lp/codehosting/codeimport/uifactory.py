@@ -10,18 +10,20 @@ __all__ = ['LoggingUIFactory']
 import sys
 import time
 
+from bzrlib.ui import NoninteractiveUIFactory
 from bzrlib.ui.text import (
     TextProgressView,
-    TextUIFactory,
     )
 
 
-class LoggingUIFactory(TextUIFactory):
+class LoggingUIFactory(NoninteractiveUIFactory):
     """A UI Factory that produces reasonably sparse logging style output.
 
     The goal is to produce a line of output no more often than once a minute
     (by default).
     """
+
+    # TODO JRV 2011-08-02: This seems generic enough to live in bzrlib.ui
 
     def __init__(self, time_source=time.time, logger=None, interval=60.0):
         """Construct a `LoggingUIFactory`.
@@ -33,7 +35,7 @@ class LoggingUIFactory(TextUIFactory):
         :param interval: Don't produce output more often than once every this
             many seconds.  Defaults to 60 seconds.
         """
-        TextUIFactory.__init__(self)
+        NoninteractiveUIFactory.__init__(self)
         self.interval = interval
         self.logger = logger
         self._progress_view = LoggingTextProgressView(
@@ -53,14 +55,33 @@ class LoggingUIFactory(TextUIFactory):
     def get_password(self, prompt, **kwargs):
         return None
 
+    def show_message(self, msg):
+        self.logger.info("%s", msg)
+
     def note(self, msg):
         self.logger.info("%s", msg)
 
     def show_error(self, msg):
         self.logger.error("%s", msg)
 
-    def confirm_action(self, prompt, confirmation_id, prompt_kwargs):
-        return True
+    def _progress_updated(self, task):
+        """A task has been updated and wants to be displayed.
+        """
+        if not self._task_stack:
+            self.logger.warning("%r updated but no tasks are active", task)
+        self._progress_view.show_progress(task)
+
+    def _progress_all_finished(self):
+        self._progress_view.clear()
+
+    def report_transport_activity(self, transport, byte_count, direction):
+        """Called by transports as they do IO.
+
+        This may update a progress bar, spinner, or similar display.
+        By default it does nothing.
+        """
+        self._progress_view.show_transport_activity(transport,
+            direction, byte_count)
 
 
 class LoggingTextProgressView(TextProgressView):
