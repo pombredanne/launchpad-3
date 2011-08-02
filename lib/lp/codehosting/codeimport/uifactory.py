@@ -23,30 +23,29 @@ class LoggingUIFactory(TextUIFactory):
     (by default).
     """
 
-    def __init__(self, time_source=time.time, writer=None, interval=60.0):
+    def __init__(self, time_source=time.time, logger=None, interval=60.0):
         """Construct a `LoggingUIFactory`.
 
         :param time_source: A callable that returns time in seconds since the
             epoch.  Defaults to ``time.time`` and should be replaced with
             something deterministic in tests.
-        :param writer: A callable that takes a string and displays it.  It is
-            not called with newline terminated strings.
+        :param logger: The logger object to write to
         :param interval: Don't produce output more often than once every this
             many seconds.  Defaults to 60 seconds.
         """
         TextUIFactory.__init__(self)
         self.interval = interval
-        self.writer = writer
+        self.logger = logger
         self._progress_view = LoggingTextProgressView(
-            time_source, writer, interval)
+            time_source, lambda m: logger.info("%s", m), interval)
 
     def show_user_warning(self, warning_id, **message_args):
-        self.writer(self.format_user_warning(warning_id, message_args))
+        self.logger.warning("%s", self.format_user_warning(warning_id, message_args))
 
     def show_warning(self, msg):
         if isinstance(msg, unicode):
             msg = msg.encode("utf-8")
-        self.writer("warning: " + msg)
+        self.logger.warning("%s", msg)
 
     def get_username(self, prompt, **kwargs):
         return None
@@ -55,10 +54,10 @@ class LoggingUIFactory(TextUIFactory):
         return None
 
     def note(self, msg):
-        self.writer(msg)
+        self.logger.info("%s", msg)
 
     def show_error(self, msg):
-        self.writer("ERROR: " + msg)
+        self.logger.error("%s", msg)
 
     def confirm_action(self, prompt, confirmation_id, prompt_kwargs):
         return True

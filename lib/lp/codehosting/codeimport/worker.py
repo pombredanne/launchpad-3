@@ -601,8 +601,7 @@ class PullingImportWorker(ImportWorker):
     def _doImport(self):
         self._logger.info("Starting job.")
         saved_factory = bzrlib.ui.ui_factory
-        bzrlib.ui.ui_factory = LoggingUIFactory(
-            writer=lambda m: self._logger.info('%s', m))
+        bzrlib.ui.ui_factory = LoggingUIFactory(self._logger)
         try:
             self._logger.info(
                 "Getting exising bzr branch from central store.")
