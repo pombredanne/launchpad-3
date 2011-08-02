@@ -48,7 +48,10 @@ class LoggingUIFactory(TextUIFactory):
             msg = msg.encode("utf-8")
         self.writer("warning: " + msg)
 
-    def get_username(self):
+    def get_username(self, prompt, **kwargs):
+        return None
+
+    def get_password(self, prompt, **kwargs):
         return None
 
     def note(self, msg):

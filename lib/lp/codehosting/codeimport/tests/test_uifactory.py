@@ -120,7 +120,13 @@ class TestLoggingUIFactory(TestCase):
 
     def test_get_username(self):
         factory = self.makeLoggingUIFactory()
-        self.assertIs(None, factory.get_username())
+        self.assertIs(
+            None, factory.get_username("Who are you %(when)s?", when="today"))
+
+    def test_get_password(self):
+        factory = self.makeLoggingUIFactory()
+        self.assertIs(
+            None, factory.get_password("How is your %(drink)s", drink="coffee"))
 
     def test_show_warning(self):
         factory = self.makeLoggingUIFactory()
