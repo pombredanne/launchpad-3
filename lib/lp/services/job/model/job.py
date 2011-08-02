@@ -21,6 +21,10 @@ from storm.expr import (
     Or,
     Select,
     )
+from storm.locals import (
+    Int,
+    Reference,
+    )
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
@@ -73,6 +77,9 @@ class Job(SQLBase):
 
     max_retries = IntCol(default=0)
 
+    requester_id = Int(name='requester', allow_none=True)
+    requester = Reference(requester_id, 'Person.id')
+
     # Mapping of valid target states from a given state.
     _valid_transitions = {
         JobStatus.WAITING:
@@ -108,16 +115,19 @@ class Job(SQLBase):
         return self.status in self.PENDING_STATUSES
 
     @classmethod
-    def createMultiple(self, store, num_jobs):
+    def createMultiple(self, store, num_jobs, requester=None):
         """Create multiple `Job`s at once.
 
         :param store: `Store` to ceate the jobs in.
         :param num_jobs: Number of `Job`s to create.
+        :param request: The `IPerson` requesting the jobs.
         :return: An iterable of `Job.id` values for the new jobs.
         """
-        job_contents = ["(%s)" % quote(JobStatus.WAITING)] * num_jobs
+        job_contents = [
+            "(%s, %s)" % (
+                quote(JobStatus.WAITING), quote(requester))] * num_jobs
         result = store.execute("""
-            INSERT INTO Job (status)
+            INSERT INTO Job (status, requester)
             VALUES %s
             RETURNING id
             """ % ", ".join(job_contents))
@@ -172,6 +182,7 @@ class Job(SQLBase):
         if self.status is not JobStatus.SUSPENDED:
             raise InvalidTransition(self._status, JobStatus.WAITING)
         self._set_status(JobStatus.WAITING)
+        self.lease_expires = None
 
 
 Job.ready_jobs = Select(

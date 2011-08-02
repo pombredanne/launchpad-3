@@ -80,6 +80,7 @@ from storm.expr import (
     With,
     )
 from storm.info import ClassAlias
+from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabularyTokenized
@@ -92,6 +93,8 @@ from zope.security.proxy import (
     isinstance as zisinstance,
     removeSecurityProxy,
     )
+
+from lazr.restful.interfaces import IReference
 
 from canonical.database.sqlbase import (
     quote,
@@ -128,14 +131,11 @@ from canonical.launchpad.webapp.vocabulary import (
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
-from lp.bugs.interfaces.bugtask import (
-    IBugTask,
-    IDistroBugTask,
-    IDistroSeriesBugTask,
-    IProductSeriesBugTask,
-    IUpstreamBugTask,
+from lp.bugs.interfaces.bugtask import IBugTask
+from lp.registry.interfaces.distribution import (
+    IDistribution,
+    IDistributionSet,
     )
-from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
@@ -640,7 +640,7 @@ class ValidPersonOrTeamVocabulary(
                     Person.id.is_in(public_inner_textual_select),
                     Person.visibility == PersonVisibility.PUBLIC,
                     Person.merged == None,
-                    Or(# A valid person-or-team is either a team...
+                    Or(  # A valid person-or-team is either a team...
                        # Note: 'Not' due to Bug 244768.
                        Not(Person.teamowner == None),
                        # Or a person who has a preferred email address.
@@ -836,10 +836,10 @@ class ValidPersonOrTeamVocabulary(
                 And(
                     SQL("Person.id = MatchingPerson.id"),
                     Or(
-                        And(# A public person or team
+                        And(  # A public person or team
                             Person.visibility == PersonVisibility.PUBLIC,
                             Person.merged == None,
-                            Or(# A valid person-or-team is either a team...
+                            Or(  # A valid person-or-team is either a team...
                                 # Note: 'Not' due to Bug 244768.
                                 Not(Person.teamowner == None),
                                 # Or a person who has preferred email address.
@@ -1458,14 +1458,18 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
     @staticmethod
     def getMilestoneTarget(milestone_context):
         """Return the milestone target."""
-        if IUpstreamBugTask.providedBy(milestone_context):
-            target = milestone_context.product
-        elif IDistroBugTask.providedBy(milestone_context):
-            target = milestone_context.distribution
-        elif IDistroSeriesBugTask.providedBy(milestone_context):
-            target = milestone_context.distroseries
-        elif IProductSeriesBugTask.providedBy(milestone_context):
-            target = milestone_context.productseries.product
+        if IBugTask.providedBy(milestone_context):
+            bug_target = milestone_context.target
+            if IProduct.providedBy(bug_target):
+                target = milestone_context.product
+            elif IProductSeries.providedBy(bug_target):
+                target = milestone_context.productseries.product
+            elif (IDistribution.providedBy(bug_target) or
+                  IDistributionSourcePackage.providedBy(bug_target)):
+                target = milestone_context.distribution
+            elif (IDistroSeries.providedBy(bug_target) or
+                  ISourcePackage.providedBy(bug_target)):
+                target = milestone_context.distroseries
         elif IDistributionSourcePackage.providedBy(milestone_context):
             target = milestone_context.distribution
         elif ISourcePackage.providedBy(milestone_context):
@@ -1981,13 +1985,29 @@ class DistributionSourcePackageVocabulary:
 
     implements(IHugeVocabulary)
     displayname = 'Select a package'
-    step_title = 'Search'
+    step_title = 'Search by name or distro/name'
 
     def __init__(self, context):
         self.context = context
+        # Avoid circular import issues.
+        from lp.answers.interfaces.question import IQuestion
+        if IReference.providedBy(context):
+            target = context.context.target
+        elif IBugTask.providedBy(context) or IQuestion.providedBy(context):
+            target = context.target
+        else:
+            target = context
+        try:
+            self.distribution = IDistribution(target)
+        except TypeError:
+            self.distribution = None
 
-    def __contains__(self, obj):
-        pass
+    def __contains__(self, spn_or_dsp):
+        try:
+            self.toTerm(spn_or_dsp)
+            return True
+        except LookupError:
+            return False
 
     def __iter__(self):
         pass
@@ -1995,31 +2015,60 @@ class DistributionSourcePackageVocabulary:
     def __len__(self):
         pass
 
-    def toTerm(self, spn):
-        """See `IVocabulary`."""
-        dsp = self.context.getSourcePackage(spn)
-        if dsp.publishing_history:
-            binaries = dsp.publishing_history[0].getBuiltBinaries()
-            summary = ', '.join(
-                [binary.binary_package_name for binary in binaries])
-        else:
-            summary = "Not yet built."
-        token = '%s-%s' % (dsp.distribution.name, dsp.name)
-        return SimpleTerm(summary, token, dsp.name)
+    def getDistributionAndPackageName(self, text):
+        "Return the distribution and package name from the parsed text."
+        # Match the toTerm() format, but also use it to select a distribution.
+        distribution = None
+        if '/' in text:
+            distro_name, text = text.split('/', 1)
+            distribution = getUtility(IDistributionSet).getByName(distro_name)
+        if distribution is None:
+            distribution = self.distribution
+        return distribution, text
 
-    def getTerm(self, spn):
+    def toTerm(self, spn_or_dsp, distribution=None):
+        """See `IVocabulary`."""
+        dsp = None
+        if IDistributionSourcePackage.providedBy(spn_or_dsp):
+            dsp = spn_or_dsp
+            distribution = spn_or_dsp.distribution
+        else:
+            distribution = distribution or self.distribution
+            if distribution is not None and spn_or_dsp is not None:
+                dsp = distribution.getSourcePackage(spn_or_dsp)
+        try:
+            token = '%s/%s' % (dsp.distribution.name, dsp.name)
+            binaries = dsp.publishing_history[0].getBuiltBinaries()
+            binary_names = [binary.binary_package_name for binary in binaries]
+            if binary_names != []:
+                summary = ', '.join(binary_names)
+            else:
+                summary = 'Not yet built.'
+            summary = token + ' ' + summary
+            return SimpleTerm(dsp.sourcepackagename, token, summary)
+        except (IndexError, AttributeError):
+            # Either the DSP was None or there is no publishing history.
+            raise LookupError(distribution, spn_or_dsp)
+
+    def getTerm(self, spn_or_dsp):
         """See `IBaseVocabulary`."""
-        return self.toTerm(spn)
+        return self.toTerm(spn_or_dsp)
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
-        pass
+        distribution, package_name = self.getDistributionAndPackageName(token)
+        return self.toTerm(package_name, distribution)
 
     def searchForTerms(self, query=None):
         """See `IHugeVocabulary`."""
-        distribution = self.context
-        if query is None:
-            return
+        if not query:
+            return EmptyResultSet()
+        distribution, query = self.getDistributionAndPackageName(query)
+        if distribution is None:
+            # This could failover to ubuntu, but that is non-obvious. The
+            # Python widget must set the default distribution and the JS
+            # widget must encourage the <distro>/<package> search format.
+            return EmptyResultSet()
         search_term = unicode(query)
         store = IStore(SourcePackagePublishingHistory)
         spns = store.using(
@@ -2059,4 +2108,5 @@ class DistributionSourcePackageVocabulary:
                     SourcePackageName.name.contains_string(search_term),
                     BinaryPackageName.name.contains_string(
                         search_term))).config(distinct=True)
-        return [self.toTerm(spn) for spn in spns]
+        # XXX sinzui 2011-07-26: This query ignored SPN branches.
+        return CountableIterator(spns.count(), spns, self.toTerm)
