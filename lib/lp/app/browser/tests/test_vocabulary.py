@@ -18,6 +18,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.vocabulary import IPickerEntry
+from lp.app.errors import UnexpectedFormData
 from lp.registry.interfaces.irc import IIrcIDSet
 from lp.testing import (
     login_person,
@@ -134,3 +135,12 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
         view = self.create_vocabulary_view({'name': 'ValidPerson'})
         self.assertRaisesWithContent(
             MissingInputError, "('search_text', '', None)", view.__call__)
+
+    def test_vocabulary_name_unknown_error(self):
+        form = {
+            'name': 'snarf',
+            'search_text': 'pting',
+            }
+        view = self.create_vocabulary_view(form)
+        self.assertRaisesWithContent(
+            UnexpectedFormData, "Unknown vocabulary 'snarf'", view.__call__)
