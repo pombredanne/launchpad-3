@@ -1902,8 +1902,9 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
         equal_clauses = [PillarName.name == query]
         like_clauses = [
             PillarName.name != query, PillarName.name.contains_string(query)]
-        equal_clauses.extend(self._filter)
-        like_clauses.extend(self._filter)
+        if self._filter:
+            equal_clauses.extend(self._filter)
+            like_clauses.extend(self._filter)
         ranked_results = store.execute(
             Union(
                 Select(
