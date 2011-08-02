@@ -243,21 +243,3 @@ class TestQuestionWebServiceSubscription(TestCaseWithFactory):
 
         # Check the results.
         self.assertFalse(db_question.isSubscribed(db_person))
-
-    def test_removeAnswerContact(self):
-        # Test removeAnswerContact() API.
-        person = self.factory.makePerson()
-        with person_logged_in(person):
-            db_question = self.factory.makeQuestion()
-            db_person = self.factory.makePerson()
-            db_person.addLanguage(getUtility(ILanguageSet)['en'])
-            db_question.target.addAnswerContact(db_person, db_person)
-            launchpad = self.factory.makeLaunchpadService(person=db_person)
-
-        question = ws_object(launchpad, db_question)
-        person = ws_object(launchpad, db_person)
-        question.removeAnswerContact(person=person)
-        transaction.commit()
-
-        # Check the results.
-        self.assertEqual([], db_question.target.direct_answer_contacts)
