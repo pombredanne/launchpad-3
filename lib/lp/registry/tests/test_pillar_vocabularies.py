@@ -18,7 +18,7 @@ from lp.testing import (
 
 
 class TestPillarVocabularyBase(TestCaseWithFactory):
-    """Test that the PillarVocabulary behaves as expected."""
+    """Test that the PillarVocabularyBase behaves as expected."""
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
@@ -47,7 +47,7 @@ class TestPillarVocabularyBase(TestCaseWithFactory):
             LookupError,
             self.vocabulary.getTermByToken, 'does-notexist')
 
-    def test_order_by_name(self):
+    def test_ordering(self):
         # Results are ordered by rank, with exact matches first.
         terms = self.vocabulary.searchForTerms('snark')
         result = [term.value for term in terms]
