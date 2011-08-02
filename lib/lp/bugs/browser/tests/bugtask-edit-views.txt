@@ -29,8 +29,6 @@ Person:
     >>> edit_view = getMultiAdapter(
     ...     (ubuntu_thunderbird_task, request), name='+editstatus')
     >>> edit_view.initialize()
-    >>> for error in edit_view.errors:
-    ...     print error
     >>> ubuntu_thunderbird_task.status.title
     'In Progress'
 
