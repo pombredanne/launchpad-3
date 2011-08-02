@@ -93,8 +93,7 @@ def productseries_filebug(productseries, summary, status=None):
     """
     bug = bugtarget_filebug(productseries.product, summary, status=status)
     getUtility(IBugTaskSet).createTask(
-        bug, getUtility(ILaunchBag).user, productseries=productseries,
-        status=status)
+        bug, getUtility(ILaunchBag).user, productseries, status=status)
     return bug
 
 
@@ -132,10 +131,12 @@ def distroseries_filebug(distroseries, summary, sourcepackagename=None,
     first be filed on its distribution, and then a series task will be
     added.
     """
+    target = distroseries
+    if sourcepackagename:
+        target = target.getSourcePackage(sourcepackagename)
     bug = bugtarget_filebug(distroseries.distribution, summary, status=status)
     getUtility(IBugTaskSet).createTask(
-        bug, getUtility(ILaunchBag).user, distroseries=distroseries,
-        sourcepackagename=sourcepackagename, status=status)
+        bug, getUtility(ILaunchBag).user, target, status=status)
     return bug
 
 

@@ -253,6 +253,7 @@ class TestDistroSeriesTemplatesView(SeriesTemplatesViewScenario,
         ['priority_column'],
         ['sourcepackage_column'],
         ['template_column'],
+        ['sharing'],
         ['length_column'],
         ['lastupdate_column'],
     ]
@@ -287,13 +288,64 @@ class TestDistroSeriesTemplatesView(SeriesTemplatesViewScenario,
 
     def test_renderSourcePackage(self):
         # _renderSourcePackage returns the template's source-package
-        # name for a productseries view.
+        # name for a distroseries view.
         template = self._makeTemplate()
         view = self._makeView(template)
 
-        return self.assertEqual(
+        self.assertEqual(
             template.sourcepackagename.name,
             view._renderSourcePackage(template))
+
+
+class FauxSharedTemplate:
+    """A stand-in for a template."""
+    name = 'TEMPLATE_NAME'
+
+
+class FauxSourcePackageName:
+    """A stand-in for a SourcePackageName."""
+    name = 'SOURCE_PACKAGE_NAME'
+
+
+class FauxProductSeries:
+    """A stand-in for a ProductSeries."""
+    name = 'PRODUCT_SERIES_NAME'
+
+
+class TestSharingColumn(TestDistroSeriesTemplatesView):
+    """Test the _renderSharing method of BaseSeriesTemplatesView."""
+
+    columns = [
+        ['priority_column'],
+        ['sourcepackage_column'],
+        ['template_column'],
+        ['sharing'],
+        ['length_column'],
+        ['lastupdate_column'],
+    ]
+
+    def test_unshared(self):
+        # Unshared templates result in the text "not shared" and an edit link.
+        template = self._makeTemplate()
+        view = self._makeView(template)
+        rendered = view._renderSharing(template, None, None, None, None, None)
+        self.assertTrue('not shared' in rendered)
+        edit_link_segment = ('+source/%s/+sharing-details' %
+            template.sourcepackagename.name)
+        self.assertTrue(edit_link_segment in rendered)
+
+    def test_shared(self):
+        view = self._makeView()
+        rendered = view._renderSharing(FauxSharedTemplate, object(),
+            FauxProductSeries, object(), object(), FauxSourcePackageName)
+        # Shared templates are displayed with an edit link that leads to the
+        # +sharing-details page...
+        edit_link_segment = ('+source/%s/+sharing-details' %
+            FauxSourcePackageName.name)
+        self.assertTrue(edit_link_segment in rendered)
+        # ...and a link to the shared template.
+        template_link_segment = ('/+pots/%s' % FauxSharedTemplate.name)
+        self.assertTrue(template_link_segment in rendered)
 
 
 class TestProductSeriesTemplatesView(SeriesTemplatesViewScenario,

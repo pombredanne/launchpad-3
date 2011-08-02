@@ -11,8 +11,12 @@ team.
 
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from lp.registry.interfaces.persontransferjob import (
+    ...     IPersonMergeJobSource,
+    ...     )
     >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
     >>> person_set = getUtility(IPersonSet)
+    >>> merge_job_source = getUtility(IPersonMergeJobSource)
     >>> registry_expert= factory.makeRegistryExpert()
     >>> login_person(registry_expert)
 
@@ -128,7 +132,7 @@ The view provides a label, page_title, and cancel url to present the page.
     >>> print view.cancel_url
     http://launchpad.dev/~deletable
 
-The view uses the same form fields as the team merge view, but it does not
+The view uses the similar form fields as the team merge view, but it does not
 render them because their values are preset. Only the action is rendered,
 and it is only rendered if canDelete() returns True.
 
@@ -137,16 +141,16 @@ and it is only rendered if canDelete() returns True.
     >>> view = create_initialized_view(
     ...     deletable_team, '+delete', principal=team_owner)
     >>> view.field_names
-    ['dupe_person', 'target_person']
+    ['dupe_person']
 
     >>> view.default_values
-    {'field.target_person': u'registry', 'field.dupe_person': u'deletable'}
+    {'field.delete': True, 'field.dupe_person': u'deletable'}
 
     >>> content = find_tag_by_id(view.render(), 'maincontent')
     >>> print find_tag_by_id(content, 'field.dupe_person')
     None
 
-    >>> print find_tag_by_id(content, 'field.target_person')
+    >>> print find_tag_by_id(content, 'field.delete')
     None
 
     >>> print find_tag_by_id(content, 'field.actions.delete')['value']
@@ -178,6 +182,14 @@ The user is redirected to /people when a team is deleted.
 
     >>> print view.next_url
     http://launchpad.dev/people
+
+And there is a person merge job setup to delete them.
+
+    >>> job = merge_job_source.find(deletable_team).any()
+    >>> job.metadata['delete']
+    True
+    >>> job.from_person.name
+    u'deletable'
 
 The delete team view cannot be hacked to delete another team, or change
 the team that the merge operation is performed with.

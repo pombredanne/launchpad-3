@@ -36,10 +36,11 @@ def import_debian_bugs(bugs_to_import):
         [debian_task] = bug.bugtasks
         bug_watch_updater.updateBugWatches(
             external_debbugs, [debian_task.bugwatch])
+        target = getUtility(ILaunchpadCelebrities).ubuntu
+        if debian_task.sourcepackagename:
+            target = target.getSourcePackage(debian_task.sourcepackagename)
         getUtility(IBugTaskSet).createTask(
-            bug, getUtility(ILaunchpadCelebrities).bug_watch_updater,
-            distribution=getUtility(ILaunchpadCelebrities).ubuntu,
-            sourcepackagename=debian_task.sourcepackagename)
+            bug, getUtility(ILaunchpadCelebrities).bug_watch_updater, target)
         log.info(
             "Imported debbugs #%s as Launchpad bug #%s." % (
                 debian_bug, bug.id))

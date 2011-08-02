@@ -507,6 +507,19 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         branches = all_branches.targetedBy(registrant, since=since)
         self.assertEqual([], list(branches.getBranches()))
 
+    def test_linkedToBugs(self):
+        # BranchCollection.linkedToBugs() returns all the branches linked
+        # to a given set of bugs.
+        all_branches = self.all_branches
+        bug = self.factory.makeBug()
+        linked_branch = self.factory.makeBranch()
+        unlinked_branch = self.factory.makeBranch()
+        with person_logged_in(linked_branch.owner):
+            bug.linkBranch(linked_branch, linked_branch.owner)
+        branches = all_branches.linkedToBugs([bug])
+        self.assertContentEqual([linked_branch], branches.getBranches())
+        self.assertNotIn(unlinked_branch, list(branches.getBranches()))
+
 
 class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
 
