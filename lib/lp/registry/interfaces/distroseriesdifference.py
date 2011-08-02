@@ -287,7 +287,7 @@ class IDistroSeriesDifference(IDistroSeriesDifferencePublic,
 class IDistroSeriesDifferenceSource(Interface):
     """A utility of this interface can be used to create differences."""
 
-    def new(derived_series, source_package_name, parent_series=None):
+    def new(derived_series, source_package_name, parent_series):
         """Create an `IDistroSeriesDifference`.
 
         :param derived_series: The distribution series which was derived
