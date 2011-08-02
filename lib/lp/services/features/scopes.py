@@ -169,55 +169,11 @@ class ScriptScope(BaseScope):
         return scope_name == self.script_scope
 
 
-class MailHeaderScope(BaseScope):
-    """Matches a regex against the un-wrapped form of arbitrary mail headers.
-
-    For example mail_header:received:bad-example\\.com will match any mail
-    that passed through that host.
-
-    The header name is matched case-insensitively, and if the header is
-    repeated this scope looks for a match in any occurrence.
-
-    The value is matched as a Python regex, without
-    anchoring to the start of the string, and with Python's default regexp
-    options.  For a case-insensitive match, you should include (?i) at the
-    start.
-
-    Headers are not unfolded before matching, so wrapped lines may appear as
-    "\n\t".
-    """
-
-    pattern = r'mail_header:(?P<header_name>[^:]*):(?P<value_regex>.*)'
-
-    def __init__(self, email_message):
-        self.email_message = email_message
-
-    def lookup(self, scope_name):
-        match = self.compiled_pattern.match(scope_name)
-        if match is None:
-            return False  # Shouldn't happen?
-        header_name = match.group('header_name')
-        regex_str = match.group('value_regex')
-        regex = re.compile(regex_str)
-        for header_value in self.email_message.get_all(header_name, []):
-            if regex.search(header_value):
-                return True
-        else:
-            return False
-
-
 # These are the handlers for all of the allowable scopes, listed here so that
 # we can for example show all of them in an admin page.  Any new scope will
 # need a scope handler and that scope handler has to be added to this list.
 # See BaseScope for hints as to what a scope handler should look like.
-HANDLERS = set([
-    DefaultScope,
-    MailHeaderScope,
-    PageScope,
-    ScriptScope,
-    ServerScope,
-    TeamScope,
-    ])
+HANDLERS = set([DefaultScope, PageScope, TeamScope, ServerScope, ScriptScope])
 
 
 class MultiScopeHandler():
@@ -229,11 +185,6 @@ class MultiScopeHandler():
 
     def __init__(self, scopes):
         self.handlers = scopes
-
-    def __repr__(self):
-        return "%s(%r)" % (
-            self.__class__.__name__,
-            self.handlers)
 
     def _findMatchingHandlers(self, scope_name):
         """Find any handlers that match `scope_name`."""
@@ -280,21 +231,3 @@ class ScopesForScript(MultiScopeHandler):
         super(ScopesForScript, self).__init__([
             DefaultScope(),
             ScriptScope(script_name)])
-
-
-class ScopesForMail(MultiScopeHandler):
-    """Identify feature scopes for handling user email."""
-
-    def __init__(self, mail_object):
-        """Construct set of scopes for incoming mail.
-
-        :param mail_object: An ISignedMessage giving the parsed
-            form of the incoming message.  (Note that it's *not*
-            necessarily signed, just potentially signed.)
-        """
-        super(ScopesForMail, self).__init__([
-            DefaultScope(),
-            MailHeaderScope(mail_object),
-            ServerScope(),
-            TeamScope(),
-            ])
