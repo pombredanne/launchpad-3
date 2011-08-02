@@ -154,6 +154,11 @@ class TestLoggingUIFactory(TestCase):
             }
         self.assertEqual("WARNING %s\n" % message, self.logger.getLogBuffer())
 
+    def test_clear_term(self):
+        factory = self.makeLoggingUIFactory()
+        factory.clear_term()
+        self.assertEqual("", self.logger.getLogBuffer())
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
