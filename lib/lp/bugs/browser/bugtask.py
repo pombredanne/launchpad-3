@@ -3250,6 +3250,10 @@ class BugTasksAndNominationsView(LaunchpadView):
         latest_parent = None
 
         for bugtask in all_bugtasks:
+            # Series bug targets only display the series name, so they
+            # must always be preceded by their parent context. Normally
+            # the parent will have a task, but if not we need to show a
+            # fake one.
             if ISeriesBugTarget.providedBy(bugtask.target):
                 parent = bugtask.target.bugtarget_parent
             else:
