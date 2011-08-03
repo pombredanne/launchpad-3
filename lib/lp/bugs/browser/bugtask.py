@@ -220,6 +220,7 @@ from lp.bugs.interfaces.bugnomination import (
     BugNominationStatus,
     IBugNominationSet,
     )
+from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugBlueprintSearch,
     BugBranchSearch,
@@ -3246,7 +3247,25 @@ class BugTasksAndNominationsView(LaunchpadView):
         # iteration.
         bugtasks_by_package = bug.getBugTasksByPackageName(all_bugtasks)
 
+        latest_parent = None
+
         for bugtask in all_bugtasks:
+            # Series bug targets only display the series name, so they
+            # must always be preceded by their parent context. Normally
+            # the parent will have a task, but if not we need to show a
+            # fake one.
+            if ISeriesBugTarget.providedBy(bugtask.target):
+                parent = bugtask.target.bugtarget_parent
+            else:
+                latest_parent = parent = bugtask.target
+
+            if parent != latest_parent:
+                latest_parent = parent
+                bugtask_and_nomination_views.append(
+                    getMultiAdapter(
+                        (parent, self.request),
+                        name='+bugtasks-and-nominations-table-row'))
+
             conjoined_master = bugtask.getConjoinedMaster(
                 bugtasks, bugtasks_by_package)
             view = self._getTableRowView(
@@ -3399,9 +3418,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
         Returns True or False.
         """
-        if self.context.productseries or self.context.distroseries:
-            return True
-        return False
+        return ISeriesBugTarget.providedBy(self.context.target)
 
     def taskLink(self):
         """Return the proper link to the bugtask whether it's editable."""

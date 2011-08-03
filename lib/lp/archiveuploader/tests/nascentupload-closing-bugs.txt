@@ -44,8 +44,7 @@ Check the current status of the bug we are supposed to fix:
 
     >>> the_bug = getUtility(IBugSet).get(the_bug_id)
     >>> bugtask = getUtility(IBugTaskSet).createTask(
-    ...     bug=the_bug, owner=bugtask_owner, distribution=ubuntu,
-    ...     sourcepackagename=ubuntu_bar.sourcepackagename)
+    ...     the_bug, bugtask_owner, ubuntu_bar)
 
 Inspect the current bugtasks for bug #6:
 

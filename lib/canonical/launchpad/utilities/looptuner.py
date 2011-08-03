@@ -311,7 +311,7 @@ class TunableLoop:
     """A base implementation of `ITunableLoop`."""
     implements(ITunableLoop)
 
-    goal_seconds = 4
+    goal_seconds = 2
     minimum_chunk_size = 1
     maximum_chunk_size = None # Override
     cooldown_time = 0

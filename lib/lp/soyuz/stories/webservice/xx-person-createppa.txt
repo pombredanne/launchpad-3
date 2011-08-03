@@ -1,5 +1,8 @@
 = Creating a PPA =
 
+  >>> from zope.component import getUtility
+  >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+  >>> from lp.testing import celebrity_logged_in
   >>> from lp.testing.sampledata import ADMIN_EMAIL
   >>> login(ADMIN_EMAIL)
   >>> owner = factory.makePerson()
@@ -58,3 +61,36 @@ single PPA they had at the beginning:
   ...     ppa_owner['ppas_collection_link']).jsonBody())
   http://api.launchpad.dev/beta/~.../+archive/ppa
 
+However, we can grant them commercial admin access:
+
+  >>> with celebrity_logged_in('admin'):
+  ...     comm = getUtility(ILaunchpadCelebrities).commercial_admin
+  ...     comm.addMember(owner, comm.teamowner)
+  (True, <DBItem TeamMembershipStatus.APPROVED, (2) Approved>)
+
+Once they have commercial access, they can create private PPAs:
+
+  >>> print ppa_owner_webservice.named_post(
+  ...     ppa_owner['self_link'], 'createPPA', {}, name='secret',
+  ...     displayname='My secret new PPA', description='Secretness!',
+  ...     private=True,
+  ...     )
+  HTTP/1.1 201 Created
+  Status: 201
+  ...
+  Location: http://api.launchpad.dev/.../+archive/secret
+  ...
+
+And the PPA appears in their list of PPAs:
+
+  >>> print_self_link_of_entries(webservice.get(
+  ...     ppa_owner['ppas_collection_link']).jsonBody())
+  http://api.launchpad.dev/.../+archive/ppa
+  http://api.launchpad.dev/.../+archive/secret
+
+And the PPA is, of course, private:
+
+  >>> ppa = ppa_owner_webservice.named_get(
+  ...     ppa_owner['self_link'], 'getPPAByName', name='secret').jsonBody()
+  >>> ppa['private']
+  True

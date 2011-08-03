@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test Archive features."""
@@ -2199,15 +2199,16 @@ class TestSyncSource(TestCaseWithFactory):
             target_distroseries=Equals(to_series),
             target_pocket=Equals(to_pocket),
             include_binaries=Equals(False),
-            copy_policy=Equals(PackageCopyPolicy.INSECURE)))
+            copy_policy=Equals(PackageCopyPolicy.MASS_SYNC)))
 
     def test_copyPackages_with_multiple_packages(self):
+        # PENDING and PUBLISHED packages should both be copied.
         (source, source_archive, source_name, target_archive, to_pocket,
          to_series, version) = self._setup_copy_data()
         sources = [source]
         sources.append(self.factory.makeSourcePackagePublishingHistory(
             archive=source_archive,
-            status=PackagePublishingStatus.PUBLISHED))
+            status=PackagePublishingStatus.PENDING))
         sources.append(self.factory.makeSourcePackagePublishingHistory(
             archive=source_archive,
             status=PackagePublishingStatus.PUBLISHED))

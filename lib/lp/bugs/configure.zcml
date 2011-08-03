@@ -785,6 +785,7 @@
                     activity
                     initial_message
                     linked_branches
+                    getVisibleLinkedBranches
                     watches
                     has_cves
                     cves
