@@ -78,8 +78,6 @@ class TestTranslationSplitter(TestCaseWithFactory):
         splitter = make_translation_splitter(self.factory)
         upstream_item, ubuntu_item = make_shared_potmsgset(
             self.factory, splitter)
-        ubuntu_template = ubuntu_item.potemplate
-        ubuntu_sequence = ubuntu_item.sequence
         new_potmsgset = splitter.splitPOTMsgSet(ubuntu_item)
         self.assertEqual(new_potmsgset, ubuntu_item.potmsgset)
 
@@ -92,8 +90,7 @@ class TestTranslationSplitter(TestCaseWithFactory):
             potmsgset=upstream_item.potmsgset,
             potemplate=upstream_item.potemplate, diverged=True)
         splitter.splitPOTMsgSet(ubuntu_item)
-        upstream_translation = splitter.migrateTranslations(
-            upstream_item.potmsgset, ubuntu_item)
+        splitter.migrateTranslations(upstream_item.potmsgset, ubuntu_item)
         self.assertEqual(
             upstream_message,
             upstream_item.potmsgset.getAllTranslationMessages().one())
@@ -109,8 +106,7 @@ class TestTranslationSplitter(TestCaseWithFactory):
             potmsgset=ubuntu_item.potmsgset,
             potemplate=ubuntu_item.potemplate, diverged=True)
         splitter.splitPOTMsgSet(ubuntu_item)
-        upstream_translation = splitter.migrateTranslations(
-            upstream_item.potmsgset, ubuntu_item)
+        splitter.migrateTranslations(upstream_item.potmsgset, ubuntu_item)
         self.assertEqual(
             ubuntu_message,
             ubuntu_item.potmsgset.getAllTranslationMessages().one())
@@ -140,7 +136,7 @@ class TestTranslationSplitter(TestCaseWithFactory):
         splitter = make_translation_splitter(self.factory)
         upstream_item, ubuntu_item = make_shared_potmsgset(
             self.factory, splitter)
-        upstream_message = self.factory.makeCurrentTranslationMessage(
+        self.factory.makeCurrentTranslationMessage(
             potmsgset=upstream_item.potmsgset,
             potemplate=upstream_item.potemplate)
         splitter.split()

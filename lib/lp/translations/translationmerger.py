@@ -568,7 +568,6 @@ class TranslationMerger:
             deletions = 0
             order_check.check(template)
             potmsgset_ids = self._getPOTMsgSetIds(template)
-            total_ids = len(potmsgset_ids)
             for potmsgset_id in potmsgset_ids:
                 potmsgset = POTMsgSet.get(potmsgset_id)
 
