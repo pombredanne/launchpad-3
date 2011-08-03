@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """In-memory doubles of core codehosting objects."""
@@ -446,14 +446,12 @@ class FakeObjectFactory(ObjectFactory):
         self._distribution_set._add(distro)
         return distro
 
-    def makeDistroRelease(self):
+    def makeDistroSeries(self):
         distro = self.makeDistribution()
         distroseries_name = self.getUniqueString()
         distroseries = FakeDistroSeries(distroseries_name, distro)
         self._distroseries_set._add(distroseries)
         return distroseries
-
-    makeDistroSeries = makeDistroRelease
 
     def makeSourcePackageName(self):
         sourcepackagename = FakeSourcePackageName(self.getUniqueString())
@@ -462,7 +460,7 @@ class FakeObjectFactory(ObjectFactory):
 
     def makeSourcePackage(self, distroseries=None, sourcepackagename=None):
         if distroseries is None:
-            distroseries = self.makeDistroRelease()
+            distroseries = self.makeDistroSeries()
         if sourcepackagename is None:
             sourcepackagename = self.makeSourcePackageName()
         package = FakeSourcePackage(sourcepackagename, distroseries)
@@ -859,7 +857,8 @@ class FakeCodehosting:
                 if product:
                     branch = product.development_focus.branch
                 else:
-                    branch = self._branch_set._find(unique_name=component_name)
+                    branch = self._branch_set._find(
+                        unique_name=component_name)
             else:
                 branch = self._branch_set._find(unique_name=first)
             if branch is not None:
