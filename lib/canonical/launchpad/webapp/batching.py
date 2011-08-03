@@ -11,8 +11,10 @@ import simplejson
 from storm import Undef
 from storm.expr import (
     And,
+    compile,
     Desc,
     Or,
+    SQL,
     )
 from storm.properties import PropertyColumn
 from storm.zope.interfaces import IResultSet
@@ -26,6 +28,7 @@ from zope.security.proxy import (
     )
 
 from canonical.config import config
+from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
@@ -342,7 +345,7 @@ class StormRangeFactory:
                 return expression
         return [plain_expression(column) == memo for column, memo in limits]
 
-    def whereExpressions(self, limits):
+    def genericWhereExpressions(self, limits):
         """Generate WHERE expressions for the given sort columns and
         memos values.
 
@@ -371,14 +374,43 @@ class StormRangeFactory:
             clauses = self.andClausesForLeadingColumns(start)
             clauses.append(last_limit)
             clause_for_last_column = reduce(And, clauses)
-            return [clause_for_last_column] + self.whereExpressions(start)
+            return (
+                [clause_for_last_column]
+                + self.genericWhereExpressions(start))
         else:
             return [last_limit]
+
+    def whereExpressions(self, sort_expressions, memos):
+        """WHERE expressions for the given sort columns and memos values."""
+        expression = sort_expressions[0]
+        descending = isinstance(expression, Desc)
+        consistent = True
+        for expression in sort_expressions[1:]:
+            if isinstance(expression, Desc) != descending:
+                consistent = False
+                break
+        if not consistent or len(sort_expressions) == 1:
+            return self.genericWhereExpressions(zip(sort_expressions, memos))
+
+        # If the columns are sorted either only ascending or only
+        # descending, we can specify a single WHERE condition
+        # (col1, col2...) > (memo1, memo2...)
+        if descending:
+            sort_expressions = [
+                expression.expr for expression in sort_expressions]
+        sort_expressions = map(compile, sort_expressions)
+        sort_expressions = ', '.join(sort_expressions)
+        memos = sqlvalues(*memos)
+        memos = ', '.join(memos)
+        if descending:
+            return [SQL('(%s) < (%s)' % (sort_expressions, memos))]
+        else:
+            return [SQL('(%s) > (%s)' % (sort_expressions, memos))]
 
     def getSliceFromMemo(self, size, memo):
         """Return a result set for the given memo values.
 
-        Note that at least two other implementatians are possible:
+        Note that at least two other implementations are possible:
         Instead of OR-combining the expressions returned by
         whereExpressions(), these expressions could be used for
         separate SELECTs which are then merged with UNION ALL.
@@ -390,7 +422,7 @@ class StormRangeFactory:
         differ between different queries.
         """
         sort_expressions = self.getOrderBy()
-        where = self.whereExpressions(zip(sort_expressions, memo))
+        where = self.whereExpressions(sort_expressions, memo)
         where = reduce(Or, where)
         # From storm.zope.interfaces.IResultSet.__doc__:
         #     - C{find()}, C{group_by()} and C{having()} are really

@@ -93,7 +93,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
             StormRangeFactoryError, range_factory.getOrderValuesFor,
             resultset[0])
         self.assertEqual(
-            "StormRangeFactory supports only sorting by PropertyColumn, "
+            "StormRangeFactory only supports sorting by PropertyColumn, "
             "not by 'Person.id'.",
             str(exception))
 
@@ -106,7 +106,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
             resultset[0])
         self.assertTrue(
             str(exception).startswith(
-                'StormRangeFactory supports only sorting by PropertyColumn, '
+                'StormRangeFactory only supports sorting by PropertyColumn, '
                 'not by <storm.expr.SQL object at'))
 
     def test_getOrderValuesFor__unordered_result_set(self):
@@ -358,7 +358,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         """
         resultset = self.makeStormResultSet()
         range_factory = StormRangeFactory(resultset, self.logError)
-        [where_clause] = range_factory.whereExpressions([(Person.id, 1)])
+        [where_clause] = range_factory.whereExpressions([Person.id], [1])
         self.assertEquals('Person.id > ?', compile(where_clause))
 
     def test_whereExpressions_desc(self):
@@ -368,15 +368,45 @@ class TestStormRangeFactory(TestCaseWithFactory):
         resultset = self.makeStormResultSet()
         range_factory = StormRangeFactory(resultset, self.logError)
         [where_clause] = range_factory.whereExpressions(
-            [(Desc(Person.id), 1)])
+            [Desc(Person.id)], [1])
         self.assertEquals('Person.id < ?', compile(where_clause))
 
-    def test_whereExpressions__two_sort_columns(self):
-        """If the sort columns and memo values (c1, m1) and (c2, m2)
-        are specified, whereExpressions() returns two expressions where
-        the first expression is
+    def test_whereExpressions__two_sort_columns_asc_asc(self):
+        """If the ascending sort columns c1, c2 and the memo values
+        m1, m2 are specified, whereExpressions() returns a WHERE
+        expressions comparing the tuple (c1, c2) with the memo tuple
+        (m1, m2):
 
-            c1 == m1 AND c2 > m2
+        (c1, c2) > (m1, m2)
+        """
+        resultset = self.makeStormResultSet()
+        range_factory = StormRangeFactory(resultset, self.logError)
+        [where_clause] = range_factory.whereExpressions(
+            [Person.id, Person.name], [1, 'foo'])
+        self.assertEquals(
+            "(Person.id, Person.name) > (1, 'foo')", compile(where_clause))
+
+    def test_whereExpressions__two_sort_columns_desc_desc(self):
+        """If the descending sort columns c1, c2 and the memo values
+        m1, m2 are specified, whereExpressions() returns a WHERE
+        expressions comparing the tuple (c1, c2) with the memo tuple
+        (m1, m2):
+
+        (c1, c2) < (m1, m2)
+        """
+        resultset = self.makeStormResultSet()
+        range_factory = StormRangeFactory(resultset, self.logError)
+        [where_clause] = range_factory.whereExpressions(
+            [Desc(Person.id), Desc(Person.name)], [1, 'foo'])
+        self.assertEquals(
+            "(Person.id, Person.name) < (1, 'foo')", compile(where_clause))
+
+    def test_whereExpressions__two_sort_columns_asc_desc(self):
+        """If the ascending sort column c1, the descending sort column
+        c2 and the memo values m1, m2 are specified, whereExpressions()
+        returns two expressions where  the first expression is
+
+            c1 == m1 AND c2 < m2
 
         and the second expression is
 
@@ -385,9 +415,9 @@ class TestStormRangeFactory(TestCaseWithFactory):
         resultset = self.makeStormResultSet()
         range_factory = StormRangeFactory(resultset, self.logError)
         [where_clause_1, where_clause_2] = range_factory.whereExpressions(
-            [(Person.id, 1), (Person.name, 'foo')])
+            [Person.id, Desc(Person.name)], [1, 'foo'])
         self.assertEquals(
-            'Person.id = ? AND Person.name > ?', compile(where_clause_1))
+            'Person.id = ? AND Person.name < ?', compile(where_clause_1))
         self.assertEquals('Person.id > ?', compile(where_clause_2))
 
     def test_getSlice__forward_without_memo(self):
