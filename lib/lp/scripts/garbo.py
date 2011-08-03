@@ -765,11 +765,12 @@ class BugHeatUpdater(TunableLoop):
         outdated_bugs = self._outdated_bugs[:chunk_size]
         # We don't use outdated_bugs.set() here to work around
         # Storm Bug #820290.
-        outdated_bugs = list(outdated_bugs)
-        self.log.debug("Updating heat for %s bugs", len(outdated_bugs))
-        for bug in outdated_bugs:
-            bug.heat = SQL('calculate_bug_heat(Bug.id)')
-            bug.heat_last_updated = UTC_NOW
+        outdated_bug_ids = [bug.id for bug in outdated_bugs]
+        self.log.debug("Updating heat for %s bugs", len(outdated_bug_ids))
+        IMasterStore(Bug).find(
+            Bug, Bug.id.is_in(outdated_bug_ids)).set(
+                heat=SQL('calculate_bug_heat(Bug.id)'),
+                heat_last_updated=UTC_NOW)
         transaction.commit()
 
 
