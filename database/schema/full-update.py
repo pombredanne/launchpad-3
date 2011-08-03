@@ -6,6 +6,7 @@
 
 import _pythonpath
 
+from datetime import datetime
 from optparse import OptionParser
 import subprocess
 import sys
@@ -125,6 +126,8 @@ def main():
     upgrade_run = False
     security_run = False
 
+    outage_start = datetime.now()
+
     try:
         # Shutdown pgbouncer
         log.info("Outage starts. Shutting down pgbouncer.")
@@ -157,7 +160,7 @@ def main():
             log.fatal("pgbouncer not restarted [%s]", pgbouncer_rc)
             return pgbouncer_rc
         pgbouncer_down = False
-        log.info("Outage complete.")
+        log.info("Outage complete. %s", datetime.now() - outage_start)
 
         # We will start seeing connections as soon as pgbouncer is
         # reenabled, so ignore them here.
@@ -185,7 +188,7 @@ def main():
             pgbouncer_rc = run_pgbouncer(log, 'start')
             if pgbouncer_rc == 0:
                 log.info("Despite failures, pgbouncer restarted.")
-                log.info("Outage complete.")
+                log.info("Outage complete. %s", datetime.now() - outage_start)
             else:
                 log.fatal("pgbouncer is down and refuses to restart")
         if not upgrade_run:
