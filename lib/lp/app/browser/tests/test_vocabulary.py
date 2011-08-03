@@ -12,10 +12,21 @@ import pytz
 import simplejson
 
 from zope.app.form.interfaces import MissingInputError
-from zope.component import getUtility
+from zope.component import (
+    getSiteManager,
+    getUtility,
+    )
+from zope.interface import implements
+from zope.schema.interfaces import IVocabularyFactory
+from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
+
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
+from canonical.launchpad.webapp.vocabulary import (
+    CountableIterator,
+    IHugeVocabulary,
+    )
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.vocabulary import (
     IPickerEntry,
@@ -118,14 +129,47 @@ class PersonPickerEntryAdapterTestCase(TestCaseWithFactory):
         self.assertEqual('Affiliated with Fnord', entry.badges[0]['alt'])
 
 
+class TestPersonVocabulary:
+    implements(IHugeVocabulary)
+    test_persons = []
+
+    @classmethod
+    def setTestData(cls, person_list):
+        cls.test_persons = person_list
+
+    def __init__(self, context):
+        self.context = context
+
+    def toTerm(self, person):
+        return SimpleTerm(person, person.name, person.displayname)
+
+    def searchForTerms(self, query=None):
+        found = [
+            person for person in self.test_persons if query in person.name]
+        return CountableIterator(len(found), found, self.toTerm)
+
+
 class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def setUp(self):
+        super(HugeVocabularyJSONViewTestCase, self).setUp()
+        test_persons = []
+        for name in range(1, 7):
+            test_persons.append(
+                self.factory.makePerson(name='pting-%s' % name))
+        TestPersonVocabulary.setTestData(test_persons)
+        getSiteManager().registerUtility(
+            TestPersonVocabulary, IVocabularyFactory, 'TestPerson')
+        self.addCleanup(
+            getSiteManager().unregisterUtility,
+            TestPersonVocabulary, IVocabularyFactory, 'TestPerson')
+        self.addCleanup(TestPersonVocabulary.setTestData, [])
+
     @staticmethod
-    def create_vocabulary_view(form, context=None):
-        if context is None:
-            context = getUtility(ILaunchpadRoot)
+    def create_vocabulary_view(form):
+        context = getUtility(ILaunchpadRoot)
         query_string = urlencode(form)
         return create_view(
             context, '+huge-vocabulary', form=form, query_string=query_string)
@@ -136,7 +180,7 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
             MissingInputError, "('name', '', None)", view.__call__)
 
     def test_search_text_field_missing_error(self):
-        view = self.create_vocabulary_view({'name': 'ValidPerson'})
+        view = self.create_vocabulary_view({'name': 'TestPerson'})
         self.assertRaisesWithContent(
             MissingInputError, "('search_text', '', None)", view.__call__)
 
@@ -152,19 +196,21 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
         flags = FeatureFixture(feature_flag)
         flags.setUp()
         self.addCleanup(flags.cleanUp)
-        form = dict(name='ValidPersonOrTeam', search_text='guadamen')
+        team = self.factory.makeTeam(name='pting-team')
+        TestPersonVocabulary.test_persons.append(team)
+        form = dict(name='TestPerson', search_text='pting-team')
         view = self.create_vocabulary_view(form)
         result = simplejson.loads(view())
         expected = {
-            "alt_title": "guadamen",
-            "alt_title_link": "http://launchpad.dev/~guadamen",
-            "api_uri": "/~guadamen",
+            "alt_title": team.name,
+            "alt_title_link": "http://launchpad.dev/~%s" % team.name,
+            "api_uri": "/~%s" % team.name,
             "css": "sprite team",
-            "details": ['Team members: 11'],
+            "details": ['Team members: 1'],
             "link_css": "sprite new-window",
             "metadata": "team",
-            "title": "GuadaMen",
-            "value": "guadamen"
+            "title": team.displayname,
+            "value": team.name
             }
         self.assertTrue('entries' in result)
         self.assertContentEqual(
@@ -173,29 +219,35 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
     def test_max_description_size(self):
         # Descriptions over 120 characters are truncated and ellipsised.
         email = 'pting-' * 19 + '@example.dom'
-        person = self.factory.makePerson(name='pting', email=email)
+        person = self.factory.makePerson(name='pting-n', email=email)
+        TestPersonVocabulary.test_persons.append(person)
+        # Login to gain permission to know the email address that used
+        # for the description
         login_person(person)
-        form = dict(name='ValidPersonOrTeam', search_text='pting')
+        form = dict(name='TestPerson', search_text='pting-n')
         view = self.create_vocabulary_view(form)
         result = simplejson.loads(view())
         expected = (email[:MAX_DESCRIPTION_LENGTH - 3] + '...')
         self.assertEqual(
-            'pting', result['entries'][0]['value'])
+            'pting-n', result['entries'][0]['value'])
         self.assertEqual(
             expected, result['entries'][0]['description'])
 
     def test_default_batch_size(self):
         # The results are batched.
-        form = dict(name='ValidPersonOrTeam', search_text='admin')
+        form = dict(name='TestPerson', search_text='pting')
         view = self.create_vocabulary_view(form)
         result = simplejson.loads(view())
-        self.assertEqual(6, result['total_size'])
-        self.assertEqual(5, len(result['entries']))
+        total_size = result['total_size']
+        entries = len(result['entries'])
+        self.assertTrue(
+            total_size > entries,
+            'total_size: %d is less than entries: %d' % (total_size, entries))
 
     def test_batch_size(self):
         # A The batch size can be specified with the batch param.
         form = dict(
-            name='ValidPersonOrTeam', search_text='admin',
+            name='TestPerson', search_text='pting',
             start='0', batch='1')
         view = self.create_vocabulary_view(form)
         result = simplejson.loads(view())
@@ -205,10 +257,10 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
     def test_start_offset(self):
         # The offset of the batch is specified with the start param.
         form = dict(
-            name='ValidPersonOrTeam', search_text='admin',
+            name='TestPerson', search_text='pting',
             start='1', batch='1')
         view = self.create_vocabulary_view(form)
         result = simplejson.loads(view())
         self.assertEqual(6, result['total_size'])
         self.assertEqual(1, len(result['entries']))
-        self.assertEqual('name16', result['entries'][0]['value'])
+        self.assertEqual('pting-2', result['entries'][0]['value'])
