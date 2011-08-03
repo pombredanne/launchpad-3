@@ -23,7 +23,8 @@ class LoggingUIFactory(NoninteractiveUIFactory):
     (by default).
     """
 
-    # TODO JRV 2011-08-02: This seems generic enough to live in bzrlib.ui
+    # XXX: JelmerVernooij 2011-08-02 bug=820127: This seems generic enough to
+    # live in bzrlib.ui
 
     def __init__(self, time_source=time.time, logger=None, interval=60.0):
         """Construct a `LoggingUIFactory`.
