@@ -1901,6 +1901,7 @@ COMMENT ON COLUMN PackagingJob.job_type IS 'An enumeration specifying the type o
 COMMENT ON COLUMN PackagingJob.productseries IS 'The productseries of the Packaging.';
 COMMENT ON COLUMN PackagingJob.sourcepackagename IS 'The sourcepackage of the Packaging.';
 COMMENT ON COLUMN PackagingJob.distroseries IS 'The distroseries of the Packaging.';
+COMMENT ON COLUMN PackagingJob.potemplate IS 'A POTemplate to restrict the job to or NULL if all templates need to be handled.';
 
 -- Translator / TranslationGroup
 
