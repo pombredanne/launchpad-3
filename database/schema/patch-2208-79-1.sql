@@ -21,4 +21,6 @@ ALTER TABLE PackagingJob
     (potemplate IS NULL AND productseries IS NOT NULL AND
      distroseries IS NOT NULL AND sourcepackagename IS NOT NULL));
 
+CREATE INDEX packagingjob__potemplate__idx ON PackagingJob (potemplate);
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 79, 1);
