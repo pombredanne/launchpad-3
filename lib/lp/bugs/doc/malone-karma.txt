@@ -158,7 +158,7 @@ Create a new bug task on a product:
     >>> from lp.registry.interfaces.product import IProductSet
     >>> evolution = getUtility(IProductSet)['evolution']
     >>> evolution_task = getUtility(IBugTaskSet).createTask(
-    ...     bug, product=evolution, owner=foo_bar)
+    ...     bug, foo_bar, evolution)
     >>> notify(ObjectCreatedEvent(evolution_task))
     Karma added: action=bugtaskcreated, product=evolution
 
@@ -166,7 +166,7 @@ Create a new bug task on a product series:
 
     >>> evolution_trunk = evolution.getSeries('trunk')
     >>> evolution_trunk_task = getUtility(IBugTaskSet).createTask(
-    ...     bug, productseries=evolution_trunk, owner=foo_bar)
+    ...     bug, foo_bar, evolution_trunk)
     >>> notify(ObjectCreatedEvent(evolution_trunk_task))
     Karma added: action=bugtaskcreated, product=evolution
 
@@ -174,7 +174,7 @@ Create a new bug task on a distroseries:
 
     >>> debian_woody = debian.getSeries("woody")
     >>> debian_woody_task = getUtility(IBugTaskSet).createTask(
-    ...     bug, distroseries=debian_woody, owner=foo_bar)
+    ...     bug, foo_bar, debian_woody)
     >>> notify(ObjectCreatedEvent(debian_woody_task))
     Karma added: action=bugtaskcreated, distribution=debian
 

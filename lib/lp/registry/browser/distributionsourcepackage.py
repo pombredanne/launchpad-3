@@ -21,6 +21,7 @@ import itertools
 import operator
 
 from lazr.delegates import delegates
+from lazr.restful.interfaces import IJSONRequestCache
 import pytz
 from zope.component import (
     adapter,
@@ -336,6 +337,10 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
         super(DistributionSourcePackageView, self).initialize()
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
+        IJSONRequestCache(self.request).objects['archive_context_url'] = (
+            canonical_url(
+                self.context.latest_overall_publication.archive,
+                path_only_if_possible=True))
 
     @property
     def label(self):

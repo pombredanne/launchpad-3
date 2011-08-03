@@ -16,7 +16,9 @@ import time
 
 from pytz import UTC
 from storm.expr import (
+    In,
     Min,
+    Not,
     SQL,
     )
 from storm.locals import (
@@ -98,6 +100,11 @@ from lp.services.session.model import (
 from lp.testing import (
     TestCase,
     TestCaseWithFactory,
+    )
+from lp.translations.model.potemplate import POTemplate
+from lp.translations.model.potmsgset import POTMsgSet
+from lp.translations.model.translationtemplateitem import (
+    TranslationTemplateItem,
     )
 
 
@@ -915,3 +922,42 @@ class TestGarbo(TestCaseWithFactory):
         num_rows = store.execute(
             "SELECT COUNT(*) FROM BugSummaryJournal").get_one()[0]
         self.assertThat(num_rows, Equals(0))
+
+    def test_UnusedPOTMsgSetPruner_removes_obsolete_message_sets(self):
+        # UnusedPOTMsgSetPruner removes any POTMsgSet that are
+        # participating in a POTemplate only as obsolete messages.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        pofile = self.factory.makePOFile()
+        translation_message = self.factory.makeCurrentTranslationMessage(
+            pofile=pofile)
+        translation_message.potmsgset.setSequence(
+            pofile.potemplate, 0)
+        transaction.commit()
+        store = IMasterStore(POTMsgSet)
+        obsolete_msgsets = store.find(
+            POTMsgSet,
+            TranslationTemplateItem.potmsgset == POTMsgSet.id,
+            TranslationTemplateItem.sequence == 0)
+        self.assertNotEqual(0, obsolete_msgsets.count())
+        self.runDaily()
+        self.assertEqual(0, obsolete_msgsets.count())
+
+    def test_UnusedPOTMsgSetPruner_removes_unreferenced_message_sets(self):
+        # If a POTMsgSet is not referenced by any templates the
+        # UnusedPOTMsgSetPruner will remove it.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        potmsgset = self.factory.makePOTMsgSet()
+        # Cheekily drop any references to the POTMsgSet we just created.
+        store = IMasterStore(POTMsgSet)
+        store.execute(
+            "DELETE FROM TranslationTemplateItem WHERE potmsgset = %s"
+            % potmsgset.id)
+        transaction.commit()
+        unreferenced_msgsets = store.find(
+            POTMsgSet,
+            Not(In(
+                POTMsgSet.id,
+                SQL("SELECT potmsgset FROM TranslationTemplateItem"))))
+        self.assertNotEqual(0, unreferenced_msgsets.count())
+        self.runDaily()
+        self.assertEqual(0, unreferenced_msgsets.count())

@@ -1247,14 +1247,12 @@ class BugTaskSetFindExpirableBugTasksTest(unittest.TestCase):
             create_old_bug("90 days old", 90, self.distribution))
         bugtasks.append(
             self.bugtaskset.createTask(
-                bug=bugtasks[-1].bug, owner=self.user,
-                distroseries=self.distroseries))
+                bugtasks[-1].bug, self.user, self.distroseries))
         bugtasks.append(
             create_old_bug("90 days old", 90, self.product))
         bugtasks.append(
             self.bugtaskset.createTask(
-                bug=bugtasks[-1].bug, owner=self.user,
-                productseries=self.productseries))
+                bugtasks[-1].bug, self.user, self.productseries))
 
     def tearDown(self):
         logout()
