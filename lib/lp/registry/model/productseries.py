@@ -63,7 +63,10 @@ from lp.blueprints.model.specification import (
     Specification,
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.interfaces.bugtarget import (
+    IHasBugHeat,
+    ISeriesBugTarget,
+    )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     get_bug_tags,
@@ -128,7 +131,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-    implements(IBugSummaryDimension, IHasBugHeat, IProductSeries, IServiceUsage)
+    implements(
+        IBugSummaryDimension, IHasBugHeat, IProductSeries, IServiceUsage,
+        ISeriesBugTarget)
 
     _table = 'ProductSeries'
 
@@ -247,6 +252,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def bugtargetname(self):
         """See IBugTarget."""
         return "%s/%s" % (self.product.name, self.name)
+
+    @property
+    def bugtarget_parent(self):
+        """See `ISeriesBugTarget`."""
+        return self.parent
 
     @property
     def max_bug_heat(self):

@@ -106,7 +106,6 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
-    ILaunchBag,
     IStoreSelector,
     MAIN_STORE,
     )
@@ -177,9 +176,6 @@ from lp.bugs.model.structuralsubscription import (
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage,
-    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -1183,33 +1179,7 @@ BugMessage""" % sqlvalues(self.id))
 
     def addTask(self, owner, target):
         """See `IBug`."""
-        product = None
-        product_series = None
-        distribution = None
-        distro_series = None
-        source_package_name = None
-
-        # Turn `target` into something more useful.
-        if IProduct.providedBy(target):
-            product = target
-        if IProductSeries.providedBy(target):
-            product_series = target
-        if IDistribution.providedBy(target):
-            distribution = target
-        if IDistroSeries.providedBy(target):
-            distro_series = target
-        if IDistributionSourcePackage.providedBy(target):
-            distribution = target.distribution
-            source_package_name = target.sourcepackagename
-        if ISourcePackage.providedBy(target):
-            distro_series = target.distroseries
-            source_package_name = target.sourcepackagename
-
-        new_task = getUtility(IBugTaskSet).createTask(
-            self, owner=owner, product=product,
-            productseries=product_series, distribution=distribution,
-            distroseries=distro_series,
-            sourcepackagename=source_package_name)
+        new_task = getUtility(IBugTaskSet).createTask(self, owner, target)
 
         # When a new task is added the bug's heat becomes relevant to the
         # target's max_bug_heat.
@@ -2531,15 +2501,15 @@ class BugSet:
         # Create the task on a product if one was passed.
         if params.product:
             getUtility(IBugTaskSet).createTask(
-                bug=bug, product=params.product, owner=params.owner,
-                status=params.status)
+                bug, params.owner, params.product, status=params.status)
 
         # Create the task on a source package name if one was passed.
         if params.distribution:
+            target = params.distribution
+            if params.sourcepackagename:
+                target = target.getSourcePackage(params.sourcepackagename)
             getUtility(IBugTaskSet).createTask(
-                bug=bug, distribution=params.distribution,
-                sourcepackagename=params.sourcepackagename,
-                owner=params.owner, status=params.status)
+                bug, params.owner, target, status=params.status)
 
         bug_task = bug.default_bugtask
         if params.assignee:
