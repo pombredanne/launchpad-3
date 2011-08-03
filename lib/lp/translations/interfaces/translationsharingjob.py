@@ -19,3 +19,6 @@ class ITranslationSharingJob(IJob):
 
     sourcepackagename = Attribute(
         _("The sourcepackagename of the Packaging."))
+
+    potemplate = Attribute(
+        _("The POTemplate to pass around as the relevant template."))
