@@ -727,7 +727,7 @@ class MirrorBugMessageOwner(TunableLoop):
 class BugHeatUpdater(TunableLoop):
     """A `TunableLoop` for bug heat calculations."""
 
-    maximum_chunk_size = 1000
+    maximum_chunk_size = 5000
 
     def __init__(self, log, abort_time=None, max_heat_age=None):
         super(BugHeatUpdater, self).__init__(log, abort_time)
@@ -765,6 +765,8 @@ class BugHeatUpdater(TunableLoop):
         outdated_bugs = self._outdated_bugs[:chunk_size]
         # We don't use outdated_bugs.set() here to work around
         # Storm Bug #820290.
+        outdated_bugs = list(outdated_bugs)
+        self.log.debug("Updating heat for %s bugs", len(outdated_bugs))
         for bug in outdated_bugs:
             bug.heat = SQL('calculate_bug_heat(Bug.id)')
             bug.heat_last_updated = UTC_NOW
