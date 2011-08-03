@@ -743,30 +743,22 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         class MoonPhaseError(Exception):
             """Simulated failure."""
 
-        failure = MoonPhaseError(self.factory.getUniqueString())
+        message = self.factory.getUniqueString()
         script = self.makeScript()
-        script.publishAllUploads = FakeMethod(failure=failure)
+        script.publishAllUploads = FakeMethod(failure=MoonPhaseError(message))
         script.setUp()
-        try:
-            script.publish()
-        except MoonPhaseError, e:
-            self.assertEqual(failure, e)
-        else:
-            self.assertTrue(False, "Exception wasn't re-raised.")
+        self.assertRaisesWithContent(MoonPhaseError, message, script.publish)
 
     def test_publish_obeys_keyboard_interrupt(self):
         # Similar to an Exception, a keyboard interrupt does not get
         # swallowed.
-        failure = KeyboardInterrupt(self.factory.getUniqueString())
+        message = self.factory.getUniqueString()
         script = self.makeScript()
-        script.publishAllUploads = FakeMethod(failure=failure)
+        script.publishAllUploads = FakeMethod(
+            failure=KeyboardInterrupt(message))
         script.setUp()
-        try:
-            script.publish()
-        except KeyboardInterrupt, e:
-            self.assertEqual(failure, e)
-        else:
-            self.assertTrue(False, "KeyboardInterrupt wasn't re-raised.")
+        self.assertRaisesWithContent(
+            KeyboardInterrupt, message, script.publish)
 
     def test_publish_recovers_working_dists_on_exception(self):
         # If an Exception comes up while publishing, the publish method
