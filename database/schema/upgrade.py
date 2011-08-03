@@ -178,7 +178,7 @@ def apply_patches_replicated():
     # The first script applies the DB patches to all nodes.
 
     # First make sure the cluster is synced.
-    log.info("Waiting for cluster to sync.")
+    log.info("Waiting for cluster to sync, pre-update.")
     replication.helpers.sync(timeout=600)
 
     outf = StringIO()
@@ -246,9 +246,11 @@ def apply_patches_replicated():
         """)
 
     # Execute the script with slonik.
+    log.info("slonik(1) schema upgrade script generated. Invoking.")
     if not replication.helpers.execute_slonik(outf.getvalue()):
         log.fatal("Aborting.")
         raise SystemExit(4)
+    log.info("slonik(1) schema upgrade script completed.")
 
     # Cleanup our temporary files - they applied successfully.
     for temporary_file in temporary_files:
@@ -256,6 +258,7 @@ def apply_patches_replicated():
     del temporary_files
 
     # Wait for replication to sync.
+    log.info("Waiting for patches to apply to slaves and cluster to sync.")
     replication.helpers.sync(timeout=0)
 
     # The db patches have now been applied to all nodes, and we are now
@@ -350,25 +353,33 @@ def apply_patches_replicated():
                 subscribe set (
                     id=@holding_set, provider=@master_node,
                     receiver=@node%d_node, forward=yes);
+                wait for event (
+                    origin=@master_node, confirmed=all,
+                    wait on=@master_node, timeout=0);
                 echo 'Waiting for sync';
                 sync (id=@master_node);
                 wait for event (
                     origin=@master_node, confirmed=ALL,
-                    wait on=@master_node, timeout=0
-                    );
+                    wait on=@master_node, timeout=0);
                 """ % (slave_node.node_id, slave_node.node_id))
 
         print >> outf, dedent("""\
             echo 'Merging holding set to lpmain';
             merge set (
-                id=@lpmain_set, add id=@holding_set, origin=@master_node
-                );
+                id=@lpmain_set, add id=@holding_set, origin=@master_node);
             """)
 
         # Execute the script and sync.
+        log.info(
+            "Generated slonik(1) script to replicate new objects. Invoking.")
         if not replication.helpers.execute_slonik(outf.getvalue()):
             log.fatal("Aborting.")
+        log.info(
+            "slonik(1) script to replicate new objects completed.")
+        log.info("Waiting for sync.")
         replication.helpers.sync(timeout=0)
+    else:
+        log.info("No new tables or sequences to replicate.")
 
     # We also scan for tables and sequences we want to drop and do so using
     # a final slonik script. Instead of dropping tables in the DB patch,
@@ -411,8 +422,10 @@ def apply_patches_replicated():
                 exit 1;
                 }
             """ % sql.name)
+        log.info("Generated slonik(1) script to drop tables. Invoking.")
         if not replication.helpers.execute_slonik(sk.getvalue()):
             log.fatal("Aborting.")
+        log.info("slonik(1) script to drop tables completed.")
         sql.close()
 
     # Now drop sequences. We don't do this at the same time as the tables,
@@ -455,8 +468,11 @@ def apply_patches_replicated():
                 exit 1;
                 }
             """ % sql.name)
+        log.info("Generated slonik(1) script to drop sequences. Invoking.")
         if not replication.helpers.execute_slonik(sk.getvalue()):
             log.fatal("Aborting.")
+        log.info("slonik(1) script to drop sequences completed.")
+    log.info("Waiting for final sync.")
     replication.helpers.sync(timeout=0)
 
 

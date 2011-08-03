@@ -81,7 +81,10 @@ from lp.blueprints.model.specification import (
     Specification,
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.interfaces.bugtarget import (
+    IHasBugHeat,
+    ISeriesBugTarget,
+    )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     get_bug_tags,
@@ -212,7 +215,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     """A particular series of a distribution."""
     implements(
         ICanPublishPackages, IBugSummaryDimension, IDistroSeries, IHasBugHeat,
-        IHasBuildRecords, IHasQueueItems, IServiceUsage)
+        IHasBuildRecords, IHasQueueItems, IServiceUsage, ISeriesBugTarget)
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']
@@ -802,6 +805,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def bugtargetdisplayname(self):
         """See IBugTarget."""
         return self.fullseriesname
+
+    @property
+    def bugtarget_parent(self):
+        """See `ISeriesBugTarget`."""
+        return self.parent
 
     @property
     def max_bug_heat(self):

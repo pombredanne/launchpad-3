@@ -220,6 +220,7 @@ from lp.bugs.interfaces.bugnomination import (
     BugNominationStatus,
     IBugNominationSet,
     )
+from lp.bugs.interfaces.bugtarget import ISeriesBugTarget
 from lp.bugs.interfaces.bugtask import (
     BugBlueprintSearch,
     BugBranchSearch,
@@ -3399,9 +3400,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
         Returns True or False.
         """
-        if self.context.productseries or self.context.distroseries:
-            return True
-        return False
+        return ISeriesBugTarget.providedBy(self.context.target)
 
     def taskLink(self):
         """Return the proper link to the bugtask whether it's editable."""
