@@ -21,4 +21,4 @@ ALTER TABLE PackagingJob
     (potemplate IS NULL AND productseries IS NOT NULL AND
      distroseries IS NOT NULL AND sourcepackagename IS NOT NULL));
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 98, 1);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 79, 1);
