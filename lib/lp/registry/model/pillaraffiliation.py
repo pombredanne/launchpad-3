@@ -85,7 +85,6 @@ class BugTaskPillarAffiliation(PillarAffiliation):
         alt_text = "Affiliated with %s" % pillar.displayname
         if IDistribution.providedBy(pillar):
             icon_url = getIconUrl(pillar, "/@@/distribution-badge")
-            return BadgeDetails(icon_url, alt_text)
         else:
             icon_url = getIconUrl(pillar, "/@@/product-badge")
-            return BadgeDetails(icon_url, alt_text)
+        return BadgeDetails(icon_url, alt_text)
