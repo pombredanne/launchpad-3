@@ -6,8 +6,11 @@
 __metaclass__ = type
 __all__ = [
     'LaunchpadFault',
+    'Transport',
     ]
 
+import httplib
+import socket
 import xmlrpclib
 
 
@@ -38,3 +41,28 @@ class LaunchpadFault(xmlrpclib.Fault):
 
     def __ne__(self, other):
         return not (self == other)
+
+
+class HTTP(httplib.HTTP):
+    """A version of httplib.HTTP with a timeout argument."""
+
+    def __init__(self, host='', port=None, strict=None,
+                 timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
+        self._setup(
+            self._connection_class(host, port, strict, timeout=timeout))
+
+
+class Transport(xmlrpclib.Transport):
+    """An xmlrpclib transport that supports a timeout argument.
+
+    Use by passing into the "transport" argument of the xmlrpclib.ServerProxy
+    initialization.
+    """
+
+    def __init__(self,
+                 use_datetime=0, timeout=socket._GLOBAL_DEFAULT_TIMEOUT):
+        xmlrpclib.Transport.__init__(self, use_datetime)
+        self.timeout = timeout
+
+    def make_connection(self, host):
+        return HTTP(host, timeout=self.timeout)

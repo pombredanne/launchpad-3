@@ -97,16 +97,6 @@ edit the Status Whiteboard using the 'Edit Question' page.
     Whiteboard: Some note
     >>> portlet_details = find_tag_by_id(browser.contents, 'portlet-details')
 
-Since the assignee is notified of changes to the question, his name also
-appears under the 'Also notified' list in the 'Subscribers' portlet:
-
-    >>> portlet = find_tag_by_id(browser.contents, id='subscribers')
-    >>> also_notified = portlet.first('b')
-    >>> also_notified
-    <b>Also notified:</b>
-    >>> also_notified.findNextSibling('ul')
-    <ul> ...Foo Bar...
-
 These fields cannot be modified by a non-privileged user:
 
     >>> user_browser.open('http://localhost/ubuntu/+question/5')

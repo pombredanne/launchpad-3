@@ -561,6 +561,11 @@
             name="+bugtasks-and-nominations-table-row"
             template="../templates/bugtask-tasks-and-nominations-table-row.pt"/>
         <browser:page
+            for="lp.bugs.interfaces.bugtarget.IBugTarget"
+            permission="zope.Public"
+            name="+bugtasks-and-nominations-table-row"
+            template="../templates/bugtarget-tasks-and-nominations-table-row.pt"/>
+        <browser:page
             for="lp.bugs.interfaces.bugtask.IBugTask"
             name="+bugtask-macros-listing"
             template="../templates/bugtask-macros-listing.pt"
@@ -852,6 +857,7 @@
             name="+index"/>
         <browser:pages
             for="lp.bugs.interfaces.bugtracker.IRemoteBug"
+            class="canonical.launchpad.webapp.LaunchpadView"
             permission="zope.Public">
             <browser:page
                 name="+index"

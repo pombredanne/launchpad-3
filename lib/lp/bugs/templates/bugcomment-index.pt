@@ -7,6 +7,24 @@
   i18n:domain="launchpad"
 >
   <body>
+    <metal:block fill-slot="head_epilogue">
+    <tal:if condition="request/features/bugs.private_notification.enabled">
+    <script>
+        LPS.use('base', 'node', 'lp.app.privacy', function(Y) {
+            Y.on("domready", function () {
+                if (Y.one(document.body).hasClass('private')) {
+                    var config = {
+                        notification_text: 'This comment is on a private bug',
+                        hidden: true
+                    };
+                    Y.lp.app.privacy.setup_privacy_notification(config);
+                    Y.lp.app.privacy.display_privacy_notification(false);
+                }
+            });
+        });
+    </script>
+    </tal:if>
+    </metal:block>
     <div metal:fill-slot="main" tal:define="comment view/comment">
       <h1 tal:content="view/page_title">Foo doesn't work</h1>
       <tal:comment replace="structure comment/@@+box-expanded-reply">

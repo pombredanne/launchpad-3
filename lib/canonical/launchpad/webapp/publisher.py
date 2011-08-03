@@ -26,6 +26,7 @@ __all__ = [
     ]
 
 import httplib
+import simplejson
 
 from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
@@ -51,7 +52,14 @@ from zope.security.checker import (
     )
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
+from lazr.restful import (
+    EntryResource,
+    ResourceJSONEncoder,
+    )
 from lazr.restful.declarations import error_status
+from lazr.restful.interfaces import IJSONRequestCache
+
+from lazr.restful.tales import WebLayerAPI
 
 from canonical.launchpad.layers import (
     LaunchpadLayer,
@@ -339,6 +347,17 @@ class LaunchpadView(UserAttributeCache):
                     type(info_message))
 
     info_message = property(_getInfoMessage, _setInfoMessage)
+
+    def getCacheJSON(self):
+        if self.user is not None:
+            cache = dict(IJSONRequestCache(self.request).objects)
+        else:
+            cache = dict()
+        if WebLayerAPI(self.context).is_entry:
+            cache['context'] = self.context
+        return simplejson.dumps(
+            cache, cls=ResourceJSONEncoder,
+            media_type=EntryResource.JSON_TYPE)
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):

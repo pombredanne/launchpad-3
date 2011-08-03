@@ -347,7 +347,6 @@ The archive index is also available in in compressed formats.
     Directory: pool/main/a/alsa-utils
     Files:
      01234567890123456789012345678925 3 alsa-utils_1.0.8-1ubuntu1.dsc
-    <BLANKLINE>
 
 Empty fields like are suppressed, like 'Build-Depends' or
 'Build-Depends-Indep' to avoid extra charge on download.
@@ -935,7 +934,6 @@ Generating respective "Packages" stanzas:
     SHA1: 5a04c7b5ea3f0fdbc95d0dd47f3c5bc275da8a33
     Description: Mozilla Firefox Web Browser
      Mozilla Firefox Web Browser is .....
-    <BLANKLINE>
 
     >>> any_file = bpph.files[-1]
     >>> IBinaryPackageFilePublishing.providedBy(any_file)

@@ -299,20 +299,20 @@ class BugComment:
 
         # Don't cache for long if we are waiting for synchronization.
         elif self.bugwatch and not self.synchronized:
-            return 5*60
+            return 5 * 60
 
         # For the rest of the first day, the rendering changes every
         # hour. '4 hours ago'. Expire in 15 minutes so the timestamp
         # is at most 15 minutes out of date.
         elif self.datecreated > now - timedelta(days=1):
-            return 15*60
+            return 15 * 60
 
         # Otherwise, cache away. Lets cache for 6 hours. We don't want
         # to cache for too long as there are still things that can
         # become stale - eg. if a bug attachment has been deleted we
         # should stop rendering the link.
         else:
-            return 6*60*60
+            return 6 * 60 * 60
 
 
 class BugCommentView(LaunchpadView):
@@ -328,10 +328,17 @@ class BugCommentView(LaunchpadView):
     @property
     def show_spam_controls(self):
         return self.comment.show_spam_controls
-    
+
     def page_title(self):
         return 'Comment %d for bug %d' % (
             self.comment.index, self.context.bug.id)
+
+    @property
+    def privacy_notice_classes(self):
+        if not self.context.bug.private:
+            return 'hidden'
+        else:
+            return ''
 
 
 class BugCommentBoxViewMixin:
@@ -340,12 +347,12 @@ class BugCommentBoxViewMixin:
     @property
     def show_spam_controls(self):
         if hasattr(self.context, 'show_spam_controls'):
-           return self.context.show_spam_controls
+            return self.context.show_spam_controls
         elif (hasattr(self, 'comment') and
-           hasattr(self.comment, 'show_spam_controls')):
-           return self.comment.show_spam_controls
+            hasattr(self.comment, 'show_spam_controls')):
+            return self.comment.show_spam_controls
         else:
-           return False
+            return False
 
     def proxiedUrlOfLibraryFileAlias(self, attachment):
         """Return the proxied URL for the Librarian file of the attachment."""

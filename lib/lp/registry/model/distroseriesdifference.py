@@ -20,7 +20,6 @@ from debian.changelog import (
     )
 from lazr.enum import DBItem
 from sqlobject import StringCol
-from storm.exceptions import NotOneError
 from storm.expr import (
     And,
     Column,
@@ -55,7 +54,6 @@ from lp.registry.enum import (
     )
 from lp.registry.errors import (
     DistroSeriesDifferenceError,
-    MultipleParentsForDerivedSeriesError,
     NotADerivedSeriesError,
     )
 from lp.registry.interfaces.distroseriesdifference import (
@@ -367,6 +365,16 @@ def eager_load_dsds(dsds):
         SourcePackageName, dsds, ("source_package_name_id",))
 
 
+def get_comment_with_status_change(status, new_status, comment):
+    # Create a new comment string with the description of the status
+    # change and the given comment string.
+    new_comment = "Ignored: %s => %s" % (
+        status.title, new_status.title)
+    if comment:
+        new_comment = "%s\n\n%s" % (comment, new_comment)
+    return new_comment
+
+
 class DistroSeriesDifference(StormBase):
     """See `DistroSeriesDifference`."""
     implements(IDistroSeriesDifference)
@@ -407,22 +415,13 @@ class DistroSeriesDifference(StormBase):
     base_version = StringCol(dbName='base_version', notNull=False)
 
     @staticmethod
-    def new(derived_series, source_package_name, parent_series=None):
+    def new(derived_series, source_package_name, parent_series):
         """See `IDistroSeriesDifferenceSource`."""
-        # XXX JeroenVermeulen 2011-05-26 bug=758906: Make parent_series
-        # mandatory as part of multi-parent support.
-        if parent_series is None:
-            try:
-                dsps = getUtility(IDistroSeriesParentSet)
-                dsp = dsps.getByDerivedSeries(
-                    derived_series).one()
-            except NotOneError:
-                raise MultipleParentsForDerivedSeriesError()
-            else:
-                if dsp is None:
-                    raise NotADerivedSeriesError()
-                else:
-                    parent_series = dsp.parent_series
+        dsps = getUtility(IDistroSeriesParentSet)
+        dsp = dsps.getByDerivedAndParentSeries(
+            derived_series, parent_series)
+        if dsp is None:
+            raise NotADerivedSeriesError()
 
         store = IMasterStore(DistroSeriesDifference)
         diff = DistroSeriesDifference()
@@ -439,15 +438,10 @@ class DistroSeriesDifference(StormBase):
         return store.add(diff)
 
     @staticmethod
-    def getForDistroSeries(
-        distro_series,
-        difference_type=None,
-        name_filter=None,
-        status=None,
-        child_version_higher=False,
-        parent_series=None,
-        packagesets=None,
-        changed_by=None):
+    def getForDistroSeries(distro_series, difference_type=None,
+                           name_filter=None, status=None,
+                           child_version_higher=False, parent_series=None,
+                           packagesets=None, changed_by=None):
         """See `IDistroSeriesDifferenceSource`."""
         if difference_type is None:
             difference_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
@@ -901,17 +895,29 @@ class DistroSeriesDifference(StormBase):
             DSDComment.distro_series_difference == self)
         return comments.order_by(Desc(DSDComment.id))
 
-    def blacklist(self, all=False):
+    def _getCommentWithStatusChange(self, new_status, comment=None):
+        return get_comment_with_status_change(
+            self.status, new_status, comment)
+
+    def blacklist(self, commenter, all=False, comment=None):
         """See `IDistroSeriesDifference`."""
         if all:
-            self.status = DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS
+            new_status = DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS
         else:
-            self.status = DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT
+            new_status = DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT
+        new_comment = self._getCommentWithStatusChange(new_status, comment)
+        dsd_comment = self.addComment(commenter, new_comment)
+        self.status = new_status
+        return dsd_comment
 
-    def unblacklist(self):
+    def unblacklist(self, commenter, comment=None):
         """See `IDistroSeriesDifference`."""
-        self.status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        new_status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        new_comment = self._getCommentWithStatusChange(new_status, comment)
+        self.status = new_status
+        dsd_comment = self.addComment(commenter, new_comment)
         self.update(manual=True)
+        return dsd_comment
 
     def requestPackageDiffs(self, requestor):
         """See `IDistroSeriesDifference`."""

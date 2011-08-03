@@ -6,17 +6,19 @@
 __metaclass__ = type
 
 import transaction
-from zope.component import getUtility
 
 from canonical.launchpad.testing.pages import (
     LaunchpadWebServiceCaller,
     webservice_for_person,
     )
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.servers import WebServiceTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.webservice.marshallers import TextFieldMarshaller
-from lp.testing import logout, TestCaseWithFactory
+from lp.testing import (
+    logout,
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 
 
 def ws_url(bug):
@@ -28,28 +30,17 @@ class TestTextFieldMarshaller(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def _makeRequest(self, is_anonymous):
-        """Create either an anonymous or authenticated request."""
-        request = WebServiceTestRequest()
-        if is_anonymous:
-            request.setPrincipal(
-                getUtility(IPlacelessAuthUtility).unauthenticatedPrincipal())
-        else:
-            request.setPrincipal(self.factory.makePerson())
-        return request
-
     def test_unmarshall_obfuscated(self):
-        # Data is obfuccated if the request is anonynous.
-        request = self._makeRequest(is_anonymous=True)
-        marshaller = TextFieldMarshaller(None, request)
+        # Data is obfuscated if the user is anonynous.
+        marshaller = TextFieldMarshaller(None, WebServiceTestRequest())
         result = marshaller.unmarshall(None, u"foo@example.com")
         self.assertEqual(u"<email address hidden>", result)
 
     def test_unmarshall_not_obfuscated(self):
-        # Data is not obfuccated if the request is authenticated.
-        request = self._makeRequest(is_anonymous=False)
-        marshaller = TextFieldMarshaller(None, request)
-        result = marshaller.unmarshall(None, u"foo@example.com")
+        # Data is not obfuccated if the user is authenticated.
+        marshaller = TextFieldMarshaller(None, WebServiceTestRequest())
+        with person_logged_in(self.factory.makePerson()):
+            result = marshaller.unmarshall(None, u"foo@example.com")
         self.assertEqual(u"foo@example.com", result)
 
 
