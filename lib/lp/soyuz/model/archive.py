@@ -2083,7 +2083,7 @@ class ArchiveSet:
 
     def new(self, purpose, owner, name=None, displayname=None,
             distribution=None, description=None, enabled=True,
-            require_virtualized=True):
+            require_virtualized=True, private=False):
         """See `IArchiveSet`."""
         if distribution is None:
             distribution = getUtility(ILaunchpadCelebrities).ubuntu
@@ -2157,6 +2157,8 @@ class ArchiveSet:
             new_archive.buildd_secret = create_unique_token_for_table(
                 20, Archive.buildd_secret)
             new_archive.private = True
+        else:
+            new_archive.private = private
 
         return new_archive
 
