@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,7 +9,13 @@ import lazr.batchnavigator
 from lazr.batchnavigator.interfaces import IRangeFactory
 import simplejson
 from storm import Undef
-from storm.expr import Desc
+from storm.expr import (
+    And,
+    compile,
+    Desc,
+    Or,
+    SQL,
+    )
 from storm.properties import PropertyColumn
 from storm.zope.interfaces import IResultSet
 from zope.component import adapts
@@ -22,6 +28,7 @@ from zope.security.proxy import (
     )
 
 from canonical.config import config
+from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
@@ -175,6 +182,10 @@ class StormRangeFactory:
           store.find(Bug, Bug.id < 10)
 
       works.
+
+    Note: This factory assumes that the result set is fully sorted,
+    i.e. that the set of the column values used for sorting is
+    distinct for each result row.
     """
     implements(IRangeFactory)
 
@@ -194,7 +205,7 @@ class StormRangeFactory:
             self.plain_resultset = resultset
         self.error_cb = error_cb
 
-    def getSortExpressions(self):
+    def getOrderBy(self):
         """Return the order_by expressions of the result set."""
         return removeSecurityProxy(self.plain_resultset)._order_by
 
@@ -204,7 +215,7 @@ class StormRangeFactory:
         sort_values = []
         if not zope_isinstance(row, tuple):
             row = (row, )
-        sort_expressions = self.getSortExpressions()
+        sort_expressions = self.getOrderBy()
         if sort_expressions is Undef:
             raise StormRangeFactoryError(
                 'StormRangeFactory requires a sorted result set.')
@@ -213,7 +224,7 @@ class StormRangeFactory:
                 expression = expression.expr
             if not zope_isinstance(expression, PropertyColumn):
                 raise StormRangeFactoryError(
-                    'StormRangeFactory supports only sorting by '
+                    'StormRangeFactory only supports sorting by '
                     'PropertyColumn, not by %r.' % expression)
             class_instance_found = False
             for row_part in row:
@@ -267,7 +278,7 @@ class StormRangeFactory:
                 'memo must be the JSON representation of a list.')
             return None
 
-        sort_expressions = self.getSortExpressions()
+        sort_expressions = self.getOrderBy()
         if len(sort_expressions) != len(parsed_memo):
             self.reportError(
                 'Invalid number of elements in memo string. '
@@ -323,17 +334,103 @@ class StormRangeFactory:
 
         return [
             invert_sort_expression(expression)
-            for expression in self.getSortExpressions()]
+            for expression in self.getOrderBy()]
 
-    def whereExpressionFromSortExpression(self, expression, memo):
-        """Create a Storm expression to be used in the WHERE clause of the
-        slice query.
+    def andClausesForLeadingColumns(self, limits):
+        def plain_expression(expression):
+            # Strip a possible Desc from an expression.
+            if isinstance(expression, Desc):
+                return expression.expr
+            else:
+                return expression
+        return [plain_expression(column) == memo for column, memo in limits]
+
+    def genericWhereExpressions(self, limits):
+        """Generate WHERE expressions for the given sort columns and
+        memos values.
+
+        :return: A list of where expressions which should be OR-ed
+        :param limits: A sequence of (column, mem_value) tuples.
+
+        Note that the result set may be ordered by more than one column.
+        Given the sort columns c[1], c[2] ... c[N] and assuming ascending
+        sorting, we must look for all rows where
+          * c[1] == memo[1], c[2] == memo[2] ... c[N-1] == memo[N-1] and
+            c[N] > memo[N]
+          * c[1] == memo[1], c[2] == memo[2] ... c[N-2] == memo[N-2] and
+            c[N-1] > memo[N-1]
+          ...
+          * c[1] == memo[1], c[2] > memo[2]
+          * c[1] > memo[1]
         """
-        if isinstance(expression, Desc):
-            expression = expression.expr
-            return expression < memo
+        start = limits[:-1]
+        last_expression, last_memo = limits[-1]
+        if isinstance(last_expression, Desc):
+            last_expression = last_expression.expr
+            last_limit = last_expression < last_memo
         else:
-            return expression > memo
+            last_limit = last_expression > last_memo
+        if len(start) > 0:
+            clauses = self.andClausesForLeadingColumns(start)
+            clauses.append(last_limit)
+            clause_for_last_column = reduce(And, clauses)
+            return (
+                [clause_for_last_column]
+                + self.genericWhereExpressions(start))
+        else:
+            return [last_limit]
+
+    def whereExpressions(self, sort_expressions, memos):
+        """WHERE expressions for the given sort columns and memos values."""
+        expression = sort_expressions[0]
+        descending = isinstance(expression, Desc)
+        consistent = True
+        for expression in sort_expressions[1:]:
+            if isinstance(expression, Desc) != descending:
+                consistent = False
+                break
+        if not consistent or len(sort_expressions) == 1:
+            return self.genericWhereExpressions(zip(sort_expressions, memos))
+
+        # If the columns are sorted either only ascending or only
+        # descending, we can specify a single WHERE condition
+        # (col1, col2...) > (memo1, memo2...)
+        if descending:
+            sort_expressions = [
+                expression.expr for expression in sort_expressions]
+        sort_expressions = map(compile, sort_expressions)
+        sort_expressions = ', '.join(sort_expressions)
+        memos = sqlvalues(*memos)
+        memos = ', '.join(memos)
+        if descending:
+            return [SQL('(%s) < (%s)' % (sort_expressions, memos))]
+        else:
+            return [SQL('(%s) > (%s)' % (sort_expressions, memos))]
+
+    def getSliceFromMemo(self, size, memo):
+        """Return a result set for the given memo values.
+
+        Note that at least two other implementations are possible:
+        Instead of OR-combining the expressions returned by
+        whereExpressions(), these expressions could be used for
+        separate SELECTs which are then merged with UNION ALL.
+
+        We could also issue separate Storm queries for each
+        expression and combine the results here.
+
+        Which variant is more efficient is yet unknown; it may
+        differ between different queries.
+        """
+        sort_expressions = self.getOrderBy()
+        where = self.whereExpressions(sort_expressions, memo)
+        where = reduce(Or, where)
+        # From storm.zope.interfaces.IResultSet.__doc__:
+        #     - C{find()}, C{group_by()} and C{having()} are really
+        #       used to configure result sets, so are mostly intended
+        #       for use on the model side.
+        naked_result = removeSecurityProxy(self.resultset).find(where)
+        result = ProxyFactory(naked_result)
+        return result.config(limit=size)
 
     def getSlice(self, size, endpoint_memo='', forwards=True):
         """See `IRangeFactory`."""
@@ -343,14 +440,4 @@ class StormRangeFactory:
         if parsed_memo is None:
             return self.resultset.config(limit=size)
         else:
-            sort_expressions = self.getSortExpressions()
-            where = [
-                self.whereExpressionFromSortExpression(expression, memo)
-                for expression, memo in zip(sort_expressions, parsed_memo)]
-            # From storm.zope.interfaces.IResultSet.__doc__:
-            #     - C{find()}, C{group_by()} and C{having()} are really
-            #       used to configure result sets, so are mostly intended
-            #       for use on the model side.
-            naked_result = removeSecurityProxy(self.resultset).find(*where)
-            result = ProxyFactory(naked_result)
-            return result.config(limit=size)
+            return self.getSliceFromMemo(size, parsed_memo)

@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 
-import cgi
 from testtools.matchers import Not
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -81,7 +80,7 @@ class TestFeatureControlPage(BrowserTestCase):
         browser = self.getUserBrowserAsAdmin()
         browser.open(self.getFeatureInfoUrl())
         for pattern in [handler.pattern for handler in HANDLERS]:
-            self.assertThat(browser.contents, Contains(cgi.escape(pattern)))
+            self.assertThat(browser.contents, Contains(pattern))
 
     def test_undocumented_features_displayed(self):
         """The undocumented feature flag names are displayed on the page."""
