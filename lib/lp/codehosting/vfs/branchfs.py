@@ -105,7 +105,10 @@ from lp.code.interfaces.codehosting import (
     CONTROL_TRANSPORT,
     LAUNCHPAD_SERVICES,
     )
-from lp.codehosting.bzrutils import get_stacked_on_url
+from lp.codehosting.bzrutils import (
+    get_branch_info,
+    get_stacked_on_url,
+    )
 from lp.codehosting.vfs.branchfsclient import (
     BranchFileSystemClient,
     )
@@ -689,23 +692,16 @@ class LaunchpadServer(_BaseLaunchpadServer):
             try:
                 branch = BzrDir.open_from_transport(transport).open_branch(
                     ignore_fallbacks=True)
-                last_revision = branch.last_revision()
-                stacked_on_url = self._normalize_stacked_on_url(branch)
-                # XXX: Aaron Bentley 2008-06-13
-                # Bazaar does not provide a public API for learning about
-                # format markers.  Fix this in Bazaar, then here.
-                control_string = branch.bzrdir._format.get_format_string()
-                branch_string = branch._format.get_format_string()
-                repository_string = \
-                    branch.repository._format.get_format_string()
+                info = get_branch_info(branch)
+                info['stacked_on_url'] = (
+                    self._normalize_stacked_on_url(branch))
             finally:
                 if jail_info.transports:
                     jail_info.transports.remove(transport)
-            if stacked_on_url is None:
-                stacked_on_url = ''
+            if info['stacked_on_url'] is None:
+                info['stacked_on_url'] = ''
             return self._branchfs_client.branchChanged(
-                data['id'], stacked_on_url, last_revision,
-                control_string, branch_string, repository_string)
+                data['id'], **info)
 
         @no_traceback_failures
         def handle_error(failure=None, **kw):

@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = []
 
 import subprocess
-import sys
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
 
@@ -168,7 +167,7 @@ def execute_slonik(script, sync=None, exit_on_fail=True, auto_preamble=True):
                  block indefinitely.
 
     :param exit_on_fail: If True, on failure of the slonik script
-                         sys.exit is invoked using the slonik return code.
+                         SystemExit is raised using the slonik return code.
 
     :param auto_preamble: If True, the generated preamble will be
                           automatically included.
@@ -205,7 +204,7 @@ def execute_slonik(script, sync=None, exit_on_fail=True, auto_preamble=True):
     if returncode != 0:
         log.error("slonik script failed")
         if exit_on_fail:
-            sys.exit(1)
+            raise SystemExit(1)
 
     return returncode == 0
 
@@ -473,6 +472,15 @@ def discover_unreplicated(cur):
     all_tables = all_tables_in_schema(cur, 'public')
     all_sequences = all_sequences_in_schema(cur, 'public')
 
+    # Ignore any tables and sequences starting with temp_. These are
+    # transient and not to be replicated per Bug #778338.
+    all_tables = set(
+        table for table in all_tables
+            if not table.startswith('public.temp_'))
+    all_sequences = set(
+        sequence for sequence in all_sequences
+            if not sequence.startswith('public.temp_'))
+
     cur.execute("""
         SELECT tab_nspname, tab_relname FROM %s
         WHERE tab_nspname = 'public'
@@ -517,4 +525,3 @@ def validate_replication(cur):
 
     lpmain_tables, lpmain_sequences = calculate_replication_set(
         cur, LPMAIN_SEED)
-

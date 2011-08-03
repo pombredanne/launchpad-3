@@ -4,11 +4,12 @@
 __metaclass__ = type
 
 __all__ = [
-    'distribution_from_distributionsourcepackage',
+    'DistributionSourcePackageAnswersMenu',
     'DistributionSourcePackageBreadcrumb',
     'DistributionSourcePackageChangelogView',
     'DistributionSourcePackageEditView',
     'DistributionSourcePackageFacets',
+    'DistributionSourcePackageHelpView',
     'DistributionSourcePackageNavigation',
     'DistributionSourcePackageOverviewMenu',
     'DistributionSourcePackagePublishingHistoryView',
@@ -20,13 +21,13 @@ import itertools
 import operator
 
 from lazr.delegates import delegates
+from lazr.restful.interfaces import IJSONRequestCache
 import pytz
 from zope.component import (
     adapter,
     getUtility,
     )
 from zope.interface import (
-    implementer,
     implements,
     Interface,
     )
@@ -52,11 +53,16 @@ from canonical.launchpad.webapp.menu import (
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
 from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import (
+    QuestionTargetAnswersMenu,
     QuestionTargetFacetMixin,
     QuestionTargetTraversalMixin,
     )
 from lp.answers.enums import QuestionStatus
 from lp.app.browser.tales import CustomizableFormatter
+from lp.app.browser.stringformatter import (
+    extract_bug_numbers,
+    extract_email_addresses,
+    )
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import IServiceUsage
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
@@ -75,8 +81,6 @@ from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.series import SeriesStatus
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.sourcepackagerelease import (
-    extract_bug_numbers,
-    extract_email_addresses,
     linkify_changelog,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
@@ -111,17 +115,27 @@ class DistributionSourcePackageBreadcrumb(Breadcrumb):
             self.context.sourcepackagename.name)
 
 
-@adapter(IDistributionSourcePackage)
-@implementer(IServiceUsage)
-def distribution_from_distributionsourcepackage(dsp):
-    return dsp.distribution
-
-
 class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
                                       StandardLaunchpadFacets):
 
     usedfor = IDistributionSourcePackage
     enable_only = ['overview', 'bugs', 'answers', 'branches']
+
+    def overview(self):
+        text = 'Overview'
+        summary = 'General information about {0}'.format(
+            self.context.displayname)
+        return Link('', text, summary)
+
+    def bugs(self):
+        text = 'Bugs'
+        summary = 'Bugs reported about {0}'.format(self.context.displayname)
+        return Link('', text, summary)
+
+    def branches(self):
+        text = 'Code'
+        summary = 'Branches for {0}'.format(self.context.displayname)
+        return Link('', text, summary)
 
 
 class DistributionSourcePackageLinksMixin:
@@ -168,6 +182,17 @@ class DistributionSourcePackageBugsMenu(
         links = ['filebug']
         add_subscribe_link(links)
         return links
+
+
+class DistributionSourcePackageAnswersMenu(QuestionTargetAnswersMenu):
+
+    usedfor = IDistributionSourcePackage
+    facet = 'answers'
+
+    links = QuestionTargetAnswersMenu.links + ['gethelp']
+
+    def gethelp(self):
+        return Link('+gethelp', 'Help and support options', icon='info')
 
 
 class DistributionSourcePackageNavigation(Navigation,
@@ -246,7 +271,7 @@ class DistributionSourcePackageActionMenu(
         return Link('+changelog', text, icon="info")
 
 
-class DistributionSourcePackageBaseView:
+class DistributionSourcePackageBaseView(LaunchpadView):
     """Common features to all `DistributionSourcePackage` views."""
 
     def releases(self):
@@ -312,6 +337,10 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
         super(DistributionSourcePackageView, self).initialize()
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
+        IJSONRequestCache(self.request).objects['archive_context_url'] = (
+            canonical_url(
+                self.context.latest_overall_publication.archive,
+                path_only_if_possible=True))
 
     @property
     def label(self):
@@ -600,3 +629,9 @@ class DistributionSourcePackageEditView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
     cancel_url = next_url
+
+
+class DistributionSourcePackageHelpView(LaunchpadView):
+    """A View to show Answers help."""
+
+    page_title = 'Help and support options'

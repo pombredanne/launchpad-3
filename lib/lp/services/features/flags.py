@@ -24,11 +24,30 @@ value_domain_info = sorted([
      'Any non-empty value is true; an empty value is false.'),
     ('float',
      'The flag value is set to the given floating point number.'),
+    ('int',
+     "An integer."),
+    ('space delimited',
+     'Space-delimited strings.')
     ])
 
-# This table of flag name, value domain, and prose documentation is used to
-# generate the web-visible feature flag documentation.
+# Data for generating web-visible feature flag documentation.
+#
+# Entries for each flag are:
+# flag name, value domain, prose documentation, default behaviour.
+#
+# Value domain as in value_domain_info above.
+#
+# NOTE: "default behaviour" does not specify a default value.  It
+# merely documents the code's behaviour if no value is specified.
 flag_info = sorted([
+    ('bugs.bugtracker_components.enabled',
+     'boolean',
+     ('Enables the display of bugtracker components.'),
+     ''),
+    ('code.ajax_revision_diffs.enabled',
+     'boolean',
+     ("Offer expandable inline diffs for branch revisions."),
+     ''),
     ('code.branchmergequeue',
      'boolean',
      'Enables merge queue pages and lists them on branch pages.',
@@ -45,14 +64,6 @@ flag_info = sorted([
      'boolean',
      'Disable DKIM authentication checks on incoming mail.',
      ''),
-    ('malone.advanced-subscriptions.enabled',
-     'boolean',
-     'Enables advanced bug subscription features.',
-     ''),
-    ('malone.advanced-structural-subscriptions.enabled',
-     'boolean',
-     'Enables advanced structural subscriptions',
-     ''),
     ('malone.disable_targetnamesearch',
      'boolean',
      'If true, disables consultation of target names during bug text search.',
@@ -65,13 +76,21 @@ flag_info = sorted([
      'boolean',
      'Overrides config.profiling.profiling_allowed to permit profiling.',
      ''),
-    ('soyuz.derived-series-ui.enabled',
+    ('soyuz.derived_series.max_synchronous_syncs',
+     'int',
+     "How many package syncs may be done directly in a web request.",
+     '100'),
+    ('soyuz.derived_series_ui.enabled',
      'boolean',
      'Enables derivative distributions pages.',
      ''),
-    ('soyuz.derived-series-sync.enabled',
+    ('soyuz.derived_series_sync.enabled',
      'boolean',
      'Enables syncing of packages on derivative distributions pages.',
+     ''),
+    ('soyuz.derived_series_upgrade.enabled',
+     'boolean',
+     'Enables mass-upgrade of packages on derivative distributions pages.',
      ''),
     ('soyuz.derived_series_jobs.enabled',
      'boolean',
@@ -89,6 +108,26 @@ flag_info = sorted([
      'boolean',
      'Changes the appearance of notifications on private bugs.',
      ''),
+    ('disclosure.picker_enhancements.enabled',
+     'boolean',
+     ('Enables the display of extra details in the person picker.'),
+     ''),
+    ('disclosure.person_affiliation_rank.enabled',
+     'boolean',
+     ('Enables ranking by pillar affiliation in the person picker.'),
+     ''),
+    ('bugs.autoconfirm.enabled_distribution_names',
+     'space delimited',
+     ('Enables auto-confirming bugtasks for distributions (and their '
+      'series and packages).  Use the default domain.  Specify a single '
+      'asterisk ("*") to enable for all distributions.'),
+     'None are enabled'),
+    ('bugs.autoconfirm.enabled_product_names',
+     'space delimited',
+     ('Enables auto-confirming bugtasks for products (and their '
+      'series).  Use the default domain.  Specify a single '
+      'asterisk ("*") to enable for all products.'),
+     'None are enabled'),
     ])
 
 # The set of all flag names that are documented.

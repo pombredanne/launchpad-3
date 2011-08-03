@@ -33,7 +33,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from urlparse import urlparse
 
 import pytz
 from sqlobject import SQLObjectNotFound
@@ -60,9 +59,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import FileNavigationMixin
-from canonical.launchpad.components.tokens import create_token
 from canonical.launchpad.helpers import english_list
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
     canonical_url,
     enabled_with_permission,
@@ -74,7 +71,10 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.badge import HasBadgeBase
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.launchpad.webapp.interfaces import (
+    ICanonicalUrlData,
+    IStructuredString,
+    )
 from canonical.launchpad.webapp.menu import (
     NavigationMenu,
     structured,
@@ -91,6 +91,7 @@ from lp.app.browser.lazrjs import (
     TextLineEditorWidget,
     )
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import (
     LabeledMultiCheckBoxWidget,
     LaunchpadDropdownWidget,
@@ -108,6 +109,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.browser_helpers import get_user_agent_distroseries
 from lp.services.database.bulk import load
+from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountrySet
 from lp.soyuz.adapters.archivedependencies import (
@@ -121,29 +123,30 @@ from lp.soyuz.browser.build import (
     BuildNavigationMixin,
     BuildRecordsView,
     )
-from lp.soyuz.browser.sourceslist import (
-    SourcesListEntries,
-    SourcesListEntriesView,
-    )
+from lp.soyuz.browser.sourceslist import SourcesListEntriesWidget
 from lp.soyuz.browser.widgets.archive import PPANameWidget
 from lp.soyuz.enums import (
     ArchivePermissionType,
     ArchivePurpose,
     ArchiveStatus,
+    PackageCopyPolicy,
     PackagePublishingStatus,
     )
 from lp.soyuz.interfaces.archive import (
+    ArchiveDependencyError,
     CannotCopy,
     IArchive,
     IArchiveEditDependenciesForm,
     IArchiveSet,
     NoSuchPPA,
+    validate_external_dependencies,
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.interfaces.binarypackagebuild import BuildSetStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
@@ -158,7 +161,16 @@ from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
     )
-from lp.soyuz.scripts.packagecopier import do_copy
+from lp.soyuz.scripts.packagecopier import (
+    check_copy_permissions,
+    do_copy,
+    )
+
+# Feature flag: up to how many package sync requests (inclusive) are to be
+# processed synchronously within the web request?
+# Set to -1 to disable synchronous syncs.
+FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS = (
+    'soyuz.derived_series.max_synchronous_syncs')
 
 
 class ArchiveBadges(HasBadgeBase):
@@ -548,7 +560,7 @@ class ArchivePackagesActionMenu(NavigationMenu, ArchiveMenuMixin):
     links = ['copy', 'delete']
 
 
-class ArchiveViewBase(LaunchpadView):
+class ArchiveViewBase(LaunchpadView, SourcesListEntriesWidget):
     """Common features for Archive view classes."""
 
     def initialize(self):
@@ -568,20 +580,13 @@ class ArchiveViewBase(LaunchpadView):
                     "being dispatched.")
             self.request.response.addNotification(structured(notification))
         super(ArchiveViewBase, self).initialize()
+        # Set the archive attribute so SourcesListEntriesWidget can be built
+        # correctly.
+        self.archive = self.context
 
     @cachedproperty
     def private(self):
         return self.context.private
-
-    @cachedproperty
-    def has_sources(self):
-        """Whether or not this PPA has any sources for the view.
-
-        This can be overridden by subclasses as necessary. It allows
-        the view to determine whether to display "This PPA does not yet
-        have any published sources" or "No sources matching 'blah'."
-        """
-        return not self.context.getPublishedSources().is_empty()
 
     @cachedproperty
     def repository_usage(self):
@@ -631,14 +636,6 @@ class ArchiveViewBase(LaunchpadView):
             used_percentage=used_percentage,
             used_css_class=used_css_class,
             quota=quota)
-
-    @property
-    def archive_url(self):
-        """Return an archive_url where available, or None."""
-        if self.has_sources and not self.context.is_copy:
-            return self.context.archive_url
-        else:
-            return None
 
     @property
     def archive_label(self):
@@ -887,14 +884,6 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
         display_name = IArchive['displayname']
         title = "Edit the displayname"
         return TextLineEditorWidget(self.context, display_name, title, 'h1')
-
-    @property
-    def sources_list_entries(self):
-        """Setup and return the source list entries widget."""
-        entries = SourcesListEntries(
-            self.context.distribution, self.archive_url,
-            self.context.series_with_sources)
-        return SourcesListEntriesView(entries, self.request)
 
     @property
     def default_series_filter(self):
@@ -1214,14 +1203,141 @@ class DestinationSeriesDropdownWidget(LaunchpadDropdownWidget):
     _messageNoValue = _("vocabulary-copy-to-same-series", "The same series")
 
 
+def preload_binary_package_names(copies):
+    """Preload `BinaryPackageName`s to speed up display-name construction."""
+    bpn_ids = [
+        copy.binarypackagerelease.binarypackagenameID for copy in copies
+        if isinstance(copy, BinaryPackagePublishingHistory)]
+    load(BinaryPackageName, bpn_ids)
+
+
+def compose_synchronous_copy_feedback(copies, dest_archive, dest_url=None,
+                                      dest_display_name=None):
+    """Compose human-readable feedback after a synchronous copy."""
+    if dest_url is None:
+        dest_url = escape(
+            canonical_url(dest_archive) + '/+packages', quote=True)
+
+    if dest_display_name is None:
+        dest_display_name = escape(dest_archive.displayname)
+
+    if len(copies) == 0:
+        return structured(
+            '<p>All packages already copied to <a href="%s">%s</a>.</p>'
+            % (dest_url, dest_display_name))
+    else:
+        messages = []
+        messages.append(
+            '<p>Packages copied to <a href="%s">%s</a>:</p>'
+            % (dest_url, dest_display_name))
+        messages.append('<ul>')
+        messages.append("\n".join([
+            '<li>%s</li>' % escape(copy) for copy in copies]))
+        messages.append('</ul>')
+        return structured("\n".join(messages))
+
+
+def copy_synchronously(source_pubs, dest_archive, dest_series, dest_pocket,
+                       include_binaries, dest_url=None,
+                       dest_display_name=None, person=None,
+                       check_permissions=True):
+    """Copy packages right now.
+
+    :return: A `structured` with human-readable feedback about the
+        operation.
+    :raises CannotCopy: If `check_permissions` is True and the copy is
+        not permitted.
+    """
+    copies = do_copy(
+        source_pubs, dest_archive, dest_series, dest_pocket, include_binaries,
+        allow_delayed_copies=True, person=person,
+        check_permissions=check_permissions)
+
+    preload_binary_package_names(copies)
+
+    return compose_synchronous_copy_feedback(
+        [copy.displayname for copy in copies], dest_archive, dest_url,
+        dest_display_name)
+
+
+def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
+                        include_binaries, dest_url=None,
+                        dest_display_name=None, person=None,
+                        check_permissions=True):
+    """Schedule jobs to copy packages later.
+
+    :return: A `structured` with human-readable feedback about the
+        operation.
+    :raises CannotCopy: If `check_permissions` is True and the copy is
+        not permitted.
+    """
+    if check_permissions:
+        spns = [
+            spph.sourcepackagerelease.sourcepackagename
+            for spph in source_pubs]
+        check_copy_permissions(
+            person, dest_archive, dest_series, dest_pocket, spns)
+
+    job_source = getUtility(IPlainPackageCopyJobSource)
+    for spph in source_pubs:
+        job_source.create(
+            spph.source_package_name, spph.archive, dest_archive, dest_series,
+            dest_pocket, include_binaries=include_binaries,
+            package_version=spph.sourcepackagerelease.version,
+            copy_policy=PackageCopyPolicy.INSECURE,
+            requester=person)
+
+    return structured("""
+        <p>Requested sync of %s packages.</p>
+        <p>Please allow some time for these to be processed.</p>
+        """, len(source_pubs))
+
+
+def render_cannotcopy_as_html(cannotcopy_exception):
+    """Render `CannotCopy` exception as HTML for display in the page."""
+    error_lines = str(cannotcopy_exception).splitlines()
+
+    if len(error_lines) == 1:
+        intro = "The following source cannot be copied:"
+    else:
+        intro = "The following sources cannot be copied:"
+
+    # Produce structured HTML.  Include <li>%s</li> placeholders for
+    # each error line, but have "structured" interpolate the actual
+    # package names.  It will escape them as needed.
+    html_text = """
+        <p>%s</p>
+        <ul>
+        %s
+        </ul>
+        """ % (intro, "<li>%s</li>" * len(error_lines))
+    return structured(html_text, *error_lines)
+
+
 class PackageCopyingMixin:
     """A mixin class that adds helpers for package copying."""
+
+    def canCopySynchronously(self, source_pubs):
+        """Can we afford to copy `source_pubs` synchronously?"""
+        # Fixed estimate: up to 100 packages can be copied in acceptable
+        # time.  Anything more than that and we go async.
+        limit = getFeatureFlag(FEATURE_FLAG_MAX_SYNCHRONOUS_SYNCS)
+        try:
+            limit = int(limit)
+        except:
+            limit = 100
+
+        return len(source_pubs) <= limit
 
     def do_copy(self, sources_field_name, source_pubs, dest_archive,
                 dest_series, dest_pocket, include_binaries,
                 dest_url=None, dest_display_name=None, person=None,
-                check_permissions=True):
+                check_permissions=True, force_async=False):
         """Copy packages and add appropriate feedback to the browser page.
+
+        This may either copy synchronously, if there are few enough
+        requests to process right now; or asynchronously in which case
+        it will schedule jobs that will be processed by a script.
 
         :param sources_field_name: The name of the form field to set errors
             on when the copy fails
@@ -1240,65 +1356,31 @@ class PackageCopyingMixin:
         :param person: The person requesting the copy.
         :param: check_permissions: boolean indicating whether or not the
             requester's permissions to copy should be checked.
+        :param force_async: Force the copy to create package copy jobs and
+            perform the copy asynchronously.
 
         :return: True if the copying worked, False otherwise.
         """
         try:
-            copies = do_copy(
-                source_pubs, dest_archive, dest_series,
-                dest_pocket, include_binaries, allow_delayed_copies=True,
-                person=person, check_permissions=check_permissions)
-        except CannotCopy, error:
-            messages = []
-            error_lines = str(error).splitlines()
-            if len(error_lines) == 1:
-                messages.append(
-                    "<p>The following source cannot be copied:</p>")
+            if (force_async == False and
+                    self.canCopySynchronously(source_pubs)):
+                notification = copy_synchronously(
+                    source_pubs, dest_archive, dest_series, dest_pocket,
+                    include_binaries, dest_url=dest_url,
+                    dest_display_name=dest_display_name, person=person,
+                    check_permissions=check_permissions)
             else:
-                messages.append(
-                    "<p>The following sources cannot be copied:</p>")
-            messages.append('<ul>')
-            messages.append(
-                "\n".join('<li>%s</li>' % escape(line)
-                    for line in error_lines))
-            messages.append('</ul>')
-
+                notification = copy_asynchronously(
+                    source_pubs, dest_archive, dest_series, dest_pocket,
+                    include_binaries, dest_url=dest_url,
+                    dest_display_name=dest_display_name, person=person,
+                    check_permissions=check_permissions)
+        except CannotCopy, error:
             self.setFieldError(
-                sources_field_name, structured('\n'.join(messages)))
+                sources_field_name, render_cannotcopy_as_html(error))
             return False
 
-        # Preload BPNs to save queries when calculating display names.
-        load(BinaryPackageName, (
-            copy.binarypackagerelease.binarypackagenameID for copy in copies
-            if isinstance(copy, BinaryPackagePublishingHistory)))
-
-        # Present a page notification describing the action.
-        messages = []
-        if dest_url is None:
-            dest_url = escape(
-                canonical_url(dest_archive) + '/+packages',
-                quote=True)
-        if dest_display_name is None:
-            dest_display_name = escape(dest_archive.displayname)
-        if len(copies) == 0:
-            messages.append(
-                '<p>All packages already copied to '
-                '<a href="%s">%s</a>.</p>' % (
-                    dest_url,
-                    dest_display_name))
-        else:
-            messages.append(
-                '<p>Packages copied to <a href="%s">%s</a>:</p>' % (
-                    dest_url,
-                    dest_display_name))
-            messages.append('<ul>')
-            messages.append(
-                "\n".join(['<li>%s</li>' % escape(copy.displayname)
-                           for copy in copies]))
-            messages.append('</ul>')
-
-        notification = "\n".join(messages)
-        self.request.response.addNotification(structured(notification))
+        self.request.response.addNotification(notification)
         return True
 
 
@@ -1306,7 +1388,7 @@ def make_archive_vocabulary(archives):
     terms = []
     for archive in archives:
         token = '%s/%s' % (archive.owner.name, archive.name)
-        label = '%s (%s)' % (archive.displayname, token)
+        label = archive.displayname
         terms.append(SimpleTerm(archive, token, label))
     return SimpleVocabulary(terms)
 
@@ -1472,6 +1554,14 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView,
             # The copy worked so we can redirect back to the page to
             # show the result.
             self.setNextURL()
+
+
+def get_escapedtext(message):
+    """Return escapedtext if message is an `IStructuredString`."""
+    if IStructuredString.providedBy(message):
+        return message.escapedtext
+    else:
+        return message
 
 
 class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
@@ -1670,7 +1760,7 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
 
     @property
     def messages(self):
-        return '\n'.join(self._messages)
+        return '\n'.join(map(get_escapedtext, self._messages))
 
     def _remove_dependencies(self, data):
         """Perform the removal of the selected dependencies."""
@@ -1686,7 +1776,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         # Present a page notification describing the action.
         self._messages.append('<p>Dependencies removed:')
         for dependency in selected_dependencies:
-            self._messages.append('<br/>%s' % dependency.displayname)
+            self._messages.append(
+                structured('<br/>%s', dependency.displayname))
         self._messages.append('</p>')
 
     def _add_ppa_dependencies(self, data):
@@ -1699,8 +1790,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
             dependency_candidate, PackagePublishingPocket.RELEASE,
             getUtility(IComponentSet)['main'])
 
-        self._messages.append(
-            '<p>Dependency added: %s</p>' % dependency_candidate.displayname)
+        self._messages.append(structured(
+            '<p>Dependency added: %s</p>', dependency_candidate.displayname))
 
     def _add_primary_dependencies(self, data):
         """Record the selected dependency."""
@@ -1745,47 +1836,8 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         primary_dependency = self.context.addArchiveDependency(
             self.context.distribution.main_archive, dependency_pocket,
             dependency_component)
-        self._messages.append(
-            '<p>Primary dependency added: %s</p>' % primary_dependency.title)
-
-    def validate(self, data):
-        """Validate dependency configuration changes.
-
-        Skip checks if no dependency candidate was sent in the form.
-
-        Validate if the requested PPA dependency is sane (different than
-        the context PPA and not yet registered).
-
-        Also check if the dependency candidate is private, if so, it can
-        only be set if the user has 'launchpad.View' permission on it and
-        the context PPA is also private (this way P3A credentials will be
-        sanitized from buildlogs).
-        """
-        dependency_candidate = data.get('dependency_candidate')
-
-        if dependency_candidate is None:
-            return
-
-        if dependency_candidate == self.context:
-            self.setFieldError('dependency_candidate',
-                               "An archive should not depend on itself.")
-            return
-
-        if self.context.getArchiveDependency(dependency_candidate):
-            self.setFieldError('dependency_candidate',
-                               "This dependency is already registered.")
-            return
-
-        if not check_permission('launchpad.View', dependency_candidate):
-            self.setFieldError(
-                'dependency_candidate',
-                "You don't have permission to use this dependency.")
-            return
-
-        if dependency_candidate.private and not self.context.private:
-            self.setFieldError(
-                'dependency_candidate',
-                "Public PPAs cannot depend on private ones.")
+        self._messages.append(structured(
+            '<p>Primary dependency added: %s</p>', primary_dependency.title))
 
     @action(_("Save"), name="save")
     def save_action(self, action, data):
@@ -1798,18 +1850,21 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
         refreshing. And render a page notification with the summary of the
         changes made.
         """
-        # Redirect after POST.
-        self.next_url = self.request.URL
-
         # Process the form.
         self._add_primary_dependencies(data)
-        self._add_ppa_dependencies(data)
+        try:
+            self._add_ppa_dependencies(data)
+        except ArchiveDependencyError as e:
+            self.setFieldError('dependency_candidate', str(e))
+            return
         self._remove_dependencies(data)
 
         # Issue a notification if anything was changed.
         if len(self.messages) > 0:
             self.request.response.addNotification(
                 structured(self.messages))
+        # Redirect after POST.
+        self.next_url = self.request.URL
 
 
 class ArchiveActivateView(LaunchpadFormView):
@@ -1978,8 +2033,8 @@ class ArchiveAdminView(BaseArchiveEditView):
         archive as private, generate a secret for them.
         """
         if data['private'] and data['buildd_secret'] is None:
-            # buildd secrets are only used by builders, autogenerate one.
-            self.context.buildd_secret = create_token(16)
+            # The buildd secret is auto-generated and set when 'private'
+            # is set to True
             del(data['buildd_secret'])
         super(ArchiveAdminView, self).updateContextFromData(data)
 
@@ -2012,7 +2067,7 @@ class ArchiveAdminView(BaseArchiveEditView):
         # Check the external_dependencies field.
         ext_deps = data.get('external_dependencies')
         if ext_deps is not None:
-            errors = self.validate_external_dependencies(ext_deps)
+            errors = validate_external_dependencies(ext_deps)
             if len(errors) != 0:
                 error_text = "\n".join(errors)
                 self.setFieldError('external_dependencies', error_text)
@@ -2021,31 +2076,6 @@ class ArchiveAdminView(BaseArchiveEditView):
             self.setFieldError(
                 'commercial',
                 'Can only set commericial for private archives.')
-
-    def validate_external_dependencies(self, ext_deps):
-        """Validate the external_dependencies field.
-
-        :param ext_deps: The dependencies form field to check.
-        """
-        errors = []
-        # The field can consist of multiple entries separated by
-        # newlines, so process each in turn.
-        for dep in ext_deps.splitlines():
-            try:
-                deb, url, suite, components = dep.split(" ", 3)
-            except ValueError:
-                errors.append(
-                    "'%s' is not a complete and valid sources.list entry"
-                        % dep)
-                continue
-
-            if deb != "deb":
-                errors.append("%s: Must start with 'deb'" % dep)
-            url_components = urlparse(url)
-            if not url_components[0] or not url_components[1]:
-                errors.append("%s: Invalid URL" % dep)
-
-        return errors
 
     @property
     def owner_is_private_team(self):

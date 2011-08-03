@@ -5,22 +5,31 @@
 
 __metaclass__ = type
 
-from apt_pkg import TagFile
 import logging
 import os
-from testtools.matchers import StartsWith
 from textwrap import dedent
+
+from apt_pkg import TagFile
+from testtools.matchers import StartsWith
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
+from lp.archivepublisher.scripts.publish_ftpmaster import (
+    compose_env_string,
+    compose_shell_boolean,
+    find_run_parts_dir,
+    get_working_dists,
+    PublishFTPMaster,
+    shell_quote,
+    )
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket,
     pocketsuffix,
@@ -35,14 +44,6 @@ from lp.services.utils import file_exists
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
-    )
-from lp.archivepublisher.scripts.publish_ftpmaster import (
-    compose_env_string,
-    compose_shell_boolean,
-    find_run_parts_dir,
-    get_working_dists,
-    PublishFTPMaster,
-    shell_quote,
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
@@ -260,14 +261,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         sections = list(TagFile(file(filename)))
         self.assertEqual(1, len(sections))
         return dict(sections[0])
-
-    def enableCommercialCompat(self):
-        """Enable commercial-compat.sh runs for the duration of the test."""
-        config.push("commercial-compat", dedent("""\
-            [archivepublisher]
-            run_commercial_compat: true
-            """))
-        self.addCleanup(config.pop, "commercial-compat")
 
     def installRunPartsScript(self, distro, parts_dir, script_code):
         """Set up a run-parts script, and configure it to run.
@@ -504,38 +497,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             "ARCHIVEROOT", "DISTSROOT", "OVERRIDEROOT"])
         missing_parameters = required_parameters.difference(set(env.keys()))
         self.assertEqual(set(), missing_parameters)
-
-    def test_runCommercialCompat_runs_commercial_compat_script(self):
-        # XXX JeroenVermeulen 2011-03-29 bug=741683: Retire
-        # runCommercialCompat as soon as Dapper support ends.
-        self.enableCommercialCompat()
-        script = self.makeScript(self.prepareUbuntu())
-        script.setUp()
-        script.executeShell = FakeMethod()
-        script.runCommercialCompat()
-        self.assertEqual(1, script.executeShell.call_count)
-        args, kwargs = script.executeShell.calls[0]
-        command_line, = args
-        self.assertIn("commercial-compat.sh", command_line)
-
-    def test_runCommercialCompat_runs_only_for_ubuntu(self):
-        # XXX JeroenVermeulen 2011-03-29 bug=741683: Retire
-        # runCommercialCompat as soon as Dapper support ends.
-        self.enableCommercialCompat()
-        script = self.makeScript(self.makeDistroWithPublishDirectory())
-        script.setUp()
-        script.executeShell = FakeMethod()
-        script.runCommercialCompat()
-        self.assertEqual(0, script.executeShell.call_count)
-
-    def test_runCommercialCompat_runs_only_if_configured(self):
-        # XXX JeroenVermeulen 2011-03-29 bug=741683: Retire
-        # runCommercialCompat as soon as Dapper support ends.
-        script = self.makeScript(self.prepareUbuntu())
-        script.setUp()
-        script.executeShell = FakeMethod()
-        script.runCommercialCompat()
-        self.assertEqual(0, script.executeShell.call_count)
 
     def test_generateListings_writes_ls_lR_gz(self):
         distro = self.makeDistroWithPublishDirectory()

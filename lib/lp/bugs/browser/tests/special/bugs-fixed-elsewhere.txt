@@ -45,18 +45,16 @@ Simply opening a bug elsewhere won't increase the count.
 
     >>> from lp.bugs.interfaces.bugtask import IBugTaskSet
     >>> elsewhere = getUtility(IBugTaskSet).createTask(
-    ...     bug, owner=getUtility(ILaunchBag).user, product=evolution)
+    ...     bug, getUtility(ILaunchBag).user, evolution)
     >>> get_view().bugs_fixed_elsewhere_count
     0
 
 But if we mark the bug as fixed in the other, the count will increase
 by one.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
     >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
     >>> elsewhere.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
-    >>> syncUpdate(elsewhere)
 
     >>> get_view().bugs_fixed_elsewhere_count
     1L
@@ -88,13 +86,11 @@ Only bugs that the user has permission to view are included in the count.
     >>> another_bug = filebug(bugtarget, 'Example Bug')
     >>> another_bug.setPrivate(True, getUtility(ILaunchBag).user)
     True
-    >>> syncUpdate(another_bug)
 
     >>> another_elsewhere = getUtility(IBugTaskSet).createTask(
-    ...     another_bug, owner=getUtility(ILaunchBag).user, product=evolution)
+    ...     another_bug, getUtility(ILaunchBag).user, evolution)
     >>> another_elsewhere.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
-    >>> syncUpdate(another_elsewhere)
 
     >>> get_view().bugs_fixed_elsewhere_count
     2L
@@ -112,7 +108,6 @@ there are two bugs fixed.
     >>> login('foo.bar@canonical.com')
     >>> another_bug.setPrivate(False, getUtility(ILaunchBag).user)
     True
-    >>> syncUpdate(another_bug)
 
     >>> login('no-priv@canonical.com')
     >>> get_view().bugs_fixed_elsewhere_count
@@ -124,7 +119,6 @@ there are two bugs fixed.
 Bugs that are duplicate of other bugs aren't included in the count.
 
     >>> another_bug.markAsDuplicate(bug)
-    >>> syncUpdate(another_bug)
 
     >>> get_view().bugs_fixed_elsewhere_count
     1L
@@ -141,7 +135,6 @@ The count includes only bugs that are open in the current context.
     ...     print "Couldn't find a bugtasks for %r" % bugtarget
     >>> bugtask.transitionToStatus(
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
-    >>> syncUpdate(bugtask)
 
     >>> get_view().bugs_fixed_elsewhere_count
     0

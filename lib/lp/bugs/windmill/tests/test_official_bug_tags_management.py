@@ -15,6 +15,7 @@ from lp.testing.windmill import (
 
 
 class TestOfficialBugTags(WindmillTestCase):
+    """XXX: Pull most to YUI test, but port XHR check at end."""
 
     layer = BugsWindmillLayer
     suite_name = 'Official bug tags management test'

@@ -6,10 +6,10 @@ that it is able to communicate upstream bugs to the relevant upstream
 project and monitor them as they change. Launchpad offers functionality
 to allow a distribution to focus on and improve this process.
 
+    >>> from storm.store import Store
     >>> from canonical.launchpad.ftests import login
     >>> from lp.bugs.tests.bug import (
     ...     create_bug_from_strings)
-    >>> from canonical.launchpad.ftests import sync
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> from lp.registry.interfaces.distribution import IDistributionSet
@@ -83,10 +83,10 @@ for triaged bugs updated:
     >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> ls_bug = getUtility(IBugTaskSet).get(23)
     >>> ls_bug.transitionToStatus(BugTaskStatus.TRIAGED, mark)
-    >>> sync(ls_bug)
+    >>> Store.of(ls_bug).flush()
     >>> mf_bug = getUtility(IBugTaskSet).get(17)
     >>> mf_bug.transitionToStatus(BugTaskStatus.TRIAGED, mark)
-    >>> sync(mf_bug)
+    >>> Store.of(mf_bug).flush()
     >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts())
     linux-source-2.6.15 None    1 0 0 0 0
     mozilla-firefox     firefox 1 1 1 1 0
@@ -127,8 +127,7 @@ upstream is reported for it. Let's fix that:
 
 We then add an upstream task to the second pmount bug:
 
-    >>> from storm.store import Store
-    >>> task = getUtility(IBugTaskSet).createTask(bug, name12, product=pmount)
+    >>> task = getUtility(IBugTaskSet).createTask(bug, name12, pmount)
     >>> Store.of(task).flush()
     >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
     pmount              pmount  2 2 1 0 0
@@ -176,7 +175,7 @@ the count of bugs having patches but no bug watch.
     >>> url = "http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=666"
     >>> [watch] = getUtility(IBugWatchSet).fromText(url, bug, name12)
     >>> task.bugwatch = watch
-    >>> sync(task)
+    >>> Store.of(task).flush()
     >>> print_report(ubuntu.getPackagesAndPublicUpstreamBugCounts(limit=3))
     pmount              pmount  2 2 1 1 0
     linux-source-2.6.15 None    1 0 0 0 0

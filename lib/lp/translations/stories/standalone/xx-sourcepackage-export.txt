@@ -88,8 +88,7 @@ admin or expert, but he is one of the owners of a translation group.
     >>> from zope.component import getUtility
 
     >>> from canonical.launchpad.ftests import login, logout
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> from lp.registry.interfaces.person import IPersonSet
 
@@ -130,8 +129,6 @@ Gussie's translation group takes charge of Ubuntu translations.
 This change gives Gussie the ability to download full package
 translations.
 
-    >>> from canonical.launchpad.ftests import syncUpdate
-    >>> syncUpdate(ubuntu)
     >>> can_download_translations(gussie_browser)
     True
 

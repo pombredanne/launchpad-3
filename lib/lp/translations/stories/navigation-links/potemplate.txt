@@ -35,4 +35,4 @@ The Application tabs should point to ISourcePackage URLs.
     * Bugs - http://bugs.launchpad.dev/ubuntu/hoary/+source/evolution
     * Blueprints - not linked
     * Translations (selected) - http://translations.launchpad.dev/ubuntu/hoary/+source/evolution
-    * Answers - http://answers.launchpad.dev/ubuntu/hoary/+source/evolution
+    * Answers - not linked

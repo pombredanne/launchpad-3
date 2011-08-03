@@ -24,7 +24,6 @@ from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus,
     IEmailAddressSet,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.webapp import (
@@ -36,6 +35,7 @@ from lp.app.browser.launchpadform import (
     action,
     LaunchpadFormView,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.mailinglist import (
     MailingListStatus,
     PURGE_STATES,
@@ -96,6 +96,7 @@ class AdminMergeBaseView(ValidatingMergeView):
     dupe_person_emails = ()
     dupe_person = None
     target_person = None
+    delete = False
 
     @property
     def cancel_url(self):
@@ -120,7 +121,7 @@ class AdminMergeBaseView(ValidatingMergeView):
         """
         emailset = getUtility(IEmailAddressSet)
         self.dupe_person = data['dupe_person']
-        self.target_person = data['target_person']
+        self.target_person = data.get('target_person', None)
         self.dupe_person_emails = emailset.getByPerson(self.dupe_person)
 
     def doMerge(self, data):
@@ -139,8 +140,9 @@ class AdminMergeBaseView(ValidatingMergeView):
                 naked_email.personID = self.target_person.id
                 naked_email.accountID = self.target_person.accountID
                 naked_email.status = EmailAddressStatus.NEW
-        job = getUtility(IPersonSet).mergeAsync(
-            self.dupe_person, self.target_person, reviewer=self.user)
+        getUtility(IPersonSet).mergeAsync(
+            self.dupe_person, self.target_person, reviewer=self.user,
+            delete=self.delete)
         self.request.response.addInfoNotification(self.merge_message)
         self.next_url = self.success_url
 
@@ -214,7 +216,6 @@ class AdminTeamMergeView(AdminMergeBaseView):
 
         super(AdminTeamMergeView, self).validate(data)
         dupe_team = data['dupe_person']
-        target_team = data['target_person']
         # We cannot merge the teams if there is a mailing list on the
         # duplicate person, unless that mailing list is purged.
         if self.hasMailingList(dupe_team):
@@ -251,7 +252,7 @@ class DeleteTeamView(AdminTeamMergeView):
     """A view that deletes a team by merging it with Registry experts."""
 
     page_title = 'Delete'
-    field_names = ['dupe_person', 'target_person']
+    field_names = ['dupe_person']
     merge_message = _('The team is queued to be deleted.')
 
     @property
@@ -260,8 +261,7 @@ class DeleteTeamView(AdminTeamMergeView):
 
     def __init__(self, context, request):
         super(DeleteTeamView, self).__init__(context, request)
-        if ('field.dupe_person' in self.request.form
-            or 'field.target_person' in self.request.form):
+        if ('field.dupe_person' in self.request.form):
             # These fields have fixed values and are managed by this method.
             # The user has crafted a request to gain ownership of the dupe
             # team's assets.
@@ -281,8 +281,7 @@ class DeleteTeamView(AdminTeamMergeView):
     def default_values(self):
         return {
             'field.dupe_person': self.context.name,
-            'field.target_person': getUtility(
-                ILaunchpadCelebrities).registry_experts.name,
+            'field.delete': True,
             }
 
     @property
@@ -303,6 +302,7 @@ class DeleteTeamView(AdminTeamMergeView):
     @action('Delete', name='delete', condition=canDelete)
     def merge_action(self, action, data):
         base = super(DeleteTeamView, self)
+        self.delete = True
         base.deactivate_members_and_merge_action.success(data)
 
 
@@ -342,19 +342,18 @@ class FinishedPeopleMergeRequestView(LaunchpadView):
             return ''
 
 
-class RequestPeopleMergeMultipleEmailsView:
+class RequestPeopleMergeMultipleEmailsView(LaunchpadView):
     """Merge request view when dupe account has multiple email addresses."""
 
     label = 'Merge Launchpad accounts'
     page_title = label
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        super(RequestPeopleMergeMultipleEmailsView, self).__init__(
+            context, request)
         self.form_processed = False
         self.dupe = None
         self.notified_addresses = []
-        self.user = getUtility(ILaunchBag).user
 
     def processForm(self):
         dupe = self.request.form.get('dupe')

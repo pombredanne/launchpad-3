@@ -191,34 +191,12 @@ special = {
     # No setup or teardown at all, since it is demonstrating these features.
     'old-testing.txt': LayeredDocFileSuite(
         '../doc/old-testing.txt', layer=FunctionalLayer),
-
-    # And this test want minimal environment too.
-    'package-relationship.txt': LayeredDocFileSuite(
-        '../doc/package-relationship.txt',
-        stdout_logging=False, layer=None),
-
     'webservice-configuration.txt': LayeredDocFileSuite(
         '../doc/webservice-configuration.txt',
         setUp=setGlobs, tearDown=layerlessTearDown, layer=None),
-
-
-    # POExport stuff is Zopeless and connects as a different database user.
-    # poexport-distroseries-(date-)tarball.txt is excluded, since they add
-    # data to the database as well.
-    'message.txt': LayeredDocFileSuite(
-        '../doc/message.txt',
-        setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer),
     'close-account.txt': LayeredDocFileSuite(
         '../doc/close-account.txt', setUp=setUp, tearDown=tearDown,
         layer=LaunchpadZopelessLayer),
-    'launchpadform.txt': LayeredDocFileSuite(
-        '../doc/launchpadform.txt',
-        setUp=setUp, tearDown=tearDown,
-        layer=LaunchpadFunctionalLayer),
-    'launchpadformharness.txt': LayeredDocFileSuite(
-        '../doc/launchpadformharness.txt',
-        setUp=setUp, tearDown=tearDown,
-        layer=LaunchpadFunctionalLayer),
     'uri.txt': LayeredDocFileSuite(
         '../doc/uri.txt',
         setUp=setUp, tearDown=tearDown,

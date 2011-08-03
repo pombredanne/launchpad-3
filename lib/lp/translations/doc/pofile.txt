@@ -553,8 +553,7 @@ Now, just to be sure that this entry doesn't exist yet:
 
 Is time to create it.  We need some extra privileges here.
 
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> login('carlos@canonical.com')
     >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     >>> translations = {0: u''}

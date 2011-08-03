@@ -31,9 +31,11 @@
   <script type="text/javascript"
           tal:content="string:
     LPS.use('node', 'event', 'widget', 'plugin', 'overlay',
-              'lazr.choiceedit', 'lp.code.branch.status',
+              'lazr.choiceedit',
+              'lp.code.branch.status',
               'lp.code.branchmergeproposal.diff',
-              'lp.code.branch.subscription', function(Y) {
+              'lp.code.branch.subscription',
+              function(Y) {
 
         Y.on('load', function(e) {
             var logged_in = LP.links['me'] !== undefined;
@@ -48,6 +50,24 @@
         }, window);
     });
   "/>
+
+  <tal:if condition="request/features/bugs.private_notification.enabled">
+  <script>
+      LPS.use('base', 'node', 'lp.app.privacy', function(Y) {
+          Y.on("domready", function () {
+              if (Y.one(document.body).hasClass('private')) {
+                  var config = {
+                      notification_text: 'This is a private branch',
+                      hidden: true
+                  };
+                  Y.lp.app.privacy.setup_privacy_notification(config);
+                  Y.lp.app.privacy.display_privacy_notification(true);
+              }
+          });
+      });
+  </script>
+  </tal:if>
+
 </metal:block>
 
 <body>
@@ -74,7 +94,7 @@
     <tal:registrant replace="structure context/registrant/fmt:link" />
   on
     <tal:created-on replace="structure context/date_created/fmt:date" />
-  and last modified on 
+  and last modified on
     <tal:last-modified replace="structure context/date_last_modified/fmt:date" />
 </tal:registering>
 

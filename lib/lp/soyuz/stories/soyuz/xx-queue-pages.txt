@@ -112,8 +112,8 @@ custom-upload filename.
   >>> anon_browser.getControl("Update").click()
   >>> print_queue(anon_browser.contents)
   Package             Version   Component Section  Priority Sets Pocket   When
-  netapplet...(raw-translations) -                               Updates  2006-...
   netapplet...ddtp... -                                          Backp... 2006-...
+  netapplet...(raw-translations) -                               Updates  2006-...
 
   >>> anon_browser.getControl(
   ...     name="queue_state", index=0).displayValue = ['New']
@@ -205,15 +205,15 @@ image:
   >>> anon_browser.getControl(name="queue_text").value = ''
   >>> anon_browser.getControl("Update").click()
 
-  >>> print find_tag_by_id(anon_browser.contents, 'queue-4-arrow')
-  <img width="14" height="14" src="/@@/treeCollapsed" alt="view files"
-       id="queue-4-arrow" />
+  >>> print find_tag_by_id(anon_browser.contents, 'queue-4-icon')
+  <span class="expander-link" id="queue-4-icon">&nbsp;</span>
 
 The 'filelist' is expanded as one or more table rows, right below the
 clicked item:
 
-  >>> filelist = find_tags_by_class(
+  >>> filelist_body = first_tag_by_class(
   ...     anon_browser.contents, 'queue-4')
+  >>> filelist = filelist_body.findAll('tr')
 
 It contains a list of files related to the queue item clicked, followed
 by its size, one file per line. Expired files have no size.
@@ -530,7 +530,7 @@ One rejection email is generated:
 
   >>> [rejection] = pop_notifications()
   >>> rejection['Subject']
-  'netapplet-1.0.0.tar.gz rejected'
+  '[ubuntu/breezy-autotest] alsa-utils 1.0.9a-4ubuntu1 (Rejected)'
 
 Please note that in this case the rejection reason is not available
 and how that's stated in the notification email body.

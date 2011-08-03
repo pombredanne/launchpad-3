@@ -180,7 +180,7 @@ Changing the state to reviewed but not approved results in the project
 being shown as proprietary.
 
     >>> admin_browser.open('http://launchpad.dev/thunderbird/+review-license')
-    >>> admin_browser.getControl(name='field.license_reviewed').value = True
+    >>> admin_browser.getControl(name='field.project_reviewed').value = True
     >>> admin_browser.getControl(name='field.license_approved').value = False
     >>> admin_browser.getControl('Change').click()
 

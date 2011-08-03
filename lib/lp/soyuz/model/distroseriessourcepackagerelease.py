@@ -12,18 +12,33 @@ __all__ = [
     ]
 
 from lazr.delegates import delegates
+from operator import itemgetter
+from storm.expr import (
+    And,
+    Desc,
+    Join,
+    )
+from storm.store import Store
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease,
     )
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.publishing import (
+    BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 
 
 class DistroSeriesSourcePackageRelease:
@@ -112,7 +127,7 @@ class DistroSeriesSourcePackageRelease:
 
         return (
             [build for build in distro_builds
-                if build.distro_arch_series.distroseries == self.distroseries])
+             if build.distro_arch_series.distroseries == self.distroseries])
 
     @property
     def files(self):
@@ -122,30 +137,40 @@ class DistroSeriesSourcePackageRelease:
     @property
     def binaries(self):
         """See `IDistroSeriesSourcePackageRelease`."""
-        clauseTables = [
-            'BinaryPackageRelease',
-            'DistroArchSeries',
-            'BinaryPackageBuild',
-            'BinaryPackagePublishingHistory'
-        ]
+        # Avoid circular imports.
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
+        store = Store.of(self.distroseries)
+        result_row = (
+            BinaryPackageRelease, BinaryPackageBuild, BinaryPackageName)
 
-        query = """
-        BinaryPackageRelease.build=BinaryPackageBuild.id AND
-        DistroArchSeries.id =
-            BinaryPackagePublishingHistory.distroarchseries AND
-        BinaryPackagePublishingHistory.binarypackagerelease=
-            BinaryPackageRelease.id AND
-        DistroArchSeries.distroseries=%s AND
-        BinaryPackagePublishingHistory.archive IN %s AND
-        BinaryPackageBuild.source_package_release=%s
-        """ % sqlvalues(self.distroseries,
-                        self.distroseries.distribution.all_distro_archive_ids,
-                        self.sourcepackagerelease)
-
-        return BinaryPackageRelease.select(
-                query, prejoinClauseTables=['BinaryPackageBuild'],
-                orderBy=['-id'], clauseTables=clauseTables,
-                distinct=True)
+        tables = (
+            BinaryPackageRelease,
+            Join(
+                BinaryPackageBuild,
+                BinaryPackageBuild.id == BinaryPackageRelease.buildID),
+            Join(
+                BinaryPackagePublishingHistory,
+                BinaryPackageRelease.id ==
+                BinaryPackagePublishingHistory.binarypackagereleaseID),
+            Join(
+                DistroArchSeries,
+                DistroArchSeries.id ==
+                BinaryPackagePublishingHistory.distroarchseriesID),
+            Join(
+                BinaryPackageName,
+                BinaryPackageName.id ==
+                BinaryPackageRelease.binarypackagenameID))
+        archive_ids = list(
+            self.distroseries.distribution.all_distro_archive_ids)
+        binaries = store.using(*tables).find(
+            result_row,
+            And(
+                DistroArchSeries.distroseriesID == self.distroseries.id,
+                BinaryPackagePublishingHistory.archiveID.is_in(archive_ids),
+                BinaryPackageBuild.source_package_release ==
+                self.sourcepackagerelease))
+        binaries.order_by(Desc(BinaryPackageRelease.id)).config(distinct=True)
+        return DecoratedResultSet(binaries, itemgetter(0))
 
     @property
     def changesfile(self):

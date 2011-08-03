@@ -272,7 +272,7 @@ adapter that is defined for the content class, and as shown below
 through the printed attribute accessors, uses the attributes of the
 content class.
 
-    >>> from canonical.launchpad.ftests import test_tales
+    >>> from lp.testing import test_tales
     >>> print test_tales('context/badges:small', context=foo)
     Foo.bugs
     Foo.blueprints

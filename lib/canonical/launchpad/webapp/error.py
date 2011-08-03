@@ -13,6 +13,7 @@ __all__ = [
     ]
 
 
+import httplib
 import sys
 import traceback
 
@@ -24,10 +25,6 @@ from zope.interface import implements
 
 from canonical.config import config
 import canonical.launchpad.layers
-from canonical.launchpad.webapp.adapter import (
-    clear_request_started,
-    set_request_started,
-    )
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from lp.services.propertycache import cachedproperty
@@ -44,10 +41,10 @@ class SystemErrorView(LaunchpadView):
     override_title_breadcrumbs = True
 
     plain_oops_template = ViewPageTemplateFile(
-        '../templates/oops-veryplain.pt')
+        'templates/oops-veryplain.pt')
 
     # Override this in subclasses.  A value of None means "don't set this"
-    response_code = 500
+    response_code = httplib.INTERNAL_SERVER_ERROR
 
     show_tracebacks = False
     pagetesting = False
@@ -70,6 +67,9 @@ class SystemErrorView(LaunchpadView):
         self.request.response.removeAllNotifications()
         if self.response_code is not None:
             self.request.response.setStatus(self.response_code)
+        if getattr(self.request, 'oopsid') is not None:
+            self.request.response.addHeader(
+                'X-Lazr-OopsId', self.request.oopsid)
         self.computeDebugOutput()
         if config.canonical.show_tracebacks:
             self.show_tracebacks = True
@@ -196,7 +196,7 @@ class NotFoundView(SystemErrorView):
     page_title = 'Error: Page not found'
     override_title_breadcrumbs = True
 
-    response_code = 404
+    response_code = httplib.NOT_FOUND
 
     def __call__(self):
         return self.index()
@@ -224,8 +224,10 @@ class NotFoundView(SystemErrorView):
 
 class GoneView(NotFoundView):
     """The page is gone, such as a page belonging to a suspended user."""
+
     page_title = 'Error: Page gone'
-    response_code = 410
+
+    response_code = httplib.GONE
 
 
 class RequestExpiredView(SystemErrorView):
@@ -233,7 +235,7 @@ class RequestExpiredView(SystemErrorView):
     page_title = 'Error: Timeout'
     override_title_breadcrumbs = True
 
-    response_code = 503
+    response_code = httplib.SERVICE_UNAVAILABLE
 
     def __init__(self, context, request):
         SystemErrorView.__init__(self, context, request)
@@ -249,7 +251,7 @@ class InvalidBatchSizeView(SystemErrorView):
     page_title = "Error: Invalid Batch Size"
     override_title_breadcrumbs = True
 
-    response_code = 400
+    response_code = httplib.BAD_REQUEST
 
     def isSystemError(self):
         """We don't need to log these errors in the SiteLog."""
@@ -268,7 +270,7 @@ class TranslationUnavailableView(SystemErrorView):
     page_title = 'Error: Translation page is not available'
     override_title_breadcrumbs = True
 
-    response_code = 503
+    response_code = httplib.SERVICE_UNAVAILABLE
 
     def __call__(self):
         return self.index()
@@ -280,7 +282,7 @@ class ReadOnlyErrorView(SystemErrorView):
     page_title = "Error: you can't do this right now"
     override_title_breadcrumbs = True
 
-    response_code = 503
+    response_code = httplib.SERVICE_UNAVAILABLE
 
     def isSystemError(self):
         """We don't need to log these errors in the SiteLog."""
@@ -293,4 +295,13 @@ class ReadOnlyErrorView(SystemErrorView):
 class NoReferrerErrorView(SystemErrorView):
     """View rendered when a POST request does not include a REFERER header."""
 
-    response_code = 403 # Forbidden.
+    response_code = httplib.FORBIDDEN
+
+
+class OpenIdDiscoveryFailureView(SystemErrorView):
+
+    response_code = httplib.SERVICE_UNAVAILABLE
+
+    def isSystemError(self):
+        """We don't need to log these errors in the SiteLog."""
+        return False

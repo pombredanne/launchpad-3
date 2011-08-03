@@ -20,7 +20,6 @@ __all__ = [
     'CodeReviewCommentEmailJob',
     'CreateMergeProposalJob',
     'GenerateIncrementalDiffJob',
-    'MergeProposalCreatedJob',
     'MergeProposalNeedsReviewEmailJob',
     'MergeProposalUpdatedEmailJob',
     'ReviewRequestedEmailJob',
@@ -62,11 +61,11 @@ from zope.interface import (
 
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.database.message import (
+from lp.services.messages.model.message import (
     MessageJob,
     MessageJobAction,
     )
-from canonical.launchpad.interfaces.message import IMessageJob
+from lp.services.messages.interfaces.message import IMessageJob
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.webapp.interfaces import (
@@ -108,7 +107,10 @@ from lp.codehosting.vfs import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from lp.services.job.runner import BaseRunnableJob
+from lp.services.job.runner import (
+    BaseRunnableJob,
+    BaseRunnableJobSource,
+    )
 from lp.services.mail.sendmail import format_address_for_person
 from lp.services.database.stormbase import StormBase
 
@@ -666,7 +668,7 @@ class GenerateIncrementalDiffJob(BranchMergeProposalJobDerived):
         revision_set = getUtility(IRevisionSet)
         old_revision = revision_set.getByRevisionId(self.old_revision_id)
         new_revision = revision_set.getByRevisionId(self.new_revision_id)
-        diff = self.branch_merge_proposal.generateIncrementalDiff(
+        self.branch_merge_proposal.generateIncrementalDiff(
             old_revision, new_revision)
 
     @classmethod
@@ -736,7 +738,7 @@ class BranchMergeProposalJobFactory:
         return job_class(bmp_job)
 
 
-class BranchMergeProposalJobSource:
+class BranchMergeProposalJobSource(BaseRunnableJobSource):
     """Provide a job source for all merge proposal jobs.
 
     Only one job for any particular merge proposal is returned.

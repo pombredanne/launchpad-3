@@ -6,6 +6,7 @@ __metaclass__ = type
 
 from BeautifulSoup import BeautifulSoup
 
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.testing.pages import find_tag_by_id
@@ -16,6 +17,7 @@ from lp.blueprints.interfaces.specificationtarget import (
     )
 from lp.app.enums import ServiceUsage
 from lp.blueprints.browser.specificationtarget import HasSpecificationsView
+from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.blueprints.publisher import BlueprintsLayer
 from lp.testing import (
     login_person,
@@ -123,8 +125,8 @@ class TestAssignments(TestCaseWithFactory):
 
     def test_assignments_are_batched(self):
         product = self.factory.makeProduct()
-        spec1 = self.factory.makeSpecification(product=product)
-        spec2 = self.factory.makeSpecification(product=product)
+        self.factory.makeSpecification(product=product)
+        self.factory.makeSpecification(product=product)
         view = create_initialized_view(product, name='+assignments',
             query_string="batch=1")
         content = view.render()
@@ -197,7 +199,7 @@ class TestHasSpecificationsTemplates(TestCaseWithFactory):
     def test_projectgroup(self):
         project = self.factory.makeProject()
         product1 = self.factory.makeProduct(project=project)
-        product2 = self.factory.makeProduct(project=project)
+        self.factory.makeProduct(project=project)
         self._test_templates_for_configuration(
             target=product1,
             context=project)
@@ -274,3 +276,30 @@ class TestSpecificationsRobots(TestCaseWithFactory):
 
     def test_LAUNCHPAD_does_not_block_robots(self):
         self._verify_robots_not_blocked(ServiceUsage.LAUNCHPAD)
+
+
+class SpecificationSetViewTestCase(TestCaseWithFactory):
+    """Test the specification application root view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_search_specifications_form_rendering(self):
+        # The view's template directly renders the form widgets.
+        specification_set = getUtility(ISpecificationSet)
+        view = create_initialized_view(specification_set, '+index')
+        content = find_tag_by_id(view.render(), 'search-all-specifications')
+        self.assertIsNot(None, content.find(True, id='text'))
+        self.assertIsNot(
+            None, content.find(True, id='field.actions.search'))
+        self.assertIsNot(
+            None, content.find(True, id='field.scope.option.all'))
+        self.assertIsNot(
+            None, content.find(True, id='field.scope.option.project'))
+        target_widget = view.widgets['scope'].target_widget
+        self.assertIsNot(
+            None, content.find(True, id=target_widget.show_widget_id))
+        text = str(content)
+        picker_vocab = 'DistributionOrProductOrProjectGroup'
+        self.assertIn(picker_vocab, text)
+        focus_script = "setFocusByName('field.search_text')"
+        self.assertIn(focus_script, text)

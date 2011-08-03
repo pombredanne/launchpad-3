@@ -12,6 +12,7 @@
   <include package=".inlinehelp" file="meta.zcml" />
   <include package=".job" />
   <include package=".memcache" />
+  <include package=".messages" />
   <include package=".openid" />
   <include package=".profile" />
   <include package=".salesforce" />

@@ -3,8 +3,12 @@
 
 __metaclass__ = type
 
+import transaction
+
 from datetime import datetime
 
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 from pytz import UTC
 from storm.store import Store
 from testtools.matchers import LessThan
@@ -12,6 +16,8 @@ from zope.component import (
     getMultiAdapter,
     getUtility,
     )
+from zope.event import notify
+from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import (
@@ -20,14 +26,15 @@ from canonical.launchpad.ftests import (
     login_person,
     )
 from canonical.launchpad.testing.pages import find_tag_by_id
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.browser.bugtask import (
+    BugActivityItem,
     BugTaskEditView,
     BugTasksAndNominationsView,
     )
@@ -86,7 +93,7 @@ class TestBugTaskView(TestCaseWithFactory):
         self.getUserBrowser(url, person_no_teams)
         # This may seem large: it is; there is easily another 30% fat in
         # there.
-        self.assertThat(recorder, HasQueryCount(LessThan(69)))
+        self.assertThat(recorder, HasQueryCount(LessThan(74)))
         count_with_no_teams = recorder.count
         # count with many teams
         self.invalidate_caches(task)
@@ -102,7 +109,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                73, self.factory.makePerson())
+                78, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -142,6 +149,39 @@ class TestBugTaskView(TestCaseWithFactory):
         self.assertEqual(1, len(view.interesting_activity))
         [activity] = view.interesting_activity
         self.assertEqual("description", activity.whatchanged)
+
+    def test_error_for_changing_target_with_invalid_status(self):
+        # If a user moves a bug task with a restricted status (say,
+        # Triaged) to a target where they do not have permission to set
+        # that status, they will be unable to complete the retargeting
+        # and will instead receive an error in the UI.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct(
+            name='product1', owner=person, official_malone=True)
+        with person_logged_in(person):
+            product.setBugSupervisor(person, person)
+        product_2 = self.factory.makeProduct(
+            name='product2', official_malone=True)
+        with person_logged_in(product_2.owner):
+            product_2.setBugSupervisor(product_2.owner, product_2.owner)
+        bug = self.factory.makeBug(
+            product=product, owner=person)
+        # We need to commit here, otherwise all the sample data we
+        # created gets destroyed when the transaction is rolled back.
+        transaction.commit()
+        with person_logged_in(person):
+            form_data = {
+                '%s.product' % product.name: product_2.name,
+                '%s.status' % product.name: BugTaskStatus.TRIAGED.title,
+                '%s.actions.save' % product.name: 'Save Changes',
+                }
+            view = create_initialized_view(
+                bug.default_bugtask, name=u'+editstatus',
+                form=form_data)
+            # The bugtask's target won't have changed, since an error
+            # happend. The error will be listed in the view.
+            self.assertEqual(1, len(view.errors))
+            self.assertEqual(product, bug.default_bugtask.target)
 
 
 class TestBugTasksAndNominationsView(TestCaseWithFactory):
@@ -456,8 +496,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         product_bar = self.factory.makeProduct(name="bar")
         foo_bug = self.factory.makeBug(product=product_foo)
         bugtask_set = getUtility(IBugTaskSet)
-        bugtask_set.createTask(
-            bug=foo_bug, owner=foo_bug.owner, product=product_bar)
+        bugtask_set.createTask(foo_bug, foo_bug.owner, product_bar)
 
         removeSecurityProxy(product_bar).active = False
 
@@ -493,6 +532,30 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         task_and_nomination_views = (
             foo_bugtasks_and_nominations_view.getBugTaskAndNominationViews())
         self.assertEqual([], task_and_nomination_views)
+
+    def test_bugtarget_parent_shown_for_orphaned_series_tasks(self):
+        # Test that a row is shown for the parent of a series task, even
+        # if the parent doesn't actually have a task.
+        series = self.factory.makeProductSeries()
+        bug = self.factory.makeBug(series=series)
+        self.assertEqual(2, len(bug.bugtasks))
+        new_prod = self.factory.makeProduct()
+        bug.getBugTask(series.product).transitionToTarget(new_prod)
+
+        view = create_initialized_view(bug, "+bugtasks-and-nominations-table")
+        subviews = view.getBugTaskAndNominationViews()
+        self.assertEqual([
+            (series.product, '+bugtasks-and-nominations-table-row'),
+            (bug.getBugTask(series), '+bugtasks-and-nominations-table-row'),
+            (bug.getBugTask(new_prod), '+bugtasks-and-nominations-table-row'),
+            ], [(v.context, v.__name__) for v in subviews])
+
+        content = subviews[0]()
+        self.assertIn(
+            'href="%s"' % canonical_url(
+                series.product, path_only_if_possible=True),
+            content)
+        self.assertIn(series.product.displayname, content)
 
 
 class TestBugTaskEditViewStatusField(TestCaseWithFactory):
@@ -642,13 +705,13 @@ class TestBugTaskEditView(TestCaseWithFactory):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         dsp_1 = self.factory.makeDistributionSourcePackage(
             distribution=ubuntu, sourcepackagename='mouse')
-        ignore = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             distroseries=ubuntu.currentseries,
             sourcepackagename=dsp_1.sourcepackagename)
         bug_task_1 = self.factory.makeBugTask(target=dsp_1)
         dsp_2 = self.factory.makeDistributionSourcePackage(
             distribution=ubuntu, sourcepackagename='rabbit')
-        ignore = self.factory.makeSourcePackagePublishingHistory(
+        self.factory.makeSourcePackagePublishingHistory(
             distroseries=ubuntu.currentseries,
             sourcepackagename=dsp_2.sourcepackagename)
         bug_task_2 = self.factory.makeBugTask(
@@ -665,7 +728,8 @@ class TestBugTaskEditView(TestCaseWithFactory):
             bug_task_2, name='+editstatus', form=form, principal=user)
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
-            'This bug has already been reported on mouse (ubuntu).',
+            'A fix for this bug has already been requested for mouse in '
+            'Ubuntu',
             view.errors[0])
 
     def setUpRetargetMilestone(self):
@@ -825,3 +889,33 @@ class TestProjectGroupBugs(TestCaseWithFactory):
         contents = view.render()
         help_link = find_tag_by_id(contents, 'getting-started-help')
         self.assertIs(None, help_link)
+
+
+class TestBugActivityItem(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setAttribute(self, obj, attribute, value):
+        obj_before_modification = Snapshot(obj, providing=providedBy(obj))
+        setattr(removeSecurityProxy(obj), attribute, value)
+        notify(ObjectModifiedEvent(
+            obj, obj_before_modification, [attribute],
+            self.factory.makePerson()))
+
+    def test_escapes_assignee(self):
+        with celebrity_logged_in('admin'):
+            task = self.factory.makeBugTask()
+            self.setAttribute(
+                task, 'assignee',
+                self.factory.makePerson(displayname="Foo &<>", name='foo'))
+        self.assertEquals(
+            "nobody &#8594; Foo &amp;&lt;&gt; (foo)",
+            BugActivityItem(task.bug.activity[-1]).change_details)
+
+    def test_escapes_title(self):
+        with celebrity_logged_in('admin'):
+            bug = self.factory.makeBug(title="foo")
+            self.setAttribute(bug, 'title', "bar &<>")
+        self.assertEquals(
+            "- foo<br />+ bar &amp;&lt;&gt;",
+            BugActivityItem(bug.activity[-1]).change_details)

@@ -14,9 +14,9 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.ftests import login
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.answers.interfaces.questioncollection import IQuestionSet
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
@@ -316,7 +316,7 @@ class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
         bugtracker = new_bugtracker(BugTrackerType.ROUNDUP)
         self.bugtask_with_question = getUtility(IBugTaskSet).createTask(
             bug_with_question, sample_person,
-            product=getUtility(IProductSet).getByName('firefox'))
+            getUtility(IProductSet).getByName('firefox'))
         self.bugwatch_with_question = bug_with_question.addWatch(
             bugtracker, '1', getUtility(ILaunchpadCelebrities).janitor)
         self.bugtask_with_question.bugwatch = self.bugwatch_with_question

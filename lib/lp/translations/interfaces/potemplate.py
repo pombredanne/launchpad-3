@@ -169,6 +169,13 @@ class IPOTemplate(IRosettaStats):
         required=False,
         vocabulary="SourcePackageName")
 
+    sourcepackagenameID = Int(
+        title=_("Source Package Name ID"),
+        description=_(
+            "The ID of the source package that uses this template."),
+        required=False,
+        readonly=True)
+
     sourcepackage = Reference(
         ISourcePackage, title=u"Source package this template is for, if any.",
         required=False, readonly=True)
@@ -322,6 +329,13 @@ class IPOTemplate(IRosettaStats):
         translations one `POFile` at a time, you can drop any cached
         data about a `POFile` as soon as you're done with it.  Use this
         method to do that.
+        """
+
+    def setActive(active):
+        """Toggle the iscurrent flag.
+
+        Takes care of updating the suggestive potempalte cache when the
+        template is disabled.
         """
 
     def getHeader():
@@ -684,6 +698,12 @@ class IPOTemplateSet(Interface):
         :return: Number of rows deleted.
         """
 
+    def removeFromSuggestivePOTemplatesCache(potemplate):
+        """Remove the given potemplate from the suggestive-templates cache.
+
+        :return: True if the template was in the cache.
+        """
+
     def populateSuggestivePOTemplatesCache():
         """Populate suggestive-templates cache.
 
@@ -785,3 +805,9 @@ class ITranslationTemplatesCollection(Interface):
 
     def select(*args):
         """Return a ResultSet for this collection with values set to args."""
+
+    def joinInner(cls, *conditions):
+        """Inner-join `cls` into the query."""
+
+    def joinOuter(cls, *conditions):
+        """Outer-join `cls` into the query."""

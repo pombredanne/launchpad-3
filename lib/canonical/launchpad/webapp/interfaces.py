@@ -178,7 +178,8 @@ class ILinkData(Interface):
 class ILink(ILinkData):
     """An object that represents a link in a menu.
 
-    The attributes name, url and linked may be set by the menus infrastructure.
+    The attributes name, url and linked may be set by the menus
+    infrastructure.
     """
 
     name = Attribute("The name of this link in Python data structures.")
@@ -262,6 +263,7 @@ class NoCanonicalUrl(TypeError):
             (object_url_requested_for, broken_link_in_chain)
             )
 
+
 # XXX kiko 2007-02-08: this needs reconsideration if we are to make it a truly
 # generic thing. The problem lies in the fact that half of this (user, login,
 # time zone, developer) is actually useful inside webapp/, and the other half
@@ -306,6 +308,7 @@ class IOpenLaunchBag(ILaunchBag):
         and cached at the start of the transaction in case our database
         connection blows up.
         '''
+
 
 #
 # Request
@@ -406,6 +409,7 @@ class ILoggedInEvent(Interface):
 
 class CookieAuthLoggedInEvent:
     implements(ILoggedInEvent)
+
     def __init__(self, request, login):
         self.request = request
         self.login = login
@@ -413,6 +417,7 @@ class CookieAuthLoggedInEvent:
 
 class CookieAuthPrincipalIdentifiedEvent:
     implements(IPrincipalIdentifiedEvent)
+
     def __init__(self, principal, request, login):
         self.principal = principal
         self.request = request
@@ -421,6 +426,7 @@ class CookieAuthPrincipalIdentifiedEvent:
 
 class BasicAuthLoggedInEvent:
     implements(ILoggedInEvent, IPrincipalIdentifiedEvent)
+
     def __init__(self, request, login, principal):
         # these one from ILoggedInEvent
         self.login = login
@@ -436,6 +442,7 @@ class ILoggedOutEvent(Interface):
 
 class LoggedOutEvent:
     implements(ILoggedOutEvent)
+
     def __init__(self, request):
         self.request = request
 
@@ -527,6 +534,7 @@ class OAuthPermission(DBEnumeratedType):
         you're using right now.
         """)
 
+
 class AccessLevel(DBEnumeratedType):
     """The level of access any given principal has."""
     use_template(OAuthPermission, exclude='UNAUTHORIZED')
@@ -553,10 +561,10 @@ class ILaunchpadPrincipal(IPrincipal):
 
 class BrowserNotificationLevel:
     """Matches the standard logging levels."""
-    DEBUG = logging.DEBUG     # A debugging message
-    INFO = logging.INFO       # simple confirmation of a change
-    WARNING = logging.WARNING # action will not be successful unless you ...
-    ERROR = logging.ERROR     # the previous action did not succeed, and why
+    DEBUG = logging.DEBUG  # debugging message
+    INFO = logging.INFO  # simple confirmation of a change
+    WARNING = logging.WARNING  # action will not be successful unless you ...
+    ERROR = logging.ERROR  # the previous action did not succeed, and why
 
     ALL_LEVELS = (DEBUG, INFO, WARNING, ERROR)
 
@@ -646,6 +654,10 @@ class INotificationResponse(Interface):
         """
 
 
+class IUnloggedException(Interface):
+    """An exception that should not be logged in an OOPS report (marker)."""
+
+
 class IErrorReportEvent(IObjectEvent):
     """A new error report has been created."""
 
@@ -672,6 +684,7 @@ class IErrorReportRequest(Interface):
     oopsid = TextLine(
         description=u"""an identifier for the exception, or None if no
         exception has occurred""")
+
 
 #
 # Batch Navigation
@@ -720,12 +733,12 @@ class IPrimaryContext(Interface):
 # Database policies
 #
 
-MAIN_STORE = 'main' # The main database.
+MAIN_STORE = 'main'  # The main database.
 ALL_STORES = frozenset([MAIN_STORE])
 
-DEFAULT_FLAVOR = 'default' # Default flavor for current state.
-MASTER_FLAVOR = 'master' # The master database.
-SLAVE_FLAVOR = 'slave' # A slave database.
+DEFAULT_FLAVOR = 'default'  # Default flavor for current state.
+MASTER_FLAVOR = 'master'  # The master database.
+SLAVE_FLAVOR = 'slave'  # A slave database.
 
 
 class IDatabasePolicy(Interface):
@@ -856,7 +869,6 @@ except ImportError:
 
         request = Attribute("The request the event is about")
 
-
     class StartRequestEvent:
         """An event fired once at the start of requests.
 
@@ -866,3 +878,9 @@ except ImportError:
 
         def __init__(self, request):
             self.request = request
+
+
+class StormRangeFactoryError(AssertionError):
+    """Raised when a Storm result set cannot be used for slicing by a
+    StormRangeFactory.
+    """

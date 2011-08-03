@@ -13,22 +13,18 @@ import re
 import time
 
 import feedparser
+from lazr.batchnavigator import ListRangeFactory
 from lazr.batchnavigator.z3batching import batch
 from zope.component import getUtility
+from zope.interface import Interface
+from zope.schema import TextLine
 from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
 from canonical.config import config
-from canonical.launchpad.interfaces.launchpad import (
-    ILaunchpadCelebrities,
-    ILaunchpadSearch,
-    )
+from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
-    )
-from lp.services.googlesearch.interfaces import (
-    GoogleResponseError,
-    ISearchService,
     )
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.authorization import check_permission
@@ -43,6 +39,7 @@ from lp.app.browser.launchpadform import (
     safe_action,
     )
 from lp.app.errors import NotFoundError
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.name import sanitize_name
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.bugs.interfaces.bug import IBugSet
@@ -51,6 +48,10 @@ from lp.registry.browser.announcement import HasAnnouncementsView
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.googlesearch.interfaces import (
+    GoogleResponseError,
+    ISearchService,
+    )
 from lp.services.propertycache import cachedproperty
 
 
@@ -62,7 +63,6 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
 
     featured_projects = []
     featured_projects_top = None
-
 
     # Used by the footer to display the lp-arcana section.
     is_root_page = True
@@ -229,6 +229,13 @@ class LaunchpadPrimarySearchFormView(LaunchpadSearchFormView):
         if self.error:
             return 'error'
         return None
+
+
+class ILaunchpadSearch(Interface):
+    """The Schema for performing searches across all Launchpad."""
+
+    text = TextLine(
+        title=_('Search text'), required=False, max_length=250)
 
 
 class LaunchpadSearchView(LaunchpadFormView):
@@ -560,6 +567,7 @@ class WindowedListBatch(batch._Batch):
 class GoogleBatchNavigator(BatchNavigator):
     """A batch navigator with a fixed size of 20 items per batch."""
 
+    _batch_factory = WindowedListBatch
     # Searches generally don't show the 'Last' link when there is a
     # good chance of getting over 100,000 results.
     show_last_link = False
@@ -567,7 +575,9 @@ class GoogleBatchNavigator(BatchNavigator):
     singular_heading = 'page'
     plural_heading = 'pages'
 
-    def __init__(self, results, request, start=0, size=20, callback=None):
+    def __init__(self, results, request, start=0, size=20, callback=None,
+                 transient_parameters=None, force_start=False,
+                 range_factory=None):
         """See `BatchNavigator`.
 
         :param results: A `PageMatches` object that contains the matching
@@ -578,25 +588,13 @@ class GoogleBatchNavigator(BatchNavigator):
         :param size: The batch size is fixed to 20, The param is not used.
         :param callback: Not used.
         """
-        # We do not want to call super() because it will use the batch
-        # size from the URL.
-        # pylint: disable-msg=W0231
         results = WindowedList(results, start, results.total)
-        self.request = request
-        request_start = request.get(self.start_variable_name, None)
-        if request_start is None:
-            self.start = start
-        else:
-            try:
-                self.start = int(request_start)
-            except (ValueError, TypeError):
-                self.start = start
+        super(GoogleBatchNavigator, self).__init__(results, request,
+            start=start, size=size, callback=callback,
+            transient_parameters=transient_parameters, force_start=force_start,
+            range_factory=range_factory)
 
+    def determineSize(self, size, batch_params_source):
+        # Force the default and users requested sizes to 20.
         self.default_size = 20
-
-        self.transient_parameters = [self.start_variable_name]
-
-        self.batch = WindowedListBatch(
-            results, start=self.start, size=self.default_size)
-        self.setHeadings(
-            self.default_singular_heading, self.default_plural_heading)
+        return 20

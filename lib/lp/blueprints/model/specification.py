@@ -52,6 +52,7 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     )
+from lp.app.errors import UserCannotUnsubscribePerson
 from lp.blueprints.adapters import SpecificationDelta
 from lp.blueprints.enums import (
     NewSpecificationDefinitionStatus,
@@ -89,6 +90,11 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.product import IProduct
+from lp.services.propertycache import (
+    cachedproperty,
+    get_property_cache,
+    )
+
 
 
 def recursive_blocked_query(spec):
@@ -182,7 +188,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
     date_started = UtcDateTimeCol(notNull=False, default=None)
 
     # useful joins
-    subscriptions = SQLMultipleJoin('SpecificationSubscription',
+    _subscriptions = SQLMultipleJoin('SpecificationSubscription',
         joinColumn='specification', orderBy='id')
     subscribers = SQLRelatedJoin('Person',
         joinColumn='specification', otherColumn='person',
@@ -212,6 +218,13 @@ class Specification(SQLBase, BugLinkTargetMixin):
     blocked_specs = SQLRelatedJoin('Specification', joinColumn='dependency',
         otherColumn='specification', orderBy='title',
         intermediateTable='SpecificationDependency')
+
+    @cachedproperty
+    def subscriptions(self):
+        """Sort the subscriptions"""
+        from lp.registry.model.person import person_sort_key
+        return sorted(
+            self._subscriptions, key=lambda sub: person_sort_key(sub.person))
 
     @property
     def target(self):
@@ -524,9 +537,12 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 return sub
         return None
 
-    def subscribe(self, person, user, essential):
-        """Create or modify a user's subscription to this blueprint."""
-        # first see if a relevant subscription exists, and if so, return it
+    def subscribe(self, person, subscribed_by=None, essential=False):
+        """See ISpecification."""
+        if subscribed_by is None:
+            subscribed_by = person
+        # Create or modify a user's subscription to this blueprint.
+        # First see if a relevant subscription exists, and if so, return it
         sub = self.subscription(person)
         if sub is not None:
             if sub.essential != essential:
@@ -540,19 +556,33 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 # that we can get away with not examining the attribute
                 # at all - it's a boolean!
                 notify(ObjectModifiedEvent(
-                        sub, sub, ['essential'], user=user))
+                        sub, sub, ['essential'], user=subscribed_by))
             return sub
         # since no previous subscription existed, create and return a new one
         sub = SpecificationSubscription(specification=self,
             person=person, essential=essential)
-        notify(ObjectCreatedEvent(sub, user=user))
+        property_cache = get_property_cache(self)
+        if 'subscription' in property_cache:
+            from lp.registry.model.person import person_sort_key
+            property_cache.subscriptions.append(sub)
+            property_cache.subscriptions.sort(
+                key=lambda sub: person_sort_key(sub.person))
+        notify(ObjectCreatedEvent(sub, user=subscribed_by))
         return sub
 
-    def unsubscribe(self, person):
+    def unsubscribe(self, person, unsubscribed_by):
         """See ISpecification."""
         # see if a relevant subscription exists, and if so, delete it
+        if person is None:
+            person = unsubscribed_by
         for sub in self.subscriptions:
             if sub.person.id == person.id:
+                if not sub.canBeUnsubscribedByUser(unsubscribed_by):
+                    raise UserCannotUnsubscribePerson(
+                        '%s does not have permission to unsubscribe %s.' % (
+                            unsubscribed_by.displayname,
+                            person.displayname))
+                get_property_cache(self).subscriptions.remove(sub)
                 SpecificationSubscription.delete(sub.id)
                 return
 
@@ -692,7 +722,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def __repr__(self):
         return '<Specification %s %r for %r>' % (
             self.id, self.name, self.target.name)
-
 
 
 class HasSpecificationsMixin:

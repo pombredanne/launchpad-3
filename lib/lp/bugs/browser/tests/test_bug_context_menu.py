@@ -17,7 +17,6 @@ from lp.services.features import get_relevant_feature_controller
 from lp.testing import (
     feature_flags,
     person_logged_in,
-    set_feature_flag,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
@@ -37,8 +36,6 @@ class TestBugContextMenu(TestCaseWithFactory):
         launchbag.add(self.bug)
         launchbag.add(self.bug.default_bugtask)
         self.context_menu = BugContextMenu(self.bug)
-        with feature_flags():
-            set_feature_flag(u'malone.advanced-subscriptions.enabled', u'on')
 
     def test_text_for_muted_subscriptions(self):
         # If a user has a mute on a bug it's recorded internally as a
@@ -47,8 +44,7 @@ class TestBugContextMenu(TestCaseWithFactory):
         person = self.factory.makePerson()
         with feature_flags():
             with person_logged_in(person):
-                self.bug.subscribe(
-                    person, person, level=BugNotificationLevel.NOTHING)
+                self.bug.mute(person, person)
                 link = self.context_menu.subscription()
                 self.assertEqual('Subscribe', link.text)
 
@@ -65,8 +61,7 @@ class TestBugContextMenu(TestCaseWithFactory):
                 self.assertEqual("Mute bug mail", link.text)
                 # Once the user has muted the bug, the link text will
                 # change.
-                self.bug.subscribe(
-                    person, person, level=BugNotificationLevel.NOTHING)
+                self.bug.mute(person, person)
                 link = self.context_menu.mute_subscription()
                 self.assertEqual("Unmute bug mail", link.text)
 
@@ -76,10 +71,11 @@ class TestBugContextMenu(TestCaseWithFactory):
         with feature_flags():
             with person_logged_in(person):
                 self.bug.subscribe(
-                    person, person, level=BugNotificationLevel.NOTHING)
+                    person, person, level=BugNotificationLevel.METADATA)
+                self.bug.mute(person, person)
                 request = LaunchpadTestRequest()
                 request.features = get_relevant_feature_controller()
                 view = create_initialized_view(
-                    self.bug, name="+portlet-subscribers", request=request)
+                    self.bug, name="+portlet-subscription", request=request)
                 html = view.render()
         self.assertTrue('class="sprite maybe mute-help"' in html)

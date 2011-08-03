@@ -80,15 +80,17 @@ class IBugNotificationSet(Interface):
         `BugNotificationRecipient` objects.
         """
 
-    def getRecipientFilterData(recipient_to_sources, notifications):
+    def getRecipientFilterData(bug, recipient_to_sources, notifications):
         """Get non-muted recipients mapped to sources & filter descriptions.
 
+        :param bug:
+            A bug we are collecting filter data for.
         :param recipient_to_sources:
             A dict of people who are to receive the email to the sources
             (BugNotificationRecipients) that represent the subscriptions that
             caused the notifications to be sent.
         :param notifications: the notifications that are being communicated.
-    
+
         The dict of recipients may have fewer recipients than were
         provided if those users muted all of the subscription filters
         that caused them to be sent.

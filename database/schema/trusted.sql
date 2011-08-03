@@ -259,6 +259,7 @@ $$
         WHERE
             pg_class.relnamespace = pg_namespace.oid
             AND pg_class.relkind = 'r'
+            AND pg_table_is_visible(pg_class.oid)
 
         UNION ALL
         
@@ -277,6 +278,7 @@ $$
             pg_index
         WHERE
             pg_class_index.relkind = 'i'
+            AND pg_table_is_visible(pg_class_table.oid)
             AND pg_class_index.relnamespace = pg_namespace_index.oid
             AND pg_class_table.relnamespace = pg_namespace_table.oid
             AND pg_index.indexrelid = pg_class_index.oid
@@ -299,6 +301,7 @@ $$
             pg_class AS pg_class_toast
         WHERE
             pg_class_toast.relnamespace = pg_namespace_toast.oid
+            AND pg_table_is_visible(pg_class_table.oid)
             AND pg_class_table.relnamespace = pg_namespace_table.oid
             AND pg_class_toast.oid = pg_class_table.reltoastrelid
 
@@ -320,6 +323,7 @@ $$
             pg_class AS pg_class_toast
         WHERE
             pg_class_table.relnamespace = pg_namespace_table.oid
+            AND pg_table_is_visible(pg_class_table.oid)
             AND pg_class_index.relnamespace = pg_namespace_index.oid
             AND pg_class_table.reltoastrelid = pg_class_toast.oid
             AND pg_class_index.oid = pg_class_toast.reltoastidxid
@@ -1995,7 +1999,51 @@ END;
 $$;
 
 COMMENT ON FUNCTION message_copy_owner_to_bugmessage() IS
-'Copies the message owner into bugmessage whenmessage changes.';
+'Copies the message owner into bugmessage when message changes.';
+
+
+CREATE OR REPLACE FUNCTION questionmessage_copy_owner_from_message()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        IF NEW.owner is NULL THEN
+            UPDATE QuestionMessage
+            SET owner = Message.owner FROM
+            Message WHERE
+            Message.id = NEW.message AND
+            QuestionMessage.id = NEW.id;
+        END IF;
+    ELSIF NEW.message != OLD.message THEN
+        UPDATE QuestionMessage
+        SET owner = Message.owner FROM
+        Message WHERE
+        Message.id = NEW.message AND
+        QuestionMessage.id = NEW.id;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION questionmessage_copy_owner_from_message() IS
+'Copies the message owner into QuestionMessage when QuestionMessage changes.';
+
+CREATE OR REPLACE FUNCTION message_copy_owner_to_questionmessage()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO public AS
+$$
+BEGIN
+    IF NEW.owner != OLD.owner THEN
+        UPDATE QuestionMessage
+        SET owner = NEW.owner
+        WHERE
+        QuestionMessage.message = NEW.id;
+    END IF;
+    RETURN NULL; -- Ignored - this is an AFTER trigger
+END;
+$$;
+
+COMMENT ON FUNCTION message_copy_owner_to_questionmessage() IS
+'Copies the message owner into questionmessage when message changes.';
 
 
 CREATE OR REPLACE FUNCTION bug_update_heat_copy_to_bugtask()

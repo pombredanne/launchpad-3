@@ -24,8 +24,11 @@ __all__ = [
 import cgi
 from cStringIO import StringIO
 from datetime import datetime
+from functools import partial
 from operator import itemgetter
+import httplib
 import urllib
+from urlparse import urljoin
 
 from lazr.restful.interface import copy_field
 from pytz import timezone
@@ -59,7 +62,6 @@ from canonical.launchpad.browser.feeds import (
     FeedsMixin,
     )
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import (
     canonical_url,
@@ -71,7 +73,6 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.menu import structured
-from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -87,6 +88,7 @@ from lp.app.errors import (
     UnexpectedFormData,
     )
 from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
     ILaunchpadUsage,
     IServiceUsage,
     )
@@ -133,6 +135,7 @@ from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_target,
     )
+from lp.bugs.publisher import BugsLayer
 from lp.bugs.utilities.filebugdataparser import FileBugData
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionSet
 from lp.registry.browser.product import ProductConfigureBase
@@ -327,6 +330,17 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
         self.extra_data = FileBugData()
 
     def initialize(self):
+        # redirect_ubuntu_filebug is a cached_property.
+        # Access it first just to compute its value. Because it
+        # makes a DB access to get the bug supervisor, it causes
+        # trouble in tests when form validation errors occur. Because the
+        # transaction is doomed, the storm cache is invalidated and accessing
+        # the property will result in a a LostObjectError, because
+        # the created objects disappeared. Not likely a problem in production
+        # since the objects will still be in the DB, but doesn't hurt there
+        # either. It makes for better diagnosis of failing tests.
+        if self.redirect_ubuntu_filebug:
+            pass
         LaunchpadFormView.initialize(self)
         if (not self.redirect_ubuntu_filebug and
             self.extra_data_token is not None and
@@ -471,7 +485,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
                     distribution = self.context.distribution
 
                 try:
-                    distribution.guessPackageNames(packagename)
+                    distribution.guessPublishedSourcePackageName(packagename)
                 except NotFoundError:
                     if distribution.series:
                         # If a distribution doesn't have any series,
@@ -588,13 +602,9 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             # package name, so let the Soyuz API figure it out for us.
             packagename = str(packagename.name)
             try:
-                sourcepackagename, binarypackagename = (
-                    context.guessPackageNames(packagename))
+                sourcepackagename = context.guessPublishedSourcePackageName(
+                    packagename)
             except NotFoundError:
-                # guessPackageNames may raise NotFoundError. It would be
-                # nicer to allow people to indicate a package even if
-                # never published, but the quick fix for now is to note
-                # the issue and move on.
                 notifications.append(
                     "The package %s is not published in %s; the "
                     "bug was targeted only to the distribution."
@@ -606,7 +616,6 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
                         packagename, context.displayname))
             else:
                 context = context.getSourcePackage(sourcepackagename.name)
-                params.binarypackagename = binarypackagename
 
         extra_data = self.extra_data
         if extra_data.extra_description:
@@ -747,7 +756,7 @@ class FileBugViewBase(FileBugReportingGuidelines, LaunchpadFormView):
             else:
                 bug.subscribe(self.user, self.user)
                 self.request.response.addNotification(
-                    "You have been subscribed to this bug.")
+                    "You have subscribed to this bug report.")
 
         self.next_url = canonical_url(bug.bugtasks[0])
 
@@ -953,7 +962,7 @@ class FileBugAdvancedView(FileBugViewBase):
         filebug_url = canonical_url(
             self.context, rootsite='bugs', view_name='+filebug')
         self.request.response.redirect(
-            filebug_url, status=HTTP_MOVED_PERMANENTLY)
+            filebug_url, status=httplib.MOVED_PERMANENTLY)
 
 
 class FilebugShowSimilarBugsView(FileBugViewBase):
@@ -1065,7 +1074,8 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
                 config.malone.ubuntu_bug_filing_url)
 
     @safe_action
-    @action("Continue", name="projectgroupsearch", validator="validate_search")
+    @action("Continue", name="projectgroupsearch",
+            validator="validate_search")
     def projectgroup_search_action(self, action, data):
         """Search for similar bug reports."""
         # Don't give focus to any widget, to ensure that the browser
@@ -1187,35 +1197,35 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
         return url
 
 
-class BugTargetBugListingView:
+class BugTargetBugListingView(LaunchpadView):
     """Helper methods for rendering bug listings."""
 
     @property
     def series_list(self):
-        if IDistribution(self.context, None):
-            series = self.context.series
-        elif IProduct(self.context, None):
-            series = self.context.series
-        elif IDistroSeries(self.context, None):
+        if IDistroSeries(self.context, None):
             series = self.context.distribution.series
+        elif IDistribution(self.context, None):
+            series = self.context.series
         elif IProductSeries(self.context, None):
             series = self.context.product.series
+        elif IProduct(self.context, None):
+            series = self.context.series
         else:
             raise AssertionError("series_list called with illegal context")
         return list(series)
 
     @property
     def milestones_list(self):
-        if IDistribution(self.context, None):
-            milestone_resultset = self.context.milestones
-        elif IProduct(self.context, None):
-            milestone_resultset = self.context.milestones
-        elif IDistroSeries(self.context, None):
+        if IDistroSeries(self.context, None):
             milestone_resultset = self.context.distribution.milestones
+        elif IDistribution(self.context, None):
+            milestone_resultset = self.context.milestones
         elif IProductSeries(self.context, None):
             milestone_resultset = self.context.product.milestones
+        elif IProduct(self.context, None):
+            milestone_resultset = self.context.milestones
         else:
-            raise AssertionError("series_list called with illegal context")
+            raise AssertionError("milestones_list called with illegal context")
         return list(milestone_resultset)
 
     @property
@@ -1227,25 +1237,25 @@ class BugTargetBugListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
         series_buglistings = []
         bug_task_set = getUtility(IBugTaskSet)
         series_list = self.series_list
         if not series_list:
             return series_buglistings
-        open_bugs = bug_task_set.open_bugtask_search
-        open_bugs.setTarget(any(*series_list))
         # This would be better as delegation not a case statement.
-        if IDistribution(self.context, None):
-            backlink = BugTask.distroseriesID
-        elif IProduct(self.context, None):
-            backlink = BugTask.productseriesID
-        elif IDistroSeries(self.context, None):
-            backlink = BugTask.distroseriesID
+        if IDistroSeries(self.context, None):
+            backlink = BugSummary.distroseries_id
+        elif IDistribution(self.context, None):
+            backlink = BugSummary.distroseries_id
         elif IProductSeries(self.context, None):
-            backlink = BugTask.productseriesID
+            backlink = BugSummary.productseries_id
+        elif IProduct(self.context, None):
+            backlink = BugSummary.productseries_id
         else:
             raise AssertionError("illegal context %r" % self.context)
-        counts = bug_task_set.countBugs(open_bugs, (backlink,))
+        counts = bug_task_set.countBugs(self.user, series_list, (backlink,))
         for series in series_list:
             series_bug_count = counts.get((series.id,), 0)
             if series_bug_count > 0:
@@ -1260,14 +1270,23 @@ class BugTargetBugListingView:
     @property
     def milestone_buglistings(self):
         """Return a buglisting for each milestone."""
+        # Circular fail.
+        from lp.bugs.model.bugsummary import (
+            BugSummary,
+            CombineBugSummaryConstraint,
+            )
         milestone_buglistings = []
         bug_task_set = getUtility(IBugTaskSet)
         milestones = self.milestones_list
         if not milestones:
             return milestone_buglistings
-        open_bugs = bug_task_set.open_bugtask_search
-        open_bugs.setTarget(any(*milestones))
-        counts = bug_task_set.countBugs(open_bugs, (BugTask.milestoneID,))
+        # Note: this isn't totally optimal as a query, but its the simplest to
+        # code; we can iterate if needed to provide one complex context to
+        # countBugs.
+        query_milestones = map(partial(
+            CombineBugSummaryConstraint, self.context), milestones)
+        counts = bug_task_set.countBugs(
+            self.user, query_milestones, (BugSummary.milestone_id,))
         for milestone in milestones:
             milestone_bug_count = counts.get((milestone.id,), 0)
             if milestone_bug_count > 0:
@@ -1402,19 +1421,8 @@ class BugTargetBugTagsView(LaunchpadView):
     def tags_cloud_data(self):
         """The data for rendering a tags cloud"""
         official_tags = self.context.official_bug_tags
-
-        # Construct a dict of official and top 10 tags.
-        # getUsedBugTagsWithOpenCounts is expensive, so do the union in
-        # SQL. Also preseed with 0 for all the official tags, as gUBTWOC
-        # won't return unused ones.
-        top_ten = removeSecurityProxy(
-            self.context.getUsedBugTagsWithOpenCounts(self.user)[:10])
-        official = removeSecurityProxy(
-            self.context.getUsedBugTagsWithOpenCounts(
-                self.user, official_tags))
-        tags = dict((tag, 0) for tag in official_tags)
-        tags.update(dict(top_ten.union(official)))
-
+        tags = self.context.getUsedBugTagsWithOpenCounts(
+            self.user, 10, official_tags)
         max_count = float(max([1] + tags.values()))
 
         return sorted(
@@ -1459,8 +1467,11 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
     @property
     def tags_js_data(self):
         """Return the JSON representation of the bug tags."""
-        used_tags = dict(self.context.getUsedBugTagsWithOpenCounts(self.user))
-        official_tags = list(self.context.official_bug_tags)
+        # The model returns dict and list respectively but dumps blows up on
+        # security proxied objects.
+        used_tags = removeSecurityProxy(
+            self.context.getUsedBugTagsWithOpenCounts(self.user))
+        official_tags = removeSecurityProxy(self.context.official_bug_tags)
         return """<script type="text/javascript">
                       var used_bug_tags = %s;
                       var official_bug_tags = %s;
@@ -1568,6 +1579,14 @@ class TargetSubscriptionView(LaunchpadView):
 
     def initialize(self):
         super(TargetSubscriptionView, self).initialize()
+        # Some resources such as help files are only provided on the bugs
+        # rootsite.  So if we got here via another, possibly hand-crafted, URL
+        # redirect to the equivalent URL on the bugs rootsite.
+        if not BugsLayer.providedBy(self.request):
+            new_url = urljoin(
+                self.request.getRootURL('bugs'), self.request['PATH_INFO'])
+            self.request.response.redirect(new_url)
+            return
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user, self.subscriptions)
 

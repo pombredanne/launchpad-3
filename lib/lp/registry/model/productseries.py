@@ -40,13 +40,17 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+from lp.app.enums import service_uses_launchpad
 from lp.app.errors import NotFoundError
-from lp.app.enums import (
-    service_uses_launchpad)
-from lp.app.interfaces.launchpad import IServiceUsage
+from lp.app.interfaces.launchpad import (
+    ILaunchpadCelebrities,
+    IServiceUsage,
+    )
 from lp.blueprints.enums import (
     SpecificationDefinitionStatus,
     SpecificationFilter,
@@ -58,11 +62,14 @@ from lp.blueprints.model.specification import (
     HasSpecificationsMixin,
     Specification,
     )
-from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
+from lp.bugs.interfaces.bugtarget import (
+    IHasBugHeat,
+    ISeriesBugTarget,
+    )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import (
     get_bug_tags,
-    get_bug_tags_open_count,
     )
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
@@ -74,6 +81,7 @@ from lp.bugs.model.structuralsubscription import (
     )
 from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.person import validate_person
+from lp.registry.interfaces.productrelease import IProductReleaseSet
 from lp.registry.interfaces.productseries import (
     IProductSeries,
     IProductSeriesSet,
@@ -123,7 +131,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
                     StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-    implements(IHasBugHeat, IProductSeries, IServiceUsage)
+    implements(
+        IBugSummaryDimension, IHasBugHeat, IProductSeries, IServiceUsage,
+        ISeriesBugTarget)
 
     _table = 'ProductSeries'
 
@@ -202,11 +212,19 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def releases(self):
         """See `IProductSeries`."""
         store = Store.of(self)
+
+        # The Milestone is cached too because most uses of a ProductRelease
+        # need it. The decorated resultset returns just the ProductRelease.
+        def decorate(row):
+            product_release, milestone = row
+            return product_release
+
         result = store.find(
-            ProductRelease,
-            And(Milestone.productseries == self,
-                ProductRelease.milestone == Milestone.id))
-        return result.order_by(Desc('datereleased'))
+            (ProductRelease, Milestone),
+            Milestone.productseries == self,
+            ProductRelease.milestone == Milestone.id)
+        result = result.order_by(Desc('datereleased'))
+        return DecoratedResultSet(result, decorate)
 
     @property
     def release_files(self):
@@ -234,6 +252,11 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
     def bugtargetname(self):
         """See IBugTarget."""
         return "%s/%s" % (self.product.name, self.name)
+
+    @property
+    def bugtarget_parent(self):
+        """See `ISeriesBugTarget`."""
+        return self.parent
 
     @property
     def max_bug_heat(self):
@@ -433,18 +456,15 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
         """See IBugTarget."""
         return get_bug_tags("BugTask.productseries = %s" % sqlvalues(self))
 
-    def getUsedBugTagsWithOpenCounts(self, user, wanted_tags=None):
-        """See IBugTarget."""
-        return get_bug_tags_open_count(
-            BugTask.productseries == self, user, wanted_tags=wanted_tags)
-
     def createBug(self, bug_params):
         """See IBugTarget."""
         raise NotImplementedError('Cannot file a bug against a productseries')
 
-    def _getBugTaskContextClause(self):
+    def getBugSummaryContextWhereClause(self):
         """See BugTargetBase."""
-        return 'BugTask.productseries = %s' % sqlvalues(self)
+        # Circular fail.
+        from lp.bugs.model.bugsummary import BugSummary
+        return BugSummary.productseries_id == self.id
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
@@ -458,10 +478,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasBugHeatMixin,
             return None
 
     def getRelease(self, version):
-        for release in self.releases:
-            if release.version == version:
-                return release
-        return None
+        return getUtility(IProductReleaseSet).getBySeriesAndVersion(
+            self, version)
 
     def getPackage(self, distroseries):
         """See IProductSeries."""

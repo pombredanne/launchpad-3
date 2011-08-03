@@ -83,3 +83,7 @@ class MailingListAPITestCase(TestCaseWithFactory):
         email = config.mailman.archive_address
         self.factory.makePerson(email=email)
         self.assertFalse(self.api.isRegisteredInLaunchpad(email))
+
+    def test_isRegisteredInLaunchpad_team(self):
+        self.factory.makeTeam(email='me@fndor.dom')
+        self.assertFalse(self.api.isRegisteredInLaunchpad('me@fndor.dom'))

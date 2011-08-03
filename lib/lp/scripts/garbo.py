@@ -25,6 +25,9 @@ from contrib.glock import (
 import multiprocessing
 from psycopg2 import IntegrityError
 import pytz
+from storm.expr import (
+    In,
+    )
 from storm.locals import (
     Max,
     Min,
@@ -74,6 +77,7 @@ from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
 from lp.services.log.logger import PrefixFilter
+from lp.services.propertycache import cachedproperty
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LOCK_PATH,
@@ -82,6 +86,11 @@ from lp.services.scripts.base import (
 from lp.services.session.model import SessionData
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potranslation import POTranslation
+from lp.translations.model.potmsgset import POTMsgSet
+from lp.translations.model.translationmessage import TranslationMessage
+from lp.translations.model.translationtemplateitem import (
+    TranslationTemplateItem,
+    )
 
 
 ONE_DAY_IN_SECONDS = 24*60*60
@@ -119,7 +128,7 @@ class BulkPruner(TunableLoop):
     target_table_key = 'id'
 
     # SQL type of the target_table_key. May be overridden.
-    target_table_key_type = 'integer'
+    target_table_key_type = 'id integer'
 
     # An SQL query returning a list of ids to remove from target_table.
     # The query must return a single column named 'id' and should not
@@ -164,9 +173,9 @@ class BulkPruner(TunableLoop):
         """See `ITunableLoop`."""
         result = self.store.execute("""
             DELETE FROM %s
-            WHERE %s IN (
-                SELECT id FROM
-                cursor_fetch('%s', %d) AS f(id %s))
+            WHERE (%s) IN (
+                SELECT * FROM
+                cursor_fetch('%s', %d) AS f(%s))
             """
             % (
                 self.target_table_name, self.target_table_key,
@@ -216,7 +225,7 @@ class SessionPruner(BulkPruner):
 
     target_table_class = SessionData
     target_table_key = 'client_id'
-    target_table_key_type = 'text'
+    target_table_key_type = 'id text'
 
 
 class AntiqueSessionPruner(SessionPruner):
@@ -278,9 +287,13 @@ class OAuthNoncePruner(BulkPruner):
 
     We remove all OAuthNonce records older than 1 day.
     """
+    target_table_key = 'access_token, request_timestamp, nonce'
+    target_table_key_type = (
+        'access_token integer, request_timestamp timestamp without time zone,'
+        ' nonce text')
     target_table_class = OAuthNonce
     ids_to_prune_query = """
-        SELECT id FROM OAuthNonce
+        SELECT access_token, request_timestamp, nonce FROM OAuthNonce
         WHERE request_timestamp
             < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - CAST('1 day' AS interval)
         """
@@ -855,6 +868,69 @@ class SuggestiveTemplatesCacheUpdater(TunableLoop):
         self.done = True
 
 
+class UnusedPOTMsgSetPruner(TunableLoop):
+    """Cleans up unused POTMsgSets."""
+
+    done = False
+    offset = 0
+    maximum_chunk_size = 50000
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return self.offset >= len(self.msgset_ids_to_remove)
+
+    @cachedproperty
+    def msgset_ids_to_remove(self):
+        """Return the IDs of the POTMsgSets to remove."""
+        query = """
+            -- Get all POTMsgSet IDs which are obsolete (sequence == 0)
+            -- and are not used (sequence != 0) in any other template.
+            SELECT POTMsgSet
+              FROM TranslationTemplateItem tti
+              WHERE sequence=0 AND
+              NOT EXISTS(
+                SELECT id
+                  FROM TranslationTemplateItem
+                  WHERE potmsgset = tti.potmsgset AND sequence != 0)
+            UNION
+            -- Get all POTMsgSet IDs which are not referenced
+            -- by any of the templates (they must have TTI rows for that).
+            (SELECT POTMsgSet.id
+               FROM POTMsgSet
+               LEFT OUTER JOIN TranslationTemplateItem
+                 ON TranslationTemplateItem.potmsgset = POTMsgSet.id
+               WHERE
+                 TranslationTemplateItem.potmsgset IS NULL);
+            """
+        store = IMasterStore(POTMsgSet)
+        results = store.execute(query)
+        ids_to_remove = [id for (id,) in results.get_all()]
+        return ids_to_remove
+
+    def __call__(self, chunk_size):
+        """See `TunableLoop`."""
+        # We cast chunk_size to an int to avoid issues with slicing
+        # (DBLoopTuner passes in a float).
+        chunk_size = int(chunk_size)
+        msgset_ids_to_remove = (
+            self.msgset_ids_to_remove[self.offset:][:chunk_size])
+        # Remove related TranslationTemplateItems.
+        store = IMasterStore(POTMsgSet)
+        related_ttis = store.find(
+            TranslationTemplateItem,
+            In(TranslationTemplateItem.potmsgsetID, msgset_ids_to_remove))
+        related_ttis.remove()
+        # Remove related TranslationMessages.
+        related_translation_messages = store.find(
+            TranslationMessage,
+            In(TranslationMessage.potmsgsetID, msgset_ids_to_remove))
+        related_translation_messages.remove()
+        store.find(
+            POTMsgSet, In(POTMsgSet.id, msgset_ids_to_remove)).remove()
+        self.offset = self.offset + chunk_size
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None # Script name for locking and database user. Override.
@@ -1104,6 +1180,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         RevisionAuthorEmailLinker,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
+        UnusedPOTMsgSetPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,

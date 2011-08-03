@@ -1,11 +1,10 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for the process-accepted.py script."""
 
 __metaclass__ = type
 __all__ = [
-    'close_bugs',
     'close_bugs_for_queue_item',
     'close_bugs_for_sourcepackagerelease',
     'close_bugs_for_sourcepublication',
@@ -13,37 +12,34 @@ __all__ = [
     'ProcessAccepted',
     ]
 
-from debian.deb822 import Deb822Dict
 import sys
 
+from debian.deb822 import Deb822Dict
+from optparse import OptionValueError
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
     )
 from lp.app.errors import NotFoundError
-from lp.archiveuploader.tagfiles import parse_tagfile_lines
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.scripts.base import (
-    LaunchpadScript,
+    LaunchpadCronScript,
     LaunchpadScriptFailure,
     )
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
-from lp.soyuz.interfaces.queue import (
-    IPackageUploadSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.queue import IPackageUploadSet
 
 
 def get_bugs_from_changes_file(changes_file):
@@ -52,9 +48,7 @@ def get_bugs_from_changes_file(changes_file):
     The bugs is specified in the Launchpad-bugs-fixed header, and are
     separated by a space character. Nonexistent bug ids are ignored.
     """
-    contents = changes_file.read()
-    changes_lines = contents.splitlines(True)
-    tags = Deb822Dict(parse_tagfile_lines(changes_lines, allow_unsigned=True))
+    tags = Deb822Dict(parse_tagfile_content(changes_file.read()))
     bugs_fixed_line = tags.get('Launchpad-bugs-fixed', '')
     bugs = []
     for bug_id in bugs_fixed_line.split():
@@ -68,17 +62,6 @@ def get_bugs_from_changes_file(changes_file):
         else:
             bugs.append(bug)
     return bugs
-
-
-def close_bugs(queue_ids):
-    """Close any bugs referenced by the queue items.
-
-    Retrieve PackageUpload objects for the given ID list and perform
-    close_bugs_for_queue_item on each of them.
-    """
-    for queue_id in queue_ids:
-        queue_item = getUtility(IPackageUploadSet).get(queue_id)
-        close_bugs_for_queue_item(queue_item)
 
 
 def can_close_bugs(target):
@@ -195,7 +178,73 @@ def close_bugs_for_sourcepackagerelease(source_release, changesfile_object):
                 content=content)
 
 
-class ProcessAccepted(LaunchpadScript):
+class TargetPolicy:
+    """Policy describing what kinds of archives to operate on."""
+
+    def __init__(self, logger):
+        self.logger = logger
+
+    def getTargetArchives(self, distribution):
+        """Get target archives of the right sort for `distribution`."""
+        raise NotImplemented("getTargetArchives")
+
+    def describeArchive(self, archive):
+        """Return textual description for `archive` in this script run."""
+        raise NotImplemented("describeArchive")
+
+    def postprocessSuccesses(self, queue_ids):
+        """Optionally, post-process successfully processed queue items.
+
+        :param queue_ids: An iterable of `PackageUpload` ids that were
+            successfully processed.
+        """
+
+
+class PPATargetPolicy(TargetPolicy):
+    """Target policy for PPA archives."""
+
+    def getTargetArchives(self, distribution):
+        """See `TargetPolicy`."""
+        return distribution.getPendingAcceptancePPAs()
+
+    def describeArchive(self, archive):
+        """See `TargetPolicy`."""
+        return archive.archive_url
+
+
+class CopyArchiveTargetPolicy(TargetPolicy):
+    """Target policy for copy archives."""
+
+    def getTargetArchives(self, distribution):
+        """See `TargetPolicy`."""
+        return getUtility(IArchiveSet).getArchivesForDistribution(
+            distribution, purposes=[ArchivePurpose.COPY])
+
+    def describeArchive(self, archive):
+        """See `TargetPolicy`."""
+        return archive.displayname
+
+
+class DistroTargetPolicy(TargetPolicy):
+    """Target policy for distro archives."""
+
+    def getTargetArchives(self, distribution):
+        """See `TargetPolicy`."""
+        return distribution.all_distro_archives
+
+    def describeArchive(self, archive):
+        """See `TargetPolicy`."""
+        return archive.purpose.title
+
+    def postprocessSuccesses(self, queue_ids):
+        """See `TargetPolicy`."""
+        self.logger.debug("Closing bugs.")
+        for queue_id in queue_ids:
+            queue_item = getUtility(IPackageUploadSet).get(queue_id)
+            close_bugs_for_queue_item(queue_item)
+
+
+class ProcessAccepted(LaunchpadCronScript):
     """Queue/Accepted processor.
 
     Given a distribution to run on, obtains all the queue items for the
@@ -209,6 +258,10 @@ class ProcessAccepted(LaunchpadScript):
             "-n", "--dry-run", action="store_true",
             dest="dryrun", metavar="DRY_RUN", default=False,
             help="Whether to treat this as a dry-run or not.")
+
+        self.parser.add_option(
+            '-D', '--derived', action="store_true", dest="derived",
+            default=False, help="Process all Ubuntu-derived distributions.")
 
         self.parser.add_option(
             "--ppa", action="store_true",
@@ -225,89 +278,116 @@ class ProcessAccepted(LaunchpadScript):
         """Override LaunchpadScript's lock file name."""
         return "/var/lock/launchpad-upload-queue.lock"
 
+    def _commit(self):
+        """Commit transaction (unless in dry-run mode)."""
+        if self.options.dryrun:
+            self.logger.debug("Skipping commit: dry-run mode.")
+        else:
+            self.txn.commit()
+
+    def findNamedDistro(self, distro_name):
+        """Find the `Distribution` called `distro_name`."""
+        self.logger.debug("Finding distribution %s.", distro_name)
+        distro = getUtility(IDistributionSet).getByName(distro_name)
+        if distro is None:
+            raise LaunchpadScriptFailure(
+                "Distribution '%s' not found." % distro_name)
+        return distro
+
+    def findTargetDistros(self):
+        """Find the distribution(s) to process, based on arguments."""
+        if self.options.derived:
+            return getUtility(IDistributionSet).getDerivedDistributions()
+        else:
+            return [self.findNamedDistro(self.args[0])]
+
+    def validateArguments(self):
+        """Validate command-line arguments."""
+        if self.options.ppa and self.options.copy_archives:
+            raise OptionValueError(
+                "Specify only one of copy archives or ppa archives.")
+        if self.options.derived:
+            if len(self.args) != 0:
+                raise OptionValueError(
+                    "Can't combine --derived with a distribution name.")
+        else:
+            if len(self.args) != 1:
+                raise OptionValueError(
+                    "Need to be given exactly one non-option argument. "
+                    "Namely the distribution to process.")
+
+    def makeTargetPolicy(self):
+        """Pick and instantiate a `TargetPolicy` based on given options."""
+        if self.options.ppa:
+            policy_class = PPATargetPolicy
+        elif self.options.copy_archives:
+            policy_class = CopyArchiveTargetPolicy
+        else:
+            policy_class = DistroTargetPolicy
+        return policy_class(self.logger)
+
+    def processQueueItem(self, queue_item):
+        """Attempt to process `queue_item`.
+
+        This method swallows exceptions that occur while processing the
+        item.
+
+        :param queue_item: A `PackageUpload` to process.
+        :return: True on success, or False on failure.
+        """
+        self.logger.debug("Processing queue item %d" % queue_item.id)
+        try:
+            queue_item.realiseUpload(self.logger)
+        except Exception:
+            message = "Failure processing queue_item %d" % queue_item.id
+            properties = [('error-explanation', message)]
+            request = ScriptRequest(properties)
+            ErrorReportingUtility().raising(sys.exc_info(), request)
+            self.logger.error('%s (%s)', message, request.oopsid)
+            return False
+        else:
+            self.logger.debug(
+                "Successfully processed queue item %d", queue_item.id)
+            return True
+
+    def processForDistro(self, distribution, target_policy):
+        """Process all queue items for a distribution.
+
+        Commits between items, except in dry-run mode.
+
+        :param distribution: The `Distribution` to process queue items for.
+        :param target_policy: The applicable `TargetPolicy`.
+        :return: A list of all successfully processed items' ids.
+        """
+        processed_queue_ids = []
+        for archive in target_policy.getTargetArchives(distribution):
+            description = target_policy.describeArchive(archive)
+            for distroseries in distribution.series:
+
+                self.logger.debug("Processing queue for %s %s" % (
+                    distroseries.name, description))
+
+                queue_items = distroseries.getPackageUploads(
+                    status=PackageUploadStatus.ACCEPTED, archive=archive)
+                for queue_item in queue_items:
+                    if self.processQueueItem(queue_item):
+                        processed_queue_ids.append(queue_item.id)
+                    # Commit even on error; we may have altered the
+                    # on-disk archive, so the partial state must
+                    # make it to the DB.
+                    self._commit()
+        return processed_queue_ids
+
     def main(self):
         """Entry point for a LaunchpadScript."""
-        if len(self.args) != 1:
-            self.logger.error(
-                "Need to be given exactly one non-option argument. "
-                "Namely the distribution to process.")
-            return 1
-
-        if self.options.ppa and self.options.copy_archives:
-            self.logger.error(
-                "Specify only one of copy archives or ppa archives.")
-            return 1
-
-        distro_name = self.args[0]
-
-        processed_queue_ids = []
+        self.validateArguments()
+        target_policy = self.makeTargetPolicy()
         try:
-            self.logger.debug("Finding distribution %s." % distro_name)
-            distribution = getUtility(IDistributionSet).getByName(distro_name)
-            if distribution is None:
-                raise LaunchpadScriptFailure(
-                    "Distribution '%s' not found." % distro_name)
-
-            # target_archives is a tuple of (archive, description).
-            if self.options.ppa:
-                target_archives = [
-                    (archive, archive.archive_url)
-                    for archive in distribution.getPendingAcceptancePPAs()]
-            elif self.options.copy_archives:
-                copy_archives = getUtility(
-                    IArchiveSet).getArchivesForDistribution(
-                        distribution, purposes=[ArchivePurpose.COPY])
-                target_archives = [
-                    (archive, archive.displayname)
-                    for archive in copy_archives]
-            else:
-                target_archives = [
-                    (archive, archive.purpose.title)
-                    for archive in distribution.all_distro_archives]
-
-            for archive, description in target_archives:
-                for distroseries in distribution.series:
-
-                    self.logger.debug("Processing queue for %s %s" % (
-                        distroseries.name, description))
-
-                    queue_items = distroseries.getQueueItems(
-                        PackageUploadStatus.ACCEPTED, archive=archive)
-                    for queue_item in queue_items:
-                        self.logger.debug(
-                            "Processing queue item %d" % queue_item.id)
-                        try:
-                            queue_item.realiseUpload(self.logger)
-                        except Exception:
-                            message = "Failure processing queue_item %d" % (
-                                queue_item.id)
-                            properties = [('error-explanation', message)]
-                            request = ScriptRequest(properties)
-                            error_utility = ErrorReportingUtility()
-                            error_utility.raising(sys.exc_info(), request)
-                            self.logger.error('%s (%s)' % (message,
-                                request.oopsid))
-                        else:
-                            self.logger.debug(
-                                "Successfully processed queue item %d" %
-                                queue_item.id)
-                            processed_queue_ids.append(queue_item.id)
-                        # Commit even on error; we may have altered the
-                        # on-disk archive, so the partial state must
-                        # make it to the DB.
-                        self.txn.commit()
-
-            if not self.options.dryrun:
-                self.txn.commit()
-            else:
-                self.logger.debug("Dry Run mode.")
-
-            if not self.options.ppa and not self.options.copy_archives:
-                self.logger.debug("Closing bugs.")
-                close_bugs(processed_queue_ids)
-
-            if not self.options.dryrun:
-                self.txn.commit()
+            for distro in self.findTargetDistros():
+                queue_ids = self.processForDistro(distro, target_policy)
+                self._commit()
+                target_policy.postprocessSuccesses(queue_ids)
+                self._commit()
 
         finally:
             self.logger.debug("Rolling back any remaining transactions.")

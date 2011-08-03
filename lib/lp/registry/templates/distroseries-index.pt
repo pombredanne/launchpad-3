@@ -15,9 +15,7 @@
         tal:content="view/register_milestone_script"></script>
       <tal:uses_launchpad_bugtracker
          condition="context/bug_tracking_usage/enumvalue:LAUNCHPAD">
-        <script type="text/javascript"
-          tal:condition="
-            request/features/malone.advanced-structural-subscriptions.enabled">
+        <script type="text/javascript">
             LPS.use('lp.registry.structural_subscription', function(Y) {
                 var module = Y.lp.registry.structural_subscription;
                 Y.on('domready', function() {
@@ -65,10 +63,14 @@
           <div
             tal:replace="structure context/@@+portlet-details"/>
         </div>
-        <div class="yui-u"
-             tal:condition="request/features/soyuz.derived-series-ui.enabled">
-          <div tal:replace="structure context/@@+portlet-derivation" />
-        </div>
+        <tal:derivation
+          tal:condition="request/features/soyuz.derived_series_ui.enabled">
+          <div class="yui-u"
+               tal:condition="python: context.isDerivedSeries() or
+                              context.getInitializationJob() is not None">
+            <div tal:replace="structure context/@@+portlet-derivation" />
+          </div>
+        </tal:derivation>
 
         <div class="yui-u">
           <div tal:replace="structure context/@@+portlet-package-summary" />
@@ -142,6 +144,9 @@
           </li>
           <li tal:condition="overview_menu/admin/enabled">
             <a tal:replace="structure overview_menu/admin/fmt:link" />
+          </li>
+          <li tal:condition="overview_menu/initseries/enabled|nothing">
+            <a tal:replace="structure overview_menu/initseries/fmt:link" />
           </li>
           <li tal:condition="overview_menu/subscribe/enabled|nothing">
             <a tal:replace="structure overview_menu/subscribe/fmt:link" />

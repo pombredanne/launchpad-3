@@ -50,7 +50,7 @@ def assign_to_builder(test, job_name, builder_number, processor='386'):
         builder = None
         builders = test.builders.get(builder_key(build), [])
         try:
-            builder = builders[n-1]
+            builder = builders[n - 1]
         except IndexError:
             pass
         return builder
@@ -256,16 +256,41 @@ class TestBuildPackageJobScore(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_score_unusual_component(self):
-        unusual_component = self.factory.makeComponent(name="unusual")
-        source_package_release = self.factory.makeSourcePackageRelease()
-        self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagerelease=source_package_release,
-            component=unusual_component,
-            archive=source_package_release.upload_archive,
-            distroseries=source_package_release.upload_distroseries)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            component='unusual')
         build = self.factory.makeBinaryPackageBuild(
-            source_package_release=source_package_release)
+            source_package_release=spph.sourcepackagerelease)
         build.queueBuild()
         job = build.buildqueue_record.specific_job
         # For now just test that it doesn't raise an Exception
         job.score()
+
+    def test_main_release_low_score(self):
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            component='main', urgency='low')
+        build = self.factory.makeBinaryPackageBuild(
+            source_package_release=spph.sourcepackagerelease,
+            pocket='RELEASE')
+        job = build.makeJob()
+        self.assertEquals(2505, job.score())
+
+    def test_copy_archive_main_release_low_score(self):
+        copy_archive = self.factory.makeArchive(purpose='COPY')
+        spph = self.factory.makeSourcePackagePublishingHistory(
+           archive=copy_archive, component='main', urgency='low')
+        build = self.factory.makeBinaryPackageBuild(
+            source_package_release=spph.sourcepackagerelease,
+            pocket='RELEASE')
+        job = build.makeJob()
+        self.assertEquals(-95, job.score())
+
+    def test_copy_archive_relative_score_is_applied(self):
+        copy_archive = self.factory.makeArchive(purpose='COPY')
+        removeSecurityProxy(copy_archive).relative_build_score = 2600
+        spph = self.factory.makeSourcePackagePublishingHistory(
+           archive=copy_archive, component='main', urgency='low')
+        build = self.factory.makeBinaryPackageBuild(
+            source_package_release=spph.sourcepackagerelease,
+            pocket='RELEASE')
+        job = build.makeJob()
+        self.assertEquals(2505, job.score())

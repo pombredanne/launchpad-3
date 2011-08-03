@@ -44,6 +44,7 @@ from zope.interface import (
     Interface,
     )
 from zope.schema import (
+    Bool,
     Choice,
     Date,
     Datetime,
@@ -81,6 +82,7 @@ class PoolFileOverwriteError(Exception):
     file in pool and print a warning in the publisher log. It probably
     requires manual intervention in the archive.
     """
+
 
 class MissingSymlinkInPool(Exception):
     """Raised when there is a missing symlink in pool.
@@ -126,7 +128,7 @@ class ICanPublishPackages(Interface):
     def publish(diskpool, log, archive, pocket, careful=False):
         """Publish associated publishing records targeted for a given pocket.
 
-        Require an initialised diskpool instance and a logger instance.
+        Require an initialized diskpool instance and a logger instance.
         Require an 'archive' which will restrict the publications.
         'careful' argument would cause the 'republication' of all published
         records if True (system will DTRT checking hash of all
@@ -588,8 +590,15 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         `IBinaryPackagePublishingHistory`.
         """
 
-    def copyTo(distroseries, pocket, archive):
+    def copyTo(distroseries, pocket, archive, overrides=None):
         """Copy this publication to another location.
+
+        :param distroseries: The `IDistroSeries` to copy the source
+            publication into.
+        :param pocket: The `PackagePublishingPocket` to copy into.
+        :param archive: The `IArchive` to copy the source publication into.
+        :param overrides: A tuple of override data as returned from a
+            `IOverridePolicy`
 
         :return: a `ISourcePackagePublishingHistory` record representing the
             source in the destination location.
@@ -788,6 +797,10 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
         TextLine(
             title=_("Binary Package Version"),
             required=False, readonly=True))
+    architecture_specific = exported(
+        Bool(
+            title=_("Architecture Specific"),
+            required=False, readonly=True))
     priority_name = exported(
         TextLine(
             title=_("Priority Name"),
@@ -862,7 +875,7 @@ class IBinaryPackagePublishingHistory(IBinaryPackagePublishingHistoryPublic,
 class IPublishingSet(Interface):
     """Auxiliary methods for dealing with sets of publications."""
 
-    def copyBinariesTo(binaries, distroseries, pocket, archive):
+    def copyBinariesTo(binaries, distroseries, pocket, archive, policy=None):
         """Copy multiple binaries to a given destination.
 
         Processing multiple binaries in a batch allows certain
@@ -874,6 +887,7 @@ class IPublishingSet(Interface):
         :param distroseries: The target distroseries.
         :param pocket: The target pocket.
         :param archive: The target archive.
+        :param policy: The `IOverridePolicy` to apply to the copy.
 
         :return: A result set of the created binary package
             publishing histories.
@@ -935,7 +949,8 @@ class IPublishingSet(Interface):
         """
 
     def newSourcePublication(archive, sourcepackagerelease, distroseries,
-                             component, section, pocket, ancestor):
+                             component, section, pocket, ancestor,
+                             create_dsd_job=True):
         """Create a new `SourcePackagePublishingHistory`.
 
         :param archive: An `IArchive`
@@ -946,6 +961,8 @@ class IPublishingSet(Interface):
         :param pocket: A `PackagePublishingPocket`
         :param ancestor: A `ISourcePackagePublishingHistory` for the previous
             version of this publishing record
+        :param create_dsd_job: A boolean indicating whether or not a dsd job
+             should be created for the new source publication.
 
         datecreated will be UTC_NOW.
         status will be PackagePublishingStatus.PENDING

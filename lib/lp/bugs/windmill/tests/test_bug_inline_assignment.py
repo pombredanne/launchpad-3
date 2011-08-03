@@ -1,22 +1,44 @@
 # Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+import transaction
+
+from canonical.launchpad.webapp import canonical_url
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import WindmillTestCase
 from lp.testing.windmill import lpuser
 from lp.testing.windmill.constants import (
     FOR_ELEMENT,
+    SLEEP,
     )
+
+ASSIGN_BUTTON = (u'//*[@id="affected-software"]//tr//td[5]' +
+    '//button[contains(@class, "yui3-activator-act")]')
+VISIBLE_PICKER_OVERLAY = (
+    u'//div[contains(@class, "yui3-picker ") and '
+        'not(contains(@class, "yui3-picker-hidden"))]')
+VISIBLE_PICKER_SEARCH = (
+    u"//input[@class='yui3-picker-search' and "
+    "not(ancestor::*[contains(@style,'display: none')])]")
+
+
+def full_picker_element_xpath(element_path):
+    return VISIBLE_PICKER_OVERLAY + element_path
 
 
 class TestInlineAssignment(WindmillTestCase):
 
     layer = BugsWindmillLayer
 
+    def openAssigneePicker(self, client):
+        client.waits.forElement(xpath=ASSIGN_BUTTON, timeout=FOR_ELEMENT)
+        client.click(xpath=ASSIGN_BUTTON)
+        client.waits.forElement(
+            xpath=VISIBLE_PICKER_OVERLAY, timeout=FOR_ELEMENT)
+
     def test_inline_assignment_non_contributor(self):
         """Test assigning bug to a non contributor displays a confirmation."""
 
-        import transaction
         # Create a person who has not contributed
         self.factory.makePerson(name="fred")
         transaction.commit()
@@ -24,23 +46,11 @@ class TestInlineAssignment(WindmillTestCase):
         client, start_url = self.getClientFor(
             "/firefox/+bug/1", lpuser.SAMPLE_PERSON)
 
-        ASSIGN_BUTTON = (u'//*[@id="affected-software"]//tr//td[5]' +
-            '//button[contains(@class, "yui3-activator-act")]')
-        client.waits.forElement(xpath=ASSIGN_BUTTON, timeout=FOR_ELEMENT)
-        client.click(xpath=ASSIGN_BUTTON)
+        self.openAssigneePicker(client)
 
-        VISIBLE_PICKER_OVERLAY = (
-            u'//div[contains(@class, "yui3-picker ") and '
-             'not(contains(@class, "yui3-picker-hidden"))]')
-
-        client.waits.forElement(
-            xpath=VISIBLE_PICKER_OVERLAY, timeout=FOR_ELEMENT)
-
-        def full_picker_element_xpath(element_path):
-            return VISIBLE_PICKER_OVERLAY + element_path
-
-        client.type(xpath=full_picker_element_xpath(
-            "//input[@class='yui3-picker-search']"), text='fred')
+        client.type(
+            xpath=full_picker_element_xpath(VISIBLE_PICKER_SEARCH),
+            text='fred')
         client.click(xpath=full_picker_element_xpath(
             "//div[@class='yui3-picker-search-box']/button"))
 

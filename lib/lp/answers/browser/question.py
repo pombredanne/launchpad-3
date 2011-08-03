@@ -60,11 +60,9 @@ from canonical.launchpad.helpers import (
     is_english_variant,
     preferred_or_request_languages,
     )
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet,
     )
-from canonical.launchpad.utilities.personroles import PersonRoles
 from canonical.launchpad.webapp import (
     ApplicationMenu,
     canonical_url,
@@ -74,7 +72,6 @@ from canonical.launchpad.webapp import (
     Link,
     Navigation,
     NavigationMenu,
-    redirection,
     )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
@@ -82,6 +79,11 @@ from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
 from lp.answers.browser.questiontarget import SearchQuestionsView
+from lp.answers.enums import (
+    QuestionAction,
+    QuestionSort,
+    QuestionStatus,
+    )
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.interfaces.question import (
@@ -91,11 +93,6 @@ from lp.answers.interfaces.question import (
     IQuestionLinkFAQForm,
     )
 from lp.answers.interfaces.questioncollection import IQuestionSet
-from lp.answers.enums import (
-    QuestionAction,
-    QuestionSort,
-    QuestionStatus,
-    )
 from lp.answers.interfaces.questiontarget import (
     IAnswersFrontPageSearchForm,
     IQuestionTarget,
@@ -107,15 +104,18 @@ from lp.app.browser.launchpadform import (
     LaunchpadFormView,
     safe_action,
     )
+from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.errors import (
     NotFoundError,
     UnexpectedFormData,
     )
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.app.widgets.textwidgets import TokensTextWidget
 from lp.registry.interfaces.projectgroup import IProjectGroup
+from lp.registry.model.personroles import PersonRoles
 from lp.services.propertycache import cachedproperty
 
 
@@ -127,10 +127,22 @@ class QuestionLinksMixin:
         if self.user is not None and self.context.isSubscribed(self.user):
             text = 'Unsubscribe'
             icon = 'remove'
+            summary = ('You will stop receiving email notifications about '
+                        'updates to this question')
         else:
             text = 'Subscribe'
-            icon = 'mail'
-        return Link('+subscribe', text, icon=icon)
+            icon = 'add'
+            summary = ('You will receive email notifications about updates '
+                        'to this question')
+        return Link('+subscribe', text, icon=icon, summary=summary)
+
+    def addsubscriber(self):
+        """Return the 'Subscribe someone else' Link."""
+        text = 'Subscribe someone else'
+        return Link(
+            '+addsubscriber', text, icon='add', summary=(
+                'Launchpad will email that person whenever this question '
+                'changes'))
 
     def edit(self):
         """Return a Link to the edit view."""
@@ -144,7 +156,7 @@ class QuestionEditMenu(NavigationMenu, QuestionLinksMixin):
     usedfor = IQuestion
     facet = 'answers'
     title = 'Edit question'
-    links = ['edit', 'reject', 'subscription']
+    links = ['edit', 'reject']
 
     def reject(self):
         """Return a Link to the reject view."""
@@ -159,7 +171,7 @@ class QuestionExtrasMenu(ApplicationMenu, QuestionLinksMixin):
     facet = 'answers'
     links = [
         'history', 'linkbug', 'unlinkbug', 'makebug', 'linkfaq',
-        'createfaq', 'edit', 'changestatus']
+        'createfaq', 'edit', 'changestatus', 'subscription', 'addsubscriber']
 
     def initialize(self):
         """Initialize the menu from the Question's state."""
@@ -244,7 +256,7 @@ class QuestionSetNavigation(Navigation):
         if hasattr(self.request, 'version'):
             return question
         else:
-            return redirection(
+            return self.redirectSubTree(
                 canonical_url(question, self.request), status=301)
 
 
@@ -361,7 +373,7 @@ class QuestionSubscriptionView(LaunchpadView):
                     _("You have subscribed to this question."))
                 modified_fields.add('subscribers')
             elif newsub == 'Unsubscribe':
-                self.context.unsubscribe(self.user)
+                self.context.unsubscribe(self.user, self.user)
                 response.addNotification(
                     _("You have unsubscribed from this question."))
                 modified_fields.add('subscribers')
@@ -832,7 +844,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
 
     @property
     def label(self):
-        return self.context.title
+        return FormattersAPI(self.context.title).obfuscate_email()
 
     @property
     def page_title(self):
@@ -925,7 +937,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
                 self.user != self.context.owner and
                 self.context.can_give_answer)
 
-    @action(_('Add Answer'), name='answer', condition=canAddAnswer)
+    @action(_('Propose Answer'), name='answer', condition=canAddAnswer)
     def answer_action(self, action, data):
         """Add an answer to the question."""
         self.context.giveAnswer(self.user, data['message'])

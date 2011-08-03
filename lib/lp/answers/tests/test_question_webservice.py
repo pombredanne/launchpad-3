@@ -12,9 +12,24 @@ import transaction
 from zope.component import getUtility
 
 from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    AppServerLayer,
+    DatabaseFunctionalLayer,
+    FunctionalLayer,
+    )
+from lp.answers.errors import (
+    AddAnswerContactError,
+    FAQTargetError,
+    InvalidQuestionStateError,
+    NotAnswerContactError,
+    NotMessageOwnerError,
+    NotQuestionOwnerError,
+    QuestionTargetError,
+    )
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
+    TestCase,
     TestCaseWithFactory,
     celebrity_logged_in,
     launchpadlib_for,
@@ -22,6 +37,41 @@ from lp.testing import (
     person_logged_in,
     ws_object,
     )
+from lp.testing.views import create_webservice_error_view
+
+
+class ErrorsTestCase(TestCase):
+    """Test answers errors are exported as HTTPErrors."""
+
+    layer = FunctionalLayer
+
+    def test_AddAnswerContactError(self):
+        error_view = create_webservice_error_view(AddAnswerContactError())
+        self.assertEqual(400, error_view.status)
+
+    def test_FAQTargetError(self):
+        error_view = create_webservice_error_view(FAQTargetError())
+        self.assertEqual(400, error_view.status)
+
+    def test_InvalidQuestionStateError(self):
+        error_view = create_webservice_error_view(InvalidQuestionStateError())
+        self.assertEqual(400, error_view.status)
+
+    def test_NotAnswerContactError(self):
+        error_view = create_webservice_error_view(NotAnswerContactError())
+        self.assertEqual(400, error_view.status)
+
+    def test_NotMessageOwnerError(self):
+        error_view = create_webservice_error_view(NotMessageOwnerError())
+        self.assertEqual(400, error_view.status)
+
+    def test_NotQuestionOwnerError(self):
+        error_view = create_webservice_error_view(NotQuestionOwnerError())
+        self.assertEqual(400, error_view.status)
+
+    def test_QuestionTargetError(self):
+        error_view = create_webservice_error_view(QuestionTargetError())
+        self.assertEqual(400, error_view.status)
 
 
 class TestQuestionRepresentation(TestCaseWithFactory):
@@ -155,3 +205,41 @@ class TestSetCommentVisibility(TestCaseWithFactory):
         question = self._get_question_for_user(person)
         self._set_visibility(question)
         self.assertFalse(self.message.visible)
+
+
+class TestQuestionWebServiceSubscription(TestCaseWithFactory):
+
+    layer = AppServerLayer
+
+    def test_subscribe(self):
+        # Test subscribe() API.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            db_question = self.factory.makeQuestion()
+            db_person = self.factory.makePerson()
+            launchpad = self.factory.makeLaunchpadService()
+
+        question = ws_object(launchpad, db_question)
+        person = ws_object(launchpad, db_person)
+        question.subscribe(person=person)
+        transaction.commit()
+
+        # Check the results.
+        self.assertTrue(db_question.isSubscribed(db_person))
+
+    def test_unsubscribe(self):
+        # Test unsubscribe() API.
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            db_question = self.factory.makeQuestion()
+            db_person = self.factory.makePerson()
+            db_question.subscribe(person=db_person)
+            launchpad = self.factory.makeLaunchpadService(person=db_person)
+
+        question = ws_object(launchpad, db_question)
+        person = ws_object(launchpad, db_person)
+        question.unsubscribe(person=person)
+        transaction.commit()
+
+        # Check the results.
+        self.assertFalse(db_question.isSubscribed(db_person))

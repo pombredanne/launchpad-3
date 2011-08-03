@@ -20,14 +20,13 @@ from zope.formlib import form
 from zope.schema import Date
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.app.errors import UnexpectedFormData
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.widgets.date import DateWidget
 from lp.registry.interfaces.teammembership import TeamMembershipStatus
 
@@ -40,12 +39,10 @@ class TeamMembershipBreadcrumb(Breadcrumb):
         return "%s's membership" % self.context.person.displayname
 
 
-class TeamMembershipEditView:
+class TeamMembershipEditView(LaunchpadView):
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
+        super(TeamMembershipEditView, self).__init__(context, request)
         self.errormessage = ""
         self.prefix = 'membership'
         self.max_year = 2050
@@ -256,7 +253,6 @@ class TeamMembershipEditView:
 
         assert self.context.status == TeamMembershipStatus.PROPOSED
 
-        action = self.request.form.get('editproposed')
         if self.request.form.get('decline'):
             status = TeamMembershipStatus.DECLINED
         elif self.request.form.get('approve'):

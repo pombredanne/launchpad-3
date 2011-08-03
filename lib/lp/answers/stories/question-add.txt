@@ -174,8 +174,3 @@ redirect the user to the question page.
     >>> contents = find_main_content(user_browser.contents)
     >>> print extract_text(contents.find('div', 'report'))
     I use Ubuntu on AMD64 ...
-
-The user automatically got subscribed to this new question.
-
-    >>> find_tag_by_id(user_browser.contents, 'subscribers')
-    <div ...No Privileges Person...

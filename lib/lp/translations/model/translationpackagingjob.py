@@ -12,11 +12,13 @@ __all__ = [
     'TranslationSplitJob',
     ]
 
+import logging
 
 from lazr.lifecycle.interfaces import (
     IObjectCreatedEvent,
     IObjectDeletedEvent,
     )
+import transaction
 from zope.interface import (
     classProvides,
     implements,
@@ -29,10 +31,10 @@ from lp.services.job.runner import BaseRunnableJob
 from lp.translations.interfaces.translationpackagingjob import (
     ITranslationPackagingJobSource,
     )
-from lp.registry.model.packagingjob import (
-    PackagingJob,
-    PackagingJobDerived,
-    PackagingJobType,
+from lp.translations.model.translationsharingjob import (
+    TranslationSharingJob,
+    TranslationSharingJobDerived,
+    TranslationSharingJobType,
     )
 from lp.translations.translationmerger import (
     TransactionManager,
@@ -41,7 +43,7 @@ from lp.translations.translationmerger import (
 from lp.translations.utilities.translationsplitter import TranslationSplitter
 
 
-class TranslationPackagingJob(PackagingJobDerived, BaseRunnableJob):
+class TranslationPackagingJob(TranslationSharingJobDerived, BaseRunnableJob):
     """Iterate through all Translation job types."""
 
     classProvides(ITranslationPackagingJobSource)
@@ -50,7 +52,7 @@ class TranslationPackagingJob(PackagingJobDerived, BaseRunnableJob):
 
     @staticmethod
     def _register_subclass(cls):
-        PackagingJobDerived._register_subclass(cls)
+        TranslationSharingJobDerived._register_subclass(cls)
         job_type = getattr(cls, 'class_job_type', None)
         if job_type is not None:
             cls._translation_packaging_job_types.append(job_type)
@@ -69,7 +71,7 @@ class TranslationPackagingJob(PackagingJobDerived, BaseRunnableJob):
     @classmethod
     def iterReady(cls):
         """See `IJobSource`."""
-        clause = PackagingJob.job_type.is_in(
+        clause = TranslationSharingJob.job_type.is_in(
             cls._translation_packaging_job_types)
         return super(TranslationPackagingJob, cls).iterReady([clause])
 
@@ -79,28 +81,39 @@ class TranslationMergeJob(TranslationPackagingJob):
 
     implements(IRunnableJob)
 
-    class_job_type = PackagingJobType.TRANSLATION_MERGE
+    class_job_type = TranslationSharingJobType.PACKAGING_MERGE
 
     create_on_event = IObjectCreatedEvent
 
     def run(self):
         """See `IRunnableJob`."""
+        logger = logging.getLogger()
         if not self.distroseries.distribution.full_functionality:
+            logger.warning(
+                'Skipping merge for unsupported distroseries "%s".' %
+                self.distroseries.displayname)
             return
-        tm = TransactionManager(None, False)
+        logger.info(
+            'Merging %s and %s', self.productseries.displayname,
+            self.sourcepackage.displayname)
+        tm = TransactionManager(transaction.manager, False)
         TranslationMerger.mergePackagingTemplates(
             self.productseries, self.sourcepackagename, self.distroseries, tm)
 
 
 class TranslationSplitJob(TranslationPackagingJob):
-    """Job for merging translations between a product and sourcepackage."""
+    """Job for splitting translations between a product and sourcepackage."""
 
     implements(IRunnableJob)
 
-    class_job_type = PackagingJobType.TRANSLATION_SPLIT
+    class_job_type = TranslationSharingJobType.PACKAGING_SPLIT
 
     create_on_event = IObjectDeletedEvent
 
     def run(self):
         """See `IRunnableJob`."""
+        logger = logging.getLogger()
+        logger.info(
+            'Splitting %s and %s', self.productseries.displayname,
+            self.sourcepackage.displayname)
         TranslationSplitter(self.productseries, self.sourcepackage).split()
