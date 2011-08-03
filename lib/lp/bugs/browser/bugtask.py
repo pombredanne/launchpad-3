@@ -1148,8 +1148,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     @property
     def show_target_widget(self):
         # Only non-series tasks can be retargetted.
-        return not set(providedBy(self.context.target)).intersection(
-            (IProductSeries, IDistroSeries, ISourcePackage))
+        return not ISeriesBugTarget.providedBy(self.context.target)
 
     @cachedproperty
     def field_names(self):
