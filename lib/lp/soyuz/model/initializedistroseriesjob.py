@@ -45,7 +45,32 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
     def create(cls, child, parents, arches=(), packagesets=(),
                rebuild=False, overlays=(), overlay_pockets=(),
                overlay_components=()):
-        """See `IInitializeDistroSeriesJob`."""
+        """Create a new `InitializeDistroSeriesJob`.
+
+        :param child: The child `IDistroSeries` to initialize
+        :param parents: An iterable of `IDistroSeries` of parents to
+            initialize from.
+        :param arches: An iterable of architecture tags which lists the
+            architectures to enable in the child.
+        :param packagesets: An iterable of `PackageSet` IDs from which to
+            copy packages in parents.
+        :param rebuild: A boolean to say whether the child should rebuild
+            all the copied sources (if True), or to copy the parents'
+            binaries (if False).
+        :param overlays: An iterable of booleans corresponding exactly to
+            each parent in the "parents" parameter.  Each boolean says
+            whether this corresponding parent is an overlay for the child
+            or not.  An overlay allows the child to use the parent's
+            packages for build dependencies, and the overlay_pockets and
+            overlay_components parameters dictate from where the
+            dependencies may be used in the parent.
+        :param overlay_pockets: An iterable of textual pocket names
+            corresponding exactly to each parent.  The  name *must* be set
+            if the corresponding overlays boolean is True.
+        :param overlay_components: An iterable of textual component names
+            corresponding exactly to each parent.  The  name *must* be set
+            if the corresponding overlays boolean is True.
+        """
         store = IMasterStore(DistributionJob)
         # Only one InitializeDistroSeriesJob can be present at a time.
         distribution_job = store.find(
