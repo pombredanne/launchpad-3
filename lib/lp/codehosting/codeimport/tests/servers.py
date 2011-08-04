@@ -26,6 +26,7 @@ from bzrlib.transport import Server
 from bzrlib.urlutils import (
     escape,
     join as urljoin,
+    local_path_from_url,
     )
 import CVS
 import dulwich.index
@@ -213,7 +214,7 @@ class GitServer(Server):
     def makeRepo(self, tree_contents):
         wd = os.getcwd()
         try:
-            os.chdir(self.repo_url)
+            os.chdir(local_path_from_url(self.repo_url))
             repo = GitRepo.init(".")
             blobs = [
                 (Blob.from_string(contents), filename) for (filename, contents)

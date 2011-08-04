@@ -17,6 +17,9 @@ import urllib
 
 from bzrlib.branch import Branch
 from bzrlib.tests import TestCase as BzrTestCase
+from bzrlib.urlutils import (
+    local_path_to_url,
+    )
 import transaction
 from testtools.deferredruntest import (
     assert_fails_with,
@@ -661,26 +664,28 @@ class TestWorkerMonitorIntegration(BzrTestCase):
     def makeGitCodeImport(self):
         """Make a `CodeImport` that points to a real Git repository."""
         load_optional_plugin('git')
-        self.git_server = GitServer(self.repo_path)
+        repo_url = local_path_to_url(self.repo_path)
+        self.git_server = GitServer(repo_url)
         self.git_server.start_server()
         self.addCleanup(self.git_server.stop_server)
 
         self.git_server.makeRepo([('README', 'contents')])
         self.foreign_commit_count = 1
 
-        return self.factory.makeCodeImport(git_repo_url=self.repo_path)
+        return self.factory.makeCodeImport(git_repo_url=repo_url)
 
     def makeHgCodeImport(self):
         """Make a `CodeImport` that points to a real Mercurial repository."""
         load_optional_plugin('hg')
-        self.hg_server = MercurialServer(self.repo_path)
+        repo_url = local_path_to_url(self.repo_path)
+        self.hg_server = MercurialServer(repo_url)
         self.hg_server.start_server()
         self.addCleanup(self.hg_server.stop_server)
 
         self.hg_server.makeRepo([('README', 'contents')])
         self.foreign_commit_count = 1
 
-        return self.factory.makeCodeImport(hg_repo_url=self.repo_path)
+        return self.factory.makeCodeImport(hg_repo_url=repo_url)
 
     def getStartedJobForImport(self, code_import):
         """Get a started `CodeImportJob` for `code_import`.

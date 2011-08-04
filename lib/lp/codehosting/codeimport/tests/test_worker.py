@@ -31,6 +31,7 @@ from bzrlib.transport import get_transport
 from bzrlib.urlutils import (
     join as urljoin,
     local_path_from_url,
+    local_path_to_url,
     )
 from CVS import (
     Repository,
@@ -1071,7 +1072,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
 
     def makeForeignCommit(self, source_details):
         """Change the foreign tree, generating exactly one commit."""
-        repo = GitRepo(source_details.url)
+        repo = GitRepo(local_path_from_url(source_details.url))
         repo.do_commit(message=self.factory.getUniqueString(),
             committer="Joe Random Hacker <joe@example.com>")
         self.foreign_commit_count += 1
@@ -1080,7 +1081,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         """Make a Git `CodeImportSourceDetails` pointing at a real Git repo.
         """
         repository_path = self.makeTemporaryDirectory()
-        git_server = GitServer(repository_path)
+        git_server = GitServer(local_path_to_url(repository_path))
         git_server.start_server()
         self.addCleanup(git_server.stop_server)
 
@@ -1088,7 +1089,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='git', url=repository_path)
+            rcstype='git', url=local_path_to_url(repository_path))
 
 
 
@@ -1124,7 +1125,7 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
         """Change the foreign tree, generating exactly one commit."""
         from mercurial.ui import ui
         from mercurial.localrepo import localrepository
-        repo = localrepository(ui(), source_details.url)
+        repo = localrepository(ui(), local_path_from_url(source_details.url))
         repo.commit(text="hello world!", user="Jane Random Hacker", force=1)
         self.foreign_commit_count += 1
 
@@ -1140,7 +1141,7 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='hg', url=repository_path)
+            rcstype='hg', url=local_path_to_url(repository_path))
 
 
 class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
