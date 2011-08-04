@@ -1,4 +1,4 @@
-# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Dynamic feature configuration.
@@ -133,13 +133,6 @@ up are visible in the comment at the bottom of every standard Launchpad
 page.
 
 
-Installing a feature controller
-===============================
-
-To use a particular feature controller, you should typicall go through a
-UseFeatureController fixture.
-
-
 Setting flags in your tests
 ===========================
 
@@ -176,11 +169,8 @@ other environments that have no explicit setup and teardown::
 
 import threading
 
-from fixtures import Fixture
-
 
 __all__ = [
-    'UseFeatureController',
     'get_relevant_feature_controller',
     'getFeatureFlag',
     'install_feature_controller',
@@ -194,23 +184,6 @@ per_thread = threading.local()
 Framework code is responsible for setting this in the appropriate context, eg
 when starting a web request.
 """
-
-
-class UseFeatureController(Fixture):
-    """Install a feature controller for the duration of this context.
-
-    Intended for use with the `with` statement.
-    """
-
-    def __init__(self, controller):
-        super(UseFeatureController, self).__init__()
-        self.controller = controller
-
-    def setUp(self):
-        super(UseFeatureController, self).setUp()
-        self.addCleanup(
-            install_feature_controller, get_relevant_feature_controller())
-        install_feature_controller(self.controller)
 
 
 def install_feature_controller(controller):

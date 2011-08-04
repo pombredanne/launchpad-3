@@ -127,10 +127,22 @@ class QuestionLinksMixin:
         if self.user is not None and self.context.isSubscribed(self.user):
             text = 'Unsubscribe'
             icon = 'remove'
+            summary = ('You will stop receiving email notifications about '
+                        'updates to this question')
         else:
             text = 'Subscribe'
-            icon = 'mail'
-        return Link('+subscribe', text, icon=icon)
+            icon = 'add'
+            summary = ('You will receive email notifications about updates '
+                        'to this question')
+        return Link('+subscribe', text, icon=icon, summary=summary)
+
+    def addsubscriber(self):
+        """Return the 'Subscribe someone else' Link."""
+        text = 'Subscribe someone else'
+        return Link(
+            '+addsubscriber', text, icon='add', summary=(
+                'Launchpad will email that person whenever this question '
+                'changes'))
 
     def edit(self):
         """Return a Link to the edit view."""
@@ -144,7 +156,7 @@ class QuestionEditMenu(NavigationMenu, QuestionLinksMixin):
     usedfor = IQuestion
     facet = 'answers'
     title = 'Edit question'
-    links = ['edit', 'reject', 'subscription']
+    links = ['edit', 'reject']
 
     def reject(self):
         """Return a Link to the reject view."""
@@ -159,7 +171,7 @@ class QuestionExtrasMenu(ApplicationMenu, QuestionLinksMixin):
     facet = 'answers'
     links = [
         'history', 'linkbug', 'unlinkbug', 'makebug', 'linkfaq',
-        'createfaq', 'edit', 'changestatus']
+        'createfaq', 'edit', 'changestatus', 'subscription', 'addsubscriber']
 
     def initialize(self):
         """Initialize the menu from the Question's state."""

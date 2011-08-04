@@ -2749,7 +2749,7 @@ class Person(
         return getUtility(IArchiveSet).new(
             owner=self, purpose=ArchivePurpose.PPA,
             distribution=ubuntu, name=name, displayname=displayname,
-            description=description)
+            description=description, private=private)
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""
