@@ -120,7 +120,7 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
         parts += ", distroseries: %s" % self.distroseries.name
         parts += ", parent[overlay?/pockets/components]: "
         parents = []
-        for i in range(len(self.parents)):
+        for i in range(len(self.overlays)):
             series = DistroSeries.get(self.parents[i])
             parents.append("%s[%s/%s/%s]" % (
                 series.name,
