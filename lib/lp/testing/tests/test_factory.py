@@ -375,17 +375,6 @@ class TestFactory(TestCaseWithFactory):
         distribution = self.factory.makeDistribution()
         self.assertThat(distribution.displayname, StartsWith("Distribution"))
 
-    # makeDistroRelease
-    def test_makeDistroRelease_returns_IDistroSeries(self):
-        distroseries = self.factory.makeDistroRelease()
-        self.assertThat(
-            removeSecurityProxy(distroseries), Provides(IDistroSeries))
-
-    def test_makeDistroRelease_returns_proxy(self):
-        distroseries = self.factory.makeDistroRelease()
-        self.assertThat(distroseries, IsProxied())
-
-    # makeDistroSeries
     def test_makeDistroSeries_returns_IDistroSeries(self):
         distroseries = self.factory.makeDistroSeries()
         self.assertThat(
