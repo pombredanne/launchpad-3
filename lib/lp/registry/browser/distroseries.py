@@ -998,8 +998,11 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
     def describeJobs(self, dsd):
         """Describe any jobs that may be pending for `dsd`.
 
-        Shows "synchronizing..." if the entry is being synchronized, and
-        "updating..." if the DSD is being updated with package changes.
+        Shows "synchronizing..." if the entry is being synchronized,
+        "updating..." if the DSD is being updated with package changes and
+        "waiting in <queue>..." if the package is in the distroseries
+        queues (<queue> will be NEW or UNAPPROVED and links to the
+        relevant queue page).
 
         :param dsd: A `DistroSeriesDifference` on the page.
         :return: An HTML text describing work that is pending or in
