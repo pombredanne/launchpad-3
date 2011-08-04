@@ -121,7 +121,13 @@ class PullerWorkerProtocol:
 
 
 class SafeBranchOpener(object):
-    """Safe branch opener."""
+    """Safe branch opener.
+
+    The policy object is expected to have the following methods:
+    * checkOneURL
+    * shouldFollowReferences
+    * transformFallbackLocation
+    """
 
     def __init__(self, policy):
         self.policy = policy
@@ -168,7 +174,7 @@ class SafeBranchOpener(object):
             self, callable, *args, **kw):
         Branch.hooks.install_named_hook(
             'transform_fallback_location', self.transformFallbackLocationHook,
-            'BranchMirrorer.transformFallbackLocationHook')
+            'SafeBranchOpener.transformFallbackLocationHook')
         try:
             return callable(*args, **kw)
         finally:
