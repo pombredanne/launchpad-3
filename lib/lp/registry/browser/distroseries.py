@@ -66,6 +66,7 @@ from canonical.launchpad.webapp.publisher import (
     stepthrough,
     stepto,
     )
+from canonical.launchpad.webapp.url import urlappend
 from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
@@ -959,10 +960,9 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         """Have there been changes that `dsd` is still being updated for?"""
         return dsd in self.pending_dsd_updates
 
-    def hasPendingSync(self, dsd):
+    def pendingSync(self, dsd):
         """Is there a package-copying job pending to resolve `dsd`?"""
-        pending_sync = self.pending_syncs.get(dsd.source_package_name.name)
-        return pending_sync is not None
+        return self.pending_syncs.get(dsd.source_package_name.name)
 
     def isNewerThanParent(self, dsd):
         """Is the child's version of this package newer than the parent's?
@@ -993,7 +993,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         # sync if the child's version of the package is newer than the
         # parent's version, or if there is already a sync pending.
         return (
-            not self.isNewerThanParent(dsd) and not self.hasPendingSync(dsd))
+            not self.isNewerThanParent(dsd) and not self.pendingSync(dsd))
 
     def describeJobs(self, dsd):
         """Describe any jobs that may be pending for `dsd`.
@@ -1006,7 +1006,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             progress for `dsd`; or None.
         """
         has_pending_dsd_update = self.hasPendingDSDUpdate(dsd)
-        has_pending_sync = self.hasPendingSync(dsd)
+        pending_sync = self.pendingSync(dsd)
         if not has_pending_dsd_update and not has_pending_sync:
             return None
 
@@ -1014,7 +1014,18 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         if has_pending_dsd_update:
             description.append("updating")
         if has_pending_sync:
-            description.append("synchronizing")
+            # If the pending sync is waiting in the distroseries queues,
+            # provide a handy link to there.
+            pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+                pending_sync).any()
+            if pu is None:
+                description.append("synchronizing")
+            else:
+                url = urlappend(
+                    canonical_url(self.context), "+queue?queue_state=%s" %
+                        pu.status.value)
+                description.append('waiting in <a href="%s">%s</a>' %
+                    (url, pu.status.name))
         return " and ".join(description) + "&hellip;"
 
     @property
