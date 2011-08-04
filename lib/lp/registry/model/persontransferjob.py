@@ -420,7 +420,7 @@ class PersonMergeJob(PersonTransferJobDerived):
 
         from canonical.launchpad.scripts import log
         personset = getUtility(IPersonSet)
-        if self.metadata['delete']:
+        if self.metadata.get('delete', False):
             log.debug(
                 "%s is about to delete ~%s", self.log_name,
                 from_person_name)
