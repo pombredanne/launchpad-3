@@ -120,83 +120,12 @@ class PullerWorkerProtocol:
         self.sendEvent('log', fmt % args)
 
 
-class BranchMirrorer(object):
-    """A `BranchMirrorer` safely makes mirrors of branches.
+class SafeBranchOpener(object):
+    """Safe branch opener."""
 
-    A `BranchMirrorer` has a `BranchPolicy` to tell it which URLs are safe to
-    accesss, whether or not to follow branch references and how to stack
-    branches when they are mirrored.
-
-    The mirrorer knows how to follow branch references, create new mirrors,
-    update existing mirrors, determine stacked-on branches and the like.
-
-    Public methods are `open` and `mirror`.
-    """
-
-    def __init__(self, policy, protocol=None, log=None):
-        """Construct a branch opener with 'policy'.
-
-        :param policy: A `BranchPolicy` that tells us what URLs are valid and
-            similar things.
-        :param log: A callable which can be called with a format string and
-            arguments to log messages in the scheduler, or None, in which case
-            log messages are discarded.
-        """
-        self._seen_urls = set()
+    def __init__(self, policy):
         self.policy = policy
-        self.protocol = protocol
-        if log is not None:
-            self.log = log
-        else:
-            self.log = lambda *args: None
-
-    def _runWithTransformFallbackLocationHookInstalled(
-            self, callable, *args, **kw):
-        Branch.hooks.install_named_hook(
-            'transform_fallback_location', self.transformFallbackLocationHook,
-            'BranchMirrorer.transformFallbackLocationHook')
-        try:
-            return callable(*args, **kw)
-        finally:
-            # XXX 2008-11-24 MichaelHudson, bug=301472: This is the hacky way
-            # to remove a hook.  The linked bug report asks for an API to do
-            # it.
-            Branch.hooks['transform_fallback_location'].remove(
-                self.transformFallbackLocationHook)
-            # We reset _seen_urls here to avoid multiple calls to open giving
-            # spurious loop exceptions.
-            self._seen_urls = set()
-
-    def open(self, url):
-        """Open the Bazaar branch at url, first checking for safety.
-
-        What safety means is defined by a subclasses `followReference` and
-        `checkOneURL` methods.
-        """
-        url = self.checkAndFollowBranchReference(url)
-        return self._runWithTransformFallbackLocationHookInstalled(
-            Branch.open, url)
-
-    def transformFallbackLocationHook(self, branch, url):
-        """Installed as the 'transform_fallback_location' Branch hook.
-
-        This method calls `transformFallbackLocation` on the policy object and
-        either returns the url it provides or passes it back to
-        checkAndFollowBranchReference.
-        """
-        new_url, check = self.policy.transformFallbackLocation(branch, url)
-        if check:
-            return self.checkAndFollowBranchReference(new_url)
-        else:
-            return new_url
-
-    def followReference(self, url):
-        """Get the branch-reference value at the specified url.
-
-        This exists as a separate method only to be overriden in unit tests.
-        """
-        bzrdir = BzrDir.open(url)
-        return bzrdir.get_branch_reference()
+        self._seen_urls = set()
 
     def checkAndFollowBranchReference(self, url):
         """Check URL (and possibly the referenced URL) for safety.
@@ -221,6 +150,85 @@ class BranchMirrorer(object):
             url = next_url
             if not self.policy.shouldFollowReferences():
                 raise BranchReferenceForbidden(url)
+
+    def transformFallbackLocationHook(self, branch, url):
+        """Installed as the 'transform_fallback_location' Branch hook.
+
+        This method calls `transformFallbackLocation` on the policy object and
+        either returns the url it provides or passes it back to
+        checkAndFollowBranchReference.
+        """
+        new_url, check = self.policy.transformFallbackLocation(branch, url)
+        if check:
+            return self.checkAndFollowBranchReference(new_url)
+        else:
+            return new_url
+
+    def _runWithTransformFallbackLocationHookInstalled(
+            self, callable, *args, **kw):
+        Branch.hooks.install_named_hook(
+            'transform_fallback_location', self.transformFallbackLocationHook,
+            'BranchMirrorer.transformFallbackLocationHook')
+        try:
+            return callable(*args, **kw)
+        finally:
+            # XXX 2008-11-24 MichaelHudson, bug=301472: This is the hacky way
+            # to remove a hook.  The linked bug report asks for an API to do
+            # it.
+            Branch.hooks['transform_fallback_location'].remove(
+                self.transformFallbackLocationHook)
+            # We reset _seen_urls here to avoid multiple calls to open giving
+            # spurious loop exceptions.
+            self._seen_urls = set()
+
+    def followReference(self, url):
+        """Get the branch-reference value at the specified url.
+
+        This exists as a separate method only to be overriden in unit tests.
+        """
+        bzrdir = BzrDir.open(url)
+        return bzrdir.get_branch_reference()
+
+    def open(self, url):
+        """Open the Bazaar branch at url, first checking for safety.
+
+        What safety means is defined by a subclasses `followReference` and
+        `checkOneURL` methods.
+        """
+        url = self.checkAndFollowBranchReference(url)
+        return self._runWithTransformFallbackLocationHookInstalled(
+            Branch.open, url)
+
+
+class BranchMirrorer(object):
+    """A `BranchMirrorer` safely makes mirrors of branches.
+
+    A `BranchMirrorer` has a `BranchPolicy` to tell it which URLs are safe to
+    accesss, whether or not to follow branch references and how to stack
+    branches when they are mirrored.
+
+    The mirrorer knows how to follow branch references, create new mirrors,
+    update existing mirrors, determine stacked-on branches and the like.
+
+    Public methods are `open` and `mirror`.
+    """
+
+    def __init__(self, policy, protocol=None, log=None):
+        """Construct a branch opener with 'policy'.
+
+        :param policy: A `BranchPolicy` that tells us what URLs are valid and
+            similar things.
+        :param log: A callable which can be called with a format string and
+            arguments to log messages in the scheduler, or None, in which case
+            log messages are discarded.
+        """
+        self.policy = policy
+        self.protocol = protocol
+        self.opener = SafeBranchOpener(policy)
+        if log is not None:
+            self.log = log
+        else:
+            self.log = lambda *args: None
 
     def createDestinationBranch(self, source_branch, destination_url):
         """Create a destination branch for 'source_branch'.
@@ -295,6 +303,9 @@ class BranchMirrorer(object):
             branch.break_lock()
         stacked_on_url = self.updateBranch(source_branch, branch)
         return branch, revid_before, stacked_on_url
+
+    def open(self, url):
+        return self.opener.open(url)
 
 
 class PullerWorker:
