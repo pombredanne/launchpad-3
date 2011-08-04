@@ -16,6 +16,7 @@ __all__ = [
     'IBugDelta',
     'IBugMute',
     'IBugSet',
+    'IDeferredObjectModifiedEvent',
     'IFileBugData',
     'IFrontPageBugAddForm',
     'IProjectGroupBugAddForm',
@@ -23,6 +24,7 @@ __all__ = [
 
 from lazr.enum import DBEnumeratedType
 
+from lazr.lifecycle.interfaces import IObjectModifiedEvent
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
     call_with,
@@ -1233,3 +1235,7 @@ class IBugMute(Interface):
     date_created = Datetime(
         title=_("The date on which the mute was created."), required=False,
         readonly=True)
+
+
+class IDeferredObjectModifiedEvent(IObjectModifiedEvent):
+    pass

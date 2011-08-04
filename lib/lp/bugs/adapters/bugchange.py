@@ -198,6 +198,7 @@ class BugConvertedToQuestion(BugChangeBase):
     """A bug got converted into a question."""
 
     def __init__(self, when, person, question):
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
         super(BugConvertedToQuestion, self).__init__(when, person)
         self.question = question
 
@@ -421,6 +422,93 @@ class BugDuplicateChange(AttributeChange):
             return BugNotificationLevel.METADATA
 
     def getBugActivity(self):
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
+        if self.old_value is not None and self.new_value is not None:
+            return {
+                'whatchanged': CHANGED_DUPLICATE_MARKER,
+                'oldvalue': str(self.old_value.id),
+                'newvalue': str(self.new_value.id),
+                }
+        elif self.old_value is None:
+            return {
+                'whatchanged': MARKED_AS_DUPLICATE,
+                'newvalue': str(self.new_value.id),
+                }
+        elif self.new_value is None:
+            return {
+                'whatchanged': REMOVED_DUPLICATE_MARKER,
+                'oldvalue': str(self.old_value.id),
+                }
+        else:
+            raise AssertionError(
+                "There is no change: both the old bug and new bug are None.")
+
+    def getBugNotification(self):
+        if self.old_value is not None and self.new_value is not None:
+            if self.old_value.private:
+                old_value_text = (
+                    "** This bug is no longer a duplicate of private bug "
+                    "%d" % self.old_value.id)
+            else:
+                old_value_text = (
+                    "** This bug is no longer a duplicate of bug %d\n"
+                    "   %s" % (self.old_value.id, self.old_value.title))
+            if self.new_value.private:
+                new_value_text = (
+                    "** This bug has been marked a duplicate of private bug "
+                    "%d" % self.new_value.id)
+            else:
+                new_value_text = (
+                    "** This bug has been marked a duplicate of bug %d\n"
+                    "   %s" % (self.new_value.id, self.new_value.title))
+
+            text = "\n".join((old_value_text, new_value_text))
+
+        elif self.old_value is None:
+            if self.new_value.private:
+                text = (
+                    "** This bug has been marked a duplicate of private bug "
+                    "%d" % self.new_value.id)
+            else:
+                text = (
+                    "** This bug has been marked a duplicate of bug %d\n"
+                    "   %s" % (self.new_value.id, self.new_value.title))
+
+        elif self.new_value is None:
+            if self.old_value.private:
+                text = (
+                    "** This bug is no longer a duplicate of private bug "
+                    "%d" % self.old_value.id)
+            else:
+                text = (
+                    "** This bug is no longer a duplicate of bug %d\n"
+                    "   %s" % (self.old_value.id, self.old_value.title))
+
+        else:
+            raise AssertionError(
+                "There is no change: both the old bug and new bug are None.")
+
+        return {'text': text}
+
+
+class DeferredBugDuplicateChange(AttributeChange):
+    """Describes a change to a bug's duplicate marker.
+
+    This change is merely queued up without a recipients list given.  The
+    post-processing job is responsible for computing the recipients list and
+    then sending the notifications.
+
+    The deferral may be fragile if multiple changes are made to the bug's
+    duplicate status before the post-processor runs, so checks must be
+    performed to ensure the state is still as expected.
+    """
+    def __init__(self, when, person, what_changed,
+                 old_value, new_value):
+        super(DeferredBugDuplicateChange, self).__init__(
+            when, person, what_changed, old_value, new_value)
+
+    def getBugActivity(self):
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
         if self.old_value is not None and self.new_value is not None:
             return {
                 'whatchanged': CHANGED_DUPLICATE_MARKER,

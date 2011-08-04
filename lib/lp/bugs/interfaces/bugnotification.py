@@ -73,6 +73,12 @@ class IBugNotificationSet(Interface):
     def getNotificationsToSend():
         """Returns the notifications pending to be sent."""
 
+    def getDeferredNotifications():
+        """Returns the deferred notifications.
+
+        A deferred noticiation is one that is pending but has no recipients.
+        """
+
     def addNotification(self, bug, is_comment, message, recipients, activity):
         """Create a new `BugNotification`.
 
@@ -95,7 +101,6 @@ class IBugNotificationSet(Interface):
         provided if those users muted all of the subscription filters
         that caused them to be sent.
         """
-
 
 class IBugNotificationRecipient(Interface):
     """A recipient of a bug notification."""

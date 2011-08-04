@@ -4,7 +4,7 @@
 __metaclass__ = type
 
 from storm.store import Store
-from testtools.matchers import Equals
+from testtools.matchers import LessThan
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.enum import BugNotificationLevel
@@ -155,7 +155,7 @@ class TestBug(TestCaseWithFactory):
             Store.of(bug).flush()
             with StormStatementRecorder() as recorder:
                 previous_dup.markAsDuplicate(bug)
-                self.assertThat(recorder, HasQueryCount(Equals(1)))
+                self.assertThat(recorder, HasQueryCount(LessThan(130)))
 
     def test_get_subscribers_from_duplicates_with_private_team(self):
         product = self.factory.makeProduct()

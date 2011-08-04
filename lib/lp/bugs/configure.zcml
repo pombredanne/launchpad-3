@@ -114,6 +114,9 @@
         for="lp.bugs.interfaces.bugsubscription.IBugSubscription                 lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="lp.bugs.subscribers.bug.notify_bug_subscription_added"/>
     <subscriber
+        for="lp.bugs.interfaces.bug.IBug                 lp.bugs.interfaces.bug.IDeferredObjectModifiedEvent"
+        handler="lp.bugs.subscribers.bug.deferred_notify_bug_modified"/>
+    <subscriber
         for="lp.bugs.interfaces.bug.IBug                 lazr.lifecycle.interfaces.IObjectModifiedEvent"
         handler="lp.bugs.subscribers.bug.notify_bug_modified"/>
     <securedutility

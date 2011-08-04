@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     "construct_email_notifications",
     "get_email_notifications",
+    "process_deferred_recipients",
     ]
 
 from itertools import groupby
@@ -296,3 +297,8 @@ def get_email_notifications(bug_notifications):
             log.exception("Error while building email notifications.")
             transaction.abort()
             transaction.begin()
+
+
+def process_deferred_notifications(bug_notifications):
+    for notification in bug_notifications:
+        # Construct the real notification with recipients.
