@@ -6,9 +6,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'PackagingJob',
-    'PackagingJobType',
-    'PackagingJobDerived',
+    'TranslationSharingJob',
+    'TranslationSharingJobType',
+    'TranslationSharingJobDerived',
     ]
 
 from lazr.delegates import delegates
@@ -25,7 +25,6 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import (
     IStore,
     )
-from lp.registry.interfaces.packagingjob import IPackagingJob
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -35,25 +34,35 @@ from lp.services.job.interfaces.job import (
     JobStatus,
     )
 from lp.services.job.model.job import Job
+from lp.translations.interfaces.translationsharingjob import (
+    ITranslationSharingJob,
+    )
+from lp.translations.model.potemplate import POTemplate
 
 
-class PackagingJobType(DBEnumeratedType):
-    """Types of Packaging Job."""
+class TranslationSharingJobType(DBEnumeratedType):
+    """Types of translation sharing Job."""
 
-    TRANSLATION_MERGE = DBItem(0, """
+    PACKAGING_MERGE = DBItem(0, """
         Merge translations betweeen productseries and sourcepackage.
 
         Merge translations betweeen productseries and sourcepackage.
         """)
 
-    TRANSLATION_SPLIT = DBItem(1, """
+    PACKAGING_SPLIT = DBItem(1, """
         Split translations between productseries and sourcepackage.
 
         Split translations between productseries and sourcepackage.
         """)
 
+    TEMPLATE_CHANGE = DBItem(2, """
+        Split/merge translations for a single translation template.
 
-class PackagingJob(StormBase):
+        Split/merge translations for a single translation template.
+        """)
+
+
+class TranslationSharingJob(StormBase):
     """Base class for jobs related to a packaging."""
 
     __storm_table__ = 'PackagingJob'
@@ -66,7 +75,7 @@ class PackagingJob(StormBase):
 
     delegates(IJob, 'job')
 
-    job_type = EnumCol(enum=PackagingJobType, notNull=True)
+    job_type = EnumCol(enum=TranslationSharingJobType, notNull=True)
 
     productseries_id = Int('productseries')
 
@@ -80,8 +89,12 @@ class PackagingJob(StormBase):
 
     sourcepackagename = Reference(sourcepackagename_id, SourcePackageName.id)
 
+    potemplate_id = Int('potemplate')
+
+    potemplate = Reference(potemplate_id, POTemplate.id)
+
     def __init__(self, job, job_type, productseries, distroseries,
-                 sourcepackagename):
+                 sourcepackagename, potemplate=None):
         """"Constructor.
 
         :param job: The `Job` to use for storing basic job state.
@@ -94,6 +107,7 @@ class PackagingJob(StormBase):
         self.distroseries = distroseries
         self.sourcepackagename = sourcepackagename
         self.productseries = productseries
+        self.potemplate = potemplate
 
 
 class RegisteredSubclass(type):
@@ -103,12 +117,12 @@ class RegisteredSubclass(type):
         cls._register_subclass(cls)
 
 
-class PackagingJobDerived:
-    """Base class for specialized Packaging Job types."""
+class TranslationSharingJobDerived:
+    """Base class for specialized TranslationTemplate Job types."""
 
     __metaclass__ = RegisteredSubclass
 
-    delegates(IPackagingJob, 'job')
+    delegates(ITranslationSharingJob, 'job')
 
     _subclass = {}
     _event_types = {}
@@ -136,26 +150,28 @@ class PackagingJobDerived:
 
     def __init__(self, job):
         assert job.job_type == self.class_job_type, (
-            "Attempting to create a %s using a %s PackagingJob" %
+            "Attempting to create a %s using a %s TranslationSharingJob" %
             (self.__class__.__name__, job.job_type))
         self.job = job
 
     @classmethod
-    def create(cls, productseries, distroseries, sourcepackagename):
-        """"Create a TranslationMergeJob backed by a PackageJob.
+    def create(cls, productseries=None, distroseries=None,
+               sourcepackagename=None, potemplate=None):
+        """"Create a TranslationPackagingJob backed by TranslationSharingJob.
 
         :param productseries: The ProductSeries side of the Packaging.
         :param distroseries: The distroseries of the Packaging sourcepackage.
         :param sourcepackagename: The name of the Packaging sourcepackage.
+        :param potemplate: POTemplate to restrict to (if any).
         """
-        context = PackagingJob(
+        context = TranslationSharingJob(
             Job(), cls.class_job_type, productseries,
-            distroseries, sourcepackagename)
+            distroseries, sourcepackagename, potemplate)
         return cls(context)
 
     @classmethod
-    def scheduleJob(cls, packaging, event):
-        """Event subscriber to create a PackagingJob on events.
+    def schedulePackagingJob(cls, packaging, event):
+        """Event subscriber to create a TranslationSharingJob on events.
 
         :param packaging: The `Packaging` to create a `TranslationMergeJob`
             for.
@@ -168,16 +184,37 @@ class PackagingJobDerived:
                 job_class.forPackaging(packaging)
 
     @classmethod
+    def schedulePOTemplateJob(cls, potemplate, event):
+        """Event subscriber to create a TranslationSharingJob on events.
+
+        :param potemplate: The `POTemplate` to create
+            a `TranslationSharingJob` for.
+        :param event: The event itself.
+        """
+        if ('name' not in event.edited_fields and
+            'productseries' not in event.edited_fields and
+            'distroseries' not in event.edited_fields and
+            'sourcepackagename' not in event.edited_fields):
+            # Ignore changes to POTemplates that are neither renames,
+            # nor moves to a different package/project.
+            return
+        for event_type, job_classes in cls._event_types.iteritems():
+            if not event_type.providedBy(event):
+                continue
+            for job_class in job_classes:
+                job_class.forPOTemplate(potemplate)
+
+    @classmethod
     def iterReady(cls, extra_clauses):
         """See `IJobSource`.
 
-        This version will emit any ready job based on PackagingJob.
+        This version will emit any ready job based on TranslationSharingJob.
         :param extra_clauses: Extra clauses to reduce the selections.
         """
-        store = IStore(PackagingJob)
+        store = IStore(TranslationSharingJob)
         jobs = store.find(
-            (PackagingJob),
-            PackagingJob.job == Job.id,
+            (TranslationSharingJob),
+            TranslationSharingJob.job == Job.id,
             Job.id.is_in(Job.ready_jobs),
             *extra_clauses)
         return (cls._subclass[job.job_type](job) for job in jobs)
@@ -185,16 +222,18 @@ class PackagingJobDerived:
     @classmethod
     def getNextJobStatus(cls, packaging):
         """Return the status of the next job to run."""
-        store = IStore(PackagingJob)
+        store = IStore(TranslationSharingJob)
         result = store.find(
-            Job, Job.id == PackagingJob.job_id,
-            PackagingJob.distroseries_id == packaging.distroseries.id,
-            PackagingJob.sourcepackagename_id ==
+            Job, Job.id == TranslationSharingJob.job_id,
+            (TranslationSharingJob.distroseries_id ==
+             packaging.distroseries.id),
+            TranslationSharingJob.sourcepackagename_id ==
                 packaging.sourcepackagename.id,
-            PackagingJob.productseries_id == packaging.productseries.id,
-            PackagingJob.job_type == cls.class_job_type,
+            (TranslationSharingJob.productseries_id ==
+             packaging.productseries.id),
+            TranslationSharingJob.job_type == cls.class_job_type,
             Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING]))
-        result.order_by(PackagingJob.id)
+        result.order_by(TranslationSharingJob.id)
         job = result.first()
         if job is None:
             return None
@@ -202,4 +241,5 @@ class PackagingJobDerived:
 
 
 #make accessible to zcml
-schedule_job = PackagingJobDerived.scheduleJob
+schedule_packaging_job = TranslationSharingJobDerived.schedulePackagingJob
+schedule_potemplate_job = TranslationSharingJobDerived.schedulePOTemplateJob

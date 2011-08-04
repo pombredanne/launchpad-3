@@ -792,7 +792,7 @@ class IDifferencesFormSchema(Interface):
 
     selected_differences = List(
         title=_('Selected differences'),
-        value_type=Choice(vocabulary=SimpleVocabulary([])),
+        value_type=Choice(vocabulary="DistroSeriesDifferences"),
         description=_("Select the differences for syncing."),
         required=True)
 
@@ -828,9 +828,18 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         super(DistroSeriesDifferenceBaseView, self).initialize()
 
     def initialize_sync_label(self, label):
-        # XXX: GavinPanella 2011-07-13 bug=809985: Good thing the app servers
-        # are running single threaded...
-        self.__class__.actions.byname['actions.sync'].label = label
+        # Owing to the design of Action/Actions in zope.formlib.form - actions
+        # is actually a descriptor that copies itself and its actions when
+        # accessed - this has the effect of making a shallow copy of the sync
+        # action which we can modify.
+        actions = self.actions
+        sync_action = next(
+            action for action in actions if action.name == "sync")
+        sync_action.label = label
+        # Mask the actions descriptor with an instance variable.
+        self.actions = actions.__class__(
+            *((sync_action if action.name == "sync" else action)
+              for action in actions))
 
     @property
     def label(self):
@@ -859,15 +868,6 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         self.form_fields = (
             self.setupPackageFilterRadio() +
             self.form_fields)
-        check_permission('launchpad.Edit', self.context)
-        terms = [
-            SimpleTerm(diff, diff.id)
-                    for diff in self.cached_differences.batch]
-        diffs_vocabulary = SimpleVocabulary(terms)
-        # XXX: GavinPanella 2011-07-13 bug=809985: Good thing the app servers
-        # are running single threaded...
-        choice = self.form_fields['selected_differences'].field.value_type
-        choice.vocabulary = diffs_vocabulary
 
     def _sync_sources(self, action, data):
         """Synchronise packages from the parent series to this one."""

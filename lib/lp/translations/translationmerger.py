@@ -387,6 +387,26 @@ class TranslationMerger:
             merger = cls(templates, tm)
             merger.mergePOTMsgSets()
 
+    @classmethod
+    def mergeModifiedTemplates(cls, potemplate, tm):
+        subset = getUtility(IPOTemplateSet).getSharingSubset(
+            distribution=potemplate.distribution,
+            sourcepackagename=potemplate.sourcepackagename,
+            product=potemplate.product)
+        templates = list(subset.getSharingPOTemplates(potemplate.name))
+        templates.sort(key=methodcaller('sharingKey'), reverse=True)
+        merger = cls(templates, tm)
+        merger.mergeAll()
+
+    def mergeAll(self):
+        """Properly merge POTMsgSets and TranslationMessages."""
+        self._removeDuplicateMessages()
+        self.tm.endTransaction(intermediate=True)
+        self.mergePOTMsgSets()
+        self.tm.endTransaction(intermediate=True)
+        self.mergeTranslationMessages()
+        self.tm.endTransaction()
+
     def __init__(self, potemplates, tm):
         """Constructor.
 
@@ -548,7 +568,6 @@ class TranslationMerger:
             deletions = 0
             order_check.check(template)
             potmsgset_ids = self._getPOTMsgSetIds(template)
-            total_ids = len(potmsgset_ids)
             for potmsgset_id in potmsgset_ids:
                 potmsgset = POTMsgSet.get(potmsgset_id)
 

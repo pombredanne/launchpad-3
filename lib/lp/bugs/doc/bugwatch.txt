@@ -433,9 +433,7 @@ creating a bug task with a conjoined master.
     ...     comment="A sample bug for conjoined master tests."))
 
     >>> targeted_bugtask = getUtility(IBugTaskSet).createTask(
-    ...     bug=bug, owner=sample_person,
-    ...     distroseries=ubuntu.currentseries,
-    ...     sourcepackagename=firefox.sourcepackagename)
+    ...     bug, sample_person, firefox.development_version)
 
     >>> targeted_bugtask.conjoined_master is None
     True

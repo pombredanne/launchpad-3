@@ -39,6 +39,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database import postgresql
+from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     cursor,
     session_store,
@@ -726,7 +727,7 @@ class MirrorBugMessageOwner(TunableLoop):
 class BugHeatUpdater(TunableLoop):
     """A `TunableLoop` for bug heat calculations."""
 
-    maximum_chunk_size = 1000
+    maximum_chunk_size = 5000
 
     def __init__(self, log, abort_time=None, max_heat_age=None):
         super(BugHeatUpdater, self).__init__(log, abort_time)
@@ -760,17 +761,16 @@ class BugHeatUpdater(TunableLoop):
 
         See `ITunableLoop`.
         """
-        # We multiply chunk_size by 1000 for the sake of doing updates
-        # quickly.
-        chunk_size = int(chunk_size * 1000)
-
-        transaction.begin()
+        chunk_size = int(chunk_size + 0.5)
         outdated_bugs = self._outdated_bugs[:chunk_size]
-        self.log.debug("Updating heat for %s bugs" % outdated_bugs.count())
-        outdated_bugs.set(
-            heat=SQL('calculate_bug_heat(Bug.id)'),
-            heat_last_updated=datetime.now(pytz.utc))
-
+        # We don't use outdated_bugs.set() here to work around
+        # Storm Bug #820290.
+        outdated_bug_ids = [bug.id for bug in outdated_bugs]
+        self.log.debug("Updating heat for %s bugs", len(outdated_bug_ids))
+        IMasterStore(Bug).find(
+            Bug, Bug.id.is_in(outdated_bug_ids)).set(
+                heat=SQL('calculate_bug_heat(Bug.id)'),
+                heat_last_updated=UTC_NOW)
         transaction.commit()
 
 
@@ -885,23 +885,22 @@ class UnusedPOTMsgSetPruner(TunableLoop):
         query = """
             -- Get all POTMsgSet IDs which are obsolete (sequence == 0)
             -- and are not used (sequence != 0) in any other template.
-            SELECT DISTINCT POTMsgSet
+            SELECT POTMsgSet
               FROM TranslationTemplateItem tti
               WHERE sequence=0 AND
               NOT EXISTS(
                 SELECT id
                   FROM TranslationTemplateItem
-                  WHERE potmsgset = tti.potmsgset AND
-                  sequence != 0)
+                  WHERE potmsgset = tti.potmsgset AND sequence != 0)
             UNION
             -- Get all POTMsgSet IDs which are not referenced
             -- by any of the templates (they must have TTI rows for that).
             (SELECT POTMsgSet.id
-              FROM POTMsgSet
-             EXCEPT
-             SELECT potmsgset
-               FROM TranslationTemplateItem)
-            LIMIT 50000;
+               FROM POTMsgSet
+               LEFT OUTER JOIN TranslationTemplateItem
+                 ON TranslationTemplateItem.potmsgset = POTMsgSet.id
+               WHERE
+                 TranslationTemplateItem.potmsgset IS NULL);
             """
         store = IMasterStore(POTMsgSet)
         results = store.execute(query)

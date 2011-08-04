@@ -11,7 +11,7 @@ from canonical.launchpad import _
 from lp.services.job.interfaces.job import IJob
 
 
-class IPackagingJob(IJob):
+class ITranslationSharingJob(IJob):
 
     productseries = Attribute(_("The productseries of the Packaging."))
 
@@ -19,3 +19,6 @@ class IPackagingJob(IJob):
 
     sourcepackagename = Attribute(
         _("The sourcepackagename of the Packaging."))
+
+    potemplate = Attribute(
+        _("The POTemplate to pass around as the relevant template."))
