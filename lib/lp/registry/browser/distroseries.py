@@ -1078,7 +1078,10 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             ALL: DistroSeriesDifferenceStatus.items,
         }
 
-        status = package_type_dsd_status[self.specified_package_type]
+        # Get the right status or the default status.
+        status = package_type_dsd_status.get(
+            self.specified_package_type,
+            package_type_dsd_status.get(DEFAULT_PACKAGE_TYPE))
         child_version_higher = (
             self.specified_package_type == HIGHER_VERSION_THAN_PARENT)
 
