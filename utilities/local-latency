@@ -1,0 +1,62 @@
+#!/usr/bin/env python
+
+__metaclass__ = type
+
+import sys
+import subprocess
+
+from script_commands import (
+    Command,
+    OptionParser,
+    UserError,
+    )
+
+
+def tc(command):
+     subprocess.call('sudo tc ' + command, shell=True)
+
+
+class StartCommand(Command):
+
+    @classmethod
+    def get_parser(cls):
+        parser = OptionParser()
+        parser.add_option(
+            '-d', '--delay', dest='delay', type='int',
+            help='Length of delay in miliseconds (each way).')
+        return parser
+
+    @staticmethod
+    def run(delay=500, port=443):
+        tc('qdisc add dev lo root handle 1: prio')
+        tc('qdisc add dev lo parent 1:3 handle 30: netem delay %dms' % delay)
+        tc('filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip'
+           ' dport %d 0xffff flowid 1:3' % port)
+        tc('filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip'
+           ' sport %d 0xffff flowid 1:3' % port)
+
+
+Command.commands['start'] = StartCommand
+
+
+class StopCommand(Command):
+
+    @staticmethod
+    def get_parser():
+        parser = OptionParser()
+        return parser
+
+    @staticmethod
+    def run():
+        tc('qdisc del dev lo root')
+
+
+Command.commands['stop'] = StopCommand
+
+
+
+if __name__ == "__main__":
+    try:
+        Command.run_subcommand(sys.argv[1:])
+    except UserError as e:
+        sys.stderr.write(str(e)+'\n')
