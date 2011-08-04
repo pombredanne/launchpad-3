@@ -1007,17 +1007,17 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         """
         has_pending_dsd_update = self.hasPendingDSDUpdate(dsd)
         pending_sync = self.pendingSync(dsd)
-        if not has_pending_dsd_update and not has_pending_sync:
+        if not has_pending_dsd_update and not pending_sync:
             return None
 
         description = []
         if has_pending_dsd_update:
             description.append("updating")
-        if has_pending_sync:
+        if pending_sync is not None:
             # If the pending sync is waiting in the distroseries queues,
             # provide a handy link to there.
             pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
-                pending_sync).any()
+                (pending_sync.id,)).any()
             if pu is None:
                 description.append("synchronizing")
             else:
