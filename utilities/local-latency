@@ -2,12 +2,12 @@
 
 __metaclass__ = type
 
+from optparse import OptionParser
 import sys
 import subprocess
 
 from script_commands import (
     Command,
-    OptionParser,
     UserError,
     )
 

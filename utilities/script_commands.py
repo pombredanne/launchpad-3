@@ -1,29 +1,8 @@
-import optparse
+import inspect
 
 
 class UserError(Exception):
     pass
-
-
-class OptionParser(optparse.OptionParser):
-
-    UNSPECIFIED = object()
-
-    def add_option(self, *args, **kwargs):
-        """Add an option, with the default that it not be included."""
-        kwargs['default'] = kwargs.get('default', self.UNSPECIFIED)
-        optparse.OptionParser.add_option(self, *args, **kwargs)
-
-    def parse_args_dict(self, cmd_args):
-        """Return a dict of specified options.
-
-        Unspecified options with no explicit default are not included in the
-        dict."""
-        options, args = self.parse_args(cmd_args)
-        option_dict = dict(
-            item for item in options.__dict__.items()
-            if item[1] is not self.UNSPECIFIED)
-        return args, option_dict
 
 
 class Command:
@@ -38,9 +17,23 @@ class Command:
         return {}
 
     @classmethod
+    def set_defaults(cls, parser):
+        args, ignored, ignored, defaults = inspect.getargspec(cls.run)
+        if defaults is None:
+            return
+        defaults_dict = dict(zip(args, defaults))
+        option_defaults = dict(
+            (key, value) for key, value in defaults_dict.items()
+            if parser.defaults.get(key, '') is None)
+        parser.set_defaults(**option_defaults)
+
+    @classmethod
     def run_from_args(cls, cmd_args):
-        args, kwargs = cls.get_parser().parse_args_dict(cmd_args)
-        kwargs.update(cls.parse_args(args))
+        parser = cls.get_parser()
+        cls.set_defaults(parser)
+        options, args = parser.parse_args(cmd_args)
+        kwargs = cls.parse_args(args)
+        kwargs.update(options.__dict__)
         cls.run(**kwargs)
 
     @classmethod
