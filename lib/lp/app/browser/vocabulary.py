@@ -140,6 +140,10 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
                 extra.badges = [
                     dict(url=badge_info.url, alt=badge_info.alt_text)]
 
+        picker_expander_enabled = kwarg.get('picker_expander_enabled', False)
+        if picker_expander_enabled:
+            extra.details = []
+
         if person.preferredemail is not None:
             if person.hide_email_addresses:
                 extra.description = '<email address hidden>'
@@ -157,7 +161,6 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
             # We will linkify the person's name so it can be clicked to open
             # the page for that person.
             extra.alt_title_link = canonical_url(person, rootsite='mainsite')
-            extra.details = []
             # We will display the person's irc nick(s) after their email
             # address in the description text.
             irc_nicks = None
@@ -165,15 +168,22 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
                 irc_nicks = ", ".join(
                     [IRCNicknameFormatterAPI(ircid).displayname()
                     for ircid in person.ircnicknames])
-            if irc_nicks:
+            if irc_nicks and not picker_expander_enabled:
+                if extra.description:
+                    extra.description = ("%s (%s)" %
+                        (extra.description, irc_nicks))
+                else:
+                    extra.description = "%s" % irc_nicks
+            if picker_expander_enabled:
+                if irc_nicks:
                     extra.details.append(irc_nicks)
-            if person.is_team:
-                extra.details.append(
-                    'Team members: %s' % person.all_member_count)
-            else:
-                extra.details.append(
-                    'Member since %s' % DateTimeFormatterAPI(
-                        person.datecreated).date())
+                if person.is_team:
+                    extra.details.append(
+                        'Team members: %s' % person.all_member_count)
+                else:
+                    extra.details.append(
+                        'Member since %s' % DateTimeFormatterAPI(
+                            person.datecreated).date())
 
         return extra
 
@@ -230,6 +240,8 @@ class HugeVocabularyJSONView:
         self.request = request
         self.enhanced_picker_enabled = bool(
             getFeatureFlag('disclosure.picker_enhancements.enabled'))
+        self.picker_expander_enabled = bool(
+            getFeatureFlag('disclosure.picker_expander.enabled'))
 
     def __call__(self):
         name = self.request.form.get('name')
@@ -274,7 +286,8 @@ class HugeVocabularyJSONView:
                 entry['api_uri'] = 'Could not find canonical url.'
             picker_entry = IPickerEntry(term.value).getPickerEntry(
                 self.context,
-                enhanced_picker_enabled=self.enhanced_picker_enabled)
+                enhanced_picker_enabled=self.enhanced_picker_enabled,
+                picker_expander_enabled=self.picker_expander_enabled)
             if picker_entry.description is not None:
                 if len(picker_entry.description) > MAX_DESCRIPTION_LENGTH:
                     entry['description'] = (

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for recording changes done to a bug."""
@@ -1343,7 +1343,7 @@ class TestBugChanges(TestCaseWithFactory):
         # Nominating a bug to be fixed in a product series adds an item
         # to the activity log only.
         distribution = self.factory.makeDistribution()
-        series = self.factory.makeDistroRelease(distribution=distribution)
+        series = self.factory.makeDistroSeries(distribution=distribution)
         self.bug.addTask(self.user, distribution)
         self.saveOldChanges()
 
@@ -1657,7 +1657,6 @@ class TestBugChanges(TestCaseWithFactory):
             'newvalue': 'Invalid',
             'oldvalue': 'New',
             }
-
 
         conversion_notification = {
             'person': self.user,

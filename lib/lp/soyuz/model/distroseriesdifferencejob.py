@@ -255,6 +255,18 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
                 jobs_by_dsd.setdefault(dsd, []).append(cls(job))
         return jobs_by_dsd
 
+    def __repr__(self):
+        """Returns an informative representation of the job."""
+        parts = "%s for " % self.__class__.__name__
+        name = self.sourcepackagename
+        if not name:
+            parts += "no package name (!)"
+        else:
+            parts += "package %s" % name
+        parts += " from %s to %s" % (self.parent_series.name,
+                                     self.derived_series.name)
+        return "<%s>" % parts
+
     @property
     def sourcepackagename(self):
         return SourcePackageName.get(self.metadata['sourcepackagename'])

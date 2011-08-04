@@ -1637,6 +1637,23 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
 
         self.assertContentEqual(diffs, all_view.cached_differences.batch)
 
+    def test_batch_wrong_param(self):
+        # If a wrong parameter is passed then an error is displayed
+        # and no differences are shown.
+        set_derived_series_ui_feature_flag(self)
+        derived_series, parent_series = self._createChildAndParent()
+        self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            source_package_name_str="my-src-package")
+        view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs',
+            query_string='field.package_type=%s' % 'unexpected')
+        view()  # Render the view.
+
+        self.assertEqual('Invalid option', view.getFieldError('package_type'))
+        self.assertContentEqual([], view.cached_differences.batch)
+
     def test_batch_blacklisted_differences_with_higher_version(self):
         # field.package_type parameter allows to list only
         # blacklisted differences with a child's version higher than parent's.
