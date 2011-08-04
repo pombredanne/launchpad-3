@@ -164,7 +164,7 @@ class SafeBranchOpener(object):
         else:
             return new_url
 
-    def _runWithTransformFallbackLocationHookInstalled(
+    def runWithTransformFallbackLocationHookInstalled(
             self, callable, *args, **kw):
         Branch.hooks.install_named_hook(
             'transform_fallback_location', self.transformFallbackLocationHook,
@@ -196,7 +196,7 @@ class SafeBranchOpener(object):
         `checkOneURL` methods.
         """
         url = self.checkAndFollowBranchReference(url)
-        return self._runWithTransformFallbackLocationHookInstalled(
+        return self.runWithTransformFallbackLocationHookInstalled(
             Branch.open, url)
 
 
@@ -242,7 +242,7 @@ class BranchMirrorer(object):
             URL must point to a writable location.
         :return: The destination branch.
         """
-        return self._runWithTransformFallbackLocationHookInstalled(
+        return self.opener.runWithTransformFallbackLocationHookInstalled(
             self.policy.createDestinationBranch, source_branch,
             destination_url)
 
