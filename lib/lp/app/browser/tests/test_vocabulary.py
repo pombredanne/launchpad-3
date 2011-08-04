@@ -197,7 +197,8 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
         # The results are JSON encoded.
         feature_flag = {
             'disclosure.picker_enhancements.enabled': 'on',
-            'disclosure.picker_expander.enabled': 'on',}
+            'disclosure.picker_expander.enabled': 'on',
+            }
         flags = FeatureFixture(feature_flag)
         flags.setUp()
         self.addCleanup(flags.cleanUp)
