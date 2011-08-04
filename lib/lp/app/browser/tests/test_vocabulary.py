@@ -103,7 +103,8 @@ class PersonPickerEntryAdapterTestCase(TestCaseWithFactory):
         getUtility(IIrcIDSet).new(person, 'eg.dom', 'snarf')
         getUtility(IIrcIDSet).new(person, 'ex.dom', 'pting')
         entry = IPickerEntry(person).getPickerEntry(
-            None, enhanced_picker_enabled=True)
+            None, enhanced_picker_enabled=True,
+            picker_expander_enabled=True)
         self.assertEqual('http://launchpad.dev/~snarf', entry.alt_title_link)
         self.assertEqual(
             ['snarf on eg.dom, pting on ex.dom', 'Member since 2005-01-30'],
@@ -113,7 +114,8 @@ class PersonPickerEntryAdapterTestCase(TestCaseWithFactory):
         # The enhanced person picker provides more information for teams.
         team = self.factory.makeTeam(email='fnord@eg.dom', name='fnord')
         entry = IPickerEntry(team).getPickerEntry(
-            None, enhanced_picker_enabled=True)
+            None, enhanced_picker_enabled=True,
+            picker_expander_enabled=True)
         self.assertEqual('http://launchpad.dev/~fnord', entry.alt_title_link)
         self.assertEqual(['Team members: 1'], entry.details)
 
@@ -123,7 +125,8 @@ class PersonPickerEntryAdapterTestCase(TestCaseWithFactory):
         project = self.factory.makeProduct(name='fnord', owner=person)
         bugtask = self.factory.makeBugTask(target=project)
         entry = IPickerEntry(person).getPickerEntry(
-            bugtask, enhanced_picker_enabled=True)
+            bugtask, enhanced_picker_enabled=True,
+            picker_expander_enabled=True)
         self.assertEqual(1, len(entry.badges))
         self.assertEqual('/@@/product-badge', entry.badges[0]['url'])
         self.assertEqual('Affiliated with Fnord', entry.badges[0]['alt'])
@@ -192,7 +195,9 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
 
     def test_json_entries(self):
         # The results are JSON encoded.
-        feature_flag = {'disclosure.picker_enhancements.enabled': 'on'}
+        feature_flag = {
+            'disclosure.picker_enhancements.enabled': 'on',
+            'disclosure.picker_expander.enabled': 'on',}
         flags = FeatureFixture(feature_flag)
         flags.setUp()
         self.addCleanup(flags.cleanUp)
