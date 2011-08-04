@@ -135,12 +135,24 @@ class ActivityDescriptor:
             "while listing activity for %s." % (
                 person.name, pofiletranslator.person.name))
 
-        self.date = pofiletranslator.date_last_touched
+        self._person = person
+        self._pofiletranslator = pofiletranslator
 
-        pofile = pofiletranslator.pofile
+    @cachedproperty
+    def date(self):
+        return self._pofiletranslator.date_last_touched
 
-        self.title = pofile.potemplate.translationtarget.title
-        self.url = compose_pofile_filter_url(pofile, person)
+    @cachedproperty
+    def _pofile(self):
+        return self._pofiletranslator.pofile
+
+    @cachedproperty
+    def title(self):
+        return self._pofile.potemplate.translationtarget.title
+
+    @cachedproperty
+    def url(self):
+        return compose_pofile_filter_url(self._pofile, self._person)
 
 
 def person_is_reviewer(person):
