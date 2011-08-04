@@ -6,10 +6,10 @@ import sys
 import subprocess
 
 from script_commands import (
-    Command,
+    helps,
+    run_subcommand,
     UserError,
     types,
-    helps,
     )
 
 
@@ -29,19 +29,19 @@ def start(delay=500, port=443):
        ' sport %d 0xffff flowid 1:3' % port)
 
 
-Command.commands['start'] = start
-
-
 def stop():
     tc('qdisc del dev lo root')
 
 
-Command.commands['stop'] = stop
+subcommands = {
+    'start': start,
+    'stop': stop,
+    }
 
 
 
 if __name__ == "__main__":
     try:
-        Command.run_subcommand(sys.argv[1:])
+        run_subcommand(subcommands, sys.argv[1:])
     except UserError as e:
         sys.stderr.write(str(e)+'\n')
