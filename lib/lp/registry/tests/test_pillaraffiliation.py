@@ -17,17 +17,17 @@ class TestPillarAffiliation(TestCaseWithFactory):
     def test_bugtask_distro_affiliation(self):
         # A person who owns a bugtask distro is affiliated.
         person = self.factory.makePerson()
-        distro = self.factory.makeDistribution(owner=person, name='pting')
+        distro = self.factory.makeDistribution(owner=person)
         bugtask = self.factory.makeBugTask(target=distro)
         badge = IHasAffiliation(bugtask).getAffiliationBadge(person)
         self.assertEqual(
-            badge, ("/@@/distribution-badge", "Affiliated with Pting"))
+            badge, ("/@@/distribution-badge", "Affiliated with Ubuntu"))
 
     def test_bugtask_product_affiliation(self):
         # A person who owns a bugtask product is affiliated.
         person = self.factory.makePerson()
-        product = self.factory.makeProduct(owner=person, name='pting')
+        product = self.factory.makeProduct(owner=person)
         bugtask = self.factory.makeBugTask(target=product)
         badge = IHasAffiliation(bugtask).getAffiliationBadge(person)
         self.assertEqual(
-            badge, ("/@@/product-badge", "Affiliated with Pting"))
+            badge, ("/@@/product-badge", "Affiliated with Launchpad itself"))
