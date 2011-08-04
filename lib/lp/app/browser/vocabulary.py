@@ -32,6 +32,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.app.browser.tales import (
+    DateTimeFormatterAPI,
     IRCNicknameFormatterAPI,
     ObjectImageDisplayAPI,
     )
@@ -61,6 +62,7 @@ class IPickerEntry(Interface):
     css = Attribute('CSS Class')
     alt_title = Attribute('Alternative title')
     title_link = Attribute('URL used for anchor on title')
+    details = Attribute('An optional list of information about the entry')
     alt_title_link = Attribute('URL used for anchor on alt title')
     link_css = Attribute('CSS Class for links')
     badges = Attribute('List of badge img attributes')
@@ -72,13 +74,14 @@ class PickerEntry:
     implements(IPickerEntry)
 
     def __init__(self, description=None, image=None, css=None, alt_title=None,
-                 title_link=None, alt_title_link=None, link_css='js-action',
-                 badges=None, metadata=None):
+                 title_link=None, details=None, alt_title_link=None,
+                 link_css='sprite new-window', badges=None, metadata=None):
         self.description = description
         self.image = image
         self.css = css
         self.alt_title = alt_title
         self.title_link = title_link
+        self.details = details
         self.alt_title_link = alt_title_link
         self.link_css = link_css
         self.badges = badges
@@ -154,6 +157,7 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
             # We will linkify the person's name so it can be clicked to open
             # the page for that person.
             extra.alt_title_link = canonical_url(person, rootsite='mainsite')
+            extra.details = []
             # We will display the person's irc nick(s) after their email
             # address in the description text.
             irc_nicks = None
@@ -162,11 +166,14 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
                     [IRCNicknameFormatterAPI(ircid).displayname()
                     for ircid in person.ircnicknames])
             if irc_nicks:
-                if extra.description:
-                    extra.description = ("%s (%s)" %
-                        (extra.description, irc_nicks))
-                else:
-                    extra.description = "%s" % irc_nicks
+                    extra.details.append(irc_nicks)
+            if person.is_team:
+                extra.details.append(
+                    'Team members: %s' % person.all_member_count)
+            else:
+                extra.details.append(
+                    'Member since %s' % DateTimeFormatterAPI(
+                        person.datecreated).date())
 
         return extra
 
@@ -283,6 +290,8 @@ class HugeVocabularyJSONView:
                 entry['alt_title'] = picker_entry.alt_title
             if picker_entry.title_link is not None:
                 entry['title_link'] = picker_entry.title_link
+            if picker_entry.details is not None:
+                entry['details'] = picker_entry.details
             if picker_entry.alt_title_link is not None:
                 entry['alt_title_link'] = picker_entry.alt_title_link
             if picker_entry.link_css is not None:
