@@ -5,13 +5,21 @@ import subprocess
 class UserError(Exception):
     pass
 
-def start():
-    subprocess.call(
-        'sudo tc qdisc add dev lo root netem delay 500ms'.split(' '))
+def tc(command):
+     subprocess.call('sudo tc ' + command, shell=True)
+
+def start(delay=500, port=443):
+    tc('qdisc add dev lo root handle 1: prio')
+    tc('qdisc add dev lo parent 1:3 handle 30: netem delay %dms' % delay)
+    tc('filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip'
+       ' dport %d 0xffff flowid 1:3' % port)
+    tc('filter add dev lo protocol ip parent 1:0 prio 3 u32 match ip'
+       ' sport %d 0xffff flowid 1:3' % port)
+
 
 def stop():
-    subprocess.call(
-        'sudo tc qdisc del dev lo root'.split(' '))
+    tc('qdisc del dev lo root')
+
 
 def main(argv):
     commands = {
