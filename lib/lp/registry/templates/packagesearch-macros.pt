@@ -63,7 +63,7 @@
     class="distroseries-localdiff-search-filter"
     action="" method="GET">
     <div style="float:left; margin-right:1px;">
-      <label for="field.name_filter">Show packages with names or packagesets matching:</label>
+      <label for="field.name_filter">Show packages or packagesets named:</label>
     </div>
     <div style="float:left;">
       <input
