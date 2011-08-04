@@ -186,18 +186,15 @@ def apply_patches_replicated():
     # Start a transaction block.
     print >> outf, "try {"
 
+    sql_to_run = []
+
     def run_sql(script):
         if os.path.isabs(script):
             full_path = script
         else:
             full_path = os.path.abspath(os.path.join(SCHEMA_DIR, script))
         assert os.path.exists(full_path), "%s doesn't exist." % full_path
-        print >> outf, dedent("""\
-            execute script (
-                set id = @lpmain_set, event node = @master_node,
-                filename='%s'
-                );
-            """ % full_path)
+        sql_to_run.append(full_path)
 
     # We are going to generate some temporary files using
     # NamedTempoararyFile. Store them here so we can control when
@@ -235,6 +232,22 @@ def apply_patches_replicated():
 
     combined_script.flush()
     run_sql(combined_script.name)
+
+    # Now combine all the written SQL (probably trusted.sql and
+    # patch*.sql) into one big file, which we execute with a single
+    # slonik execute_script statement to avoid multiple syncs.
+    single = NamedTemporaryFile(prefix='single', suffix='.sql')
+    for path in sql_to_run:
+        print >> single, open(path, 'r').read()
+        print >> single, ""
+    single.flush()
+
+    print >> outf, dedent("""\
+        execute script (
+            set id = @lpmain_set, event node = @master_node,
+            filename='%s'
+            );
+        """ % single.name)
 
     # Close transaction block and abort on error.
     print >> outf, dedent("""\
