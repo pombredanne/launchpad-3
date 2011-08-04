@@ -23,7 +23,8 @@ class StartCommand(Command):
         parser = OptionParser()
         parser.add_option(
             '-d', '--delay', dest='delay', type='int',
-            help='Length of delay in miliseconds (each way).')
+            help='Length of delay in miliseconds (each way).'
+            ' Default: %default.')
         return parser
 
     @staticmethod
