@@ -128,7 +128,6 @@ class TestBug(TestCaseWithFactory):
             subscriber = self.factory.makePerson()
             with person_logged_in(subscriber):
                 bug.subscribe(subscriber, subscriber)
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
         Store.of(bug).flush()
         with StormStatementRecorder() as recorder:
             subscribers = list(bug.getDirectSubscribers())
@@ -150,7 +149,6 @@ class TestBug(TestCaseWithFactory):
                 with person_logged_in(previous_dup.owner):
                     previous_dup.markAsDuplicate(dup)
             previous_dup = dup
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
         with person_logged_in(bug.owner):
             Store.of(bug).flush()
             with StormStatementRecorder() as recorder:

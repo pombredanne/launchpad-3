@@ -165,7 +165,6 @@ class BugNotificationSet:
 
     def addNotification(self, bug, is_comment, message, recipients, activity):
         """See `IBugNotificationSet`."""
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
         if not recipients:
             status = BugNotificationStatus.DEFERRED
         else:

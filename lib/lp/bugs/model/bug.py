@@ -1109,7 +1109,6 @@ BugMessage""" % sqlvalues(self.id))
 
     def addChange(self, change, recipients=None):
         """See `IBug`."""
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
         when = change.when
         if when is None:
             when = UTC_NOW
@@ -1431,7 +1430,6 @@ BugMessage""" % sqlvalues(self.id))
         question = question_target.createQuestionFromBug(self)
         self.addChange(BugConvertedToQuestion(UTC_NOW, person, question))
         get_property_cache(self)._question_from_bug = question
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
         notify(BugBecameQuestionEvent(self, question, person))
         return question
 
@@ -1879,7 +1877,6 @@ BugMessage""" % sqlvalues(self.id))
 
     def markAsDuplicate(self, duplicate_of):
         """See `IBug`."""
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
         affected_targets = self._markAsDuplicate(duplicate_of)
         if duplicate_of is not None:
             duplicate_of.updateHeat(affected_targets)

@@ -1111,6 +1111,9 @@
         <require
             permission="launchpad.AnyPerson"
             set_schema="lp.bugs.interfaces.bugnotification.IBugNotification"/>
+	<require
+	    permission="launchpad.Edit"
+            attributes="destroySelf" />
     </class>
     <class
         class="lp.bugs.model.bugnotification.BugNotificationRecipient">

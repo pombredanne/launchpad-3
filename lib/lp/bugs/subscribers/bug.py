@@ -205,7 +205,6 @@ def add_deferred_bug_change_notifications(bug_delta, old_bugtask=None,
     These notifications provide all of the necessary information except the
     recipient list which is too costly to generate during the request.
     """
-    import pdb; pdb.set_trace(); # DO NOT COMMIT
     changes = get_bug_changes(bug_delta)
     recipients = BugNotificationRecipients()
     for change in changes:

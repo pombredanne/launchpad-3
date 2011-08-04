@@ -10,12 +10,13 @@ __metaclass__ = type
 __all__ = [
     "construct_email_notifications",
     "get_email_notifications",
-    "process_deferred_recipients",
+    "process_deferred_notifications",
     ]
 
 from itertools import groupby
 from operator import itemgetter
 
+from storm.store import Store
 import transaction
 from zope.component import getUtility
 
@@ -26,6 +27,7 @@ from lp.bugs.mail.bugnotificationbuilder import (
     BugNotificationBuilder,
     get_bugmail_from_address,
     )
+from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.registry.model.person import get_recipients
@@ -300,5 +302,24 @@ def get_email_notifications(bug_notifications):
 
 
 def process_deferred_notifications(bug_notifications):
+    bug_notification_set = getUtility(IBugNotificationSet)
     for notification in bug_notifications:
         # Construct the real notification with recipients.
+        bug = notification.bug
+        recipients = bug.getBugNotificationRecipients(
+            level=BugNotificationLevel.LIFECYCLE,
+            include_master_dupe_subscribers=False)
+        message = notification.message
+        is_comment = notification.is_comment
+        activity = notification.activity
+        # Remove the deferred notification.
+        # Is activity affected?
+        store = Store.of(notification)
+        notification.destroySelf()
+        store.flush()
+        bug_notification_set.addNotification(
+            bug=bug,
+            is_comment=is_comment,
+            message=message,
+            recipients=recipients,
+            activity=activity)

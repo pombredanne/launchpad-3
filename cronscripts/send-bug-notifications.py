@@ -24,7 +24,7 @@ from lp.bugs.enum import BugNotificationStatus
 from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.scripts.bugnotification import (
     get_email_notifications,
-    process_deferred_recipients,
+    process_deferred_notifications,
     )
 from lp.services.scripts.base import LaunchpadCronScript
 

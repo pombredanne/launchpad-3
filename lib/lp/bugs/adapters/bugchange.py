@@ -198,7 +198,6 @@ class BugConvertedToQuestion(BugChangeBase):
     """A bug got converted into a question."""
 
     def __init__(self, when, person, question):
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
         super(BugConvertedToQuestion, self).__init__(when, person)
         self.question = question
 
@@ -422,7 +421,6 @@ class BugDuplicateChange(AttributeChange):
             return BugNotificationLevel.METADATA
 
     def getBugActivity(self):
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
         if self.old_value is not None and self.new_value is not None:
             return {
                 'whatchanged': CHANGED_DUPLICATE_MARKER,
@@ -508,7 +506,6 @@ class DeferredBugDuplicateChange(AttributeChange):
             when, person, what_changed, old_value, new_value)
 
     def getBugActivity(self):
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
         if self.old_value is not None and self.new_value is not None:
             return {
                 'whatchanged': CHANGED_DUPLICATE_MARKER,
