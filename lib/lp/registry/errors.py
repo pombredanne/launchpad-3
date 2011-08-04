@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = [
     'DistroSeriesDifferenceError',
     'NotADerivedSeriesError',
-    'MultipleParentsForDerivedSeriesError',
     'CannotTransitionToCountryMirror',
     'CountryMirrorAlreadySet',
     'DeleteSubscriptionError',
@@ -122,14 +121,6 @@ class NotADerivedSeriesError(Exception):
 
     This is raised when a DistroSeriesDifference is created with a
     non-derived series - that is, a distroseries with a null Parent."""
-
-
-class MultipleParentsForDerivedSeriesError(Exception):
-    """A distro series difference must have one parent series set.
-
-    This is raised when a DistroSeriesDifference is created, and we can't
-    determine the parent series to use, since there is more than one. The
-    parent series needs to be specified in this case."""
 
 
 @error_status(httplib.BAD_REQUEST)

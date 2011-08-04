@@ -175,8 +175,7 @@ subscribed.)
     name16
 
     >>> bugtaskset = getUtility(IBugTaskSet)
-    >>> bug_in_evolution = bugtaskset.createTask(
-    ...     bug=bug, product=evolution, owner=foobar)
+    >>> bug_in_evolution = bugtaskset.createTask(bug, foobar, evolution)
 
 lifeless is subscribed to the public security bug when a task is added
 for evolution.
@@ -203,8 +202,7 @@ subscribed.
     >>> subscriber_names(bug)
     [u'name12', u'name16']
 
-    >>> bug_in_evolution = bugtaskset.createTask(
-    ...     bug=bug, product=evolution, owner=foobar)
+    >>> bug_in_evolution = bugtaskset.createTask(bug, foobar, evolution)
 
     >>> subscriber_names(bug)
     [u'name12', u'name16']
@@ -230,7 +228,7 @@ thunderbird to see how this works.
     >>> from lp.bugs.interfaces.bugtask import IBugTask
 
     >>> old_state = Snapshot(bug_in_evolution, providing=IBugTask)
-    >>> bug_in_evolution.product = thunderbird
+    >>> bug_in_evolution.transitionToTarget(thunderbird)
     >>> bug_product_changed = ObjectModifiedEvent(
     ...     bug_in_evolution, old_state, ["product"])
 

@@ -467,7 +467,11 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         except SuspendJobException:
             raise
         except:
+            # Abort work done so far, but make sure that we commit the
+            # rejection to the PackageUpload.
+            transaction.abort()
             self._rejectPackageUpload()
+            transaction.commit()
             raise
 
     def attemptCopy(self):
@@ -507,7 +511,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             series=self.target_distroseries, pocket=self.target_pocket,
             include_binaries=self.include_binaries, check_permissions=True,
             person=self.requester, overrides=[override],
-            send_email=send_email)
+            send_email=send_email, announce_from_person=self.requester)
 
         if pu is not None:
             # A PackageUpload will only exist if the copy job had to be

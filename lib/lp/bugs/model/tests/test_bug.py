@@ -4,7 +4,7 @@
 __metaclass__ = type
 
 from storm.store import Store
-from testtools.matchers import LessThan
+from testtools.testcase import ExpectedException
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.enum import BugNotificationLevel
@@ -19,12 +19,25 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.matchers import HasQueryCount
+from lp.testing.matchers import (
+    Equals,
+    HasQueryCount,
+    LessThan,
+    )
 
 
 class TestBug(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def test_markAsDuplicate_None(self):
+        # Calling markAsDuplicate(None) on a bug that is not currently a
+        # duplicate works correctly, and does not raise an AttributeError.
+        bug = self.factory.makeBug()
+        with ExpectedException(AssertionError, 'AttributeError not raised'):
+            with ExpectedException(AttributeError, ''):
+                with person_logged_in(self.factory.makePerson()):
+                    bug.markAsDuplicate(None)
 
     def test_get_subscribers_for_person_unsubscribed(self):
         bug = self.factory.makeBug()
@@ -372,6 +385,35 @@ class TestBug(TestCaseWithFactory):
             bug.subscribe(team, person)
             bug.setPrivate(True, person)
             self.assertFalse(bug.personIsDirectSubscriber(person))
+
+    def test_getVisibleLinkedBranches_doesnt_return_inaccessible_branches(self):
+        # If a Bug has branches linked to it that the current user
+        # cannot access, those branches will not be returned in its
+        # linked_branches property.
+        bug = self.factory.makeBug()
+        private_branch_owner = self.factory.makePerson()
+        private_branch = self.factory.makeBranch(
+            owner=private_branch_owner, private=True)
+        with person_logged_in(private_branch_owner):
+            bug.linkBranch(private_branch, private_branch.registrant)
+        public_branch_owner = self.factory.makePerson()
+        public_branches = [
+            self.factory.makeBranch() for i in range(4)]
+        with person_logged_in(public_branch_owner):
+            for public_branch in public_branches:
+                bug.linkBranch(public_branch, public_branch.registrant)
+        with StormStatementRecorder() as recorder:
+            linked_branches = [
+                bug_branch.branch for bug_branch in
+                bug.getVisibleLinkedBranches(user=public_branch_owner)]
+            # We check that the query count is low, since that's
+            # part of the point of the way that linked_branches is
+            # implemented. If we try eager-loading all the linked
+            # branches the query count jumps up by 6, which is not
+            # what we want.
+            self.assertThat(recorder, HasQueryCount(LessThan(7)))
+        self.assertContentEqual(public_branches, linked_branches)
+        self.assertNotIn(private_branch, linked_branches)
 
 
 class TestBugAutoConfirmation(TestCaseWithFactory):

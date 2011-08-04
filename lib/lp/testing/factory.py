@@ -862,7 +862,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 productseries = self.makeProductSeries(product=product)
             distroseries = None
         else:
-            distroseries = self.makeDistroRelease(distribution=distribution)
+            distroseries = self.makeDistroSeries(distribution=distribution)
         if name is None:
             name = self.getUniqueString()
         return ProxyFactory(
@@ -2050,7 +2050,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     makeBlueprint = makeSpecification
 
     def makeQuestion(self, target=None, title=None,
-                     owner=None, description=None):
+                     owner=None, description=None, language=None):
         """Create and return a new, arbitrary Question.
 
         :param target: The IQuestionTarget to make the question on. If one is
@@ -2059,6 +2059,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             arbitrary title is created.
         :param owner: The owner of the question. If one is not provided, the
             question target owner will be used.
+        :param description: The question description.
+        :param language: The question language. If one is not provided, then
+            English will be used.
         """
         if target is None:
             target = self.makeProduct()
@@ -2068,10 +2071,20 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             owner = target.owner
         if description is None:
             description = self.getUniqueString('description')
-        with person_logged_in(target.owner):
+        with person_logged_in(owner):
             question = target.newQuestion(
-                owner=owner, title=title, description=description)
+                owner=owner, title=title, description=description,
+                language=language)
         return question
+
+    def makeQuestionSubscription(self, question=None, person=None):
+        """Create a QuestionSubscription."""
+        if question is None:
+            question = self.makeQuestion()
+        if person is None:
+            person = self.makePerson()
+        with person_logged_in(person):
+            return question.subscribe(person)
 
     def makeFAQ(self, target=None, title=None):
         """Create and return a new, arbitrary FAQ.
@@ -2344,11 +2357,11 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 publish_copy_base_url)
         return distro
 
-    def makeDistroRelease(self, distribution=None, version=None,
-                          status=SeriesStatus.DEVELOPMENT,
-                          previous_series=None, name=None, displayname=None,
-                          registrant=None):
-        """Make a new distro release."""
+    def makeDistroSeries(self, distribution=None, version=None,
+                         status=SeriesStatus.DEVELOPMENT,
+                         previous_series=None, name=None, displayname=None,
+                         registrant=None):
+        """Make a new `DistroSeries`."""
         if distribution is None:
             distribution = self.makeDistribution()
         if name is None:
@@ -2374,18 +2387,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         return ProxyFactory(series)
 
-    def makeUbuntuDistroRelease(self, version=None,
-                                status=SeriesStatus.DEVELOPMENT,
-                                previous_series=None, name=None,
-                                displayname=None):
+    def makeUbuntuDistroSeries(self, version=None,
+                               status=SeriesStatus.DEVELOPMENT,
+                               previous_series=None, name=None,
+                               displayname=None):
         """Short cut to use the celebrity 'ubuntu' as the distribution."""
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        return self.makeDistroRelease(
+        return self.makeDistroSeries(
             ubuntu, version, status, previous_series, name, displayname)
-
-    # Most people think of distro releases as distro series.
-    makeDistroSeries = makeDistroRelease
-    makeUbuntuDistroSeries = makeUbuntuDistroRelease
 
     def makeDistroSeriesDifference(
         self, derived_series=None, source_package_name_str=None,
@@ -2498,7 +2507,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         """Create a new distroarchseries"""
 
         if distroseries is None:
-            distroseries = self.makeDistroRelease()
+            distroseries = self.makeDistroSeries()
         if processorfamily is None:
             processorfamily = self.makeProcessorFamily()
         if owner is None:
@@ -2765,7 +2774,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :param epoch_days: the time window to use when creating records.
         """
 
-        distroseries = self.makeDistroRelease()
+        distroseries = self.makeDistroSeries()
         sourcepackagename = self.makeSourcePackageName()
         sourcepackage = self.makeSourcePackage(
             sourcepackagename=sourcepackagename,
@@ -3360,7 +3369,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             sourcepackagename = self.getOrMakeSourcePackageName(
                 sourcepackagename)
         if distroseries is None:
-            distroseries = self.makeDistroRelease()
+            distroseries = self.makeDistroSeries()
         return distroseries.getSourcePackage(sourcepackagename)
 
     def getAnySourcePackageUrgency(self):
@@ -3485,7 +3494,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     distribution = None
                 else:
                     distribution = archive.distribution
-                distroseries = self.makeDistroRelease(
+                distroseries = self.makeDistroSeries(
                     distribution=distribution)
 
         if archive is None:
@@ -3670,7 +3679,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                     distribution = None
                 else:
                     distribution = archive.distribution
-                distroseries = self.makeDistroRelease(
+                distroseries = self.makeDistroSeries(
                     distribution=distribution)
         if archive is None:
             archive = distroseries.main_archive
@@ -3876,7 +3885,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
     def makeSuiteSourcePackage(self, distroseries=None,
                                sourcepackagename=None, pocket=None):
         if distroseries is None:
-            distroseries = self.makeDistroRelease()
+            distroseries = self.makeDistroSeries()
         if pocket is None:
             pocket = self.getAnyPocket()
         # Make sure we have a real sourcepackagename object.

@@ -285,16 +285,17 @@ class PublishFTPMaster(LaunchpadCronScript):
         """Run the process-accepted script."""
         self.logger.debug(
             "Processing the accepted queue into the publishing records...")
-        script = ProcessAccepted(test_args=[self.distribution.name])
+        script = ProcessAccepted(
+            test_args=[self.distribution.name], logger=self.logger)
         script.txn = self.txn
-        script.logger = self.logger
         script.main()
 
     def getDirtySuites(self):
         """Return list of suites that have packages pending publication."""
         self.logger.debug("Querying which suites are pending publication...")
         query_distro = LpQueryDistro(
-            test_args=['-d', self.distribution.name, "pending_suites"])
+            test_args=['-d', self.distribution.name, "pending_suites"],
+            logger=self.logger)
         receiver = StoreArgument()
         query_distro.runAction(presenter=receiver)
         return receiver.argument.split()
@@ -362,7 +363,8 @@ class PublishFTPMaster(LaunchpadCronScript):
             args +
             sum([['-s', suite] for suite in suites], []))
 
-        publish_distro = PublishDistro(test_args=arguments)
+        publish_distro = PublishDistro(
+            test_args=arguments, logger=self.logger)
         publish_distro.logger = self.logger
         publish_distro.txn = self.txn
         publish_distro.main()
@@ -426,25 +428,6 @@ class PublishFTPMaster(LaunchpadCronScript):
             os.rename(dists, temp_dists)
             os.rename(backup_dists, dists)
             os.rename(temp_dists, backup_dists)
-
-    def runCommercialCompat(self):
-        """Generate the -commercial pocket.
-
-        This is done for backwards compatibility with dapper, edgy, and
-        feisty releases.  Failure here is not fatal.
-        """
-        # XXX JeroenVermeulen 2011-03-24 bug=741683: Retire
-        # commercial-compat.sh (and this method) as soon as Dapper
-        # support ends.
-        if self.distribution.name != 'ubuntu':
-            return
-        if not config.archivepublisher.run_commercial_compat:
-            return
-
-        env = {"LPCONFIG": shell_quote(config.instance_name)}
-        self.executeShell(
-            "env %s commercial-compat.sh"
-            % compose_env_string(env, extend_PATH()))
 
     def generateListings(self):
         """Create ls-lR.gz listings."""
@@ -570,13 +553,11 @@ class PublishFTPMaster(LaunchpadCronScript):
 
         self.rsyncBackupDists()
         self.publish(security_only=True)
-        self.runCommercialCompat()
         self.runFinalizeParts(security_only=True)
 
         if not self.options.security_only:
             self.rsyncBackupDists()
             self.publish(security_only=False)
-            self.runCommercialCompat()
             self.generateListings()
             self.clearEmptyDirs()
             self.runFinalizeParts(security_only=False)

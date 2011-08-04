@@ -27,6 +27,7 @@ from lazr.enum import DBEnumeratedType
 from lazr.lifecycle.interfaces import IObjectModifiedEvent
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
+    accessor_for,
     call_with,
     export_as_webservice_entry,
     export_factory_operation,
@@ -431,6 +432,13 @@ class IBug(IPrivacy, IHasLinkedBranches):
     latest_patch = Attribute("The most recent patch of this bug.")
 
     official_tags = Attribute("The official bug tags relevant to this bug.")
+
+    @accessor_for(linked_branches)
+    @call_with(user=REQUEST_USER)
+    @export_read_operation()
+    @operation_for_version('beta')
+    def getVisibleLinkedBranches(user):
+        """Rertun the linked to this bug that are visible by `user`."""
 
     @operation_parameters(
         subject=optional_message_subject_field(),

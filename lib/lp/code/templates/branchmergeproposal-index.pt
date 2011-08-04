@@ -200,7 +200,7 @@
   conf = <tal:status-config replace="view/status_config" />
   <!--
   LPS.use('io-base', 'lp.code.branchmergeproposal.reviewcomment',
-          'lp.code.branchmergeproposal.status', 'lp.app.comment', 
+          'lp.code.branchmergeproposal.status', 'lp.app.comment',
           'lp.app.widgets.expander', 'lp.code.branch.revisionexpander', function(Y) {
 
     Y.on('load', function() {

@@ -18,6 +18,8 @@ __all__ = [
     'get_bug_privacy_filter',
     'get_related_bugtasks_search_params',
     'search_value_to_where_condition',
+    'validate_new_target',
+    'validate_target',
     ]
 
 
@@ -85,10 +87,6 @@ from canonical.launchpad.components.decoratedresultset import (
     )
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.interfaces.validation import (
-    valid_upstreamtask,
-    validate_new_distrotask,
-    )
 from canonical.launchpad.searchbuilder import (
     all,
     any,
@@ -130,7 +128,6 @@ from lp.bugs.interfaces.bugtask import (
     )
 from lp.bugs.model.bugnomination import BugNomination
 from lp.bugs.model.bugsubscription import BugSubscription
-from lp.bugs.model.structuralsubscription import StructuralSubscription
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -437,6 +434,65 @@ def validate_sourcepackagename(self, attr, value):
     if not is_passthrough:
         self._syncSourcePackages(value)
     return validate_target_attribute(self, attr, value)
+
+
+def validate_target(bug, target):
+    """Validate a bugtask target against a bug's existing tasks.
+
+    Checks that no conflicting tasks already exist.
+    """
+    if bug.getBugTask(target):
+        raise IllegalTarget(
+            "A fix for this bug has already been requested for %s"
+            % target.displayname)
+
+    if IDistributionSourcePackage.providedBy(target):
+        # If the distribution has at least one series, check that the
+        # source package has been published in the distribution.
+        if (target.sourcepackagename is not None and
+            len(target.distribution.series) > 0):
+            try:
+                target.distribution.guessPublishedSourcePackageName(
+                    target.sourcepackagename.name)
+            except NotFoundError, e:
+                raise IllegalTarget(e[0])
+
+
+def validate_new_target(bug, target):
+    """Validate a bugtask target to be added.
+
+    Make sure that the isn't already a distribution task without a
+    source package, or that such task is added only when the bug doesn't
+    already have any tasks for the distribution.
+
+    The same checks as `validate_target` does are also done.
+    """
+    if IDistribution.providedBy(target):
+        # Prevent having a task on only the distribution if there's at
+        # least one task already on the distribution, whether or not
+        # that task also has a source package.
+        distribution_tasks_for_bug = [
+            bugtask for bugtask
+            in shortlist(bug.bugtasks, longest_expected=50)
+            if bugtask.distribution == target]
+
+        if len(distribution_tasks_for_bug) > 0:
+            raise IllegalTarget(
+                "This bug is already on %s. Please specify an "
+                "affected package in which the bug has not yet "
+                "been reported." % target.displayname)
+    elif IDistributionSourcePackage.providedBy(target):
+        # Ensure that there isn't already a generic task open on the
+        # distribution for this bug, because if there were, that task
+        # should be reassigned to the sourcepackage, rather than a new
+        # task opened.
+        if bug.getBugTask(target.distribution) is not None:
+            raise IllegalTarget(
+                "This bug is already open on %s with no package "
+                "specified. You should fill in a package name for "
+                "the existing bug." % target.distribution.displayname)
+
+    validate_target(bug, target)
 
 
 class BugTask(SQLBase):
@@ -1081,6 +1137,34 @@ class BugTask(SQLBase):
             get_property_cache(self.bug)._known_viewers = set(
                 [self.assignee.id])
 
+    def validateTransitionToTarget(self, target):
+        """See `IBugTask`."""
+        # Check if any series are involved. You can't retarget series
+        # tasks. Except for DistroSeries/SourcePackage tasks, which can
+        # only be retargetted to another SourcePackage in the same
+        # DistroSeries, or the DistroSeries.
+        interfaces = set(providedBy(target))
+        interfaces.update(providedBy(self.target))
+        if IProductSeries in interfaces:
+            raise IllegalTarget(
+                "Series tasks may only be created by approving nominations.")
+        elif interfaces.intersection((IDistroSeries, ISourcePackage)):
+            series = set()
+            for potential_target in (target, self.target):
+                if IDistroSeries.providedBy(potential_target):
+                    series.add(potential_target)
+                elif ISourcePackage.providedBy(potential_target):
+                    series.add(potential_target.distroseries)
+                else:
+                    series = set()
+                    break
+            if len(series) != 1:
+                raise IllegalTarget(
+                    "Distribution series tasks may only be retargetted "
+                    "to a package within the same series.")
+
+        validate_target(self.bug, target)
+
     def transitionToTarget(self, target):
         """See `IBugTask`.
 
@@ -1090,6 +1174,11 @@ class BugTask(SQLBase):
         lib/canonical/launchpad/browser/bugtask.py#BugTaskEditView.
         """
 
+        if self.target == target:
+            return
+
+        self.validateTransitionToTarget(target)
+
         target_before_change = self.target
 
         if (self.milestone is not None and
@@ -1098,22 +1187,6 @@ class BugTask(SQLBase):
             # have to make sure that it's a milestone of the
             # current target, or reset it to None
             self.milestone = None
-
-        # Check if any series are involved. You can't retarget series
-        # tasks. Except for SourcePackage tasks, which can only be
-        # retargetted to another SourcePackage in the same DistroSeries.
-        interfaces = set(providedBy(target))
-        interfaces.update(providedBy(self.target))
-        if interfaces.intersection((IProductSeries, IDistroSeries)):
-            raise IllegalTarget(
-                "Series tasks may only be created by approving nominations.")
-        elif ISourcePackage in interfaces:
-            if (not ISourcePackage.providedBy(target) or
-                not ISourcePackage.providedBy(self.target) or
-                target.distroseries != self.target.distroseries):
-                raise IllegalTarget(
-                    "Series source package tasks may only be retargetted "
-                    "to another source package in the same series.")
 
         # Inhibit validate_target_attribute, as we can't set them all
         # atomically, but we know the final result is correct.
@@ -1872,55 +1945,55 @@ class BugTaskSet:
                     sqlvalues(personid=params.subscriber.id))
 
         if params.structural_subscriber is not None:
-            ssub_match_product = (
-                BugTask.productID ==
-                StructuralSubscription.productID)
-            ssub_match_productseries = (
-                BugTask.productseriesID ==
-                StructuralSubscription.productseriesID)
+            # See bug 787294 for the story that led to the query elements
+            # below.  Please change with care.
+            with_clauses.append(
+                '''ss as (SELECT * from StructuralSubscription
+                WHERE StructuralSubscription.subscriber = %s)'''
+                % sqlvalues(params.structural_subscriber))
             # Prevent circular import problems.
             from lp.registry.model.product import Product
-            ssub_match_project = And(
-                Product.projectID ==
-                StructuralSubscription.projectID,
-                BugTask.product == Product.id)
-            ssub_match_distribution = (
-                BugTask.distributionID ==
-                StructuralSubscription.distributionID)
-            ssub_match_sourcepackagename = (
-                BugTask.sourcepackagenameID ==
-                StructuralSubscription.sourcepackagenameID)
-            ssub_match_null_sourcepackagename = (
-                StructuralSubscription.sourcepackagename == None)
-            ssub_match_distribution_with_optional_package = And(
-                ssub_match_distribution, Or(
-                    ssub_match_sourcepackagename,
-                    ssub_match_null_sourcepackagename))
-            ssub_match_distribution_series = (
-                BugTask.distroseriesID ==
-                StructuralSubscription.distroseriesID)
-            ssub_match_milestone = (
-                BugTask.milestoneID ==
-                StructuralSubscription.milestoneID)
-
-            join_clause = Or(
-                ssub_match_product,
-                ssub_match_productseries,
-                ssub_match_project,
-                ssub_match_distribution_with_optional_package,
-                ssub_match_distribution_series,
-                ssub_match_milestone)
-
             join_tables.append(
                 (Product, LeftJoin(Product, And(
                                 BugTask.productID == Product.id,
                                 Product.active))))
             join_tables.append(
-                (StructuralSubscription,
-                 Join(StructuralSubscription, join_clause)))
+                (None,
+                 LeftJoin(
+                    SQL('ss ss1'),
+                    BugTask.product == SQL('ss1.product'))))
+            join_tables.append(
+                (None,
+                 LeftJoin(
+                    SQL('ss ss2'),
+                    BugTask.productseries == SQL('ss2.productseries'))))
+            join_tables.append(
+                (None,
+                 LeftJoin(
+                    SQL('ss ss3'),
+                    Product.project == SQL('ss3.project'))))
+            join_tables.append(
+                (None,
+                 LeftJoin(
+                    SQL('ss ss4'),
+                    And(BugTask.distribution == SQL('ss4.distribution'),
+                        Or(BugTask.sourcepackagename ==
+                            SQL('ss4.sourcepackagename'),
+                           SQL('ss4.sourcepackagename IS NULL'))))))
+            join_tables.append(
+                (None,
+                 LeftJoin(
+                    SQL('ss ss5'),
+                    BugTask.distroseries == SQL('ss5.distroseries'))))
+            join_tables.append(
+                (None,
+                 LeftJoin(
+                    SQL('ss ss6'),
+                    BugTask.milestone == SQL('ss6.milestone'))))
             extra_clauses.append(
-                'StructuralSubscription.subscriber = %s'
-                % sqlvalues(params.structural_subscriber))
+                "NULL_COUNT("
+                "ARRAY[ss1.id, ss2.id, ss3.id, ss4.id, ss5.id, ss6.id]"
+                ") < 6")
             has_duplicate_results = True
 
         # Remove bugtasks from deactivated products, if necessary.
@@ -2414,9 +2487,10 @@ class BugTaskSet:
         origin = [BugTask]
         already_joined = set(origin)
         for table, join in join_tables:
-            if table not in already_joined:
+            if table is None or table not in already_joined:
                 origin.append(join)
-                already_joined.add(table)
+                if table is not None:
+                    already_joined.add(table)
         for table, join in prejoin_tables:
             if table not in already_joined:
                 origin.append(join)
@@ -2470,9 +2544,11 @@ class BugTaskSet:
             [query, clauseTables, ignore, decorator, join_tables,
              has_duplicate_results, with_clause] = self.buildQuery(arg)
             origin = self.buildOrigin(join_tables, [], clauseTables)
+            localstore = store
             if with_clause:
-                store = orig_store.with_(with_clause)
-            next_result = store.using(*origin).find(inner_resultrow, query)
+                localstore = orig_store.with_(with_clause)
+            next_result = localstore.using(*origin).find(
+                inner_resultrow, query)
             resultset = resultset.union(next_result)
             # NB: assumes the decorators are all compatible.
             # This may need revisiting if e.g. searches on behalf of different
@@ -2623,9 +2699,7 @@ class BugTaskSet:
             omit_dupes=True, exclude_conjoined_tasks=True)
         return self.search(params)
 
-    def createTask(self, bug, owner, product=None, productseries=None,
-                   distribution=None, distroseries=None,
-                   sourcepackagename=None,
+    def createTask(self, bug, owner, target,
                    status=IBugTask['status'].default,
                    importance=IBugTask['importance'].default,
                    assignee=None, milestone=None):
@@ -2639,53 +2713,19 @@ class BugTaskSet:
         if not milestone:
             milestone = None
 
-        # Raise a WidgetError if this product bugtask already exists.
-        target = None
-        stop_checking = False
-        if sourcepackagename is not None:
-            # A source package takes precedence over the distro series
-            # or distribution in which the source package is found.
-            if distroseries is not None:
-                # We'll need to make sure there's no bug task already
-                # filed against this source package in this
-                # distribution series.
-                target = distroseries.getSourcePackage(sourcepackagename)
-            elif distribution is not None:
-                # Make sure there's no bug task already filed against
-                # this source package in this distribution.
-                validate_new_distrotask(bug, distribution, sourcepackagename)
-                stop_checking = True
+        # Make sure there's no task for this bug already filed
+        # against the target.
+        validate_new_target(bug, target)
 
-        if target is None and not stop_checking:
-            # This task is not being filed against a source package. Find
-            # the prospective target.
-            if productseries is not None:
-                # Bug filed against a product series.
-                target = productseries
-            elif product is not None:
-                # Bug filed against a product.
-                target = product
-            elif distroseries is not None:
-                # Bug filed against a distro series.
-                target = distroseries
-            elif distribution is not None and not stop_checking:
-                # Bug filed against a distribution.
-                validate_new_distrotask(bug, distribution)
-                stop_checking = True
-
-        if target is not None and not stop_checking:
-            # Make sure there's no task for this bug already filed
-            # against the target.
-            valid_upstreamtask(bug, target)
+        target_key = bug_target_to_key(target)
 
         if not bug.private and bug.security_related:
+            product = target_key['product']
+            distribution = target_key['distribution']
             if product and product.security_contact:
                 bug.subscribe(product.security_contact, owner)
             elif distribution and distribution.security_contact:
                 bug.subscribe(distribution.security_contact, owner)
-
-        assert (product or productseries or distribution or distroseries), (
-            'Got no bugtask target.')
 
         non_target_create_params = dict(
             bug=bug,
@@ -2694,24 +2734,21 @@ class BugTaskSet:
             assignee=assignee,
             owner=owner,
             milestone=milestone)
-        bugtask = BugTask(
-            product=product,
-            productseries=productseries,
-            distribution=distribution,
-            distroseries=distroseries,
-            sourcepackagename=sourcepackagename,
-            **non_target_create_params)
+        create_params = non_target_create_params.copy()
+        create_params.update(target_key)
+        bugtask = BugTask(**create_params)
 
-        if distribution:
+        if target_key['distribution']:
             # Create tasks for accepted nominations if this is a source
             # package addition.
             accepted_nominations = [
-                nomination for nomination in bug.getNominations(distribution)
+                nomination for nomination in
+                bug.getNominations(target_key['distribution'])
                 if nomination.isApproved()]
             for nomination in accepted_nominations:
                 accepted_series_task = BugTask(
                     distroseries=nomination.distroseries,
-                    sourcepackagename=sourcepackagename,
+                    sourcepackagename=target_key['sourcepackagename'],
                     **non_target_create_params)
                 accepted_series_task.updateTargetNameCache()
 

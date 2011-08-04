@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'distribution_from_distributionsourcepackage',
     'DistributionSourcePackageAnswersMenu',
     'DistributionSourcePackageBreadcrumb',
     'DistributionSourcePackageChangelogView',
@@ -22,13 +21,13 @@ import itertools
 import operator
 
 from lazr.delegates import delegates
+from lazr.restful.interfaces import IJSONRequestCache
 import pytz
 from zope.component import (
     adapter,
     getUtility,
     )
 from zope.interface import (
-    implementer,
     implements,
     Interface,
     )
@@ -116,12 +115,6 @@ class DistributionSourcePackageBreadcrumb(Breadcrumb):
             self.context.sourcepackagename.name)
 
 
-@adapter(IDistributionSourcePackage)
-@implementer(IServiceUsage)
-def distribution_from_distributionsourcepackage(dsp):
-    return dsp.distribution
-
-
 class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
                                       StandardLaunchpadFacets):
 
@@ -130,7 +123,8 @@ class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
 
     def overview(self):
         text = 'Overview'
-        summary = 'General information about {0}'.format(self.context.displayname)
+        summary = 'General information about {0}'.format(
+            self.context.displayname)
         return Link('', text, summary)
 
     def bugs(self):
@@ -277,7 +271,7 @@ class DistributionSourcePackageActionMenu(
         return Link('+changelog', text, icon="info")
 
 
-class DistributionSourcePackageBaseView:
+class DistributionSourcePackageBaseView(LaunchpadView):
     """Common features to all `DistributionSourcePackage` views."""
 
     def releases(self):
@@ -343,6 +337,11 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
         super(DistributionSourcePackageView, self).initialize()
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
+
+        pub = self.context.latest_overall_publication
+        if pub:
+            IJSONRequestCache(self.request).objects['archive_context_url'] = (
+                canonical_url(pub.archive, path_only_if_possible=True))
 
     @property
     def label(self):
@@ -633,7 +632,7 @@ class DistributionSourcePackageEditView(LaunchpadEditFormView):
     cancel_url = next_url
 
 
-class DistributionSourcePackageHelpView:
+class DistributionSourcePackageHelpView(LaunchpadView):
     """A View to show Answers help."""
 
     page_title = 'Help and support options'

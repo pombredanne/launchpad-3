@@ -175,11 +175,9 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     get_structural_subscribers,
     )
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage,
-    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -1187,33 +1185,7 @@ BugMessage""" % sqlvalues(self.id))
 
     def addTask(self, owner, target):
         """See `IBug`."""
-        product = None
-        product_series = None
-        distribution = None
-        distro_series = None
-        source_package_name = None
-
-        # Turn `target` into something more useful.
-        if IProduct.providedBy(target):
-            product = target
-        if IProductSeries.providedBy(target):
-            product_series = target
-        if IDistribution.providedBy(target):
-            distribution = target
-        if IDistroSeries.providedBy(target):
-            distro_series = target
-        if IDistributionSourcePackage.providedBy(target):
-            distribution = target.distribution
-            source_package_name = target.sourcepackagename
-        if ISourcePackage.providedBy(target):
-            distro_series = target.distroseries
-            source_package_name = target.sourcepackagename
-
-        new_task = getUtility(IBugTaskSet).createTask(
-            self, owner=owner, product=product,
-            productseries=product_series, distribution=distribution,
-            distroseries=distro_series,
-            sourcepackagename=source_package_name)
+        new_task = getUtility(IBugTaskSet).createTask(self, owner, target)
 
         # When a new task is added the bug's heat becomes relevant to the
         # target's max_bug_heat.
@@ -1325,6 +1297,21 @@ BugMessage""" % sqlvalues(self.id))
             self.addChange(BranchUnlinkedFromBug(UTC_NOW, user, branch, self))
             notify(ObjectDeletedEvent(bug_branch, user=user))
             bug_branch.destroySelf()
+
+    def getVisibleLinkedBranches(self, user):
+        """Return all the branches linked to the bug that `user` can see."""
+        all_branches = getUtility(IAllBranches)
+        linked_branches = list(all_branches.visibleByUser(
+            user).linkedToBugs([self]).getBranches())
+        if len(linked_branches) == 0:
+            return EmptyResultSet()
+        else:
+            store = Store.of(self)
+            branch_ids = [branch.id for branch in linked_branches]
+            return store.find(
+                BugBranch,
+                BugBranch.bug == self,
+                In(BugBranch.branchID, branch_ids))
 
     @cachedproperty
     def has_cves(self):
@@ -1872,7 +1859,8 @@ BugMessage""" % sqlvalues(self.id))
             # from having been a duplicate. We also update the bug that
             # was previously duplicated.
             self.updateHeat(affected_targets)
-            current_duplicateof.updateHeat(affected_targets)
+            if current_duplicateof is not None:
+                current_duplicateof.updateHeat(affected_targets)
         return affected_targets
 
     def markAsDuplicate(self, duplicate_of):
@@ -2522,15 +2510,15 @@ class BugSet:
         # Create the task on a product if one was passed.
         if params.product:
             getUtility(IBugTaskSet).createTask(
-                bug=bug, product=params.product, owner=params.owner,
-                status=params.status)
+                bug, params.owner, params.product, status=params.status)
 
         # Create the task on a source package name if one was passed.
         if params.distribution:
+            target = params.distribution
+            if params.sourcepackagename:
+                target = target.getSourcePackage(params.sourcepackagename)
             getUtility(IBugTaskSet).createTask(
-                bug=bug, distribution=params.distribution,
-                sourcepackagename=params.sourcepackagename,
-                owner=params.owner, status=params.status)
+                bug, params.owner, target, status=params.status)
 
         bug_task = bug.default_bugtask
         if params.assignee:

@@ -1010,7 +1010,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         #  <DESCRIPTION LN>
         descr_lines = [line.lstrip() for line in bpr.description.splitlines()]
         bin_description = (
-            '%s\n %s'% (bpr.summary, '\n '.join(descr_lines)))
+            '%s\n %s' % (bpr.summary, '\n '.join(descr_lines)))
 
         # Dealing with architecturespecific field.
         # Present 'all' in every archive index for architecture
@@ -1364,6 +1364,8 @@ class PublishingSet:
             overrides = policy.calculateBinaryOverrides(
                 archive, distroseries, pocket, bpn_archtag.keys())
             for override in overrides:
+                if override.distro_arch_series is None:
+                    continue
                 bpph = bpn_archtag[
                     (override.binary_package_name,
                      override.distro_arch_series.architecturetag)]
@@ -1376,6 +1378,8 @@ class PublishingSet:
             with_overrides = dict(
                 (bpph.binarypackagerelease, (bpph.component, bpph.section,
                  bpph.priority)) for bpph in binaries)
+        if not with_overrides:
+            return list()
         return self.publishBinaries(
             archive, distroseries, pocket, with_overrides)
 
@@ -1496,9 +1500,8 @@ class PublishingSet:
                     pocket)
         return pub
 
-    def getBuildsForSourceIds(
-        self, source_publication_ids, archive=None, build_states=None,
-        need_build_farm_job=False):
+    def getBuildsForSourceIds(self, source_publication_ids, archive=None,
+                              build_states=None, need_build_farm_job=False):
         """See `IPublishingSet`."""
         # Import Build and DistroArchSeries locally to avoid circular
         # imports, since that Build uses SourcePackagePublishingHistory

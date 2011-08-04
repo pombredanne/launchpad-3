@@ -195,9 +195,7 @@ supervisor is also an indirect subscriber.
     >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).get(4)
 
-    >>> getUtility(IBugTaskSet).createTask(
-    ...     product=firefox, bug=linux_source_bug,
-    ...     owner=foobar)
+    >>> getUtility(IBugTaskSet).createTask(linux_source_bug, foobar, firefox)
     <BugTask ...>
 
     >>> lifeless = personset.getByName("lifeless")
@@ -749,7 +747,7 @@ If we create a bug task on Ubuntu in the same bug, the Ubuntu bug
 supervisor will be subscribed:
 
     >>> ubuntu_task = getUtility(IBugTaskSet).createTask(
-    ...     bug=new_bug, distribution=ubuntu, owner=mark)
+    ...     new_bug, mark, ubuntu)
 
     >>> print '\n'.join(getSubscribers(new_bug))
     foo.bar@canonical.com

@@ -794,6 +794,12 @@ class IBugTask(IHasDateCreated, IHasBug):
         value is set to None, date_assigned is also set to None.
         """
 
+    def validateTransitionToTarget(target):
+        """Check whether a transition to this target is legal.
+
+        :raises IllegalTarget: if the new target is not allowed.
+        """
+
     @mutator_for(target)
     @operation_parameters(
         target=copy_field(target))
@@ -1502,10 +1508,8 @@ class IBugTaskSet(Interface):
         :return: A list of tuples containing (status_id, count).
         """
 
-    def createTask(bug, product=None, productseries=None, distribution=None,
-                   distroseries=None, sourcepackagename=None, status=None,
-                   importance=None, assignee=None, owner=None,
-                   milestone=None):
+    def createTask(bug, owner, target, status=None, importance=None,
+                   assignee=None, milestone=None):
         """Create a bug task on a bug and return it.
 
         If the bug is public, bug supervisors will be automatically
@@ -1513,8 +1517,6 @@ class IBugTaskSet(Interface):
 
         If the bug has any accepted series nominations for a supplied
         distribution, series tasks will be created for them.
-
-        Exactly one of product, distribution or distroseries must be provided.
         """
 
     def findExpirableBugTasks(min_days_old, user, bug=None, target=None,

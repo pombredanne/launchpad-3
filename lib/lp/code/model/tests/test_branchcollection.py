@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch collections."""
@@ -77,7 +77,7 @@ class TestBranchCollectionAdaptation(TestCaseWithFactory):
 
     def test_distro_series(self):
         # A distro series can be adapted to a branch collection.
-        distro_series = self.factory.makeDistroRelease()
+        distro_series = self.factory.makeDistroSeries()
         collection = IBranchCollection(distro_series, None)
         self.assertIsNot(None, collection)
 
@@ -272,9 +272,9 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         # 'inDistribution' returns a new collection that only has branches
         # that are source package branches associated with distribution series
         # for the distribution specified.
-        series_one = self.factory.makeDistroRelease()
+        series_one = self.factory.makeDistroSeries()
         distro = series_one.distribution
-        series_two = self.factory.makeDistroRelease(distribution=distro)
+        series_two = self.factory.makeDistroSeries(distribution=distro)
         # Make two branches in the same distribution, but different series and
         # source packages.
         branch = self.factory.makePackageBranch(distroseries=series_one)
@@ -291,8 +291,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         # 'inDistroSeries' returns a new collection that only has branches
         # that are source package branches associated with the distribution
         # series specified.
-        series_one = self.factory.makeDistroRelease()
-        series_two = self.factory.makeDistroRelease(
+        series_one = self.factory.makeDistroSeries()
+        series_two = self.factory.makeDistroSeries(
             distribution=series_one.distribution)
         # Make two branches in the same distroseries, but different source
         # packages.
@@ -343,8 +343,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         # 'inDistributionSourcePackage' returns a new collection that only has
         # branches for the source package across any distroseries of the
         # distribution.
-        series_one = self.factory.makeDistroRelease()
-        series_two = self.factory.makeDistroRelease(
+        series_one = self.factory.makeDistroSeries()
+        series_two = self.factory.makeDistroSeries(
             distribution=series_one.distribution)
         package = self.factory.makeSourcePackageName()
         sourcepackage_one = self.factory.makeSourcePackage(
@@ -506,6 +506,19 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         since = self.factory.getUniqueDate()
         branches = all_branches.targetedBy(registrant, since=since)
         self.assertEqual([], list(branches.getBranches()))
+
+    def test_linkedToBugs(self):
+        # BranchCollection.linkedToBugs() returns all the branches linked
+        # to a given set of bugs.
+        all_branches = self.all_branches
+        bug = self.factory.makeBug()
+        linked_branch = self.factory.makeBranch()
+        unlinked_branch = self.factory.makeBranch()
+        with person_logged_in(linked_branch.owner):
+            bug.linkBranch(linked_branch, linked_branch.owner)
+        branches = all_branches.linkedToBugs([bug])
+        self.assertContentEqual([linked_branch], branches.getBranches())
+        self.assertNotIn(unlinked_branch, list(branches.getBranches()))
 
 
 class TestGenericBranchCollectionVisibleFilter(TestCaseWithFactory):
