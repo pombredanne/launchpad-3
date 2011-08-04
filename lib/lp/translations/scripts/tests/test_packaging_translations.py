@@ -37,6 +37,7 @@ class TestMergeTranslations(TestCaseWithFactory):
             INFO    Merging .* and .* in Ubuntu Distroseries.*
             INFO    Deleted POTMsgSets: 1.  TranslationMessages: 1.
             INFO    Splitting .* and .* in Ubuntu Distroseries.*
+            INFO    1 entries split.
             INFO    Ran 1 TranslationMergeJob jobs.
             INFO    Ran 1 TranslationSplitJob jobs.
             """))
