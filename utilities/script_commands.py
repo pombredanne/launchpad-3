@@ -24,9 +24,8 @@ def helps(**kwargs):
 def get_function_parser(function):
     """Generate an OptionParser for a function.
 
-    Defaults come from the parameter defaults.
-    For every permitted to provide as an option, the type must be specified,
-    using the types decorator.
+    Defaults come from the parameter defaults.  Types are inferred from the
+    default, or may be specified using the types decorator.
     Help may be specified using the helps decorator.
     """
     parser = OptionParser()
