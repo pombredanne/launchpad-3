@@ -31,7 +31,6 @@ from bzrlib.transport import get_transport
 from bzrlib.urlutils import (
     join as urljoin,
     local_path_from_url,
-    local_path_to_url,
     )
 from CVS import (
     Repository,

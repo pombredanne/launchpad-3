@@ -260,16 +260,37 @@ class GitServer(Server):
 
 class MercurialServer(Server):
 
-    def __init__(self, repository_path):
+    def __init__(self, repository_path, use_server=False):
         super(MercurialServer, self).__init__()
         self.repository_path = repository_path
+        self._use_server = use_server
 
     def get_url(self):
-        return local_path_to_url(self.repository_path)
+        if self._use_server:
+            return "http://localhost:%d/" % self._port
+        else:
+            return local_path_to_url(self.repository_path)
 
     def start_server(self):
         super(MercurialServer, self).start_server()
         self.createRepository(self.repository_path)
+        if self._use_server:
+            self._port = 4344
+            pid = os.fork()
+            if pid == 0:
+                from mercurial import hgweb
+                from mercuria.ui import ui
+                ui.setconfig('web', 'port', self._port)
+                app = hgweb.hgweb(self.repository_path, baseui=ui)
+                httpd = hgweb.server.create_server(ui(), app)
+                httpd.serve_forever()
+            else:
+                self._server_pid = pid
+
+    def stop_server(self):
+        super(MercurialServer, self).stop_server()
+        if self._use_server:
+            os.kill(self._server_pid, signal.SIGINT)
 
     def createRepository(self, path):
         from mercurial.ui import ui
