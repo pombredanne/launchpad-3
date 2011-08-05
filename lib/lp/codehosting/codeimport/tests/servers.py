@@ -26,7 +26,6 @@ from bzrlib.transport import Server
 from bzrlib.urlutils import (
     escape,
     join as urljoin,
-    local_path_from_url,
     )
 import CVS
 import dulwich.index
@@ -207,15 +206,47 @@ class CVSServer(Server):
 
 class GitServer(Server):
 
-    def __init__(self, repo_url):
+    def __init__(self, repository_path, use_server=False):
         super(GitServer, self).__init__()
-        self.repo_url = repo_url
+        self.repository_path = repository_path
+        self._use_server = use_server
 
     def get_url(self):
-        return self.repo_url
+        """Return a URL to the Git repository."""
+        if self._use_server:
+            return 'git://localhost/'
+        else:
+            return local_path_to_url(self.repository_path)
+
+    def createRepository(self, path):
+        GitRepo.init(path)
+
+    def start_server(self):
+        super(GitServer, self).start_server()
+        self.createRepository(self.repository_path)
+        if self._use_server:
+            pid = os.fork()
+            if pid == 0:
+                from dulwich import log_utils
+                from dulwich.repo import Repo
+                from dulwich.server import (
+                    DictBackend,
+                    TCPGitServer,
+                    )
+                log_utils.default_logging_config()
+                backend = DictBackend({'/': Repo(self.repository_path)})
+                server = TCPGitServer(backend, 'localhost')
+                server.serve_forever()
+            else:
+                self._server_pid = os.fork()
+
+    def stop_server(self):
+        super(GitServer, self).stop_server()
+        if self._use_server:
+            os.kill(self._server_pid, signal.SIGINT)
 
     def makeRepo(self, tree_contents):
-        repo = GitRepo.init(local_path_from_url(self.repo_url))
+        repo = GitRepo(self.repository_path)
         blobs = [
             (Blob.from_string(contents), filename) for (filename, contents)
             in tree_contents]

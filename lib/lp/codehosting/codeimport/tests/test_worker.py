@@ -1081,7 +1081,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         """Make a Git `CodeImportSourceDetails` pointing at a real Git repo.
         """
         repository_path = self.makeTemporaryDirectory()
-        git_server = GitServer(local_path_to_url(repository_path))
+        git_server = GitServer(repository_path)
         git_server.start_server()
         self.addCleanup(git_server.stop_server)
 
@@ -1089,8 +1089,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='git', url=local_path_to_url(repository_path))
-
+            rcstype='git', url=git_server.get_url())
 
 
 class TestMercurialImport(WorkerTest, TestActualImportMixin,
