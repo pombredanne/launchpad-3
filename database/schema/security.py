@@ -272,7 +272,7 @@ class PermissionGatherer:
         :param principal: User or group to which the privilege should
             apply.
         """
-        self.permissions[permission].setdefault(entity, set()).add(principal)
+        self.permissions[permission].setdefault(principal, set()).add(entity)
 
     def tabulate(self):
         """Group privileges into single-statement work items.
@@ -287,9 +287,9 @@ class PermissionGatherer:
         """
         result = []
         for permission, parties in self.permissions.iteritems():
-            for entity, principals in parties.iteritems():
+            for principal, entities in parties.iteritems():
                 result.append(
-                    (permission, entity, ", ".join(principals)))
+                    (permission, ", ".join(entities), principal))
         return result
 
     def countPermissions(self):
@@ -298,17 +298,17 @@ class PermissionGatherer:
 
     def countEntities(self):
         """Count the number of different entities."""
-        return len(set(sum([
-            entities.keys()
-            for entities in self.permissions.itervalues()], [])))
+        entities = set()
+        for entities_and_entities in self.permissions.itervalues():
+            for extra_entities in entities_and_entities.itervalues():
+                entities.update(extra_entities)
+        return len(entities)
 
     def countPrincipals(self):
         """Count the number of different principals."""
-        principals = set()
-        for entities_and_principals in self.permissions.itervalues():
-            for extra_principals in entities_and_principals.itervalues():
-                principals.update(extra_principals)
-        return len(principals)
+        return len(set(sum([
+            principals.keys()
+            for principals in self.permissions.itervalues()], [])))
 
     def grant(self, cur):
         """Grant all gathered permissions.
