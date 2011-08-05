@@ -37,11 +37,12 @@ SECURE_TABLES = [
 class DbObject(object):
 
     def __init__(
-            self, schema, name, type_, owner, arguments=None, language=None):
+        self, schema, name, type_, owner, acl, arguments=None, language=None):
         self.schema = schema
         self.name = name
         self.type = type_
         self.owner = owner
+        self.acl = acl
         self.arguments = arguments
         self.language = language
 
@@ -80,7 +81,8 @@ class DbSchema(dict):
                     WHEN 'S' THEN 'sequence'
                     WHEN 's' THEN 'special'
                 END as "Type",
-                u.usename as "Owner"
+                u.usename as "Owner",
+                c.relacl as "ACL"
             FROM pg_catalog.pg_class c
                 LEFT JOIN pg_catalog.pg_user u ON u.usesysid = c.relowner
                 LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
@@ -89,9 +91,9 @@ class DbSchema(dict):
                 AND pg_catalog.pg_table_is_visible(c.oid)
             ORDER BY 1,2
             ''')
-        for schema, name, type_, owner in cur.fetchall():
+        for schema, name, type_, owner, acl in cur.fetchall():
             key = '%s.%s' % (schema, name)
-            self[key] = DbObject(schema, name, type_, owner)
+            self[key] = DbObject(schema, name, type_, owner, acl)
 
         cur.execute(r"""
             SELECT
@@ -99,6 +101,7 @@ class DbSchema(dict):
                 p.proname as "name",
                 pg_catalog.oidvectortypes(p.proargtypes) as "Argument types",
                 u.usename as "owner",
+                p.proacl::text[] as "acl",
                 l.lanname as "language"
             FROM pg_catalog.pg_proc p
                 LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
@@ -110,9 +113,9 @@ class DbSchema(dict):
                 AND pg_catalog.pg_function_is_visible(p.oid)
                 AND n.nspname <> 'pg_catalog'
                 """)
-        for schema, name, arguments, owner, language in cur.fetchall():
+        for schema, name, arguments, owner, acl, language in cur.fetchall():
             self['%s.%s(%s)' % (schema, name, arguments)] = DbObject(
-                    schema, name, 'function', owner, arguments, language)
+                    schema, name, 'function', owner, acl, arguments, language)
         # Pull a list of groups
         cur.execute("SELECT groname FROM pg_group")
         self.groups = [r[0] for r in cur.fetchall()]
