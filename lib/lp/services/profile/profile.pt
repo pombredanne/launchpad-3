@@ -3,12 +3,23 @@
   Click to REVEAL profiling information
   </div>
 </div>
-<div class="profiling_info" id="profiling_info">
+<div class="profiling_info" id="profiling_info"
+     tal:define="actions options/actions;
+                 help actions/help|nothing;
+                 log actions/log|nothing;
+                 show actions/show|nothing;
+                 always_log options/always_log;
+                 dump_path options/dump_path;
+                 inlinetime options/inlinetime|nothing;
+                 totaltime options/totaltime|nothing;
+                 callcount options/callcount|nothing;
+                 oops options/oops|nothing;
+                 ">
   <div class="hide_reveal_profiling" id="hide_profiling">
   Click to HIDE profiling information
   </div>
   <h1>Profiling Information</h1>
-  <tal:block condition="'help' in actions">
+  <tal:block condition="help">
     <h2>Help</h2>
     <p>Hi.  I see you are using a <code>++profile++</code> request.
     <tal:block condition="always_log">You have configured every request
@@ -16,7 +27,7 @@
     the <code>[profiling]</code> section of your launchpad-lazr.conf, so
     you'll always see some logging information below.  In order to also
     get immediate profiling results in the browser, use
-    <code>++profile++show</code>.</tal:block> <tal:block condition="not
+    <code>++profile++show</code>.</tal:block> <tal:block condition="not:
     always_log">In order to get profiling results, you need to ask for
     an HTML view (<code>++profile++show</code>), a KCacheGrind-friendly
     log on the filesystem (<code>++profile++log</code>), or both
@@ -29,14 +40,15 @@
     be necessary.</p>
   </tal:block>
   <h2>Log information</h2>
-  <tal:block condition="'log' not in actions">
+  <tal:block condition="not:log">
     <p>Profile was not logged to file.</p>
     <p>Use <code>++profile++log</code> in your URL in order to log the
     information to file for later KCacheGrind analysis (or
     <code>++profile++log,show</code> to see both the log information and
-    immediate results).</p>
+    immediate results).  Profiles are logged to
+    <tal:block replace="dump_path" />.</p>
   </tal:block>
-  <tal:block condition="'log' in actions">
+  <tal:block condition="log">
     <p tal:condition="always_log"><strong>You have configured every
     request to have a full profile log</strong>, via the
     <code>profile_all_requests: True</code> in the
@@ -49,12 +61,12 @@
     >dev wiki</a> may have more information on how to use this.</p>
   </tal:block>
   <h2>Profile quick view</h2>
-  <tal:block condition="'show' not in actions">
+  <tal:block condition="not:show">
     <p>Use <code>++profile++show</code> in your URL in order to see
     immediate profile results (or <code>++profile++log,show</code> to
     see both the log information and immediate results).</p>
   </tal:block>
-  <tal:block condition="'show' in actions">
+  <tal:block condition="show">
     <h3>Top Inline Time</h3>
     <pre tal:content="inlinetime" />
     <h3>Top Total Time</h3>
