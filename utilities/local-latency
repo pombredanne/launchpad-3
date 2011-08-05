@@ -17,7 +17,6 @@ def tc(command):
      subprocess.call('sudo tc ' + command, shell=True)
 
 
-@types(delay='int', port='int')
 @helps(delay='Length of delay in miliseconds (each way).',
        port='Port to induce delay on.')
 def start(delay=500, port=443):

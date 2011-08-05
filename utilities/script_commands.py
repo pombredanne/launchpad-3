@@ -31,20 +31,26 @@ def get_function_parser(function):
     """
     parser = OptionParser()
     args, ignore, ignored, defaults = inspect.getargspec(function)
+    if defaults is not None:
+        defaults_dict = dict(zip(args, defaults))
+    else:
+        defaults_dict = {}
+    arg_types = getattr(function, '_types', {})
     for arg in args:
-        arg_type = function._types.get(arg)
+        arg_type = arg_types.get(arg)
         if arg_type is None:
-            continue
+            arg_type = defaults_dict.get(arg)
+            if arg_type is None:
+                continue
+            arg_type = type(arg_type)
         arg_help = getattr(function, '_helps', {}).get(arg)
         if arg_help is not None:
             arg_help += ' Default: %default.'
         parser.add_option('--%s' % arg, type=arg_type, help=arg_help)
-    if defaults is not None:
-        defaults_dict = dict(zip(args, defaults))
-        option_defaults = dict(
-            (key, value) for key, value in defaults_dict.items()
-            if parser.defaults.get(key, '') is None)
-        parser.set_defaults(**option_defaults)
+    option_defaults = dict(
+        (key, value) for key, value in defaults_dict.items()
+        if parser.defaults.get(key, '') is None)
+    parser.set_defaults(**option_defaults)
     return parser
 
 
