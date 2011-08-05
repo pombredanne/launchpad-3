@@ -16,6 +16,7 @@ def add_dict(name, **kwargs):
 def types(**kwargs):
     return add_dict('_types', **kwargs)
 
+
 def helps(**kwargs):
     return add_dict('_helps', **kwargs)
 
@@ -36,7 +37,7 @@ def get_function_parser(function):
             continue
         arg_help = getattr(function, '_helps', {}).get(arg)
         if arg_help is not None:
-            arg_help +=' Default: %default.'
+            arg_help += ' Default: %default.'
         parser.add_option('--%s' % arg, type=arg_type, help=arg_help)
     if defaults is not None:
         defaults_dict = dict(zip(args, defaults))
