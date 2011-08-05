@@ -526,7 +526,7 @@ def reset_permissions(con, config, options):
                     desired_permissions[obj][who_ro].add("SELECT")
                 is_secure = (obj.fullname in SECURE_TABLES)
                 if not is_secure:
-                    desired_permissions[obj]['read'].add("EXECUTE")
+                    desired_permissions[obj]['read'].add("SELECT")
                 if obj.seqname in schema:
                     seq = schema[obj.seqname]
                     controlled_objs.add(seq)
