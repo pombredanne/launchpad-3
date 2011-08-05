@@ -49,24 +49,36 @@ POSTGRES_ACL_MAP = {
     }
 
 
+def unquote_identifier(identifier):
+    if not (identifier.startswith('"') and identifier.endswith('"')):
+        return identifier
+    identifier = identifier[1:-1]
+    identifier = identifier.replace('""', '"')
+    return identifier
+
+
 def parse_postgres_acl(acl):
     """Parse a PostgreSQL object ACL into a dict with permission names.
 
     The dict is of the form {user: {permission: grant option}}.
     """
     parsed = {}
+    if acl is None:
+        return parsed
     for entry in acl:
         try:
             user, rest = entry.split('=')
             perms, grantor = rest.split('/')
         except ValueError:
             raise Exception("Invalid ACL entry: %r" % entry)
+        if user == '':
+            user = 'public'
         parsed_perms = []
         for perm in perms:
             if perm == '*':
                 parsed_perms[-1] = (parsed_perms[-1][0], True)
             parsed_perms.append((POSTGRES_ACL_MAP[perm], False))
-        parsed[user] = dict(parsed_perms)
+        parsed[unquote_identifier(user.encode('utf-8'))] = dict(parsed_perms)
     return parsed
 
 
