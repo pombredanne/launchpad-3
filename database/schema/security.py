@@ -50,6 +50,10 @@ POSTGRES_ACL_MAP = {
 
 
 def parse_postgres_acl(acl):
+    """Parse a PostgreSQL object ACL into a dict with permission names.
+
+    The dict is of the form {user: {permission: grant option}}.
+    """
     parsed = {}
     for entry in acl:
         try:
