@@ -20,6 +20,7 @@ import stat
 import subprocess
 import tempfile
 import time
+import threading
 
 from bzrlib.tests.treeshape import build_tree_contents
 from bzrlib.transport import Server
@@ -31,6 +32,11 @@ import CVS
 import dulwich.index
 from dulwich.objects import Blob
 from dulwich.repo import Repo as GitRepo
+from dulwich.server import DictBackend
+from dulwich.server import (
+    DictBackend,
+    TCPGitServer,
+    )
 import subvertpy.ra
 import svn_oo
 
@@ -204,6 +210,24 @@ class CVSServer(Server):
         self._repository = self.createRepository(self._repository_path)
 
 
+class TCPGitServerThread(threading.Thread):
+    """TCP Git server that runs in a separate thread."""
+
+    def __init__(self, backend, address, port=None):
+        super(TCPGitServerThread, self).__init__()
+        self.setName("TCP Git server on %s:%s" % (address, port))
+        self.server = TCPGitServer(backend, address, port)
+
+    def run(self):
+        self.server.serve_forever()
+
+    def get_address(self):
+        return self.server.server_address
+
+    def stop(self):
+        self.server.shutdown()
+
+
 class GitServer(Server):
 
     def __init__(self, repository_path, use_server=False):
@@ -214,7 +238,7 @@ class GitServer(Server):
     def get_url(self):
         """Return a URL to the Git repository."""
         if self._use_server:
-            return 'git://localhost/'
+            return 'git://%s:%d/' % self._server.get_address()
         else:
             return local_path_to_url(self.repository_path)
 
@@ -225,16 +249,15 @@ class GitServer(Server):
         super(GitServer, self).start_server()
         self.createRepository(self.repository_path)
         if self._use_server:
-            self._gitserve = subprocess.Popen(
-                [os.path.join(os.path.dirname(__file__),
-                    '../../../../../sourcecode/dulwich/bin/dul-daemon'),
-                 self.repository_path], stderr=subprocess.PIPE)
+            repo = GitRepo(self.repository_path)
+            self._server = TCPGitServerThread(
+                DictBackend({"/": repo}), "localhost", 0)
+            self._server.start()
 
     def stop_server(self):
         super(GitServer, self).stop_server()
         if self._use_server:
-            os.kill(self._gitserve.pid, signal.SIGINT)
-            self._gitserve.communicate()
+            self._server.stop()
 
     def makeRepo(self, tree_contents):
         repo = GitRepo(self.repository_path)
@@ -266,22 +289,36 @@ class MercurialServer(Server):
         super(MercurialServer, self).start_server()
         self.createRepository(self.repository_path)
         if self._use_server:
-            self._port = 4344
-            pid = os.fork()
-            if pid == 0:
-                from mercurial import hgweb
-                from mercuria.ui import ui
-                ui.setconfig('web', 'port', self._port)
-                app = hgweb.hgweb(self.repository_path, baseui=ui)
-                httpd = hgweb.server.create_server(ui(), app)
-                httpd.serve_forever()
+            import httplib
+            port = 8000
+            self._hgserve = subprocess.Popen(
+                ['hg', 'serve', '-6', '-a', 'localhost', '-p', str(port)],
+                cwd=self.repository_path)
+            delay = 0.1
+            for i in range(10):
+                try:
+                    conn = httplib.HTTPConnection("localhost", port)
+                    conn.request("HEAD", "/")
+                    res = conn.getresponse()
+                    if res.status == 200:
+                        break
+                    raise
+                except Exception, e:
+                    if 'Connection refused' in str(e):
+                        time.sleep(delay)
+                        delay *= 1.5
+                        continue
+                else:
+                    break
             else:
-                self._server_pid = pid
+                raise AssertionError(
+                    "hg serve didn't start accepting connections")
 
     def stop_server(self):
         super(MercurialServer, self).stop_server()
         if self._use_server:
-            os.kill(self._server_pid, signal.SIGINT)
+            os.kill(self._hgserve.pid, signal.SIGINT)
+            self._hgserve.communicate()
 
     def createRepository(self, path):
         from mercurial.ui import ui

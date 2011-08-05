@@ -674,7 +674,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
     def makeHgCodeImport(self):
         """Make a `CodeImport` that points to a real Mercurial repository."""
         load_optional_plugin('hg')
-        self.hg_server = MercurialServer(self.repo_path)
+        self.hg_server = MercurialServer(self.repo_path, use_server=False)
         self.hg_server.start_server()
         self.addCleanup(self.hg_server.stop_server)
 
