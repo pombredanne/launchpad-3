@@ -42,7 +42,6 @@ from lp.soyuz.interfaces.packageset import (
     NoSuchPackageSet,
     )
 from lp.soyuz.model.packageset import Packageset
-from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
 from lp.soyuz.scripts.packagecopier import do_copy
 
 
@@ -215,7 +214,6 @@ class InitializeDistroSeries:
         self._copy_architectures()
         self._copy_packages()
         self._copy_packagesets()
-        self._copy_custom_uploads()
         self._create_dsds()
         self._set_initialized()
         transaction.commit()
@@ -584,15 +582,3 @@ class InitializeDistroSeries:
                 new_series_ps.add(parent_to_child[old_series_child])
             new_series_ps.add(old_series_ps.sourcesIncluded(
                 direct_inclusion=True))
-
-    def _copy_custom_uploads(self):
-        """Copy latest versions of custom uploads for installer images etc.
-
-        Unlike other copy procedures here, this copies only from the previous
-        series in the same distribution.  Why?  Because it's simple and serves
-        our known use case (namely Ubuntu).  We may want to improve on this
-        later.
-        """
-        if self.distroseries.previous_series is not None:
-            copier = CustomUploadsCopier(self.distroseries)
-            copier.copy(self.distroseries.previous_series)

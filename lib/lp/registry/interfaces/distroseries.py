@@ -786,34 +786,20 @@ class IDistroSeriesPublic(
         DistroSeriesBinaryPackage objects that match the given text.
         """
 
-    def createQueueEntry(pocket, archive, changesfilename=None,
-                         changesfilecontent=None, changes_file_alias=None,
+    def createQueueEntry(pocket, archive, changesfilename, changesfilecontent,
                          signingkey=None, package_copy_job=None):
         """Create a queue item attached to this distroseries.
 
-        Create a new `PackageUpload` to the given pocket and archive.
+        Create a new records respecting the given pocket and archive.
 
-        The default state is NEW.  Any further state changes go through
-        the Queue state-machine.
+        The default state is NEW, sorted sqlobject declaration, any
+        modification should be performed via Queue state-machine.
 
-        :param pocket: The `PackagePublishingPocket` to upload to.
-        :param archive: The `Archive` to upload to.  Must be for the same
-            `Distribution` as this series.
-        :param changesfilename: Name for the upload's .changes file.  You may
-            specify a changes file by passing both `changesfilename` and
-            `changesfilecontent`, or by passing `changes_file_alias`.
-        :param changesfilecontent: Text for the changes file.  It will be
-            signed and stored in the Librarian.  Must be passed together with
-            `changesfilename`; alternatively, you may provide a
-            `changes_file_alias` to replace both of these.
-        :param changes_file_alias: A `LibraryFileAlias` containing the
-            .changes file.  Security warning: unless the file has already
-            been checked, this may open us up to replay attacks as per bugs
-            159304 and 451396.  Use `changes_file_alias` only if you know
-            this can't happen.
-        :param signingkey: `IGPGKey` used to sign the changes file, or None if
-            it is unsigned.
-        :return: A new `PackageUpload`.
+        The changesfile argument should be the text of the .changes for this
+        upload. The contents of this may be used later.
+
+        'signingkey' is the IGPGKey used to sign the changesfile or None if
+        the changesfile is unsigned.
         """
 
     def newArch(architecturetag, processorfamily, official, owner,

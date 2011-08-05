@@ -1587,34 +1587,25 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 get_property_cache(spph).newer_distroseries_version = version
 
     def createQueueEntry(self, pocket, archive, changesfilename=None,
-                         changesfilecontent=None, changes_file_alias=None,
-                         signing_key=None, package_copy_job=None):
+                         changesfilecontent=None, signing_key=None,
+                         package_copy_job=None):
         """See `IDistroSeries`."""
-        if (changesfilename is None) != (changesfilecontent is None):
-            raise AssertionError(
-                "Inconsistent changesfilename and changesfilecontent. "
-                "Pass either both, or neither.")
-        if changes_file_alias is not None and changesfilename is not None:
-            raise AssertionError(
-                "Conflicting options: "
-                "Both changesfilename and changes_file_alias were given.")
-        have_changes_file = not (
-            changesfilename is None and changes_file_alias is None)
-        if package_copy_job is None and not have_changes_file:
+        # We store the changes file in the librarian to avoid having to
+        # deal with broken encodings in these files; this will allow us
+        # to regenerate these files as necessary.
+        #
+        # The use of StringIO here should be safe: we do not encoding of
+        # the content in the changes file (as doing so would be guessing
+        # at best, causing unpredictable corruption), and simply pass it
+        # off to the librarian.
+
+        if package_copy_job is None and (
+            changesfilename is None or changesfilecontent is None):
             raise AssertionError(
                 "changesfilename and changesfilecontent must be supplied "
                 "if there is no package_copy_job")
 
-        if changesfilename is not None:
-            # We store the changes file in the librarian to avoid having to
-            # deal with broken encodings in these files; this will allow us
-            # to regenerate these files as necessary.
-            #
-            # The use of StringIO here should be safe: we do not encoding of
-            # the content in the changes file (as doing so would be guessing
-            # at best, causing unpredictable corruption), and simply pass it
-            # off to the librarian.
-
+        if package_copy_job is None:
             # The PGP signature is stripped from all changesfiles
             # to avoid replay attacks (see bugs 159304 and 451396).
             signed_message = signed_message_from_string(changesfilecontent)
@@ -1625,15 +1616,17 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 if new_content is not None:
                     changesfilecontent = signed_message.signedContent
 
-            changes_file_alias = getUtility(ILibraryFileAliasSet).create(
+            changes_file = getUtility(ILibraryFileAliasSet).create(
                 changesfilename, len(changesfilecontent),
                 StringIO(changesfilecontent), 'text/plain',
                 restricted=archive.private)
+        else:
+            changes_file = None
 
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,
             pocket=pocket, archive=archive,
-            changesfile=changes_file_alias, signing_key=signing_key,
+            changesfile=changes_file, signing_key=signing_key,
             package_copy_job=package_copy_job)
 
     def getPackageUploadQueue(self, state):
