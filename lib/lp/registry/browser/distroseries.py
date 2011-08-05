@@ -1019,16 +1019,16 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         if pending_sync is not None:
             # If the pending sync is waiting in the distroseries queues,
             # provide a handy link to there.
-            pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+            queue_item = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
                 (pending_sync.id,)).any()
-            if pu is None:
+            if queue_item is None:
                 description.append("synchronizing")
             else:
                 url = urlappend(
                     canonical_url(self.context), "+queue?queue_state=%s" %
-                        pu.status.value)
+                        queue_item.status.value)
                 description.append('waiting in <a href="%s">%s</a>' %
-                    (url, pu.status.name))
+                    (url, queue_item.status.name))
         return " and ".join(description) + "&hellip;"
 
     @property
