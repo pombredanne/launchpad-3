@@ -33,6 +33,38 @@ SECURE_TABLES = [
     'public.openidconsumernonce',
     ]
 
+POSTGRES_ACL_MAP = {
+    'r': 'SELECT',
+    'w': 'UPDATE',
+    'a': 'INSERT',
+    'd': 'DELETE',
+    'D': 'TRUNCATE',
+    'x': 'REFERENCES',
+    't': 'TRIGGER',
+    'X': 'EXECUTE',
+    'U': 'USAGE',
+    'C': 'CREATE',
+    'c': 'CONNECT',
+    'T': 'TEMPORARY',
+    }
+
+
+def parse_postgres_acl(acl):
+    parsed = {}
+    for entry in acl:
+        try:
+            user, rest = entry.split('=')
+            perms, grantor = rest.split('/')
+        except ValueError:
+            raise Exception("Invalid ACL entry: %r" % entry)
+        parsed_perms = []
+        for perm in perms:
+            if perm == '*':
+                parsed_perms[-1] = (parsed_perms[-1][0], True)
+            parsed_perms.append((POSTGRES_ACL_MAP[perm], False))
+        parsed[user] = dict(parsed_perms)
+    return parsed
+
 
 class DbObject(object):
 
@@ -82,7 +114,7 @@ class DbSchema(dict):
                     WHEN 's' THEN 'special'
                 END as "Type",
                 u.usename as "Owner",
-                c.relacl as "ACL"
+                c.relacl::text[] as "ACL"
             FROM pg_catalog.pg_class c
                 LEFT JOIN pg_catalog.pg_user u ON u.usesysid = c.relowner
                 LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
@@ -93,7 +125,8 @@ class DbSchema(dict):
             ''')
         for schema, name, type_, owner, acl in cur.fetchall():
             key = '%s.%s' % (schema, name)
-            self[key] = DbObject(schema, name, type_, owner, acl)
+            self[key] = DbObject(
+                schema, name, type_, owner, parse_postgres_acl(acl))
 
         cur.execute(r"""
             SELECT
@@ -115,7 +148,8 @@ class DbSchema(dict):
                 """)
         for schema, name, arguments, owner, acl, language in cur.fetchall():
             self['%s.%s(%s)' % (schema, name, arguments)] = DbObject(
-                    schema, name, 'function', owner, acl, arguments, language)
+                    schema, name, 'function', owner, parse_postgres_acl(acl),
+                    arguments, language)
         # Pull a list of groups
         cur.execute("SELECT groname FROM pg_group")
         self.groups = [r[0] for r in cur.fetchall()]
