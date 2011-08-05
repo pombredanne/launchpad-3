@@ -1877,7 +1877,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
         view.hasPendingDSDUpdate = FakeMethod(result=True)
-        view.hasPendingSync = FakeMethod(result=False)
+        view.pendingSync = FakeMethod(result=None)
         self.assertEqual("updating&hellip;", view.describeJobs(dsd))
 
     def test_describeJobs_reports_pending_sync(self):
@@ -1885,15 +1885,36 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
         view.hasPendingDSDUpdate = FakeMethod(result=False)
-        view.hasPendingSync = FakeMethod(result=True)
+        pcj = self.factory.makePlainPackageCopyJob()
+        view.pending_syncs = {dsd.source_package_name.name: pcj}
         self.assertEqual("synchronizing&hellip;", view.describeJobs(dsd))
+
+    def test_describeJobs_reports_pending_queue(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        view.hasPendingDSDUpdate = FakeMethod(result=False)
+        pcj = self.factory.makePlainPackageCopyJob()
+        pu = self.factory.makePackageUpload(distroseries=dsd.derived_series)
+        # A copy job with an attached packageupload means the job is
+        # waiting in the queues.
+        removeSecurityProxy(pu).package_copy_job=pcj.id
+        view.pending_syncs = {dsd.source_package_name.name: pcj}
+        expected = (
+            'waiting in <a href="%s/+queue?queue_state=%s">%s</a>&hellip;'
+            % (canonical_url(dsd.derived_series), pu.status.value,
+               pu.status.name))
+        self.assertEqual(expected, view.describeJobs(dsd))
 
     def test_describeJobs_reports_pending_sync_and_update(self):
         dsd = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
         view.hasPendingDSDUpdate = FakeMethod(result=True)
-        view.hasPendingSync = FakeMethod(result=True)
+        pcj = self.factory.makePlainPackageCopyJob()
+        self.factory.makePackageUpload(distroseries=dsd.derived_series,
+                                       package_copy_job=pcj.id)
+        view.pending_syncs = {dsd.source_package_name.name: pcj}
         self.assertEqual(
             "updating and synchronizing&hellip;", view.describeJobs(dsd))
 
