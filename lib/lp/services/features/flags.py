@@ -111,7 +111,8 @@ flag_info = sorted([
     ('disclosure.dsp_picker.enabled',
      'boolean',
      'Enables the use of the new DistributionSourcePackage vocabulary for '
-     'the source and binary package name pickers.'),
+     'the source and binary package name pickers.',
+     ''),
     ('disclosure.picker_enhancements.enabled',
      'boolean',
      ('Enables the display of extra details in the person picker.'),
