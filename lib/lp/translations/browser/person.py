@@ -302,11 +302,8 @@ class PersonTranslationView(LaunchpadView):
     def _review_targets(self):
         """Query and aggregate the top targets for review.
 
-        :param max_fetch: Maximum number of `POFile`s to fetch while
-            looking for these.
-        :return: a list of at most `max_fetch` translation targets.
-            Multiple `POFile`s may be aggregated together into a single
-            target.
+        :return: a list of translation targets.  Multiple `POFile`s may be
+            aggregated together into a single target.
         """
         person = ITranslationsPerson(self.context)
         pofiles = person.getReviewableTranslationFiles(
