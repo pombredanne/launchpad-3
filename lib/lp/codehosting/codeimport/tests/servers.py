@@ -225,25 +225,16 @@ class GitServer(Server):
         super(GitServer, self).start_server()
         self.createRepository(self.repository_path)
         if self._use_server:
-            pid = os.fork()
-            if pid == 0:
-                from dulwich import log_utils
-                from dulwich.repo import Repo
-                from dulwich.server import (
-                    DictBackend,
-                    TCPGitServer,
-                    )
-                log_utils.default_logging_config()
-                backend = DictBackend({'/': Repo(self.repository_path)})
-                server = TCPGitServer(backend, 'localhost')
-                server.serve_forever()
-            else:
-                self._server_pid = os.fork()
+            self._gitserve = subprocess.Popen(
+                [os.path.join(os.path.dirname(__file__),
+                    '../../../../../sourcecode/dulwich/bin/dul-daemon'),
+                 self.repository_path], stderr=subprocess.PIPE)
 
     def stop_server(self):
         super(GitServer, self).stop_server()
         if self._use_server:
-            os.kill(self._server_pid, signal.SIGINT)
+            os.kill(self._gitserve.pid, signal.SIGINT)
+            self._gitserve.communicate()
 
     def makeRepo(self, tree_contents):
         repo = GitRepo(self.repository_path)

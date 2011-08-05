@@ -17,9 +17,6 @@ import urllib
 
 from bzrlib.branch import Branch
 from bzrlib.tests import TestCase as BzrTestCase
-from bzrlib.urlutils import (
-    local_path_to_url,
-    )
 import transaction
 from testtools.deferredruntest import (
     assert_fails_with,
@@ -664,7 +661,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
     def makeGitCodeImport(self):
         """Make a `CodeImport` that points to a real Git repository."""
         load_optional_plugin('git')
-        self.git_server = GitServer(self.repo_path)
+        self.git_server = GitServer(self.repo_path, use_server=True)
         self.git_server.start_server()
         self.addCleanup(self.git_server.stop_server)
 
