@@ -677,15 +677,15 @@ class TestWorkerMonitorIntegration(BzrTestCase):
     def makeHgCodeImport(self):
         """Make a `CodeImport` that points to a real Mercurial repository."""
         load_optional_plugin('hg')
-        repo_url = local_path_to_url(self.repo_path)
-        self.hg_server = MercurialServer(repo_url)
+        self.hg_server = MercurialServer(self.repo_path)
         self.hg_server.start_server()
         self.addCleanup(self.hg_server.stop_server)
 
         self.hg_server.makeRepo([('README', 'contents')])
         self.foreign_commit_count = 1
 
-        return self.factory.makeCodeImport(hg_repo_url=repo_url)
+        return self.factory.makeCodeImport(
+            hg_repo_url=self.hg_server.get_url())
 
     def getStartedJobForImport(self, code_import):
         """Get a started `CodeImportJob` for `code_import`.

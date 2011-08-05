@@ -211,36 +211,37 @@ class GitServer(Server):
         super(GitServer, self).__init__()
         self.repo_url = repo_url
 
+    def get_url(self):
+        return self.repo_url
+
     def makeRepo(self, tree_contents):
-        wd = os.getcwd()
-        try:
-            os.chdir(local_path_from_url(self.repo_url))
-            repo = GitRepo.init(".")
-            blobs = [
-                (Blob.from_string(contents), filename) for (filename, contents)
-                in tree_contents]
-            repo.object_store.add_objects(blobs)
-            root_id = dulwich.index.commit_tree(repo.object_store, [
-                (filename, b.id, stat.S_IFREG | 0644)
-                for (b, filename) in blobs])
-            repo.do_commit(committer='Joe Foo <joe@foo.com>',
-                message=u'<The commit message>', tree=root_id)
-        finally:
-            os.chdir(wd)
+        repo = GitRepo.init(local_path_from_url(self.repo_url))
+        blobs = [
+            (Blob.from_string(contents), filename) for (filename, contents)
+            in tree_contents]
+        repo.object_store.add_objects(blobs)
+        root_id = dulwich.index.commit_tree(repo.object_store, [
+            (filename, b.id, stat.S_IFREG | 0644)
+            for (b, filename) in blobs])
+        repo.do_commit(committer='Joe Foo <joe@foo.com>',
+            message=u'<The commit message>', tree=root_id)
 
 
 class MercurialServer(Server):
 
-    def __init__(self, repo_url):
+    def __init__(self, repository_path):
         super(MercurialServer, self).__init__()
-        self.repo_url = repo_url
+        self.repository_path = repository_path
+
+    def get_url(self):
+        return local_path_to_url(self.repository_path)
 
     def makeRepo(self, tree_contents):
         from mercurial.ui import ui
         from mercurial.localrepo import localrepository
-        repo = localrepository(ui(), self.repo_url, create=1)
+        repo = localrepository(ui(), self.repository_path, create=1)
         for filename, contents in tree_contents:
-            f = open(os.path.join(self.repo_url, filename), 'w')
+            f = open(os.path.join(self.repository_path, filename), 'w')
             try:
                 f.write(contents)
             finally:

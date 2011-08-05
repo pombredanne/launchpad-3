@@ -1141,7 +1141,7 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='hg', url=local_path_to_url(repository_path))
+            rcstype='hg', url=hg_server.get_url())
 
 
 class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
