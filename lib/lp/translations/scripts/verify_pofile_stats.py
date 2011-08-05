@@ -118,7 +118,7 @@ class QuickVerifier(Verifier):
     def getPOFilesBatch(self, chunk_size):
         """Return a batch of POFiles to work with."""
         pofiles = self.touched_pofiles[
-            self.total_checked : self.total_checked+int(chunk_size)]
+            self.total_checked: self.total_checked + int(chunk_size)]
         return pofiles
 
 
@@ -158,9 +158,9 @@ class VerifyPOFileStatsProcess:
             # Not all statistics were correct, or there were failures while
             # checking them.  Email the admins.
             message = template % {
-                'exceptions' : loop.total_exceptions,
-                'errors' : loop.total_incorrect,
-                'total' : loop.total_checked}
+                'exceptions': loop.total_exceptions,
+                'errors': loop.total_incorrect,
+                'total': loop.total_checked}
             simple_sendmail(
                 from_addr=config.rosetta.admin_email,
                 to_addrs=[config.rosetta.admin_email],
@@ -195,9 +195,9 @@ class VerifyRecentPOFileStatsProcess:
             template = helpers.get_email_template(
                 'pofile-stats.txt', 'translations')
             message = template % {
-                'exceptions' : loop.total_exceptions,
-                'errors' : loop.total_incorrect,
-                'total' : loop.total_checked}
+                'exceptions': loop.total_exceptions,
+                'errors': loop.total_incorrect,
+                'total': loop.total_checked}
             simple_sendmail(
                 from_addr=config.rosetta.admin_email,
                 to_addrs=[config.rosetta.admin_email],
@@ -206,4 +206,3 @@ class VerifyRecentPOFileStatsProcess:
             self.transaction.commit()
 
         self.logger.info("Done.")
-
