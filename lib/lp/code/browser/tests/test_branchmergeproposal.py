@@ -624,7 +624,8 @@ class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
         """User error if same branch is target and prerequisite."""
         view = self.createView()
         first_bmp = view.context
-        self.resubmitDefault(view, prerequisite_branch=first_bmp.target_branch)
+        self.resubmitDefault(
+            view, prerequisite_branch=first_bmp.target_branch)
         self.assertEqual(
             view.errors,
             ['Target and prerequisite branches must be different.'])
