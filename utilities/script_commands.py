@@ -73,7 +73,7 @@ def parse_args(command, args):
     :return: A dict mapping variable names to arguments.
     """
     # TODO: implement!
-    # Basically each argument without a default is treated as a posiitonal
+    # Basically each argument without a default is treated as a positional
     # argument.  They must have types defined, since we can't infer it from
     # the default.
     #
