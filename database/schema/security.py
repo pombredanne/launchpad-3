@@ -486,6 +486,7 @@ def reset_permissions(con, config, options):
     found = set()
 
     # Set permissions as per config file
+    controlled_objs = set()
     desired_permissions = defaultdict(lambda: defaultdict(set))
 
     for username in config.sections():
@@ -504,6 +505,8 @@ def reset_permissions(con, config, options):
                 # No perm means no rights. We can't grant no rights, so skip.
                 continue
 
+            controlled_objs.add(obj)
+
             who = username
             if username == 'public':
                 who_ro = who
@@ -517,9 +520,7 @@ def reset_permissions(con, config, options):
                 if who_ro:
                     desired_permissions[obj][who_ro].add("EXECUTE")
                 desired_permissions[obj]['read'].add("EXECUTE")
-                desired_permissions[obj]['admin'].add("ALL")  # XXX
             else:
-                desired_permissions[obj]['admin'].add("ALL")  # XXX
                 desired_permissions[obj][who].update(perm.split(', '))
                 if who_ro:
                     desired_permissions[obj][who_ro].add("SELECT")
@@ -528,6 +529,7 @@ def reset_permissions(con, config, options):
                     desired_permissions[obj]['read'].add("EXECUTE")
                 if obj.seqname in schema:
                     seq = schema[obj.seqname]
+                    controlled_objs.add(seq)
                     if 'INSERT' in perm:
                         seqperm = 'USAGE'
                     elif 'SELECT' in perm:
@@ -536,11 +538,10 @@ def reset_permissions(con, config, options):
                     if not is_secure:
                         desired_permissions[seq]["read"].add("SELECT")
                     desired_permissions[seq][who_ro].add("SELECT")
-                    desired_permissions[seq]['admin'].add("ALL")  # XXX
 
     required_grants = []
     required_revokes = []
-    for obj in desired_permissions:
+    for obj in controlled_objs:
         for role in controlled_roles:
             new = desired_permissions[obj][role]
             old = set(obj.acl.get(role, {}).keys())
@@ -552,6 +553,7 @@ def reset_permissions(con, config, options):
                 required_grants.append((obj, role, missing))
             if extra:
                 required_revokes.append((obj, role, extra))
+        required_grants.append((obj, "admin", ("ALL",)))
 
     alter_permissions(cur, required_grants)
     if options.revoke:
