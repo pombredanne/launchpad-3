@@ -284,7 +284,7 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
     """Unit tests for `SafeBranchOpener.checkAndFollowBranchReference`."""
 
     class StubbedSafeBranchOpener(SafeBranchOpener):
-        """BranchMirrorer that provides canned answers.
+        """SafeBranchOpener that provides canned answers.
 
         We implement the methods we need to to be able to control all the
         inputs to the `BranchMirrorer.checkSource` method, which is what is
