@@ -226,7 +226,7 @@ class DatabasePreflight:
         cluster to be quiescent.
         """
         if self.is_replicated:
-            success = replication.helpers.sync(30)
+            success = replication.helpers.sync(30, exit_on_fail=False)
             if success:
                 self.log.info(
                     "Replication events are being propagated.")
