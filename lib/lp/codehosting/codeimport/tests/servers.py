@@ -267,10 +267,19 @@ class MercurialServer(Server):
     def get_url(self):
         return local_path_to_url(self.repository_path)
 
+    def start_server(self):
+        super(MercurialServer, self).start_server()
+        self.createRepository(self.repository_path)
+
+    def createRepository(self, path):
+        from mercurial.ui import ui
+        from mercurial.localrepo import localrepository
+        localrepository(ui(), self.repository_path, create=1)
+
     def makeRepo(self, tree_contents):
         from mercurial.ui import ui
         from mercurial.localrepo import localrepository
-        repo = localrepository(ui(), self.repository_path, create=1)
+        repo = localrepository(ui(), self.repository_path)
         for filename, contents in tree_contents:
             f = open(os.path.join(self.repository_path, filename), 'w')
             try:
