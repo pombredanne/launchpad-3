@@ -154,6 +154,12 @@ def sync(timeout, exit_on_fail=True):
 
     :param timeout: Number of seconds to wait for the sync. 0 to block
                     indefinitely.
+
+    :param exit_on_fail: If True, on failure of the sync
+                         SystemExit is raised using the slonik return code.
+
+    :returns: True if the sync completed successfully. False if
+              exit_on_fail is False and the script failed for any reason.
     """
     return execute_slonik("", sync=timeout, exit_on_fail=exit_on_fail)
 
