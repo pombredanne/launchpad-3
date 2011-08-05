@@ -18,7 +18,7 @@ def tc(command):
 
     :param tc: The remainder of the command (leaving out tc).
     """
-     subprocess.call('sudo tc ' + command, shell=True)
+    subprocess.call('sudo tc ' + command, shell=True)
 
 
 @helps(delay='Length of delay in miliseconds (each way).',
