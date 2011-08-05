@@ -9,11 +9,9 @@ from unittest import TestLoader
 
 from lazr.batchnavigator.interfaces import IRangeFactory
 from storm.expr import (
+    compile,
     Desc,
-    Gt,
-    Lt,
     )
-from storm.variables import IntVariable
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.launchpad.components.decoratedresultset import (
@@ -95,7 +93,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
             StormRangeFactoryError, range_factory.getOrderValuesFor,
             resultset[0])
         self.assertEqual(
-            "StormRangeFactory supports only sorting by PropertyColumn, "
+            "StormRangeFactory only supports sorting by PropertyColumn, "
             "not by 'Person.id'.",
             str(exception))
 
@@ -108,7 +106,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
             resultset[0])
         self.assertTrue(
             str(exception).startswith(
-                'StormRangeFactory supports only sorting by PropertyColumn, '
+                'StormRangeFactory only supports sorting by PropertyColumn, '
                 'not by <storm.expr.SQL object at'))
 
     def test_getOrderValuesFor__unordered_result_set(self):
@@ -169,7 +167,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
             str(exception))
 
     def test_DatetimeJSONEncoder(self):
-        # DateTimeJSONEncoder represents Pytjon datetime objects as strings
+        # DateTimeJSONEncoder represents Python datetime objects as strings
         # where the value is represented in the ISO time format.
         self.assertEqual(
             '"2011-07-25T00:00:00"',
@@ -354,29 +352,73 @@ class TestStormRangeFactory(TestCaseWithFactory):
         self.assertIs(Person.id, reverse_person_id.expr)
         self.assertIs(Person.name, person_name)
 
-    def test_whereExpressionFromSortExpression__asc(self):
-        """For ascending sort order, whereExpressionFromSortExpression()
-        returns the WHERE clause expression > memo.
+    def test_whereExpressions__asc(self):
+        """For ascending sort order, whereExpressions() returns the
+        WHERE clause expression > memo.
         """
         resultset = self.makeStormResultSet()
         range_factory = StormRangeFactory(resultset, self.logError)
-        where_clause = range_factory.whereExpressionFromSortExpression(
-            expression=Person.id, memo=1)
-        self.assertTrue(isinstance(where_clause, Gt))
-        self.assertIs(where_clause.expr1, Person.id)
-        self.assertTrue(where_clause.expr2, IntVariable)
+        [where_clause] = range_factory.whereExpressions([Person.id], [1])
+        self.assertEquals('Person.id > ?', compile(where_clause))
 
-    def test_whereExpressionFromSortExpression_desc(self):
-        """For descending sort order, whereExpressionFromSortExpression()
-        returns the WHERE clause expression < memo.
+    def test_whereExpressions_desc(self):
+        """For descending sort order, whereExpressions() returns the
+        WHERE clause expression < memo.
         """
         resultset = self.makeStormResultSet()
         range_factory = StormRangeFactory(resultset, self.logError)
-        where_clause = range_factory.whereExpressionFromSortExpression(
-            expression=Desc(Person.id), memo=1)
-        self.assertTrue(isinstance(where_clause, Lt))
-        self.assertIs(where_clause.expr1, Person.id)
-        self.assertTrue(where_clause.expr2, IntVariable)
+        [where_clause] = range_factory.whereExpressions(
+            [Desc(Person.id)], [1])
+        self.assertEquals('Person.id < ?', compile(where_clause))
+
+    def test_whereExpressions__two_sort_columns_asc_asc(self):
+        """If the ascending sort columns c1, c2 and the memo values
+        m1, m2 are specified, whereExpressions() returns a WHERE
+        expressions comparing the tuple (c1, c2) with the memo tuple
+        (m1, m2):
+
+        (c1, c2) > (m1, m2)
+        """
+        resultset = self.makeStormResultSet()
+        range_factory = StormRangeFactory(resultset, self.logError)
+        [where_clause] = range_factory.whereExpressions(
+            [Person.id, Person.name], [1, 'foo'])
+        self.assertEquals(
+            "(Person.id, Person.name) > (1, 'foo')", compile(where_clause))
+
+    def test_whereExpressions__two_sort_columns_desc_desc(self):
+        """If the descending sort columns c1, c2 and the memo values
+        m1, m2 are specified, whereExpressions() returns a WHERE
+        expressions comparing the tuple (c1, c2) with the memo tuple
+        (m1, m2):
+
+        (c1, c2) < (m1, m2)
+        """
+        resultset = self.makeStormResultSet()
+        range_factory = StormRangeFactory(resultset, self.logError)
+        [where_clause] = range_factory.whereExpressions(
+            [Desc(Person.id), Desc(Person.name)], [1, 'foo'])
+        self.assertEquals(
+            "(Person.id, Person.name) < (1, 'foo')", compile(where_clause))
+
+    def test_whereExpressions__two_sort_columns_asc_desc(self):
+        """If the ascending sort column c1, the descending sort column
+        c2 and the memo values m1, m2 are specified, whereExpressions()
+        returns two expressions where  the first expression is
+
+            c1 == m1 AND c2 < m2
+
+        and the second expression is
+
+            c1 > m1
+        """
+        resultset = self.makeStormResultSet()
+        range_factory = StormRangeFactory(resultset, self.logError)
+        [where_clause_1, where_clause_2] = range_factory.whereExpressions(
+            [Person.id, Desc(Person.name)], [1, 'foo'])
+        self.assertEquals(
+            'Person.id = ? AND Person.name < ?', compile(where_clause_1))
+        self.assertEquals('Person.id > ?', compile(where_clause_2))
 
     def test_getSlice__forward_without_memo(self):
         resultset = self.makeStormResultSet()
@@ -415,6 +457,43 @@ class TestStormRangeFactory(TestCaseWithFactory):
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, memo, forwards=False)
         self.assertEqual(expected, list(sliced_result))
+
+    def makeResultSetWithPartiallyIdenticalSortData(self):
+        # Create a result set, where each value of
+        # LibraryFileAlias.filename and of LibraryFileAlias.mimetype
+        # appears twice. (Note that Bug.bugattachments returns a
+        # DecoratedResultSet, where the Storm query returns
+        # LibraryFileAlias rows too.)
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            for filename in ('file-a', 'file-b'):
+                for content_type in ('text/a', 'text/b'):
+                    for count in range(2):
+                        self.factory.makeBugAttachment(
+                            bug=bug, owner=bug.owner, filename=filename,
+                            content_type=content_type)
+        return bug.attachments
+
+    def test_getSlice__multiple_sort_columns(self):
+        # Slicing works if the result set is ordered by more than
+        # one column, and if the result contains rows with identical
+        resultset = self.makeResultSetWithPartiallyIdenticalSortData()
+        resultset.order_by(
+            LibraryFileAlias.mimetype, LibraryFileAlias.filename,
+            LibraryFileAlias.id)
+        all_results = list(resultset)
+        # We have two results
+        # The third and fourth row have identical filenames and
+        # mime types, but the LibraryFileAlias IDs are different
+        # If we use the values from the third row as memo parameters
+        # for a forward batch, the slice of this btach starts with
+        # the fourth row of the entire result set.
+        memo_lfa = all_results[2].libraryfile
+        memo = simplejson.dumps(
+            [memo_lfa.mimetype, memo_lfa.filename, memo_lfa.id])
+        range_factory = StormRangeFactory(resultset)
+        sliced_result = range_factory.getSlice(3, memo)
+        self.assertEqual(all_results[3:6], list(sliced_result))
 
     def test_getSlice__decorated_resultset(self):
         resultset = self.makeDecoratedStormResultSet()

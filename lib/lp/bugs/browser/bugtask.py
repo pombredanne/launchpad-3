@@ -86,7 +86,6 @@ from zope.app.form.interfaces import (
     IDisplayWidget,
     IInputWidget,
     InputErrors,
-    WidgetsError,
     )
 from zope.app.form.utility import (
     setUpWidget,
@@ -182,7 +181,6 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     IServiceUsage,
     )
-from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.bug import (
@@ -269,6 +267,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
 from lp.registry.vocabularies import MilestoneVocabulary
+from lp.services.features import getFeatureFlag
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
 
@@ -1332,6 +1331,14 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
                 BugTaskAssigneeWidget)
 
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            # Replace the default field with a field that uses the better
+            # vocabulary.
+            self.form_fields = self.form_fields.omit('sourcepackagename')
+            self.form_fields += formlib.form.Fields(Choice(
+                __name__='sourcepackagename', title=_('SourcePackageName'),
+                required=False, vocabulary='DistributionSourcePackage'))
+
     def _getReadOnlyFieldNames(self):
         """Return the names of fields that will be rendered read only."""
         if self.context.target_uses_malone:
@@ -1452,7 +1459,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             # the form machinery to try and set this value back to
             # what it was!
             data_to_apply.pop('milestone', None)
-
 
         # We special case setting assignee and status, because there's
         # a workflow associated with changes to these fields.

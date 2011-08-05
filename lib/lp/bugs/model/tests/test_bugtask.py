@@ -45,9 +45,7 @@ from lp.bugs.model.bugtask import (
     validate_new_target,
     validate_target,
     )
-from lp.bugs.tests.bug import (
-    create_old_bug,
-    )
+from lp.bugs.tests.bug import create_old_bug
 from lp.hardwaredb.interfaces.hwdb import (
     HWBus,
     IHWDeviceSet,
@@ -968,7 +966,7 @@ class TestBugTaskSearch(TestCaseWithFactory):
     def test_omit_targeted_default_is_false(self):
         # The default value of omit_targeted is false so bugs targeted
         # to a series are not hidden.
-        target = self.factory.makeDistroRelease()
+        target = self.factory.makeDistroSeries()
         self.login()
         task1 = self.factory.makeBugTask(target=target)
         default_result = target.searchTasks(None)
@@ -1394,7 +1392,7 @@ class TestConjoinedBugTasks(TestCaseWithFactory):
         self.owner = self.factory.makePerson()
         self.distro = self.factory.makeDistribution(
             name="eggs", owner=self.owner, bug_supervisor=self.owner)
-        distro_release = self.factory.makeDistroRelease(
+        distro_release = self.factory.makeDistroSeries(
             distribution=self.distro, registrant=self.owner)
         source_package = self.factory.makeSourcePackage(
             sourcepackagename="spam", distroseries=distro_release)
