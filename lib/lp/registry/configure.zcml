@@ -885,9 +885,27 @@
         <adapter
             factory="lp.registry.model.pillaraffiliation.BugTaskPillarAffiliation"
             />
-
         <adapter
+            factory="lp.registry.model.pillaraffiliation.QuestionPillarAffiliation"
+            />
+        <adapter
+            factory="lp.registry.model.pillaraffiliation.SpecificationPillarAffiliation"
+            />
+        <adapter
+            for="lp.registry.interfaces.distribution.IDistribution"
             factory="lp.registry.model.pillaraffiliation.PillarAffiliation"
+            />
+        <adapter
+            for="lp.registry.interfaces.distroseries.IDistroSeries"
+            factory="lp.registry.model.pillaraffiliation.DistroSeriesPillarAffiliation"
+            />
+        <adapter
+            for="lp.registry.interfaces.product.IProduct"
+            factory="lp.registry.model.pillaraffiliation.PillarAffiliation"
+            />
+        <adapter
+            for="lp.registry.interfaces.productseries.IProductSeries"
+            factory="lp.registry.model.pillaraffiliation.ProductSeriesPillarAffiliation"
             />
 
         <!-- Using
