@@ -284,8 +284,12 @@ class MercurialServerThread(threading.Thread):
         super(MercurialServerThread, self).__init__()
         self.ui = hg_ui()
         self.ui.setconfig("web", "address", address)
+        self.ui.setconfig("web", "port", 0)
         self.app = hgweb(path, baseui=self.ui)
         self.httpd = hgweb_server.create_server(self.ui, self.app)
+        # By default the Mercurial server output goes to stdout
+        self.httpd.errorlog = StringIO()
+        self.httpd.accesslog = StringIO()
 
     def get_address(self):
         return (self.httpd.addr, self.httpd.port)
