@@ -32,10 +32,16 @@ import CVS
 import dulwich.index
 from dulwich.objects import Blob
 from dulwich.repo import Repo as GitRepo
-from dulwich.server import DictBackend
 from dulwich.server import (
     DictBackend,
     TCPGitServer,
+    )
+from mercurial.ui import (
+    ui as hg_ui,
+    )
+from mercurial.hgweb import (
+    hgweb,
+    server as hgweb_server,
     )
 import subvertpy.ra
 import svn_oo
@@ -272,6 +278,25 @@ class GitServer(Server):
             message=u'<The commit message>', tree=root_id)
 
 
+class MercurialServerThread(threading.Thread):
+
+    def __init__(self, path, address, port=0):
+        super(MercurialServerThread, self).__init__()
+        self.ui = hg_ui()
+        self.ui.setconfig("web", "address", address)
+        self.app = hgweb(path, baseui=self.ui)
+        self.httpd = hgweb_server.create_server(self.ui, self.app)
+
+    def get_address(self):
+        return (self.httpd.addr, self.httpd.port)
+
+    def run(self):
+        self.httpd.serve_forever()
+
+    def stop(self):
+        self.httpd.shutdown()
+
+
 class MercurialServer(Server):
 
     def __init__(self, repository_path, use_server=False):
@@ -281,7 +306,7 @@ class MercurialServer(Server):
 
     def get_url(self):
         if self._use_server:
-            return "http://localhost:%d/" % self._port
+            return "http://%s:%d/" % self._hgserver.get_address()
         else:
             return local_path_to_url(self.repository_path)
 
@@ -289,36 +314,13 @@ class MercurialServer(Server):
         super(MercurialServer, self).start_server()
         self.createRepository(self.repository_path)
         if self._use_server:
-            import httplib
-            port = 8000
-            self._hgserve = subprocess.Popen(
-                ['hg', 'serve', '-6', '-a', 'localhost', '-p', str(port)],
-                cwd=self.repository_path)
-            delay = 0.1
-            for i in range(10):
-                try:
-                    conn = httplib.HTTPConnection("localhost", port)
-                    conn.request("HEAD", "/")
-                    res = conn.getresponse()
-                    if res.status == 200:
-                        break
-                    raise
-                except Exception, e:
-                    if 'Connection refused' in str(e):
-                        time.sleep(delay)
-                        delay *= 1.5
-                        continue
-                else:
-                    break
-            else:
-                raise AssertionError(
-                    "hg serve didn't start accepting connections")
+            self._hgserver = MercurialServerThread(self.repository_path, "localhost")
+            self._hgserver.start()
 
     def stop_server(self):
         super(MercurialServer, self).stop_server()
         if self._use_server:
-            os.kill(self._hgserve.pid, signal.SIGINT)
-            self._hgserve.communicate()
+            self._hgserver.stop()
 
     def createRepository(self, path):
         from mercurial.ui import ui
