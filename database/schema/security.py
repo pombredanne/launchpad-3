@@ -351,6 +351,30 @@ class PermissionGatherer:
         log.debug("Issued %d REVOKE statement(s).", revoke_count)
 
 
+def alter_permissions(cur, which, revoke=False):
+    """Efficiently apply a set of permission changes.
+
+    :param cur: a database cursor
+    :param which: an iterable of (object, role, permissions)
+    :param revoke: whether to revoke or grant permissions
+    """
+    gatherers = {
+        'table': PermissionGatherer("TABLE"),
+        'function': PermissionGatherer("FUNCTION"),
+        'sequence': PermissionGatherer("SEQUENCE"),
+        }
+
+    for obj, role, perms in which:
+        gatherers.get(obj.type, gatherers['table']).add(
+            ', '.join(perms), obj.fullname, quote_identifier(role))
+
+    for gatherer in gatherers.values():
+        if revoke:
+            gatherer.revoke(cur)
+        else:
+            gatherer.grant(cur)
+
+
 def reset_permissions(con, config, options):
     schema = DbSchema(con)
     all_users = list_identifiers(schema.users)
@@ -447,40 +471,14 @@ def reset_permissions(con, config, options):
                     log.info("Resetting ownership of %s", obj.fullname)
                     cur.execute("ALTER TABLE %s OWNER TO %s" % (
                         obj.fullname, quote_identifier(options.owner)))
-
-        # Revoke all privs from known groups. Don't revoke anything for
-        # users or groups not defined in our security.cfg.
-        table_revocations = PermissionGatherer("TABLE")
-        function_revocations = PermissionGatherer("FUNCTION")
-        sequence_revocations = PermissionGatherer("SEQUENCE")
-
-        # Gather all revocations.
-        for section_name in config.sections():
-            role = quote_identifier(section_name)
-            if section_name == 'public':
-                ro_role = None
-            else:
-                ro_role = quote_identifier(section_name + "_ro")
-
-            for obj in schema.values():
-                if obj.type == 'function':
-                    gatherer = function_revocations
-                else:
-                    gatherer = table_revocations
-
-                gatherer.add("ALL", obj.fullname, role)
-
-                if obj.seqname in schema:
-                    sequence_revocations.add("ALL", obj.seqname, role)
-                    if ro_role is not None:
-                        sequence_revocations.add("ALL", obj.seqname, ro_role)
-
-        table_revocations.revoke(cur)
-        function_revocations.revoke(cur)
-        sequence_revocations.revoke(cur)
     else:
         log.info("Not resetting ownership of database objects")
-        log.info("Not revoking permissions on database objects")
+
+    controlled_roles = set()
+    for section_name in config.sections():
+        controlled_roles.add(section_name)
+        if section_name != 'public':
+            controlled_roles.add(section_name + "_ro")
 
     # Set of all tables we have granted permissions on. After we have assigned
     # permissions, we can use this to determine what tables have been
@@ -488,10 +486,7 @@ def reset_permissions(con, config, options):
     found = set()
 
     # Set permissions as per config file
-
-    table_permissions = PermissionGatherer("TABLE")
-    function_permissions = PermissionGatherer("FUNCTION")
-    sequence_permissions = PermissionGatherer("SEQUENCE")
+    desired_permissions = defaultdict(lambda: defaultdict(set))
 
     for username in config.sections():
         for obj_name, perm in config.items(username):
@@ -509,41 +504,58 @@ def reset_permissions(con, config, options):
                 # No perm means no rights. We can't grant no rights, so skip.
                 continue
 
-            who = quote_identifier(username)
+            who = username
             if username == 'public':
                 who_ro = who
             else:
-                who_ro = quote_identifier('%s_ro' % username)
+                who_ro = '%s_ro' % username
 
             log.debug2(
                 "Granting %s on %s to %s", perm, obj.fullname, who)
             if obj.type == 'function':
-                function_permissions.add(perm, obj.fullname, who)
-                function_permissions.add("EXECUTE", obj.fullname, who_ro)
-                function_permissions.add("EXECUTE", obj.fullname, "read")
-                function_permissions.add("ALL", obj.fullname, "admin")
+                desired_permissions[obj][who].update(perm.split(', '))
+                if who_ro:
+                    desired_permissions[obj][who_ro].add("EXECUTE")
+                desired_permissions[obj]['read'].add("EXECUTE")
+                desired_permissions[obj]['admin'].add("ALL")  # XXX
             else:
-                table_permissions.add("ALL", obj.fullname, "admin")
-                table_permissions.add(perm, obj.fullname, who)
-                table_permissions.add("SELECT", obj.fullname, who_ro)
+                desired_permissions[obj]['admin'].add("ALL")  # XXX
+                desired_permissions[obj][who].update(perm.split(', '))
+                if who_ro:
+                    desired_permissions[obj][who_ro].add("SELECT")
                 is_secure = (obj.fullname in SECURE_TABLES)
                 if not is_secure:
-                    table_permissions.add("SELECT", obj.fullname, "read")
+                    desired_permissions[obj]['read'].add("EXECUTE")
                 if obj.seqname in schema:
+                    seq = schema[obj.seqname]
                     if 'INSERT' in perm:
                         seqperm = 'USAGE'
                     elif 'SELECT' in perm:
                         seqperm = 'SELECT'
-                    sequence_permissions.add(seqperm, obj.seqname, who)
+                    desired_permissions[seq][who].add(seqperm)
                     if not is_secure:
-                        sequence_permissions.add(
-                            "SELECT", obj.seqname, "read")
-                    sequence_permissions.add("SELECT", obj.seqname, who_ro)
-                    sequence_permissions.add("ALL", obj.seqname, "admin")
+                        desired_permissions[seq]["read"].add("SELECT")
+                    desired_permissions[seq][who_ro].add("SELECT")
+                    desired_permissions[seq]['admin'].add("ALL")  # XXX
 
-    function_permissions.grant(cur)
-    table_permissions.grant(cur)
-    sequence_permissions.grant(cur)
+    required_grants = []
+    required_revokes = []
+    for obj in desired_permissions:
+        for role in controlled_roles:
+            new = desired_permissions[obj][role]
+            old = set(obj.acl.get(role, {}).keys())
+            if any(obj.acl.get(role, {}).values()):
+                log.warning("%s has grant option on %s", role, obj.fullname)
+            missing = new.difference(old)
+            extra = old.difference(new)
+            if missing:
+                required_grants.append((obj, role, missing))
+            if extra:
+                required_revokes.append((obj, role, extra))
+
+    alter_permissions(cur, required_grants)
+    if options.revoke:
+        alter_permissions(cur, required_revokes, revoke=True)
 
     # Set permissions on public schemas
     public_schemas = [
