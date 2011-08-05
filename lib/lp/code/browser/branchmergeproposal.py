@@ -105,6 +105,7 @@ from lp.code.enums import (
 from lp.code.errors import (
     BranchMergeProposalExists,
     ClaimReviewFailed,
+    InvalidBranchMergeProposal,
     WrongBranchMergeProposal,
     )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
@@ -1039,6 +1040,9 @@ class BranchMergeProposalResubmitView(LaunchpadFormView,
                 url=canonical_url(e.existing_proposal))
             self.request.response.addErrorNotification(message)
             self.next_url = canonical_url(self.context)
+            return None
+        except InvalidBranchMergeProposal as e:
+            self.addError(str(e))
             return None
         self.next_url = canonical_url(proposal)
         return proposal
