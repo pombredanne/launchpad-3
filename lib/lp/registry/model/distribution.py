@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -157,6 +157,7 @@ from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage,
     )
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.distroseriesparent import DistroSeriesParent
 from lp.registry.model.hasdrivers import HasDriversMixin
 from lp.registry.model.karma import KarmaContextMixin
 from lp.registry.model.milestone import (
@@ -655,26 +656,89 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
 
-    def getBranchTips(self, since=None):
+    def getBranchTips(self, user=None, since=None):
         """See `IDistribution`."""
-        query = """
-            SELECT unique_name, last_scanned_id, SPBDS.name FROM Branch
-            JOIN DistroSeries
-                ON Branch.distroseries = DistroSeries.id
-            LEFT OUTER JOIN SeriesSourcePackageBranch
-                ON Branch.id = SeriesSourcePackageBranch.branch
-            LEFT OUTER JOIN DistroSeries SPBDS
-                -- (SPDBS stands for Source Package Branch Distro Series)
-                ON SeriesSourcePackageBranch.distroseries = SPBDS.id
-            WHERE DistroSeries.distribution = %s""" % sqlvalues(self.id)
-
+        # This, ignoring privacy issues, is what we want.
+        base_query = """
+        SELECT Branch.unique_name,
+               Branch.last_scanned_id,
+               SPBDS.name AS distro_series_name,
+               Branch.id,
+               Branch.private,
+               Branch.owner
+        FROM Branch
+        JOIN DistroSeries
+            ON Branch.distroseries = DistroSeries.id
+        LEFT OUTER JOIN SeriesSourcePackageBranch
+            ON Branch.id = SeriesSourcePackageBranch.branch
+        LEFT OUTER JOIN DistroSeries SPBDS
+            -- (SPDBS stands for Source Package Branch Distro Series)
+            ON SeriesSourcePackageBranch.distroseries = SPBDS.id
+        WHERE DistroSeries.distribution = %s
+        """ % sqlvalues(self.id)
         if since is not None:
-            query += (
-                ' AND branch.last_scanned > %s' % sqlvalues(since))
+            # If "since" was provided, take into account.
+            base_query += (
+                '      AND branch.last_scanned > %s\n' % sqlvalues(since))
+        if user is None:
+            # Now we see just a touch of privacy concerns.
+            # If the current user is anonymous, they cannot see any private
+            # branches.
+            base_query += ('      AND NOT Branch.private\n')
+        # We want to order the results, in part for easier grouping at the
+        # end.
+        base_query += 'ORDER BY unique_name, last_scanned_id'
+        if (user is None or
+            user.inTeam(getUtility(ILaunchpadCelebrities).admin)):
+            # Anonymous is already handled above; admins can see everything.
+            # In both cases, we can just use the query as it already stands.
+            query = base_query
+        else:
+            # Otherwise (an authenticated, non-admin user), we need to do some
+            # more sophisticated privacy dances.  Note that the one thing we
+            # are ignoring here is stacking.  See the discussion in comment 1
+            # of https://bugs.launchpad.net/launchpad/+bug/812335 . Often, we
+            # use unions for this kind of work.  The WITH statement can give
+            # us a similar approach with more flexibility. In both cases,
+            # we're essentially declaring that we have a better idea of a good
+            # high-level query plan than Postgres will.
+            query = """
+            WITH principals AS (
+                    SELECT team AS id
+                        FROM TeamParticipation
+                        WHERE TeamParticipation.person = %(user)s
+                    UNION
+                    SELECT %(user)s
+                ), all_branches AS (
+            %(base_query)s
+                ), private_branches AS (
+                    SELECT unique_name,
+                           last_scanned_id,
+                           distro_series_name,
+                           id,
+                           owner
+                    FROM all_branches
+                    WHERE private
+                ), owned_branch_ids AS (
+                    SELECT private_branches.id
+                    FROM private_branches
+                    JOIN principals ON private_branches.owner = principals.id
+                ), subscribed_branch_ids AS (
+                    SELECT private_branches.id
+                    FROM private_branches
+                    JOIN BranchSubscription
+                        ON BranchSubscription.branch = private_branches.id
+                    JOIN principals
+                        ON BranchSubscription.person = principals.id
+                )
+            SELECT unique_name, last_scanned_id, distro_series_name
+            FROM all_branches
+            WHERE NOT private OR
+                  id IN (SELECT id FROM owned_branch_ids) OR
+                  id IN (SELECT id FROM subscribed_branch_ids)
+            """ % dict(base_query=base_query, user=quote(user.id))
 
-        query += ' ORDER BY unique_name, last_scanned_id;'
-
-        data = Store.of(self).execute(query)
+        data = Store.of(self).execute(query + ';')
 
         result = []
         # Group on location (unique_name) and revision (last_scanned_id).
@@ -682,7 +746,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             result.append(list(key))
             # Pull out all the official series names and append them as a list
             # to the end of the current record, removing Nones from the list.
-            result[-1].append(filter(None, map(itemgetter(-1), group)))
+            result[-1].append(filter(None, map(itemgetter(2), group)))
         return result
 
     def getMirrorByName(self, name):
@@ -1993,3 +2057,12 @@ class DistributionSet:
             result[sourcepackage] = DistributionSourcePackageRelease(
                 distro, sp_release)
         return result
+
+    def getDerivedDistributions(self):
+        """See `IDistributionSet`."""
+        ubuntu_id = getUtility(ILaunchpadCelebrities).ubuntu.id
+        return IStore(DistroSeries).find(
+            Distribution,
+            Distribution.id == DistroSeries.distributionID,
+            DistroSeries.id == DistroSeriesParent.derived_series_id,
+            DistroSeries.distributionID != ubuntu_id).config(distinct=True)

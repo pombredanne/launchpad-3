@@ -86,8 +86,7 @@ that no bug tasks can be expired.
     # An expirable bugtask, a distroseries. The ubuntu bugtask is its
     # conjoined slave.
     >>> hoary_bugtask = bugtaskset.createTask(
-    ...     bug=ubuntu_bugtask.bug, owner=sample_person,
-    ...     distroseries=ubuntu.currentseries)
+    ...     ubuntu_bugtask.bug, sample_person, ubuntu.currentseries)
     >>> ubuntu_bugtask.conjoined_master == hoary_bugtask
     True
     >>> ubuntu_bugtask.bug.permits_expiration
@@ -120,8 +119,7 @@ Let's also make some bugs that almost qualify for expiration.
     # This one's status is New.
     >>> thunderbird = getUtility(IProductSet).getByName('thunderbird')
     >>> new_bugtask = bugtaskset.createTask(
-    ...     bug=ubuntu_bugtask.bug, owner=sample_person,
-    ...     product=thunderbird)
+    ...     ubuntu_bugtask.bug, sample_person, thunderbird)
     >>> new_bugtask.status.title
     'New'
     >>> new_bugtask.bug.permits_expiration
@@ -145,9 +143,7 @@ Let's also make some bugs that almost qualify for expiration.
     >>> another_assigned_bugtask.transitionToTarget(ubuntu_alsa)
     >>> ubuntu_evolution = ubuntu.getSourcePackage('evolution')
     >>> invalid_bugtask = bugtaskset.createTask(
-    ...     bug=another_assigned_bugtask.bug, owner=sample_person,
-    ...     distribution=ubuntu,
-    ...     sourcepackagename=ubuntu_evolution.sourcepackagename,
+    ...     another_assigned_bugtask.bug, sample_person, ubuntu_evolution,
     ...     status=BugTaskStatus.INVALID)
     >>> another_assigned_bugtask.bug.permits_expiration
     True

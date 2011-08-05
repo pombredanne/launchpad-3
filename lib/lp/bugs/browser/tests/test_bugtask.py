@@ -496,8 +496,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         product_bar = self.factory.makeProduct(name="bar")
         foo_bug = self.factory.makeBug(product=product_foo)
         bugtask_set = getUtility(IBugTaskSet)
-        bugtask_set.createTask(
-            bug=foo_bug, owner=foo_bug.owner, product=product_bar)
+        bugtask_set.createTask(foo_bug, foo_bug.owner, product_bar)
 
         removeSecurityProxy(product_bar).active = False
 
@@ -533,6 +532,30 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         task_and_nomination_views = (
             foo_bugtasks_and_nominations_view.getBugTaskAndNominationViews())
         self.assertEqual([], task_and_nomination_views)
+
+    def test_bugtarget_parent_shown_for_orphaned_series_tasks(self):
+        # Test that a row is shown for the parent of a series task, even
+        # if the parent doesn't actually have a task.
+        series = self.factory.makeProductSeries()
+        bug = self.factory.makeBug(series=series)
+        self.assertEqual(2, len(bug.bugtasks))
+        new_prod = self.factory.makeProduct()
+        bug.getBugTask(series.product).transitionToTarget(new_prod)
+
+        view = create_initialized_view(bug, "+bugtasks-and-nominations-table")
+        subviews = view.getBugTaskAndNominationViews()
+        self.assertEqual([
+            (series.product, '+bugtasks-and-nominations-table-row'),
+            (bug.getBugTask(series), '+bugtasks-and-nominations-table-row'),
+            (bug.getBugTask(new_prod), '+bugtasks-and-nominations-table-row'),
+            ], [(v.context, v.__name__) for v in subviews])
+
+        content = subviews[0]()
+        self.assertIn(
+            'href="%s"' % canonical_url(
+                series.product, path_only_if_possible=True),
+            content)
+        self.assertIn(series.product.displayname, content)
 
 
 class TestBugTaskEditViewStatusField(TestCaseWithFactory):
@@ -705,7 +728,8 @@ class TestBugTaskEditView(TestCaseWithFactory):
             bug_task_2, name='+editstatus', form=form, principal=user)
         self.assertEqual(1, len(view.errors))
         self.assertEqual(
-            'This bug has already been reported on mouse (ubuntu).',
+            'A fix for this bug has already been requested for mouse in '
+            'Ubuntu',
             view.errors[0])
 
     def setUpRetargetMilestone(self):

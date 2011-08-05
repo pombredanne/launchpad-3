@@ -878,3 +878,9 @@ except ImportError:
 
         def __init__(self, request):
             self.request = request
+
+
+class StormRangeFactoryError(Exception):
+    """Raised when a Storm result set cannot be used for slicing by a
+    StormRangeFactory.
+    """

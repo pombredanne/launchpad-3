@@ -32,6 +32,7 @@ from lp.registry.interfaces.distroseriesdifference import (
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseriesdifference import (
+    get_comment_with_status_change,
     most_recent_comments,
     most_recent_publications,
     )
@@ -74,7 +75,8 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
 
         self.assertRaises(
             NotADerivedSeriesError, distroseriesdifference_factory.new,
-            distro_series, source_package_name)
+            distro_series, source_package_name,
+            self.factory.makeDistroSeries())
 
     def test_source_pub(self):
         # The related source pub is returned for the derived series.
@@ -463,7 +465,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             ds_diff.derived_series.main_archive)
 
         with person_logged_in(admin):
-            ds_diff.blacklist()
+            ds_diff.blacklist(admin)
 
         self.assertEqual(
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
@@ -476,7 +478,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             ds_diff.derived_series.main_archive)
 
         with person_logged_in(admin):
-            ds_diff.blacklist(all=True)
+            ds_diff.blacklist(admin, all=True)
 
         self.assertEqual(
             DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS,
@@ -490,7 +492,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             ds_diff.derived_series.main_archive)
 
         with person_logged_in(admin):
-            ds_diff.unblacklist()
+            ds_diff.unblacklist(admin)
 
         self.assertEqual(
             DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
@@ -513,11 +515,64 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         admin = self.factory.makeArchiveAdmin(
             ds_diff.derived_series.main_archive)
         with person_logged_in(admin):
-            ds_diff.unblacklist()
+            ds_diff.unblacklist(admin)
 
         self.assertEqual(
             DistroSeriesDifferenceStatus.RESOLVED,
             ds_diff.status)
+
+    def test_get_comment_with_status_change(self):
+        # Test the new comment string created to describe a status
+        # change.
+        old_status = DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS
+        new_status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        new_comment = get_comment_with_status_change(
+            old_status, new_status, 'simple comment')
+
+        self.assertEqual(
+            'simple comment\n\nIgnored: %s => %s' % (
+                old_status.title, new_status.title),
+            new_comment)
+
+    def assertDSDComment(self, ds_diff, dsd_comment, comment_string):
+        self.assertEqual(
+            dsd_comment,
+            ds_diff.latest_comment)
+        self.assertEqual(
+            comment_string,
+            ds_diff.latest_comment.message.text_contents)
+
+    def test_unblacklist_creates_comment(self):
+        old_status = DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            status=old_status,
+            source_package_name_str="foo")
+        admin = self.factory.makeArchiveAdmin(
+            ds_diff.derived_series.main_archive)
+        with person_logged_in(admin):
+            dsd_comment = ds_diff.unblacklist(
+                admin, "Ok now")
+        new_status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        expected_comment = 'Ok now\n\nIgnored: %s => %s' % (
+                old_status.title, new_status.title)
+
+        self.assertDSDComment(ds_diff, dsd_comment, expected_comment)
+
+    def test_blacklist_creates_comment(self):
+        old_status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            status=old_status,
+            source_package_name_str="foo")
+        admin = self.factory.makeArchiveAdmin(
+            ds_diff.derived_series.main_archive)
+        with person_logged_in(admin):
+            dsd_comment = ds_diff.blacklist(
+                admin, True, "Wait until version 2.1")
+        new_status = DistroSeriesDifferenceStatus.BLACKLISTED_ALWAYS
+        expected_comment = 'Wait until version 2.1\n\nIgnored: %s => %s' % (
+                old_status.title, new_status.title)
+
+        self.assertDSDComment(ds_diff, dsd_comment, expected_comment)
 
     def test_source_package_name_unique_for_derived_series(self):
         # We cannot create two differences for the same derived series
@@ -836,7 +891,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         # factory.makeDistroSeriesDifference() will always create
         # publications to be helpful. We don't need the help in this case.
         dsd = getUtility(IDistroSeriesDifferenceSource).new(
-            dsp.derived_series, spn)
+            dsp.derived_series, spn, dsp.parent_series)
         self.assertEqual(pd, dsd.package_diff)
 
     def _initDiffWithMultiplePendingPublications(self, versions, parent):
@@ -982,10 +1037,10 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         self.makeDiffsForDistroSeries(derived_series)
         diff_for_other_series = self.factory.makeDistroSeriesDifference()
 
-        result = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
-            derived_series)
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        results = set(dsd_source.getForDistroSeries(derived_series))
 
-        self.assertFalse(diff_for_other_series in result)
+        self.assertFalse(diff_for_other_series in results)
 
     def test_getForDistroSeries_filters_by_type(self):
         # Only differences for the specified types are returned.
@@ -1137,6 +1192,47 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         self.assertContentEqual(
             [], dsd_source.getForDistroSeries(
                 dsd.derived_series, packagesets=(packageset, )))
+
+    def makeDistroSeriesDifferenceForUser(self, series, user):
+        dsd = self.factory.makeDistroSeriesDifference(derived_series=series)
+        removeSecurityProxy(dsd.source_package_release).creator = user
+        return dsd
+
+    def test_getForDistroSeries_filters_by_spr_creator(self):
+        # Specifiying changed_by limits the DSDs returned to those where the
+        # associated SPR was created by the given user or team.
+        megatron = self.factory.makePersonByName("Megatron")
+        alderney = self.factory.makePersonByName("Alderney")
+        bulgaria = self.factory.makePersonByName("Bulgaria")
+        # Create the derived distroseries and a DSD for each of the users
+        # above.
+        derived_distroseries = self.factory.makeDistroSeries()
+        dsd_megatron = self.makeDistroSeriesDifferenceForUser(
+            derived_distroseries, megatron)
+        dsd_alderney = self.makeDistroSeriesDifferenceForUser(
+            derived_distroseries, alderney)
+        dsd_bulgaria = self.makeDistroSeriesDifferenceForUser(
+            derived_distroseries, bulgaria)
+        # When changed_by is a person we see DSDs created only by that person.
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        self.assertContentEqual(
+            [dsd_alderney],
+            dsd_source.getForDistroSeries(
+                derived_distroseries, changed_by=alderney))
+        # When changed_by is a team we see DSDs created by any member of the
+        # team.
+        wombles = self.factory.makeTeam(members=(alderney, bulgaria))
+        self.assertContentEqual(
+            [dsd_alderney, dsd_bulgaria],
+            dsd_source.getForDistroSeries(
+                derived_distroseries, changed_by=wombles))
+        # When changed_by is not a person or team it is treated as a
+        # collection, and we see DSDs created by any person in the collection
+        # or member of a team in the collection.
+        self.assertContentEqual(
+            [dsd_alderney, dsd_bulgaria, dsd_megatron],
+            dsd_source.getForDistroSeries(
+                derived_distroseries, changed_by=(megatron, wombles)))
 
     def test_getByDistroSeriesNameAndParentSeries(self):
         # An individual difference is obtained using the name.

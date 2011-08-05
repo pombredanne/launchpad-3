@@ -218,7 +218,7 @@ class TestProcessorFamilies(WebServiceTestCase):
         transaction.commit()
         ws_archive = self.wsObject(archive, user=commercial_admin)
         expected_re = (
-            "(.|\n)*'Entry' object has no attribute "
+            "(.|\n)*object has no attribute "
             "'enabled_restricted_families'(.|\n)*")
         with ExpectedException(AttributeError, expected_re):
             ws_archive.enabled_restricted_families

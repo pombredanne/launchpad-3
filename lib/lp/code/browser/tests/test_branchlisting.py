@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch listing."""
@@ -30,10 +30,10 @@ from lp.code.browser.branchlisting import (
     SourcePackageBranchesView,
     )
 from lp.code.enums import BranchVisibilityRule
+from lp.code.model.branch import Branch
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
     )
-from lp.code.model.branch import Branch
 from lp.registry.interfaces.person import (
     IPersonSet,
     PersonVisibility,
@@ -199,7 +199,7 @@ class TestSourcePackageBranchesView(TestCaseWithFactory):
         sourcepackagename = self.factory.makeSourcePackageName()
         packages = {}
         for version in ("1.0", "2.0", "3.0"):
-            series = self.factory.makeDistroRelease(
+            series = self.factory.makeDistroSeries(
                 distribution=distro, version=version)
             package = self.factory.makeSourcePackage(
                 distroseries=series, sourcepackagename=sourcepackagename)
@@ -237,7 +237,7 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
         # source package.
         self.distro = self.factory.makeDistribution()
         for version in ("1.0", "2.0", "3.0"):
-            self.factory.makeDistroRelease(
+            self.factory.makeDistroSeries(
                 distribution=self.distro, version=version)
         self.sourcepackagename = self.factory.makeSourcePackageName()
         self.distro_source_package = (

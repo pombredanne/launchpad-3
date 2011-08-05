@@ -1008,7 +1008,8 @@ class IArchiveView(IHasBuildRecords):
         :param version: source version filter (always exact match).
         :param status: `PackagePublishingStatus` filter, can be a sequence.
         :param distroseries: `IDistroSeries` filter.
-        :param pocket: `PackagePublishingPocket` filter.
+        :param pocket: `PackagePublishingPocket` filter.  This may be an
+            iterable of more than one pocket or a single pocket.
         :param exact_match: either or not filter source names by exact
                              matching.
         :param created_since_date: Only return results whose `date_created`
@@ -1657,7 +1658,8 @@ class IArchiveSet(Interface):
         """
 
     def new(purpose, owner, name=None, displayname=None, distribution=None,
-            description=None, enabled=True, require_virtualized=True):
+            description=None, enabled=True, require_virtualized=True,
+            private=False):
         """Create a new archive.
 
         On named-ppa creation, the signing key for the default PPA for the
@@ -1679,6 +1681,7 @@ class IArchiveSet(Interface):
         :param enabled: whether the archive shall be enabled post creation
         :param require_virtualized: whether builds for the new archive shall
             be carried out on virtual builders
+        :param private: whether or not to make the PPA private
 
         :return: an `IArchive` object.
         :raises AssertionError if name is already taken within distribution.

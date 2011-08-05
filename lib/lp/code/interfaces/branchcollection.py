@@ -139,6 +139,9 @@ class IBranchCollection(Interface):
     def inDistributionSourcePackage(distro_source_package):
         """Restrict to branches in a 'package' for a 'distribution'."""
 
+    def linkedToBugs(bugs):
+        """Restrict to branches linked to `bugs`."""
+
     def officialBranches(pocket=None):
         """Restrict to branches that are official for some source package."""
 

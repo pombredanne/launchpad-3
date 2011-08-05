@@ -554,8 +554,13 @@ class Archive(SQLBase):
                     distroseries.id)
 
         if pocket is not None:
+            try:
+                pockets = tuple(pocket)
+            except TypeError:
+                pockets = (pocket,)
             storm_clauses.append(
-                SourcePackagePublishingHistory.pocket == pocket)
+                "SourcePackagePublishingHistory.pocket IN %s " %
+                   sqlvalues(pockets))
 
         if created_since_date is not None:
             clauses.append(
@@ -1532,11 +1537,21 @@ class Archive(SQLBase):
             [source], to_pocket, to_series, include_binaries,
             person=person)
 
+    def _checkCopyPackageFeatureFlags(self):
+        """Prevent copyPackage(s) if these conditions are not met."""
+        if not getFeatureFlag(u"soyuz.copypackage.enabled"):
+            raise ForbiddenByFeatureFlag
+        if (self.is_ppa and 
+            not getFeatureFlag(u"soyuz.copypackageppa.enabled")):
+            # We have no way of giving feedback about failed jobs yet,
+            # so this is disabled for now.
+            raise ForbiddenByFeatureFlag(
+                "Not enabled for copying to PPAs yet.")
+
     def copyPackage(self, source_name, version, from_archive, to_pocket,
                     person, to_series=None, include_binaries=False):
         """See `IArchive`."""
-        if not getFeatureFlag(u"soyuz.copypackage.enabled"):
-            raise ForbiddenByFeatureFlag
+        self._checkCopyPackageFeatureFlags()
 
         # Asynchronously copy a package using the job system.
         pocket = self._text_to_pocket(to_pocket)
@@ -1559,8 +1574,7 @@ class Archive(SQLBase):
     def copyPackages(self, source_names, from_archive, to_pocket,
                      person, to_series=None, include_binaries=None):
         """See `IArchive`."""
-        if not getFeatureFlag(u"soyuz.copypackage.enabled"):
-            raise ForbiddenByFeatureFlag
+        self._checkCopyPackageFeatureFlags()
 
         sources = self._collectLatestPublishedSources(
             from_archive, source_names)
@@ -1598,7 +1612,7 @@ class Archive(SQLBase):
         job_source = getUtility(IPlainPackageCopyJobSource)
         job_source.createMultiple(
             series, copy_tasks, person,
-            copy_policy=PackageCopyPolicy.INSECURE,
+            copy_policy=PackageCopyPolicy.MASS_SYNC,
             include_binaries=include_binaries)
 
     def _collectLatestPublishedSources(self, from_archive, source_names):
@@ -1621,7 +1635,8 @@ class Archive(SQLBase):
             # publication.
             published_sources = from_archive.getPublishedSources(
                 name=name, exact_match=True,
-                status=PackagePublishingStatus.PUBLISHED)
+                status=(PackagePublishingStatus.PUBLISHED,
+                        PackagePublishingStatus.PENDING))
             first_source = published_sources.first()
             if first_source is not None:
                 sources.append(first_source)
@@ -1933,8 +1948,18 @@ class Archive(SQLBase):
         self.enabled_restricted_families = restricted
 
     @classmethod
-    def validatePPA(self, person, proposed_name):
+    def validatePPA(self, person, proposed_name, private=False):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        if private:
+            # NOTE: This duplicates the policy in lp/soyuz/configure.zcml
+            # which says that one needs 'launchpad.Commercial' permission to
+            # set 'private', and the logic in `AdminByCommercialTeamOrAdmins`
+            # which determines who is granted launchpad.Commercial
+            # permissions.
+            commercial = getUtility(ILaunchpadCelebrities).commercial_admin
+            admin = getUtility(ILaunchpadCelebrities).admin
+            if not person.inTeam(commercial) and not person.inTeam(admin):
+                return '%s is not allowed to make private PPAs' % (person.name,)
         if person.isTeam() and (
             person.subscriptionpolicy in OPEN_TEAM_POLICY):
             return "Open teams cannot have PPAs."
@@ -2058,7 +2083,7 @@ class ArchiveSet:
 
     def new(self, purpose, owner, name=None, displayname=None,
             distribution=None, description=None, enabled=True,
-            require_virtualized=True):
+            require_virtualized=True, private=False):
         """See `IArchiveSet`."""
         if distribution is None:
             distribution = getUtility(ILaunchpadCelebrities).ubuntu
@@ -2132,6 +2157,8 @@ class ArchiveSet:
             new_archive.buildd_secret = create_unique_token_for_table(
                 20, Archive.buildd_secret)
             new_archive.private = True
+        else:
+            new_archive.private = private
 
         return new_archive
 

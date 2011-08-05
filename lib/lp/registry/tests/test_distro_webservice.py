@@ -5,15 +5,19 @@ __metaclass__ = type
 
 from datetime import datetime
 
-import pytz
 from launchpadlib.errors import Unauthorized
-
-from zope.security.management import (
-    endInteraction,
-    newInteraction,
-    )
+import pytz
+from zope.component import getUtility
+from zope.security.management import endInteraction
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.code.enums import (
+    BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel,
+    CodeReviewNotificationLevel,
+    )
 from lp.code.model.seriessourcepackagebranch import (
     SeriesSourcePackageBranchSet,
     )
@@ -40,18 +44,19 @@ class TestDistribution(TestCaseWithFactory):
 
 
 class TestGetBranchTips(TestCaseWithFactory):
-    """Test the getBranchTips method and it's exposure to the web service."""
+    """Test the getBranchTips method and its exposure to the web service."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestGetBranchTips, self).setUp()
         self.distro = self.factory.makeDistribution()
-        series_1 = self.series_1 = self.factory.makeDistroRelease(self.distro)
-        series_2 = self.series_2 = self.factory.makeDistroRelease(self.distro)
+        series_1 = self.series_1 = self.factory.makeDistroSeries(self.distro)
+        series_2 = self.series_2 = self.factory.makeDistroSeries(self.distro)
         source_package = self.factory.makeSourcePackage(distroseries=series_1)
         branch = self.factory.makeBranch(sourcepackage=source_package)
-        unofficial_branch =  self.factory.makeBranch(sourcepackage=source_package)
+        unofficial_branch = self.factory.makeBranch(
+            sourcepackage=source_package)
         registrant = self.factory.makePerson()
         now = datetime.now(pytz.UTC)
         sourcepackagename = self.factory.makeSourcePackageName()
@@ -115,3 +120,96 @@ class TestGetBranchTips(TestCaseWithFactory):
         self.assertEqual(tips[0], self.unofficial_branch_name)
         self.assertEqual(tips[1], None)
         self.assertEqual(tips[2], [])
+
+
+class TestGetBranchTipsSecurity(TestCaseWithFactory):
+    """Test the getBranchTips method and its exposure to the web service."""
+
+    layer = DatabaseFunctionalLayer
+
+    # Security tests are inspired by TestGenericBranchCollectionVisibleFilter
+    # in lp.code.model.tests.test_branchcollection, and TestAccessBranch in
+    # lp.code.tests.test_branch.  Ideally we'd have one code base and one
+    # set of tests to handle them all.  We don't. :-/  As a way to try and
+    # partially compensate, we verify here that branch.visibleByUser
+    # agrees with our results.
+
+    # These tests (and the application code that allows them to pass)
+    # consciously ignores the stacked aspect of the branch visibility rules.
+    # See https://bugs.launchpad.net/launchpad/+bug/812335/comments/1 .
+
+    # Similarly, we do not support the LAUNCHPAD_SERVICES user because this
+    # is a special-cased string in the codehosting xmlrpc machinery and
+    # does not correspond to an actual LP Person.
+
+    def makeBranch(self, **kwargs):
+        distro = self.factory.makeDistribution()
+        series = self.factory.makeDistroSeries(distro)
+        source_package = self.factory.makeSourcePackage(distroseries=series)
+        branch = self.factory.makeBranch(
+            sourcepackage=source_package, private=True, **kwargs)
+        return branch, distro
+
+    def test_private_branch_hidden(self):
+        # A private branch should not be included for anonymous users or for
+        # authenticated users who do not have the necessary privileges.
+        branch, distro = self.makeBranch()
+        self.assertFalse(  # Double-checking.
+            removeSecurityProxy(branch).visibleByUser(None))
+        self.assertEqual([], distro.getBranchTips())
+        person = self.factory.makePerson()
+        self.assertFalse(  # Double-checking.
+            removeSecurityProxy(branch).visibleByUser(person))
+        self.assertEqual([], distro.getBranchTips(user=person))
+
+    def assertVisible(self, distro, branch, person):
+        self.assertTrue(  # Double-checking.
+            removeSecurityProxy(branch).visibleByUser(person))
+        self.assertEqual(1, len(distro.getBranchTips(user=person)))
+
+    def test_owned_visible(self):
+        # If user owns the branch, it is visible.
+        person = self.factory.makePerson()
+        branch, distro = self.makeBranch(owner=person)
+        self.assertVisible(distro, branch, person)
+
+    def test_owner_member_visible(self):
+        # If user is a member of the team that owns the branch, it is visible.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[person])
+        branch, distro = self.makeBranch(owner=team)
+        self.assertVisible(distro, branch, person)
+
+    def test_subscriber_visible(self):
+        # If user is a subscriber to the branch, it is visible.
+        branch, distro = self.makeBranch()
+        person = self.factory.makePerson()
+        removeSecurityProxy(branch).subscribe(
+            person, BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.NOEMAIL,
+            person)
+        self.assertVisible(distro, branch, person)
+
+    def test_subscriber_member_visible(self):
+        # If user is a member of a team that is a subscriber to the branch,
+        # it is visible.
+        branch, distro = self.makeBranch()
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam(members=[person])
+        removeSecurityProxy(branch).subscribe(
+            team, BranchSubscriptionNotificationLevel.NOEMAIL,
+            BranchSubscriptionDiffSize.NODIFF,
+            CodeReviewNotificationLevel.NOEMAIL,
+            team)
+        self.assertVisible(distro, branch, person)
+
+    def test_admin_visible(self):
+        # All private branches are visible to members of the Launchpad
+        # admin team.
+        person = self.factory.makePerson()
+        admin_team = removeSecurityProxy(
+            getUtility(ILaunchpadCelebrities).admin)
+        admin_team.addMember(person, admin_team.teamowner)
+        branch, distro = self.makeBranch()
+        self.assertVisible(distro, branch, person)

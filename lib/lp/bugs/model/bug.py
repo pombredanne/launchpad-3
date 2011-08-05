@@ -173,11 +173,9 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     get_structural_subscribers,
     )
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage,
-    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -939,10 +937,12 @@ BugMessage""" % sqlvalues(self.id))
 
     def getDirectSubscribersWithDetails(self):
         """See `IBug`."""
+        SubscribedBy = ClassAlias(Person, name="subscribed_by")
         results = Store.of(self).find(
-            (Person, BugSubscription),
+            (Person, SubscribedBy, BugSubscription),
             BugSubscription.person_id == Person.id,
             BugSubscription.bug_id == self.id,
+            BugSubscription.subscribed_by_id == SubscribedBy.id,
             Not(In(BugSubscription.person_id,
                    Select(BugMute.person_id, BugMute.bug_id == self.id)))
             ).order_by(Person.displayname)
@@ -1179,33 +1179,7 @@ BugMessage""" % sqlvalues(self.id))
 
     def addTask(self, owner, target):
         """See `IBug`."""
-        product = None
-        product_series = None
-        distribution = None
-        distro_series = None
-        source_package_name = None
-
-        # Turn `target` into something more useful.
-        if IProduct.providedBy(target):
-            product = target
-        if IProductSeries.providedBy(target):
-            product_series = target
-        if IDistribution.providedBy(target):
-            distribution = target
-        if IDistroSeries.providedBy(target):
-            distro_series = target
-        if IDistributionSourcePackage.providedBy(target):
-            distribution = target.distribution
-            source_package_name = target.sourcepackagename
-        if ISourcePackage.providedBy(target):
-            distro_series = target.distroseries
-            source_package_name = target.sourcepackagename
-
-        new_task = getUtility(IBugTaskSet).createTask(
-            self, owner=owner, product=product,
-            productseries=product_series, distribution=distribution,
-            distroseries=distro_series,
-            sourcepackagename=source_package_name)
+        new_task = getUtility(IBugTaskSet).createTask(self, owner, target)
 
         # When a new task is added the bug's heat becomes relevant to the
         # target's max_bug_heat.
@@ -1317,6 +1291,21 @@ BugMessage""" % sqlvalues(self.id))
             self.addChange(BranchUnlinkedFromBug(UTC_NOW, user, branch, self))
             notify(ObjectDeletedEvent(bug_branch, user=user))
             bug_branch.destroySelf()
+
+    def getVisibleLinkedBranches(self, user):
+        """Return all the branches linked to the bug that `user` can see."""
+        all_branches = getUtility(IAllBranches)
+        linked_branches = list(all_branches.visibleByUser(
+            user).linkedToBugs([self]).getBranches())
+        if len(linked_branches) == 0:
+            return EmptyResultSet()
+        else:
+            store = Store.of(self)
+            branch_ids = [branch.id for branch in linked_branches]
+            return store.find(
+                BugBranch,
+                BugBranch.bug == self,
+                In(BugBranch.branchID, branch_ids))
 
     @cachedproperty
     def has_cves(self):
@@ -1780,6 +1769,20 @@ BugMessage""" % sqlvalues(self.id))
         store.flush()
         store.invalidate(self)
 
+    def shouldConfirmBugtasks(self):
+        """Should we try to confirm this bug's bugtasks?
+        The answer is yes if more than one user is affected."""
+        # == 2 would probably be sufficient once we have all legacy bug tasks
+        # confirmed.  For now, this is a compromise: we don't need a migration
+        # step, but we will make some unnecessary comparisons.
+        return self.users_affected_count_with_dupes > 1
+
+    def maybeConfirmBugtasks(self):
+        """Maybe try to confirm our new bugtasks."""
+        if self.shouldConfirmBugtasks():
+            for bugtask in self.bugtasks:
+                bugtask.maybeConfirm()
+
     def markUserAffected(self, user, affected=True):
         """See `IBug`."""
         bap = self._getAffectedUser(user)
@@ -1795,6 +1798,9 @@ BugMessage""" % sqlvalues(self.id))
         for dupe in self.duplicates:
             if dupe._getAffectedUser(user) is not None:
                 dupe.markUserAffected(user, affected)
+
+        if affected:
+            self.maybeConfirmBugtasks()
 
         self.updateHeat()
 
@@ -1836,12 +1842,16 @@ BugMessage""" % sqlvalues(self.id))
             # to 0 (since it's a duplicate, it shouldn't have any heat
             # at all).
             self.setHeat(0, affected_targets=affected_targets)
+            # Maybe confirm bug tasks, now that more people might be affected
+            # by this bug.
+            duplicate_of.maybeConfirmBugtasks()
         else:
             # Otherwise, recalculate this bug's heat, since it will be 0
             # from having been a duplicate. We also update the bug that
             # was previously duplicated.
             self.updateHeat(affected_targets)
-            current_duplicateof.updateHeat(affected_targets)
+            if current_duplicateof is not None:
+                current_duplicateof.updateHeat(affected_targets)
         return affected_targets
 
     def markAsDuplicate(self, duplicate_of):
@@ -2491,15 +2501,15 @@ class BugSet:
         # Create the task on a product if one was passed.
         if params.product:
             getUtility(IBugTaskSet).createTask(
-                bug=bug, product=params.product, owner=params.owner,
-                status=params.status)
+                bug, params.owner, params.product, status=params.status)
 
         # Create the task on a source package name if one was passed.
         if params.distribution:
+            target = params.distribution
+            if params.sourcepackagename:
+                target = target.getSourcePackage(params.sourcepackagename)
             getUtility(IBugTaskSet).createTask(
-                bug=bug, distribution=params.distribution,
-                sourcepackagename=params.sourcepackagename,
-                owner=params.owner, status=params.status)
+                bug, params.owner, target, status=params.status)
 
         bug_task = bug.default_bugtask
         if params.assignee:
