@@ -9,7 +9,6 @@ from script_commands import (
     helps,
     run_subcommand,
     UserError,
-    types,
     )
 
 
