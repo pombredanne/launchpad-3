@@ -247,7 +247,7 @@ class PermissionGatherer:
         self.entity_keyword = entity_keyword
         self.permissions = defaultdict(dict)
 
-    def add(self, permission, entity, principal, is_group=False):
+    def add(self, permission, entity, principal):
         """Add a permission.
 
         Add all privileges you want to grant or revoke first, then use
@@ -258,14 +258,8 @@ class PermissionGatherer:
             or revoke a privilege.
         :param principal: User or group to which the privilege should
             apply.
-        :param is_group: Is `principal` a group?
         """
-        if is_group:
-            full_principal = "GROUP " + principal
-        else:
-            full_principal = principal
-        self.permissions[permission].setdefault(entity, set()).add(
-            full_principal)
+        self.permissions[permission].setdefault(entity, set()).add(principal)
 
     def tabulate(self):
         """Group privileges into single-statement work items.
@@ -513,19 +507,15 @@ def reset_permissions(con, config, options):
             if obj.type == 'function':
                 function_permissions.add(perm, obj.fullname, who)
                 function_permissions.add("EXECUTE", obj.fullname, who_ro)
-                function_permissions.add(
-                    "EXECUTE", obj.fullname, "read", is_group=True)
-                function_permissions.add(
-                    "ALL", obj.fullname, "admin", is_group=True)
+                function_permissions.add("EXECUTE", obj.fullname, "read")
+                function_permissions.add("ALL", obj.fullname, "admin")
             else:
-                table_permissions.add(
-                    "ALL", obj.fullname, "admin", is_group=True)
+                table_permissions.add("ALL", obj.fullname, "admin")
                 table_permissions.add(perm, obj.fullname, who)
                 table_permissions.add("SELECT", obj.fullname, who_ro)
                 is_secure = (obj.fullname in SECURE_TABLES)
                 if not is_secure:
-                    table_permissions.add(
-                        "SELECT", obj.fullname, "read", is_group=True)
+                    table_permissions.add("SELECT", obj.fullname, "read")
                 if obj.seqname in schema:
                     if 'INSERT' in perm:
                         seqperm = 'USAGE'
@@ -534,10 +524,9 @@ def reset_permissions(con, config, options):
                     sequence_permissions.add(seqperm, obj.seqname, who)
                     if not is_secure:
                         sequence_permissions.add(
-                            "SELECT", obj.seqname, "read", is_group=True)
+                            "SELECT", obj.seqname, "read")
                     sequence_permissions.add("SELECT", obj.seqname, who_ro)
-                    sequence_permissions.add(
-                        "ALL", obj.seqname, "admin", is_group=True)
+                    sequence_permissions.add("ALL", obj.seqname, "admin")
 
     function_permissions.grant(cur)
     table_permissions.grant(cur)
