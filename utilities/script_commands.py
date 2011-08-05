@@ -51,13 +51,14 @@ def get_function_parser(function):
     if defaults is None:
         defaults = [None] * len(args)
     arg_types = getattr(function, '_types', {})
+    arg_helps = getattr(function, '_helps', {})
     for arg, default in zip(args, defaults):
         arg_type = arg_types.get(arg)
         if arg_type is None:
             if default is None:
                 continue
             arg_type = type(default)
-        arg_help = getattr(function, '_helps', {}).get(arg)
+        arg_help = arg_helps.get(arg)
         if arg_help is not None:
             arg_help += ' Default: %default.'
         parser.add_option(

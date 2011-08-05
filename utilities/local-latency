@@ -34,7 +34,7 @@ def start(delay=500, port=443):
 
 
 def stop():
-    """Add latency from the lo."""
+    """Remove latency from the lo."""
     tc('qdisc del dev lo root')
 
 
