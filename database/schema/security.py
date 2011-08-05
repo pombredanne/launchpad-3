@@ -77,6 +77,7 @@ def parse_postgres_acl(acl):
         for perm in perms:
             if perm == '*':
                 parsed_perms[-1] = (parsed_perms[-1][0], True)
+                continue
             parsed_perms.append((POSTGRES_ACL_MAP[perm], False))
         parsed[unquote_identifier(user.encode('utf-8'))] = dict(parsed_perms)
     return parsed
