@@ -1078,17 +1078,23 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             ALL: DistroSeriesDifferenceStatus.items,
         }
 
-        status = package_type_dsd_status[self.specified_package_type]
-        child_version_higher = (
-            self.specified_package_type == HIGHER_VERSION_THAN_PARENT)
+        # If the package_type option is not supported, add an error to
+        # the field and return an empty list.
+        if self.specified_package_type not in package_type_dsd_status:
+            self.setFieldError('package_type', 'Invalid option')
+            differences = []
+        else:
+            status = package_type_dsd_status[self.specified_package_type]
+            child_version_higher = (
+                self.specified_package_type == HIGHER_VERSION_THAN_PARENT)
+            differences = getUtility(
+                IDistroSeriesDifferenceSource).getForDistroSeries(
+                    self.context, difference_type=self.differences_type,
+                    name_filter=self.specified_name_filter,
+                    status=status, child_version_higher=child_version_higher,
+                    packagesets=self.specified_packagesets_filter,
+                    changed_by=self.specified_changed_by_filter)
 
-        differences = getUtility(
-            IDistroSeriesDifferenceSource).getForDistroSeries(
-                self.context, difference_type=self.differences_type,
-                name_filter=self.specified_name_filter,
-                status=status, child_version_higher=child_version_higher,
-                packagesets=self.specified_packagesets_filter,
-                changed_by=self.specified_changed_by_filter)
         return BatchNavigator(differences, self.request)
 
     @cachedproperty

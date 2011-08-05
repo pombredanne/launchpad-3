@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests relating to the revision cache."""
@@ -9,7 +9,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import unittest
 
 import pytz
 from zope.component import getUtility
@@ -60,7 +59,7 @@ class TestRevisionCacheAdaptation(TestCaseWithFactory):
 
     def test_distro_series(self):
         # A distro series can be adapted to a revision cache.
-        distro_series = self.factory.makeDistroRelease()
+        distro_series = self.factory.makeDistroSeries()
         cache = IRevisionCache(distro_series, None)
         self.assertIsNot(None, cache)
 
@@ -177,7 +176,8 @@ class TestRevisionCache(TestCaseWithFactory):
         self.assertEqual(3, cache.count())
         # Limiting to public revisions does not get the private revisions.
         self.assertEqual(2, cache.public().count())
-        self.assertCollectionContents([revision, public_revision], cache.public())
+        self.assertCollectionContents(
+            [revision, public_revision], cache.public())
 
     def test_in_product(self):
         # Revisions in a particular product can be restricted using the
@@ -224,9 +224,9 @@ class TestRevisionCache(TestCaseWithFactory):
     def test_in_distribution(self):
         # Check inDistribution limits to those revisions associated with
         # distribution series related to the distro.
-        distroseries1 = self.factory.makeDistroRelease()
+        distroseries1 = self.factory.makeDistroSeries()
         distro = distroseries1.distribution
-        distroseries2 = self.factory.makeDistroRelease(distribution=distro)
+        distroseries2 = self.factory.makeDistroSeries(distribution=distro)
         # Two revisions associated with sourcepackages in the series for the
         # distro.
         rev1 = self.makeCachedRevision(
@@ -245,9 +245,9 @@ class TestRevisionCache(TestCaseWithFactory):
     def test_in_distro_series(self):
         # Check that inDistroSeries limits the revisions to those in the
         # distroseries specified.
-        distroseries1 = self.factory.makeDistroRelease()
+        distroseries1 = self.factory.makeDistroSeries()
         distro = distroseries1.distribution
-        distroseries2 = self.factory.makeDistroRelease(distribution=distro)
+        distroseries2 = self.factory.makeDistroSeries(distribution=distro)
         # Two revisions associated with sourcepackages in the distro series we
         # care about.
         rev1 = self.makeCachedRevision(
@@ -271,9 +271,9 @@ class TestRevisionCache(TestCaseWithFactory):
     def test_in_distribution_source_package(self):
         # Check that inDistributionSourcePackage limits to revisions in
         # different distro series for the same source package name.
-        distroseries1 = self.factory.makeDistroRelease()
+        distroseries1 = self.factory.makeDistroSeries()
         distro = distroseries1.distribution
-        distroseries2 = self.factory.makeDistroRelease(distribution=distro)
+        distroseries2 = self.factory.makeDistroSeries(distribution=distro)
         # Two revisions associated with the same sourcepackagename in the
         # distro series we care about.
         sourcepackagename = self.factory.makeSourcePackageName()
@@ -359,14 +359,8 @@ class TestRevisionCache(TestCaseWithFactory):
         # If there are multiple revisions with the same revision author text,
         # but not linked to a Launchpad person, then that revision_text is
         # counted as one author.
-        revisions = [
+        for counter in xrange(4):
             self.makeCachedRevision(revision=self.factory.makeRevision(
-                    author="Foo <foo@example.com>"))
-            for i in range(4)]
+                author="Foo <foo@example.com>"))
         revision_cache = getUtility(IRevisionCache)
         self.assertEqual(1, revision_cache.authorCount())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-
