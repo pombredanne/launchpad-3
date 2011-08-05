@@ -1781,18 +1781,18 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             dsd.derived_series, '+localpackagediffs')
         self.assertTrue(view.hasPendingDSDUpdate(dsd))
 
-    def test_hasPendingSync_returns_False_if_no_pending_sync(self):
+    def test_pendingSync_returns_None_if_no_pending_sync(self):
         dsd = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
-        self.assertFalse(view.hasPendingSync(dsd))
+        self.assertIs(None, view.pendingSync(dsd))
 
-    def test_hasPendingSync_returns_True_if_pending_sync(self):
+    def test_pendingSync_returns_not_None_if_pending_sync(self):
         dsd = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
         view.pending_syncs = {dsd.source_package_name.name: object()}
-        self.assertTrue(view.hasPendingSync(dsd))
+        self.assertIsNot(None, view.pendingSync(dsd))
 
     def test_isNewerThanParent_compares_versions_not_strings(self):
         # isNewerThanParent compares Debian-style version numbers, not
