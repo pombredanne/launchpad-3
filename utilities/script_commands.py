@@ -75,7 +75,7 @@ def parse_args(command, args):
     # TODO: implement!
     # Basically each argument without a default is treated as a posiitonal
     # argument.  They must have types defined, since we can't infer it from
-    # the kwargs.
+    # the default.
     #
     # We may wish to declare optional positional arguments.  These would have
     # have defaults, but declaring them as positional would prevent them from
