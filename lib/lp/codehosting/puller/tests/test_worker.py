@@ -36,22 +36,20 @@ from lp.codehosting.puller.tests import (
     PullerWorkerMixin,
     )
 from lp.codehosting.puller.worker import (
+    BadUrlLaunchpad,
+    BadUrlScheme,
+    BadUrlSsh,
+    ImportedBranchPolicy,
     install_worker_ui_factory,
+    MirroredBranchPolicy,
     PullerWorkerProtocol,
     SafeBranchOpener,
     WORKER_ACTIVITY_NETWORK,
     )
 from lp.codehosting.safe_open import (
     AcceptAnythingPolicy,
-    )
-from lp.codehosting.vfs.branchfs import (
     BadUrl,
-    BadUrlLaunchpad,
-    BadUrlScheme,
-    BadUrlSsh,
     BranchOpenPolicy,
-    ImportedBranchPolicy,
-    MirroredBranchPolicy,
     )
 from lp.testing import TestCase
 from lp.testing.factory import (
