@@ -232,14 +232,11 @@ $(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py \
 
 $(subst $(PY),,$(BUILDOUT_BIN)): $(PY)
 
-# bin/compile_templates is responsible for building all chameleon templates,
-# of which there is currently one, but of which many more are coming.
 compile: $(PY) $(BZR_VERSION_INFO)
 	mkdir -p /var/tmp/vostok-archive
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
-	bin/compile_templates
 
 test_build: build
 	bin/test $(TESTFLAGS) $(TESTOPTS)
@@ -269,8 +266,9 @@ start-gdb: check_schema inplace stop support_files run.gdb
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
 run_all: check_schema inplace stop
-	bin/run -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached \
-	    -i $(LPCONFIG)
+	bin/run \
+	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached \
+	 -i $(LPCONFIG)
 
 run_codebrowse: build
 	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py -f
@@ -372,8 +370,7 @@ clean: clean_js clean_buildout clean_logs
 	fi
 	find . -path ./eggs -prune -false -o \
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
-	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' -o \
-	    -name '*.pt.py' \) \
+	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
 	$(RM) -r lib/mailman
 	$(RM) -rf $(LP_BUILT_JS_ROOT)/*
