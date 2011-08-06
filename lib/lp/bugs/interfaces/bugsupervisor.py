@@ -35,7 +35,7 @@ class IHasBugSupervisor(Interface):
             "The Launchpad id of the person or team (preferred) responsible "
             "for bug management. Mail about all bug activity will be sent to "
             "the supervisor by default. The bug supervisor can change the "
-            "bug mail rules to limit the volume of email.")
+            "bug mail rules to limit the volume of email."),
         required=False, vocabulary='ValidPersonOrTeam', readonly=True))
 
     @mutator_for(bug_supervisor)
