@@ -14,6 +14,7 @@ __all__ = [
     'BadUrl',
     'BlacklistPolicy',
     'BranchLoopError',
+    'BranchOpenPolicy',
     'BranchReferenceForbidden',
     'SafeBranchOpener',
     'WhitelistPolicy',
