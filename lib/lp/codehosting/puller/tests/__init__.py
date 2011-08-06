@@ -25,6 +25,7 @@ from bzrlib.tests.http_server import (
 from canonical.config import config
 from lp.codehosting.puller.worker import (
     BranchMirrorer,
+    BranchMirrorerPolicy,
     PullerWorker,
     PullerWorkerProtocol,
     )
@@ -32,6 +33,11 @@ from lp.codehosting.tests.helpers import LoomTestMixin
 from lp.codehosting.safe_open import AcceptAnythingPolicy
 from lp.codehosting.vfs import branch_id_to_path
 from lp.testing import TestCaseWithFactory
+
+
+class AcceptAnythingBranchMirrorerPolicy(AcceptAnythingPolicy,
+    BranchMirrorerPolicy): pass
+
 
 
 class PullerWorkerMixin:
@@ -52,7 +58,7 @@ class PullerWorkerMixin:
             oops_prefix = ''
         if branch_type is None:
             if policy is None:
-                policy = AcceptAnythingPolicy()
+                policy = AcceptAnythingBranchMirrorerPolicy()
             opener = BranchMirrorer(policy, protocol)
         else:
             opener = None

@@ -39,6 +39,7 @@ from lp.codehosting.puller.worker import (
     BadUrlLaunchpad,
     BadUrlScheme,
     BadUrlSsh,
+    BranchMirrorerPolicy,
     ImportedBranchPolicy,
     install_worker_ui_factory,
     MirroredBranchPolicy,
@@ -74,7 +75,8 @@ def get_netstrings(line):
     return strings
 
 
-class PrearrangedStackedBranchPolicy(AcceptAnythingPolicy):
+class PrearrangedStackedBranchPolicy(BranchMirrorerPolicy,
+    AcceptAnythingPolicy):
     """A branch policy that returns a pre-configurable stack-on URL."""
 
     def __init__(self, stack_on_url):
