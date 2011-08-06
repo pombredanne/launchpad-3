@@ -10,7 +10,6 @@ import urllib2
 
 from bzrlib import (
     errors,
-    urlutils,
     )
 from bzrlib.branch import (
     Branch,
@@ -38,6 +37,7 @@ from lp.codehosting.bzrutils import identical_formats
 from lp.codehosting.puller import get_lock_id_for_branch_id
 from lp.codehosting.safe_open import (
     BranchLoopError,
+    BranchOpenPolicy,
     BranchReferenceForbidden,
     SafeBranchOpener,
     )
@@ -112,6 +112,46 @@ class PullerWorkerProtocol:
         self.sendEvent('log', fmt % args)
 
 
+class BranchMirrorPolicy(BranchOpenPolicy):
+    """The policy for what branches to open and how to stack them."""
+
+    def createDestinationBranch(self, source_branch, destination_url):
+        """Create a destination branch for 'source_branch'.
+
+        Creates a branch at 'destination_url' that is has the same format as
+        'source_branch'.  Any content already at 'destination_url' will be
+        deleted.  Generally the new branch will have no revisions, but they
+        will be copied for import branches, because this can be done safely
+        and efficiently with a vfs-level copy (see `ImportedBranchPolicy`,
+        below).
+
+        :param source_branch: The Bazaar branch that will be mirrored.
+        :param destination_url: The place to make the destination branch. This
+            URL must point to a writable location.
+        :return: The destination branch.
+        """
+        dest_transport = get_transport(destination_url)
+        if dest_transport.has('.'):
+            dest_transport.delete_tree('.')
+        if isinstance(source_branch, LoomSupport):
+            # Looms suck.
+            revision_id = None
+        else:
+            revision_id = 'null:'
+        source_branch.bzrdir.clone_on_transport(
+            dest_transport, revision_id=revision_id)
+        return Branch.open(destination_url)
+
+    def getStackedOnURLForDestinationBranch(self, source_branch,
+                                            destination_url):
+        """Get the stacked on URL for `source_branch`.
+
+        In particular, the URL it should be stacked on when it is mirrored to
+        `destination_url`.
+        """
+        return None
+
+
 class BranchMirrorer(object):
     """A `BranchMirrorer` safely makes mirrors of branches.
 
@@ -141,33 +181,6 @@ class BranchMirrorer(object):
         else:
             self.log = lambda *args: None
 
-    def _createDestinationBranch(self, source_branch, destination_url):
-        """Create a destination branch for 'source_branch'.
-
-        Creates a branch at 'destination_url' that is has the same format as
-        'source_branch'.  Any content already at 'destination_url' will be
-        deleted.  Generally the new branch will have no revisions, but they
-        will be copied for import branches, because this can be done safely
-        and efficiently with a vfs-level copy (see `ImportedBranchPolicy`,
-        below).
-
-        :param source_branch: The Bazaar branch that will be mirrored.
-        :param destination_url: The place to make the destination branch. This
-            URL must point to a writable location.
-        :return: The destination branch.
-        """
-        dest_transport = get_transport(destination_url)
-        if dest_transport.has('.'):
-            dest_transport.delete_tree('.')
-        if isinstance(source_branch, LoomSupport):
-            # Looms suck.
-            revision_id = None
-        else:
-            revision_id = 'null:'
-        source_branch.bzrdir.clone_on_transport(
-            dest_transport, revision_id=revision_id)
-        return Branch.open(destination_url)
-
     def createDestinationBranch(self, source_branch, destination_url):
         """Create a destination branch for 'source_branch'.
 
@@ -181,7 +194,7 @@ class BranchMirrorer(object):
         :return: The destination branch.
         """
         return self.opener.runWithTransformFallbackLocationHookInstalled(
-            self._createDestinationBranch, source_branch,
+            self.policy.createDestinationBranch, source_branch,
             destination_url)
 
     def openDestinationBranch(self, source_branch, destination_url):
@@ -204,21 +217,6 @@ class BranchMirrorer(object):
         self.log('Formats differ.')
         return self.createDestinationBranch(source_branch, destination_url)
 
-    def getStackedOnURLForDestinationBranch(self, source_branch,
-                                            destination_url):
-        """Return the stacked on URL for the destination branch.
-
-        Mirrored branches are stacked on the default stacked-on branch of
-        their product, except when we're mirroring the default stacked-on
-        branch itself.
-        """
-        if self.stacked_on_url is None:
-            return None
-        stacked_on_url = urlutils.join(destination_url, self.stacked_on_url)
-        if destination_url == stacked_on_url:
-            return None
-        return self.stacked_on_url
-
     def updateBranch(self, source_branch, dest_branch):
         """Bring 'dest_branch' up-to-date with 'source_branch'.
 
@@ -228,7 +226,7 @@ class BranchMirrorer(object):
         This method assumes that 'source_branch' and 'dest_branch' both have
         the same format.
         """
-        stacked_on_url = self.getStackedOnURLForDestinationBranch(
+        stacked_on_url = self.policy.getStackedOnURLForDestinationBranch(
             source_branch, dest_branch.base)
         try:
             dest_branch.set_stacked_on_url(stacked_on_url)

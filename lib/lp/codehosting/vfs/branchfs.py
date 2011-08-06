@@ -785,6 +785,21 @@ class MirroredBranchPolicy(BranchOpenPolicy):
     def __init__(self, stacked_on_url=None):
         self.stacked_on_url = stacked_on_url
 
+    def getStackedOnURLForDestinationBranch(self, source_branch,
+                                            destination_url):
+        """Return the stacked on URL for the destination branch.
+
+        Mirrored branches are stacked on the default stacked-on branch of
+        their product, except when we're mirroring the default stacked-on
+        branch itself.
+        """
+        if self.stacked_on_url is None:
+            return None
+        stacked_on_url = urlutils.join(destination_url, self.stacked_on_url)
+        if destination_url == stacked_on_url:
+            return None
+        return self.stacked_on_url
+
     def shouldFollowReferences(self):
         """See `BranchOpenPolicy.shouldFollowReferences`.
 
