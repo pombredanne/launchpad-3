@@ -29,6 +29,7 @@ from lp.codehosting.puller.worker import (
     PullerWorkerProtocol,
     )
 from lp.codehosting.tests.helpers import LoomTestMixin
+from lp.codehosting.safe_open import AcceptAnythingPolicy
 from lp.codehosting.vfs import branch_id_to_path
 from lp.testing import TestCaseWithFactory
 

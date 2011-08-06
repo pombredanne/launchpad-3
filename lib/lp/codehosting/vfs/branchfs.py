@@ -97,7 +97,10 @@ from zope.interface import (
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.xmlrpc import faults
-from lp.codehosting.safe_open import BranchPolicy
+from lp.codehosting.safe_open import (
+    BadUrl,
+    BranchPolicy,
+    )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import (
@@ -124,10 +127,6 @@ from lp.services.twistedsupport.xmlrpc import (
     DeferredBlockingProxy,
     trap_fault,
     )
-
-
-class BadUrl(Exception):
-    """Tried to access a branch from a bad URL."""
 
 
 class BadUrlSsh(BadUrl):

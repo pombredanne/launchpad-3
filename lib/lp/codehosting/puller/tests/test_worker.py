@@ -41,7 +41,7 @@ from lp.codehosting.puller.worker import (
     SafeBranchOpener,
     WORKER_ACTIVITY_NETWORK,
     )
-from lp.codehosting.tests.test_safe_open import (
+from lp.codehosting.safe_open import (
     AcceptAnythingPolicy,
     )
 from lp.codehosting.vfs.branchfs import (
