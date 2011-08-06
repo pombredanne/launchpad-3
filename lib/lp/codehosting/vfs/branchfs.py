@@ -51,7 +51,6 @@ __all__ = [
     'BadUrlScheme',
     'BadUrlSsh',
     'branch_id_to_path',
-    'BranchPolicy',
     'DirectDatabaseLaunchpadServer',
     'get_lp_server',
     'get_ro_server',
@@ -99,7 +98,7 @@ from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.xmlrpc import faults
 from lp.codehosting.safe_open import (
     BadUrl,
-    BranchPolicy,
+    BranchOpenPolicy,
     )
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
@@ -774,7 +773,7 @@ def get_lp_server(user_id, codehosting_endpoint_url=None, branch_url=None,
     return lp_server
 
 
-class MirroredBranchPolicy(BranchPolicy):
+class MirroredBranchPolicy(BranchOpenPolicy):
     """Mirroring policy for MIRRORED branches.
 
     In summary:
@@ -786,23 +785,8 @@ class MirroredBranchPolicy(BranchPolicy):
     def __init__(self, stacked_on_url=None):
         self.stacked_on_url = stacked_on_url
 
-    def getStackedOnURLForDestinationBranch(self, source_branch,
-                                            destination_url):
-        """See `BranchPolicy.getStackedOnURLForDestinationBranch`.
-
-        Mirrored branches are stacked on the default stacked-on branch of
-        their product, except when we're mirroring the default stacked-on
-        branch itself.
-        """
-        if self.stacked_on_url is None:
-            return None
-        stacked_on_url = urlutils.join(destination_url, self.stacked_on_url)
-        if destination_url == stacked_on_url:
-            return None
-        return self.stacked_on_url
-
     def shouldFollowReferences(self):
-        """See `BranchPolicy.shouldFollowReferences`.
+        """See `BranchOpenPolicy.shouldFollowReferences`.
 
         We traverse branch references for MIRRORED branches because they
         provide a useful redirection mechanism and we want to be consistent
@@ -811,7 +795,7 @@ class MirroredBranchPolicy(BranchPolicy):
         return True
 
     def transformFallbackLocation(self, branch, url):
-        """See `BranchPolicy.transformFallbackLocation`.
+        """See `BranchOpenPolicy.transformFallbackLocation`.
 
         For mirrored branches, we stack on whatever the remote branch claims
         to stack on, but this URL still needs to be checked.
@@ -819,7 +803,7 @@ class MirroredBranchPolicy(BranchPolicy):
         return urlutils.join(branch.base, url), True
 
     def checkOneURL(self, url):
-        """See `BranchPolicy.checkOneURL`.
+        """See `BranchOpenPolicy.checkOneURL`.
 
         We refuse to mirror from Launchpad or a ssh-like or file URL.
         """
@@ -838,7 +822,7 @@ class MirroredBranchPolicy(BranchPolicy):
             raise BadUrlScheme(uri.scheme, url)
 
 
-class ImportedBranchPolicy(BranchPolicy):
+class ImportedBranchPolicy(BranchOpenPolicy):
     """Mirroring policy for IMPORTED branches.
 
     In summary:
@@ -848,7 +832,7 @@ class ImportedBranchPolicy(BranchPolicy):
     """
 
     def createDestinationBranch(self, source_branch, destination_url):
-        """See `BranchPolicy.createDestinationBranch`.
+        """See `BranchOpenPolicy.createDestinationBranch`.
 
         Because we control the process that creates import branches, a
         vfs-level copy is safe and more efficient than a bzr fetch.
@@ -869,7 +853,7 @@ class ImportedBranchPolicy(BranchPolicy):
         return Branch.open_from_transport(dest_transport)
 
     def shouldFollowReferences(self):
-        """See `BranchPolicy.shouldFollowReferences`.
+        """See `BranchOpenerPolicy.shouldFollowReferences`.
 
         We do not traverse references for IMPORTED branches because the
         code-import system should never produce branch references.
@@ -877,14 +861,14 @@ class ImportedBranchPolicy(BranchPolicy):
         return False
 
     def transformFallbackLocation(self, branch, url):
-        """See `BranchPolicy.transformFallbackLocation`.
+        """See `BranchOpenerPolicy.transformFallbackLocation`.
 
         Import branches should not be stacked, ever.
         """
         raise AssertionError("Import branch unexpectedly stacked!")
 
     def checkOneURL(self, url):
-        """See `BranchPolicy.checkOneURL`.
+        """See `BranchOpenerPolicy.checkOneURL`.
 
         If the URL we are mirroring from does not start how we expect the pull
         URLs of import branches to start, something has gone badly wrong, so
@@ -897,7 +881,7 @@ class ImportedBranchPolicy(BranchPolicy):
 
 def make_branch_mirrorer(branch_type, protocol=None,
                          mirror_stacked_on_url=None):
-    """Create a `BranchMirrorer` with the appropriate `BranchPolicy`.
+    """Create a `BranchMirrorer` with the appropriate `BranchOpenerPolicy`.
 
     :param branch_type: A `BranchType` to select a policy by.
     :param protocol: Optional protocol for the mirrorer to work with.

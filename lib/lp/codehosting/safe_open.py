@@ -43,23 +43,13 @@ class BranchLoopError(Exception):
     """
 
 
-class BranchPolicy:
-    """Policy on how to mirror branches.
+class BranchOpenPolicy:
+    """Policy on how to open branches.
 
-    In particular, a policy determines which branches are safe to mirror by
+    In particular, a policy determines which branches are safe to open by
     checking their URLs and deciding whether or not to follow branch
-    references. A policy also determines how the mirrors of branches should be
-    stacked.
+    references.
     """
-
-    def getStackedOnURLForDestinationBranch(self, source_branch,
-                                            destination_url):
-        """Get the stacked on URL for `source_branch`.
-
-        In particular, the URL it should be stacked on when it is mirrored to
-        `destination_url`.
-        """
-        return None
 
     def shouldFollowReferences(self):
         """Whether we traverse references when mirroring.
@@ -97,7 +87,7 @@ class BranchPolicy:
         raise NotImplementedError(self.checkOneURL)
 
 
-class BlacklistPolicy(BranchPolicy):
+class BlacklistPolicy(BranchOpenPolicy):
     """Branch policy that forbids certain URLs."""
 
     def __init__(self, should_follow_references, unsafe_urls=None):
@@ -114,7 +104,7 @@ class BlacklistPolicy(BranchPolicy):
             raise BadUrl(url)
 
     def transformFallbackLocation(self, branch, url):
-        """See `BranchPolicy.transformFallbackLocation`.
+        """See `BranchOpenPolicy.transformFallbackLocation`.
 
         This class is not used for testing our smarter stacking features so we
         just do the simplest thing: return the URL that would be used anyway
@@ -130,7 +120,7 @@ class AcceptAnythingPolicy(BlacklistPolicy):
         super(AcceptAnythingPolicy, self).__init__(True, set())
 
 
-class WhitelistPolicy(BranchPolicy):
+class WhitelistPolicy(BranchOpenPolicy):
     """Branch policy that only allows certain URLs."""
 
     def __init__(self, should_follow_references, allowed_urls=None,
@@ -148,7 +138,7 @@ class WhitelistPolicy(BranchPolicy):
             raise BadUrl(url)
 
     def transformFallbackLocation(self, branch, url):
-        """See `BranchPolicy.transformFallbackLocation`.
+        """See `BranchOpenPolicy.transformFallbackLocation`.
 
         Here we return the URL that would be used anyway and optionally check
         it.

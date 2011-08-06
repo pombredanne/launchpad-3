@@ -8,7 +8,10 @@ import socket
 import sys
 import urllib2
 
-from bzrlib import errors
+from bzrlib import (
+    errors,
+    urlutils,
+    )
 from bzrlib.branch import (
     Branch,
     BzrBranchFormat4,
@@ -112,9 +115,8 @@ class PullerWorkerProtocol:
 class BranchMirrorer(object):
     """A `BranchMirrorer` safely makes mirrors of branches.
 
-    A `BranchMirrorer` has a `BranchPolicy` to tell it which URLs are safe to
-    accesss, whether or not to follow branch references and how to stack
-    branches when they are mirrored.
+    A `BranchMirrorer` has a `BranchOpenPolicy` to tell it which URLs are safe
+    to accesss and whether or not to follow branch references.
 
     The mirrorer knows how to follow branch references, create new mirrors,
     update existing mirrors, determine stacked-on branches and the like.
@@ -125,8 +127,8 @@ class BranchMirrorer(object):
     def __init__(self, policy, protocol=None, log=None):
         """Construct a branch opener with 'policy'.
 
-        :param policy: A `BranchPolicy` that tells us what URLs are valid and
-            similar things.
+        :param policy: A `BranchOpenPolicy` that tells us what URLs are valid
+            and similar things.
         :param log: A callable which can be called with a format string and
             arguments to log messages in the scheduler, or None, in which case
             log messages are discarded.
@@ -202,6 +204,21 @@ class BranchMirrorer(object):
         self.log('Formats differ.')
         return self.createDestinationBranch(source_branch, destination_url)
 
+    def getStackedOnURLForDestinationBranch(self, source_branch,
+                                            destination_url):
+        """Return the stacked on URL for the destination branch.
+
+        Mirrored branches are stacked on the default stacked-on branch of
+        their product, except when we're mirroring the default stacked-on
+        branch itself.
+        """
+        if self.stacked_on_url is None:
+            return None
+        stacked_on_url = urlutils.join(destination_url, self.stacked_on_url)
+        if destination_url == stacked_on_url:
+            return None
+        return self.stacked_on_url
+
     def updateBranch(self, source_branch, dest_branch):
         """Bring 'dest_branch' up-to-date with 'source_branch'.
 
@@ -211,7 +228,7 @@ class BranchMirrorer(object):
         This method assumes that 'source_branch' and 'dest_branch' both have
         the same format.
         """
-        stacked_on_url = self.policy.getStackedOnURLForDestinationBranch(
+        stacked_on_url = self.getStackedOnURLForDestinationBranch(
             source_branch, dest_branch.base)
         try:
             dest_branch.set_stacked_on_url(stacked_on_url)
@@ -252,7 +269,7 @@ class PullerWorker:
     """
 
     def _checkerForBranchType(self, branch_type):
-        """Return a `BranchMirrorer` with an appropriate `BranchPolicy`.
+        """Return a `BranchMirrorer` with an appropriate `BranchOpenPolicy`.
 
         :param branch_type: A `BranchType`. The policy of the mirrorer will
             be based on this.

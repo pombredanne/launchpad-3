@@ -49,7 +49,7 @@ from lp.codehosting.vfs.branchfs import (
     BadUrlLaunchpad,
     BadUrlScheme,
     BadUrlSsh,
-    BranchPolicy,
+    BranchOpenPolicy,
     ImportedBranchPolicy,
     MirroredBranchPolicy,
     )
@@ -319,7 +319,7 @@ class TestReferenceOpener(TestCaseWithTransport):
     def testFollowReferenceValue(self):
         # SafeBranchOpener.followReference gives the reference value for
         # a branch reference.
-        opener = SafeBranchOpener(BranchPolicy())
+        opener = SafeBranchOpener(BranchOpenPolicy())
         reference_value = 'http://example.com/branch'
         reference_url = self.createBranchReference(reference_value)
         self.assertEqual(
@@ -329,7 +329,7 @@ class TestReferenceOpener(TestCaseWithTransport):
         # SafeBranchOpener.followReference gives None for a normal branch.
         self.make_branch('repo')
         branch_url = self.get_url('repo')
-        opener = SafeBranchOpener(BranchPolicy())
+        opener = SafeBranchOpener(BranchOpenPolicy())
         self.assertIs(None, opener.followReference(branch_url))
 
 
