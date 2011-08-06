@@ -16,8 +16,7 @@ import StringIO
 
 from bzrlib import errors
 from bzrlib.lsprof import BzrProfiler
-from chameleon.zpt.template import PageTemplateFile
-from zope.app.publication.interfaces import IBeforeTraverseEvent
+from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.app.publication.interfaces import IEndRequestEvent
 from zope.component import (
     adapter,
@@ -127,13 +126,15 @@ class StdLibStats:
 # Profilers may only run one at a time, but block and serialize.
 _profilers = threading.local()
 
+
 def before_traverse(event):
-    """Handle profiling when enabled via the profiling.enabled feature flag."""
-    # This event is raised on each step of traversal so needs to be lightweight
-    # and not assume that profiling has not started - but this is equally well
-    # done in _maybe_profile so that function takes care of it. We have to use
-    # this event (or add a new one) because we depend on the feature flags
-    # system being configured and usable, and on the principal being known.
+    "Handle profiling when enabled via the profiling.enabled feature flag."
+    # This event is raised on each step of traversal so needs to be
+    # lightweight and not assume that profiling has not started - but this is
+    # equally well done in _maybe_profile so that function takes care of it.
+    # We have to use this event (or add a new one) because we depend on the
+    # feature flags system being configured and usable, and on the principal
+    # being known.
     try:
         if getFeatureFlag('profiling.enabled'):
             _maybe_profile(event)
@@ -151,7 +152,7 @@ def start_request(event):
 
 def _maybe_profile(event):
     """Setup profiling as requested.
-    
+
     If profiling is enabled, start a profiler for this thread. If memory
     profiling is requested, save the VSS and RSS.
 
@@ -160,7 +161,8 @@ def _maybe_profile(event):
     try:
         if _profilers.profiling:
             # Already profiling - e.g. called in from both start_request and
-            # before_traverse, or by successive before_traverse on one request.
+            # before_traverse, or by successive before_traverse on one
+            # request.
             return
     except AttributeError:
         # The first call in on a new thread cannot be profiling at the start.
@@ -206,7 +208,7 @@ def end_request(event):
     # Create a timestamp including milliseconds.
     now = datetime.fromtimestamp(da.get_request_start_time())
     timestamp = "%s.%d" % (
-        now.strftime('%Y-%m-%d_%H:%M:%S'), int(now.microsecond/1000.0))
+        now.strftime('%Y-%m-%d_%H:%M:%S'), int(now.microsecond / 1000.0))
     pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
     oopsid = getattr(request, 'oopsid', None)
     content_type = request.response.getHeader('content-type')
@@ -217,8 +219,10 @@ def end_request(event):
         _major, _minor, content_type_params = parse(content_type)
         is_html = _major == 'text' and _minor == 'html'
     template_context = {
-        'actions': actions,
+        # Dicts are easier for tal expressions.
+        'actions': dict((action, True) for action in actions),
         'always_log': config.profiling.profile_all_requests}
+    dump_path = config.profiling.profile_dir
     if _profilers.profiler is not None:
         prof_stats = _profilers.profiler.stop()
         # Free some memory (at least for the BzrProfiler).
@@ -243,7 +247,7 @@ def end_request(event):
                 # The Bzr stats class looks at the filename to know to use
                 # callgrind syntax.
                 filename = 'callgrind.out.' + filename
-            dump_path = os.path.join(config.profiling.profile_dir, filename)
+            dump_path = os.path.join(dump_path, filename)
             prof_stats.save(dump_path)
             template_context['dump_path'] = os.path.abspath(dump_path)
         if is_html and 'show' in actions:
@@ -259,10 +263,11 @@ def end_request(event):
                 template_context[name] = f.getvalue()
         # Try to free some more memory.
         del prof_stats
+    template_context['dump_path'] = os.path.abspath(dump_path)
     if actions and is_html:
         # Hack the new HTML in at the end of the page.
         encoding = content_type_params.get('charset', 'utf-8')
-        added_html = template.render(**template_context).encode(encoding)
+        added_html = template(**template_context).encode(encoding)
         existing_html = request.response.consumeBody()
         e_start, e_close_body, e_end = existing_html.rpartition(
             '</body>')
