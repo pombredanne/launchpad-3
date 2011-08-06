@@ -572,15 +572,16 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         """
         if not self.list_can_be_requested:
             self.addError(
-                "You cannot request a new mailing list for this team.")
+                "You cannot create a new mailing list for this team.")
 
-    @action('Apply for Mailing List', name='request_list_creation',
+    @action('Create new Mailing List', name='request_list_creation',
             validator=request_list_creation_validator)
     def request_list_creation(self, action, data):
         """Creates a new mailing list."""
         getUtility(IMailingListSet).new(self.context)
         self.request.response.addInfoNotification(
-            "Mailing list requested and queued for approval.")
+            "Launchpad will now add a mailing list to this team. You "
+            "should recieve an email confirmation in a few minutes.")
         self.next_url = canonical_url(self.context)
 
     def deactivate_list_validator(self, action, data):
