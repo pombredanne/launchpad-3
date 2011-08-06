@@ -97,6 +97,7 @@ from zope.interface import (
 from canonical.config import config
 from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.xmlrpc import faults
+from lp.codehosting.safe_open import BranchPolicy
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import (
@@ -772,60 +773,6 @@ def get_lp_server(user_id, codehosting_endpoint_url=None, branch_url=None,
         DeferredBlockingProxy(codehosting_client), user_id, branch_transport,
         seen_new_branch_hook)
     return lp_server
-
-
-class BranchPolicy:
-    """Policy on how to mirror branches.
-
-    In particular, a policy determines which branches are safe to mirror by
-    checking their URLs and deciding whether or not to follow branch
-    references. A policy also determines how the mirrors of branches should be
-    stacked.
-    """
-
-    def getStackedOnURLForDestinationBranch(self, source_branch,
-                                            destination_url):
-        """Get the stacked on URL for `source_branch`.
-
-        In particular, the URL it should be stacked on when it is mirrored to
-        `destination_url`.
-        """
-        return None
-
-    def shouldFollowReferences(self):
-        """Whether we traverse references when mirroring.
-
-        Subclasses must override this method.
-
-        If we encounter a branch reference and this returns false, an error is
-        raised.
-
-        :returns: A boolean to indicate whether to follow a branch reference.
-        """
-        raise NotImplementedError(self.shouldFollowReferences)
-
-    def transformFallbackLocation(self, branch, url):
-        """Validate, maybe modify, 'url' to be used as a stacked-on location.
-
-        :param branch:  The branch that is being opened.
-        :param url: The URL that the branch provides for its stacked-on
-            location.
-        :return: (new_url, check) where 'new_url' is the URL of the branch to
-            actually open and 'check' is true if 'new_url' needs to be
-            validated by checkAndFollowBranchReference.
-        """
-        raise NotImplementedError(self.transformFallbackLocation)
-
-    def checkOneURL(self, url):
-        """Check the safety of the source URL.
-
-        Subclasses must override this method.
-
-        :param url: The source URL to check.
-        :raise BadUrl: subclasses are expected to raise this or a subclass
-            when it finds a URL it deems to be unsafe.
-        """
-        raise NotImplementedError(self.checkOneURL)
 
 
 class MirroredBranchPolicy(BranchPolicy):

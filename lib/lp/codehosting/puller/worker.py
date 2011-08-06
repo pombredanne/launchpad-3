@@ -13,7 +13,6 @@ from bzrlib.branch import (
     Branch,
     BzrBranchFormat4,
     )
-from bzrlib.bzrdir import BzrDir
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4,
     RepositoryFormat5,
@@ -34,6 +33,11 @@ from lp.code.bzr import (
 from lp.code.enums import BranchType
 from lp.codehosting.bzrutils import identical_formats
 from lp.codehosting.puller import get_lock_id_for_branch_id
+from lp.codehosting.safe_open import (
+    BranchLoopError,
+    BranchReferenceForbidden,
+    SafeBranchOpener,
+    )
 from lp.codehosting.vfs.branchfs import (
     BadUrlLaunchpad,
     BadUrlScheme,
@@ -44,28 +48,11 @@ from lp.codehosting.vfs.branchfs import (
 
 __all__ = [
     'BranchMirrorer',
-    'BranchLoopError',
-    'BranchReferenceForbidden',
     'get_canonical_url_for_branch_name',
     'install_worker_ui_factory',
     'PullerWorker',
     'PullerWorkerProtocol',
     ]
-
-
-class BranchReferenceForbidden(Exception):
-    """Trying to mirror a branch reference and the branch type does not allow
-    references.
-    """
-
-
-class BranchLoopError(Exception):
-    """Encountered a branch cycle.
-
-    A URL may point to a branch reference or it may point to a stacked branch.
-    In either case, it's possible for there to be a cycle in these references,
-    and this exception is raised when we detect such a cycle.
-    """
 
 
 def get_canonical_url_for_branch_name(unique_name):
@@ -120,92 +107,6 @@ class PullerWorkerProtocol:
 
     def log(self, fmt, *args):
         self.sendEvent('log', fmt % args)
-
-
-class SafeBranchOpener(object):
-    """Safe branch opener.
-
-    The policy object is expected to have the following methods:
-    * checkOneURL
-    * shouldFollowReferences
-    * transformFallbackLocation
-    """
-
-    def __init__(self, policy):
-        self.policy = policy
-        self._seen_urls = set()
-
-    def checkAndFollowBranchReference(self, url):
-        """Check URL (and possibly the referenced URL) for safety.
-
-        This method checks that `url` passes the policy's `checkOneURL`
-        method, and if `url` refers to a branch reference, it checks whether
-        references are allowed and whether the reference's URL passes muster
-        also -- recursively, until a real branch is found.
-
-        :raise BranchLoopError: If the branch references form a loop.
-        :raise BranchReferenceForbidden: If this opener forbids branch
-            references.
-        """
-        while True:
-            if url in self._seen_urls:
-                raise BranchLoopError()
-            self._seen_urls.add(url)
-            self.policy.checkOneURL(url)
-            next_url = self.followReference(url)
-            if next_url is None:
-                return url
-            url = next_url
-            if not self.policy.shouldFollowReferences():
-                raise BranchReferenceForbidden(url)
-
-    def transformFallbackLocationHook(self, branch, url):
-        """Installed as the 'transform_fallback_location' Branch hook.
-
-        This method calls `transformFallbackLocation` on the policy object and
-        either returns the url it provides or passes it back to
-        checkAndFollowBranchReference.
-        """
-        new_url, check = self.policy.transformFallbackLocation(branch, url)
-        if check:
-            return self.checkAndFollowBranchReference(new_url)
-        else:
-            return new_url
-
-    def runWithTransformFallbackLocationHookInstalled(
-            self, callable, *args, **kw):
-        Branch.hooks.install_named_hook(
-            'transform_fallback_location', self.transformFallbackLocationHook,
-            'SafeBranchOpener.transformFallbackLocationHook')
-        try:
-            return callable(*args, **kw)
-        finally:
-            # XXX 2008-11-24 MichaelHudson, bug=301472: This is the hacky way
-            # to remove a hook.  The linked bug report asks for an API to do
-            # it.
-            Branch.hooks['transform_fallback_location'].remove(
-                self.transformFallbackLocationHook)
-            # We reset _seen_urls here to avoid multiple calls to open giving
-            # spurious loop exceptions.
-            self._seen_urls = set()
-
-    def followReference(self, url):
-        """Get the branch-reference value at the specified url.
-
-        This exists as a separate method only to be overriden in unit tests.
-        """
-        bzrdir = BzrDir.open(url)
-        return bzrdir.get_branch_reference()
-
-    def open(self, url):
-        """Open the Bazaar branch at url, first checking for safety.
-
-        What safety means is defined by a subclasses `followReference` and
-        `checkOneURL` methods.
-        """
-        url = self.checkAndFollowBranchReference(url)
-        return self.runWithTransformFallbackLocationHookInstalled(
-            Branch.open, url)
 
 
 class BranchMirrorer(object):
