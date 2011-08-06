@@ -19,6 +19,8 @@ from bzrlib.repofmt.weaverepo import (
     RepositoryFormat5,
     RepositoryFormat6,
     )
+from bzrlib.plugins.loom.branch import LoomSupport
+from bzrlib.transport import get_transport
 import bzrlib.ui
 from bzrlib.ui import SilentUIFactory
 from lazr.uri import InvalidURIError
@@ -236,6 +238,33 @@ class BranchMirrorer(object):
         else:
             self.log = lambda *args: None
 
+    def _createDestinationBranch(self, source_branch, destination_url):
+        """Create a destination branch for 'source_branch'.
+
+        Creates a branch at 'destination_url' that is has the same format as
+        'source_branch'.  Any content already at 'destination_url' will be
+        deleted.  Generally the new branch will have no revisions, but they
+        will be copied for import branches, because this can be done safely
+        and efficiently with a vfs-level copy (see `ImportedBranchPolicy`,
+        below).
+
+        :param source_branch: The Bazaar branch that will be mirrored.
+        :param destination_url: The place to make the destination branch. This
+            URL must point to a writable location.
+        :return: The destination branch.
+        """
+        dest_transport = get_transport(destination_url)
+        if dest_transport.has('.'):
+            dest_transport.delete_tree('.')
+        if isinstance(source_branch, LoomSupport):
+            # Looms suck.
+            revision_id = None
+        else:
+            revision_id = 'null:'
+        source_branch.bzrdir.clone_on_transport(
+            dest_transport, revision_id=revision_id)
+        return Branch.open(destination_url)
+
     def createDestinationBranch(self, source_branch, destination_url):
         """Create a destination branch for 'source_branch'.
 
@@ -249,7 +278,7 @@ class BranchMirrorer(object):
         :return: The destination branch.
         """
         return self.opener.runWithTransformFallbackLocationHookInstalled(
-            self.policy.createDestinationBranch, source_branch,
+            self._createDestinationBranch, source_branch,
             destination_url)
 
     def openDestinationBranch(self, source_branch, destination_url):
