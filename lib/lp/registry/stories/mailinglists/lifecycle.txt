@@ -31,10 +31,10 @@ He thinks for a second whether his mailing list is for Ubuntu or not.
     Landscape Developers in Launchpad
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
-    Launchpad will now add a mailing list to this team. You should recieve an email confirmation in a few minutes.
+    The mailing list is being created and will be available for use in a few minutes.
 
-Once the mailing list is requested, the button to request its activation is
-not shown anymore.
+Once the mailing list is created, the button to create it is not shown
+anymore.
 
     >>> browser.getControl('Create new Mailing List')
     Traceback (most recent call last):
@@ -56,7 +56,7 @@ archive link yet.
     >>> print find_tag_by_id(browser.contents, 'mailing-list-archive')
     None
 
-Even after the list has been requested, it still cannot be used as the contact
+Even after the list has been created, it still cannot be used as the contact
 address until Mailman has acknowledged successful creation.
 
     >>> browser.reload()
@@ -374,10 +374,10 @@ A purged list acts as if it doesn't even exist.
     PURGED
     >>> admin_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
     >>> admin_browser.getControl('Create new Mailing List')
-    <SubmitControl name='field.actions.request_list_creation' type='submit'>
+    <SubmitControl name='field.actions.create_list_creation' type='submit'>
     >>> expert_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
     >>> expert_browser.getControl('Create new Mailing List')
-    <SubmitControl name='field.actions.request_list_creation' type='submit'>
+    <SubmitControl name='field.actions.create_list_creation' type='submit'>
 
 The team owner can see that an inactive list can be reactivated or purged.
 
