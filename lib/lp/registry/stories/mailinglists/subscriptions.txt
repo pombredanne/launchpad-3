@@ -24,11 +24,11 @@ contact address.
 
     >>> admin_browser.open('http://launchpad.dev/~admins')
     >>> admin_browser.getLink(url='+mailinglist').click()
-    >>> admin_browser.getControl('Apply for Mailing List').click()
+    >>> admin_browser.getControl('Create new Mailing List').click()
 
     >>> admin_browser.open('http://launchpad.dev/~rosetta-admins/')
     >>> admin_browser.getLink(url='+mailinglist').click()
-    >>> admin_browser.getControl('Apply for Mailing List').click()
+    >>> admin_browser.getControl('Create new Mailing List').click()
 
     >>> import transaction
     >>> from lp.registry.tests import mailinglists_helper
@@ -48,7 +48,7 @@ actually be approved.
     >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~testing-spanish-team')
     >>> browser.getLink(url='+mailinglist').click()
-    >>> browser.getControl('Apply for Mailing List').click()
+    >>> browser.getControl('Create new Mailing List').click()
 
 
 Subscribing
