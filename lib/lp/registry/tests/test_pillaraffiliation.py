@@ -112,26 +112,7 @@ class TestPillarAffiliation(TestCaseWithFactory):
         self._check_affiliated_with_product(person, product, 'maintainer')
 
 
-class TestBugTaskPillarAffiliation(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def test_correct_pillar_is_used(self):
-        bugtask = self.factory.makeBugTask()
-        badge = IHasAffiliation(bugtask)
-        self.assertEqual(bugtask.pillar, badge.getPillar())
-
-    def _check_affiliated_with_distro(self, person, target, role):
-        bugtask = self.factory.makeBugTask(target=target)
-        badge = IHasAffiliation(bugtask).getAffiliationBadge(person)
-        self.assertEqual(
-            ("/@@/distribution-badge", "Pting %s" % role), badge)
-
-    def _check_affiliated_with_product(self, person, target, role):
-        bugtask = self.factory.makeBugTask(target=target)
-        badge = IHasAffiliation(bugtask).getAffiliationBadge(person)
-        self.assertEqual(
-            ("/@@/product-badge", "Pting %s" % role), badge)
+class _TestBugTaskorBranchMixin:
 
     def test_distro_security_contact_affiliation(self):
         # A person who is the security contact for a distro is affiliated.
@@ -162,6 +143,29 @@ class TestBugTaskPillarAffiliation(TestCaseWithFactory):
             bug_supervisor=person, name='pting')
         self._check_affiliated_with_product(person, product, 'bug supervisor')
 
+
+class TestBugTaskPillarAffiliation(_TestBugTaskorBranchMixin,
+                                   TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_correct_pillar_is_used(self):
+        bugtask = self.factory.makeBugTask()
+        badge = IHasAffiliation(bugtask)
+        self.assertEqual(bugtask.pillar, badge.getPillar())
+
+    def _check_affiliated_with_distro(self, person, target, role):
+        bugtask = self.factory.makeBugTask(target=target)
+        badge = IHasAffiliation(bugtask).getAffiliationBadge(person)
+        self.assertEqual(
+            ("/@@/distribution-badge", "Pting %s" % role), badge)
+
+    def _check_affiliated_with_product(self, person, target, role):
+        bugtask = self.factory.makeBugTask(target=target)
+        badge = IHasAffiliation(bugtask).getAffiliationBadge(person)
+        self.assertEqual(
+            ("/@@/product-badge", "Pting %s" % role), badge)
+
     def test_product_affiliation_query_count(self):
         # Only 4 queries are expected, selects from:
         # - Bug, BugTask, Product, Person
@@ -183,6 +187,31 @@ class TestBugTaskPillarAffiliation(TestCaseWithFactory):
         with StormStatementRecorder() as recorder:
             IHasAffiliation(bugtask).getAffiliationBadge(person)
         self.assertThat(recorder, HasQueryCount(Equals(4)))
+
+
+class TestBranchPillarAffiliation(_TestBugTaskorBranchMixin,
+                                  TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_correct_pillar_is_used(self):
+        branch = self.factory.makeBranch()
+        badge = IHasAffiliation(branch)
+        self.assertEqual(branch.product, badge.getPillar())
+
+    def _check_affiliated_with_distro(self, person, target, role):
+        distroseries = self.factory.makeDistroSeries(distribution=target)
+        sp = self.factory.makeSourcePackage(distroseries=distroseries)
+        branch = self.factory.makeBranch(sourcepackage=sp)
+        badge = IHasAffiliation(branch).getAffiliationBadge(person)
+        self.assertEqual(
+            ("/@@/distribution-badge", "Pting %s" % role), badge)
+
+    def _check_affiliated_with_product(self, person, target, role):
+        branch = self.factory.makeBranch(product=target)
+        badge = IHasAffiliation(branch).getAffiliationBadge(person)
+        self.assertEqual(
+            ("/@@/product-badge", "Pting %s" % role), badge)
 
 
 class TestDistroSeriesPillarAffiliation(TestCaseWithFactory):
@@ -332,6 +361,25 @@ class TestQuestionPillarAffiliation(TestCaseWithFactory):
         self.assertEqual(
             ("/@@/distribution-badge", "%s answer contact" %
                 distro_sourcepackage.displayname), badge)
+
+    def test_answer_contact_affiliation_for_distro_sourcepackage_distro(self):
+        # A person is affiliated if they are an answer contact for a dsp
+        # target's distro. Even if they also own the distro, the answer
+        # contact affiliation takes precedence.
+        answer_contact = self.factory.makePerson()
+        english = getUtility(ILanguageSet)['en']
+        answer_contact.addLanguage(english)
+        distribution = self.factory.makeDistribution(owner=answer_contact)
+        distro_sourcepackage = self.factory.makeDistributionSourcePackage(
+            distribution=distribution)
+        with person_logged_in(answer_contact):
+            distribution.addAnswerContact(answer_contact, answer_contact)
+        question = self.factory.makeQuestion(
+            target=distro_sourcepackage, owner=answer_contact)
+        badge = IHasAffiliation(question).getAffiliationBadge(answer_contact)
+        self.assertEqual(
+            ("/@@/distribution-badge", "%s answer contact" %
+                distribution.displayname), badge)
 
     def test_answer_contact_affiliation_for_product(self):
         # A person is affiliated if they are an answer contact for a product

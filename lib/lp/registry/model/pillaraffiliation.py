@@ -29,12 +29,11 @@ from zope.interface import (
     )
 
 from canonical.launchpad.interfaces.launchpad import IHasIcon
-from lp.answers.interfaces.question import IQuestion
-from lp.blueprints.interfaces.specification import ISpecification
-from lp.bugs.interfaces.bugtask import IBugTask
+from lp.answers.interfaces.questionsperson import IQuestionsPerson
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
 
 
 class IHasAffiliation(Interface):
@@ -107,7 +106,6 @@ class PillarAffiliation(object):
         return BadgeDetails(icon_url, alt_text)
 
 
-@adapter(IBugTask)
 class BugTaskPillarAffiliation(PillarAffiliation):
     """An affiliation adapter for bug tasks."""
     def getPillar(self):
@@ -130,28 +128,30 @@ class BugTaskPillarAffiliation(PillarAffiliation):
             return pillar.displayname, 'security contact'
 
 
-@adapter(IDistroSeries)
+class BranchPillarAffiliation(BugTaskPillarAffiliation):
+    """An affiliation adapter for branches."""
+    def getPillar(self):
+        return self.context.product or self.context.distribution
+
+
 class DistroSeriesPillarAffiliation(PillarAffiliation):
     """An affiliation adapter for distroseries."""
     def getPillar(self):
         return self.context.distribution
 
 
-@adapter(IProductSeries)
 class ProductSeriesPillarAffiliation(PillarAffiliation):
     """An affiliation adapter for productseries."""
     def getPillar(self):
         return self.context.product
 
 
-@adapter(ISpecification)
 class SpecificationPillarAffiliation(PillarAffiliation):
     """An affiliation adapter for blueprints."""
     def getPillar(self):
         return (self.context.target)
 
 
-@adapter(IQuestion)
 class QuestionPillarAffiliation(PillarAffiliation):
     """An affiliation adapter for questions."""
     def getPillar(self):
@@ -164,9 +164,16 @@ class QuestionPillarAffiliation(PillarAffiliation):
         - driver of question target
         """
         target = self.context.target
-        answer_contacts = target.answer_contacts
-        for answer_contact in answer_contacts:
-            if person.inTeam(answer_contact):
+        if IDistributionSourcePackage.providedBy(target):
+            question_targets = (target, target.distribution)
+        else:
+            question_targets = (target, )
+        questions_person = IQuestionsPerson(person)
+        for target in questions_person.getDirectAnswerQuestionTargets():
+            if target in question_targets:
+                return target.displayname, 'answer contact'
+        for target in questions_person.getTeamAnswerQuestionTargets():
+            if target in question_targets:
                 return target.displayname, 'answer contact'
         return super(QuestionPillarAffiliation, self)._getAffiliationDetails(
             person, pillar)
