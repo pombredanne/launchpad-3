@@ -189,6 +189,19 @@ class TestRequestStartHandler(TestCleanupProfiler):
             None)
         self.assertEquals(profile._profilers.actions, set(('pstats',)))
 
+    def test_optional_profiling_with_log_request_starts_profiling(self):
+        # If profiling is allowed and a request with the "log" and "pstats"
+        # marker URL segments is made, profiling starts as a callgrind profile
+        # request.
+        self.pushProfilingConfig(profiling_allowed='True')
+        profile.start_request(
+            self._get_start_event('/++profile++log,pstats/'))
+        self.assertIsInstance(profile._profilers.profiler, BzrProfiler)
+        self.assertIs(
+            getattr(profile._profilers, 'memory_profile_start', None),
+            None)
+        self.assertEquals(profile._profilers.actions, set(('pstats',)))
+
     def test_optional_profiling_with_conflicting_request(self):
         # If profiling is allowed and a request with both the "pstats" and
         # "callgrind" markers, profiling starts with the bzr/callgrind
