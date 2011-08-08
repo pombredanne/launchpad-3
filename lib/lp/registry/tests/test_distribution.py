@@ -14,6 +14,7 @@ from testtools.matchers import (
     Not,
     )
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
@@ -197,6 +198,13 @@ class TestDistribution(TestCaseWithFactory):
             distro.package_derivatives_email = email
         Store.of(distro).flush()
         self.assertEqual(email, distro.package_derivatives_email)
+
+    def test_derivatives_email_permissions(self):
+        # package_derivatives_email requires lp.edit to set/change.
+        distro = self.factory.makeDistribution()
+        self.assertRaises(
+            Unauthorized,
+            setattr, distro, "package_derivatives_email", "foo")
 
 
 class TestDistributionCurrentSourceReleases(
