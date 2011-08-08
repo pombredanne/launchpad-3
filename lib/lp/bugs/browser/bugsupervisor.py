@@ -76,7 +76,7 @@ class BugSupervisorEditView(BugRoleMixin, LaunchpadEditFormView):
         else:
             message = structured(
                 'A bug mail subscription was created for the bug supervisor. '
-                'You can <a href="%s/+subscriptions">edit bug mail</a> '
+                'You can <a href="%s">edit bug mail</a> '
                 'to change which notifications will be sent.',
-                canonical_url(self.context))
+                canonical_url(self.context, view_name='+subscriptions'))
         self.request.response.addNotification(message)
