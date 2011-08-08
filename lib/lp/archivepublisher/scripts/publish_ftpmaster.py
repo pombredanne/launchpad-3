@@ -321,6 +321,19 @@ class PublishFTPMaster(LaunchpadCronScript):
                 failure=LaunchpadScriptFailure(
                     "Failed to rsync new dists for %s." % purpose.title))
 
+    def recoverArchiveWorkingDir(self, archive_config):
+        """Recover working dists dir for `archive_config`.
+
+        If there is a dists directory for `archive_config` in the working
+        location, kick it back to the backup location.
+        """
+        working_location = get_working_dists(archive_config)
+        if file_exists(working_location):
+            self.logger.info(
+                "Recovering working directory %s from failed run.",
+                working_location)
+            os.rename(working_location, get_backup_dists(archive_config))
+
     def recoverWorkingDists(self):
         """Look for and recover any dists left in transient working state.
 
@@ -330,12 +343,7 @@ class PublishFTPMaster(LaunchpadCronScript):
         permanent location.
         """
         for archive_config in self.configs.itervalues():
-            working_location = get_working_dists(archive_config)
-            if file_exists(working_location):
-                self.logger.info(
-                    "Recovering working directory %s from failed run.",
-                    working_location)
-                os.rename(working_location, get_backup_dists(archive_config))
+            self.recoverArchiveWorkingDir(archive_config)
 
     def setUpDirs(self):
         """Create archive roots and such if they did not yet exist."""
