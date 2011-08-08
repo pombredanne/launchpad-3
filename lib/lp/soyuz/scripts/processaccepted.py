@@ -273,11 +273,6 @@ class ProcessAccepted(LaunchpadCronScript):
             dest="copy_archives", metavar="COPY_ARCHIVES",
             default=False, help="Run only over COPY archives.")
 
-    @property
-    def lockfilename(self):
-        """Override LaunchpadScript's lock file name."""
-        return "/var/lock/launchpad-upload-queue.lock"
-
     def _commit(self):
         """Commit transaction (unless in dry-run mode)."""
         if self.options.dryrun:
