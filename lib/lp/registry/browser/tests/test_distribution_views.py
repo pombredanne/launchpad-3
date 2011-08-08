@@ -14,6 +14,7 @@ from lp.registry.browser.distribution import DistributionPublisherConfigView
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.testing import (
     login_celebrity,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.sampledata import LAUNCHPAD_ADMIN
@@ -131,18 +132,18 @@ class TestDistroEditView(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def setUp(self):
-        pass
-
     def test_package_derivatives_email(self):
         # Test that the edit form allows changing package_derivatives_email
         distro = self.factory.makeDistribution()
         email = '{package_name}_thing@foo.com'
         form = {
-            'field.package_derivatives_email': email
+            'field.package_derivatives_email': email,
+            'field.actions.change': 'Change',
             }
-        create_initialized_view(
-            distro, '+edit', principal=distro.owner, method="POST", form=form)
+        with person_logged_in(distro.owner):
+            create_initialized_view(
+                distro, '+edit', principal=distro.owner, method="POST",
+                form=form)
         self.assertEqual(distro.package_derivatives_email, email)
 
 
