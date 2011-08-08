@@ -41,6 +41,7 @@ from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     )
 from lp.testing import (
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.matchers import Provides
@@ -192,7 +193,8 @@ class TestDistribution(TestCaseWithFactory):
         # correctly.
         email = "thingy@foo.com"
         distro = self.factory.makeDistribution()
-        distro.package_derivatives_email = email
+        with person_logged_in(distro.owner):
+            distro.package_derivatives_email = email
         Store.of(distro).flush()
         self.assertEqual(email, distro.package_derivatives_email)
 
