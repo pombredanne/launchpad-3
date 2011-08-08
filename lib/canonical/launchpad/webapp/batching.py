@@ -416,7 +416,7 @@ class StormRangeFactory:
               ...
               (cM1, cM2 ...) < (mM1, mM2 ...)
 
-              (where M = N -1)
+              (where M = N - 1)
             ...
             * (c11, c12 ...) < (m11, m12 ...)
 
@@ -432,8 +432,8 @@ class StormRangeFactory:
         if len(start) > 0:
             clauses = self.equalsExpressionsFromLimits(start)
             clauses.append(last_clause)
-            clauses = reduce(And, clauses)
-            return [clauses] + self.whereExpressionsFromGroupedLimits(start)
+            clauses = [And(*clauses)]
+            return clauses + self.whereExpressionsFromGroupedLimits(start)
         else:
             return [last_clause]
 
