@@ -86,8 +86,10 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
             'accepted')
         self.assertEqual(expected_subject, subject)
 
-    def _setup_notification(self, from_person=None, distroseries=None):
-        spr = self.factory.makeSourcePackageRelease()
+    def _setup_notification(self, from_person=None, distroseries=None,
+                            spr=None):
+        if spr is None:
+            spr = self.factory.makeSourcePackageRelease()
         self.factory.makeSourcePackageReleaseFile(sourcepackagerelease=spr)
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         pocket = PackagePublishingPocket.RELEASE
@@ -117,15 +119,18 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
     def test_notify_bcc_to_derivatives_list(self):
         # notify() will BCC the announcement email to the address defined in
         # Distribution.package_derivatives_email if it's defined.
-        email = "thing@foo.com"
+        email = "{package_name}_thing@foo.com"
         distroseries = self.factory.makeDistroSeries()
         with person_logged_in(distroseries.distribution.owner):
             distroseries.distribution.package_derivatives_email = email
-        self._setup_notification()
+        spr = self.factory.makeSourcePackageRelease()
+        self._setup_notification(distroseries=distroseries, spr=spr)
+
         notifications = pop_notifications()
         self.assertEqual(2, len(notifications))
         bcc_address = notifications[1]["Bcc"]
-        self.assertIn(email, bcc_address)
+        expected_email = email.format(package_name=spr.sourcepackagename.name)
+        self.assertIn(expected_email, bcc_address)
 
 
 class TestNotification(TestCaseWithFactory):
