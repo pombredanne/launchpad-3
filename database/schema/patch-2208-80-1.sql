@@ -9,4 +9,4 @@ UPDATE distribution
     SET package_derivatives_email = '{package_name}_derivatives@packages.qa.debian.org'
     WHERE name='ubuntu';
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 80, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 81, 0);
