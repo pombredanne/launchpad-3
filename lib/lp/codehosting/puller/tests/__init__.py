@@ -36,7 +36,8 @@ from lp.testing import TestCaseWithFactory
 
 
 class AcceptAnythingBranchMirrorerPolicy(AcceptAnythingPolicy,
-    BranchMirrorerPolicy): pass
+                                         BranchMirrorerPolicy):
+    """A branch mirror policy that supports mirrorring from anywhere."""
 
 
 

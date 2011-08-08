@@ -76,7 +76,7 @@ def get_netstrings(line):
 
 
 class PrearrangedStackedBranchPolicy(BranchMirrorerPolicy,
-    AcceptAnythingPolicy):
+                                     AcceptAnythingPolicy):
     """A branch policy that returns a pre-configurable stack-on URL."""
 
     def __init__(self, stack_on_url):
