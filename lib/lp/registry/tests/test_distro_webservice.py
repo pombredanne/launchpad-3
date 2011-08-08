@@ -5,9 +5,8 @@ __metaclass__ = type
 
 from datetime import datetime
 
-import pytz
 from launchpadlib.errors import Unauthorized
-
+import pytz
 from zope.component import getUtility
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
@@ -52,8 +51,8 @@ class TestGetBranchTips(TestCaseWithFactory):
     def setUp(self):
         super(TestGetBranchTips, self).setUp()
         self.distro = self.factory.makeDistribution()
-        series_1 = self.series_1 = self.factory.makeDistroRelease(self.distro)
-        series_2 = self.series_2 = self.factory.makeDistroRelease(self.distro)
+        series_1 = self.series_1 = self.factory.makeDistroSeries(self.distro)
+        series_2 = self.series_2 = self.factory.makeDistroSeries(self.distro)
         source_package = self.factory.makeSourcePackage(distroseries=series_1)
         branch = self.factory.makeBranch(sourcepackage=source_package)
         unofficial_branch = self.factory.makeBranch(
@@ -145,7 +144,7 @@ class TestGetBranchTipsSecurity(TestCaseWithFactory):
 
     def makeBranch(self, **kwargs):
         distro = self.factory.makeDistribution()
-        series = self.factory.makeDistroRelease(distro)
+        series = self.factory.makeDistroSeries(distro)
         source_package = self.factory.makeSourcePackage(distroseries=series)
         branch = self.factory.makeBranch(
             sourcepackage=source_package, private=True, **kwargs)

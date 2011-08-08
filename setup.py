@@ -83,7 +83,7 @@ setup(
         'zope.app.apidoc',
         'zope.app.appsetup',
         'zope.app.component',
-        'zope.app.dav', # ./zcml/package-includes/dav-configure.zcml
+        'zope.app.dav',  # ./zcml/package-includes/dav-configure.zcml
         'zope.app.error',
         'zope.app.exception',
         'zope.app.file',
@@ -112,7 +112,7 @@ setup(
         'zope.formlib',
         'zope.i18n',
         'zope.interface',
-        'zope.hookable', # indirect, via zope.app.component
+        'zope.hookable',  # indirect, via zope.app.component
         'zope.lifecycleevent',
         'zope.location',
         'zope.login',
@@ -129,7 +129,7 @@ setup(
         'zope.testbrowser',
         'zope.testing',
         'zope.traversing',
-        'zope.viewlet', # only fixing a broken dependency
+        'zope.viewlet',  # only fixing a broken dependency
         # Loggerhead dependencies. These should be removed once
         # bug 383360 is fixed and we include it as a source dist.
         'Paste',
@@ -149,7 +149,7 @@ setup(
         ]
     ),
     entry_points=dict(
-        console_scripts=[ # `console_scripts` is a magic name to setuptools
+        console_scripts=[  # `console_scripts` is a magic name to setuptools
             'apiindex = lp.scripts.utilities.apiindex:main',
             'killservice = lp.scripts.utilities.killservice:main',
             'jsbuild = lp.scripts.utilities.js.jsbuild:main',
@@ -159,8 +159,6 @@ setup(
             'start_librarian '
                 '= canonical.launchpad.scripts.runlaunchpad:start_librarian',
             'ec2 = devscripts.ec2test.entrypoint:main',
-            'compile_templates '
-                '= canonical.launchpad.scripts:execute_zcml_for_scripts',
         ]
     ),
 )

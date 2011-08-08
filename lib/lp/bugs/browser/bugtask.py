@@ -86,7 +86,6 @@ from zope.app.form.interfaces import (
     IDisplayWidget,
     IInputWidget,
     InputErrors,
-    WidgetsError,
     )
 from zope.app.form.utility import (
     setUpWidget,
@@ -182,7 +181,6 @@ from lp.app.interfaces.launchpad import (
     ILaunchpadCelebrities,
     IServiceUsage,
     )
-from lp.app.validators import LaunchpadValidationError
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.bug import (
@@ -269,6 +267,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
 from lp.registry.vocabularies import MilestoneVocabulary
+from lp.services.features import getFeatureFlag
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
 
@@ -1332,6 +1331,14 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
                 BugTaskAssigneeWidget)
 
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            # Replace the default field with a field that uses the better
+            # vocabulary.
+            self.form_fields = self.form_fields.omit('sourcepackagename')
+            self.form_fields += formlib.form.Fields(Choice(
+                __name__='sourcepackagename', title=_('SourcePackageName'),
+                required=False, vocabulary='DistributionSourcePackage'))
+
     def _getReadOnlyFieldNames(self):
         """Return the names of fields that will be rendered read only."""
         if self.context.target_uses_malone:
@@ -1452,7 +1459,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             # the form machinery to try and set this value back to
             # what it was!
             data_to_apply.pop('milestone', None)
-
 
         # We special case setting assignee and status, because there's
         # a workflow associated with changes to these fields.
@@ -3247,7 +3253,25 @@ class BugTasksAndNominationsView(LaunchpadView):
         # iteration.
         bugtasks_by_package = bug.getBugTasksByPackageName(all_bugtasks)
 
+        latest_parent = None
+
         for bugtask in all_bugtasks:
+            # Series bug targets only display the series name, so they
+            # must always be preceded by their parent context. Normally
+            # the parent will have a task, but if not we need to show a
+            # fake one.
+            if ISeriesBugTarget.providedBy(bugtask.target):
+                parent = bugtask.target.bugtarget_parent
+            else:
+                latest_parent = parent = bugtask.target
+
+            if parent != latest_parent:
+                latest_parent = parent
+                bugtask_and_nomination_views.append(
+                    getMultiAdapter(
+                        (parent, self.request),
+                        name='+bugtasks-and-nominations-table-row'))
+
             conjoined_master = bugtask.getConjoinedMaster(
                 bugtasks, bugtasks_by_package)
             view = self._getTableRowView(

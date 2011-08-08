@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests related to bug nominations for an object with a bug supervisor."""
@@ -11,7 +11,6 @@ from canonical.launchpad.ftests import (
     logout,
     )
 from canonical.testing.layers import DatabaseFunctionalLayer
-
 from lp.bugs.interfaces.bugnomination import NominationError
 from lp.testing import TestCaseWithFactory
 
@@ -61,8 +60,8 @@ class TestBugAddNominationProductSeries(
     """Test IBug.addNomination for IProductSeries nominations."""
 
     def setUpTarget(self):
-        self.product = self.factory.makeProduct(official_malone = True,
-            bug_supervisor=self.bug_supervisor,
+        self.product = self.factory.makeProduct(
+            official_malone=True, bug_supervisor=self.bug_supervisor,
             owner=self.owner)
         self.series = self.factory.makeProductSeries(product=self.product)
         self.bug = self.factory.makeBug(product=self.product)
@@ -77,7 +76,7 @@ class TestBugAddNominationDistroSeries(
         self.distro = self.factory.makeDistribution(
             bug_supervisor=self.bug_supervisor,
             owner=self.owner)
-        self.series = self.factory.makeDistroRelease(distribution=self.distro)
+        self.series = self.factory.makeDistroSeries(distribution=self.distro)
         # The factory can't create a distro bug directly.
         self.bug = self.factory.makeBug()
         self.bug.addTask(self.bug_supervisor, self.distro)

@@ -1511,16 +1511,16 @@ class TestPOFileSet(TestCaseWithFactory):
         # (potemplates have the same name).
         distro = self.factory.makeDistribution()
         distro.translations_usage = ServiceUsage.LAUNCHPAD
-        series1 = self.factory.makeDistroRelease(distribution=distro,
-                                                 name='one')
+        series1 = self.factory.makeDistroSeries(
+            distribution=distro, name='one')
         sourcepackagename = self.factory.makeSourcePackageName()
         potemplate1 = self.factory.makePOTemplate(
             name='shared', distroseries=series1,
             sourcepackagename=sourcepackagename)
         pofile1 = self.factory.makePOFile('sr', potemplate=potemplate1)
 
-        series2 = self.factory.makeDistroRelease(distribution=distro,
-                                                 name='two')
+        series2 = self.factory.makeDistroSeries(
+            distribution=distro, name='two')
         potemplate2 = self.factory.makePOTemplate(
             name='shared', distroseries=series2,
             sourcepackagename=sourcepackagename)

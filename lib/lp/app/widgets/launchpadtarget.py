@@ -39,6 +39,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.product import IProduct
+from lp.services.features import getFeatureFlag
 
 
 class LaunchpadTargetWidget(BrowserWidget, InputWidget):
@@ -53,6 +54,12 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
     def setUpSubWidgets(self):
         if self._widgets_set_up:
             return
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            # Replace the default field with a field that uses the better
+            # vocabulary.
+            package_vocab = 'DistributionSourcePackage'
+        else:
+            package_vocab = 'BinaryAndSourcePackageName'
         fields = [
             Choice(
                 __name__='product', title=u'Project',
@@ -63,7 +70,7 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                 default=getUtility(ILaunchpadCelebrities).ubuntu),
             Choice(
                 __name__='package', title=u"Package",
-                required=False, vocabulary='BinaryAndSourcePackageName'),
+                required=False, vocabulary=package_vocab),
             ]
         self.distribution_widget = CustomWidgetFactory(
             LaunchpadDropdownWidget)
@@ -136,9 +143,14 @@ class LaunchpadTargetWidget(BrowserWidget, InputWidget):
                 if package_name is None:
                     return distribution
                 try:
-                    source_name = (
-                        distribution.guessPublishedSourcePackageName(
-                            package_name.name))
+                    if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+                        vocab = self.package_widget.context.vocabulary
+                        name = package_name.name
+                        source_name = vocab.getTermByToken(name).value
+                    else:
+                        source_name = (
+                            distribution.guessPublishedSourcePackageName(
+                                package_name.name))
                 except NotFoundError:
                     raise LaunchpadValidationError(
                         "There is no package name '%s' published in %s"
