@@ -156,7 +156,7 @@ The Ubuntu distribution gets special treatment for the language pack flag.
 
     >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    >>> ubuntuseries = factory.makeDistroRelease(ubuntu)
+    >>> ubuntuseries = factory.makeDistroSeries(ubuntu)
     >>> packagename = factory.makeSourcePackageName()
 
 We can upload to a sourcepackagename in the Ubuntu series.
@@ -201,7 +201,7 @@ as the default value.
 
 For non-Ubuntu distroseries, languagepack is not displayed.
 
-    >>> other_series = factory.makeDistroRelease()
+    >>> other_series = factory.makeDistroSeries()
     >>> other_entry = queue.addOrUpdateEntry(
     ...     'demo.pot', '# foo', True,
     ...     importer, distroseries=other_series,

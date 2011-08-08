@@ -62,6 +62,44 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         queue."""
         return len(self._getJobs())
 
+    def test___repr__(self):
+        parent1 = self.factory.makeDistroSeries()
+        parent2 = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
+        packageset1 = self.factory.makePackageset()
+        packageset2 = self.factory.makePackageset()
+
+        overlays = (True, False)
+        overlay_pockets = (('Updates',), ('Release',))
+        overlay_components = (("main",), ("universe",))
+        arches = (u'i386', u'amd64')
+        packagesets = (packageset1.id, packageset2.id)
+        rebuild = False
+
+        job = self.job_source.create(
+            distroseries, [parent1.id, parent2.id], arches, packagesets,
+            rebuild, overlays, overlay_pockets, overlay_components)
+
+        expected = ("<InitializeDistroSeriesJob for "
+            "distribution: {distroseries.distribution.name}, "
+            "distroseries: {distroseries.name}, "
+            "parent[overlay?/pockets/components]: "
+            "{parent1.name}[True/[u'Updates']/[u'main']],"
+            "{parent2.name}[False/[u'Release']/[u'universe']], "
+            "architectures: (u'i386', u'amd64'), "
+            "packagesets: [u'{packageset1.name}', u'{packageset2.name}'], "
+            "rebuild: False>".format(
+                distroseries=distroseries,
+                parent1=parent1,
+                parent2=parent2,
+                packageset1=packageset1,
+                packageset2=packageset2))
+        self.assertEqual(
+            expected,
+            repr(job)
+        )
+
+
     def test_create_with_existing_pending_job(self):
         parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()

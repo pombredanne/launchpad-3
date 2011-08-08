@@ -81,6 +81,22 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
     def test_baseline(self):
         verifyObject(IDistroSeriesDifferenceJobSource, self.getJobSource())
 
+    def test___repr__(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        package = self.factory.makeSourcePackageName()
+        jobs = self.getJobSource().createForPackagePublication(
+            dsp.derived_series, package,
+            PackagePublishingPocket.RELEASE)
+        [job] = jobs
+        self.assertEqual(
+            ("<DistroSeriesDifferenceJob for package {package.name} "
+             "from {parentseries.name} to "
+             "{derivedseries.name}>").format(
+                package=package,
+                parentseries=dsp.parent_series,
+                derivedseries=dsp.derived_series),
+            repr(job))
+
     def test_make_metadata_is_consistent(self):
         package = self.factory.makeSourcePackageName()
         parent_series = self.factory.makeDistroSeries()

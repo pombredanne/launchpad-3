@@ -108,9 +108,18 @@ flag_info = sorted([
      'boolean',
      'Changes the appearance of notifications on private bugs.',
      ''),
+    ('disclosure.dsp_picker.enabled',
+     'boolean',
+     'Enables the use of the new DistributionSourcePackage vocabulary for '
+     'the source and binary package name pickers.',
+     ''),
     ('disclosure.picker_enhancements.enabled',
      'boolean',
      ('Enables the display of extra details in the person picker.'),
+     ''),
+    ('disclosure.picker_expander.enabled',
+     'boolean',
+     ('Enables the expanding of extra details in the person picker.'),
      ''),
     ('disclosure.person_affiliation_rank.enabled',
      'boolean',
@@ -192,8 +201,6 @@ class FeatureController():
 
     The controller is then supposed to be held in a thread-local and reused
     for the duration of the request.
-
-    These should typically be used via a UseFeatureController fixture.
 
     @see: U{https://dev.launchpad.net/LEP/FeatureFlags}
     """

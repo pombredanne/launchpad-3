@@ -533,6 +533,30 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             foo_bugtasks_and_nominations_view.getBugTaskAndNominationViews())
         self.assertEqual([], task_and_nomination_views)
 
+    def test_bugtarget_parent_shown_for_orphaned_series_tasks(self):
+        # Test that a row is shown for the parent of a series task, even
+        # if the parent doesn't actually have a task.
+        series = self.factory.makeProductSeries()
+        bug = self.factory.makeBug(series=series)
+        self.assertEqual(2, len(bug.bugtasks))
+        new_prod = self.factory.makeProduct()
+        bug.getBugTask(series.product).transitionToTarget(new_prod)
+
+        view = create_initialized_view(bug, "+bugtasks-and-nominations-table")
+        subviews = view.getBugTaskAndNominationViews()
+        self.assertEqual([
+            (series.product, '+bugtasks-and-nominations-table-row'),
+            (bug.getBugTask(series), '+bugtasks-and-nominations-table-row'),
+            (bug.getBugTask(new_prod), '+bugtasks-and-nominations-table-row'),
+            ], [(v.context, v.__name__) for v in subviews])
+
+        content = subviews[0]()
+        self.assertIn(
+            'href="%s"' % canonical_url(
+                series.product, path_only_if_possible=True),
+            content)
+        self.assertIn(series.product.displayname, content)
+
 
 class TestBugTaskEditViewStatusField(TestCaseWithFactory):
     """We show only those options as possible value in the status

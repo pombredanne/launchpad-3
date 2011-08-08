@@ -880,7 +880,7 @@ except ImportError:
             self.request = request
 
 
-class StormRangeFactoryError(AssertionError):
+class StormRangeFactoryError(Exception):
     """Raised when a Storm result set cannot be used for slicing by a
     StormRangeFactory.
     """

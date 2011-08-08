@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the choice of "translations to review" for a user."""
@@ -62,7 +62,7 @@ class ReviewTestMixin:
             self.productseries = None
             self.product = None
             self.distroseries = removeSecurityProxy(
-                self.factory.makeDistroRelease())
+                self.factory.makeDistroSeries())
             self.distribution = self.distroseries.distribution
             self.distribution.translation_focus = self.distroseries
             self.sourcepackagename = self.factory.makeSourcePackageName()

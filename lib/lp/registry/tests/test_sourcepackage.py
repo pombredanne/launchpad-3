@@ -155,9 +155,9 @@ class TestSourcePackage(TestCaseWithFactory):
         # ISourcePackage.development_version gets the development version of
         # the source package.
         distribution = self.factory.makeDistribution()
-        dev_series = self.factory.makeDistroRelease(
+        dev_series = self.factory.makeDistroSeries(
             distribution=distribution, status=SeriesStatus.DEVELOPMENT)
-        other_series = self.factory.makeDistroRelease(
+        other_series = self.factory.makeDistroSeries(
             distribution=distribution, status=SeriesStatus.OBSOLETE)
         self.assertEqual(dev_series, distribution.currentseries)
         dev_sourcepackage = self.factory.makeSourcePackage(
@@ -544,7 +544,7 @@ class TestSourcePackageSecurity(TestCaseWithFactory):
                 "source packages.")
 
     def test_uploader_has_launchpad_edit_on_obsolete_series(self):
-        obsolete_series = self.factory.makeDistroRelease(
+        obsolete_series = self.factory.makeDistroSeries(
             status=SeriesStatus.OBSOLETE)
         sourcepackage = self.factory.makeSourcePackage(
             distroseries=obsolete_series)
@@ -559,7 +559,7 @@ class TestSourcePackageSecurity(TestCaseWithFactory):
                 "source packages in an OBSOLETE series.")
 
     def test_uploader_have_launchpad_edit_on_current_series(self):
-        current_series = self.factory.makeDistroRelease(
+        current_series = self.factory.makeDistroSeries(
             status=SeriesStatus.CURRENT)
         sourcepackage = self.factory.makeSourcePackage(
             distroseries=current_series)
@@ -574,7 +574,7 @@ class TestSourcePackageSecurity(TestCaseWithFactory):
                 "source packages in a CURRENT series.")
 
     def test_uploader_have_launchpad_edit_on_supported_series(self):
-        supported_series = self.factory.makeDistroRelease(
+        supported_series = self.factory.makeDistroSeries(
             status=SeriesStatus.SUPPORTED)
         sourcepackage = self.factory.makeSourcePackage(
             distroseries=supported_series)
@@ -627,8 +627,8 @@ class TestSourcePackageViews(TestCaseWithFactory):
 
         self.distribution = self.factory.makeDistribution(
             name='youbuntu', displayname='Youbuntu', owner=self.owner)
-        self.distroseries = self.factory.makeDistroRelease(name='busy',
-            distribution=self.distribution)
+        self.distroseries = self.factory.makeDistroSeries(
+            name='busy', distribution=self.distribution)
         self.sourcepackagename = self.factory.makeSourcePackageName(
             name='bonkers')
         self.package = self.factory.makeSourcePackage(
