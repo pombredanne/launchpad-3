@@ -39,8 +39,6 @@ from lp.services.profile.mem import (
 from lp.services.features import getFeatureFlag
 
 
-
-
 class ProfilingOops(Exception):
     """Fake exception used to log OOPS information when profiling pages."""
 
@@ -54,7 +52,7 @@ class StdLibProfiler(BzrProfiler):
 
     def start(self):
         """Start profiling.
-        
+
         This will record all calls made until stop() is called.
 
         Unlike the BzrProfiler, we do not try to get profiles of sub-threads.

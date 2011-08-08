@@ -12,7 +12,6 @@ __metaclass__ = type
 import glob
 import os
 import time
-import unittest
 
 from lp.testing import TestCase
 from bzrlib.lsprof import BzrProfiler
@@ -451,6 +450,7 @@ class TestStdLibProfilerRequestEndHandler(TestBzrProfilerRequestEndHandler):
         return TestBzrProfilerRequestEndHandler.endRequest(self,
             path.replace('++profile++', '++profile++stdlib,'))
 
+
 class TestMemoryProfilerRequestEndHandler(BaseRequestEndHandlerTest):
     """Tests for the end-request handler of the memory profile.
 
@@ -518,7 +518,6 @@ class TestOOPSRequestEndHandler(BaseRequestEndHandlerTest):
     def test_profiling_oops_is_informational(self):
         self.pushProfilingConfig(profiling_allowed='True')
         request = self.endRequest('/++profile++show/')
-        response = self.getAddedResponse(request)
         self.assertIsInstance(request.oops, ErrorReport)
         self.assertTrue(request.oops.informational)
         self.assertEquals(request.oops.type, 'ProfilingOops')
@@ -555,8 +554,9 @@ class TestBeforeTraverseHandler(TestCleanupProfiler):
             memory_profile_log='.')
         event = BeforeTraverseEvent(None,
             self._get_request('/++profile++show,log'))
-        with FeatureFixture({'profiling.enabled':'on'}):
+        with FeatureFixture({'profiling.enabled': 'on'}):
             profile.before_traverse(event)
             self.assertTrue(profile._profilers.profiling)
             self.assertIsInstance(profile._profilers.profiler, BzrProfiler)
-            self.assertEquals(profile._profilers.actions, set(('show', 'log')))
+            self.assertEquals(profile._profilers.actions, set(
+                ('show', 'log')))
