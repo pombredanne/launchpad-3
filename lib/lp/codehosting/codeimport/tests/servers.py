@@ -43,6 +43,7 @@ from mercurial.hgweb import (
     hgweb,
     server as hgweb_server,
     )
+from mercurial.localrepo import localrepository
 import subvertpy.ra
 import svn_oo
 
@@ -329,14 +330,10 @@ class MercurialServer(Server):
             self._hgserver.stop()
 
     def createRepository(self, path):
-        from mercurial.ui import ui
-        from mercurial.localrepo import localrepository
-        localrepository(ui(), self.repository_path, create=1)
+        localrepository(hg_ui(), self.repository_path, create=1)
 
     def makeRepo(self, tree_contents):
-        from mercurial.ui import ui
-        from mercurial.localrepo import localrepository
-        repo = localrepository(ui(), self.repository_path)
+        repo = localrepository(hg_ui(), self.repository_path)
         for filename, contents in tree_contents:
             f = open(os.path.join(self.repository_path, filename), 'w')
             try:
