@@ -217,7 +217,7 @@ class CVSServer(Server):
 
 
 class TCPGitServerThread(threading.Thread):
-    """TCP Git server that runs in a separate thread."""
+    """Thread that runs a TCP Git server."""
 
     def __init__(self, backend, address, port=None):
         super(TCPGitServerThread, self).__init__()
@@ -279,6 +279,7 @@ class GitServer(Server):
 
 
 class MercurialServerThread(threading.Thread):
+    """A thread which runs a Mercurial http server."""
 
     def __init__(self, path, address, port=0):
         super(MercurialServerThread, self).__init__()
@@ -287,7 +288,8 @@ class MercurialServerThread(threading.Thread):
         self.ui.setconfig("web", "port", 0)
         self.app = hgweb(path, baseui=self.ui)
         self.httpd = hgweb_server.create_server(self.ui, self.app)
-        # By default the Mercurial server output goes to stdout
+        # By default the Mercurial server output goes to stdout,
+        # redirect it to prevent a lot of spurious output.
         self.httpd.errorlog = StringIO()
         self.httpd.accesslog = StringIO()
 
