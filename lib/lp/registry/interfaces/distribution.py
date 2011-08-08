@@ -283,7 +283,7 @@ class IDistributionPublic(
         "ArchivePermission records for uploaders with rights to upload to "
         "this distribution."))
     package_derivatives_email = TextLine(
-        title=_("Package Derivatives Email"),
+        title=_("Package Derivatives Email Address"),
         description=_(
             "The email address to send information about updates to packages "
             "that are derived from another distribution. The sequence "
