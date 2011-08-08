@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from lazr.lifecycle.snapshot import Snapshot
 import soupmatchers
+from storm.store import Store
 from testtools import ExpectedException
 from testtools.matchers import (
     MatchesAny,
@@ -185,6 +186,15 @@ class TestDistribution(TestCaseWithFactory):
             'my-package',
             sourcepackage.distribution.guessPublishedSourcePackageName(
                 'my-package').name)
+
+    def test_derivatives_email(self):
+        # Make sure the package_derivatives_email column stores data
+        # correctly.
+        email = "thingy@foo.com"
+        distro = self.factory.makeDistribution()
+        distro.package_derivatives_email = email
+        Store.of(distro).flush()
+        self.assertEqual(email, distro.package_derivatives_email)
 
 
 class TestDistributionCurrentSourceReleases(
