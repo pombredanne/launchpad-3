@@ -29,7 +29,8 @@ setup(
         'ampoule',
         'BeautifulSoup',
         'bzr',
-        'Chameleon',
+        'chameleon.core',
+        'chameleon.zpt',
         'cssutils',
         # Required for pydkim
         'dnspython',
