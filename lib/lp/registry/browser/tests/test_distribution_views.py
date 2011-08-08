@@ -126,6 +126,26 @@ class TestDistroAddView(TestCaseWithFactory):
         self.assertEqual(distribution.registrant, admin)
 
 
+class TestDistroEditView(TestCaseWithFactory):
+    """Test the +edit page for a distro."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        pass
+
+    def test_package_derivatives_email(self):
+        # Test that the edit form allows changing package_derivatives_email
+        distro = self.factory.makeDistribution()
+        email = '{package_name}_thing@foo.com'
+        form = {
+            'field.package_derivatives_email': email
+            }
+        create_initialized_view(
+            distro, '+edit', principal=distro.owner, method="POST", form=form)
+        self.assertEqual(distro.package_derivatives_email, email)
+
+
 class TestDistroReassignView(TestCaseWithFactory):
     """Test the +reassign page for a new distribution."""
 
