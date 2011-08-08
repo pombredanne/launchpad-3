@@ -200,7 +200,7 @@ class StormRangeFactory:
         """
         self.resultset = resultset
         if zope_isinstance(resultset, DecoratedResultSet):
-            self.plain_resultset = resultset.getPlainResultSet()
+            self.plain_resultset = resultset.get_plain_result_set()
         else:
             self.plain_resultset = resultset
         self.error_cb = error_cb

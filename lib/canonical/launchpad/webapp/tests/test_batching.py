@@ -136,7 +136,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         # of any Storm table class instance which appear in a result row.
         resultset = self.makeDecoratedStormResultSet()
         resultset = resultset.order_by(LibraryFileAlias.id)
-        plain_resultset = resultset.getPlainResultSet()
+        plain_resultset = resultset.get_plain_result_set()
         range_factory = StormRangeFactory(resultset)
         self.assertEqual(
             [plain_resultset[0][1].id],
@@ -212,9 +212,10 @@ class TestStormRangeFactory(TestCaseWithFactory):
         range_factory = StormRangeFactory(resultset)
         first, last = range_factory.getEndpointMemos(batchnav.batch)
         expected_first = simplejson.dumps(
-            [resultset.getPlainResultSet()[0][1].id], cls=DateTimeJSONEncoder)
+            [resultset.get_plain_result_set()[0][1].id],
+            cls=DateTimeJSONEncoder)
         expected_last = simplejson.dumps(
-            [resultset.getPlainResultSet()[2][1].id],
+            [resultset.get_plain_result_set()[2][1].id],
             cls=DateTimeJSONEncoder)
         self.assertEqual(expected_first, first)
         self.assertEqual(expected_last, last)
@@ -377,25 +378,25 @@ class TestStormRangeFactory(TestCaseWithFactory):
         self.assertEqual(
             [(order_by[:2], limits[:2]), (order_by[2:], limits[2:])], result)
 
-    def test_beforeOrAfterExpression_asc(self):
+    def test_lessThanOrGreaterThanExpression__asc(self):
         # beforeOrAfterExpression() returns an expression
         # (col1, col2,..) > (memo1, memo2...) for ascending sort order.
         range_factory = StormRangeFactory(None, self.logError)
         expressions = [Person.id, Person.name]
         limits = [1, 'foo']
-        limit_expression = range_factory.beforeOrAfterExpression(
+        limit_expression = range_factory.lessThanOrGreaterThanExpression(
             expressions, limits)
         self.assertEqual(
             "(Person.id, Person.name) > (1, 'foo')",
             compile(limit_expression))
 
-    def test_beforeOrAfterExpression_desc(self):
+    def test_lessThanOrGreaterThanExpression__desc(self):
         # beforeOrAfterExpression() returns an expression
         # (col1, col2,..) < (memo1, memo2...) for descending sort order.
         range_factory = StormRangeFactory(None, self.logError)
         expressions = [Desc(Person.id), Desc(Person.name)]
         limits = [1, 'foo']
-        limit_expression = range_factory.beforeOrAfterExpression(
+        limit_expression = range_factory.lessThanOrGreaterThanExpression(
             expressions, limits)
         self.assertEqual(
             "(Person.id, Person.name) < (1, 'foo')",
@@ -564,7 +565,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         resultset = self.makeDecoratedStormResultSet()
         resultset.order_by(LibraryFileAlias.id)
         all_results = list(resultset)
-        memo = simplejson.dumps([resultset.getPlainResultSet()[0][1].id])
+        memo = simplejson.dumps([resultset.get_plain_result_set()[0][1].id])
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, memo)
         self.assertEqual(all_results[1:4], list(sliced_result))
