@@ -1129,6 +1129,7 @@ COMMENT ON COLUMN Distribution.reviewer_whiteboard IS 'A whiteboard for Launchpa
 COMMENT ON COLUMN Distribution.max_bug_heat IS 'The highest heat value across bugs for this distribution.';
 COMMENT ON COLUMN Distribution.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
 COMMENT ON COLUMN Distribution.registrant IS 'The person in launchpad who registered this distribution.';
+COMMENT ON COLUMN Distribution.package_derivatives_email IS 'The optional email address template to use when sending emails about package updates in a distributrion. The string {package_name} in the template will be replaced with the actual package name being updated.';
 
 -- DistroSeries
 
