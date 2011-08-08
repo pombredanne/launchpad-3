@@ -706,6 +706,8 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         """Assert that a `CodeImportResult` was created for `code_import`."""
         self.assertEqual(len(list(code_import.results)), 1)
         result = list(code_import.results)[0]
+        if result.status != CodeImportResultStatus.SUCCESS:
+            import pdb; pdb.set_trace()
         self.assertEqual(result.status, CodeImportResultStatus.SUCCESS)
 
     def assertBranchImportedOKForCodeImport(self, code_import):

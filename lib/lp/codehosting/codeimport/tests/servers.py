@@ -321,7 +321,8 @@ class MercurialServer(Server):
         super(MercurialServer, self).start_server()
         self.createRepository(self.repository_path)
         if self._use_server:
-            self._hgserver = MercurialServerThread(self.repository_path, "localhost")
+            self._hgserver = MercurialServerThread(self.repository_path,
+                "localhost")
             self._hgserver.start()
 
     def stop_server(self):
