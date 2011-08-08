@@ -38,7 +38,10 @@ from lp.soyuz.enums import (
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -83,20 +86,26 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
             'accepted')
         self.assertEqual(expected_subject, subject)
 
-    def test_notify_from_person_override(self):
-        # notify() takes an optional from_person to override the calculated
-        # From: address in announcement emails.
+    def _setup_notification(self, from_person=None, distroseries=None):
         spr = self.factory.makeSourcePackageRelease()
         self.factory.makeSourcePackageReleaseFile(sourcepackagerelease=spr)
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         pocket = PackagePublishingPocket.RELEASE
-        distroseries = self.factory.makeDistroSeries()
+        if distroseries is None:
+            distroseries = self.factory.makeDistroSeries()
         distroseries.changeslist = "blah@example.com"
         blamer = self.factory.makePerson()
-        from_person = self.factory.makePerson()
+        if from_person is None:
+            from_person = self.factory.makePerson()
         notify(
             blamer, spr, [], [], archive, distroseries, pocket,
             action='accepted', announce_from_person=from_person)
+
+    def test_notify_from_person_override(self):
+        # notify() takes an optional from_person to override the calculated
+        # From: address in announcement emails.
+        from_person = self.factory.makePerson()
+        self._setup_notification(from_person=from_person)
         notifications = pop_notifications()
         self.assertEqual(2, len(notifications))
         # The first notification is to the blamer,
@@ -104,6 +113,19 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         # overridden From:
         self.assertEqual(
             from_person.preferredemail.email, notifications[1]["From"])
+
+    def test_notify_bcc_to_derivatives_list(self):
+        # notify() will BCC the announcement email to the address defined in
+        # Distribution.package_derivatives_email if it's defined.
+        email = "thing@foo.com"
+        distroseries = self.factory.makeDistroSeries()
+        with person_logged_in(distroseries.distribution.owner):
+            distroseries.distribution.package_derivatives_email = email
+        self._setup_notification()
+        notifications = pop_notifications()
+        self.assertEqual(2, len(notifications))
+        bcc_address = notifications[1]["Bcc"]
+        self.assertIn(email, bcc_address)
 
 
 class TestNotification(TestCaseWithFactory):
