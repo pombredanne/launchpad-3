@@ -43,10 +43,10 @@ class ProfilingOops(Exception):
     """Fake exception used to log OOPS information when profiling pages."""
 
 
-class StdLibProfiler(BzrProfiler):
+class PStatsProfiler(BzrProfiler):
     """This provides a wrapper around the standard library's profiler.
 
-    It makes the BzrProfiler and the StdLibProfiler follow a similar API.
+    It makes the BzrProfiler and the PStatsProfiler follow a similar API.
     It also makes them both honor the BzrProfiler's thread lock.
     """
 
@@ -80,14 +80,13 @@ class StdLibProfiler(BzrProfiler):
             self.p.disable()
             p = self.p
             self.p = None
-            return StdLibStats(p)
+            return PStats(p)
         finally:
             self.__class__.profiler_lock.release()
 
 
-class StdLibStats:
-    """This emulates enough of the Bzr stats class to make it interoperable
-    for our purposes."""
+class PStats:
+    """Emulate enough of the Bzr stats class for our needs."""
 
     _stats = None
 
@@ -107,7 +106,7 @@ class StdLibStats:
         mapping = {
             'inlinetime': 'time',
             'totaltime': 'cumulative',
-            'callcount': 'calls'
+            'callcount': 'calls',
             }
         self.stats.sort_stats(mapping[name])
 
@@ -167,19 +166,19 @@ def _maybe_profile(event):
         pass
     actions = get_desired_profile_actions(event.request)
     if config.profiling.profile_all_requests:
-        actions.add('log')
+        actions.add('callgrind')
     _profilers.actions = actions
     _profilers.profiler = None
     _profilers.profiling = True
     if actions:
-        if actions.difference(('help', 'stdlib')):
+        if actions.difference(('help',)):
             # If this assertion has reason to fail, we'll need to add code
             # to try and stop the profiler before we delete it, in case it is
             # still running.
             assert getattr(_profilers, 'profiler', None) is None
-            if 'stdlib' in actions:
-                _profilers.profiler = StdLibProfiler()
-            else:
+            if 'pstats' in actions and 'callgrind' not in actions:
+                _profilers.profiler = PStatsProfiler()
+            else:  # 'callgrind' is the default, and wins in a conflict.
                 _profilers.profiler = BzrProfiler()
             _profilers.profiler.start()
     if config.profiling.memory_profile_log:
@@ -235,16 +234,18 @@ def end_request(event):
             oopsid = oops.id
         else:
             oops = request.oops
-        if 'log' in actions:
+        if actions.intersection(('callgrind', 'pstats')):
             filename = '%s-%s-%s-%s' % (
                 timestamp, pageid, oopsid,
                 threading.currentThread().getName())
-            if 'stdlib' in actions:
-                filename += '.prof'
-            else:
+            if 'callgrind' in actions:
+                # callgrind wins in a conflict between it and pstats, as
+                # documented in the help.
                 # The Bzr stats class looks at the filename to know to use
                 # callgrind syntax.
                 filename = 'callgrind.out.' + filename
+            else:
+                filename += '.prof'
             dump_path = os.path.join(dump_path, filename)
             prof_stats.save(dump_path)
             template_context['dump_path'] = os.path.abspath(dump_path)
@@ -313,8 +314,13 @@ def get_desired_profile_actions(request):
                 action for action in (
                     item.strip().lower() for item in actions.split(','))
                 if action)
-            result.intersection_update(('log', 'show', 'stdlib'))
-            if not result.difference(('stdlib',)):
+            # 'log' is backwards compatible for 'callgrind'
+            result.intersection_update(('log', 'callgrind', 'show', 'pstats'))
+            if 'log' in result:
+                result.remove('log')
+                if 'pstats' not in result:
+                    result.add('callgrind')
+            if not result:
                 result.add('help')
     return result
 
