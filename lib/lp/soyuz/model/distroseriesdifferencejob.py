@@ -103,6 +103,7 @@ def create_multiple_jobs(derived_series, parent_series):
         data = (
             derived_series.distribution.id, derived_series.id,
             DistributionJobType.DISTROSERIESDIFFERENCE, job_id,
+# XXX: Use make_metadata
             DistributionJob.serializeMetadata(
                 {'sourcepackagename': sourcepackagename,
                  'parent_series': parent_series.id}))
