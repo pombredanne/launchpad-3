@@ -12,10 +12,10 @@ __all__ = [
     'ProcessAccepted',
     ]
 
+from optparse import OptionValueError
 import sys
 
 from debian.deb822 import Deb822Dict
-from optparse import OptionValueError
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -252,6 +252,13 @@ class ProcessAccepted(LaunchpadCronScript):
     them for publishing as appropriate.
     """
 
+    @property
+    def lockfilename(self):
+        """See `LaunchpadScript`."""
+        # Avoid circular imports.
+        from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK
+        return GLOBAL_PUBLISHER_LOCK
+
     def add_my_options(self):
         """Command line options for this script."""
         self.parser.add_option(
@@ -264,13 +271,11 @@ class ProcessAccepted(LaunchpadCronScript):
             default=False, help="Process all Ubuntu-derived distributions.")
 
         self.parser.add_option(
-            "--ppa", action="store_true",
-            dest="ppa", metavar="PPA", default=False,
+            "--ppa", action="store_true", dest="ppa", default=False,
             help="Run only over PPA archives.")
 
         self.parser.add_option(
-            "--copy-archives", action="store_true",
-            dest="copy_archives", metavar="COPY_ARCHIVES",
+            "--copy-archives", action="store_true", dest="copy_archives",
             default=False, help="Run only over COPY archives.")
 
     def _commit(self):
