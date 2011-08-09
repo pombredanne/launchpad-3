@@ -94,7 +94,7 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         self.assertEqual('sprite person', entry.css)
         self.assertEqual('sprite new-window', entry.link_css)
 
-    def test_PersonPickerEntrySourceAdapter_enhanced_picker_enabled_user(self):
+    def test_PersonPickerEntrySourceAdapter_enhanced_picker_user(self):
         # The enhanced person picker provides more information for users.
         person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
         creation_date = datetime(
@@ -110,7 +110,7 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
             ['snarf on eg.dom, pting on ex.dom', 'Member since 2005-01-30'],
             entry.details)
 
-    def test_PersonPickerEntrySourceAdapter_enhanced_picker_enabled_team(self):
+    def test_PersonPickerEntrySourceAdapter_enhanced_picker_team(self):
         # The enhanced person picker provides more information for teams.
         team = self.factory.makeTeam(email='fnord@eg.dom', name='fnord')
         [entry] = IPickerEntrySource(team).getPickerEntries(
@@ -119,7 +119,7 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         self.assertEqual('http://launchpad.dev/~fnord', entry.alt_title_link)
         self.assertEqual(['Team members: 1'], entry.details)
 
-    def test_PersonPickerEntrySourceAdapter_personpicker_affiliation_badges(self):
+    def test_PersonPickerEntrySourceAdapter_affiliation_badges(self):
         # The person picker with affiliation enabled provides affilliation
         # information.
         person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')

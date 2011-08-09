@@ -212,15 +212,16 @@ class BranchPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
 
     def getPickerEntries(self, term_values, context_object, **kwarg):
         """See `IPickerEntrySource`"""
-        entries = super(BranchPickerEntrySourceAdapter, self).getPickerEntries(
-                term_values, context_object, kwarg)
+        entries = super(BranchPickerEntrySourceAdapter, self)\
+                    .getPickerEntries(term_values, context_object, kwarg)
         for branch, picker_entry in izip(term_values, entries):
             picker_entry.description = branch.bzr_identity
         return entries
 
 
 @adapter(ISourcePackageName)
-class SourcePackageNamePickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
+class SourcePackageNamePickerEntrySourceAdapter(
+                                            DefaultPickerEntrySourceAdapter):
     """Adapts ISourcePackageName to IPickerEntrySource."""
 
     def getPickerEntry(self, term_values, context_object, **kwarg):
@@ -240,8 +241,8 @@ class ArchivePickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
 
     def getPickerEntry(self, term_values, context_object, **kwarg):
         """See `IPickerEntrySource`"""
-        entries = super(ArchivePickerEntrySourceAdapter, self).getPickerEntries(
-                term_values, context_object, kwarg)
+        entries = super(ArchivePickerEntrySourceAdapter, self)\
+                    .getPickerEntries(term_values, context_object, kwarg)
         for archive, picker_entry in izip(term_values, entries):
             picker_entry.description = '%s/%s' % (
                                        archive.owner.name, archive.name)
