@@ -1400,7 +1400,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         expected_url = urlappend(canonical_url(parent_dsp), '+changelog')
         self.assertEqual(expected_url, link.attrs[0][1])
 
-
     def test_getUpgrades_shows_updates_in_parent(self):
         # The view's getUpgrades methods lists packages that can be
         # trivially upgraded: changed in the parent, not changed in the
