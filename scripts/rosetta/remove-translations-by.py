@@ -15,6 +15,8 @@ from lp.translations.scripts.remove_translations import RemoveTranslations
 
 
 if __name__ == '__main__':
+    import pdb
+    pdb.set_trace()
     script = RemoveTranslations(
         'canonical.launchpad.scripts.remove-translations',
         dbuser='rosettaadmin')

@@ -120,15 +120,6 @@ def is_nonempty_string(string_option):
     return string_option is not None and string_option != ''
 
 
-def check_option_type(options, option_name, option_type):
-    """Check that option value is of given type, or None."""
-    option = getattr(options, option_name)
-    if option is not None and not isinstance(option, option_type):
-        raise ValueError(
-            "Wrong argument type for %s: expected %s, got %s." % (
-                option_name, option_type.__name__, option.__class__.__name__))
-
-
 def compose_language_match(language_code):
     """Compose SQL condition for matching a language in the deletion query.
 
