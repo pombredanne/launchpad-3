@@ -354,6 +354,7 @@ def warn_about_deleting_current_messages(cur, from_text, where_text, logger):
                     'Message %i is a current translation in %s'
                     % (id, ' and '.join(current)))
 
+
 def remove_translations(logger=None, submitter=None, reviewer=None,
                         reject_license=False, ids=None, potemplate=None,
                         language_code=None, not_language=False,
