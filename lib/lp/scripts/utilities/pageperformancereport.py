@@ -1023,7 +1023,7 @@ def html_report(
             src="http://people.canonical.com/~stub/flot/jquery.min.js"
             ></script>
         <script language="javascript" type="text/javascript"
-            src="http://people.canonical.com/~rvb/serve/jquery.appear-1.1.1.min.js"
+            src="http://people.canonical.com/~stub/jquery.appear-1.1.1.min.js"
             ></script>
         <script language="javascript" type="text/javascript"
             src="http://people.canonical.com/~stub/flot/jquery.flot.min.js"
