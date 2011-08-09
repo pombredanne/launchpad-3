@@ -45,6 +45,7 @@ from zope.interface import (
     )
 from zope.publisher.interfaces import (
     IPublishTraverse,
+    NotFound,
     Retry,
     )
 from zope.publisher.interfaces.browser import (
@@ -83,6 +84,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     ITeam,
     )
+from lp.services.encoding import is_ascii_only
 from lp.services import features
 from lp.services.features.flags import NullFeatureController
 from lp.services.osutils import open_for_writing
@@ -308,6 +310,18 @@ class LaunchpadBrowserPublication(
         self.maybeRestrictToTeam(request)
         maybe_block_offsite_form_post(request)
         self.maybeNotifyReadOnlyMode(request)
+        if not self._validTraversalStack(request):
+            raise NotFound(self.getApplication(request), '')
+
+    @staticmethod
+    def _validTraversalStack(request):
+        whitespace_re = re.compile(r'\s')
+        for element in request.getTraversalStack():
+            if not is_ascii_only(element):
+                return False
+            if whitespace_re.search(element):
+                return False
+        return True
 
     def maybeNotifyReadOnlyMode(self, request):
         """Hook to notify about read-only mode."""
