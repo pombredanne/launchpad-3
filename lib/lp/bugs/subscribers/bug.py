@@ -26,6 +26,7 @@ from canonical.launchpad.mail import (
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.bugs.adapters.bugchange import (
     BugDuplicateChange,
+    DeferredBugDuplicateChange,
     BugTaskAssigneeChange,
     get_bug_changes,
     )
@@ -59,6 +60,20 @@ def notify_bug_modified(bug, event):
 
     if bug_delta is not None:
         add_bug_change_notifications(bug_delta)
+
+
+@block_implicit_flushes
+def deferred_notify_bug_modified(bug, event):
+    """Handle bug change events where the notifications should be deferred.
+
+    This handler will queue up a notice about the change but the computation
+    of recipients happens later in the cronscript.
+    """
+    bug_delta = get_bug_delta(
+        old_bug=event.object_before_modification,
+        new_bug=event.object, user=IPerson(event.user))
+    if bug_delta is not None:
+        add_deferred_bug_change_notifications(bug_delta)
 
 
 @block_implicit_flushes
@@ -142,6 +157,7 @@ def get_bug_delta(old_bug, new_bug, user):
         return None
 
 
+
 def add_bug_change_notifications(bug_delta, old_bugtask=None,
                                  new_subscribers=None):
     """Generate bug notifications and add them to the bug."""
@@ -180,6 +196,23 @@ def add_bug_change_notifications(bug_delta, old_bugtask=None,
                         include_master_dupe_subscribers=False))
                 recipients.update(change_recipients)
             bug_delta.bug.addChange(change, recipients=recipients)
+
+
+def add_deferred_bug_change_notifications(bug_delta, old_bugtask=None,
+                                          new_subscribers=None):
+    """Generate deferred bug notification.
+
+    These notifications provide all of the necessary information except the
+    recipient list which is too costly to generate during the request.
+    """
+    changes = get_bug_changes(bug_delta)
+    recipients = BugNotificationRecipients()
+    for change in changes:
+        if isinstance(change, BugDuplicateChange):
+            deferred_change = DeferredBugDuplicateChange(
+                change.when, change.person, change.what_changed,
+                change.old_value, change.new_value)
+            bug_delta.bug.addChange(deferred_change, recipients=recipients)
 
 
 def send_bug_details_to_new_bug_subscribers(

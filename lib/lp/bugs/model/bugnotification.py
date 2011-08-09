@@ -121,7 +121,7 @@ class BugNotificationSet:
         interval = timedelta(
             minutes=int(config.malone.bugnotification_interval))
         time_limit = (
-            datetime.now(pytz.timezone('UTC')) - interval)
+            datetime.now(pytz.UTC) - interval)
         last_omitted_notification = None
         pending_notifications = []
         people_ids = set()
@@ -141,7 +141,7 @@ class BugNotificationSet:
                 pending_notifications.append(notification)
                 people_ids.add(notification.message.ownerID)
                 bug_ids.add(notification.bugID)
-        # Now we do some calls that are purely for cacheing.
+        # Now we do some calls that are purely for caching.
         # Converting these into lists forces the queries to execute.
         if pending_notifications:
             list(
@@ -154,13 +154,25 @@ class BugNotificationSet:
         pending_notifications.reverse()
         return pending_notifications
 
+    def getDeferredNotifications(self):
+        """See `IBugNoticationSet`."""
+        store = IStore(BugNotification)
+        results = store.find(
+            BugNotification,
+            BugNotification.date_emailed == None,
+            BugNotification.status == BugNotificationStatus.DEFERRED)
+        return results
+
     def addNotification(self, bug, is_comment, message, recipients, activity):
         """See `IBugNotificationSet`."""
         if not recipients:
-            return
+            status = BugNotificationStatus.DEFERRED
+        else:
+            status = BugNotificationStatus.PENDING
         bug_notification = BugNotification(
             bug=bug, is_comment=is_comment,
-            message=message, date_emailed=None, activity=activity)
+            message=message, date_emailed=None, activity=activity,
+            status=status)
         store = Store.of(bug_notification)
         # XXX jamesh 2008-05-21: these flushes are to fix ordering
         # problems in the bugnotification-sending.txt tests.
@@ -173,19 +185,20 @@ class BugNotificationSet:
 
         # We add all the recipients in a single SQL statement to make
         # this a bit more efficient for bugs with many subscribers.
-        store.execute("""
-            INSERT INTO BugNotificationRecipient
-              (bug_notification, person, reason_header, reason_body)
-            VALUES %s;""" % ', '.join(sql_values))
-
-        if len(recipients.subscription_filters) > 0:
-            filter_link_sql = [
-                "(%s, %s)" % sqlvalues(bug_notification, filter.id)
-                for filter in recipients.subscription_filters]
+        if len(sql_values) > 0:
             store.execute("""
-                INSERT INTO BugNotificationFilter
-                  (bug_notification, bug_subscription_filter)
-                VALUES %s;""" % ", ".join(filter_link_sql))
+                INSERT INTO BugNotificationRecipient
+                  (bug_notification, person, reason_header, reason_body)
+                VALUES %s;""" % ', '.join(sql_values))
+
+            if len(recipients.subscription_filters) > 0:
+                filter_link_sql = [
+                    "(%s, %s)" % sqlvalues(bug_notification, filter.id)
+                    for filter in recipients.subscription_filters]
+                store.execute("""
+                    INSERT INTO BugNotificationFilter
+                      (bug_notification, bug_subscription_filter)
+                    VALUES %s;""" % ", ".join(filter_link_sql))
 
         return bug_notification
 
