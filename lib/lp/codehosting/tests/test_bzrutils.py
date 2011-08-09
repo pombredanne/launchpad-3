@@ -33,8 +33,6 @@ from bzrlib.tests.per_branch import (
     branch_scenarios,
     TestCaseWithControlDir,
     )
-from bzrlib.transport import chroot
-from lazr.uri import URI
 
 from lp.codehosting.bzrutils import (
     add_exception_logging_hook,
@@ -44,9 +42,7 @@ from lp.codehosting.bzrutils import (
     get_vfs_format_classes,
     is_branch_stackable,
     remove_exception_logging_hook,
-    safe_open,
     )
-from lp.codehosting.safe_open import BadUrl
 from lp.codehosting.tests.helpers import TestResultWrapper
 
 
@@ -260,48 +256,6 @@ class TestCheckedOpen(TestCaseWithTransport):
         self.assertEqual([reference_url, target.base], seen_urls)
 
 
-class TestSafeOpen(TestCaseWithTransport):
-    """Tests for `safe_open`."""
-
-    def get_chrooted_scheme(self, relpath):
-        """Create a server that is chrooted to `relpath`.
-
-        :return: ``(scheme, get_url)`` where ``scheme`` is the scheme of the
-            chroot server and ``get_url`` returns URLs on said server.
-        """
-        transport = self.get_transport(relpath)
-        chroot_server = chroot.ChrootServer(transport)
-        chroot_server.start_server()
-        self.addCleanup(chroot_server.stop_server)
-        def get_url(relpath):
-            return chroot_server.get_url() + relpath
-        return URI(chroot_server.get_url()).scheme, get_url
-
-    def test_stacked_within_scheme(self):
-        # A branch that is stacked on a URL of the same scheme is safe to
-        # open.
-        self.get_transport().mkdir('inside')
-        self.make_branch('inside/stacked')
-        self.make_branch('inside/stacked-on')
-        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
-        Branch.open(get_chrooted_url('stacked')).set_stacked_on_url(
-            get_chrooted_url('stacked-on'))
-        safe_open(scheme, get_chrooted_url('stacked'))
-
-    def test_stacked_outside_scheme(self):
-        # A branch that is stacked on a URL that is not of the same scheme is
-        # not safe to open.
-        self.get_transport().mkdir('inside')
-        self.get_transport().mkdir('outside')
-        self.make_branch('inside/stacked')
-        self.make_branch('outside/stacked-on')
-        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
-        Branch.open(get_chrooted_url('stacked')).set_stacked_on_url(
-            self.get_url('outside/stacked-on'))
-        self.assertRaises(
-            BadUrl, safe_open, scheme, get_chrooted_url('stacked'))
-
-
 def load_tests(basic_tests, module, loader):
     """Parametrize the tests of get_branch_stacked_on_url by branch format."""
     result = loader.suiteClass()
@@ -316,7 +270,6 @@ def load_tests(basic_tests, module, loader):
     result.addTests(loader.loadTestsFromTestCase(TestDenyingServer))
     result.addTests(loader.loadTestsFromTestCase(TestExceptionLoggingHooks))
     result.addTests(loader.loadTestsFromTestCase(TestGetVfsFormatClasses))
-    result.addTests(loader.loadTestsFromTestCase(TestSafeOpen))
     result.addTests(loader.loadTestsFromTestCase(TestCheckedOpen))
     return result
 

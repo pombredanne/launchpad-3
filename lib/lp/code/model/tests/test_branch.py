@@ -2686,7 +2686,7 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
 
 
 class TestGetBzrBranch(TestCaseWithFactory):
-    """Tests for `IBranch.safe_open`."""
+    """Tests for `IBranch.getBzrBranch`."""
 
     layer = DatabaseFunctionalLayer
 

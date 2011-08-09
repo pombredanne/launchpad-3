@@ -31,7 +31,6 @@ import sys
 from bzrlib import (
     config,
     trace,
-    urlutils,
     )
 from bzrlib.errors import (
     NotStacked,
@@ -53,12 +52,6 @@ from lazr.uri import URI
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
-    )
-
-from lp.codehosting.safe_open import (
-    BadUrl,
-    BranchOpenPolicy,
-    SafeBranchOpener,
     )
 
 
@@ -293,34 +286,6 @@ def identical_formats(branch_one, branch_two):
     """
     return (get_vfs_format_classes(branch_one) ==
             get_vfs_format_classes(branch_two))
-
-
-class URLChecker(BranchOpenPolicy):
-    """Branch open policy that rejects URLs not on the given scheme."""
-
-    def __init__(self, allowed_scheme):
-        self.allowed_scheme = allowed_scheme
-
-    def shouldFollowReferences(self):
-        return True
-
-    def transformFallbackLocation(self, branch, url):
-        return urlutils.join(branch.base, url), True
-
-    def checkOneURL(self, url):
-        """Check that `url` is safe to open."""
-        if URI(url).scheme != self.allowed_scheme:
-            raise BadUrl(url)
-
-
-def safe_open(allowed_scheme, url):
-    """Open the branch at `url`, only accessing URLs on `allowed_scheme`.
-
-    :raises BadUrl: An attempt was made to open a URL that was not on
-        `allowed_scheme`.
-    """
-    opener = SafeBranchOpener(URLChecker(allowed_scheme))
-    return opener.open(url)
 
 
 def get_stacked_on_url(branch):

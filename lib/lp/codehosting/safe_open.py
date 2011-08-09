@@ -9,6 +9,8 @@ from bzrlib import urlutils
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 
+from lazr.uri import URI
+
 __all__ = [
     'AcceptAnythingPolicy',
     'BadUrl',
@@ -231,3 +233,30 @@ class SafeBranchOpener(object):
         url = self.checkAndFollowBranchReference(url)
         return self.runWithTransformFallbackLocationHookInstalled(
             Branch.open, url)
+
+
+class URLChecker(BranchOpenPolicy):
+    """Branch open policy that rejects URLs not on the given scheme."""
+
+    def __init__(self, allowed_scheme):
+        self.allowed_scheme = allowed_scheme
+
+    def shouldFollowReferences(self):
+        return True
+
+    def transformFallbackLocation(self, branch, url):
+        return urlutils.join(branch.base, url), True
+
+    def checkOneURL(self, url):
+        """Check that `url` is safe to open."""
+        if URI(url).scheme != self.allowed_scheme:
+            raise BadUrl(url)
+
+
+def safe_open(allowed_scheme, url):
+    """Open the branch at `url`, only accessing URLs on `allowed_scheme`.
+
+    :raises BadUrl: An attempt was made to open a URL that was not on
+        `allowed_scheme`.
+    """
+    return SafeBranchOpener(URLChecker(allowed_scheme)).open(url)
