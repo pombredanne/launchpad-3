@@ -22,7 +22,6 @@ from canonical.database.sqlbase import (
     cursor,
     sqlvalues,
     )
-from canonical.launchpad.scripts import execute_zcml_for_scripts
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
@@ -217,19 +216,6 @@ class RemoveTranslations(LaunchpadScript):
             '-d', '--dry-run', action='store_true', dest='dry_run',
             help="Go through the motions, but don't really delete."),
         ]
-
-    def __init__(self, *args, **kwargs):
-        """Execute zcml early.
-
-        It is usually excuted by the run method but this script needs it
-        already when parsing the option to get an id for a name."""
-        execute_zcml_for_scripts()
-        super(RemoveTranslations, self).__init__(*args, **kwargs)
-
-    def _init_zca(self, use_web_security):
-        """Prevent second execution of zcml.
-
-        This gets called by the run method to execute the zcml."""
 
     def add_my_options(self):
         """See `LaunchpadScript`."""
