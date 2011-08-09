@@ -397,10 +397,10 @@ class TestGarbo(TestCaseWithFactory):
     def test_OAuthNoncePruner(self):
         now = datetime.now(UTC)
         timestamps = [
-            now - timedelta(days=2), # Garbage
-            now - timedelta(days=1) - timedelta(seconds=60), # Garbage
-            now - timedelta(days=1) + timedelta(seconds=60), # Not garbage
-            now, # Not garbage
+            now - timedelta(days=2),  # Garbage
+            now - timedelta(days=1) - timedelta(seconds=60),  # Garbage
+            now - timedelta(days=1) + timedelta(seconds=60),  # Not garbage
+            now,  # Not garbage
             ]
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = IMasterStore(OAuthNonce)
@@ -411,14 +411,14 @@ class TestGarbo(TestCaseWithFactory):
         for timestamp in timestamps:
             store.add(OAuthNonce(
                 access_token=OAuthAccessToken.get(1),
-                request_timestamp = timestamp,
-                nonce = str(timestamp)))
+                request_timestamp=timestamp,
+                nonce=str(timestamp)))
         transaction.commit()
 
         # Make sure we have 4 nonces now.
         self.failUnlessEqual(store.find(OAuthNonce).count(), 4)
 
-        self.runHourly(maximum_chunk_size=60) # 1 minute maximum chunk size
+        self.runHourly(maximum_chunk_size=60)  # 1 minute maximum chunk size
 
         store = IMasterStore(OAuthNonce)
 
@@ -440,10 +440,10 @@ class TestGarbo(TestCaseWithFactory):
         HOURS = 60 * 60
         DAYS = 24 * HOURS
         timestamps = [
-            now - 2 * DAYS, # Garbage
-            now - 1 * DAYS - 1 * MINUTES, # Garbage
-            now - 1 * DAYS + 1 * MINUTES, # Not garbage
-            now, # Not garbage
+            now - 2 * DAYS,  # Garbage
+            now - 1 * DAYS - 1 * MINUTES,  # Garbage
+            now - 1 * DAYS + 1 * MINUTES,  # Not garbage
+            now,  # Not garbage
             ]
         LaunchpadZopelessLayer.switchDbUser('testadmin')
 
@@ -461,7 +461,7 @@ class TestGarbo(TestCaseWithFactory):
         self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 4)
 
         # Run the garbage collector.
-        self.runHourly(maximum_chunk_size=60) # 1 minute maximum chunks.
+        self.runHourly(maximum_chunk_size=60)  # 1 minute maximum chunks.
 
         store = IMasterStore(OpenIDConsumerNonce)
 
@@ -470,7 +470,8 @@ class TestGarbo(TestCaseWithFactory):
 
         # And none of them are older than 1 day
         earliest = store.find(Min(OpenIDConsumerNonce.timestamp)).one()
-        self.failUnless(earliest >= now - 24*60*60, 'Still have old nonces')
+        self.failUnless(
+            earliest >= now - 24 * 60 * 60, 'Still have old nonces')
 
     def test_CodeImportResultPruner(self):
         now = datetime.now(UTC)
@@ -497,7 +498,7 @@ class TestGarbo(TestCaseWithFactory):
 
         new_code_import_result(now - timedelta(days=60))
         for i in range(results_to_keep_count - 1):
-            new_code_import_result(now - timedelta(days=19+i))
+            new_code_import_result(now - timedelta(days=19 + i))
 
         # Run the garbage collector
         self.runDaily()
@@ -570,7 +571,7 @@ class TestGarbo(TestCaseWithFactory):
             store.execute("""
                 INSERT INTO %s (server_url, handle, issued, lifetime)
                 VALUES (%s, %s, %d, %d)
-                """ % (table_name, str(delta), str(delta), now-10, delta))
+                """ % (table_name, str(delta), str(delta), now - 10, delta))
         transaction.commit()
 
         # Ensure that we created at least one expirable row (using the
@@ -959,7 +960,7 @@ class TestGarbo(TestCaseWithFactory):
         finally:
             con.close()
         store = IMasterStore(BugMessage)
-        unmigrated = store.find(BugMessage, BugMessage.ownerID==None).count
+        unmigrated = store.find(BugMessage, BugMessage.ownerID == None).count
         self.assertNotEqual(0, unmigrated())
         self.runHourly()
         self.assertEqual(0, unmigrated())
