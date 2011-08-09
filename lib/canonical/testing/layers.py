@@ -107,7 +107,6 @@ from canonical.config.fixture import (
     ConfigUseFixture,
     )
 from canonical.database.sqlbase import (
-    cursor,
     session_store,
     ZopelessTransactionManager,
     )
