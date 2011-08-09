@@ -281,8 +281,8 @@ class TestProductSeriesPillarAffiliation(TestCaseWithFactory):
             owner=owner, driver=driver, name='pting')
         productseries = self.factory.makeProductSeries(
             owner=driver, product=product)
-        [badge] = IHasAffiliation(productseries)\
-                                        .getAffiliationBadges([driver])
+        [badge] = (
+            IHasAffiliation(productseries).getAffiliationBadges([driver]))
         self.assertEqual(
             ("/@@/product-badge", "Pting driver"), badge)
 
@@ -295,8 +295,8 @@ class TestProductSeriesPillarAffiliation(TestCaseWithFactory):
             owner=owner, driver=driver, name='pting')
         productseries = self.factory.makeProductSeries(
             owner=owner, product=product)
-        [badge] = IHasAffiliation(productseries)\
-                                        .getAffiliationBadges([driver])
+        [badge] = (
+            IHasAffiliation(productseries).getAffiliationBadges([driver]))
         self.assertEqual(
             ("/@@/product-badge", "Pting driver"), badge)
 
@@ -310,8 +310,8 @@ class TestProductSeriesPillarAffiliation(TestCaseWithFactory):
             owner=owner, project=project, name='pting')
         productseries = self.factory.makeProductSeries(
             owner=owner, product=product)
-        [badge] = IHasAffiliation(productseries)\
-                                        .getAffiliationBadges([driver])
+        [badge] = (
+            IHasAffiliation(productseries).getAffiliationBadges([driver]))
         self.assertEqual(
             ("/@@/product-badge", "Pting driver"), badge)
 
@@ -353,8 +353,8 @@ class TestQuestionPillarAffiliation(TestCaseWithFactory):
         with person_logged_in(answer_contact):
             distro.addAnswerContact(answer_contact, answer_contact)
         question = self.factory.makeQuestion(target=distro)
-        [badge] = IHasAffiliation(question)\
-                                    .getAffiliationBadges([answer_contact])
+        [badge] = (
+            IHasAffiliation(question).getAffiliationBadges([answer_contact]))
         self.assertEqual(
             ("/@@/distribution-badge", "%s answer contact" %
                 distro.displayname), badge)
@@ -374,8 +374,8 @@ class TestQuestionPillarAffiliation(TestCaseWithFactory):
                 answer_contact, answer_contact)
         question = self.factory.makeQuestion(
             target=distro_sourcepackage, owner=answer_contact)
-        [badge] = IHasAffiliation(question)\
-                                    .getAffiliationBadges([answer_contact])
+        [badge] = (
+            IHasAffiliation(question).getAffiliationBadges([answer_contact]))
         self.assertEqual(
             ("/@@/distribution-badge", "%s answer contact" %
                 distro_sourcepackage.displayname), badge)
@@ -394,8 +394,8 @@ class TestQuestionPillarAffiliation(TestCaseWithFactory):
             distribution.addAnswerContact(answer_contact, answer_contact)
         question = self.factory.makeQuestion(
             target=distro_sourcepackage, owner=answer_contact)
-        [badge] = IHasAffiliation(question)\
-                                    .getAffiliationBadges([answer_contact])
+        [badge] = (
+            IHasAffiliation(question).getAffiliationBadges([answer_contact]))
         self.assertEqual(
             ("/@@/distribution-badge", "%s answer contact" %
                 distribution.displayname), badge)
@@ -411,8 +411,8 @@ class TestQuestionPillarAffiliation(TestCaseWithFactory):
         with person_logged_in(answer_contact):
             product.addAnswerContact(answer_contact, answer_contact)
         question = self.factory.makeQuestion(target=product)
-        [badge] = IHasAffiliation(question)\
-                                    .getAffiliationBadges([answer_contact])
+        [badge] = (
+            IHasAffiliation(question).getAffiliationBadges([answer_contact]))
         self.assertEqual(
             ("/@@/product-badge", "%s answer contact" %
                 product.displayname), badge)
@@ -459,8 +459,8 @@ class TestSpecificationPillarAffiliation(TestCaseWithFactory):
         person = self.factory.makePerson()
         product = self.factory.makeProduct(owner=person)
         specification = self.factory.makeSpecification(product=product)
-        [badge] = IHasAffiliation(specification)\
-                                        .getAffiliationBadges([person])
+        [badge] = (
+            IHasAffiliation(specification).getAffiliationBadges([person]))
         self.assertEqual(
             ("/@@/product-badge", "%s maintainer" %
                 product.displayname), badge)
@@ -470,8 +470,8 @@ class TestSpecificationPillarAffiliation(TestCaseWithFactory):
         person = self.factory.makePerson()
         distro = self.factory.makeDistribution(owner=person)
         specification = self.factory.makeSpecification(distribution=distro)
-        [badge] = IHasAffiliation(specification)\
-                                        .getAffiliationBadges([person])
+        [badge] = (
+            IHasAffiliation(specification).getAffiliationBadges([person]))
         self.assertEqual(
             ("/@@/distribution-badge", "%s maintainer" %
                 distro.displayname), badge)
