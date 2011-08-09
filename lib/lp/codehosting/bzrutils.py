@@ -33,6 +33,7 @@ import threading
 from bzrlib import (
     config,
     trace,
+    urlutils,
     )
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
@@ -56,6 +57,11 @@ from lazr.uri import URI
 from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility,
     ScriptRequest,
+    )
+
+from lp.codehosting.safe_open import (
+    BranchOpenPolicy,
+    SafeBranchOpener,
     )
 
 
@@ -292,74 +298,38 @@ def identical_formats(branch_one, branch_two):
             get_vfs_format_classes(branch_two))
 
 
-checked_open_data = threading.local()
-
-
-def _install_checked_open_hook():
-    """Install `_checked_open_pre_open_hook` as a ``pre_open`` hook.
-
-    This is done at module import time, but _checked_open_pre_open_hook
-    doesn't do anything unless the `checked_open_data` threading.Local object
-    has a 'checked_opener' attribute in this thread.
-
-    This is in a module-level function rather than performed at module level
-    so that it can be called in setUp for testing `checked_open` as
-    bzrlib.tests.TestCase.setUp clears hooks.
-    """
-    BzrDir.hooks.install_named_hook(
-        'pre_open', _checked_open_pre_open_hook, 'safe open')
-
-
-def _checked_open_pre_open_hook(transport):
-    """If a checked_open validate function is present in this thread, call it.
-    """
-    if not getattr(checked_open_data, 'validate', False):
-        return
-    checked_open_data.validate(transport.base)
-
-
-_install_checked_open_hook()
-
-
-def checked_open(validation_function, url, possible_transports=None):
-    """Open a branch, calling `validation_function` with any URL thus found.
-
-    This is intended to be used to open a branch ensuring that it's not
-    stacked or a reference to something unexpected.
-    """
-    if hasattr(checked_open_data, 'validate'):
-        raise AssertionError("checked_open called recursively")
-    checked_open_data.validate = validation_function
-    try:
-        return Branch.open(url, possible_transports=possible_transports)
-    finally:
-        del checked_open_data.validate
-
-
 class UnsafeUrlSeen(Exception):
     """`safe_open` found a URL that was not on the configured scheme."""
 
 
-def makeURLChecker(allowed_scheme):
-    """Make a callable that rejects URLs not on the given scheme."""
+class URLChecker(BranchOpenPolicy):
+    """Branch open policy that rejects URLs not on the given scheme."""
 
-    def checkURL(url):
+    def __init__(self, allowed_scheme):
+        self.allowed_scheme = allowed_scheme
+
+    def shouldFollowReferences(self):
+        return True
+
+    def transformFallbackLocation(self, branch, url):
+        return urlutils.join(branch.base, url), True
+
+    def checkOneURL(self, url):
         """Check that `url` is safe to open."""
-        if URI(url).scheme != allowed_scheme:
+        if URI(url).scheme != self.allowed_scheme:
             raise UnsafeUrlSeen(
                 "Attempt to open %r which is not a %s URL" % (
-                    url, allowed_scheme))
-    return checkURL
+                    url, self.allowed_scheme))
 
 
-def safe_open(allowed_scheme, url, possible_transports=None):
+def safe_open(allowed_scheme, url):
     """Open the branch at `url`, only accessing URLs on `allowed_scheme`.
 
     :raises UnsafeUrlSeen: An attempt was made to open a URL that was not on
         `allowed_scheme`.
     """
-    return checked_open(
-        makeURLChecker(allowed_scheme), url, possible_transports)
+    opener = SafeBranchOpener(URLChecker(allowed_scheme))
+    return opener.open(url)
 
 
 def get_stacked_on_url(branch):

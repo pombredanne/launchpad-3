@@ -37,7 +37,6 @@ from bzrlib.transport import chroot
 from lazr.uri import URI
 
 from lp.codehosting.bzrutils import (
-    _install_checked_open_hook,
     add_exception_logging_hook,
     checked_open,
     DenyingServer,
@@ -232,10 +231,6 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
 class TestCheckedOpen(TestCaseWithTransport):
     """Tests for `checked_open`."""
 
-    def setUp(self):
-        TestCaseWithTransport.setUp(self)
-        _install_checked_open_hook()
-
     def test_simple(self):
         # Opening a branch with checked_open checks the branches url.
         url = self.make_branch('branch').base
@@ -267,10 +262,6 @@ class TestCheckedOpen(TestCaseWithTransport):
 
 class TestSafeOpen(TestCaseWithTransport):
     """Tests for `safe_open`."""
-
-    def setUp(self):
-        TestCaseWithTransport.setUp(self)
-        _install_checked_open_hook()
 
     def get_chrooted_scheme(self, relpath):
         """Create a server that is chrooted to `relpath`.
