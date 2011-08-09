@@ -23,16 +23,14 @@ from lazr.uri import InvalidURIError
 
 from lp.code.enums import BranchType
 from lp.codehosting.puller.worker import (
+    BadUrlLaunchpad,
+    BadUrlScheme,
+    BadUrlSsh,
     BranchLoopError,
     BranchMirrorer,
     BranchReferenceForbidden,
     PullerWorker,
     PullerWorkerProtocol,
-    )
-from lp.codehosting.vfs.branchfs import (
-    BadUrlLaunchpad,
-    BadUrlScheme,
-    BadUrlSsh,
     )
 
 

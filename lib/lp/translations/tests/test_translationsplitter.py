@@ -309,7 +309,7 @@ class TestDistributionTranslationTemplateSplitter(
             return template2
         else:
             distro = template.distroseries.distribution
-            other_series = self.factory.makeDistroRelease(distribution=distro)
+            other_series = self.factory.makeDistroSeries(distribution=distro)
             return self.factory.makePOTemplate(
                 name='template',
                 distroseries=other_series,

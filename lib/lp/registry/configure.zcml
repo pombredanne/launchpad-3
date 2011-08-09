@@ -488,6 +488,7 @@
                 findRelatedArchivePublications
                 findRelatedArchives
                 getPersonsByEmail
+                getMergeProposals
                 getReleasesAndPublishingHistory
                 getUsedBugTags
                 getUsedBugTagsWithOpenCounts

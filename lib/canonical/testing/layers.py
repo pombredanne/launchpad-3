@@ -61,6 +61,7 @@ import signal
 import socket
 import subprocess
 import sys
+import tempfile
 from textwrap import dedent
 import threading
 import time
@@ -606,8 +607,13 @@ class MemcachedLayer(BaseLayer):
             ]
         if config.memcached.verbose:
             cmd.append('-vv')
+            stdout = sys.stdout
+            stderr = sys.stderr
+        else:
+            stdout = tempfile.NamedTemporaryFile()
+            stderr = tempfile.NamedTemporaryFile()
         MemcachedLayer._memcached_process = subprocess.Popen(
-            cmd, stdin=subprocess.PIPE)
+            cmd, stdin=subprocess.PIPE, stdout=stdout, stderr=stderr)
         MemcachedLayer._memcached_process.stdin.close()
 
         # Wait for the memcached to become operational.

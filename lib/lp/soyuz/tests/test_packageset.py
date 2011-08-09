@@ -172,10 +172,10 @@ class TestPackageset(TestCaseWithFactory):
         self.distribution = getUtility(IDistributionSet).getByName(
             'ubuntu')
         self.distroseries_current = self.distribution.currentseries
-        self.distroseries_experimental = self.factory.makeDistroRelease(
+        self.distroseries_experimental = self.factory.makeDistroSeries(
             distribution=self.distribution, name="experimental",
             status=SeriesStatus.EXPERIMENTAL)
-        self.distroseries_experimental2 = self.factory.makeDistroRelease(
+        self.distroseries_experimental2 = self.factory.makeDistroSeries(
             distribution=self.distribution, name="experimental2",
             status=SeriesStatus.EXPERIMENTAL)
 
