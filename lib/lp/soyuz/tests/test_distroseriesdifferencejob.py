@@ -120,11 +120,6 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
             make_metadata(package.id, one_parent.id),
             make_metadata(package.id, another_parent.id))
 
-    def test_may_require_job_accepts_none_derived_series(self):
-        parent_series = self.factory.makeDistroSeriesParent().parent_series
-        package = self.factory.makeSourcePackageName()
-        self.assertFalse(may_require_job(None, package, parent_series))
-
     def test_may_require_job_allows_new_jobs(self):
         dsp = self.factory.makeDistroSeriesParent()
         package = self.factory.makeSourcePackageName()
@@ -137,12 +132,6 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         create_job(dsp.derived_series, package, dsp.parent_series)
         self.assertFalse(
             may_require_job(dsp.derived_series, package, dsp.parent_series))
-
-    def test_may_require_job_forbids_jobs_on_nonderived_series(self):
-        sourcepackage = self.factory.makeSourcePackage()
-        self.assertFalse(may_require_job(
-            sourcepackage.distroseries, sourcepackage.sourcepackagename,
-            None))
 
     def test_may_require_job_forbids_jobs_for_intra_distro_derivation(self):
         package = self.factory.makeSourcePackageName()
