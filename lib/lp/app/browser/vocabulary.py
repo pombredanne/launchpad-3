@@ -130,8 +130,9 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
         extra = super(PersonPickerEntryAdapter, self).getPickerEntry(
             associated_object)
 
-        enhanced_picker_enabled = kwarg.get('enhanced_picker_enabled', False)
-        if enhanced_picker_enabled:
+        personpicker_affiliation_enabled = kwarg.get(
+                                    'personpicker_affiliation_enabled', False)
+        if personpicker_affiliation_enabled:
             # If the person is affiliated with the associated_object then we
             # can display a badge.
             badge_info = IHasAffiliation(
@@ -154,6 +155,7 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
                     extra.description = '<email address hidden>'
 
         extra.metadata = get_person_picker_entry_metadata(person)
+        enhanced_picker_enabled = kwarg.get('enhanced_picker_enabled', False)
         if enhanced_picker_enabled:
             # We will display the person's name (launchpad id) after their
             # displayname.
@@ -242,6 +244,8 @@ class HugeVocabularyJSONView:
             getFeatureFlag('disclosure.picker_enhancements.enabled'))
         self.picker_expander_enabled = bool(
             getFeatureFlag('disclosure.picker_expander.enabled'))
+        self.personpicker_affiliation_enabled = bool(
+            getFeatureFlag('disclosure.personpicker_affiliation.enabled'))
 
     def __call__(self):
         name = self.request.form.get('name')
@@ -287,7 +291,9 @@ class HugeVocabularyJSONView:
             picker_entry = IPickerEntry(term.value).getPickerEntry(
                 self.context,
                 enhanced_picker_enabled=self.enhanced_picker_enabled,
-                picker_expander_enabled=self.picker_expander_enabled)
+                picker_expander_enabled=self.picker_expander_enabled,
+                personpicker_affiliation_enabled=
+                    self.personpicker_affiliation_enabled)
             if picker_entry.description is not None:
                 if len(picker_entry.description) > MAX_DESCRIPTION_LENGTH:
                     entry['description'] = (

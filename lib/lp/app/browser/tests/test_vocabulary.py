@@ -119,17 +119,19 @@ class PersonPickerEntryAdapterTestCase(TestCaseWithFactory):
         self.assertEqual('http://launchpad.dev/~fnord', entry.alt_title_link)
         self.assertEqual(['Team members: 1'], entry.details)
 
-    def test_PersonPickerEntryAdapter_enhanced_picker_enabled_badges(self):
-        # The enhanced person picker provides affilliation information.
+    def test_PersonPickerEntryAdapter_personpicker_affiliation_badges(self):
+        # The person picker with affiliation enabled provides affilliation
+        # information.
         person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
         project = self.factory.makeProduct(name='fnord', owner=person)
         bugtask = self.factory.makeBugTask(target=project)
         entry = IPickerEntry(person).getPickerEntry(
             bugtask, enhanced_picker_enabled=True,
-            picker_expander_enabled=True)
+            picker_expander_enabled=True,
+            personpicker_affiliation_enabled=True)
         self.assertEqual(1, len(entry.badges))
         self.assertEqual('/@@/product-badge', entry.badges[0]['url'])
-        self.assertEqual('Affiliated with Fnord', entry.badges[0]['alt'])
+        self.assertEqual('Fnord maintainer', entry.badges[0]['alt'])
 
 
 class TestPersonVocabulary:
@@ -171,8 +173,9 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
         self.addCleanup(TestPersonVocabulary.setTestData, [])
 
     @staticmethod
-    def create_vocabulary_view(form):
-        context = getUtility(ILaunchpadRoot)
+    def create_vocabulary_view(form, context=None):
+        if context is None:
+            context = getUtility(ILaunchpadRoot)
         query_string = urlencode(form)
         return create_view(
             context, '+huge-vocabulary', form=form, query_string=query_string)
@@ -198,19 +201,25 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
         feature_flag = {
             'disclosure.picker_enhancements.enabled': 'on',
             'disclosure.picker_expander.enabled': 'on',
+            'disclosure.personpicker_affiliation.enabled': 'on',
             }
         flags = FeatureFixture(feature_flag)
         flags.setUp()
         self.addCleanup(flags.cleanUp)
         team = self.factory.makeTeam(name='pting-team')
         TestPersonVocabulary.test_persons.append(team)
+        product = self.factory.makeProduct(owner=team)
+        bugtask = self.factory.makeBugTask(target=product)
         form = dict(name='TestPerson', search_text='pting-team')
-        view = self.create_vocabulary_view(form)
+        view = self.create_vocabulary_view(form, context=bugtask)
         result = simplejson.loads(view())
         expected = {
             "alt_title": team.name,
             "alt_title_link": "http://launchpad.dev/~%s" % team.name,
             "api_uri": "/~%s" % team.name,
+            "badges":
+                [{"alt": "%s maintainer" % product.displayname,
+                  "url": "/@@/product-badge"}],
             "css": "sprite team",
             "details": ['Team members: 1'],
             "link_css": "sprite new-window",

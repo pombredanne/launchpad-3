@@ -954,7 +954,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
         translations_usage=None, bug_supervisor=None,
-        driver=None):
+        driver=None, security_contact=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -990,6 +990,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_product.bug_supervisor = bug_supervisor
         if driver is not None:
             naked_product.driver = driver
+        if security_contact is not None:
+            naked_product.security_contact = security_contact
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
@@ -1023,7 +1025,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return ProxyFactory(series)
 
     def makeProject(self, name=None, displayname=None, title=None,
-                    homepageurl=None, summary=None, owner=None,
+                    homepageurl=None, summary=None, owner=None, driver=None,
                     description=None):
         """Create and return a new, arbitrary ProjectGroup."""
         if owner is None:
@@ -1038,7 +1040,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             description = self.getUniqueString('description')
         if title is None:
             title = self.getUniqueString('title')
-        return getUtility(IProjectGroupSet).new(
+        project = getUtility(IProjectGroupSet).new(
             name=name,
             displayname=displayname,
             title=title,
@@ -1046,6 +1048,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             summary=summary,
             description=description,
             owner=owner)
+        if driver is not None:
+            removeSecurityProxy(project).driver = driver
+        return project
 
     def makeSprint(self, title=None, name=None):
         """Make a sprint."""
@@ -2324,9 +2329,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeDistribution(self, name=None, displayname=None, owner=None,
                          registrant=None, members=None, title=None,
-                         aliases=None, bug_supervisor=None,
-                         publish_root_dir=None, publish_base_url=None,
-                         publish_copy_base_url=None, no_pubconf=False):
+                         aliases=None, bug_supervisor=None, driver=None,
+                         security_contact=None, publish_root_dir=None,
+                         publish_base_url=None, publish_copy_base_url=None,
+                         no_pubconf=False):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString(prefix="distribution")
@@ -2346,11 +2352,15 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         distro = getUtility(IDistributionSet).new(
             name, displayname, title, description, summary, domainname,
             members, owner, registrant)
+        naked_distro = removeSecurityProxy(distro)
         if aliases is not None:
-            removeSecurityProxy(distro).setAliases(aliases)
+            naked_distro.setAliases(aliases)
+        if driver is not None:
+            naked_distro.driver = driver
         if bug_supervisor is not None:
-            naked_distro = removeSecurityProxy(distro)
             naked_distro.bug_supervisor = bug_supervisor
+        if security_contact is not None:
+            naked_distro.security_contact = security_contact
         if not no_pubconf:
             self.makePublisherConfig(
                 distro, publish_root_dir, publish_base_url,
