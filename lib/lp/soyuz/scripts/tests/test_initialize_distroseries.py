@@ -1035,5 +1035,5 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             [], self.getWaitingJobs(child, 'p1', prev_parent1))
         self.assertEqual([], self.getWaitingJobs(child, 'p11', prev_parent1))
         self.assertEqual([], self.getWaitingJobs(child, 'p2', prev_parent2))
-        self.assertEqual(1, len(self.getWaitingJobs(child, 'p1', parent3)))
+        self.assertNotEqual([], self.getWaitingJobs(child, 'p1', parent3))
         self.assertEqual([], self.getWaitingJobs(child, 'p3', parent3))
