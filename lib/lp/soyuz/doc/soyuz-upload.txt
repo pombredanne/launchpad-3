@@ -415,18 +415,9 @@ We use getPackageUploads to inspect the current NEW queue and accept items.
     drdsl ACCEPTED
     etherwake ACCEPTED
 
-# XXX cprov 2006-04-12 bug=3989:
-# We must flush these changes so that it gets out of
-# the cache and  into the database. Without this process-accepted.py
-# wouldn't see the changes. Reported in
-
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-    >>> transaction.commit()
-
-
 Now we process the accepted queue items, one more time.
 
+    >>> transaction.commit()
     >>> script = os.path.join(config.root, "scripts", "process-accepted.py")
     >>> process = subprocess.Popen(
     ...     [sys.executable, script, "ubuntutest", "-q"])
@@ -462,6 +453,7 @@ Invoke Publisher script against the 'ubuntutest' distribution:
     <BLANKLINE>
     >>> print stderr
     DEBUG Enabled by DEFAULT section
+    INFO  Creating lockfile: ...
     DEBUG     Distribution: ubuntutest
     ...
     DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz from library
@@ -469,13 +461,7 @@ Invoke Publisher script against the 'ubuntutest' distribution:
     DEBUG   Added /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.dsc from library
     ...
 
-
-# XXX cprov 2006-04-12 bug=3989
-
-    >>> flush_database_updates()
     >>> transaction.commit()
-    >>> from canonical.database.sqlbase import clear_current_connection_cache
-    >>> clear_current_connection_cache()
 
 Check if the 'etherwake' source package was correctly published and is
 in the filesystem archive, we are looking for the DSC, the gzipped
@@ -499,7 +485,7 @@ required entry for 'etherwake':
     Binary: etherwake
     Version: 1.08-1
     Section: universe/net
-    Maintainer: Alain Schroeder <alain@debian.org>
+    Maintainer: Alain Schroeder <...@...org>
     Build-Depends: debhelper (>> 2.0)
     Architecture: any
     Standards-Version: 3.5.10.0
@@ -538,8 +524,6 @@ Check if we have new pending publishing record as expected
 
 Force database changes, so they can be used by the external script properly.
 
-# XXX cprov 2006-04-12 bug=3989:
-    >>> flush_database_updates()
     >>> transaction.commit()
 
 Invoke Publisher script again to land our changes in the archive
@@ -560,16 +544,13 @@ already on disk, verify the contents are as expected.
 
     >>> print stderr
     DEBUG Enabled by DEFAULT section
+    INFO  Creating lockfile: ...
     DEBUG     Distribution: ubuntutest
     ...
     DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08.orig.tar.gz is already in pool with the same content.
     DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.diff.gz is already in pool with the same content.
     DEBUG   /var/tmp/archive/ubuntutest/pool/universe/e/etherwake/etherwake_1.08-1.dsc is already in pool with the same content.
     ...
-
-Invalidates SQLObject cache to cope with publisher.
-
-    >>> clear_current_connection_cache()
 
 Check the publishing history again
 
