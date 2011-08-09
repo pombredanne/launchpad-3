@@ -163,6 +163,8 @@ class LaunchpadScript:
 
         :param logger: Use this logger, instead of initializing global
             logging.
+        :param early_zca: Register the ZCA early, before parsing options.
+            If False, registration is delayed until the script is run.
         """
         if name is None:
             self._name = self.__class__.__name__.lower()
