@@ -48,11 +48,11 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 FEATURE_FLAG_ENABLE_MODULE = u"soyuz.derived_series_jobs.enabled"
 
 
-def make_metadata(sourcepackagename, parent_series):
-    """Return JSON metadata for a job on `sourcepackagename`."""
+def make_metadata(sourcepackagename_id, parent_series_id):
+    """Return JSON metadata for a job on `sourcepackagename_id`."""
     return {
-        'sourcepackagename': sourcepackagename.id,
-        'parent_series': parent_series.id,
+        'sourcepackagename': sourcepackagename_id,
+        'parent_series': parent_series_id,
     }
 
 
@@ -70,9 +70,20 @@ def create_job(derived_series, sourcepackagename, parent_series):
     job = DistributionJob(
         distribution=derived_series.distribution, distroseries=derived_series,
         job_type=DistributionJobType.DISTROSERIESDIFFERENCE,
-        metadata=make_metadata(sourcepackagename, parent_series))
+        metadata=make_metadata(sourcepackagename.id, parent_series.id))
     IMasterStore(DistributionJob).add(job)
     return DistroSeriesDifferenceJob(job)
+
+
+def compose_job_insertion_tuple(derived_series, parent_series,
+                                sourcepackagename, job_id):
+    data = (
+        derived_series.distribution.id, derived_series.id,
+        DistributionJobType.DISTROSERIESDIFFERENCE, job_id,
+        DistributionJob.serializeMetadata(make_metadata(
+            sourcepackagename, parent_series.id)))
+    format_string = "(%s)" % ", ".join(["%s"] * len(data))
+    return format_string % sqlvalues(*data)
 
 
 def create_multiple_jobs(derived_series, parent_series):
@@ -98,23 +109,10 @@ def create_multiple_jobs(derived_series, parent_series):
         SourcePackageRelease.sourcepackagenameID)
     job_ids = Job.createMultiple(store, nb_jobs)
 
-    def composeJobInsertionTuple(derived_series, parent_series,
-                                 sourcepackagename, job_id):
-        data = (
-            derived_series.distribution.id, derived_series.id,
-            DistributionJobType.DISTROSERIESDIFFERENCE, job_id,
-# XXX: Use make_metadata
-            DistributionJob.serializeMetadata(
-                {'sourcepackagename': sourcepackagename,
-                 'parent_series': parent_series.id}))
-        format_string = "(%s)" % ", ".join(["%s"] * len(data))
-        return format_string % sqlvalues(*data)
-
     job_contents = [
-        composeJobInsertionTuple(
+        compose_job_insertion_tuple(
             derived_series, parent_series, sourcepackagename, job_id)
-        for job_id, sourcepackagename in
-            zip(job_ids, sourcepackagenames)]
+        for job_id, sourcepackagename in zip(job_ids, sourcepackagenames)]
 
     store = IStore(DistributionJob)
     result = store.execute("""
@@ -133,7 +131,7 @@ def find_waiting_jobs(derived_series, sourcepackagename, parent_series):
     # optimization.  It's not actually disastrous to create
     # redundant jobs occasionally.
     json_metadata = DistributionJob.serializeMetadata(
-        make_metadata(sourcepackagename, parent_series))
+        make_metadata(sourcepackagename.id, parent_series.id))
 
     # Use master store because we don't like outdated information
     # here.
@@ -328,7 +326,7 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
 
         ds_diff = self.getMatchingDSD()
         if ds_diff is None:
-            ds_diff = getUtility(IDistroSeriesDifferenceSource).new(
+            getUtility(IDistroSeriesDifferenceSource).new(
                 self.distroseries, self.sourcepackagename, self.parent_series)
         else:
             ds_diff.update()

@@ -101,24 +101,24 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         package = self.factory.makeSourcePackageName()
         parent_series = self.factory.makeDistroSeries()
         self.assertEqual(
-            make_metadata(package, parent_series),
-            make_metadata(package, parent_series))
+            make_metadata(package.id, parent_series.id),
+            make_metadata(package.id, parent_series.id))
 
     def test_make_metadata_distinguishes_packages(self):
         parent_series = self.factory.makeDistroSeries()
         one_package = self.factory.makeSourcePackageName()
         another_package = self.factory.makeSourcePackageName()
         self.assertNotEqual(
-            make_metadata(one_package, parent_series),
-            make_metadata(another_package, parent_series))
+            make_metadata(one_package.id, parent_series.id),
+            make_metadata(another_package.id, parent_series.id))
 
     def test_make_metadata_distinguishes_parents(self):
         package = self.factory.makeSourcePackageName()
         one_parent = self.factory.makeDistroSeries()
         another_parent = self.factory.makeDistroSeries()
         self.assertNotEqual(
-            make_metadata(package, one_parent),
-            make_metadata(package, another_parent))
+            make_metadata(package.id, one_parent.id),
+            make_metadata(package.id, another_parent.id))
 
     def test_may_require_job_accepts_none_derived_series(self):
         parent_series = self.factory.makeDistroSeriesParent().parent_series
