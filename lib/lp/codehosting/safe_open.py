@@ -20,6 +20,7 @@ __all__ = [
     'BranchReferenceForbidden',
     'SafeBranchOpener',
     'WhitelistPolicy',
+    'safe_open',
     ]
 
 
