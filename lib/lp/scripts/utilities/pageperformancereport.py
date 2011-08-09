@@ -1023,6 +1023,9 @@ def html_report(
             src="http://people.canonical.com/~stub/flot/jquery.min.js"
             ></script>
         <script language="javascript" type="text/javascript"
+            src="http://people.canonical.com/~rvb/serve/jquery.appear-1.1.1.min.js"
+            ></script>
+        <script language="javascript" type="text/javascript"
             src="http://people.canonical.com/~stub/flot/jquery.flot.min.js"
             ></script>
         <script language="javascript" type="text/javascript"
@@ -1213,13 +1216,18 @@ def html_report(
         if histogram.count == 0:
             continue
         print >> outf, dedent("""\
-            var d = %s;
+            function plot_histogram_%d() {
+                var d = %s;
 
-            $.plot(
-                $("#histogram%d"),
-                [{data: d}], options);
+                $.plot(
+                    $("#histogram%d"),
+                    [{data: d}], options);
+            }
+            $('#histogram%d').appear(function() {
+                plot_histogram_%d();
+            });
 
-            """ % (json.dumps(histogram.bins_relative), i))
+            """ % (i, json.dumps(histogram.bins_relative), i, i, i))
 
     print >> outf, dedent("""\
             });
