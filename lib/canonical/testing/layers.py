@@ -106,10 +106,6 @@ from canonical.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )
-from canonical.database.revision import (
-    confirm_dbrevision,
-    confirm_dbrevision_on_startup,
-    )
 from canonical.database.sqlbase import (
     cursor,
     session_store,
@@ -225,9 +221,6 @@ def reconnect_stores(database_config_section='launchpad'):
 
     main_store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     assert main_store is not None, 'Failed to reconnect'
-
-    # Confirm the database has the right patchlevel
-    confirm_dbrevision(cursor())
 
     # Confirm that SQLOS is again talking to the database (it connects
     # as soon as SQLBase._connection is accessed
@@ -1884,10 +1877,6 @@ class LayerProcessController:
     @classmethod
     def _runAppServer(cls):
         """Start the app server using runlaunchpad.py"""
-        # The app server will not start at all if the database hasn't been
-        # correctly patched. The app server will make exactly this check,
-        # doing it here makes the error more obvious.
-        confirm_dbrevision_on_startup()
         _config = cls.appserver_config
         cmd = [
             os.path.join(_config.root, 'bin', 'run'),
