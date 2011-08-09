@@ -22,21 +22,17 @@ __all__ = [
     'read_locked',
     'remove_exception_logging_hook',
     'safe_open',
-    'UnsafeUrlSeen',
     ]
 
 from contextlib import contextmanager
 import os
 import sys
-import threading
 
 from bzrlib import (
     config,
     trace,
     urlutils,
     )
-from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import (
     NotStacked,
     UnstackableBranchFormat,
@@ -60,6 +56,7 @@ from canonical.launchpad.webapp.errorlog import (
     )
 
 from lp.codehosting.safe_open import (
+    BadUrl,
     BranchOpenPolicy,
     SafeBranchOpener,
     )
@@ -298,10 +295,6 @@ def identical_formats(branch_one, branch_two):
             get_vfs_format_classes(branch_two))
 
 
-class UnsafeUrlSeen(Exception):
-    """`safe_open` found a URL that was not on the configured scheme."""
-
-
 class URLChecker(BranchOpenPolicy):
     """Branch open policy that rejects URLs not on the given scheme."""
 
@@ -317,15 +310,13 @@ class URLChecker(BranchOpenPolicy):
     def checkOneURL(self, url):
         """Check that `url` is safe to open."""
         if URI(url).scheme != self.allowed_scheme:
-            raise UnsafeUrlSeen(
-                "Attempt to open %r which is not a %s URL" % (
-                    url, self.allowed_scheme))
+            raise BadUrl(url)
 
 
 def safe_open(allowed_scheme, url):
     """Open the branch at `url`, only accessing URLs on `allowed_scheme`.
 
-    :raises UnsafeUrlSeen: An attempt was made to open a URL that was not on
+    :raises BadUrl: An attempt was made to open a URL that was not on
         `allowed_scheme`.
     """
     opener = SafeBranchOpener(URLChecker(allowed_scheme))

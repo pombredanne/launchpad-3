@@ -45,8 +45,8 @@ from lp.codehosting.bzrutils import (
     is_branch_stackable,
     remove_exception_logging_hook,
     safe_open,
-    UnsafeUrlSeen,
     )
+from lp.codehosting.safe_open import BadUrl
 from lp.codehosting.tests.helpers import TestResultWrapper
 
 
@@ -299,7 +299,7 @@ class TestSafeOpen(TestCaseWithTransport):
         Branch.open(get_chrooted_url('stacked')).set_stacked_on_url(
             self.get_url('outside/stacked-on'))
         self.assertRaises(
-            UnsafeUrlSeen, safe_open, scheme, get_chrooted_url('stacked'))
+            BadUrl, safe_open, scheme, get_chrooted_url('stacked'))
 
 
 def load_tests(basic_tests, module, loader):

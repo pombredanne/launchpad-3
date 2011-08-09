@@ -108,7 +108,7 @@ from lp.code.model.codeimport import (
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.revision import Revision
 from lp.code.tests.helpers import add_revision_to_branch
-from lp.codehosting.bzrutils import UnsafeUrlSeen
+from lp.codehosting.safe_open import BadUrl
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.osutils import override_environ
@@ -2722,7 +2722,7 @@ class TestGetBzrBranch(TestCaseWithFactory):
         branch = BzrDir.create_branch_convenience('local')
         db_stacked, stacked_tree = self.create_branch_and_tree()
         stacked_tree.branch.set_stacked_on_url(branch.base)
-        self.assertRaises(UnsafeUrlSeen, db_stacked.getBzrBranch)
+        self.assertRaises(BadUrl, db_stacked.getBzrBranch)
 
 
 class TestMergeQueue(TestCaseWithFactory):
