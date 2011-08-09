@@ -185,7 +185,7 @@ class LaunchpadScript:
         else:
             description = self.description
         if self._early_zca:
-            self._init_zca()
+            self._init_zca(use_web_security=False)
         self.parser = OptionParser(usage=self.usage,
                                    description=description)
 
