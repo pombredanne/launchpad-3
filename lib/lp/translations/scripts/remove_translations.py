@@ -219,12 +219,17 @@ class RemoveTranslations(LaunchpadScript):
         ]
 
     def __init__(self, *args, **kwargs):
-        """Execute zcml early."""
+        """Execute zcml early.
+
+        It is usually excuted by the run method but this script needs it
+        already when parsing the option to get an id for a name."""
         execute_zcml_for_scripts()
         super(RemoveTranslations, self).__init__(*args, **kwargs)
 
     def _init_zca(self, use_web_security):
-        """Prevent second execution of zcml."""
+        """Prevent second execution of zcml.
+
+        This gets called by the run method to execute the zcml."""
 
     def add_my_options(self):
         """See `LaunchpadScript`."""
