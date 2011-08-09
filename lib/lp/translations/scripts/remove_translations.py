@@ -434,11 +434,6 @@ def remove_translations(logger=None, submitter=None, reviewer=None,
 
     assert len(conditions) > 0, "That would delete ALL translations, maniac!"
 
-    if len(joins) > 0:
-        using_clause = 'USING %s' % ', '.join(joins)
-    else:
-        using_clause = ''
-
     cur = cursor()
     drop_tables(cur, 'temp_doomed_message')
 
