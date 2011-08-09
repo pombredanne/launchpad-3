@@ -49,6 +49,7 @@ from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.utilities.looptuner import TunableLoop
@@ -57,6 +58,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
@@ -677,6 +679,34 @@ class BugNotificationPruner(BulkPruner):
         """
 
 
+class AnswerContactPruner(BulkPruner):
+    """Remove old answer contacts which are no longer required.
+
+    Remove a person as an answer contact if:
+      their account has been deactivated for more than one day, or
+      suspended for more than one week.
+    """
+    target_table_class = AnswerContact
+    ids_to_prune_query = """
+        SELECT DISTINCT AnswerContact.id
+        FROM AnswerContact, Person, Account
+        WHERE
+            AnswerContact.person = Person.id
+            AND Person.account = Account.id
+            AND (
+                (Account.date_status_set <
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('1 day' AS interval)
+                AND Account.status = %s)
+                OR
+                (Account.date_status_set <
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('7 days' AS interval)
+                AND Account.status = %s)
+            )
+        """ % (AccountStatus.DEACTIVATED.value, AccountStatus.SUSPENDED.value)
+
+
 class BranchJobPruner(BulkPruner):
     """Prune `BranchJob`s that are in a final state and more than a month old.
 
@@ -1169,6 +1199,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-daily'
     tunable_loops = [
+        AnswerContactPruner,
         BranchJobPruner,
         BugNotificationPruner,
         BugWatchActivityPruner,

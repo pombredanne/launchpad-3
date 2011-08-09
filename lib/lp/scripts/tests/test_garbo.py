@@ -33,6 +33,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database import sqlbase
 from canonical.database.constants import (
+    ONE_DAY_AGO,
+    SEVEN_DAYS_AGO,
     THIRTY_DAYS_AGO,
     UTC_NOW,
     )
@@ -43,6 +45,7 @@ from canonical.launchpad.database.oauth import (
     OAuthNonce,
     )
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.scripts.tests import run_script
@@ -57,6 +60,7 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
+from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnotification import (
     BugNotification,
@@ -93,11 +97,12 @@ from lp.services.session.model import (
     SessionData,
     SessionPkgData,
     )
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
+    person_logged_in,
     TestCase,
     TestCaseWithFactory,
     )
-from lp.translations.model.potemplate import POTemplate
 from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
@@ -778,6 +783,60 @@ class TestGarbo(TestCaseWithFactory):
                 BugNotification,
                 BugNotification.date_emailed < THIRTY_DAYS_AGO).count(),
             0)
+
+    def _test_AnswerContactPruner(self, status, interval, expected_count=0):
+        # Garbo should remove answer contacts for accounts with given 'status'
+        # which was set more than 'interval' days ago.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = IMasterStore(AnswerContact)
+
+        person = self.factory.makePerson()
+        person.addLanguage(getUtility(ILanguageSet)['en'])
+        question = self.factory.makeQuestion()
+        with person_logged_in(question.owner):
+            question.target.addAnswerContact(person, person)
+        Store.of(question).flush()
+        self.assertEqual(
+            store.find(
+                AnswerContact,
+                AnswerContact.person == person.id).count(),
+                1)
+
+        account = person.account
+        account.status = status
+        # We flush because a trigger sets the date_status_set and we need to
+        # modify it ourselves.
+        Store.of(account).flush()
+        if interval is not None:
+            account.date_status_set = interval
+
+        self.runDaily()
+
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(
+            store.find(
+                AnswerContact,
+                AnswerContact.person == person.id).count(),
+                expected_count)
+
+    def test_AnswerContactPruner_deactivated_accounts(self):
+        # Answer contacts with an account deactivated at least one day ago
+        # should be pruned.
+        self._test_AnswerContactPruner(AccountStatus.DEACTIVATED, ONE_DAY_AGO)
+
+    def test_AnswerContactPruner_suspended_accounts(self):
+        # Answer contacts with an account suspended at least seven days ago
+        # should be pruned.
+        self._test_AnswerContactPruner(
+            AccountStatus.SUSPENDED, SEVEN_DAYS_AGO)
+
+    def test_AnswerContactPruner_doesnt_prune_recently_changed_accounts(self):
+        # Answer contacts which are suspended or deactivated inside the
+        # minimum time interval are not pruned.
+        self._test_AnswerContactPruner(
+            AccountStatus.DEACTIVATED, None, expected_count=1)
+        self._test_AnswerContactPruner(
+            AccountStatus.SUSPENDED, ONE_DAY_AGO, expected_count=1)
 
     def test_BranchJobPruner(self):
         # Garbo should remove jobs completed over 30 days ago.
