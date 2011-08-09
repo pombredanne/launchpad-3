@@ -1216,18 +1216,18 @@ def html_report(
         if histogram.count == 0:
             continue
         print >> outf, dedent("""\
-            function plot_histogram_%d() {
-                var d = %s;
+            function plot_histogram_%(id)d() {
+                var d = %(data)s;
 
                 $.plot(
-                    $("#histogram%d"),
+                    $("#histogram%(id)d"),
                     [{data: d}], options);
             }
-            $('#histogram%d').appear(function() {
-                plot_histogram_%d();
+            $('#histogram%(id)d').appear(function() {
+                plot_histogram_%(id)d();
             });
 
-            """ % (i, json.dumps(histogram.bins_relative), i, i, i))
+            """ % {'id': i, 'data': json.dumps(histogram.bins_relative)})
 
     print >> outf, dedent("""\
             });
