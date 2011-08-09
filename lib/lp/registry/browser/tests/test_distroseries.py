@@ -47,6 +47,7 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from canonical.launchpad.webapp.url import urlappend
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.debversion import Version
 from lp.registry.browser.distroseries import (
@@ -1377,6 +1378,27 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
                 dsd.source_package_release.creator.displayname,
                 dsd.source_package_release.dscsigningkey.owner.displayname),
             normalize_whitespace(creator_cell.text_content()))
+
+    def test_diff_row_links_to_parent_changelog(self):
+        # After the parent's version, there should be text "(changelog)"
+        # linked to the parent distro source package +changelog page.  The
+        # text is styled with "discreet".
+        set_derived_series_ui_feature_flag(self)
+        dsd = self.makePackageUpgrade()
+        view = self.makeView(dsd.derived_series)
+        soup = BeautifulSoup(view())
+        diff_table = soup.find('table', {'class': 'listing'})
+        row = diff_table.tbody.tr
+
+        changelog_span = row.findAll('span', {'class': 'discreet'})
+        self.assertEqual(1, len(changelog_span))
+        link = changelog_span[0].a
+        self.assertEqual("changelog", link.string)
+
+        parent_dsp = dsd.parent_series.distribution.getSourcePackage(
+            dsd.source_package_name)
+        expected_url = urlappend(canonical_url(parent_dsp), '+changelog')
+        self.assertEqual(expected_url, link.attrs[0][1])
 
     def test_getUpgrades_shows_updates_in_parent(self):
         # The view's getUpgrades methods lists packages that can be
