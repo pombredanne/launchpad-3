@@ -12,6 +12,7 @@ from lazr.delegates import delegates
 from storm import Undef
 from storm.zope.interfaces import IResultSet
 from zope.security.proxy import (
+    isinstance as zope_isinstance,
     ProxyFactory,
     removeSecurityProxy,
     )
@@ -174,9 +175,12 @@ class DecoratedResultSet(object):
             new_result_set, self.result_decorator, self.pre_iter_hook,
             self.slice_info)
 
-    def getPlainResultSet(self):
+    def get_plain_result_set(self):
         """Return the plain Storm result set."""
-        return self.result_set
+        if zope_isinstance(self.result_set, DecoratedResultSet):
+            return self.result_set.get_plain_result_set()
+        else:
+            return self.result_set
 
     def find(self, *args, **kwargs):
         """See `IResultSet`.

@@ -563,24 +563,25 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
             "Mailing list application cancelled.")
         self.next_url = canonical_url(self.context)
 
-    def request_list_creation_validator(self, action, data):
-        """Validator for the `request_list_creation` action.
+    def create_list_creation_validator(self, action, data):
+        """Validator for the `create_list_creation` action.
 
-        Adds an error if someone tries to request a mailing list for a
+        Adds an error if someone tries to create a mailing list for a
         team that already has one. This can only happen through
         bypassing the UI.
         """
-        if not self.list_can_be_requested:
+        if not self.list_can_be_created:
             self.addError(
-                "You cannot request a new mailing list for this team.")
+                "You cannot create a new mailing list for this team.")
 
-    @action('Apply for Mailing List', name='request_list_creation',
-            validator=request_list_creation_validator)
-    def request_list_creation(self, action, data):
+    @action('Create new Mailing List', name='create_list_creation',
+            validator=create_list_creation_validator)
+    def create_list_creation(self, action, data):
         """Creates a new mailing list."""
         getUtility(IMailingListSet).new(self.context)
         self.request.response.addInfoNotification(
-            "Mailing list requested and queued for approval.")
+            "The mailing list is being created and will be available for "
+            "use in a few minutes.")
         self.next_url = canonical_url(self.context)
 
     def deactivate_list_validator(self, action, data):
@@ -714,8 +715,8 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         return self.getListInState(MailingListStatus.REGISTERED) is not None
 
     @property
-    def list_can_be_requested(self):
-        """Can a mailing list be requested for this team?
+    def list_can_be_created(self):
+        """Can a mailing list be created for this team?
 
         It can only be requested if there's no mailing list associated with
         this team, or the mailing list has been purged.

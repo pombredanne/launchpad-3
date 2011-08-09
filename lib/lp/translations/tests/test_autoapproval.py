@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for translation import queue auto-approval.
@@ -327,7 +327,7 @@ class TestTemplateGuess(TestCaseWithFactory, GardenerDbUserMixin):
     def _setUpDistro(self):
         """Set up a `Distribution` with two templates."""
         self.distro = self.factory.makeDistribution()
-        self.distroseries = self.factory.makeDistroRelease(
+        self.distroseries = self.factory.makeDistroSeries(
             distribution=self.distro)
         self.packagename = SourcePackageNameSet().new('package')
         self.from_packagename = SourcePackageNameSet().new('from')
@@ -367,7 +367,7 @@ class TestTemplateGuess(TestCaseWithFactory, GardenerDbUserMixin):
         # getPOTemplateByPathAndOrigin disregards templates from other
         # distroseries.
         self._setUpDistro()
-        other_series = self.factory.makeDistroRelease(
+        other_series = self.factory.makeDistroSeries(
             distribution=self.distro)
         self._makeTemplateForDistroSeries(other_series, 'test1')
         self.distrotemplate1.iscurrent = False
@@ -679,7 +679,7 @@ class TestKdePOFileGuess(TestCaseWithFactory, GardenerDbUserMixin):
         super(TestKdePOFileGuess, self).setUp()
         self.queue = TranslationImportQueue()
 
-        self.distroseries = self.factory.makeDistroRelease()
+        self.distroseries = self.factory.makeDistroSeries()
 
         # For each of KDE3 and KDE4, set up:
         #  a translation package following that KDE's naming pattern,

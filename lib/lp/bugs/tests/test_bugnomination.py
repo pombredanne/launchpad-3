@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests related to bug nominations."""
@@ -78,13 +78,13 @@ class TestBugCanBeNominatedForDistroSeries(
     """Test IBug.canBeNominated for IDistroSeries nominations."""
 
     def setUpTarget(self):
-        self.series = self.factory.makeDistroRelease()
+        self.series = self.factory.makeDistroSeries()
         # The factory can't create a distro bug directly.
         self.bug = self.factory.makeBug()
         self.bug.addTask(self.eric, self.series.distribution)
         self.milestone = self.factory.makeMilestone(
             distribution=self.series.distribution)
-        self.random_series = self.factory.makeDistroRelease()
+        self.random_series = self.factory.makeDistroSeries()
 
     def test_not_canBeNominatedFor_source_package(self):
         # A bug may not be nominated directly for a source package. The

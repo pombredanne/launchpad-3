@@ -32,6 +32,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.app.browser.tales import (
+    DateTimeFormatterAPI,
     IRCNicknameFormatterAPI,
     ObjectImageDisplayAPI,
     )
@@ -61,6 +62,7 @@ class IPickerEntry(Interface):
     css = Attribute('CSS Class')
     alt_title = Attribute('Alternative title')
     title_link = Attribute('URL used for anchor on title')
+    details = Attribute('An optional list of information about the entry')
     alt_title_link = Attribute('URL used for anchor on alt title')
     link_css = Attribute('CSS Class for links')
     badges = Attribute('List of badge img attributes')
@@ -72,13 +74,14 @@ class PickerEntry:
     implements(IPickerEntry)
 
     def __init__(self, description=None, image=None, css=None, alt_title=None,
-                 title_link=None, alt_title_link=None, link_css='js-action',
-                 badges=None, metadata=None):
+                 title_link=None, details=None, alt_title_link=None,
+                 link_css='sprite new-window', badges=None, metadata=None):
         self.description = description
         self.image = image
         self.css = css
         self.alt_title = alt_title
         self.title_link = title_link
+        self.details = details
         self.alt_title_link = alt_title_link
         self.link_css = link_css
         self.badges = badges
@@ -127,8 +130,9 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
         extra = super(PersonPickerEntryAdapter, self).getPickerEntry(
             associated_object)
 
-        enhanced_picker_enabled = kwarg.get('enhanced_picker_enabled', False)
-        if enhanced_picker_enabled:
+        personpicker_affiliation_enabled = kwarg.get(
+                                    'personpicker_affiliation_enabled', False)
+        if personpicker_affiliation_enabled:
             # If the person is affiliated with the associated_object then we
             # can display a badge.
             badge_info = IHasAffiliation(
@@ -136,6 +140,10 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
             if badge_info:
                 extra.badges = [
                     dict(url=badge_info.url, alt=badge_info.alt_text)]
+
+        picker_expander_enabled = kwarg.get('picker_expander_enabled', False)
+        if picker_expander_enabled:
+            extra.details = []
 
         if person.preferredemail is not None:
             if person.hide_email_addresses:
@@ -147,6 +155,7 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
                     extra.description = '<email address hidden>'
 
         extra.metadata = get_person_picker_entry_metadata(person)
+        enhanced_picker_enabled = kwarg.get('enhanced_picker_enabled', False)
         if enhanced_picker_enabled:
             # We will display the person's name (launchpad id) after their
             # displayname.
@@ -161,12 +170,22 @@ class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
                 irc_nicks = ", ".join(
                     [IRCNicknameFormatterAPI(ircid).displayname()
                     for ircid in person.ircnicknames])
-            if irc_nicks:
+            if irc_nicks and not picker_expander_enabled:
                 if extra.description:
                     extra.description = ("%s (%s)" %
                         (extra.description, irc_nicks))
                 else:
                     extra.description = "%s" % irc_nicks
+            if picker_expander_enabled:
+                if irc_nicks:
+                    extra.details.append(irc_nicks)
+                if person.is_team:
+                    extra.details.append(
+                        'Team members: %s' % person.all_member_count)
+                else:
+                    extra.details.append(
+                        'Member since %s' % DateTimeFormatterAPI(
+                            person.datecreated).date())
 
         return extra
 
@@ -223,6 +242,10 @@ class HugeVocabularyJSONView:
         self.request = request
         self.enhanced_picker_enabled = bool(
             getFeatureFlag('disclosure.picker_enhancements.enabled'))
+        self.picker_expander_enabled = bool(
+            getFeatureFlag('disclosure.picker_expander.enabled'))
+        self.personpicker_affiliation_enabled = bool(
+            getFeatureFlag('disclosure.personpicker_affiliation.enabled'))
 
     def __call__(self):
         name = self.request.form.get('name')
@@ -267,7 +290,10 @@ class HugeVocabularyJSONView:
                 entry['api_uri'] = 'Could not find canonical url.'
             picker_entry = IPickerEntry(term.value).getPickerEntry(
                 self.context,
-                enhanced_picker_enabled=self.enhanced_picker_enabled)
+                enhanced_picker_enabled=self.enhanced_picker_enabled,
+                picker_expander_enabled=self.picker_expander_enabled,
+                personpicker_affiliation_enabled=
+                    self.personpicker_affiliation_enabled)
             if picker_entry.description is not None:
                 if len(picker_entry.description) > MAX_DESCRIPTION_LENGTH:
                     entry['description'] = (
@@ -283,6 +309,8 @@ class HugeVocabularyJSONView:
                 entry['alt_title'] = picker_entry.alt_title
             if picker_entry.title_link is not None:
                 entry['title_link'] = picker_entry.title_link
+            if picker_entry.details is not None:
+                entry['details'] = picker_entry.details
             if picker_entry.alt_title_link is not None:
                 entry['alt_title_link'] = picker_entry.alt_title_link
             if picker_entry.link_css is not None:
