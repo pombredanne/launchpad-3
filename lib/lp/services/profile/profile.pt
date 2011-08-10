@@ -3,12 +3,26 @@
   Click to REVEAL profiling information
   </div>
 </div>
-<div class="profiling_info" id="profiling_info">
+<div class="profiling_info" id="profiling_info"
+     tal:define="actions options/actions;
+                 help actions/help|nothing;
+                 callgrind actions/callgrind|nothing;
+                 pstats actions/pstats|nothing;
+                 log python: callgrind or pstats;
+                 log_conflict python: callgrind and pstats;
+                 show actions/show|nothing;
+                 always_log options/always_log;
+                 dump_path options/dump_path;
+                 inlinetime options/inlinetime|nothing;
+                 totaltime options/totaltime|nothing;
+                 callcount options/callcount|nothing;
+                 oops options/oops|nothing;
+                 ">
   <div class="hide_reveal_profiling" id="hide_profiling">
   Click to HIDE profiling information
   </div>
   <h1>Profiling Information</h1>
-  <tal:block condition="'help' in actions">
+  <tal:block condition="help">
     <h2>Help</h2>
     <p>Hi.  I see you are using a <code>++profile++</code> request.
     <tal:block condition="always_log">You have configured every request
@@ -16,45 +30,67 @@
     the <code>[profiling]</code> section of your launchpad-lazr.conf, so
     you'll always see some logging information below.  In order to also
     get immediate profiling results in the browser, use
-    <code>++profile++show</code>.</tal:block> <tal:block condition="not
-    always_log">In order to get profiling results, you need to ask for
-    an HTML view (<code>++profile++show</code>), a KCacheGrind-friendly
-    log on the filesystem (<code>++profile++log</code>), or both
-    (<code>++profile++show,log</code>).</tal:block>  This can usually go
-    anywhere in the URL (e.g.,
-    <code>http://launchpad.dev/++profile++show</code> or
+    <code>++profile++show</code>.</tal:block> <tal:block condition="not:
+    always_log">In order to get profiling results, you need to ask for an HTML
+    view (<code>++profile++show</code>), a KCacheGrind-friendly log on the
+    filesystem (<code>++profile++callgrind</code>), or a PStats-friendly log
+    (Python standard library) on the filesystem
+    (<code>++profile++pstats</code>). You can also ask for local HTML
+    profiling plus one of the two log files
+    (<code>++profile++show,callgrind</code> or
+    <code>++profile++show,pstats</code>).</tal:block></p>
+    <p>The "++profile++" path segment can usually go anywhere in the URL
+    (e.g., <code>http://launchpad.dev/++profile++show</code> or
     <code>http://launchpad.dev/++profile++show/Firefox</code> or
-    <code>http://launchpad.dev/Firefox/++profile++show</code>) but some
-    pages do seem to redirect in surprising ways, so experimentation may
-    be necessary.</p>
+    <code>http://launchpad.dev/Firefox/++profile++show</code>) but some pages
+    do seem to redirect in surprising ways, so experimentation may be
+    necessary.</p>
   </tal:block>
   <h2>Log information</h2>
-  <tal:block condition="'log' not in actions">
+  <tal:block condition="not:log">
     <p>Profile was not logged to file.</p>
-    <p>Use <code>++profile++log</code> in your URL in order to log the
-    information to file for later KCacheGrind analysis (or
-    <code>++profile++log,show</code> to see both the log information and
-    immediate results).</p>
+    <p>Use <code>++profile++callgrind</code> in your URL in order to log the
+    information to file for later KCacheGrind analysis.  KCacheGrind is great
+    for visualizing a profile, but it only allows analyzing a limited depth of
+    calls.  If you want a greater profile depth, or if for any other reason
+    you want to use the standard Python library's pstats analysis instead, you
+    can. To do this, use "pstats" instead as part of your ++profile++ request,
+    as in <code>++profile++pstats</code>.  Profiles are logged to <tal:block
+    replace="dump_path" />.</p>
+    <p> You can see both the log information and immediate results with
+    <code>++profile++callgrind,show</code> or
+    <code>++profile++pstats,show</code>.</p>
   </tal:block>
-  <tal:block condition="'log' in actions">
+  <tal:block condition="log">
     <p tal:condition="always_log"><strong>You have configured every
     request to have a full profile log</strong>, via the
     <code>profile_all_requests: True</code> in the
     <code>[profiling]</code> section of your launchpad-lazr.conf.</p>
     <p>Profile was logged to <tal:block replace="dump_path" />.</p>
-    <p>You should be able to use this simply by entering
-    <code>kcachegrind <tal:block replace="dump_path" /></code> in the
-    console for a great visualization of the profile.  The <a
+    <p tal:condition="callgrind">You should be able to use this
+    simply by entering <code>kcachegrind <tal:block replace="dump_path"
+    /></code> in the console for a great visualization of the profile.  The <a
     href="https://dev.launchpad.net/Debugging#Profiling%%20page%%20requests"
     >dev wiki</a> may have more information on how to use this.</p>
+    <p tal:condition="not:callgrind">You should be able to use this
+    simply by entering <code>python -m pstats <tal:block replace="dump_path"
+    /></code> in the console to use the normal Python profile statistics
+    interface.  Type &quot;help&quot; at the prompt, or see the <a
+    href="http://docs.python.org/library/profile.html#instant-user-s-manual"
+    >Python documentation</a>.</p>
+    <p tal:condition="log_conflict"><strong>You asked for both callgrind and
+    pstats logging.  We can only choose one at a time, and the default is
+    callgrind. If you want a pstats profile as well, request it
+    separately.</strong></p>
   </tal:block>
   <h2>Profile quick view</h2>
-  <tal:block condition="'show' not in actions">
-    <p>Use <code>++profile++show</code> in your URL in order to see
-    immediate profile results (or <code>++profile++log,show</code> to
-    see both the log information and immediate results).</p>
+  <tal:block condition="not:show">
+    <p>Use <code>++profile++show</code> in your URL in order to see immediate
+    profile results (or <code>++profile++callgrind,show</code> or
+    <code>++profile++pstats,show</code> to see both the log information and
+    immediate results).</p>
   </tal:block>
-  <tal:block condition="'show' in actions">
+  <tal:block condition="show">
     <h3>Top Inline Time</h3>
     <pre tal:content="inlinetime" />
     <h3>Top Total Time</h3>

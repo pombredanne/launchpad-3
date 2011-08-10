@@ -399,23 +399,23 @@
     />
 
   <adapter
-    factory="lp.app.browser.vocabulary.DefaultPickerEntryAdapter"
+    factory="lp.app.browser.vocabulary.DefaultPickerEntrySourceAdapter"
     />
 
   <adapter
-    factory="lp.app.browser.vocabulary.PersonPickerEntryAdapter"
+    factory="lp.app.browser.vocabulary.PersonPickerEntrySourceAdapter"
     />
 
   <adapter
-    factory="lp.app.browser.vocabulary.BranchPickerEntryAdapter"
+    factory="lp.app.browser.vocabulary.BranchPickerEntrySourceAdapter"
     />
 
   <adapter
-    factory="lp.app.browser.vocabulary.SourcePackageNamePickerEntryAdapter"
+    factory="lp.app.browser.vocabulary.SourcePackageNamePickerEntrySourceAdapter"
     />
 
   <adapter
-    factory="lp.app.browser.vocabulary.ArchivePickerEntryAdapter"
+    factory="lp.app.browser.vocabulary.ArchivePickerEntrySourceAdapter"
     />
 
   <!-- TALES namespaces. -->

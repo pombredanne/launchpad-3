@@ -10,25 +10,26 @@ __all__ = [
 
 from datetime import datetime
 import os
+
 from pytz import utc
 from zope.component import getUtility
 
 from canonical.config import config
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
+from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import pocketsuffix
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
     )
-from lp.registry.interfaces.series import SeriesStatus
 from lp.services.utils import file_exists
 from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.scripts.publishdistro import PublishDistro
 from lp.soyuz.scripts.ftpmaster import LpQueryDistro
 from lp.soyuz.scripts.processaccepted import ProcessAccepted
-
+from lp.soyuz.scripts.publishdistro import PublishDistro
 
 # XXX JeroenVermeulen 2011-03-31 bug=746229: to start publishing debug
 # archives, get rid of this list.
@@ -159,6 +160,8 @@ class PublishFTPMaster(LaunchpadCronScript):
     whole distribution.  At the end of this, the directories will be
     back in their original places (though with updated contents).
     """
+
+    lockfilename = GLOBAL_PUBLISHER_LOCK
 
     def add_my_options(self):
         """See `LaunchpadScript`."""
@@ -321,6 +324,19 @@ class PublishFTPMaster(LaunchpadCronScript):
                 failure=LaunchpadScriptFailure(
                     "Failed to rsync new dists for %s." % purpose.title))
 
+    def recoverArchiveWorkingDir(self, archive_config):
+        """Recover working dists dir for `archive_config`.
+
+        If there is a dists directory for `archive_config` in the working
+        location, kick it back to the backup location.
+        """
+        working_location = get_working_dists(archive_config)
+        if file_exists(working_location):
+            self.logger.info(
+                "Recovering working directory %s from failed run.",
+                working_location)
+            os.rename(working_location, get_backup_dists(archive_config))
+
     def recoverWorkingDists(self):
         """Look for and recover any dists left in transient working state.
 
@@ -330,12 +346,7 @@ class PublishFTPMaster(LaunchpadCronScript):
         permanent location.
         """
         for archive_config in self.configs.itervalues():
-            working_location = get_working_dists(archive_config)
-            if file_exists(working_location):
-                self.logger.info(
-                    "Recovering working directory %s from failed run.",
-                    working_location)
-                os.rename(working_location, get_backup_dists(archive_config))
+            self.recoverArchiveWorkingDir(archive_config)
 
     def setUpDirs(self):
         """Create archive roots and such if they did not yet exist."""

@@ -66,6 +66,7 @@ from canonical.launchpad.webapp.publisher import (
     stepthrough,
     stepto,
     )
+from canonical.launchpad.webapp.url import urlappend
 from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
@@ -959,10 +960,9 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         """Have there been changes that `dsd` is still being updated for?"""
         return dsd in self.pending_dsd_updates
 
-    def hasPendingSync(self, dsd):
+    def pendingSync(self, dsd):
         """Is there a package-copying job pending to resolve `dsd`?"""
-        pending_sync = self.pending_syncs.get(dsd.source_package_name.name)
-        return pending_sync is not None
+        return self.pending_syncs.get(dsd.source_package_name.name)
 
     def isNewerThanParent(self, dsd):
         """Is the child's version of this package newer than the parent's?
@@ -993,28 +993,42 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         # sync if the child's version of the package is newer than the
         # parent's version, or if there is already a sync pending.
         return (
-            not self.isNewerThanParent(dsd) and not self.hasPendingSync(dsd))
+            not self.isNewerThanParent(dsd) and not self.pendingSync(dsd))
 
     def describeJobs(self, dsd):
         """Describe any jobs that may be pending for `dsd`.
 
-        Shows "synchronizing..." if the entry is being synchronized, and
-        "updating..." if the DSD is being updated with package changes.
+        Shows "synchronizing..." if the entry is being synchronized,
+        "updating..." if the DSD is being updated with package changes and
+        "waiting in <queue>..." if the package is in the distroseries
+        queues (<queue> will be NEW or UNAPPROVED and links to the
+        relevant queue page).
 
         :param dsd: A `DistroSeriesDifference` on the page.
         :return: An HTML text describing work that is pending or in
             progress for `dsd`; or None.
         """
         has_pending_dsd_update = self.hasPendingDSDUpdate(dsd)
-        has_pending_sync = self.hasPendingSync(dsd)
-        if not has_pending_dsd_update and not has_pending_sync:
+        pending_sync = self.pendingSync(dsd)
+        if not has_pending_dsd_update and not pending_sync:
             return None
 
         description = []
         if has_pending_dsd_update:
             description.append("updating")
-        if has_pending_sync:
-            description.append("synchronizing")
+        if pending_sync is not None:
+            # If the pending sync is waiting in the distroseries queues,
+            # provide a handy link to there.
+            queue_item = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+                (pending_sync.id,)).any()
+            if queue_item is None:
+                description.append("synchronizing")
+            else:
+                url = urlappend(
+                    canonical_url(self.context), "+queue?queue_state=%s" %
+                        queue_item.status.value)
+                description.append('waiting in <a href="%s">%s</a>' %
+                    (url, queue_item.status.name))
         return " and ".join(description) + "&hellip;"
 
     @property
@@ -1117,6 +1131,13 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
                         DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
                         DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
             return not differences.is_empty()
+
+    def parent_changelog_url(self, distroseriesdifference):
+        """The URL to the /parent/series/+source/package/+changelog """
+        distro = distroseriesdifference.parent_series.distribution
+        dsp = distro.getSourcePackage(
+            distroseriesdifference.source_package_name)
+        return urlappend(canonical_url(dsp), '+changelog')
 
 
 class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
