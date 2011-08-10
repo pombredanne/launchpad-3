@@ -39,12 +39,12 @@ from lp.registry.interfaces.distributionsourcepackage import (
 class IHasAffiliation(Interface):
     """The affiliation status of a person with a context."""
 
-    def getAffiliationBadge(person):
-        """Return the badge for the type of affiliation the person has.
+    def getAffiliationBadges(persons):
+        """Return the badges for the type of affiliation each person has.
 
-        The return value is a tuple: (url, alt).
+        The return value is a list of namedtuples: BadgeDetails(url, alt_text)
 
-        If the person has no affiliation with this object, return None.
+        If a person has no affiliation with this object, their entry is None.
         """
 
 BadgeDetails = namedtuple('BadgeDetails', ('url', 'alt_text'))
@@ -80,30 +80,34 @@ class PillarAffiliation(object):
                 return pillar.displayname, 'driver'
         return  None
 
-    def getAffiliationBadge(self, person):
+    def getAffiliationBadges(self, persons):
         """ Return the affiliation badge details for a person given a context.
         """
         pillar = self.getPillar()
-        affiliation_details = self._getAffiliationDetails(person, pillar)
-        if not affiliation_details:
-            return None
+        result = []
+        for person in persons:
+            affiliation_details = self._getAffiliationDetails(person, pillar)
+            if not affiliation_details:
+                result.append(None)
+                continue
 
-        def getIconUrl(context, pillar, default_url):
-            if IHasIcon.providedBy(context) and context.icon is not None:
-                icon_url = context.icon.getURL()
-                return icon_url
-            if IHasIcon.providedBy(pillar) and pillar.icon is not None:
-                icon_url = context.icon.getURL()
-                return icon_url
-            return default_url
+            def getIconUrl(context, pillar, default_url):
+                if IHasIcon.providedBy(context) and context.icon is not None:
+                    icon_url = context.icon.getURL()
+                    return icon_url
+                if IHasIcon.providedBy(pillar) and pillar.icon is not None:
+                    icon_url = pillar.icon.getURL()
+                    return icon_url
+                return default_url
 
-        alt_text = "%s %s" % affiliation_details
-        if IDistribution.providedBy(pillar):
-            default_icon_url = "/@@/distribution-badge"
-        else:
-            default_icon_url = "/@@/product-badge"
-        icon_url = getIconUrl(self.context, pillar, default_icon_url)
-        return BadgeDetails(icon_url, alt_text)
+            alt_text = "%s %s" % affiliation_details
+            if IDistribution.providedBy(pillar):
+                default_icon_url = "/@@/distribution-badge"
+            else:
+                default_icon_url = "/@@/product-badge"
+            icon_url = getIconUrl(self.context, pillar, default_icon_url)
+            result.append(BadgeDetails(icon_url, alt_text))
+        return result
 
 
 class BugTaskPillarAffiliation(PillarAffiliation):
