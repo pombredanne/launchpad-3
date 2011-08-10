@@ -74,6 +74,7 @@ setup(
         'sourcecodegen',
         'storm',
         'testtools',
+        'timeline',
         'transaction',
         'Twisted',
         'wadllib',
