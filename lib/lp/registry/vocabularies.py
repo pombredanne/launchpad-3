@@ -1949,8 +1949,8 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
     _limit = 100
 
     PRODUCT_FILTER = VocabularyFilter(
-        'PRODUCT', 'Product',
-        'Display search results associated with products')
+        'PRODUCT', 'Project',
+        'Display search results associated with projects')
     PROJECTGROUP_FILTER = VocabularyFilter(
         'PROJECTGROUP', 'Project Group',
         'Display search results associated with project groups')
