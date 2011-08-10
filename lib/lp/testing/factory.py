@@ -954,7 +954,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         licenses=None, owner=None, registrant=None,
         title=None, summary=None, official_malone=None,
         translations_usage=None, bug_supervisor=None,
-        driver=None, security_contact=None):
+        driver=None, security_contact=None, icon=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePerson()
@@ -980,7 +980,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             self.getUniqueString('description'),
             licenses=licenses,
             project=project,
-            registrant=registrant)
+            registrant=registrant,
+            icon=icon)
         naked_product = removeSecurityProxy(product)
         if official_malone is not None:
             naked_product.official_malone = official_malone
@@ -2332,7 +2333,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                          aliases=None, bug_supervisor=None, driver=None,
                          security_contact=None, publish_root_dir=None,
                          publish_base_url=None, publish_copy_base_url=None,
-                         no_pubconf=False):
+                         no_pubconf=False, icon=None):
         """Make a new distribution."""
         if name is None:
             name = self.getUniqueString(prefix="distribution")
@@ -2351,7 +2352,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             members = self.makeTeam(owner)
         distro = getUtility(IDistributionSet).new(
             name, displayname, title, description, summary, domainname,
-            members, owner, registrant)
+            members, owner, registrant, icon=icon)
         naked_distro = removeSecurityProxy(distro)
         if aliases is not None:
             naked_distro.setAliases(aliases)

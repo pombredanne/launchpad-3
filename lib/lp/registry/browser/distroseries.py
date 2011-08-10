@@ -1132,6 +1132,13 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
                         DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
             return not differences.is_empty()
 
+    def parent_changelog_url(self, distroseriesdifference):
+        """The URL to the /parent/series/+source/package/+changelog """
+        distro = distroseriesdifference.parent_series.distribution
+        dsp = distro.getSourcePackage(
+            distroseriesdifference.source_package_name)
+        return urlappend(canonical_url(dsp), '+changelog')
+
 
 class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
                                        LaunchpadFormView):
