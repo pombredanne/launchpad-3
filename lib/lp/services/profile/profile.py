@@ -3,7 +3,9 @@
 
 """Profile requests when enabled."""
 
-__all__ = []
+__all__ = ['profiling',
+           'start',
+           'stop',]
 
 __metaclass__ = type
 
@@ -12,6 +14,7 @@ from cProfile import Profile
 from datetime import datetime
 import os
 import pstats
+import time
 import threading
 import StringIO
 
@@ -53,18 +56,29 @@ class Profiler:
     def disable(self):
         if self.enabled:
             self.p.disable()
+            self.enabled = False
+            stats = pstats.Stats(self.p)
+            if self.pstats is None:
+                self.pstats = stats
+            else:
+                self.pstats.add(stats)
+            self.count += 1
 
     def enable(self):
         if not self.started:
             self.start()
         elif not self.enabled:
+            self.p = Profile()
             self.p.enable(subcalls=True)
             self.enabled = True
 
     def start(self):
         """Start profiling.
         """
-        self.p = Profile()
+        if self.started:
+            return
+        self.count = 0
+        self.pstats = None
         self.started = True
         self.__class__.profiler_lock.acquire(True)  # Blocks.
         try:
@@ -85,37 +99,36 @@ class Profiler:
         try:
             self.disable()
             p = self.p
-            self.p = None
-            return Stats(p)
+            del self.p
+            return Stats(self.pstats, p.getstats(), self.count)
         finally:
             self.__class__.profiler_lock.release()
+            self.started = False
 
 
 class Stats:
 
-    _stats = None
     _callgrind_stats = None
 
-    def __init__(self, profiler):
-        self.p = profiler
-
-    @property
-    def stats(self):
-        if self._stats is None:
-            self._stats = pstats.Stats(self.p).strip_dirs()
-        return self._stats
+    def __init__(self, stats, rawstats, count):
+        self.stats = stats
+        self.rawstats = rawstats
+        self.count = count
 
     @property
     def callgrind_stats(self):
         if self._callgrind_stats is None:
-            self._callgrind_stats = lsprof.Stats(self.p.getstats(), {})
+            self._callgrind_stats = lsprof.Stats(self.rawstats, {})
         return self._callgrind_stats
 
     def save(self, filename):
         if filename.startswith('callgrind.out'):
             self.callgrind_stats.save(filename)
         else:
-            self.p.dump_stats(filename)
+            self.stats.dump_stats(filename)
+
+    def strip_dirs(self):
+        self.stats.strip_dirs()
 
     def sort(self, name):
         self.stats.sort_stats(name)
@@ -201,7 +214,10 @@ available_profilers = frozenset(('pstats', 'callgrind'))
 def start(profile_type='pstats', show=False):
     """Turn on profiling from code.
 
-    profile_type should be one of available_profilers."""
+    profile_type should be one of available_profilers.  pstats will aggregate
+    because it can; callgrind will use the last one because it can't
+    aggregate.
+    """
     actions = getattr(_profilers, 'actions', None)
     profiler = getattr(_profilers, 'profiler', None)
     assert profile_type in available_profilers
@@ -305,11 +321,14 @@ def end_request(event):
             oops.write(f)
             template_context['oops'] = f.getvalue()
             # Generate profile summaries.
+            prof_stats.strip_dirs()
             for name in ('time', 'cumulative', 'calls'):
                 prof_stats.sort(name)
                 f = StringIO.StringIO()
                 prof_stats.pprint(file=f)
                 template_context[name] = f.getvalue()
+        template_context['profile_count'] = prof_stats.count
+        template_context['multiple_profiles'] = prof_stats.count > 1
         # Try to free some more memory.
         del prof_stats
     template_context['dump_path'] = os.path.abspath(dump_path)

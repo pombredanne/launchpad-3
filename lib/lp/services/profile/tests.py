@@ -11,6 +11,7 @@ __metaclass__ = type
 
 import glob
 import os
+import random
 import time
 
 from lp.testing import TestCase
@@ -612,7 +613,6 @@ class TestBeforeTraverseHandler(TestCleanupProfiler):
 class TestInlineProfiling(BaseRequestEndHandlerTest):
 
     def make_work(self, count=1, **args):
-        import random
         def work():
             for i in range(count):
                 profile.start(**args)
@@ -647,3 +647,11 @@ class TestInlineProfiling(BaseRequestEndHandlerTest):
             '/++profile++show,callgrind', work=self.make_work())
         self.assertBothProfiles(
             self.assertBasicProfileExists(request, show=True))
+
+    def test_context_manager(self):
+        def work():
+            with profile.profiling():
+                random.random()
+        self.pushProfilingConfig(profiling_allowed='True')
+        request = self.endRequest('/', work=work)
+        self.assertPStatsProfile(self.assertBasicProfileExists(request))

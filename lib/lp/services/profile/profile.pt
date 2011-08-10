@@ -18,6 +18,8 @@
                  cumulative options/cumulative|nothing;
                  calls options/calls|nothing;
                  oops options/oops|nothing;
+                 profile_count options/profile_count|nothing;
+                 multiple_profiles options/multiple_profiles|nothing;
                  ">
   <div class="hide_reveal_profiling" id="hide_profiling">
   Click to HIDE profiling information
@@ -79,6 +81,11 @@
     interface.  Type &quot;help&quot; at the prompt, or see the <a
     href="http://docs.python.org/library/profile.html#instant-user-s-manual"
     >Python documentation</a>.</p>
+    <p tal:condition="multiple_profiles">This request made <tal:block
+    replace="profile_count" /> profiles. <tal:block condition="callgrind">
+    The callgrind profile represents the last one.</tal:block> <tal:block
+    condition="pstats">The pstats profile represents an aggregate of all the
+    profiles.</tal:block></p>
   </tal:block>
   <h2>Profile quick view</h2>
   <tal:block condition="not:show">
@@ -88,6 +95,9 @@
     immediate results).</p>
   </tal:block>
   <tal:block condition="show">
+    <p tal:condition="multiple_profiles">This request made <tal:block
+    replace="profile_count" /> profiles. The statistics below represent an
+    aggregate of all them.</p>
     <h3>Top Inline Time</h3>
     <pre tal:content="time" />
     <h3>Top Total Time</h3>
