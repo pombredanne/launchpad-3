@@ -147,14 +147,6 @@ def add_bool_match(conditions, expression, match_value):
     conditions.add(match)
 
 
-class ExtendedOption(Option):
-    TYPES = Option.TYPES + ('bool', 'origin', 'person')
-    TYPE_CHECKER = dict(entry for entry in Option.TYPE_CHECKER.items())
-    TYPE_CHECKER['bool'] = check_bool_option
-    TYPE_CHECKER['origin'] = check_origin_option
-    TYPE_CHECKER['person'] = check_person_option
-
-
 class RemoveTranslations(LaunchpadScript):
     """Remove specific `TranslationMessage`s from the database.
 
@@ -169,50 +161,49 @@ class RemoveTranslations(LaunchpadScript):
     loglevel = logging.INFO
 
     my_options = [
-        ExtendedOption(
-            '-s', '--submitter', dest='submitter', type='person',
+        Option(
+            '-s', '--submitter', dest='submitter',
             help="Submitter match: delete only messages with this "
                 "submitter."),
-        ExtendedOption(
-            '-r', '--reviewer', dest='reviewer', type='person',
+        Option(
+            '-r', '--reviewer', dest='reviewer',
             help="Reviewer match: delete only messages with this reviewer."),
-        ExtendedOption(
+        Option(
             '-x', '--reject-license', action='store_true',
             dest='reject_license',
             help="Match submitters who rejected the license agreement."),
-        ExtendedOption(
+        Option(
             '-i', '--id', action='append', dest='ids', type='int',
             help="ID of message to delete.  May be specified multiple "
                 "times."),
-        ExtendedOption(
+        Option(
             '-p', '--potemplate', dest='potemplate', type='int',
             help="Template id match.  Delete only messages in this "
                 "template."),
-        ExtendedOption(
+        Option(
             '-l', '--language', dest='language',
             help="Language match.  Deletes (default) or spares (with -L) "
                  "messages in this language."),
-        ExtendedOption(
+        Option(
             '-L', '--not-language', action='store_true', dest='not_language',
             help="Invert language match: spare messages in given language."),
-        ExtendedOption(
+        Option(
             '-C', '--is-current-ubuntu', dest='is_current_ubuntu',
-            type='bool',
             help="Match on is_current_ubuntu value (True or False)."),
-        ExtendedOption(
+        Option(
             '-I', '--is-current-upstream', dest='is_current_upstream',
             type='bool',
             help="Match on is_current_upstream value (True or False)."),
-        ExtendedOption(
+        Option(
             '-m', '--msgid', dest='msgid',
             help="Match on (singular) msgid text."),
-        ExtendedOption(
-            '-o', '--origin', dest='origin', type='origin',
+        Option(
+            '-o', '--origin', dest='origin',
             help="Origin match: delete only messages with this origin code."),
-        ExtendedOption(
+        Option(
             '-f', '--force', action='store_true', dest='force',
             help="Override safety check on moderately unsafe action."),
-        ExtendedOption(
+        Option(
             '-d', '--dry-run', action='store_true', dest='dry_run',
             help="Go through the motions, but don't really delete."),
         ]
