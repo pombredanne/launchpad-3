@@ -38,6 +38,7 @@ from lp.translations.model.translationrelicensingagreement import (
     TranslationRelicensingAgreement,
     )
 from lp.translations.scripts.remove_translations import (
+    process_options,
     remove_translations,
     RemoveTranslations,
     )
@@ -161,6 +162,7 @@ def parse_opts(opts):
     parser = OptionChecker()
     parser.add_options(RemoveTranslations.my_options)
     options, arguments = parser.parse_args(args=opts)
+    process_options(options)
     return options
 
 

@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'process_options',
     'RemoveTranslations',
     'remove_translations',
     ]
@@ -109,6 +110,7 @@ def process_person_option(value):
     """Validation and conversion for `Person`."""
     return get_id(value, get_person_id)
 
+
 # Options that need special processing.
 OPTIONS_TO_PROCESS = {
     'submitter': process_person_option,
@@ -117,6 +119,14 @@ OPTIONS_TO_PROCESS = {
     'is_current_ubuntu': process_bool_option,
     'is_current_upstream': process_bool_option,
     }
+
+
+def process_options(options):
+    """Process options that need special processing."""
+    for option_name, process_func in OPTIONS_TO_PROCESS.items():
+        option_value = getattr(options, option_name)
+        setattr(options, option_name, process_func(option_value))
+
 
 def is_nonempty_list(list_option):
     """Is list_option a non-empty a nonempty list of option values?"""
@@ -219,12 +229,6 @@ class RemoveTranslations(LaunchpadScript):
         """See `LaunchpadScript`."""
         self.parser.add_options(self.my_options)
 
-    def _process_options(self):
-        """Process options that need special processing."""
-        for option_name, process_func in OPTIONS_TO_PROCESS:
-            option_value = getattr(self.options, option_name)
-            setattr(self.options, option_name, process_func(option_value))
-            
     def _check_constraints_safety(self):
         """Are these options to the deletion script sufficiently safe?
 
