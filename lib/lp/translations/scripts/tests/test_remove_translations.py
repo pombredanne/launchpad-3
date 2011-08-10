@@ -65,7 +65,9 @@ class TestRemoveTranslationsConstraints(TestCase):
 
     def _check_options(self, opts):
         """Get `_check_constraints_safety`'s answer for given options."""
-        return make_script(opts)._check_constraints_safety()
+        script = make_script(opts)
+        process_options(script.options)
+        return script._check_constraints_safety()
 
     def test_RecklessRemoval(self):
         # The script will refuse to run if no specific person or id is

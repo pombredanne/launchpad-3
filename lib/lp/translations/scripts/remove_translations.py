@@ -125,7 +125,8 @@ def process_options(options):
     """Process options that need special processing."""
     for option_name, process_func in OPTIONS_TO_PROCESS.items():
         option_value = getattr(options, option_name)
-        setattr(options, option_name, process_func(option_value))
+        if option_value is not None:
+            setattr(options, option_name, process_func(option_value))
 
 
 def is_nonempty_list(list_option):
@@ -283,13 +284,12 @@ class RemoveTranslations(LaunchpadScript):
 
     def main(self):
         """See `LaunchpadScript`."""
+        process_options(self.options)
         (result, message) = self._check_constraints_safety()
         if not result:
             raise LaunchpadScriptFailure(message)
         if message is not None:
             self.logger.warn(message)
-
-        process_options(self.options)
 
         if self.options.dry_run:
             self.logger.info("Dry run only.  Not really deleting.")
