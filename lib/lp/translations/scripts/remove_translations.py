@@ -289,7 +289,7 @@ class RemoveTranslations(LaunchpadScript):
         if message is not None:
             self.logger.warn(message)
 
-        self._process_options()
+        process_options(self.options)
 
         if self.options.dry_run:
             self.logger.info("Dry run only.  Not really deleting.")
