@@ -25,6 +25,8 @@ __all__ = [
 
 from collections import namedtuple
 
+from lazr.restful.utils import safe_hasattr
+
 from sqlobject import (
     AND,
     CONTAINSSTRING,
@@ -238,7 +240,8 @@ class FilteredVocabularyBase:
     # parameter to a VocabularyFilter instance.
     def __getattribute__(self, name):
         func = object.__getattribute__(self, name)
-        if hasattr(func, '__call__') and func.__name__ == 'searchForTerms':
+        if (safe_hasattr(func, '__call__')
+                and func.__name__ == 'searchForTerms'):
             def searchForTerms(*args, **kwargs):
                 vocab_filter = kwargs.get('vocab_filter')
                 if isinstance(vocab_filter, basestring):
