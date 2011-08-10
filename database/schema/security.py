@@ -49,12 +49,37 @@ POSTGRES_ACL_MAP = {
     }
 
 
-def unquote_identifier(identifier):
-    if not (identifier.startswith('"') and identifier.endswith('"')):
-        return identifier
-    identifier = identifier[1:-1]
-    identifier = identifier.replace('""', '"')
-    return identifier
+def _split_postgres_aclitem(aclitem):
+    """Split a PostgreSQL aclitem textual representation.
+
+    Returns the (grantee, privs, grantor), unquoted and separated.
+    """
+    components = {'grantee': '', 'privs': '', 'grantor': ''}
+    current_component = 'grantee'
+    inside_quoted = False
+    maybe_finished_quoted = False
+    for char in aclitem:
+        if char == '"':
+            if not inside_quoted:
+                inside_quoted = True
+            elif maybe_finished_quoted:
+                components[current_component] += '"'
+                maybe_finished_quoted = False
+            else:
+                maybe_finished_quoted = True
+        else:
+            if maybe_finished_quoted:
+                maybe_finished_quoted = False
+                inside_quoted = False
+            if not inside_quoted:
+                if char == '=':
+                    current_component = 'privs'
+                    continue
+                if char == '/':
+                    current_component = 'grantor'
+                    continue
+            components[current_component] += char
+    return components['grantee'], components['privs'], components['grantor']
 
 
 def parse_postgres_acl(acl):
@@ -66,20 +91,16 @@ def parse_postgres_acl(acl):
     if acl is None:
         return parsed
     for entry in acl:
-        try:
-            user, rest = entry.split('=')
-            perms, grantor = rest.split('/')
-        except ValueError:
-            raise Exception("Invalid ACL entry: %r" % entry)
-        if user == '':
-            user = 'public'
-        parsed_perms = []
-        for perm in perms:
-            if perm == '*':
-                parsed_perms[-1] = (parsed_perms[-1][0], True)
+        grantee, privs, grantor = _split_postgres_aclitem(entry)
+        if grantee == '':
+            grantee = 'public'
+        parsed_privs = []
+        for priv in privs:
+            if priv == '*':
+                parsed_privs[-1] = (parsed_privs[-1][0], True)
                 continue
-            parsed_perms.append((POSTGRES_ACL_MAP[perm], False))
-        parsed[unquote_identifier(user)] = dict(parsed_perms)
+            parsed_privs.append((POSTGRES_ACL_MAP[priv], False))
+        parsed[grantee] = dict(parsed_privs)
     return parsed
 
 
