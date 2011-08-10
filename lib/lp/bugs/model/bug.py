@@ -935,11 +935,11 @@ BugMessage""" % sqlvalues(self.id))
         """
         if level is None:
             level = BugNotificationLevel.LIFECYCLE
-        subscriptions = self.getSubscriptionInfo(level).direct_subscriptions
+        subscription_set = self.getSubscriptionInfo(level)
         if recipients is not None:
-            for subscriber in subscribers:
+            for subscriber in subscription_set.direct_subscribers:
                 recipients.addDirectSubscriber(subscriber)
-        return subscribers.sorted
+        return subscription_set.direct_subscribers.sorted
 
     def getDirectSubscribersWithDetails(self):
         """See `IBug`."""
@@ -1005,8 +1005,7 @@ BugMessage""" % sqlvalues(self.id))
             for subscription in info.duplicate_only_subscriptions:
                 recipients.addDupeSubscriber(
                     subscription.person, subscription.bug)
-
-        return info.duplicate_only_subscribers.sorted
+        return info.duplicate_only_subscriptions.subscribers.sorted
 
     def getSubscribersForPerson(self, person):
         """See `IBug."""
@@ -2296,6 +2295,22 @@ class BugSubscriptionInfo:
         self.level = level
 
     @cachedproperty
+    def direct_subscriptions_and_subscribers(self):
+        """The bug's direct subscriptions."""
+        if self.bug.private:
+            return ((), ())
+        else:
+            res = IStore(BugSubscription).find(
+                (BugSubscription, Person),
+                BugSubscription.bug_notification_level >= self.level,
+                BugSubscription.bug_id == Bug.id,
+                BugSubscription.person_id == Person.id,
+                Bug.duplicateof == self.bug,
+                Not(In(BugSubscription.person_id,
+                       Select(BugMute.person_id, BugMute.bug_id == Bug.id))))
+            return zip(*res) or ((),())
+
+    @cachedproperty
     @freeze(BugSubscriptionSet)
     def direct_subscriptions(self):
         return self.direct_subscriptions_and_subscribers[0]
@@ -2380,7 +2395,7 @@ class BugSubscriptionInfo:
                 BugMute.person_id == Person.id,
                 BugMute.bug == self.bug)
             return BugSubscriberSet().union(
-                self.structural_subscribers,
+                self.structural_subscriptions.subscribers,
                 self.all_pillar_owners_without_bug_supervisors,
                 self.all_assignees).difference(
                 self.direct_subscribers).difference(muted)

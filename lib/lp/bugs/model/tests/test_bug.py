@@ -151,10 +151,10 @@ class TestBug(TestCaseWithFactory):
         bug = self.factory.makeBug()
         # Make lots of duplicate bugs.
         previous_dup = None
-        for i in xrange(2):
+        for i in xrange(10):
             dup = self.factory.makeBug()
             # Make lots of subscribers.
-            for j in xrange(2):
+            for j in xrange(10):
                 subscriber = self.factory.makePerson()
                 with person_logged_in(subscriber):
                     dup.subscribe(subscriber, subscriber)
@@ -166,7 +166,7 @@ class TestBug(TestCaseWithFactory):
             Store.of(bug).flush()
             with StormStatementRecorder() as recorder:
                 previous_dup.markAsDuplicate(bug)
-                self.assertThat(recorder, HasQueryCount(LessThan(130)))
+                self.assertThat(recorder, HasQueryCount(LessThan(1)))
 
     def test_get_subscribers_from_duplicates_with_private_team(self):
         product = self.factory.makeProduct()
