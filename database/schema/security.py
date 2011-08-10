@@ -510,11 +510,19 @@ def reset_permissions(con, config, options):
     controlled_objs = set()
     desired_permissions = defaultdict(lambda: defaultdict(set))
 
+    valid_objs = set(schema.iterkeys())
+
     for username in config.sections():
+        who = username
+        if username == 'public':
+            who_ro = who
+        else:
+            who_ro = '%s_ro' % username
+
         for obj_name, perm in config.items(username):
             if '.' not in obj_name:
                 continue
-            if obj_name not in schema.keys():
+            if obj_name not in valid_objs:
                 log.warn('Bad object name %r', obj_name)
                 continue
             obj = schema[obj_name]
@@ -528,14 +536,6 @@ def reset_permissions(con, config, options):
 
             controlled_objs.add(obj)
 
-            who = username
-            if username == 'public':
-                who_ro = who
-            else:
-                who_ro = '%s_ro' % username
-
-            log.debug2(
-                "Granting %s on %s to %s", perm, obj.fullname, who)
             if obj.type == 'function':
                 desired_permissions[obj][who].update(perm.split(', '))
                 if who_ro:
@@ -548,7 +548,7 @@ def reset_permissions(con, config, options):
                 is_secure = (obj.fullname in SECURE_TABLES)
                 if not is_secure:
                     desired_permissions[obj]['read'].add("SELECT")
-                if obj.seqname in schema:
+                if obj.seqname in valid_objs:
                     seq = schema[obj.seqname]
                     controlled_objs.add(seq)
                     if 'INSERT' in perm:
