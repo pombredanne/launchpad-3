@@ -9,7 +9,10 @@ from storm.store import Store
 from testtools.matchers import Equals
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.registry.model.pillaraffiliation import IHasAffiliation
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
@@ -22,12 +25,21 @@ from lp.testing.matchers import HasQueryCount
 
 class TestPillarAffiliation(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
+
+    def test_distro_badge_icon(self):
+        # A distro's icon is used for the badge if present.
+        person = self.factory.makePerson()
+        icon = self.factory.makeLibraryFileAlias(
+            filename='smurf.png', content_type='image/png')
+        distro = self.factory.makeDistribution(
+            owner=person, name='pting', icon=icon)
+        [badge] = IHasAffiliation(distro).getAffiliationBadges([person])
+        self.assertEqual((icon.getURL(), "Pting maintainer"), badge)
 
     def _check_affiliated_with_distro(self, person, distro, role):
-        badge = IHasAffiliation(distro).getAffiliationBadge(person)
-        self.assertEqual(
-            ("/@@/distribution-badge", "Pting %s" % role), badge)
+        [badge] = IHasAffiliation(distro).getAffiliationBadges([person])
+        self.assertEqual(("/@@/distribution-badge", "Pting %s" % role), badge)
 
     def test_distro_owner_affiliation(self):
         # A person who owns a distro is affiliated.
@@ -54,7 +66,7 @@ class TestPillarAffiliation(TestCaseWithFactory):
         person = self.factory.makePerson()
         distro = self.factory.makeDistribution(security_contact=person)
         self.assertIs(
-            None, IHasAffiliation(distro).getAffiliationBadge(person))
+            None, IHasAffiliation(distro).getAffiliationBadges([person])[0])
 
     def test_no_distro_bug_supervisor_affiliation(self):
         # A person who is the bug supervisor for a distro is not affiliated
@@ -62,12 +74,32 @@ class TestPillarAffiliation(TestCaseWithFactory):
         person = self.factory.makePerson()
         distro = self.factory.makeDistribution(bug_supervisor=person)
         self.assertIs(
-            None, IHasAffiliation(distro).getAffiliationBadge(person))
+            None, IHasAffiliation(distro).getAffiliationBadges([person])[0])
+
+    def test_product_badge_icon(self):
+        # A product's icon is used for the badge if present.
+        person = self.factory.makePerson()
+        icon = self.factory.makeLibraryFileAlias(
+            filename='smurf.png', content_type='image/png')
+        product = self.factory.makeProduct(
+            owner=person, name='pting', icon=icon)
+        [badge] = IHasAffiliation(product).getAffiliationBadges([person])
+        self.assertEqual((icon.getURL(), "Pting maintainer"), badge)
+
+    def test_pillar_badge_icon(self):
+        # A pillar's icon is used for the badge if the context has no icon.
+        person = self.factory.makePerson()
+        icon = self.factory.makeLibraryFileAlias(
+            filename='smurf.png', content_type='image/png')
+        product = self.factory.makeProduct(
+            owner=person, name='pting', icon=icon)
+        bugtask = self.factory.makeBugTask(target=product)
+        [badge] = IHasAffiliation(bugtask).getAffiliationBadges([person])
+        self.assertEqual((icon.getURL(), "Pting maintainer"), badge)
 
     def _check_affiliated_with_product(self, person, product, role):
-        badge = IHasAffiliation(product).getAffiliationBadge(person)
-        self.assertEqual(
-            ("/@@/product-badge", "Pting %s" % role), badge)
+        [badge] = IHasAffiliation(product).getAffiliationBadges([person])
+        self.assertEqual(("/@@/product-badge", "Pting %s" % role), badge)
 
     def test_product_driver_affiliation(self):
         # A person who is the driver for a product is affiliated.
@@ -95,7 +127,7 @@ class TestPillarAffiliation(TestCaseWithFactory):
         person = self.factory.makePerson()
         product = self.factory.makeProduct(security_contact=person)
         self.assertIs(
-            None, IHasAffiliation(product).getAffiliationBadge(person))
+            None, IHasAffiliation(product).getAffiliationBadges([person])[0])
 
     def test_no_product_bug_supervisor_affiliation(self):
         # A person who is the bug supervisor for a product is is not
@@ -103,13 +135,26 @@ class TestPillarAffiliation(TestCaseWithFactory):
         person = self.factory.makePerson()
         product = self.factory.makeProduct(bug_supervisor=person)
         self.assertIs(
-            None, IHasAffiliation(product).getAffiliationBadge(person))
+            None, IHasAffiliation(product).getAffiliationBadges([person])[0])
 
     def test_product_owner_affiliation(self):
         # A person who owns a product is affiliated.
         person = self.factory.makePerson()
         product = self.factory.makeProduct(owner=person, name='pting')
         self._check_affiliated_with_product(person, product, 'maintainer')
+
+    def test_distro_affiliation_multiple_people(self):
+        # A collection of people associated with a distro are affiliated.
+        people = [self.factory.makePerson() for x in range(3)]
+        distro = self.factory.makeDistribution(owner=people[0],
+                                               driver=people[1],
+                                               name='pting')
+        badges = IHasAffiliation(distro).getAffiliationBadges(people)
+        self.assertEqual(
+            ("/@@/distribution-badge", "Pting maintainer"), badges[0])
+        self.assertEqual(
+            ("/@@/distribution-badge", "Pting driver"), badges[1])
+        self.assertIs(None, badges[2])
 
 
 class _TestBugTaskorBranchMixin:
@@ -151,18 +196,18 @@ class TestBugTaskPillarAffiliation(_TestBugTaskorBranchMixin,
 
     def test_correct_pillar_is_used(self):
         bugtask = self.factory.makeBugTask()
-        badge = IHasAffiliation(bugtask)
-        self.assertEqual(bugtask.pillar, badge.getPillar())
+        adapter = IHasAffiliation(bugtask)
+        self.assertEqual(bugtask.pillar, adapter.getPillar())
 
     def _check_affiliated_with_distro(self, person, target, role):
         bugtask = self.factory.makeBugTask(target=target)
-        badge = IHasAffiliation(bugtask).getAffiliationBadge(person)
+        [badge] = IHasAffiliation(bugtask).getAffiliationBadges([person])
         self.assertEqual(
             ("/@@/distribution-badge", "Pting %s" % role), badge)
 
     def _check_affiliated_with_product(self, person, target, role):
         bugtask = self.factory.makeBugTask(target=target)
-        badge = IHasAffiliation(bugtask).getAffiliationBadge(person)
+        [badge] = IHasAffiliation(bugtask).getAffiliationBadges([person])
         self.assertEqual(
             ("/@@/product-badge", "Pting %s" % role), badge)
 
@@ -174,7 +219,7 @@ class TestBugTaskPillarAffiliation(_TestBugTaskorBranchMixin,
         bugtask = self.factory.makeBugTask(target=product)
         Store.of(bugtask).invalidate()
         with StormStatementRecorder() as recorder:
-            IHasAffiliation(bugtask).getAffiliationBadge(person)
+            IHasAffiliation(bugtask).getAffiliationBadges([person])
         self.assertThat(recorder, HasQueryCount(Equals(4)))
 
     def test_distro_affiliation_query_count(self):
@@ -185,7 +230,7 @@ class TestBugTaskPillarAffiliation(_TestBugTaskorBranchMixin,
         bugtask = self.factory.makeBugTask(target=distro)
         Store.of(bugtask).invalidate()
         with StormStatementRecorder() as recorder:
-            IHasAffiliation(bugtask).getAffiliationBadge(person)
+            IHasAffiliation(bugtask).getAffiliationBadges([person])
         self.assertThat(recorder, HasQueryCount(Equals(4)))
 
 
@@ -196,20 +241,20 @@ class TestBranchPillarAffiliation(_TestBugTaskorBranchMixin,
 
     def test_correct_pillar_is_used(self):
         branch = self.factory.makeBranch()
-        badge = IHasAffiliation(branch)
-        self.assertEqual(branch.product, badge.getPillar())
+        adapter = IHasAffiliation(branch)
+        self.assertEqual(branch.product, adapter.getPillar())
 
     def _check_affiliated_with_distro(self, person, target, role):
         distroseries = self.factory.makeDistroSeries(distribution=target)
         sp = self.factory.makeSourcePackage(distroseries=distroseries)
         branch = self.factory.makeBranch(sourcepackage=sp)
-        badge = IHasAffiliation(branch).getAffiliationBadge(person)
+        [badge] = IHasAffiliation(branch).getAffiliationBadges([person])
         self.assertEqual(
             ("/@@/distribution-badge", "Pting %s" % role), badge)
 
     def _check_affiliated_with_product(self, person, target, role):
         branch = self.factory.makeBranch(product=target)
-        badge = IHasAffiliation(branch).getAffiliationBadge(person)
+        [badge] = IHasAffiliation(branch).getAffiliationBadges([person])
         self.assertEqual(
             ("/@@/product-badge", "Pting %s" % role), badge)
 
@@ -220,8 +265,8 @@ class TestDistroSeriesPillarAffiliation(TestCaseWithFactory):
 
     def test_correct_pillar_is_used(self):
         series = self.factory.makeDistroSeries()
-        badge = IHasAffiliation(series)
-        self.assertEqual(series.distribution, badge.getPillar())
+        adapter = IHasAffiliation(series)
+        self.assertEqual(series.distribution, adapter.getPillar())
 
     def test_driver_affiliation(self):
         # A person who is the driver for a distroseries is affiliated.
@@ -232,7 +277,7 @@ class TestDistroSeriesPillarAffiliation(TestCaseWithFactory):
             owner=owner, driver=driver, name='pting')
         distroseries = self.factory.makeDistroSeries(
             registrant=driver, distribution=distribution)
-        badge = IHasAffiliation(distroseries).getAffiliationBadge(driver)
+        [badge] = IHasAffiliation(distroseries).getAffiliationBadges([driver])
         self.assertEqual(
             ("/@@/distribution-badge", "Pting driver"), badge)
 
@@ -245,7 +290,7 @@ class TestDistroSeriesPillarAffiliation(TestCaseWithFactory):
             owner=owner, driver=driver, name='pting')
         distroseries = self.factory.makeDistroSeries(
             registrant=owner, distribution=distribution)
-        badge = IHasAffiliation(distroseries).getAffiliationBadge(driver)
+        [badge] = IHasAffiliation(distroseries).getAffiliationBadges([driver])
         self.assertEqual(
             ("/@@/distribution-badge", "Pting driver"), badge)
 
@@ -256,8 +301,8 @@ class TestProductSeriesPillarAffiliation(TestCaseWithFactory):
 
     def test_correct_pillar_is_used(self):
         series = self.factory.makeProductSeries()
-        badge = IHasAffiliation(series)
-        self.assertEqual(series.product, badge.getPillar())
+        adapter = IHasAffiliation(series)
+        self.assertEqual(series.product, adapter.getPillar())
 
     def test_driver_affiliation(self):
         # A person who is the driver for a productseries is affiliated.
@@ -268,7 +313,8 @@ class TestProductSeriesPillarAffiliation(TestCaseWithFactory):
             owner=owner, driver=driver, name='pting')
         productseries = self.factory.makeProductSeries(
             owner=driver, product=product)
-        badge = IHasAffiliation(productseries).getAffiliationBadge(driver)
+        [badge] = (
+            IHasAffiliation(productseries).getAffiliationBadges([driver]))
         self.assertEqual(
             ("/@@/product-badge", "Pting driver"), badge)
 
@@ -281,7 +327,8 @@ class TestProductSeriesPillarAffiliation(TestCaseWithFactory):
             owner=owner, driver=driver, name='pting')
         productseries = self.factory.makeProductSeries(
             owner=owner, product=product)
-        badge = IHasAffiliation(productseries).getAffiliationBadge(driver)
+        [badge] = (
+            IHasAffiliation(productseries).getAffiliationBadges([driver]))
         self.assertEqual(
             ("/@@/product-badge", "Pting driver"), badge)
 
@@ -295,7 +342,8 @@ class TestProductSeriesPillarAffiliation(TestCaseWithFactory):
             owner=owner, project=project, name='pting')
         productseries = self.factory.makeProductSeries(
             owner=owner, product=product)
-        badge = IHasAffiliation(productseries).getAffiliationBadge(driver)
+        [badge] = (
+            IHasAffiliation(productseries).getAffiliationBadges([driver]))
         self.assertEqual(
             ("/@@/product-badge", "Pting driver"), badge)
 
@@ -307,14 +355,14 @@ class TestQuestionPillarAffiliation(TestCaseWithFactory):
     def test_correct_pillar_is_used_for_product(self):
         product = self.factory.makeProduct()
         question = self.factory.makeQuestion(target=product)
-        badge = IHasAffiliation(question)
-        self.assertEqual(question.product, badge.getPillar())
+        adapter = IHasAffiliation(question)
+        self.assertEqual(question.product, adapter.getPillar())
 
     def test_correct_pillar_is_used_for_distribution(self):
         distribution = self.factory.makeDistribution()
         question = self.factory.makeQuestion(target=distribution)
-        badge = IHasAffiliation(question)
-        self.assertEqual(question.distribution, badge.getPillar())
+        adapter = IHasAffiliation(question)
+        self.assertEqual(question.distribution, adapter.getPillar())
 
     def test_correct_pillar_is_used_for_distro_sourcepackage(self):
         distribution = self.factory.makeDistribution()
@@ -323,8 +371,8 @@ class TestQuestionPillarAffiliation(TestCaseWithFactory):
         owner = self.factory.makePerson()
         question = self.factory.makeQuestion(
             target=distro_sourcepackage, owner=owner)
-        badge = IHasAffiliation(question)
-        self.assertEqual(distribution, badge.getPillar())
+        adapter = IHasAffiliation(question)
+        self.assertEqual(distribution, adapter.getPillar())
 
     def test_answer_contact_affiliation_for_distro(self):
         # A person is affiliated if they are an answer contact for a distro
@@ -337,7 +385,8 @@ class TestQuestionPillarAffiliation(TestCaseWithFactory):
         with person_logged_in(answer_contact):
             distro.addAnswerContact(answer_contact, answer_contact)
         question = self.factory.makeQuestion(target=distro)
-        badge = IHasAffiliation(question).getAffiliationBadge(answer_contact)
+        [badge] = (
+            IHasAffiliation(question).getAffiliationBadges([answer_contact]))
         self.assertEqual(
             ("/@@/distribution-badge", "%s answer contact" %
                 distro.displayname), badge)
@@ -357,7 +406,8 @@ class TestQuestionPillarAffiliation(TestCaseWithFactory):
                 answer_contact, answer_contact)
         question = self.factory.makeQuestion(
             target=distro_sourcepackage, owner=answer_contact)
-        badge = IHasAffiliation(question).getAffiliationBadge(answer_contact)
+        [badge] = (
+            IHasAffiliation(question).getAffiliationBadges([answer_contact]))
         self.assertEqual(
             ("/@@/distribution-badge", "%s answer contact" %
                 distro_sourcepackage.displayname), badge)
@@ -376,7 +426,8 @@ class TestQuestionPillarAffiliation(TestCaseWithFactory):
             distribution.addAnswerContact(answer_contact, answer_contact)
         question = self.factory.makeQuestion(
             target=distro_sourcepackage, owner=answer_contact)
-        badge = IHasAffiliation(question).getAffiliationBadge(answer_contact)
+        [badge] = (
+            IHasAffiliation(question).getAffiliationBadges([answer_contact]))
         self.assertEqual(
             ("/@@/distribution-badge", "%s answer contact" %
                 distribution.displayname), badge)
@@ -392,7 +443,8 @@ class TestQuestionPillarAffiliation(TestCaseWithFactory):
         with person_logged_in(answer_contact):
             product.addAnswerContact(answer_contact, answer_contact)
         question = self.factory.makeQuestion(target=product)
-        badge = IHasAffiliation(question).getAffiliationBadge(answer_contact)
+        [badge] = (
+            IHasAffiliation(question).getAffiliationBadges([answer_contact]))
         self.assertEqual(
             ("/@@/product-badge", "%s answer contact" %
                 product.displayname), badge)
@@ -402,7 +454,7 @@ class TestQuestionPillarAffiliation(TestCaseWithFactory):
         person = self.factory.makePerson()
         product = self.factory.makeProduct(owner=person)
         question = self.factory.makeQuestion(target=product)
-        badge = IHasAffiliation(question).getAffiliationBadge(person)
+        [badge] = IHasAffiliation(question).getAffiliationBadges([person])
         self.assertEqual(
             ("/@@/product-badge", "%s maintainer" %
                 product.displayname), badge)
@@ -412,7 +464,7 @@ class TestQuestionPillarAffiliation(TestCaseWithFactory):
         person = self.factory.makePerson()
         distro = self.factory.makeDistribution(owner=person)
         question = self.factory.makeQuestion(target=distro)
-        badge = IHasAffiliation(question).getAffiliationBadge(person)
+        [badge] = IHasAffiliation(question).getAffiliationBadges([person])
         self.assertEqual(
             ("/@@/distribution-badge", "%s maintainer" %
                 distro.displayname), badge)
@@ -425,21 +477,22 @@ class TestSpecificationPillarAffiliation(TestCaseWithFactory):
     def test_correct_pillar_is_used_for_product(self):
         product = self.factory.makeProduct()
         specification = self.factory.makeSpecification(product=product)
-        badge = IHasAffiliation(specification)
-        self.assertEqual(specification.product, badge.getPillar())
+        adapter = IHasAffiliation(specification)
+        self.assertEqual(specification.product, adapter.getPillar())
 
     def test_correct_pillar_is_used_for_distribution(self):
         distro = self.factory.makeDistribution()
         specification = self.factory.makeSpecification(distribution=distro)
-        badge = IHasAffiliation(specification)
-        self.assertEqual(specification.distribution, badge.getPillar())
+        adapter = IHasAffiliation(specification)
+        self.assertEqual(specification.distribution, adapter.getPillar())
 
     def test_product_affiliation(self):
         # A person is affiliated if they are affiliated with the pillar.
         person = self.factory.makePerson()
         product = self.factory.makeProduct(owner=person)
         specification = self.factory.makeSpecification(product=product)
-        badge = IHasAffiliation(specification).getAffiliationBadge(person)
+        [badge] = (
+            IHasAffiliation(specification).getAffiliationBadges([person]))
         self.assertEqual(
             ("/@@/product-badge", "%s maintainer" %
                 product.displayname), badge)
@@ -449,7 +502,8 @@ class TestSpecificationPillarAffiliation(TestCaseWithFactory):
         person = self.factory.makePerson()
         distro = self.factory.makeDistribution(owner=person)
         specification = self.factory.makeSpecification(distribution=distro)
-        badge = IHasAffiliation(specification).getAffiliationBadge(person)
+        [badge] = (
+            IHasAffiliation(specification).getAffiliationBadges([person]))
         self.assertEqual(
             ("/@@/distribution-badge", "%s maintainer" %
                 distro.displayname), badge)
