@@ -27,6 +27,7 @@ from lp.code.browser.branchlisting import (
     BranchListingSort,
     BranchListingView,
     GroupedDistributionSourcePackageBranchesView,
+    PersonProductSubscribedBranchesView,
     SourcePackageBranchesView,
     )
 from lp.code.enums import BranchVisibilityRule
@@ -525,3 +526,29 @@ class TestProjectGroupBranches(TestCaseWithFactory):
             self.project, name='+branches', rootsite='code')
         table = find_tag_by_id(view(), "branchtable")
         self.assertIsNot(None, table)
+
+
+class FauxPageTitleContext:
+
+    displayname = 'DISPLAY-NAME'
+
+    class person:
+        displayname = 'PERSON'
+
+    class product:
+        displayname = 'PRODUCT'
+
+
+class TestPageTitle(TestCase):
+    """The various views should have a page_title attribute/property."""
+
+    def test_branch_listing_view(self):
+        view = BranchListingView(FauxPageTitleContext, None)
+        self.assertEqual(
+            'Bazaar branches for DISPLAY-NAME', view.page_title)
+
+    def test_person_product_subscribed_branches_view(self):
+        view = PersonProductSubscribedBranchesView(FauxPageTitleContext, None)
+        self.assertEqual(
+            'Bazaar Branches of PRODUCT subscribed to by PERSON',
+            view.page_title)

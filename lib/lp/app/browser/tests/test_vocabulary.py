@@ -29,7 +29,7 @@ from canonical.launchpad.webapp.vocabulary import (
     )
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.vocabulary import (
-    IPickerEntry,
+    IPickerEntrySource,
     MAX_DESCRIPTION_LENGTH,
     )
 from lp.app.errors import UnexpectedFormData
@@ -42,59 +42,59 @@ from lp.testing import (
 from lp.testing.views import create_view
 
 
-class PersonPickerEntryAdapterTestCase(TestCaseWithFactory):
+class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
     def test_person_to_pickerentry(self):
         # IPerson can be adpated to IPickerEntry.
         person = self.factory.makePerson()
-        adapter = IPickerEntry(person)
-        self.assertTrue(IPickerEntry.providedBy(adapter))
+        adapter = IPickerEntrySource(person)
+        self.assertTrue(IPickerEntrySource.providedBy(adapter))
 
-    def test_PersonPickerEntryAdapter_email_anonymous(self):
+    def test_PersonPickerEntrySourceAdapter_email_anonymous(self):
         # Anonymous users cannot see entry email addresses.
         person = self.factory.makePerson(email='snarf@eg.dom')
-        entry = IPickerEntry(person).getPickerEntry(None)
+        [entry] = IPickerEntrySource(person).getPickerEntries([person], None)
         self.assertEqual('<email address hidden>', entry.description)
 
-    def test_PersonPickerEntryAdapter_visible_email_logged_in(self):
+    def test_PersonPickerEntrySourceAdapter_visible_email_logged_in(self):
         # Logged in users can see visible email addresses.
         observer = self.factory.makePerson()
         login_person(observer)
         person = self.factory.makePerson(email='snarf@eg.dom')
-        entry = IPickerEntry(person).getPickerEntry(None)
+        [entry] = IPickerEntrySource(person).getPickerEntries([person], None)
         self.assertEqual('snarf@eg.dom', entry.description)
 
-    def test_PersonPickerEntryAdapter_hidden_email_logged_in(self):
+    def test_PersonPickerEntrySourceAdapter_hidden_email_logged_in(self):
         # Logged in users cannot see hidden email addresses.
         person = self.factory.makePerson(email='snarf@eg.dom')
         login_person(person)
         person.hide_email_addresses = True
         observer = self.factory.makePerson()
         login_person(observer)
-        entry = IPickerEntry(person).getPickerEntry(None)
+        [entry] = IPickerEntrySource(person).getPickerEntries([person], None)
         self.assertEqual('<email address hidden>', entry.description)
 
-    def test_PersonPickerEntryAdapter_no_email_logged_in(self):
+    def test_PersonPickerEntrySourceAdapter_no_email_logged_in(self):
         # Teams without email address have no desriptions.
         team = self.factory.makeTeam()
         observer = self.factory.makePerson()
         login_person(observer)
-        entry = IPickerEntry(team).getPickerEntry(None)
+        [entry] = IPickerEntrySource(team).getPickerEntries([team], None)
         self.assertEqual(None, entry.description)
 
-    def test_PersonPickerEntryAdapter_logged_in(self):
+    def test_PersonPickerEntrySourceAdapter_logged_in(self):
         # Logged in users can see visible email addresses.
         observer = self.factory.makePerson()
         login_person(observer)
         person = self.factory.makePerson(
             email='snarf@eg.dom', name='snarf')
-        entry = IPickerEntry(person).getPickerEntry(None)
+        [entry] = IPickerEntrySource(person).getPickerEntries([person], None)
         self.assertEqual('sprite person', entry.css)
         self.assertEqual('sprite new-window', entry.link_css)
 
-    def test_PersonPickerEntryAdapter_enhanced_picker_enabled_user(self):
+    def test_PersonPickerEntrySourceAdapter_enhanced_picker_user(self):
         # The enhanced person picker provides more information for users.
         person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
         creation_date = datetime(
@@ -102,31 +102,31 @@ class PersonPickerEntryAdapterTestCase(TestCaseWithFactory):
         removeSecurityProxy(person).datecreated = creation_date
         getUtility(IIrcIDSet).new(person, 'eg.dom', 'snarf')
         getUtility(IIrcIDSet).new(person, 'ex.dom', 'pting')
-        entry = IPickerEntry(person).getPickerEntry(
-            None, enhanced_picker_enabled=True,
+        [entry] = IPickerEntrySource(person).getPickerEntries(
+            [person], None, enhanced_picker_enabled=True,
             picker_expander_enabled=True)
         self.assertEqual('http://launchpad.dev/~snarf', entry.alt_title_link)
         self.assertEqual(
             ['snarf on eg.dom, pting on ex.dom', 'Member since 2005-01-30'],
             entry.details)
 
-    def test_PersonPickerEntryAdapter_enhanced_picker_enabled_team(self):
+    def test_PersonPickerEntrySourceAdapter_enhanced_picker_team(self):
         # The enhanced person picker provides more information for teams.
         team = self.factory.makeTeam(email='fnord@eg.dom', name='fnord')
-        entry = IPickerEntry(team).getPickerEntry(
-            None, enhanced_picker_enabled=True,
+        [entry] = IPickerEntrySource(team).getPickerEntries(
+            [team], None, enhanced_picker_enabled=True,
             picker_expander_enabled=True)
         self.assertEqual('http://launchpad.dev/~fnord', entry.alt_title_link)
         self.assertEqual(['Team members: 1'], entry.details)
 
-    def test_PersonPickerEntryAdapter_personpicker_affiliation_badges(self):
+    def test_PersonPickerEntrySourceAdapter_affiliation_badges(self):
         # The person picker with affiliation enabled provides affilliation
         # information.
         person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
         project = self.factory.makeProduct(name='fnord', owner=person)
         bugtask = self.factory.makeBugTask(target=project)
-        entry = IPickerEntry(person).getPickerEntry(
-            bugtask, enhanced_picker_enabled=True,
+        [entry] = IPickerEntrySource(person).getPickerEntries(
+            [person], bugtask, enhanced_picker_enabled=True,
             picker_expander_enabled=True,
             personpicker_affiliation_enabled=True)
         self.assertEqual(1, len(entry.badges))
@@ -206,14 +206,18 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
         flags = FeatureFixture(feature_flag)
         flags.setUp()
         self.addCleanup(flags.cleanUp)
-        team = self.factory.makeTeam(name='pting-team')
-        TestPersonVocabulary.test_persons.append(team)
+        team = self.factory.makeTeam(name='xpting-team')
+        person = self.factory.makePerson(name='xpting-person')
+        creation_date = datetime(
+            2005, 01, 30, 0, 0, 0, 0, pytz.timezone('UTC'))
+        removeSecurityProxy(person).datecreated = creation_date
+        TestPersonVocabulary.test_persons.extend([team, person])
         product = self.factory.makeProduct(owner=team)
         bugtask = self.factory.makeBugTask(target=product)
-        form = dict(name='TestPerson', search_text='pting-team')
+        form = dict(name='TestPerson', search_text='xpting')
         view = self.create_vocabulary_view(form, context=bugtask)
         result = simplejson.loads(view())
-        expected = {
+        expected = [{
             "alt_title": team.name,
             "alt_title_link": "http://launchpad.dev/~%s" % team.name,
             "api_uri": "/~%s" % team.name,
@@ -226,10 +230,24 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
             "metadata": "team",
             "title": team.displayname,
             "value": team.name
-            }
+            },
+            {
+            "alt_title": person.name,
+            "alt_title_link": "http://launchpad.dev/~%s" % person.name,
+            "api_uri": "/~%s" % person.name,
+            "css": "sprite person",
+            "description": "<email address hidden>",
+            "details": ['Member since 2005-01-30'],
+            "link_css": "sprite new-window",
+            "metadata": "person",
+            "title": person.displayname,
+            "value": person.name
+            }]
         self.assertTrue('entries' in result)
         self.assertContentEqual(
-            expected.items(), result['entries'][0].items())
+            expected[0].items(), result['entries'][0].items())
+        self.assertContentEqual(
+            expected[1].items(), result['entries'][1].items())
 
     def test_max_description_size(self):
         # Descriptions over 120 characters are truncated and ellipsised.
