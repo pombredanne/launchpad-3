@@ -97,6 +97,30 @@ class TestLaunchpadBrowserPublication(TestCase):
         publication.callTraversalHooks(request, obj2)
         self.assertEquals(request.traversed_objects, [obj1])
 
+    def test_validTraversalStack_ascii_no_space(self):
+        # ascii path with no whitespace is valid.
+        request = LaunchpadTestRequest(PATH_INFO="foo")
+        result = LaunchpadBrowserPublication._validTraversalStack(request)
+        self.assertTrue(result)
+
+    def test_validTraversalStack_space(self):
+        # ascii path with whitespace is invalid.
+        request = LaunchpadTestRequest(PATH_INFO="foo ")
+        result = LaunchpadBrowserPublication._validTraversalStack(request)
+        self.assertFalse(result)
+
+    def test_validTraversalStack_nonascii(self):
+        # path with non-ascii is invalid.
+        request = LaunchpadTestRequest(PATH_INFO=u"foo\xC0".encode('utf-8'))
+        result = LaunchpadBrowserPublication._validTraversalStack(request)
+        self.assertFalse(result)
+
+    def test_validTraversalStack_nonascii_space(self):
+        # path with non-ascii whitespace is invalid.
+        request = LaunchpadTestRequest(PATH_INFO=u"foo\xa0".encode('utf-8'))
+        result = LaunchpadBrowserPublication._validTraversalStack(request)
+        self.assertFalse(result)
+
 
 class TestReadOnlyModeSwitches(TestCase):
     # At the beginning of every request (in publication.beforeTraversal()), we

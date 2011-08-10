@@ -315,6 +315,7 @@ class LaunchpadBrowserPublication(
 
     @staticmethod
     def _validTraversalStack(request):
+        """Elements of the traversal stack must be ascii non-whitespace."""
         whitespace_re = re.compile(r'\s')
         for element in request.getTraversalStack():
             if not is_ascii_only(element):
