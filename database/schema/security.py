@@ -555,7 +555,10 @@ def reset_permissions(con, config, options):
                         seqperm = 'USAGE'
                     elif 'SELECT' in perm:
                         seqperm = 'SELECT'
-                    desired_permissions[seq][who].add(seqperm)
+                    else:
+                        seqperm = None
+                    if seqperm:
+                        desired_permissions[seq][who].add(seqperm)
                     desired_permissions[seq][who_ro].add("SELECT")
 
     for obj in controlled_objs:
