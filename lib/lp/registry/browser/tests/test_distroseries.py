@@ -2068,11 +2068,10 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         # 302 is a redirect back to the same page.
         self.assertEqual(302, view.request.response.getStatus())
 
-    def test_sync_notification_on_success(self):
-        # A user with upload rights on the destination archive can
-        # sync packages. Notifications about the synced packages are
-        # displayed and the packages are copied inside the destination
-        # series.
+    def test_sync_success(self):
+        # A user with upload rights on the destination archive can sync
+        # packages. Notifications about the synced packages are displayed and
+        # the packages are copied inside the destination series.
         versions = {
             'base': '1.0',
             'derived': '1.0derived1',
@@ -2095,36 +2094,16 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         # Now, sync the source from the parent using the form.
         set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
-            derived_series, person, [diff_id])
+            derived_series, person, [diff_id], query_string=(
+                "batch=12&start=24&my-old-man=dustman"))
 
         # The parent's version should now be in the derived series and
         # the notifications displayed:
         self.assertPackageCopied(
             derived_series, 'my-src-name', versions['parent'], view)
 
-    def test_sync_success_sets_next_url(self):
-        # When a sync is successful, next_url contains the full batch and
-        # filter parameters so that the user is redirected to the same place
-        # as from where they submitted the form.
-        versions = {
-            'base': '1.0',
-            'derived': '1.0derived1',
-            'parent': '1.0-1',
-        }
-        derived_series, parent_series, sp_name, diff_id = self._setUpDSD(
-            'my-src-name', versions=versions)
-
-        # Setup a user with upload rights.
-        person = self.factory.makePerson()
-        removeSecurityProxy(derived_series.main_archive).newPackageUploader(
-            person, sp_name)
-
-        # Now, sync the source from the parent using the form.
-        set_derived_series_sync_feature_flag(self)
-        view = self._syncAndGetView(
-            derived_series, person, [diff_id], query_string=(
-                "batch=12&start=24&my-old-man=dustman"))
-
+        # The URL to which the browser is redirected has same batch and
+        # filtering options as where the sync request was made.
         self.assertEqual(
             "batch=12&start=24&my-old-man=dustman",
             urlparse(view.next_url).query)
