@@ -20,20 +20,7 @@
     </metal:macro-parent>
   </metal:macros>
 
-  <div
-    tal:attributes="class view/blacklist_options_css_class"
-    style="float:right">
-    <dl>
-      <dt>Ignored:</dt>
-      <dd>
-        <form>
-          <tal:replace
-            replace="structure view/widgets/blacklist_options" />
-        </form>
-      </dd>
-    </dl>
-  </div>
-
+  <div style="float: left;">
   <dl>
     <dt>Binary descriptions:</dt>
       <dd><ul>
@@ -124,6 +111,22 @@
 
     </tal:package-diffs>
   </dl>
+  </div>
+  <div
+    tal:attributes="class view/blacklist_options_css_class"
+    style="float:left">
+    <dl>
+      <dt>Ignored:</dt>
+      <dd>
+        <form>
+          <tal:replace
+            replace="structure view/widgets/blacklist_options" />
+        </form>
+      </dd>
+    </dl>
+  </div>
+
+  <div style="clear:both;">&nbsp;</div>
 
   <strong>Comments:</strong>
   <tal:conversation replace="structure view/@@+render"/>
