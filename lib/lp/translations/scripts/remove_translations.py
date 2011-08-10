@@ -200,7 +200,6 @@ class RemoveTranslations(LaunchpadScript):
             help="Match on is_current_ubuntu value (True or False)."),
         Option(
             '-I', '--is-current-upstream', dest='is_current_upstream',
-            type='bool',
             help="Match on is_current_upstream value (True or False)."),
         Option(
             '-m', '--msgid', dest='msgid',
