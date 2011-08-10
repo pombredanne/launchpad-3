@@ -612,10 +612,10 @@ class TestBeforeTraverseHandler(TestCleanupProfiler):
 
 class TestInlineProfiling(BaseRequestEndHandlerTest):
 
-    def make_work(self, count=1, **args):
+    def make_work(self, count=1):
         def work():
             for i in range(count):
-                profile.start(**args)
+                profile.start()
                 random.random()
                 profile.stop()
         return work
@@ -623,30 +623,24 @@ class TestInlineProfiling(BaseRequestEndHandlerTest):
     def test_basic_inline_profiling(self):
         self.pushProfilingConfig(profiling_allowed='True')
         request = self.endRequest('/', work=self.make_work())
-        self.assertPStatsProfile(self.assertBasicProfileExists(request))
-
-    def test_callgrind_inline_profiling(self):
-        self.pushProfilingConfig(profiling_allowed='True')
-        request = self.endRequest(
-            '/', work=self.make_work(profile_type='callgrind'))
-        self.assertCallgrindProfile(self.assertBasicProfileExists(request))
-
-    def test_inline_profiling_with_show(self):
-        self.pushProfilingConfig(profiling_allowed='True')
-        request = self.endRequest('/', work=self.make_work(show=True))
-        self.assertPStatsProfile(self.assertBasicProfileExists(request, show=True))
+        self.assertPStatsProfile(
+            self.assertBasicProfileExists(request, show=True))
 
     def test_multiple_inline_profiling(self):
         self.pushProfilingConfig(profiling_allowed='True')
         request = self.endRequest('/', work=self.make_work(count=2))
-        self.assertPStatsProfile(self.assertBasicProfileExists(request))
+        response = self.assertBasicProfileExists(request, show=True)
+        self.assertPStatsProfile(response)
+        self.assertIn('2 individual profiles', response)
 
     def test_mixed_profiling(self):
+        # ++profile++ wins over inline.
         self.pushProfilingConfig(profiling_allowed='True')
         request = self.endRequest(
             '/++profile++show,callgrind', work=self.make_work())
-        self.assertBothProfiles(
-            self.assertBasicProfileExists(request, show=True))
+        response = self.assertBasicProfileExists(request, show=True)
+        self.assertCallgrindProfile(response)
+        self.assertIn('Inline request ignored', response)
 
     def test_context_manager(self):
         def work():
@@ -654,4 +648,5 @@ class TestInlineProfiling(BaseRequestEndHandlerTest):
                 random.random()
         self.pushProfilingConfig(profiling_allowed='True')
         request = self.endRequest('/', work=work)
-        self.assertPStatsProfile(self.assertBasicProfileExists(request))
+        self.assertPStatsProfile(
+            self.assertBasicProfileExists(request, show=True))

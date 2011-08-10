@@ -211,22 +211,18 @@ template = PageTemplateFile(
 available_profilers = frozenset(('pstats', 'callgrind'))
 
 
-def start(profile_type='pstats', show=False):
+def start():
     """Turn on profiling from code.
-
-    profile_type should be one of available_profilers.  pstats will aggregate
-    because it can; callgrind will use the last one because it can't
-    aggregate.
     """
     actions = getattr(_profilers, 'actions', None)
     profiler = getattr(_profilers, 'profiler', None)
-    assert profile_type in available_profilers
     if actions is None:
         actions = _profilers.actions = set()
         _profilers.profiling = True
-    actions.add(profile_type)
-    if show:
-        actions.add('show')
+    elif actions.difference(('help',)) and 'inline' not in actions:
+        actions.add('inline_ignored')
+        return
+    actions.update(('pstats', 'show', 'inline'))
     if profiler is None:
         profiler = _profilers.profiler = Profiler()
         profiler.start()
@@ -240,14 +236,15 @@ def stop():
     """Stop profiling."""
     # For simplicity, we just silently ignore stop requests when we
     # have not started.
+    actions = getattr(_profilers, 'actions', None)
     profiler = getattr(_profilers, 'profiler', None)
-    if profiler is not None:
+    if actions is not None and 'inline' in actions and profiler is not None:
         profiler.disable()
 
 
 @contextlib.contextmanager
-def profiling(*args, **kwargs):
-    start(*args, **kwargs)
+def profiling():
+    start()
     yield
     stop()
 

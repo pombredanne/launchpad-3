@@ -20,6 +20,8 @@
                  oops options/oops|nothing;
                  profile_count options/profile_count|nothing;
                  multiple_profiles options/multiple_profiles|nothing;
+                 inline_ignored actions/inline_ignored|nothing;
+                 inline actions/inline|nothing;
                  ">
   <div class="hide_reveal_profiling" id="hide_profiling">
   Click to HIDE profiling information
@@ -48,6 +50,33 @@
     <code>http://launchpad.dev/Firefox/++profile++show</code>) but some pages
     do seem to redirect in surprising ways, so experimentation may be
     necessary.</p>
+    <p>If you are working on a developer instance of Launchpad, you can also
+    insert calls directly in your code to profile certain code paths.  Try
+    something like this:</p>
+<pre>
+from lp.services.profile import profiling
+with profiling():
+    # Do the work that you want profiled here!
+</pre>
+    <p>Multiple calls like this within a single request will be aggregated
+    together.</p>
+  </tal:block>
+  <tal:block condition="inline_ignored">
+    <h2>Inline request ignored</h2>
+    <p>You tried to use a profiling call in your code while also using a
+    conflicting <code>++profile++</code> request (like <code>show</code> or
+    <code>pstats</code> or <code>callgrind</code>).  You can't use both at the
+    same time, so you got the full profile of this request.  If you want the
+    results of the inline calls instead, try removing the
+    <code>++profile++</code>...<code>/</code> segment from your browser's URL.
+    </p>
+  </tal:block>
+  <tal:block condition="inline">
+    <h2>Inline request</h2>
+    <p>These results are from profiling statements in your code. <tal:block
+    condition="multiple_profiles">This request made <tal:block
+    replace="profile_count" /> individual profiles. The data here represent
+    an aggregate of all the profiles.</tal:block></p>
   </tal:block>
   <h2>Log information</h2>
   <tal:block condition="not:log">
@@ -81,11 +110,6 @@
     interface.  Type &quot;help&quot; at the prompt, or see the <a
     href="http://docs.python.org/library/profile.html#instant-user-s-manual"
     >Python documentation</a>.</p>
-    <p tal:condition="multiple_profiles">This request made <tal:block
-    replace="profile_count" /> profiles. <tal:block condition="callgrind">
-    The callgrind profile represents the last one.</tal:block> <tal:block
-    condition="pstats">The pstats profile represents an aggregate of all the
-    profiles.</tal:block></p>
   </tal:block>
   <h2>Profile quick view</h2>
   <tal:block condition="not:show">
@@ -97,7 +121,7 @@
   <tal:block condition="show">
     <p tal:condition="multiple_profiles">This request made <tal:block
     replace="profile_count" /> profiles. The statistics below represent an
-    aggregate of all them.</p>
+    aggregate of them all.</p>
     <h3>Top Inline Time</h3>
     <pre tal:content="time" />
     <h3>Top Total Time</h3>
