@@ -1020,16 +1020,16 @@ def html_report(
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>Launchpad Page Performance Report %(date)s</title>
         <script language="javascript" type="text/javascript"
-            src="http://people.canonical.com/~stub/flot/jquery.min.js"
+            src="https://devpad.canonical.com/~lpqateam/ppr/js/flot/jquery.min.js"
             ></script>
         <script language="javascript" type="text/javascript"
-            src="http://people.canonical.com/~stub/jquery.appear-1.1.1.min.js"
+            src="https://devpad.canonical.com/~lpqateam/ppr/js/jquery.appear-1.1.1.min.js"
             ></script>
         <script language="javascript" type="text/javascript"
-            src="http://people.canonical.com/~stub/flot/jquery.flot.min.js"
+            src="https://devpad.canonical.com/~lpqateam/ppr/js/flot/jquery.flot.min.js"
             ></script>
         <script language="javascript" type="text/javascript"
-            src="http://people.canonical.com/~stub/sorttable.js"></script>
+            src="https://devpad.canonical.com/~lpqateam/ppr/js/sorttable.js"></script>
         <style type="text/css">
             h3 { font-weight: normal; font-size: 1em; }
             thead th { padding-left: 1em; padding-right: 1em; }
