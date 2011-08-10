@@ -35,6 +35,7 @@ from zope.interface import (
 from canonical.launchpad.webapp.servers import (
     ApplicationServerSettingRequestFactory,
     LaunchpadBrowserRequest,
+    LaunchpadTestRequest,
     VHostWebServiceRequestPublicationFactory,
     VirtualHostRequestPublicationFactory,
     WebServiceClientRequest,
@@ -372,6 +373,12 @@ class TestBasicLaunchpadRequest(TestCase):
 
         self.assertTrue(request.is_ajax)
 
+
+class TestLaunchpadBrowserRequestMixin:
+    """Tests for `LaunchpadBrowserRequestMixin`."""
+
+    request_factory = None  # Specify in subclasses.
+
     def test_getURL(self):
         """
         getURL() overrides HTTPRequest.getURL(), but behaves identically by
@@ -382,7 +389,7 @@ class TestBasicLaunchpadRequest(TestCase):
             "SCRIPT_NAME": "/sabbra/cadabra",
             "QUERY_STRING": "tuesday=gone",
             }
-        request = LaunchpadBrowserRequest(StringIO.StringIO(''), environ)
+        request = self.request_factory(StringIO.StringIO(''), environ)
         self.assertEqual(
             "http://geturl.example.com/sabbra/cadabra",
             request.getURL())
@@ -403,7 +410,7 @@ class TestBasicLaunchpadRequest(TestCase):
             "SCRIPT_NAME": "/sabbra/cadabra",
             "QUERY_STRING": "tuesday=gone",
             }
-        request = LaunchpadBrowserRequest(StringIO.StringIO(''), environ)
+        request = self.request_factory(StringIO.StringIO(''), environ)
         self.assertEqual(
             "http://geturl.example.com/sabbra/cadabra?tuesday=gone",
             request.getURL(include_query=True))
@@ -413,6 +420,26 @@ class TestBasicLaunchpadRequest(TestCase):
         self.assertEqual(
             "/sabbra/cadabra?tuesday=gone",
             request.getURL(include_query=True, path_only=True))
+
+
+class TestLaunchpadBrowserRequestMixinWithLaunchpadBrowserRequest(
+    TestLaunchpadBrowserRequestMixin, TestCase):
+    """
+    Tests for `LaunchpadBrowserRequestMixin` as found in
+    `LaucnhpadBrowserRequest`.
+    """
+
+    request_factory = LaunchpadBrowserRequest
+
+
+class TestLaunchpadBrowserRequestMixinWithLaunchpadTestRequest(
+    TestLaunchpadBrowserRequestMixin, TestCase):
+    """
+    Tests for `LaunchpadBrowserRequestMixin` as found in
+    `LaucnhpadTestRequest`.
+    """
+
+    request_factory = LaunchpadTestRequest
 
 
 class IThingSet(Interface):
