@@ -372,6 +372,48 @@ class TestBasicLaunchpadRequest(TestCase):
 
         self.assertTrue(request.is_ajax)
 
+    def test_getURL(self):
+        """
+        getURL() overrides HTTPRequest.getURL(), but behaves identically by
+        default.
+        """
+        environ = {
+            "SERVER_URL": "http://geturl.example.com",
+            "SCRIPT_NAME": "/sabbra/cadabra",
+            "QUERY_STRING": "tuesday=gone",
+            }
+        request = LaunchpadBrowserRequest(StringIO.StringIO(''), environ)
+        self.assertEqual(
+            "http://geturl.example.com/sabbra/cadabra",
+            request.getURL())
+        self.assertEqual(
+            "http://geturl.example.com/sabbra",
+            request.getURL(level=1))
+        self.assertEqual(
+            "/sabbra/cadabra",
+            request.getURL(path_only=True))
+
+    def test_getURL_include_query(self):
+        """
+        getURL() overrides HTTPRequest.getURL(), but appends the query string
+        if include_query=True.
+        """
+        environ = {
+            "SERVER_URL": "http://geturl.example.com",
+            "SCRIPT_NAME": "/sabbra/cadabra",
+            "QUERY_STRING": "tuesday=gone",
+            }
+        request = LaunchpadBrowserRequest(StringIO.StringIO(''), environ)
+        self.assertEqual(
+            "http://geturl.example.com/sabbra/cadabra?tuesday=gone",
+            request.getURL(include_query=True))
+        self.assertEqual(
+            "http://geturl.example.com/sabbra?tuesday=gone",
+            request.getURL(include_query=True, level=1))
+        self.assertEqual(
+            "/sabbra/cadabra?tuesday=gone",
+            request.getURL(include_query=True, path_only=True))
+
 
 class IThingSet(Interface):
     """Marker interface for a set of things."""

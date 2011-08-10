@@ -542,6 +542,16 @@ class LaunchpadBrowserRequestMixin:
         """See `IBasicLaunchpadRequest`."""
         return 'XMLHttpRequest' == self.getHeader('HTTP_X_REQUESTED_WITH')
 
+    def getURL(self, level=0, path_only=False, include_query=False):
+        """See `IBasicLaunchpadRequest`."""
+        sup = super(LaunchpadBrowserRequestMixin, self)
+        url = sup.getURL(level, path_only)
+        if include_query:
+            query_string = self.get('QUERY_STRING')
+            if query_string is not None and len(query_string) > 0:
+                url = "%s?%s" % (url, query_string)
+        return url
+
 
 class BasicLaunchpadRequest(LaunchpadBrowserRequestMixin):
     """Mixin request class to provide stepstogo."""
