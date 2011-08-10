@@ -26,11 +26,14 @@ from lp.codehosting.puller.worker import (
     BadUrlLaunchpad,
     BadUrlScheme,
     BadUrlSsh,
-    BranchLoopError,
     BranchMirrorer,
-    BranchReferenceForbidden,
     PullerWorker,
     PullerWorkerProtocol,
+    )
+
+from lp.codehosting.safe_open import (
+    BranchLoopError,
+    BranchReferenceForbidden,
     )
 
 
