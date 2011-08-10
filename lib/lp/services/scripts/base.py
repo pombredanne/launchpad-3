@@ -148,8 +148,7 @@ class LaunchpadScript:
     # State for the log_unhandled_exceptions decorator.
     _log_unhandled_exceptions_level = 0
 
-    def __init__(self, name=None, dbuser=None,
-                 test_args=None, logger=None, early_zca=False):
+    def __init__(self, name=None, dbuser=None, test_args=None, logger=None):
         """Construct new LaunchpadScript.
 
         Name is a short name for this script; it will be used to
@@ -163,8 +162,6 @@ class LaunchpadScript:
 
         :param logger: Use this logger, instead of initializing global
             logging.
-        :param early_zca: Register the ZCA early, before parsing options.
-            If False, registration is delayed until the script is run.
         """
         if name is None:
             self._name = self.__class__.__name__.lower()
@@ -173,7 +170,6 @@ class LaunchpadScript:
 
         self._dbuser = dbuser
         self.logger = logger
-        self._early_zca = early_zca
 
         # The construction of the option parser is a bit roundabout, but
         # at least it's isolated here. First we build the parser, then
@@ -184,8 +180,6 @@ class LaunchpadScript:
             description = self.__doc__
         else:
             description = self.description
-        if self._early_zca:
-            self._init_zca(use_web_security=False)
         self.parser = OptionParser(usage=self.usage,
                                    description=description)
 
@@ -321,8 +315,7 @@ class LaunchpadScript:
 
         if isolation is None:
             isolation = ISOLATION_LEVEL_DEFAULT
-        if not self._early_zca:
-            self._init_zca(use_web_security=use_web_security)
+        self._init_zca(use_web_security=use_web_security)
         self._init_db(isolation=isolation)
 
         date_started = datetime.datetime.now(UTC)
