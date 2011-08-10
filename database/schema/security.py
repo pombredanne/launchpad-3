@@ -26,12 +26,16 @@ import replication.helpers
 # The 'read' group does not get given select permission on the following
 # tables. This is to stop the ro user being given access to secrurity
 # sensitive information that interactive sessions don't need.
-SECURE_TABLES = [
+SECURE_TABLES = set((
     'public.accountpassword',
+    'public.accountpassword_id_seq',
     'public.oauthnonce',
+    'public.oauthnonce_id_seq',
     'public.openidnonce',
+    'public.openidnonce_id_seq',
     'public.openidconsumernonce',
-    ]
+    'public.openidconsumernonce_id_seq',
+    ))
 
 POSTGRES_ACL_MAP = {
     'r': 'SELECT',
@@ -495,7 +499,7 @@ def reset_permissions(con, config, options):
     else:
         log.info("Not resetting ownership of database objects")
 
-    controlled_roles = set()
+    controlled_roles = set(['read'])
     for section_name in config.sections():
         controlled_roles.add(section_name)
         if section_name != 'public':
@@ -540,14 +544,10 @@ def reset_permissions(con, config, options):
                 desired_permissions[obj][who].update(perm.split(', '))
                 if who_ro:
                     desired_permissions[obj][who_ro].add("EXECUTE")
-                desired_permissions[obj]['read'].add("EXECUTE")
             else:
                 desired_permissions[obj][who].update(perm.split(', '))
                 if who_ro:
                     desired_permissions[obj][who_ro].add("SELECT")
-                is_secure = (obj.fullname in SECURE_TABLES)
-                if not is_secure:
-                    desired_permissions[obj]['read'].add("SELECT")
                 if obj.seqname in valid_objs:
                     seq = schema[obj.seqname]
                     controlled_objs.add(seq)
@@ -556,9 +556,18 @@ def reset_permissions(con, config, options):
                     elif 'SELECT' in perm:
                         seqperm = 'SELECT'
                     desired_permissions[seq][who].add(seqperm)
-                    if not is_secure:
-                        desired_permissions[seq]["read"].add("SELECT")
                     desired_permissions[seq][who_ro].add("SELECT")
+
+    for obj in controlled_objs:
+        is_secure = (obj.fullname in SECURE_TABLES)
+        if obj.type == 'function':
+            desired_permissions[obj]['read'].add("EXECUTE")
+        elif obj.type == 'sequence':
+            if not is_secure:
+                desired_permissions[obj]["read"].add("SELECT")
+        else:
+            if not is_secure:
+                desired_permissions[obj]['read'].add("SELECT")
 
     required_grants = []
     required_revokes = []
