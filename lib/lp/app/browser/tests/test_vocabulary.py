@@ -119,7 +119,7 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         self.assertEqual('http://launchpad.dev/~fnord', entry.alt_title_link)
         self.assertEqual(['Team members: 1'], entry.details)
 
-    def test_PersonPickerEntrySourceAdapter_affiliation_badges(self):
+    def test_PersonPickerEntrySourceAdapter_affiliation_badge(self):
         # The person picker with affiliation enabled provides affilliation
         # information.
         person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
@@ -129,9 +129,9 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
             [person], bugtask, enhanced_picker_enabled=True,
             picker_expander_enabled=True,
             personpicker_affiliation_enabled=True)
-        self.assertEqual(1, len(entry.badges))
-        self.assertEqual('/@@/product-badge', entry.badges[0]['url'])
-        self.assertEqual('Fnord maintainer', entry.badges[0]['alt'])
+        self.assertEqual(1, len(entry.badge))
+        self.assertEqual('/@@/product-badge', entry.badge['url'])
+        self.assertEqual('Fnord maintainer', entry.badge['alt'])
 
 
 class TestPersonVocabulary:
@@ -221,9 +221,9 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
             "alt_title": team.name,
             "alt_title_link": "http://launchpad.dev/~%s" % team.name,
             "api_uri": "/~%s" % team.name,
-            "badges":
-                [{"alt": "%s maintainer" % product.displayname,
-                  "url": "/@@/product-badge"}],
+            "badge":
+                {"alt": "%s maintainer" % product.displayname,
+                  "url": "/@@/product-badge"},
             "css": "sprite team",
             "details": ['Team members: 1'],
             "link_css": "sprite new-window",
