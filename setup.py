@@ -56,6 +56,7 @@ setup(
         'mercurial',
         'mocker',
         'oauth',
+        'oops',
         'paramiko',
         'psycopg2',
         'python-memcached',
