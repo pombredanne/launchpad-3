@@ -96,7 +96,7 @@ check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
 
 check_schema: build
-	${PY} utilities/check-db-revision.py
+	#${PY} utilities/check-db-revision.py
 
 # Clean before running the test suite, since the build might fail depending
 # what source changes happened. (e.g. apidoc depends on interfaces)
