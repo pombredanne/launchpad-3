@@ -23,6 +23,7 @@ import sys
 import tempfile
 import unittest
 
+from oops import uniquefileallocator
 from pytz import UTC
 import transaction
 
@@ -36,7 +37,6 @@ from canonical.launchpad.scripts.oops import (
     unwanted_oops_files,
     )
 from canonical.testing.layers import LaunchpadZopelessLayer
-from lp.services.log import uniquefileallocator
 
 
 class TestOopsPrune(unittest.TestCase):
