@@ -903,14 +903,19 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             person=self.user, force_async=True):
             # The copy worked so we can redirect back to the page to
             # show the results.
-            self.next_url = self.request.URL
+            self.next_url = self.full_url
 
     @property
-    def action_url(self):
-        """The forms should post to themselves, including GET params to
-        account for batch parameters.
+    def full_url(self):
+        """The request URL including query string.
+
+        The forms should post to themselves, including GET params to account
+        for batch parameters, and actions should redirect back to the same
+        batch, with the same filtering, as they were submitted with.
         """
         return "%s?%s" % (self.request.getURL(), self.request['QUERY_STRING'])
+
+    action_url = full_url
 
     def validate_sync(self, action, data):
         """Validate selected differences."""

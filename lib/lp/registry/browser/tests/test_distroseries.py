@@ -10,6 +10,7 @@ import difflib
 import re
 from textwrap import TextWrapper
 from urllib import urlencode
+from urlparse import urlparse
 
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import IJSONRequestCache
@@ -42,17 +43,17 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
 from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.url import urlappend
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from canonical.launchpad.webapp.url import urlappend
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.debversion import Version
 from lp.registry.browser.distroseries import (
-    HIGHER_VERSION_THAN_PARENT,
     ALL,
+    HIGHER_VERSION_THAN_PARENT,
     NON_IGNORED,
     RESOLVED,
     seriesToVocab,
@@ -2100,6 +2101,33 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         # the notifications displayed:
         self.assertPackageCopied(
             derived_series, 'my-src-name', versions['parent'], view)
+
+    def test_sync_success_sets_next_url(self):
+        # When a sync is successful, next_url contains the full batch and
+        # filter parameters so that the user is redirected to the same place
+        # as from where they submitted the form.
+        versions = {
+            'base': '1.0',
+            'derived': '1.0derived1',
+            'parent': '1.0-1',
+        }
+        derived_series, parent_series, sp_name, diff_id = self._setUpDSD(
+            'my-src-name', versions=versions)
+
+        # Setup a user with upload rights.
+        person = self.factory.makePerson()
+        removeSecurityProxy(derived_series.main_archive).newPackageUploader(
+            person, sp_name)
+
+        # Now, sync the source from the parent using the form.
+        set_derived_series_sync_feature_flag(self)
+        view = self._syncAndGetView(
+            derived_series, person, [diff_id], query_string=(
+                "batch=12&start=24&my-old-man=dustman"))
+
+        self.assertEqual(
+            "batch=12&start=24&my-old-man=dustman",
+            urlparse(view.next_url).query)
 
     def test_sync_success_not_yet_in_derived_series(self):
         # If the package to sync does not exist yet in the derived series,
