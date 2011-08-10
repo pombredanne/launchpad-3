@@ -223,10 +223,10 @@ class BranchPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
 
 @adapter(ISourcePackageName)
 class SourcePackageNamePickerEntrySourceAdapter(
-                                            DefaultPickerEntrySourceAdapter):
+    DefaultPickerEntrySourceAdapter):
     """Adapts ISourcePackageName to IPickerEntrySource."""
 
-    def getPickerEntry(self, term_values, context_object, **kwarg):
+    def getPickerEntries(self, term_values, context_object, **kwarg):
         """See `IPickerEntrySource`"""
         entries = (
             super(SourcePackageNamePickerEntrySourceAdapter, self)
@@ -242,7 +242,7 @@ class SourcePackageNamePickerEntrySourceAdapter(
 class ArchivePickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
     """Adapts IArchive to IPickerEntrySource."""
 
-    def getPickerEntry(self, term_values, context_object, **kwarg):
+    def getPickerEntries(self, term_values, context_object, **kwarg):
         """See `IPickerEntrySource`"""
         entries = (
             super(ArchivePickerEntrySourceAdapter, self)
