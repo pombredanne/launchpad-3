@@ -3408,6 +3408,15 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
                 self.context.bug.duplicateof is None and
                 not self.is_converted_to_question)
 
+    def expandable(self):
+        """Can the task's details be expanded?
+        
+        They can if there are not too many bugtasks, and if the user can see
+        the task details."""
+        # Looking at many_bugtasks is an important optimization.  With 150+
+        # bugtasks, it can save three or four seconds of rendering time.
+        return not self.many_bugtasks and self.canSeeTaskDetails()
+
     def getTaskRowCSSClass(self):
         """The appropriate CSS class for the row in the Affects table.
 
