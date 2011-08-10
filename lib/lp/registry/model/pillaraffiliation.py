@@ -96,7 +96,7 @@ class PillarAffiliation(object):
                     icon_url = context.icon.getURL()
                     return icon_url
                 if IHasIcon.providedBy(pillar) and pillar.icon is not None:
-                    icon_url = context.icon.getURL()
+                    icon_url = pillar.icon.getURL()
                     return icon_url
                 return default_url
 
