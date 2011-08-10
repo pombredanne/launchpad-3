@@ -14,9 +14,9 @@
                  dump_path options/dump_path;
                  callgrind_path options/callgrind_path|nothing;
                  pstats_path options/pstats_path|nothing;
-                 inlinetime options/inlinetime|nothing;
-                 totaltime options/totaltime|nothing;
-                 callcount options/callcount|nothing;
+                 time options/time|nothing;
+                 cumulative options/cumulative|nothing;
+                 calls options/calls|nothing;
                  oops options/oops|nothing;
                  ">
   <div class="hide_reveal_profiling" id="hide_profiling">
@@ -89,11 +89,11 @@
   </tal:block>
   <tal:block condition="show">
     <h3>Top Inline Time</h3>
-    <pre tal:content="inlinetime" />
+    <pre tal:content="time" />
     <h3>Top Total Time</h3>
-    <pre tal:content="totaltime" />
+    <pre tal:content="cumulative" />
     <h3>Top Call Count</h3>
-    <pre tal:content="callcount" />
+    <pre tal:content="calls" />
     <h2>Raw OOPS Information</h2>
     <pre tal:content="oops" />
   </tal:block>

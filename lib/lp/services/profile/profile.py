@@ -7,6 +7,7 @@ __all__ = []
 
 __metaclass__ = type
 
+import contextlib
 from cProfile import Profile
 from datetime import datetime
 import os
@@ -226,6 +227,13 @@ def stop():
     profiler = getattr(_profilers, 'profiler', None)
     if profiler is not None:
         profiler.disable()
+
+
+@contextlib.contextmanager
+def profiling(*args, **kwargs):
+    start(*args, **kwargs)
+    yield
+    stop()
 
 
 @adapter(IEndRequestEvent)
