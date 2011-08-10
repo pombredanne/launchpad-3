@@ -14,8 +14,7 @@ import pstats
 import threading
 import StringIO
 
-from bzrlib import errors
-from bzrlib.lsprof import BzrProfiler
+from bzrlib import lsprof
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.app.publication.interfaces import IEndRequestEvent
 from zope.component import (
@@ -43,29 +42,35 @@ class ProfilingOops(Exception):
     """Fake exception used to log OOPS information when profiling pages."""
 
 
-class PStatsProfiler(BzrProfiler):
-    """This provides a wrapper around the standard library's profiler.
+class Profiler:
 
-    It makes the BzrProfiler and the PStatsProfiler follow a similar API.
-    It also makes them both honor the BzrProfiler's thread lock.
-    """
+    profiler_lock = threading.Lock()
+    """Global lock used to serialise profiles."""
+
+    started = enabled = False
+
+    def disable(self):
+        if self.enabled:
+            self.p.disable()
+
+    def enable(self):
+        if not self.started:
+            self.start()
+        elif not self.enabled:
+            self.p.enable(subcalls=True)
+            self.enabled = True
 
     def start(self):
         """Start profiling.
-
-        This will record all calls made until stop() is called.
-
-        Unlike the BzrProfiler, we do not try to get profiles of sub-threads.
         """
         self.p = Profile()
-        permitted = self.__class__.profiler_lock.acquire(
-            self.__class__.profiler_block)
-        if not permitted:
-            raise errors.InternalBzrError(msg="Already profiling something")
+        self.started = True
+        self.__class__.profiler_lock.acquire(True)  # Blocks.
         try:
-            self.p.enable(subcalls=True)
+            self.enable()
         except:
             self.__class__.profiler_lock.release()
+            self.started = False
             raise
 
     def stop(self):
@@ -77,18 +82,18 @@ class PStatsProfiler(BzrProfiler):
         :return: A bzrlib.lsprof.Stats object.
         """
         try:
-            self.p.disable()
+            self.disable()
             p = self.p
             self.p = None
-            return PStats(p)
+            return Stats(p)
         finally:
             self.__class__.profiler_lock.release()
 
 
-class PStats:
-    """Emulate enough of the Bzr stats class for our needs."""
+class Stats:
 
     _stats = None
+    _callgrind_stats = None
 
     def __init__(self, profiler):
         self.p = profiler
@@ -99,16 +104,20 @@ class PStats:
             self._stats = pstats.Stats(self.p).strip_dirs()
         return self._stats
 
+    @property
+    def callgrind_stats(self):
+        if self._callgrind_stats is None:
+            self._callgrind_stats = lsprof.Stats(self.p.getstats(), {})
+        return self._callgrind_stats
+
     def save(self, filename):
-        self.p.dump_stats(filename)
+        if filename.startswith('callgrind.out'):
+            self.callgrind_stats.save(filename)
+        else:
+            self.p.dump_stats(filename)
 
     def sort(self, name):
-        mapping = {
-            'inlinetime': 'time',
-            'totaltime': 'cumulative',
-            'callcount': 'calls',
-            }
-        self.stats.sort_stats(mapping[name])
+        self.stats.sort_stats(name)
 
     def pprint(self, file):
         stats = self.stats
@@ -176,16 +185,47 @@ def _maybe_profile(event):
             # to try and stop the profiler before we delete it, in case it is
             # still running.
             assert getattr(_profilers, 'profiler', None) is None
-            if 'pstats' in actions and 'callgrind' not in actions:
-                _profilers.profiler = PStatsProfiler()
-            else:  # 'callgrind' is the default, and wins in a conflict.
-                _profilers.profiler = BzrProfiler()
+            _profilers.profiler = Profiler()
             _profilers.profiler.start()
     if config.profiling.memory_profile_log:
         _profilers.memory_profile_start = (memory(), resident())
 
 template = PageTemplateFile(
     os.path.join(os.path.dirname(__file__), 'profile.pt'))
+
+
+available_profilers = frozenset(('pstats', 'callgrind'))
+
+
+def start(profile_type='pstats', show=False):
+    """Turn on profiling from code.
+
+    profile_type should be one of available_profilers."""
+    actions = getattr(_profilers, 'actions', None)
+    profiler = getattr(_profilers, 'profiler', None)
+    assert profile_type in available_profilers
+    if actions is None:
+        actions = _profilers.actions = set()
+        _profilers.profiling = True
+    actions.add(profile_type)
+    if show:
+        actions.add('show')
+    if profiler is None:
+        profiler = _profilers.profiler = Profiler()
+        profiler.start()
+    else:
+        # For simplicity, we just silently ignore start requests when we
+        # have already started.
+        profiler.enable()
+
+
+def stop():
+    """Stop profiling."""
+    # For simplicity, we just silently ignore stop requests when we
+    # have not started.
+    profiler = getattr(_profilers, 'profiler', None)
+    if profiler is not None:
+        profiler.disable()
 
 
 @adapter(IEndRequestEvent)
@@ -234,28 +274,30 @@ def end_request(event):
             oopsid = oops.id
         else:
             oops = request.oops
-        if actions.intersection(('callgrind', 'pstats')):
-            filename = '%s-%s-%s-%s' % (
-                timestamp, pageid, oopsid,
-                threading.currentThread().getName())
-            if 'callgrind' in actions:
-                # callgrind wins in a conflict between it and pstats, as
-                # documented in the help.
-                # The Bzr stats class looks at the filename to know to use
-                # callgrind syntax.
-                filename = 'callgrind.out.' + filename
-            else:
-                filename += '.prof'
-            dump_path = os.path.join(dump_path, filename)
-            prof_stats.save(dump_path)
-            template_context['dump_path'] = os.path.abspath(dump_path)
+        filename = '%s-%s-%s-%s' % (
+            timestamp, pageid, oopsid,
+            threading.currentThread().getName())
+        if 'callgrind' in actions:
+            # The stats class looks at the filename to know to use
+            # callgrind syntax.
+            callgrind_path = os.path.join(
+                dump_path, 'callgrind.out.' + filename)
+            prof_stats.save(callgrind_path)
+            template_context['callgrind_path'] = os.path.abspath(
+                callgrind_path)
+        if 'pstats' in actions:
+            pstats_path = os.path.join(
+                dump_path, filename + '.prof')
+            prof_stats.save(pstats_path)
+            template_context['pstats_path'] = os.path.abspath(
+                pstats_path)
         if is_html and 'show' in actions:
             # Generate raw OOPS results.
             f = StringIO.StringIO()
             oops.write(f)
             template_context['oops'] = f.getvalue()
             # Generate profile summaries.
-            for name in ('inlinetime', 'totaltime', 'callcount'):
+            for name in ('time', 'cumulative', 'calls'):
                 prof_stats.sort(name)
                 f = StringIO.StringIO()
                 prof_stats.pprint(file=f)
@@ -314,12 +356,16 @@ def get_desired_profile_actions(request):
                 action for action in (
                     item.strip().lower() for item in actions.split(','))
                 if action)
-            # 'log' is backwards compatible for 'callgrind'
-            result.intersection_update(('log', 'callgrind', 'show', 'pstats'))
+            # 'log' is backwards compatible for 'callgrind'.
             if 'log' in result:
                 result.remove('log')
-                if 'pstats' not in result:
-                    result.add('callgrind')
+                result.add('callgrind')
+            # Only honor the available options.
+            available_options = set(('show',))
+            available_options.update(available_profilers)
+            result.intersection_update(available_options)
+            # If we didn't end up with any known actions, we need to help the
+            # user.
             if not result:
                 result.add('help')
     return result
