@@ -909,9 +909,11 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
     def full_url(self):
         """The request URL including query string.
 
-        The forms should post to themselves, including GET params to account
-        for batch parameters, and actions should redirect back to the same
-        batch, with the same filtering, as they were submitted with.
+        Forms should post to the view with a query string containing the
+        active batch and filtering parameters. Actions should then redirect
+        using that information so that the user is left on the same batch
+        page, with the same filtering parameters, as the page from which they
+        submitted the form.
         """
         return "%s?%s" % (self.request.getURL(), self.request['QUERY_STRING'])
 
