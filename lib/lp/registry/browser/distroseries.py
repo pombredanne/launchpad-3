@@ -901,12 +901,13 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             self.context, destination_pocket, include_binaries=False,
             dest_url=series_url, dest_display_name=series_title,
             person=self.user, force_async=True):
-            # The copy worked so we can redirect back to the page to
-            # show the results.
-            self.next_url = self.full_url
+            # The copy worked so we redirect back to show the results. Include
+            # the query string so that the user ends up on the same batch page
+            # with the same filtering parameters as before.
+            self.next_url = self.request.getURL(include_query=True)
 
     @property
-    def full_url(self):
+    def action_url(self):
         """The request URL including query string.
 
         Forms should post to the view with a query string containing the
@@ -915,9 +916,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         page, with the same filtering parameters, as the page from which they
         submitted the form.
         """
-        return "%s?%s" % (self.request.getURL(), self.request['QUERY_STRING'])
-
-    action_url = full_url
+        return self.request.getURL(include_query=True)
 
     def validate_sync(self, action, data):
         """Validate selected differences."""
