@@ -9,7 +9,10 @@ from storm.store import Store
 from testtools.matchers import Equals
 from zope.component import getUtility
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.registry.model.pillaraffiliation import IHasAffiliation
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
@@ -22,12 +25,21 @@ from lp.testing.matchers import HasQueryCount
 
 class TestPillarAffiliation(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
+
+    def test_distro_badge_icon(self):
+        # A distro's icon is used for the badge if present.
+        person = self.factory.makePerson()
+        icon = self.factory.makeLibraryFileAlias(
+            filename='smurf.png', content_type='image/png')
+        distro = self.factory.makeDistribution(
+            owner=person, name='pting', icon=icon)
+        [badge] = IHasAffiliation(distro).getAffiliationBadges([person])
+        self.assertEqual((icon.getURL(), "Pting maintainer"), badge)
 
     def _check_affiliated_with_distro(self, person, distro, role):
         [badge] = IHasAffiliation(distro).getAffiliationBadges([person])
-        self.assertEqual(
-            ("/@@/distribution-badge", "Pting %s" % role), badge)
+        self.assertEqual(("/@@/distribution-badge", "Pting %s" % role), badge)
 
     def test_distro_owner_affiliation(self):
         # A person who owns a distro is affiliated.
@@ -64,10 +76,30 @@ class TestPillarAffiliation(TestCaseWithFactory):
         self.assertIs(
             None, IHasAffiliation(distro).getAffiliationBadges([person])[0])
 
+    def test_product_badge_icon(self):
+        # A product's icon is used for the badge if present.
+        person = self.factory.makePerson()
+        icon = self.factory.makeLibraryFileAlias(
+            filename='smurf.png', content_type='image/png')
+        product = self.factory.makeProduct(
+            owner=person, name='pting', icon=icon)
+        [badge] = IHasAffiliation(product).getAffiliationBadges([person])
+        self.assertEqual((icon.getURL(), "Pting maintainer"), badge)
+
+    def test_pillar_badge_icon(self):
+        # A pillar's icon is used for the badge if the context has no icon.
+        person = self.factory.makePerson()
+        icon = self.factory.makeLibraryFileAlias(
+            filename='smurf.png', content_type='image/png')
+        product = self.factory.makeProduct(
+            owner=person, name='pting', icon=icon)
+        bugtask = self.factory.makeBugTask(target=product)
+        [badge] = IHasAffiliation(bugtask).getAffiliationBadges([person])
+        self.assertEqual((icon.getURL(), "Pting maintainer"), badge)
+
     def _check_affiliated_with_product(self, person, product, role):
         [badge] = IHasAffiliation(product).getAffiliationBadges([person])
-        self.assertEqual(
-            ("/@@/product-badge", "Pting %s" % role), badge)
+        self.assertEqual(("/@@/product-badge", "Pting %s" % role), badge)
 
     def test_product_driver_affiliation(self):
         # A person who is the driver for a product is affiliated.
