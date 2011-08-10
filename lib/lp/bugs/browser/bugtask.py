@@ -3410,7 +3410,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
     def expandable(self):
         """Can the task's details be expanded?
-        
+
         They can if there are not too many bugtasks, and if the user can see
         the task details."""
         # Looking at many_bugtasks is an important optimization.  With 150+
