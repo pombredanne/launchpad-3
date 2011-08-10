@@ -31,8 +31,8 @@ from lp.translations.interfaces.translationmessage import (
     )
 
 
-def check_bool_option(option, opt, value):
-    """`optparse.Option` type checker for Boolean argument."""
+def process_bool_option(value):
+    """Validation and conversion for Boolean argument."""
     value = value.lower()
     bool_representations = {
         'true': True,
@@ -100,15 +100,14 @@ def get_origin(name):
         return None
 
 
-def check_origin_option(option, opt, value):
-    """`optparse.Option` type checker for `RosettaTranslationsOrigin`."""
+def process_origin_option(value):
+    """Validation and conversion for `RosettaTranslationsOrigin`."""
     return get_id(value, get_origin)
 
 
-def check_person_option(option, opt, value):
-    """`optparse.Option` type checker for `Person`."""
+def process_person_option(value):
+    """Validation and conversion for `Person`."""
     return get_id(value, get_person_id)
-
 
 def is_nonempty_list(list_option):
     """Is list_option a non-empty a nonempty list of option values?"""
@@ -211,6 +210,9 @@ class RemoveTranslations(LaunchpadScript):
     def add_my_options(self):
         """See `LaunchpadScript`."""
         self.parser.add_options(self.my_options)
+
+    def _process_my_options(self):
+        """Apply special validation and conversion to some options."""
 
     def _check_constraints_safety(self):
         """Are these options to the deletion script sufficiently safe?
