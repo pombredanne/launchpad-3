@@ -128,7 +128,7 @@ from canonical.launchpad.webapp.vocabulary import (
     NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,
-    )
+    VocabularyFilter)
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
@@ -902,7 +902,7 @@ class ValidPersonOrTeamVocabulary(
         text = ensure_unicode(text).lower()
         return self._doSearch(text=text)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         results = self.search(query)
         return CountableIterator(results.count(), results, self.toTerm)
@@ -1644,7 +1644,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
                 return self.toTerm(search_result)
         raise LookupError(token)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `SQLObjectVocabularyBase`."""
         results = self._doSearch(query)
         if type(results) is list:
@@ -1948,6 +1948,19 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
     _table = PillarName
     _limit = 100
 
+    PRODUCT_FILTER = VocabularyFilter(
+        'PRODUCT', 'Product',
+        'Display search results associated with products')
+    PROJECTGROUP_FILTER = VocabularyFilter(
+        'PROJECTGROUP', 'Project Group',
+        'Display search results associated with project groups')
+    DISTRO_FILTER = VocabularyFilter(
+        'DISTRO', 'Distribution',
+        'Display search results associated with distributions')
+
+    def supportedFilters(self):
+        return [self.ALL_FILTER]
+
     def toTerm(self, obj):
         """See `IVocabulary`."""
         if type(obj) == int:
@@ -1972,7 +1985,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
     def __contains__(self, obj):
         raise NotImplementedError
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         if not query:
             return self.emptySelectResults()
         query = ensure_unicode(query).lower()
@@ -2011,6 +2024,12 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
         else:
             return IDistribution.providedBy(obj)
 
+    def supportedFilters(self):
+        return [
+            self.ALL_FILTER,
+            self.PRODUCT_FILTER,
+            self.DISTRO_FILTER]
+
 
 class DistributionOrProductOrProjectGroupVocabulary(PillarVocabularyBase):
     """Active `IProduct`, `IProjectGroup` or `IDistribution` vocabulary."""
@@ -2023,6 +2042,13 @@ class DistributionOrProductOrProjectGroupVocabulary(PillarVocabularyBase):
             return obj.active
         else:
             return IDistribution.providedBy(obj)
+
+    def supportedFilters(self):
+        return [
+            self.ALL_FILTER,
+            self.PRODUCT_FILTER,
+            self.PROJECTGROUP_FILTER,
+            self.DISTRO_FILTER]
 
 
 class FeaturedProjectVocabulary(

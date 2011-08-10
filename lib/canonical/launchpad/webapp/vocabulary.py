@@ -12,6 +12,7 @@ docstring in __init__.py for details.
 __metaclass__ = type
 
 __all__ = [
+    'FilteredVocabularyBase',
     'ForgivingSimpleVocabulary',
     'IHugeVocabulary',
     'SQLObjectVocabularyBase',
@@ -19,7 +20,10 @@ __all__ = [
     'NamedSQLObjectHugeVocabulary',
     'CountableIterator',
     'BatchedCountableIterator',
+    'VocabularyFilter',
 ]
+
+from collections import namedtuple
 
 from sqlobject import (
     AND,
@@ -62,6 +66,15 @@ class ForgivingSimpleVocabulary(SimpleVocabulary):
             return self._default_term
 
 
+# A VocabularyFilter is used to filter the results of searchForTerms().
+# A filter has a the following attributes:
+#   name: the filter name, eg ALL, PRODUCT
+#   title: the text displayed in the ui, as presented to the user eg 'All'
+#   description: the tooltip text
+VocabularyFilter = namedtuple('VocabularyFilter',
+                                ('name', 'title', 'description'))
+
+
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
 
@@ -75,11 +88,24 @@ class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     step_title = Attribute(
         'The search step title in the picker window.')
 
-    def searchForTerms(query=None):
+    def searchForTerms(query=None, vocab_filter=None):
         """Return a `CountableIterator` of `SimpleTerm`s that match the query.
+
+        :param query: a query string used to limit the results.
+        :param vocab_filter: a VocabularyFilter applied to the results. A
+            filter has a specific meaning for each vocabulary implementation
+            which supports it's use. Vocabularies which support the use of
+            filters should each accept the ALL filter which means the same as
+            not applying any filter.
+            The parameter value can be a string corresponding to a supported
+            filter name, or a filter instance.
 
         Note that what is searched and how the match is the choice of the
         IHugeVocabulary implementation.
+        """
+
+    def supportedFilters():
+        """Return the VocabularyFilters supported by searchForTerms.
         """
 
 
@@ -203,7 +229,37 @@ class BatchedCountableIterator(CountableIterator):
         raise NotImplementedError
 
 
-class SQLObjectVocabularyBase:
+class FilteredVocabularyBase:
+    """A mixin to provide base filtering support."""
+
+    ALL_FILTER = VocabularyFilter('ALL', 'All', 'Display all search results')
+
+    # We need to convert any string values passed in for the vocab_filter
+    # parameter to a VocabularyFilter instance.
+    def __getattribute__(self, name):
+        func = object.__getattribute__(self, name)
+        if hasattr(func, '__call__') and func.__name__ == 'searchForTerms':
+            def searchForTerms(*args, **kwargs):
+                vocab_filter = kwargs.get('vocab_filter')
+                if isinstance(vocab_filter, basestring):
+                    for filter in self.supportedFilters():
+                        if filter.name == vocab_filter:
+                            kwargs['vocab_filter'] = filter
+                            break
+                    else:
+                        raise ValueError(
+                            "Invalid vocab filter value: %s" % vocab_filter)
+                return func(*args, **kwargs)
+            return searchForTerms
+        else:
+            return func
+
+    def supportedFilters(self):
+        # All vocabs support the ALL filter.
+        return [self.ALL_FILTER]
+
+
+class SQLObjectVocabularyBase(FilteredVocabularyBase):
     """A base class for widgets that are rendered to collect values
     for attributes that are SQLObjects, e.g. ForeignKey.
 
@@ -232,7 +288,7 @@ class SQLObjectVocabularyBase:
     # that. It is possible that a better solution would be to have the
     # search functionality produce a new vocabulary restricted to the
     # desired subset.
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         results = self.search(query)
         return CountableIterator(results.count(), results, self.toTerm)
 
@@ -382,7 +438,7 @@ class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
         # the NamedSQLObjectHugeVocabulary.
         raise NotImplementedError
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         if not query:
             return self.emptySelectResults()
 

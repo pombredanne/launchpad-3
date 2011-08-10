@@ -69,7 +69,7 @@ class FAQVocabulary:
         """Return the term for a FAQ."""
         return SimpleTerm(faq, faq.id, faq.title)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         results = self.context.findSimilarFAQs(query)
         return CountableIterator(results.count(), results, self.toTerm)

@@ -146,7 +146,7 @@ class TestPersonVocabulary:
     def toTerm(self, person):
         return SimpleTerm(person, person.name, person.displayname)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         found = [
             person for person in self.test_persons if query in person.name]
         return CountableIterator(len(found), found, self.toTerm)

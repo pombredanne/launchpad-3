@@ -28,6 +28,13 @@ class TestPillarVocabularyBase(TestCaseWithFactory):
         self.distribution = self.factory.makeDistribution(name='zebra-snark')
         self.project_group = self.factory.makeProject(name='apple-snark')
 
+    def test_supported_filters(self):
+        # The vocab supports the correct filters.
+        self.assertEqual([
+            DistributionOrProductVocabulary.ALL_FILTER],
+            self.vocabulary.supportedFilters()
+        )
+
     def test_toTerm(self):
         # Product terms are composed of title, name, and the object.
         term = self.vocabulary.toTerm(self.product)
@@ -65,6 +72,16 @@ class TestDistributionOrProductVocabulary(TestCaseWithFactory):
         self.product = self.factory.makeProduct(name='orchid-snark')
         self.distribution = self.factory.makeDistribution(name='zebra-snark')
 
+    def test_supported_filters(self):
+        # The vocab supports the correct filters.
+        self.assertEqual([
+            DistributionOrProductVocabulary.ALL_FILTER,
+            DistributionOrProductVocabulary.PRODUCT_FILTER,
+            DistributionOrProductVocabulary.DISTRO_FILTER
+            ],
+            self.vocabulary.supportedFilters()
+        )
+
     def test_inactive_products_are_excluded(self):
         # Inactive product are not in the vocabulary.
         with celebrity_logged_in('registry_experts'):
@@ -93,6 +110,17 @@ class TestDistributionOrProductOrProjectGroupVocabulary(TestCaseWithFactory):
         self.product = self.factory.makeProduct(name='orchid-snark')
         self.distribution = self.factory.makeDistribution(name='zebra-snark')
         self.project_group = self.factory.makeProject(name='apple-snark')
+
+    def test_supported_filters(self):
+        # The vocab supports the correct filters.
+        self.assertEqual([
+            DistributionOrProductVocabulary.ALL_FILTER,
+            DistributionOrProductVocabulary.PRODUCT_FILTER,
+            DistributionOrProductVocabulary.PROJECTGROUP_FILTER,
+            DistributionOrProductVocabulary.DISTRO_FILTER
+            ],
+            self.vocabulary.supportedFilters()
+        )
 
     def test_contains_all_pillars_active(self):
         # All active products, project groups and distributions are included.
