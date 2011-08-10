@@ -7,11 +7,12 @@ __metaclass__ = type
 
 __all__ = [
     'HugeVocabularyJSONView',
-    'IPickerEntry',
+    'IPickerEntrySource',
     'get_person_picker_entry_metadata',
     ]
 
 import simplejson
+from itertools import izip
 
 from lazr.restful.interfaces import IWebServiceClientRequest
 from zope.app.form.interfaces import MissingInputError
@@ -88,30 +89,42 @@ class PickerEntry:
         self.metadata = metadata
 
 
-@adapter(Interface)
-class DefaultPickerEntryAdapter(object):
-    """Adapts Interface to IPickerEntry."""
+class IPickerEntrySource(Interface):
+    """An adapter used to convert vocab terms to picker entries."""
 
-    implements(IPickerEntry)
+    def getPickerEntries(term_values, context_object, **kwarg):
+        """Return picker entries for the specified term values.
+
+        :param term_values: a collection of vocab term values
+        :param context_object: the current context used to determine any
+            affiliation for the resulting picker entries. eg a picker used to
+            select a bug task assignee will have context_object set to the bug
+            task.
+        """
+
+
+@adapter(Interface)
+class DefaultPickerEntrySourceAdapter(object):
+    """Adapts Interface to IPickerEntrySource."""
+
+    implements(IPickerEntrySource)
 
     def __init__(self, context):
         self.context = context
 
-    def getPickerEntry(self, associated_object, **kwarg):
-        """ Construct a PickerEntry for the context of this adapter.
-
-        The associated_object represents the context for which the picker is
-        being rendered. eg a picker used to select a bug task assignee will
-        have associated_object set to the bug task.
-        """
-        extra = PickerEntry()
-        if hasattr(self.context, 'summary'):
-            extra.description = self.context.summary
-        display_api = ObjectImageDisplayAPI(self.context)
-        extra.css = display_api.sprite_css()
-        if extra.css is None:
-            extra.css = 'sprite bullet'
-        return extra
+    def getPickerEntries(self, term_values, context_object, **kwarg):
+        """See `IPickerEntrySource`"""
+        entries = []
+        for term_value in term_values:
+            extra = PickerEntry()
+            if hasattr(term_value, 'summary'):
+                extra.description = term_value.summary
+            display_api = ObjectImageDisplayAPI(term_value)
+            extra.css = display_api.sprite_css()
+            if extra.css is None:
+                extra.css = 'sprite bullet'
+            entries.append(extra)
+        return entries
 
 
 def get_person_picker_entry_metadata(picker_entry):
@@ -122,111 +135,122 @@ def get_person_picker_entry_metadata(picker_entry):
 
 
 @adapter(IPerson)
-class PersonPickerEntryAdapter(DefaultPickerEntryAdapter):
-    """Adapts IPerson to IPickerEntry."""
+class PersonPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
+    """Adapts IPerson to IPickerEntrySource."""
 
-    def getPickerEntry(self, associated_object, **kwarg):
-        person = self.context
-        extra = super(PersonPickerEntryAdapter, self).getPickerEntry(
-            associated_object)
+    def getPickerEntries(self, term_values, context_object, **kwarg):
+        """See `IPickerEntrySource`"""
+        picker_entries = (
+            super(PersonPickerEntrySourceAdapter, self)
+                .getPickerEntries(term_values, context_object))
 
         personpicker_affiliation_enabled = kwarg.get(
                                     'personpicker_affiliation_enabled', False)
         if personpicker_affiliation_enabled:
-            # If the person is affiliated with the associated_object then we
+            # If a person is affiliated with the associated_object then we
             # can display a badge.
-            badge_info = IHasAffiliation(
-                associated_object).getAffiliationBadge(person)
-            if badge_info:
-                extra.badges = [
-                    dict(url=badge_info.url, alt=badge_info.alt_text)]
+            badges = IHasAffiliation(
+                context_object).getAffiliationBadges(term_values)
+            for picker_entry, badge_info in izip(picker_entries, badges):
+                if badge_info:
+                    picker_entry.badges = [
+                        dict(url=badge_info.url, alt=badge_info.alt_text)]
 
         picker_expander_enabled = kwarg.get('picker_expander_enabled', False)
-        if picker_expander_enabled:
-            extra.details = []
-
-        if person.preferredemail is not None:
-            if person.hide_email_addresses:
-                extra.description = '<email address hidden>'
-            else:
-                try:
-                    extra.description = person.preferredemail.email
-                except Unauthorized:
-                    extra.description = '<email address hidden>'
-
-        extra.metadata = get_person_picker_entry_metadata(person)
-        enhanced_picker_enabled = kwarg.get('enhanced_picker_enabled', False)
-        if enhanced_picker_enabled:
-            # We will display the person's name (launchpad id) after their
-            # displayname.
-            extra.alt_title = person.name
-            # We will linkify the person's name so it can be clicked to open
-            # the page for that person.
-            extra.alt_title_link = canonical_url(person, rootsite='mainsite')
-            # We will display the person's irc nick(s) after their email
-            # address in the description text.
-            irc_nicks = None
-            if person.ircnicknames:
-                irc_nicks = ", ".join(
-                    [IRCNicknameFormatterAPI(ircid).displayname()
-                    for ircid in person.ircnicknames])
-            if irc_nicks and not picker_expander_enabled:
-                if extra.description:
-                    extra.description = ("%s (%s)" %
-                        (extra.description, irc_nicks))
-                else:
-                    extra.description = "%s" % irc_nicks
+        for person, picker_entry in izip(term_values, picker_entries):
             if picker_expander_enabled:
-                if irc_nicks:
-                    extra.details.append(irc_nicks)
-                if person.is_team:
-                    extra.details.append(
-                        'Team members: %s' % person.all_member_count)
-                else:
-                    extra.details.append(
-                        'Member since %s' % DateTimeFormatterAPI(
-                            person.datecreated).date())
+                picker_entry.details = []
 
-        return extra
+            if person.preferredemail is not None:
+                if person.hide_email_addresses:
+                    picker_entry.description = '<email address hidden>'
+                else:
+                    try:
+                        picker_entry.description = person.preferredemail.email
+                    except Unauthorized:
+                        picker_entry.description = '<email address hidden>'
+
+            picker_entry.metadata = get_person_picker_entry_metadata(person)
+            enhanced_picker_enabled = kwarg.get(
+                                            'enhanced_picker_enabled', False)
+            if enhanced_picker_enabled:
+                # We will display the person's name (launchpad id) after their
+                # displayname.
+                picker_entry.alt_title = person.name
+                # We will linkify the person's name so it can be clicked to
+                # open the page for that person.
+                picker_entry.alt_title_link = canonical_url(
+                                                person, rootsite='mainsite')
+                # We will display the person's irc nick(s) after their email
+                # address in the description text.
+                irc_nicks = None
+                if person.ircnicknames:
+                    irc_nicks = ", ".join(
+                        [IRCNicknameFormatterAPI(ircid).displayname()
+                        for ircid in person.ircnicknames])
+                if irc_nicks and not picker_expander_enabled:
+                    if picker_entry.description:
+                        picker_entry.description = ("%s (%s)" %
+                            (picker_entry.description, irc_nicks))
+                    else:
+                        picker_entry.description = "%s" % irc_nicks
+                if picker_expander_enabled:
+                    if irc_nicks:
+                        picker_entry.details.append(irc_nicks)
+                    if person.is_team:
+                        picker_entry.details.append(
+                            'Team members: %s' % person.all_member_count)
+                    else:
+                        picker_entry.details.append(
+                            'Member since %s' % DateTimeFormatterAPI(
+                                person.datecreated).date())
+        return picker_entries
 
 
 @adapter(IBranch)
-class BranchPickerEntryAdapter(DefaultPickerEntryAdapter):
-    """Adapts IBranch to IPickerEntry."""
+class BranchPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
+    """Adapts IBranch to IPickerEntrySource."""
 
-    def getPickerEntry(self, associated_object, **kwarg):
-        branch = self.context
-        extra = super(BranchPickerEntryAdapter, self).getPickerEntry(
-            associated_object)
-        extra.description = branch.bzr_identity
-        return extra
+    def getPickerEntries(self, term_values, context_object, **kwarg):
+        """See `IPickerEntrySource`"""
+        entries = (
+            super(BranchPickerEntrySourceAdapter, self)
+                    .getPickerEntries(term_values, context_object, **kwarg))
+        for branch, picker_entry in izip(term_values, entries):
+            picker_entry.description = branch.bzr_identity
+        return entries
 
 
 @adapter(ISourcePackageName)
-class SourcePackageNamePickerEntryAdapter(DefaultPickerEntryAdapter):
-    """Adapts ISourcePackageName to IPickerEntry."""
+class SourcePackageNamePickerEntrySourceAdapter(
+                                            DefaultPickerEntrySourceAdapter):
+    """Adapts ISourcePackageName to IPickerEntrySource."""
 
-    def getPickerEntry(self, associated_object, **kwarg):
-        sourcepackagename = self.context
-        extra = super(
-            SourcePackageNamePickerEntryAdapter, self).getPickerEntry(
-                associated_object)
-        descriptions = getSourcePackageDescriptions([sourcepackagename])
-        extra.description = descriptions.get(
-            sourcepackagename.name, "Not yet built")
-        return extra
+    def getPickerEntry(self, term_values, context_object, **kwarg):
+        """See `IPickerEntrySource`"""
+        entries = (
+            super(SourcePackageNamePickerEntrySourceAdapter, self)
+                .getPickerEntries(term_values, context_object, **kwarg))
+        for sourcepackagename, picker_entry in izip(term_values, entries):
+            descriptions = getSourcePackageDescriptions([sourcepackagename])
+            picker_entry.description = descriptions.get(
+                sourcepackagename.name, "Not yet built")
+        return entries
 
 
 @adapter(IArchive)
-class ArchivePickerEntryAdapter(DefaultPickerEntryAdapter):
-    """Adapts IArchive to IPickerEntry."""
+class ArchivePickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
+    """Adapts IArchive to IPickerEntrySource."""
 
-    def getPickerEntry(self, associated_object, **kwarg):
-        archive = self.context
-        extra = super(ArchivePickerEntryAdapter, self).getPickerEntry(
-            associated_object)
-        extra.description = '%s/%s' % (archive.owner.name, archive.name)
-        return extra
+    def getPickerEntry(self, term_values, context_object, **kwarg):
+        """See `IPickerEntrySource`"""
+        entries = (
+            super(ArchivePickerEntrySourceAdapter, self)
+                    .getPickerEntries(term_values, context_object, **kwarg))
+        for archive, picker_entry in izip(term_values, entries):
+            picker_entry.description = '%s/%s' % (
+                                       archive.owner.name, archive.name)
+        return entries
 
 
 class HugeVocabularyJSONView:
@@ -273,6 +297,42 @@ class HugeVocabularyJSONView:
 
         batch_navigator = BatchNavigator(matches, self.request)
 
+        # We need to collate what IPickerEntrySource adapters are required for
+        # the items in the current batch. We expect that the batch will be
+        # homogenous and so only one adapter instance is required, but we
+        # allow for the case where the batch may contain disparate entries
+        # requiring different adapter implementations.
+
+        # A mapping from adapter class name -> adapter instance
+        adapter_cache = {}
+        # A mapping from adapter class name -> list of vocab terms
+        picker_entry_terms = {}
+        for term in batch_navigator.currentBatch():
+            picker_entry_source = IPickerEntrySource(term.value)
+            adapter_class = picker_entry_source.__class__.__name__
+            picker_terms = picker_entry_terms.get(adapter_class)
+            if picker_terms is None:
+                picker_terms = []
+                picker_entry_terms[adapter_class] = picker_terms
+                adapter_cache[adapter_class] = picker_entry_source
+            picker_terms.append(term.value)
+
+        # A mapping from vocab terms -> picker entries
+        picker_term_entries = {}
+
+        # For the list of terms associated with a picker adapter, we get the
+        # corresponding picker entries by calling the adapter.
+        for adapter_class, term_values in picker_entry_terms.items():
+            picker_entries = adapter_cache[adapter_class].getPickerEntries(
+                term_values,
+                self.context,
+                enhanced_picker_enabled=self.enhanced_picker_enabled,
+                picker_expander_enabled=self.picker_expander_enabled,
+                personpicker_affiliation_enabled=
+                    self.personpicker_affiliation_enabled)
+            for term_value, picker_entry in izip(term_values, picker_entries):
+                picker_term_entries[term_value] = picker_entry
+
         result = []
         for term in batch_navigator.currentBatch():
             entry = dict(value=term.token, title=term.title)
@@ -288,12 +348,7 @@ class HugeVocabularyJSONView:
                 # needed for inplace editing via a REST call. The
                 # form picker doesn't need the api_url.
                 entry['api_uri'] = 'Could not find canonical url.'
-            picker_entry = IPickerEntry(term.value).getPickerEntry(
-                self.context,
-                enhanced_picker_enabled=self.enhanced_picker_enabled,
-                picker_expander_enabled=self.picker_expander_enabled,
-                personpicker_affiliation_enabled=
-                    self.personpicker_affiliation_enabled)
+            picker_entry = picker_term_entries[term.value]
             if picker_entry.description is not None:
                 if len(picker_entry.description) > MAX_DESCRIPTION_LENGTH:
                     entry['description'] = (
