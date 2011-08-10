@@ -220,23 +220,12 @@ class RemoveTranslations(LaunchpadScript):
         """See `LaunchpadScript`."""
         self.parser.add_options(self.my_options)
 
-    def _process_option(self, option):
-        """Apply special processing to an option if required."""
-        option_dest = option.dest
-        process_func = OPTIONS_TO_PROCESS.get(option_dest, None)
-        option_value = getattr(self.options, option_dest)
-        if process_func is None:
-            return (option_dest, option_value)
-        else:
-            return (option_dest, process_func(option_value))
-
-    def get_option_values(self):
-        """Apply special validation and conversion to some options."""
-        return dict(
-            self._process_option(option)
-            for option in self.parser.option_list
-            if option.action not in ('help', 'version'))
-
+    def _process_options(self):
+        """Process options that need special processing."""
+        for option_name, process_func in OPTIONS_TO_PROCESS:
+            option_value = getattr(self.options, option_name)
+            setattr(self.options, option_name, process_func(option_value))
+            
     def _check_constraints_safety(self):
         """Are these options to the deletion script sufficiently safe?
 
@@ -296,6 +285,8 @@ class RemoveTranslations(LaunchpadScript):
             raise LaunchpadScriptFailure(message)
         if message is not None:
             self.logger.warn(message)
+
+        self._process_options()
 
         if self.options.dry_run:
             self.logger.info("Dry run only.  Not really deleting.")
