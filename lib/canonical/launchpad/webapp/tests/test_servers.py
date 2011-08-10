@@ -359,25 +359,29 @@ class TestBasicLaunchpadRequest(TestCase):
             retried_request.response.getHeader('Vary'),
             'Cookie, Authorization')
 
+
+class TestLaunchpadBrowserRequestMixin:
+    """Tests for `LaunchpadBrowserRequestMixin`.
+
+    As `LaunchpadBrowserRequestMixin` is a mixin, it needs to be tested when
+    mixed into another class, hence why this does not inherit from `TestCase`.
+    """
+
+    request_factory = None  # Specify in subclasses.
+
     def test_is_ajax_false(self):
         """Normal requests do not define HTTP_X_REQUESTED_WITH."""
-        request = LaunchpadBrowserRequest(StringIO.StringIO(''), {})
+        request = self.request_factory(StringIO.StringIO(''), {})
 
         self.assertFalse(request.is_ajax)
 
     def test_is_ajax_true(self):
         """Requests with HTTP_X_REQUESTED_WITH set are ajax requests."""
-        request = LaunchpadBrowserRequest(StringIO.StringIO(''), {
+        request = self.request_factory(StringIO.StringIO(''), {
             'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest',
             })
 
         self.assertTrue(request.is_ajax)
-
-
-class TestLaunchpadBrowserRequestMixin:
-    """Tests for `LaunchpadBrowserRequestMixin`."""
-
-    request_factory = None  # Specify in subclasses.
 
     def test_getURL(self):
         """
@@ -426,9 +430,8 @@ class TestLaunchpadBrowserRequestMixinWithLaunchpadBrowserRequest(
     TestLaunchpadBrowserRequestMixin, TestCase):
     """
     Tests for `LaunchpadBrowserRequestMixin` as found in
-    `LaucnhpadBrowserRequest`.
+    `LaunchpadBrowserRequest`.
     """
-
     request_factory = LaunchpadBrowserRequest
 
 
@@ -436,9 +439,8 @@ class TestLaunchpadBrowserRequestMixinWithLaunchpadTestRequest(
     TestLaunchpadBrowserRequestMixin, TestCase):
     """
     Tests for `LaunchpadBrowserRequestMixin` as found in
-    `LaucnhpadTestRequest`.
+    `LaunchpadTestRequest`.
     """
-
     request_factory = LaunchpadTestRequest
 
 
