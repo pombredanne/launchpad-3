@@ -563,11 +563,15 @@ def reset_permissions(con, config, options):
     required_grants = []
     required_revokes = []
     for obj in controlled_objs:
-        for role in controlled_roles:
+        interesting_roles = set(desired_permissions[obj]).union(obj.acl)
+        for role in controlled_roles.intersection(interesting_roles):
             new = desired_permissions[obj][role]
-            old = set(obj.acl.get(role, {}).keys())
-            if any(obj.acl.get(role, {}).values()):
+            old_privs = obj.acl.get(role, {})
+            old = set(old_privs)
+            if any(old_privs.itervalues()):
                 log.warning("%s has grant option on %s", role, obj.fullname)
+            if new == old:
+                continue
             missing = new.difference(old)
             extra = old.difference(new)
             if missing:
