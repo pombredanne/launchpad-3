@@ -109,6 +109,15 @@ def process_person_option(value):
     """Validation and conversion for `Person`."""
     return get_id(value, get_person_id)
 
+# Options that need special processing.
+OPTIONS_TO_PROCESS = {
+    'submitter': process_person_option,
+    'reviewer': process_person_option,
+    'origin': process_origin_option,
+    'is_current_ubuntu': process_bool_option,
+    'is_current_upstream': process_bool_option,
+    }
+
 def is_nonempty_list(list_option):
     """Is list_option a non-empty a nonempty list of option values?"""
     return list_option is not None and len(list_option) > 0
