@@ -964,24 +964,20 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
 
         self.assertContentEqual(
             [u'p1', u'p2'],
-            sorted(
-                [diff.source_package_name.name
-                    for diff in dsd_source.getForDistroSeries(child)]))
+            [
+                diff.source_package_name.name
+                for diff in dsd_source.getForDistroSeries(child)])
 
-    def assertWaitingJobExists(self, series, name, parent_series):
-        self._assertWaitingJobExists(series, name, parent_series)
+    def getWaitingJobs(self, derived_series, package_name, parent_series):
+        """Get waiting jobs for given derived/parent series and package.
 
-    def assertWaitingJobDoesntExist(self, series, name, parent_series):
-        self._assertWaitingJobExists(series, name, parent_series, False)
-
-    def _assertWaitingJobExists(self, series, name, parent_series,
-                                exists=True):
-        sourcepackagename = self.factory.getOrMakeSourcePackageName(name)
-        self.assertEquals(
-            1 if exists else 0,
-            len(
-                find_waiting_jobs(
-                    series, sourcepackagename, parent_series)))
+        :return: A list (not a result set or any old iterable, but a list)
+            of `DistroSeriesDifferenceJob`.
+        """
+        sourcepackagename = self.factory.getOrMakeSourcePackageName(
+            package_name)
+        return list(find_waiting_jobs(
+            derived_series, sourcepackagename, parent_series))
 
     def test_initialization_first_deriv_create_dsdjs(self):
         # A first initialization of a series creates the creation
@@ -991,8 +987,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: 'on'}))
         child = self._fullInitialize([parent1, parent2])
 
-        self.assertWaitingJobExists(child, 'p1', parent1)
-        self.assertWaitingJobExists(child, 'p2', parent2)
+        self.assertNotEqual([], self.getWaitingJobs(child, 'p1', parent1))
+        self.assertNotEqual([], self.getWaitingJobs(child, 'p2', parent1))
 
     def test_initialization_post_first_deriv_create_dsdjs(self):
         # Post-first initialization of a series with different parents
@@ -1008,10 +1004,12 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self._fullInitialize(
             [prev_parent1, prev_parent2, parent3], child=child)
 
-        self.assertWaitingJobExists(child, 'p1', prev_parent1)
-        self.assertWaitingJobExists(child, 'p2', prev_parent2)
-        self.assertWaitingJobExists(child, 'p2', parent3)
-        self.assertWaitingJobDoesntExist(child, 'p3', parent3)
+        self.assertNotEqual(
+            [], self.getWaitingJobs(child, 'p1', prev_parent1))
+        self.assertNotEqual(
+            [], self.getWaitingJobs(child, 'p2', prev_parent2))
+        self.assertNotEqual([], self.getWaitingJobs(child, 'p2', parent3))
+        self.assertEqual([], self.getWaitingJobs(child, 'p3', parent3))
 
     def test_initialization_compute_dsds_specific_packagesets(self):
         # Post-first initialization of a series with specific
@@ -1033,8 +1031,9 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             [prev_parent1, prev_parent2, parent3], child=child,
             packagesets=(str(test1.id),))
 
-        self.assertWaitingJobExists(child, 'p1', prev_parent1)
-        self.assertWaitingJobDoesntExist(child, 'p11', prev_parent1)
-        self.assertWaitingJobDoesntExist(child, 'p2', prev_parent2)
-        self.assertWaitingJobExists(child, 'p1', parent3)
-        self.assertWaitingJobDoesntExist(child, 'p3', parent3)
+        self.assertNotEqual(
+            [], self.getWaitingJobs(child, 'p1', prev_parent1))
+        self.assertEqual([], self.getWaitingJobs(child, 'p11', prev_parent1))
+        self.assertEqual([], self.getWaitingJobs(child, 'p2', prev_parent2))
+        self.assertNotEqual([], self.getWaitingJobs(child, 'p1', parent3))
+        self.assertEqual([], self.getWaitingJobs(child, 'p3', parent3))
