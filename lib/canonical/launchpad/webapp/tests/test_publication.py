@@ -18,6 +18,7 @@ from storm.database import (
     )
 from storm.exceptions import DisconnectionError
 from storm.zope.interfaces import IZStorm
+from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import directlyProvides
@@ -42,6 +43,7 @@ from canonical.launchpad.tests.readonly import (
     remove_read_only_file,
     touch_read_only_file,
     )
+from canonical.launchpad.webapp import canonical_url
 import canonical.launchpad.webapp.adapter as dbadapter
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
@@ -68,6 +70,7 @@ from canonical.testing.layers import (
     FunctionalLayer,
     )
 from lp.testing import (
+    logout,
     TestCase,
     TestCaseWithFactory,
     )
@@ -490,3 +493,26 @@ class TestUnicodePath(TestCaseWithFactory):
             browser.open,
             'http://launchpad.dev/%ED%B4%B5')
         self.assertEqual(0, len(self.oopses))
+
+    def test_beforeTraversal_non_ascii_url(self):
+        # The NotFound is raised by beforeTraversal
+        publication = LaunchpadBrowserPublication(None)
+        request = LaunchpadTestRequest(PATH_INFO='\xED\xB4\xB5')
+        logout()
+        with ExpectedException(NotFound, ''):
+            publication.beforeTraversal(request)
+        # Remove database policy created by beforeTraversal
+        getUtility(IStoreSelector).pop()
+
+
+class TestWhitespacePath(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_whitespace_bugtask(self):
+        # Bug tasks should not permit whitespace in their number.
+        bugtask = self.factory.makeBugTask()
+        url = canonical_url(bugtask) + '%20'
+        browser = self.getUserBrowser()
+        with ExpectedException(NotFound, ''):
+            browser.open(url)
