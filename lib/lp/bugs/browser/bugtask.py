@@ -1162,7 +1162,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     @cachedproperty
     def editable_field_names(self):
         """Return the names of fields the user has permission to edit."""
-
         if self.context.target_uses_malone:
             # Don't edit self.field_names directly, because it's shared by all
             # BugTaskEditView instances.
