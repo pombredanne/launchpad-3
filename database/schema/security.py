@@ -568,11 +568,10 @@ def reset_permissions(con, config, options):
     # read gets read access to all non-secure objects that we've granted
     # anybody access to.
     for obj in granted_objs:
-        is_secure = (obj.fullname in SECURE_TABLES)
         if obj.type == 'function':
             desired_permissions[obj]['read'].add("EXECUTE")
         else:
-            if not is_secure:
+            if obj.fullname not in SECURE_TABLES:
                 desired_permissions[obj]['read'].add("SELECT")
 
     # Set permissions on public schemas
