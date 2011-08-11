@@ -48,6 +48,13 @@ from lp.soyuz.scripts.packagecopier import do_copy
 class InitializationError(Exception):
     """Raised when there is an exception during the initialization process."""
 
+# Pockets to consider when initializing the derived series from its parent(s).
+INIT_POCKETS = [
+    PackagePublishingPocket.RELEASE,
+    PackagePublishingPocket.SECURITY,
+    PackagePublishingPocket.UPDATES,
+    ]
+
 
 class InitializeDistroSeries:
     """Copy in all of the parents distroseries's configuration. This
@@ -164,13 +171,13 @@ class InitializeDistroSeries:
     def _checkBuilds(self, parent):
         """Assert there are no pending builds for the given parent series.
 
-        Only cares about the RELEASE pocket, which is the only one inherited
-        via initializeFromParent method.
+        Only cares about the RELEASE, SECURITY and UPDATES pockets, which are
+        the only ones inherited via initializeFromParent method.
         """
-        # only the RELEASE pocket is inherited, so we only check
-        # pending build records for it.
+        arch_tags = self.arches if self.arches is not () else None
         pending_builds = parent.getBuildRecords(
-            BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
+            BuildStatus.NEEDSBUILD, pocket=INIT_POCKETS,
+            arch_tag=arch_tags)
 
         if pending_builds.any():
             raise InitializationError("Parent series has pending builds.")
@@ -178,18 +185,15 @@ class InitializeDistroSeries:
     def _checkQueue(self, parent):
         """Assert upload queue is empty on the given parent series.
 
-        Only cares about the RELEASE pocket, which is the only one inherited
-        via initializeFromParent method.
+        Only cares about the RELEASE, SECURITY and UPDATES pockets, which are
+        the only ones inherited via initializeFromParent method.
         """
-        # only the RELEASE pocket is inherited, so we only check
-        # queue items for it.
         statuses = [
             PackageUploadStatus.NEW,
             PackageUploadStatus.ACCEPTED,
             PackageUploadStatus.UNAPPROVED,
             ]
-        items = parent.getPackageUploads(
-            status=statuses, pocket=PackagePublishingPocket.RELEASE)
+        items = parent.getPackageUploads(status=statuses, pocket=INIT_POCKETS)
         if not items.is_empty():
             raise InitializationError(
                 "Parent series queues are not empty.")
@@ -432,12 +436,8 @@ class InitializeDistroSeries:
                     # There is only one available pocket in an unreleased
                     # series.
                     target_pocket = PackagePublishingPocket.RELEASE
-                    pockets_to_copy = (
-                        PackagePublishingPocket.RELEASE,
-                        PackagePublishingPocket.UPDATES,
-                        PackagePublishingPocket.SECURITY)
                     sources = archive.getPublishedSources(
-                        distroseries=parent, pocket=pockets_to_copy,
+                        distroseries=parent, pocket=INIT_POCKETS,
                         name=spns)
                     # XXX: rvb 2011-06-23 bug=801112: do_copy is atomic (all
                     # or none of the sources will be copied). This might

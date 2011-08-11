@@ -383,8 +383,8 @@ class DistroArchSeriesSet:
         used simply to keep trusted code DRY.
 
         :param architectures: an iterable of architectures to process.
-        :param arch_tag: an optional architecture tag with which to filter
-            the results.
+        :param arch_tag: an optional architecture tag or a tag list with
+            which to filter the results.
         :return: a list of the ids of the architectures matching arch_tag.
         """
         # If arch_tag was not provided, just return the ids without
@@ -392,8 +392,10 @@ class DistroArchSeriesSet:
         if arch_tag is None:
             return [arch.id for arch in architectures]
         else:
+            if type(arch_tag) is not list:
+                arch_tag = (arch_tag, )
             return [arch.id for arch in architectures
-                        if arch_tag == arch.architecturetag]
+                        if arch.architecturetag in arch_tag]
 
 
 class PocketChroot(SQLBase):

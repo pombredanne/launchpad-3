@@ -864,8 +864,8 @@ class BinaryPackageBuildSet:
             present.
         :param name: optional source package release name for which to add a
             query clause if present.
-        :param pocket: optional pocket for which to add a query clause if
-            present.
+        :param pocket: optional pocket or pocket list for which to add a
+            query clause if present.
         :param arch_tag: optional architecture tag for which to add a
             query clause if present.
         """
@@ -883,7 +883,10 @@ class BinaryPackageBuildSet:
 
         # Add query clause that filters on pocket if the latter is provided.
         if pocket:
-            queries.append('PackageBuild.pocket=%s' % sqlvalues(pocket))
+            if not isinstance(pocket, list):
+                pocket = (pocket,)
+
+            queries.append('PackageBuild.pocket IN %s' % sqlvalues(pocket))
 
         # Add query clause that filters on architecture tag if provided.
         if arch_tag is not None:
