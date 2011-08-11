@@ -3386,11 +3386,6 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
     target_link_title = None
     many_bugtasks = False
 
-    def render(self):
-        from lp.services.profile.profile import profiling
-        with profiling():
-            return super(BugTaskTableRowView, self).render()
-
     def __init__(self, context, request):
         super(BugTaskTableRowView, self).__init__(context, request)
         self.milestone_source = MilestoneVocabulary
