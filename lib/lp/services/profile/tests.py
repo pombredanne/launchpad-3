@@ -78,12 +78,12 @@ class TestCleanupProfiler(BaseTest):
 
     def tearDown(self):
         "Do the usual tearDown, plus clean up the profiler object."
-        if getattr(profile._profilers, 'profiler', None) is not None:
+        if profile._profilers.profiler is not None:
             profile._profilers.profiler.stop()
-            del profile._profilers.profiler
-        for name in ('actions', 'memory_profile_start', 'profiling'):
-            if getattr(profile._profilers, name, None) is not None:
-                delattr(profile._profilers, name)
+            profile._profilers.profiler = None
+        profile._profilers.actions = None
+        profile._profilers.memory_profile_start = None
+        profile._profilers.profiling = False
         super(TestCleanupProfiler, self).tearDown()
 
 

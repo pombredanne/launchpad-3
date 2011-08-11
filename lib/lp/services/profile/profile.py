@@ -80,11 +80,11 @@ class Profiler:
         self.count = 0
         self.pstats = None
         self.started = True
-        self.__class__.profiler_lock.acquire(True)  # Blocks.
+        self.profiler_lock.acquire(True)  # Blocks.
         try:
             self.enable()
         except:
-            self.__class__.profiler_lock.release()
+            self.profiler_lock.release()
             self.started = False
             raise
 
@@ -102,7 +102,7 @@ class Profiler:
             del self.p
             return Stats(self.pstats, p.getstats(), self.count)
         finally:
-            self.__class__.profiler_lock.release()
+            self.profiler_lock.release()
             self.started = False
 
 
@@ -144,7 +144,18 @@ class Stats:
 
 
 # Profilers may only run one at a time, but block and serialize.
-_profilers = threading.local()
+
+
+class Profilers(threading.local):
+    """A simple subclass to initialize our thread local values."""
+
+    def __init__(self):
+        self.profiling = False
+        self.actions = None
+        self.profiler = None
+        self.memory_profile_start = None
+        
+_profilers = Profilers()
 
 
 def before_traverse(event):
@@ -187,18 +198,17 @@ def _maybe_profile(event):
     except AttributeError:
         # The first call in on a new thread cannot be profiling at the start.
         pass
+    # If this assertion has reason to fail, we'll need to add code
+    # to try and stop the profiler before we delete it, in case it is
+    # still running.
+    assert _profilers.profiler is None
     actions = get_desired_profile_actions(event.request)
+    _profilers.actions = actions
+    _profilers.profiling = True
     if config.profiling.profile_all_requests:
         actions.add('callgrind')
-    _profilers.actions = actions
-    _profilers.profiler = None
-    _profilers.profiling = True
     if actions:
         if actions.difference(('help',)):
-            # If this assertion has reason to fail, we'll need to add code
-            # to try and stop the profiler before we delete it, in case it is
-            # still running.
-            assert getattr(_profilers, 'profiler', None) is None
             _profilers.profiler = Profiler()
             _profilers.profiler.start()
     if config.profiling.memory_profile_log:
@@ -214,8 +224,8 @@ available_profilers = frozenset(('pstats', 'callgrind'))
 def start():
     """Turn on profiling from code.
     """
-    actions = getattr(_profilers, 'actions', None)
-    profiler = getattr(_profilers, 'profiler', None)
+    actions = _profilers.actions
+    profiler = _profilers.profiler
     if actions is None:
         actions = _profilers.actions = set()
         _profilers.profiling = True
@@ -236,8 +246,8 @@ def stop():
     """Stop profiling."""
     # For simplicity, we just silently ignore stop requests when we
     # have not started.
-    actions = getattr(_profilers, 'actions', None)
-    profiler = getattr(_profilers, 'profiler', None)
+    actions = _profilers.actions
+    profiler = _profilers.profiler
     if actions is not None and 'inline' in actions and profiler is not None:
         profiler.disable()
 
@@ -261,7 +271,7 @@ def end_request(event):
         # a start request event.  Just be quiet about it.
         return
     actions = _profilers.actions
-    del _profilers.actions
+    _profilers.actions = None
     request = event.request
     # Create a timestamp including milliseconds.
     now = datetime.fromtimestamp(da.get_request_start_time())
@@ -284,7 +294,7 @@ def end_request(event):
     if _profilers.profiler is not None:
         prof_stats = _profilers.profiler.stop()
         # Free some memory (at least for the BzrProfiler).
-        del _profilers.profiler
+        _profilers.profiler = None
         if oopsid is None:
             # Log an OOPS to get a log of the SQL queries, and other
             # useful information,  together with the profiling
@@ -340,10 +350,10 @@ def end_request(event):
             (e_start, added_html, e_close_body, e_end))
         request.response.setResult(new_html)
     # Dump memory profiling info.
-    if config.profiling.memory_profile_log:
+    if _profilers.memory_profile_start is not None:
         log = file(config.profiling.memory_profile_log, 'a')
         vss_start, rss_start = _profilers.memory_profile_start
-        del _profilers.memory_profile_start
+        _profilers.memory_profile_start = None
         vss_end, rss_end = memory(), resident()
         if oopsid is None:
             oopsid = '-'
