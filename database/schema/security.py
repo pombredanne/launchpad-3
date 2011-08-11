@@ -518,7 +518,7 @@ def reset_permissions(con, config, options):
     # Any object with permissions granted is accessible to the 'read'
     # role. Some (eg. the lp_* replicated tables and internal or trigger
     # functions) aren't readable.
-    readable_objs = set()
+    granted_objs = set()
 
     for username in config.sections():
         who = username
@@ -542,7 +542,7 @@ def reset_permissions(con, config, options):
                 # No perm means no rights. We can't grant no rights, so skip.
                 continue
 
-            readable_objs.add(obj)
+            granted_objs.add(obj)
 
             if obj.type == 'function':
                 desired_permissions[obj][who].update(perm.split(', '))
@@ -554,7 +554,7 @@ def reset_permissions(con, config, options):
                     desired_permissions[obj][who_ro].add("SELECT")
                 if obj.seqname in valid_objs:
                     seq = schema[obj.seqname]
-                    readable_objs.add(seq)
+                    granted_objs.add(seq)
                     if 'INSERT' in perm:
                         seqperm = 'USAGE'
                     elif 'SELECT' in perm:
@@ -565,20 +565,17 @@ def reset_permissions(con, config, options):
                         desired_permissions[seq][who].add(seqperm)
                     desired_permissions[seq][who_ro].add("SELECT")
 
-    for obj in controlled_objs:
+    for obj in granted_objs:
         is_secure = (obj.fullname in SECURE_TABLES)
         if obj.type == 'function':
             desired_permissions[obj]['read'].add("EXECUTE")
-        elif obj.type == 'sequence':
-            if not is_secure:
-                desired_permissions[obj]["read"].add("SELECT")
         else:
             if not is_secure:
                 desired_permissions[obj]['read'].add("SELECT")
 
     required_grants = []
     required_revokes = []
-    for obj in controlled_objs:
+    for obj in schema.values():
         interesting_roles = set(desired_permissions[obj]).union(obj.acl)
         for role in controlled_roles.intersection(interesting_roles):
             new = desired_permissions[obj][role]
@@ -594,7 +591,16 @@ def reset_permissions(con, config, options):
                 required_grants.append((obj, role, missing))
             if extra:
                 required_revokes.append((obj, role, extra))
-        required_grants.append((obj, "admin", ("ALL",)))
+
+        # admin get all privileges on anything with privileges granted
+        # in security.cfg. We don't have a mapping from ALL to real
+        # privileges for each object type, so we just grant or revoke ALL
+        # each time.
+        if obj in granted_objs:
+            required_grants.append((obj, "admin", ("ALL",)))
+        else:
+            if "admin" in obj.acl:
+                required_revokes.append((obj, "admin", ("ALL",)))
 
     alter_permissions(cur, required_grants)
     if options.revoke:
