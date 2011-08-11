@@ -45,7 +45,6 @@ from lp.registry.interfaces.distributionsourcepackage import (
     )
 from lp.registry.interfaces.person import IPerson
 from lp.registry.model.pillaraffiliation import IHasAffiliation
-from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
 from lp.services.features import getFeatureFlag
 from lp.soyuz.interfaces.archive import IArchive
 
@@ -230,7 +229,6 @@ class DistributionSourcePackagePickerEntrySourceAdapter(
 
     def getPickerEntries(self, term_values, context_object, **kwarg):
         """See `IPickerEntrySource`"""
-        distribution = kwarg.get('distribution', None)
         entries = (
             super(DistributionSourcePackagePickerEntrySourceAdapter, self)
                 .getPickerEntries(term_values, context_object, **kwarg))
@@ -243,6 +241,7 @@ class DistributionSourcePackagePickerEntrySourceAdapter(
                 description = 'Not yet built.'
             picker_entry.description = description
         return entries
+
 
 @adapter(IArchive)
 class ArchivePickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
