@@ -5,7 +5,8 @@
 
 __all__ = ['profiling',
            'start',
-           'stop',]
+           'stop',
+          ]
 
 __metaclass__ = type
 
@@ -14,7 +15,6 @@ from cProfile import Profile
 from datetime import datetime
 import os
 import pstats
-import time
 import threading
 import StringIO
 

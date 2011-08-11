@@ -469,7 +469,8 @@ class TestCallgrindProfilerRequestEndHandler(BaseRequestEndHandlerTest):
             self.assertBasicProfileExists(request, show=True))
 
 
-class TestPStatsProfilerRequestEndHandler(TestCallgrindProfilerRequestEndHandler):
+class TestPStatsProfilerRequestEndHandler(
+    TestCallgrindProfilerRequestEndHandler):
     """Tests for the pstats results.
 
     If the start-request handler is broken, these tests will fail too, so fix

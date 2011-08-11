@@ -6,7 +6,8 @@
 
 __all__ = ['profiling',
            'start',
-           'stop',]
+           'stop',
+          ]
 
 # Re-export for convenience.
 from lp.services.profile.profile import (
