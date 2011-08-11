@@ -35,6 +35,9 @@ from lp.code.bzr import (
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
+from lp.code.tests.helpers import (
+    get_non_existant_source_package_branch_unique_name,
+    )
 from lp.codehosting import (
     get_bzr_path,
     get_BZR_PLUGIN_PATH_for_subprocess,
@@ -610,6 +613,15 @@ class AcceptanceTests(SSHTestCase):
         self.assertCantPush(
             self.local_branch_path, remote_url,
             ['Permission denied:', 'Transport operation not possible:'])
+
+    def test_push_new_branch_of_non_existant_source_package_name(self):
+        ZopelessAppServerLayer.txn.begin()
+        unique_name = get_non_existant_source_package_branch_unique_name(
+            'testuser', self.factory)
+        ZopelessAppServerLayer.txn.commit()
+        remote_url = self.getTransportURL(unique_name)
+        self.push(self.local_branch_path, remote_url)
+        self.assertBranchesMatch(self.local_branch_path, remote_url)
 
     def test_can_push_loom_branch(self):
         # We can push and pull a loom branch.

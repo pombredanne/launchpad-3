@@ -194,6 +194,12 @@ class FakeSourcePackage:
         self.distroseries._linked_branches[self, pocket] = branch
 
 
+class SourcePackageNameSet(ObjectSet):
+
+    def new(self, name_string):
+        return self._add(FakeSourcePackageName(name_string))
+
+
 @adapter(FakeSourcePackage)
 @implementer(IBranchTarget)
 def fake_source_package_to_branch_target(fake_package):
@@ -454,9 +460,7 @@ class FakeObjectFactory(ObjectFactory):
         return distroseries
 
     def makeSourcePackageName(self):
-        sourcepackagename = FakeSourcePackageName(self.getUniqueString())
-        self._sourcepackagename_set._add(sourcepackagename)
-        return sourcepackagename
+        return self._sourcepackagename_set.new(self.getUniqueString())
 
     def makeSourcePackage(self, distroseries=None, sourcepackagename=None):
         if distroseries is None:
@@ -659,9 +663,8 @@ class FakeCodehosting:
             sourcepackagename = self._sourcepackagename_set.getByName(
                 data['sourcepackagename'])
             if sourcepackagename is None:
-                raise faults.NotFound(
-                    "No such source package: '%s'."
-                    % (data['sourcepackagename'],))
+                sourcepackagename = self._sourcepackagename_set.new(
+                    data['sourcepackagename'])
             sourcepackage = self._factory.makeSourcePackage(
                 distroseries, sourcepackagename)
         else:
@@ -890,7 +893,7 @@ class InMemoryFrontend:
         self._product_set = ObjectSet()
         self._distribution_set = ObjectSet()
         self._distroseries_set = ObjectSet()
-        self._sourcepackagename_set = ObjectSet()
+        self._sourcepackagename_set = SourcePackageNameSet()
         self._factory = FakeObjectFactory(
             self._branch_set, self._person_set, self._product_set,
             self._distribution_set, self._distroseries_set,
