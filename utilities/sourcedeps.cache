@@ -20,8 +20,8 @@
         "launchpad@pqm.canonical.com-20100325120516-q8to5dx3gga4wlvi"
     ], 
     "subvertpy": [
-        2044, 
-        "launchpad@pqm.canonical.com-20110616232513-8jq27gm2npjgfr4t"
+        2046, 
+        "launchpad@pqm.canonical.com-20110810142738-q1w4ukw9r0z8q2nz"
     ], 
     "python-debian": [
         186, 
@@ -56,8 +56,8 @@
         "aaron@aaronbentley.com-20100715135013-uoi3q430urx9gwb8"
     ], 
     "bzr-svn": [
-        2713, 
-        "launchpad@pqm.canonical.com-20110616225217-9knedknnije37ljf"
+        2715, 
+        "launchpad@pqm.canonical.com-20110810144016-m5f5pbnrpkbz04v3"
     ], 
     "bzr-hg": [
         286, 
