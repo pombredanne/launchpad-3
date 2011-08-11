@@ -573,6 +573,24 @@ def reset_permissions(con, config, options):
             if not is_secure:
                 desired_permissions[obj]['read'].add("SELECT")
 
+    # Set permissions on public schemas
+    public_schemas = [
+        s.strip() for s in config.get('DEFAULT', 'public_schemas').split(',')
+        if s.strip()]
+    log.debug("Granting access to %d public schemas", len(public_schemas))
+    for schema_name in public_schemas:
+        cur.execute("GRANT USAGE ON SCHEMA %s TO PUBLIC" % (
+            quote_identifier(schema_name),
+            ))
+    for obj in schema.values():
+        if obj.schema not in public_schemas:
+            continue
+        found.add(obj)
+        if obj.type == 'function':
+            desired_permissions[obj]['public'].add('EXECUTE')
+        else:
+            desired_permissions[obj]['public'].add('SELECT')
+
     required_grants = []
     required_revokes = []
     for obj in schema.values():
@@ -605,25 +623,6 @@ def reset_permissions(con, config, options):
     alter_permissions(cur, required_grants)
     if options.revoke:
         alter_permissions(cur, required_revokes, revoke=True)
-
-    # Set permissions on public schemas
-    public_schemas = [
-        s.strip() for s in config.get('DEFAULT', 'public_schemas').split(',')
-        if s.strip()]
-    log.debug("Granting access to %d public schemas", len(public_schemas))
-    for schema_name in public_schemas:
-        cur.execute("GRANT USAGE ON SCHEMA %s TO PUBLIC" % (
-            quote_identifier(schema_name),
-            ))
-    for obj in schema.values():
-        if obj.schema not in public_schemas:
-            continue
-        found.add(obj)
-        if obj.type == 'function':
-            cur.execute('GRANT EXECUTE ON FUNCTION %s TO PUBLIC' %
-                        obj.fullname)
-        else:
-            cur.execute('GRANT SELECT ON TABLE %s TO PUBLIC' % obj.fullname)
 
     # Raise an error if we have database objects lying around that have not
     # had permissions assigned.
