@@ -182,8 +182,11 @@ class BaseJobRunner(object):
         """Attempt to run a job, updating its status as appropriate."""
         job = IRunnableJob(job)
 
-        self.logger.debug(
-            'Running job in status %s' % (job.status.title,))
+        class_name = job.__class__.__name__
+        job_id = removeSecurityProxy(job).job.id
+        self.logger.info(
+            'Running %s (ID %d) in status %s' % (
+                class_name, job_id, job.status.title,))
         job.start()
         transaction.commit()
         do_retry = False
@@ -262,7 +265,8 @@ class BaseJobRunner(object):
     def _logOopsId(self, oops_id):
         """Report oopses by id to the log."""
         if self.logger is not None:
-            self.logger.info('Job resulted in OOPS: %s' % oops_id)
+            self.logger.info('Job resulted in OOPS: %s' % (
+                oops_id))
         self.oops_ids.append(oops_id)
 
 
@@ -402,10 +406,10 @@ class TwistedJobRunner(BaseJobRunner):
             packages=('_pythonpath', 'twisted', 'ampoule'), env=env)
         super(TwistedJobRunner, self).__init__(logger, error_utility)
         self.job_source = job_source
-        import_name = '%s.%s' % (
+        self.import_name = '%s.%s' % (
             removeSecurityProxy(job_source).__module__, job_source.__name__)
         self.pool = pool.ProcessPool(
-            JobRunnerProcess, ampChildArgs=[import_name, str(dbuser)],
+            JobRunnerProcess, ampChildArgs=[self.import_name, str(dbuser)],
             starter=starter, min=0, timeout_signal=SIGHUP)
 
     def runJobInSubprocess(self, job):
