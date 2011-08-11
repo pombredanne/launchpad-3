@@ -10,7 +10,7 @@ import os
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.mailbox import IMailBox
+from lp.services.mail.mailbox import IMailBox
 from lp.services.mail.sendmail import (
     get_msgid,
     MailController,

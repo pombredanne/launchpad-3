@@ -10,7 +10,7 @@ from shutil import rmtree
 import tempfile
 from unittest import TestLoader
 
-from canonical.launchpad.interfaces.mailbox import IMailBox
+from lp.services.mail.mailbox import IMailBox
 from canonical.launchpad.webapp.testing import verifyObject
 from lp.services.mail.mailbox import DirectoryMailBox
 from lp.testing import TestCase

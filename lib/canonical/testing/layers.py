@@ -110,7 +110,7 @@ from canonical.database.sqlbase import (
     session_store,
     ZopelessTransactionManager,
     )
-from canonical.launchpad.interfaces.mailbox import IMailBox
+from lp.services.mail.mailbox import IMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,

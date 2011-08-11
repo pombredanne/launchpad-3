@@ -35,7 +35,7 @@ run with something like this::
 
 Let's look at the one we use in tests:
 
-    >>> from canonical.launchpad.interfaces.mailbox import IMailBox
+    >>> from lp.services.mail.mailbox import IMailBox
     >>> mailbox = getUtility(IMailBox)
 
 Now it's empty, so let's add some mails to it by using simple_sendmail:
