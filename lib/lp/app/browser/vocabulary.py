@@ -44,6 +44,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.pillaraffiliation import IHasAffiliation
 from lp.services.features import getFeatureFlag
 from lp.soyuz.interfaces.archive import IArchive
@@ -219,6 +220,23 @@ class BranchPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
                     .getPickerEntries(term_values, context_object, **kwarg))
         for branch, picker_entry in izip(term_values, entries):
             picker_entry.description = branch.bzr_identity
+        return entries
+
+
+@adapter(ISourcePackageName)
+class SourcePackageNamePickerEntrySourceAdapter(
+                                            DefaultPickerEntrySourceAdapter):
+    """Adapts ISourcePackageName to IPickerEntrySource."""
+
+    def getPickerEntry(self, term_values, context_object, **kwarg):
+        """See `IPickerEntrySource`"""
+        entries = (
+            super(SourcePackageNamePickerEntrySourceAdapter, self)
+                .getPickerEntries(term_values, context_object, **kwarg))
+        for sourcepackagename, picker_entry in izip(term_values, entries):
+            descriptions = getSourcePackageDescriptions([sourcepackagename])
+            picker_entry.description = descriptions.get(
+                sourcepackagename.name, "Not yet built")
         return entries
 
 
