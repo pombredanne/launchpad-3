@@ -265,8 +265,7 @@ class BaseJobRunner(object):
     def _logOopsId(self, oops_id):
         """Report oopses by id to the log."""
         if self.logger is not None:
-            self.logger.info('Job resulted in OOPS: %s' % (
-                oops_id))
+            self.logger.info('Job resulted in OOPS: %s' % oops_id)
         self.oops_ids.append(oops_id)
 
 
