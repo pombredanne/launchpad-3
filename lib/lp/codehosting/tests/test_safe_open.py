@@ -6,21 +6,22 @@
 
 __metaclass__ = type
 
+from lazr.uri import URI
 
-from lp.codehosting.puller.worker import (
-    BranchLoopError,
-    BranchReferenceForbidden,
-    SafeBranchOpener,
-    )
 from lp.codehosting.safe_open import (
     BadUrl,
     BlacklistPolicy,
+    BranchLoopError,
+    BranchReferenceForbidden,
+    SafeBranchOpener,
     WhitelistPolicy,
+    safe_open,
     )
 
 from lp.testing import TestCase
 
 from bzrlib.branch import (
+    Branch,
     BzrBranchFormat7,
     )
 from bzrlib.bzrdir import (
@@ -30,6 +31,7 @@ from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack1
 from bzrlib.tests import (
     TestCaseWithTransport,
     )
+from bzrlib.transport import chroot
 
 
 class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
@@ -221,3 +223,45 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
         opener = self.makeBranchOpener([a.base, b.base])
         self.assertRaises(BranchLoopError, opener.open, a.base)
         self.assertRaises(BranchLoopError, opener.open, b.base)
+
+
+class TestSafeOpen(TestCaseWithTransport):
+    """Tests for `safe_open`."""
+
+    def get_chrooted_scheme(self, relpath):
+        """Create a server that is chrooted to `relpath`.
+
+        :return: ``(scheme, get_url)`` where ``scheme`` is the scheme of the
+            chroot server and ``get_url`` returns URLs on said server.
+        """
+        transport = self.get_transport(relpath)
+        chroot_server = chroot.ChrootServer(transport)
+        chroot_server.start_server()
+        self.addCleanup(chroot_server.stop_server)
+        def get_url(relpath):
+            return chroot_server.get_url() + relpath
+        return URI(chroot_server.get_url()).scheme, get_url
+
+    def test_stacked_within_scheme(self):
+        # A branch that is stacked on a URL of the same scheme is safe to
+        # open.
+        self.get_transport().mkdir('inside')
+        self.make_branch('inside/stacked')
+        self.make_branch('inside/stacked-on')
+        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
+        Branch.open(get_chrooted_url('stacked')).set_stacked_on_url(
+            get_chrooted_url('stacked-on'))
+        safe_open(scheme, get_chrooted_url('stacked'))
+
+    def test_stacked_outside_scheme(self):
+        # A branch that is stacked on a URL that is not of the same scheme is
+        # not safe to open.
+        self.get_transport().mkdir('inside')
+        self.get_transport().mkdir('outside')
+        self.make_branch('inside/stacked')
+        self.make_branch('outside/stacked-on')
+        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
+        Branch.open(get_chrooted_url('stacked')).set_stacked_on_url(
+            self.get_url('outside/stacked-on'))
+        self.assertRaises(
+            BadUrl, safe_open, scheme, get_chrooted_url('stacked'))

@@ -136,7 +136,7 @@ from lp.code.model.revision import (
     RevisionAuthor,
     )
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
-from lp.codehosting.bzrutils import safe_open
+from lp.codehosting.safe_open import safe_open
 from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
