@@ -66,7 +66,7 @@ class IPickerEntry(Interface):
     details = Attribute('An optional list of information about the entry')
     alt_title_link = Attribute('URL used for anchor on alt title')
     link_css = Attribute('CSS Class for links')
-    badge = Attribute('Affiliation badge img attributes')
+    badges = Attribute('List of badge img attributes')
     metadata = Attribute('Metadata about the entry')
 
 
@@ -76,7 +76,7 @@ class PickerEntry:
 
     def __init__(self, description=None, image=None, css=None, alt_title=None,
                  title_link=None, details=None, alt_title_link=None,
-                 link_css='sprite new-window', badge=None, metadata=None):
+                 link_css='sprite new-window', badges=None, metadata=None):
         self.description = description
         self.image = image
         self.css = css
@@ -85,7 +85,7 @@ class PickerEntry:
         self.details = details
         self.alt_title_link = alt_title_link
         self.link_css = link_css
-        self.badge = badge
+        self.badges = badges
         self.metadata = metadata
 
 
@@ -151,10 +151,11 @@ class PersonPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
             # can display a badge.
             badges = IHasAffiliation(
                 context_object).getAffiliationBadges(term_values)
-            for picker_entry, badge_info in izip(picker_entries, badges):
-                if badge_info:
-                    picker_entry.badge = dict(
-                        url=badge_info.url, alt=badge_info.alt_text)
+            for picker_entry, badges in izip(picker_entries, badges):
+                picker_entry.badges = []
+                for badge_info in badges:
+                    picker_entry.badges.append(
+                        dict(url=badge_info.url, alt=badge_info.alt_text))
 
         picker_expander_enabled = kwarg.get('picker_expander_enabled', False)
         for person, picker_entry in izip(term_values, picker_entries):
@@ -370,8 +371,8 @@ class HugeVocabularyJSONView:
                 entry['alt_title_link'] = picker_entry.alt_title_link
             if picker_entry.link_css is not None:
                 entry['link_css'] = picker_entry.link_css
-            if picker_entry.badge is not None:
-                entry['badge'] = picker_entry.badge
+            if picker_entry.badges:
+                entry['badges'] = picker_entry.badges
             if picker_entry.metadata is not None:
                 entry['metadata'] = picker_entry.metadata
             result.append(entry)
