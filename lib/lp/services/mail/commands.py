@@ -6,7 +6,9 @@ __all__ = [
     'EditEmailCommand',
     'EmailCommand',
     'EmailCommandCollection',
-    'normalize_arguments']
+    'normalize_arguments',
+    'NoSuchCommand',
+    ]
 
 from lazr.lifecycle.event import (
     ObjectModifiedEvent,

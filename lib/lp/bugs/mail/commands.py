@@ -3,10 +3,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'EmailCommand',
-    'EmailCommandCollection',
     'BugEmailCommands',
-    'get_error_message']
+    ]
 
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
@@ -27,7 +25,11 @@ from zope.schema.interfaces import (
     TooLong,
     ValidationError,
     )
-
+from lp.services.mail.commands import (
+    EditEmailCommand,
+    EmailCommand,
+    EmailCommandCollection,
+    )
 from lp.services.mail.interfaces import (
     BugTargetNotFound,
     EmailProcessingError,
@@ -70,80 +72,6 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
-
-
-def normalize_arguments(string_args):
-    """Normalizes the string arguments.
-
-    The string_args argument is simply the argument string whitespace
-    splitted. Sometimes arguments may be quoted, though, so that they can
-    contain space characters. For example "This is a long string".
-
-    This function loops through all the argument and joins the quoted strings
-    into a single arguments.
-
-        >>> normalize_arguments(['"This', 'is', 'a', 'long', 'string."'])
-        ['This is a long string.']
-
-        >>> normalize_arguments(
-        ...     ['"First', 'string"', '"Second', 'string"', 'foo'])
-        ['First string', 'Second string', 'foo']
-    """
-    result = []
-    quoted_string = False
-    for item in string_args:
-        if item.startswith('"'):
-            quoted_string = True
-            result.append(item[1:])
-        elif quoted_string and item.endswith('"'):
-            result[-1] += ' ' + item[:-1]
-            quoted_string = False
-        elif quoted_string:
-            result[-1] += ' ' + item
-        else:
-            result.append(item)
-
-    return result
-
-
-class EmailCommand:
-    """Represents a command.
-
-    Both name the values in the args list are strings.
-    """
-    _numberOfArguments = None
-
-    def __init__(self, name, string_args):
-        self.name = name
-        self.string_args = normalize_arguments(string_args)
-
-    def _ensureNumberOfArguments(self):
-        """Check that the number of arguments is correct.
-
-        Raise an EmailProcessingError
-        """
-        if self._numberOfArguments is not None:
-            num_arguments_got = len(self.string_args)
-            if self._numberOfArguments != num_arguments_got:
-                raise EmailProcessingError(
-                    get_error_message(
-                        'num-arguments-mismatch.txt',
-                        command_name=self.name,
-                        num_arguments_expected=self._numberOfArguments,
-                        num_arguments_got=num_arguments_got))
-
-    def convertArguments(self, context):
-        """Converts the string argument to Python objects.
-
-        Returns a dict with names as keys, and the Python objects as
-        values.
-        """
-        raise NotImplementedError
-
-
-    def __str__(self):
-        """See IEmailCommand."""
-        return ' '.join([self.name] + self.string_args)
 
 
 class BugEmailCommand(EmailCommand):
@@ -206,42 +134,6 @@ class BugEmailCommand(EmailCommand):
                 raise EmailProcessingError(
                     get_error_message('no-such-bug.txt', bug_id=bugid))
             return bug, None
-
-
-class EditEmailCommand(EmailCommand):
-    """Helper class for commands that edits the context.
-
-    It makes sure that the correct events are notified.
-    """
-
-    def execute(self, context, current_event):
-        """See IEmailCommand."""
-        self._ensureNumberOfArguments()
-        args = self.convertArguments(context)
-
-        edited_fields = set()
-        if IObjectModifiedEvent.providedBy(current_event):
-            context_snapshot = current_event.object_before_modification
-            edited_fields.update(current_event.edited_fields)
-        else:
-            context_snapshot = Snapshot(
-                context, providing=providedBy(context))
-
-        edited = False
-        for attr_name, attr_value in args.items():
-            if getattr(context, attr_name) != attr_value:
-                self.setAttributeValue(context, attr_name, attr_value)
-                edited = True
-        if edited and not IObjectCreatedEvent.providedBy(current_event):
-            edited_fields.update(args.keys())
-            current_event = ObjectModifiedEvent(
-                context, context_snapshot, list(edited_fields))
-
-        return context, current_event
-
-    def setAttributeValue(self, context, attr_name, attr_value):
-        """See IEmailCommand."""
-        setattr(context, attr_name, attr_value)
 
 
 class PrivateEmailCommand(EmailCommand):
@@ -358,7 +250,8 @@ class SubscribeEmailCommand(EmailCommand):
         # preserve compatibility with the original command that let you
         # specify a subscription type
         if len(string_args) == 2:
-            subscription_name = string_args.pop()
+            # Remove the subscription_name
+            string_args.pop()
 
         user = getUtility(ILaunchBag).user
 
@@ -910,31 +803,6 @@ class TagEmailCommand(EmailCommand):
         bug.tags = tags
 
         return bug, current_event
-
-
-class NoSuchCommand(KeyError):
-    """A command with the given name couldn't be found."""
-
-
-class EmailCommandCollection:
-    """A collection of email commands."""
-
-    @classmethod
-    def names(klass):
-        """Returns all the command names."""
-        return klass._commands.keys()
-
-    @classmethod
-    def get(klass, name, string_args):
-        """Returns a command object with the given name and arguments.
-
-        If a command with the given name can't be found, a NoSuchCommand
-        error is raised.
-        """
-        command_class = klass._commands.get(name)
-        if command_class is None:
-            raise NoSuchCommand(name)
-        return command_class(name, string_args)
 
 
 class BugEmailCommands(EmailCommandCollection):

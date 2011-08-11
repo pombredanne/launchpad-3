@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces.gpghandler import (
     )
 from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
 from lp.services.mail.mailbox import IMailBox
-from canonical.launchpad.mail.commands import get_error_message
+from lp.bugs.mail.commands import get_error_message
 from lp.services.mail.helpers import (
     ensure_sane_signature_timestamp,
     save_mail_to_librarian,

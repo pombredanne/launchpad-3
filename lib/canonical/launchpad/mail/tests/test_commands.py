@@ -5,4 +5,4 @@ from doctest import DocTestSuite
 
 
 def test_suite():
-    return DocTestSuite('canonical.launchpad.mail.commands')
+    return DocTestSuite('lp.bugs.mail.commands')
