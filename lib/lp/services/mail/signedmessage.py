@@ -110,7 +110,8 @@ class SignedMessage(email.Message.Message):
             match = clearsigned_re.search(part.get_payload())
             if match is not None:
                 signed_content_unescaped = match.group(1)
-                signed_content = dash_escaped.sub('', signed_content_unescaped)
+                signed_content = dash_escaped.sub(
+                    '', signed_content_unescaped)
                 signature = match.group(2)
                 return signature, signed_content
             # Stop processing after the first non-multipart part.

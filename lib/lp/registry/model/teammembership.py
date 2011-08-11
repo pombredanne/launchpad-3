@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'sendStatusChangeNotification',
     'TeamMembership',
     'TeamMembershipSet',
     'TeamParticipation',
@@ -497,7 +496,6 @@ class TeamMembershipSet:
     def deactivateActiveMemberships(self, team, comment, reviewer):
         """See `ITeamMembershipSet`."""
         now = datetime.now(pytz.timezone('UTC'))
-        store = Store.of(team)
         cur = cursor()
         all_members = list(team.activemembers)
         cur.execute("""

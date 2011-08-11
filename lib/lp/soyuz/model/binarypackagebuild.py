@@ -570,7 +570,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
                 # Analysis of previous build data shows that a build rate
                 # of 6 KB/second is realistic. Furthermore we have to add
                 # another minute for generic build overhead.
-                estimate = int(package_size/6.0/60 + 1)
+                estimate = int(package_size / 6.0 / 60 + 1)
             else:
                 # No historic build times and no package size available,
                 # assume a build time of 5 minutes.

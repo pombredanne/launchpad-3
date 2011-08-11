@@ -103,8 +103,8 @@ class TestSignedMessage(TestCaseWithFactory):
         # signature.
         sender = getUtility(IPersonSet).getByEmail('test@canonical.com')
         body = (
-            'A message with trailing spaces.   \n'+
-            'And tabs\t\t\n'+
+            'A message with trailing spaces.   \n'
+            'And tabs\t\t\n'
             'Also mixed. \t ')
         msg = self._get_clearsigned_for_person(sender, body)
         principle = authenticateEmail(msg)

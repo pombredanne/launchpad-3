@@ -100,7 +100,7 @@ class TestEnsureSaneSignatureTimestamp(unittest.TestCase):
         one_week = 60 * 60 * 24 * 7
         self.assertRaises(
             IncomingEmailError, ensure_sane_signature_timestamp,
-            now-one_week, 'bug report')
+            now - one_week, 'bug report')
 
     def test_future_timestamp(self):
         # signature timestamps shouldn't be (far) in the future
@@ -108,21 +108,21 @@ class TestEnsureSaneSignatureTimestamp(unittest.TestCase):
         one_week = 60 * 60 * 24 * 7
         self.assertRaises(
             IncomingEmailError, ensure_sane_signature_timestamp,
-            now+one_week, 'bug report')
+            now + one_week, 'bug report')
 
     def test_near_future_timestamp(self):
         # signature timestamps in the near future are OK
         now = time.time()
         one_minute = 60
         # this should not raise an exception
-        ensure_sane_signature_timestamp(now+one_minute, 'bug report')
+        ensure_sane_signature_timestamp(now + one_minute, 'bug report')
 
     def test_recent_timestamp(self):
         # signature timestamps in the recent past are OK
         now = time.time()
         one_hour = 60 * 60
         # this should not raise an exception
-        ensure_sane_signature_timestamp(now-one_hour, 'bug report')
+        ensure_sane_signature_timestamp(now - one_hour, 'bug report')
 
 
 class TestEnsureNotWeaklyAuthenticated(TestCaseWithFactory):
