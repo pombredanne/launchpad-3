@@ -539,6 +539,8 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         self.assertThat(logger.getLogBuffer(), MatchesRegex(
             dedent("""\
             INFO Running through Twisted.
+            INFO Running StuckJob (ID .*).
+            INFO Running StuckJob (ID .*).
             INFO Job resulted in OOPS: .*
             """)))
 
@@ -562,6 +564,7 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         self.assertEqual(
             (dedent("""\
              INFO Running through Twisted.
+             INFO Running ShorterStuckJob (ID .*).
              INFO Job resulted in OOPS: %s
              """) % oops.id,
              'TimeoutError', 'Job ran too long.'),

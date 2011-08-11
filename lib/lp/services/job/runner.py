@@ -427,6 +427,12 @@ class TwistedJobRunner(BaseJobRunner):
         transaction.commit()
         job_id = job.id
         deadline = timegm(job.lease_expires.timetuple())
+
+        # Log the job class and database ID for debugging purposes.
+        class_name = job.__class__.__name__
+        ijob_id = removeSecurityProxy(job).job.id
+        self.logger.info(
+            'Running %s (ID %d).' % (class_name, ijob_id))
         self.logger.debug(
             'Running %r, lease expires %s', job, job.lease_expires)
         deferred = self.pool.doWork(
