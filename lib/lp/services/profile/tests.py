@@ -496,6 +496,15 @@ class TestBothProfilersRequestEndHandler(BaseRequestEndHandlerTest):
         self.pushProfilingConfig(profiling_allowed='True')
         request = self.endRequest('/++profile++callgrind,pstats/')
         self.assertBothProfiles(self.assertBasicProfileExists(request))
+        # We had a bug in which the callgrind file was actually a pstats
+        # file.  What we can do minimally to prevent this in the future is
+        # to verify that these two files are different.
+        data = []
+        for filename in self.getAllProfilePaths():
+            with open(filename) as f:
+                data.append(f.read())
+        self.assertEqual(2, len(data))
+        self.assertNotEqual(data[0], data[1])
 
 
 class TestMemoryProfilerRequestEndHandler(BaseRequestEndHandlerTest):

@@ -121,9 +121,9 @@ class Stats:
             self._callgrind_stats = lsprof.Stats(self.rawstats, {})
         return self._callgrind_stats
 
-    def save(self, filename):
-        if filename.startswith('callgrind.out'):
-            self.callgrind_stats.save(filename)
+    def save(self, filename, callgrind=False):
+        if callgrind:
+            self.callgrind_stats.save(filename, format="callgrind")
         else:
             self.stats.dump_stats(filename)
 
@@ -303,7 +303,7 @@ def end_request(event):
             # callgrind syntax.
             callgrind_path = os.path.join(
                 dump_path, 'callgrind.out.' + filename)
-            prof_stats.save(callgrind_path)
+            prof_stats.save(callgrind_path, callgrind=True)
             template_context['callgrind_path'] = os.path.abspath(
                 callgrind_path)
         if 'pstats' in actions:
