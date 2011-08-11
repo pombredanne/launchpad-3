@@ -127,7 +127,7 @@ def parse_commands(content, command_names):
     return commands
 
 
-def get_error_message(filename, **interpolation_items):
+def get_error_message(filename, error_templates=None, **interpolation_items):
     """Returns the error message that's in the given filename.
 
     If the error message requires some parameters, those are given in
@@ -135,8 +135,10 @@ def get_error_message(filename, **interpolation_items):
 
     The files are searched for in lib/canonical/launchpad/mail/errortemplates.
     """
-    base = os.path.dirname(__file__)
-    fullpath = os.path.join(base, 'errortemplates', filename)
+    if error_templates is None:
+        error_templates = os.path.join(
+            os.path.dirname(__file__), 'errortemplates')
+    fullpath = os.path.join(error_templates, filename)
     error_template = open(fullpath).read()
     return error_template % interpolation_items
 
