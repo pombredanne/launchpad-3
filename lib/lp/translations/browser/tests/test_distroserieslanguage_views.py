@@ -1,9 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-
-import unittest
 
 from lazr.restful.utils import get_current_browser_request
 from testtools.matchers import Equals
@@ -30,7 +28,7 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
     def setUp(self):
         # Create a distroseries that uses translations.
         TestCaseWithFactory.setUp(self)
-        self.distroseries = self.factory.makeDistroRelease()
+        self.distroseries = self.factory.makeDistroSeries()
         self.distroseries.distribution.official_rosetta = True
         self.language = getUtility(ILanguageSet).getLanguageByCode('sr')
         sourcepackagename = self.factory.makeSourcePackageName()

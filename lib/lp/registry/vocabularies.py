@@ -95,6 +95,8 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lazr.restful.interfaces import IReference
+
 from canonical.database.sqlbase import (
     quote,
     quote_like,
@@ -2079,7 +2081,9 @@ class DistributionSourcePackageVocabulary:
         self.context = context
         # Avoid circular import issues.
         from lp.answers.interfaces.question import IQuestion
-        if IBugTask.providedBy(context) or IQuestion.providedBy(context):
+        if IReference.providedBy(context):
+            target = context.context.target
+        elif IBugTask.providedBy(context) or IQuestion.providedBy(context):
             target = context.target
         else:
             target = context
@@ -2123,13 +2127,14 @@ class DistributionSourcePackageVocabulary:
             if distribution is not None and spn_or_dsp is not None:
                 dsp = distribution.getSourcePackage(spn_or_dsp)
         try:
+            token = '%s/%s' % (dsp.distribution.name, dsp.name)
             binaries = dsp.publishing_history[0].getBuiltBinaries()
             binary_names = [binary.binary_package_name for binary in binaries]
             if binary_names != []:
                 summary = ', '.join(binary_names)
             else:
                 summary = 'Not yet built.'
-            token = '%s/%s' % (dsp.distribution.name, dsp.name)
+            summary = token + ' ' + summary
             return SimpleTerm(dsp.sourcepackagename, token, summary)
         except (IndexError, AttributeError):
             # Either the DSP was None or there is no publishing history.

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for code testing live here."""
@@ -34,7 +34,7 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.seriessourcepackagebranch import (
-    SeriesSourcePackageBranchSet
+    SeriesSourcePackageBranchSet,
     )
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
@@ -125,7 +125,7 @@ def make_erics_fooix_project(factory):
 def make_linked_package_branch(factory, distribution=None,
                                sourcepackagename=None):
     """Make a new package branch and make it official."""
-    distro_series = factory.makeDistroRelease(distribution)
+    distro_series = factory.makeDistroSeries(distribution)
     source_package = factory.makeSourcePackage(
         sourcepackagename=sourcepackagename, distroseries=distro_series)
     branch = factory.makePackageBranch(sourcepackage=source_package)
@@ -225,7 +225,7 @@ def make_mint_distro_with_branches(factory):
         ("dead", "0.1", SeriesStatus.OBSOLETE),
         ]
     for name, version, status in series:
-        factory.makeDistroRelease(
+        factory.makeDistroSeries(
             distribution=mint, version=version, status=status, name=name)
 
     for pkg_index, name in enumerate(['twisted', 'zope', 'bzr', 'python']):

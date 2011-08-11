@@ -81,33 +81,44 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
     def test_baseline(self):
         verifyObject(IDistroSeriesDifferenceJobSource, self.getJobSource())
 
+    def test___repr__(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        package = self.factory.makeSourcePackageName()
+        jobs = self.getJobSource().createForPackagePublication(
+            dsp.derived_series, package,
+            PackagePublishingPocket.RELEASE)
+        [job] = jobs
+        self.assertEqual(
+            ("<DistroSeriesDifferenceJob for package {package.name} "
+             "from {parentseries.name} to "
+             "{derivedseries.name}>").format(
+                package=package,
+                parentseries=dsp.parent_series,
+                derivedseries=dsp.derived_series),
+            repr(job))
+
     def test_make_metadata_is_consistent(self):
         package = self.factory.makeSourcePackageName()
         parent_series = self.factory.makeDistroSeries()
         self.assertEqual(
-            make_metadata(package, parent_series),
-            make_metadata(package, parent_series))
+            make_metadata(package.id, parent_series.id),
+            make_metadata(package.id, parent_series.id))
 
     def test_make_metadata_distinguishes_packages(self):
         parent_series = self.factory.makeDistroSeries()
         one_package = self.factory.makeSourcePackageName()
         another_package = self.factory.makeSourcePackageName()
         self.assertNotEqual(
-            make_metadata(one_package, parent_series),
-            make_metadata(another_package, parent_series))
+            make_metadata(one_package.id, parent_series.id),
+            make_metadata(another_package.id, parent_series.id))
 
     def test_make_metadata_distinguishes_parents(self):
         package = self.factory.makeSourcePackageName()
         one_parent = self.factory.makeDistroSeries()
         another_parent = self.factory.makeDistroSeries()
         self.assertNotEqual(
-            make_metadata(package, one_parent),
-            make_metadata(package, another_parent))
-
-    def test_may_require_job_accepts_none_derived_series(self):
-        parent_series = self.factory.makeDistroSeriesParent().parent_series
-        package = self.factory.makeSourcePackageName()
-        self.assertFalse(may_require_job(None, package, parent_series))
+            make_metadata(package.id, one_parent.id),
+            make_metadata(package.id, another_parent.id))
 
     def test_may_require_job_allows_new_jobs(self):
         dsp = self.factory.makeDistroSeriesParent()
@@ -121,12 +132,6 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         create_job(dsp.derived_series, package, dsp.parent_series)
         self.assertFalse(
             may_require_job(dsp.derived_series, package, dsp.parent_series))
-
-    def test_may_require_job_forbids_jobs_on_nonderived_series(self):
-        sourcepackage = self.factory.makeSourcePackage()
-        self.assertFalse(may_require_job(
-            sourcepackage.distroseries, sourcepackage.sourcepackagename,
-            None))
 
     def test_may_require_job_forbids_jobs_for_intra_distro_derivation(self):
         package = self.factory.makeSourcePackageName()

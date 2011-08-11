@@ -3,8 +3,11 @@
 
 __metaclass__ = type
 
-__all__ = ['BugAlsoAffectsProductMetaView', 'BugAlsoAffectsDistroMetaView',
-           'BugAlsoAffectsProductWithProductCreationView']
+__all__ = [
+    'BugAlsoAffectsProductMetaView',
+    'BugAlsoAffectsDistroMetaView',
+    'BugAlsoAffectsProductWithProductCreationView'
+    ]
 
 import cgi
 from textwrap import dedent
@@ -14,6 +17,7 @@ from lazr.enum import (
     Item,
     )
 from lazr.lifecycle.event import ObjectCreatedEvent
+from lazr.restful.interface import copy_field
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
 from zope.app.form.interfaces import MissingInputError
@@ -41,7 +45,6 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.email import email_validator
 from lp.app.widgets.itemswidgets import LaunchpadRadioWidget
 from lp.app.widgets.popup import SearchForUpstreamPopupWidget
@@ -82,6 +85,7 @@ from lp.registry.interfaces.product import (
     IProductSet,
     License,
     )
+from lp.services.features import getFeatureFlag
 from lp.services.fields import StrippedTextLine
 from lp.services.propertycache import cachedproperty
 
@@ -351,6 +355,17 @@ class DistroBugTaskCreationStep(BugTaskCreationStep):
 
     label = "Also affects distribution/package"
     target_field_names = ('distribution', 'sourcepackagename')
+
+    def setUpFields(self):
+        super(DistroBugTaskCreationStep, self).setUpFields()
+        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
+            # Replace the default field with a field that uses the better
+            # vocabulary.
+            self.form_fields = self.form_fields.omit('sourcepackagename')
+            new_sourcepackagename = copy_field(
+                IAddBugTaskForm['sourcepackagename'],
+                vocabulary='DistributionSourcePackage')
+            self.form_fields += form.Fields(new_sourcepackagename)
 
     @property
     def initial_values(self):
