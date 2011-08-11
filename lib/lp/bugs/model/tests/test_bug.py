@@ -177,8 +177,6 @@ class TestBug(TestCaseWithFactory):
             Store.of(bug).flush()
             with StormStatementRecorder() as recorder:
                 previous_dup.markAsDuplicate(bug)
-                print "num queries = ", recorder.count
-                #self.analyze_queries(recorder.queries)
                 self.assertThat(recorder, HasQueryCount(LessThan(100)))
 
     def test_get_subscribers_from_duplicates_with_private_team(self):

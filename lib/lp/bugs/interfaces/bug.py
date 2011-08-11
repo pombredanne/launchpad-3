@@ -16,7 +16,6 @@ __all__ = [
     'IBugDelta',
     'IBugMute',
     'IBugSet',
-    'IDeferredObjectModifiedEvent',
     'IFileBugData',
     'IFrontPageBugAddForm',
     'IProjectGroupBugAddForm',
@@ -1243,7 +1242,3 @@ class IBugMute(Interface):
     date_created = Datetime(
         title=_("The date on which the mute was created."), required=False,
         readonly=True)
-
-
-class IDeferredObjectModifiedEvent(IObjectModifiedEvent):
-    pass

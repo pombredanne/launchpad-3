@@ -137,7 +137,6 @@ from lp.bugs.interfaces.bug import (
     IBugMute,
     IBugSet,
     IFileBugData,
-    IDeferredObjectModifiedEvent,
     )
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
@@ -238,10 +237,6 @@ class BugTag(SQLBase):
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     tag = StringCol(notNull=True)
-
-
-class DeferredObjectModifiedEvent(ObjectModifiedEvent):
-    implementsOnly(IDeferredObjectModifiedEvent)
 
 
 def get_bug_tags(context_clause):
@@ -1829,35 +1824,21 @@ BugMessage""" % sqlvalues(self.id))
             if duplicate_of is not None:
                 field._validate(duplicate_of)
             if self.duplicates:
+                user = getUtility(ILaunchBag).user
                 for duplicate in self.duplicates:
-                    ## # Fire a notify event in model code since moving
-                    ## # duplicates of a duplicate does not normally fire an
-                    ## # event.
-                    ## dupe_before = Snapshot(
-                    ##     duplicate, providing=providedBy(duplicate))
-
                     old_value = duplicate.duplicateof
-                    new_value = duplicate_of
                     affected_targets.update(
                         duplicate._markAsDuplicate(duplicate_of))
 
-                    ## # At this point the event must be marked to indicate it
-                    ## # should not gather the recipents but be a deferred
-                    ## # event.
-                    ## event = DeferredObjectModifiedEvent(
-                    ##    duplicate, dupe_before, 'duplicateof')
-                    ## notify(event)
-
-                    # Directly put an entry into the BugNotification table for
+                    # Put an entry into the BugNotification table for
                     # later processing.
-                    user = getUtility(ILaunchBag).user
                     change = DeferredBugDuplicateChange(
                         when=None, person=user,
                         what_changed='duplicateof',
                         old_value=old_value,
-                        new_value=new_value)
-                    recipients = BugNotificationRecipients()
-                    duplicate.addChange(change, recipients)
+                        new_value=duplicate_of)
+                    empty_recipients = BugNotificationRecipients()
+                    duplicate.addChange(change, empty_recipients)
 
             self.duplicateof = duplicate_of
         except LaunchpadValidationError, validation_error:
