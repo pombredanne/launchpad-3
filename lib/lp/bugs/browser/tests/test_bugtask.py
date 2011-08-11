@@ -796,6 +796,74 @@ class TestBugTaskEditView(TestCaseWithFactory):
         expected = ('The milestone setting was ignored')
         self.assertTrue(notifications.pop().message.startswith(expected))
 
+    def createNameChangingViewForSourcePackageTask(bug_task, new_name):
+        login_person(bug_task.owner)
+        form_prefix = '%s_%s_%s' % (
+            bug_task.target.distroseries.distribution.name,
+            bug_task.target.distroseries.name,
+            bug_task.target.sourcepackagename.name)
+        form = {
+            form_prefix + '.sourcepackagename': new_name,
+            form_prefix + '.actions.save': 'Save Changes',
+            }
+        view = create_initialized_view(
+            bug_task, name='+editstatus', form=form)
+        return view
+
+    def test_retarget_sourcepackage(self):
+        # The sourcepackagename of a SourcePackage task can be changed.
+        ds = self.factory.makeDistroSeries()
+        sp1 = self.factory.makeSourcePackage(distroseries=ds, publish=True)
+        sp2 = self.factory.makeSourcePackage(distroseries=ds, publish=True)
+        bug_task = self.factory.makeBugTask(target=sp1)
+
+        view = self.createNameChangingViewForSourcePackageTask(
+            bug_task, sp2.sourcepackagename.name)
+        self.assertEqual([], view.errors)
+        self.assertEqual(sp2, bug_task.target)
+        notifications = view.request.response.notifications
+        self.assertEqual(0, len(notifications))
+
+    def test_retarget_sourcepackage_to_binary_name(self):
+        # The sourcepackagename of a SourcePackage task can be changed
+        # to a binarypackagename, which gets mapped back to the source.
+        ds = self.factory.makeDistroSeries()
+        das = self.factory.makeDistroArchSeries(distroseries=ds)
+        sp1 = self.factory.makeSourcePackage(distroseries=ds, publish=True)
+        # Now create a binary and its corresponding SourcePackage.
+        bp = self.factory.makeBinaryPackagePublishingHistory(
+            distroarchseries=das)
+        bpr = bp.binarypackagerelease
+        spn = bpr.build.source_package_release.sourcepackagename
+        sp2 = self.factory.makeSourcePackage(
+            distroseries=ds, sourcepackagename=spn, publish=True)
+        bug_task = self.factory.makeBugTask(target=sp1)
+
+        view = self.createNameChangingViewForSourcePackageTask(
+            bug_task, bpr.binarypackagename.name)
+        self.assertEqual([], view.errors)
+        self.assertEqual(sp2, bug_task.target)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected = (
+            "'%s' is a binary package. This bug has been assigned to its "
+            "source package '%s' instead."
+            % (bpr.binarypackagename.name, spn.name))
+        self.assertTrue(notifications.pop().message.startswith(expected))
+
+    def test_retarget_sourcepackage_to_distroseries(self):
+        # A SourcePackage task can be changed to a DistroSeries one.
+        ds = self.factory.makeDistroSeries()
+        sp = self.factory.makeSourcePackage(distroseries=ds, publish=True)
+        bug_task = self.factory.makeBugTask(target=sp)
+
+        view = self.createNameChangingViewForSourcePackageTask(
+            bug_task, '')
+        self.assertEqual([], view.errors)
+        self.assertEqual(ds, bug_task.target)
+        notifications = view.request.response.notifications
+        self.assertEqual(0, len(notifications))
+
 
 class TestProjectGroupBugs(TestCaseWithFactory):
     """Test the bugs overview page for Project Groups."""
