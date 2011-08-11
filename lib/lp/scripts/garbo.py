@@ -49,6 +49,7 @@ from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.utilities.looptuner import TunableLoop
@@ -57,6 +58,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
@@ -94,7 +96,7 @@ from lp.translations.model.translationtemplateitem import (
     )
 
 
-ONE_DAY_IN_SECONDS = 24*60*60
+ONE_DAY_IN_SECONDS = 24 * 60 * 60
 
 
 class BulkPruner(TunableLoop):
@@ -305,7 +307,7 @@ class OpenIDConsumerNoncePruner(TunableLoop):
 
     We remove all OpenIDConsumerNonce records older than 1 day.
     """
-    maximum_chunk_size = 6*60*60 # 6 hours in seconds.
+    maximum_chunk_size = 6 * 60 * 60  # 6 hours in seconds.
 
     def __init__(self, log, abort_time=None):
         super(OpenIDConsumerNoncePruner, self).__init__(log, abort_time)
@@ -611,7 +613,7 @@ class PersonPruner(TunableLoop):
         self.max_offset = self.store.execute(
             "SELECT MAX(id) FROM UnlinkedPeople").get_one()[0]
         if self.max_offset is None:
-            self.max_offset = -1 # Trigger isDone() now.
+            self.max_offset = -1  # Trigger isDone() now.
             self.log.debug("No Person records to remove.")
         else:
             self.log.info("%d Person records to remove." % self.max_offset)
@@ -677,6 +679,34 @@ class BugNotificationPruner(BulkPruner):
         """
 
 
+class AnswerContactPruner(BulkPruner):
+    """Remove old answer contacts which are no longer required.
+
+    Remove a person as an answer contact if:
+      their account has been deactivated for more than one day, or
+      suspended for more than one week.
+    """
+    target_table_class = AnswerContact
+    ids_to_prune_query = """
+        SELECT DISTINCT AnswerContact.id
+        FROM AnswerContact, Person, Account
+        WHERE
+            AnswerContact.person = Person.id
+            AND Person.account = Account.id
+            AND (
+                (Account.date_status_set <
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('1 day' AS interval)
+                AND Account.status = %s)
+                OR
+                (Account.date_status_set <
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('7 days' AS interval)
+                AND Account.status = %s)
+            )
+        """ % (AccountStatus.DEACTIVATED.value, AccountStatus.SUSPENDED.value)
+
+
 class BranchJobPruner(BulkPruner):
     """Prune `BranchJob`s that are in a final state and more than a month old.
 
@@ -700,8 +730,8 @@ class MirrorBugMessageOwner(TunableLoop):
     Only needed until they are all set, after that triggers will maintain it.
     """
 
-    # Test migration did 3M in 2 hours, so 5000 is ~ 10 seconds - and thats the
-    # max we want to hold a DB lock open for.
+    # Test migration did 3M in 2 hours, so 5000 is ~ 10 seconds - and that's
+    # the max we want to hold a DB lock open for.
     minimum_chunk_size = 1000
     maximum_chunk_size = 5000
 
@@ -709,7 +739,7 @@ class MirrorBugMessageOwner(TunableLoop):
         super(MirrorBugMessageOwner, self).__init__(log, abort_time)
         self.store = IMasterStore(BugMessage)
         self.isDone = IMasterStore(BugMessage).find(
-            BugMessage, BugMessage.ownerID==None).is_empty
+            BugMessage, BugMessage.ownerID == None).is_empty
 
     def __call__(self, chunk_size):
         """See `ITunableLoop`."""
@@ -811,7 +841,7 @@ class ObsoleteBugAttachmentPruner(BulkPruner):
 class OldTimeLimitedTokenDeleter(TunableLoop):
     """Delete expired url access tokens from the session DB."""
 
-    maximum_chunk_size = 24*60*60 # 24 hours in seconds.
+    maximum_chunk_size = 24 * 60 * 60  # 24 hours in seconds.
 
     def __init__(self, log, abort_time=None):
         super(OldTimeLimitedTokenDeleter, self).__init__(log, abort_time)
@@ -933,10 +963,10 @@ class UnusedPOTMsgSetPruner(TunableLoop):
 
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
-    script_name = None # Script name for locking and database user. Override.
-    tunable_loops = None # Collection of TunableLoops. Override.
-    continue_on_failure = False # If True, an exception in a tunable loop
-                                # does not cause the script to abort.
+    script_name = None  # Script name for locking and database user. Override.
+    tunable_loops = None  # Collection of TunableLoops. Override.
+    continue_on_failure = False  # If True, an exception in a tunable loop
+                                 # does not cause the script to abort.
 
     # Default run time of the script in seconds. Override.
     default_abort_script_time = None
@@ -987,7 +1017,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         for count in range(0, self.options.threads):
             thread = threading.Thread(
                 target=self.run_tasks_in_thread,
-                name='Worker-%d' % (count+1,),
+                name='Worker-%d' % (count + 1,),
                 args=(tunable_loops,))
             thread.start()
             threads.add(thread)
@@ -1021,7 +1051,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
 
     @property
     def script_timeout(self):
-        a_very_long_time = 31536000 # 1 year
+        a_very_long_time = 31536000  # 1 year
         return self.options.abort_script or a_very_long_time
 
     def get_loop_logger(self, loop_name):
@@ -1034,7 +1064,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         loop_logger = logging.getLogger('garbo.' + loop_name)
         for filter in loop_logger.filters:
             if isinstance(filter, PrefixFilter):
-                return loop_logger # Already have a PrefixFilter attached.
+                return loop_logger  # Already have a PrefixFilter attached.
         loop_logger.addFilter(PrefixFilter(loop_name))
         return loop_logger
 
@@ -1106,7 +1136,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
                     loop_logger.debug3(
                         "Unable to acquire lock %s. Running elsewhere?",
                         loop_lock_path)
-                    time.sleep(0.3) # Avoid spinning.
+                    time.sleep(0.3)  # Avoid spinning.
                     tunable_loops.append(tunable_loop_class)
                 # Otherwise, emit a warning and skip the task.
                 else:
@@ -1169,6 +1199,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-daily'
     tunable_loops = [
+        AnswerContactPruner,
         BranchJobPruner,
         BugNotificationPruner,
         BugWatchActivityPruner,

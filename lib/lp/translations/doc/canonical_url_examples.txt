@@ -137,7 +137,7 @@ Distribution and distribution series default to the main vhost.
     >>> canonical_url(distribution)
     u'http://launchpad.dev/boo'
 
-    >>> distroseries = factory.makeDistroRelease(
+    >>> distroseries = factory.makeDistroSeries(
     ...     name='bah', distribution=distribution)
     >>> canonical_url(distroseries)
     u'http://launchpad.dev/boo/bah'

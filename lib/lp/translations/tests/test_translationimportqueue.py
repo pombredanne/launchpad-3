@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -151,7 +151,7 @@ class TestCanSetStatusBase:
         self._setUpUbuntu()
         ubuntu_entry = self.queue.addOrUpdateEntry(
             'demo.pot', '#demo', False, self.uploaderperson,
-            distroseries=self.factory.makeDistroRelease(self.ubuntu),
+            distroseries=self.factory.makeDistroSeries(self.ubuntu),
             sourcepackagename=self.factory.makeSourcePackageName(),
             potemplate=self.potemplate)
         self._assertCanSetStatus(self.ubuntu_group_owner, ubuntu_entry,
@@ -232,7 +232,7 @@ class TestGetGuessedPOFile(TestCaseWithFactory):
         self.queue = getUtility(ITranslationImportQueue)
         self.factory = LaunchpadObjectFactory()
         self.distribution = self.factory.makeDistribution('boohoo')
-        self.distroseries = self.factory.makeDistroRelease(self.distribution)
+        self.distroseries = self.factory.makeDistroSeries(self.distribution)
         self.uploaderperson = self.factory.makePerson()
 
     def createSourcePackageAndPOTemplate(self, sourcepackagename, template):

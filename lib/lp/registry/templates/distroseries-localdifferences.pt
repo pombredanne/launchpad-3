@@ -117,6 +117,10 @@
                    class="parent-version">
                    <tal:replace
                         replace="difference/parent_source_version"/></a>
+                <span class="discreet">
+                  (<a tal:define="changelog_url python:view.parent_changelog_url(difference)"
+                      tal:attributes="href changelog_url">changelog</a>)
+                </span>
                 <span tal:condition="not: difference/parent_source_package_release"
                       class="parent-version"
                       tal:content="difference/parent_source_version">

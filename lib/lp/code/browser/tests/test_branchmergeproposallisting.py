@@ -192,6 +192,11 @@ class TestMerges(BrowserTestCase):
         self.getViewBrowser(personproduct, '+merges',
                 rootsite='code')
 
+    def test_DistributionSourcePackage(self):
+        """The merges view should be enabled for DistributionSourcePackage."""
+        package = self.factory.makeDistributionSourcePackage()
+        self.getViewBrowser(package, '+merges', rootsite='code')
+
 
 class ActiveReviewGroupsTest(TestCaseWithFactory):
     """Tests for groupings used in for active reviews."""

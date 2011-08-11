@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0102
@@ -23,6 +23,7 @@ from lp.translations.tests.helpers import (
 #  https://dev.launchpad.net/Translations/Specs
 #     /UpstreamImportIntoUbuntu/FixingIsImported
 #     /setCurrentTranslation#Execution%20matrix
+
 
 class SetCurrentTranslationTestMixin:
     """Tests for `POTMsgSet.setCurrentTranslation`.
@@ -1142,7 +1143,7 @@ class TestSetCurrentTranslation_Ubuntu(SetCurrentTranslationTestMixin,
         potemplate = self.factory.makePOTemplate(
             distroseries=ubuntu.currentseries,
             sourcepackagename=sourcepackagename)
-        sharing_series = self.factory.makeDistroRelease(distribution=ubuntu)
+        sharing_series = self.factory.makeDistroSeries(distribution=ubuntu)
         sharing_potemplate = self.factory.makePOTemplate(
             distroseries=sharing_series,
             sourcepackagename=sourcepackagename,

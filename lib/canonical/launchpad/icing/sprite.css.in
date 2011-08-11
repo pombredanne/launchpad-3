@@ -109,6 +109,10 @@
     background-image: url(/@@/link.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;
     }
+.new-window {
+    background-image: url(/@@/new-window.png); /* sprite-ref: icon-sprites */
+    background-repeat: no-repeat;
+    }
 .mail {
     background-image: url(/@@/mail.png); /* sprite-ref: icon-sprites */
     background-repeat: no-repeat;

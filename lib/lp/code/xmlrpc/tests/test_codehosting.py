@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the internal codehosting API."""
@@ -392,7 +392,7 @@ class CodehostingTest(TestCaseWithFactory):
         # If createBranch is called with the path to a non-existent distro, it
         # will return a Fault saying so in plain English.
         owner = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         branch_name = self.factory.getUniqueString()
         unique_name = '/~%s/ningnangnong/%s/%s/%s' % (
@@ -422,7 +422,7 @@ class CodehostingTest(TestCaseWithFactory):
         # If createBranch is called with the path to an invalid source
         # package, it will return a Fault saying so.
         owner = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         branch_name = self.factory.getUniqueString()
         unique_name = '/~%s/%s/%s/ningnangnong/%s' % (
             owner.name, distroseries.distribution.name, distroseries.name,
@@ -974,7 +974,8 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertNotFound(requester, path)
 
     def test_translatePath_branch_alias_invalid_product_name(self):
-        # translatePath returns a not found when there is an invalid product name.
+        # translatePath returns a not found when there is an invalid product
+        # name.
         requester = self.factory.makePerson()
         invalid_name = '_' + self.factory.getUniqueString()
         path = '/%s/%s' % (BRANCH_ALIAS_PREFIX, invalid_name)
@@ -1012,9 +1013,12 @@ class CodehostingTest(TestCaseWithFactory):
         branch = removeSecurityProxy(self.factory.makeAnyBranch())
         path = escape(u'%s/foo/bar' % branch_id_alias(branch))
         translation = self.codehosting_api.translatePath(requester.id, path)
-        self.assertEqual(
-            (BRANCH_TRANSPORT, {'id': branch.id, 'writable': False}, 'foo/bar'),
-            translation)
+        expected = (
+            BRANCH_TRANSPORT,
+            {'id': branch.id, 'writable': False},
+            'foo/bar',
+            )
+        self.assertEqual(expected, translation)
 
     def test_translatePath_branch_id_alias_owned(self):
         # Even if the the requester is the owner, the branch is read only.
