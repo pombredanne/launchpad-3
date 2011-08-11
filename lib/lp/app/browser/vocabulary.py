@@ -40,8 +40,10 @@ from lp.app.browser.tales import (
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from lp.app.errors import UnexpectedFormData
 from lp.code.interfaces.branch import IBranch
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.person import IPerson
-from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.pillaraffiliation import IHasAffiliation
 from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
 from lp.services.features import getFeatureFlag
@@ -221,22 +223,26 @@ class BranchPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
         return entries
 
 
-@adapter(ISourcePackageName)
-class SourcePackageNamePickerEntrySourceAdapter(
+@adapter(IDistributionSourcePackage)
+class DistributionSourcePackagePickerEntrySourceAdapter(
     DefaultPickerEntrySourceAdapter):
     """Adapts ISourcePackageName to IPickerEntrySource."""
 
     def getPickerEntries(self, term_values, context_object, **kwarg):
         """See `IPickerEntrySource`"""
+        distribution = kwarg.get('distribution', None)
         entries = (
-            super(SourcePackageNamePickerEntrySourceAdapter, self)
+            super(DistributionSourcePackagePickerEntrySourceAdapter, self)
                 .getPickerEntries(term_values, context_object, **kwarg))
-        for sourcepackagename, picker_entry in izip(term_values, entries):
-            descriptions = getSourcePackageDescriptions([sourcepackagename])
-            picker_entry.description = descriptions.get(
-                sourcepackagename.name, "Not yet built")
+        for dsp, picker_entry in izip(term_values, entries):
+            binaries = dsp.publishing_history[0].getBuiltBinaries()
+            binary_names = [binary.binary_package_name for binary in binaries]
+            if binary_names != []:
+                description = ', '.join(binary_names)
+            else:
+                description = 'Not yet built.'
+            picker_entry.description = description
         return entries
-
 
 @adapter(IArchive)
 class ArchivePickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):

@@ -2070,6 +2070,14 @@ class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
         return super(SourcePackageNameVocabulary, self).getTermByToken(
             token.lower())
 
+def get_distribution_and_spn_from_text(text):
+    distribution = None
+    if '/' in text:
+        distro_name, text = text.split('/', 1)
+        distribution = getUtility(IDistributionSet).getByName(distro_name)
+    if distribution is None:
+        distribution = self.distribution
+    return distribution, text
 
 class DistributionSourcePackageVocabulary:
 
@@ -2128,14 +2136,13 @@ class DistributionSourcePackageVocabulary:
                 dsp = distribution.getSourcePackage(spn_or_dsp)
         try:
             token = '%s/%s' % (dsp.distribution.name, dsp.name)
+            summary = '%s (%s)' % (token, dsp.name) 
+            # We try to get the binaries for the dsp; if this fails, we return
+            # lookup error instead.
             binaries = dsp.publishing_history[0].getBuiltBinaries()
             binary_names = [binary.binary_package_name for binary in binaries]
-            if binary_names != []:
-                summary = ', '.join(binary_names)
-            else:
-                summary = 'Not yet built.'
-            summary = token + ' ' + summary
-            return SimpleTerm(dsp.sourcepackagename, token, summary)
+            return SimpleTerm(dsp, token, summary)
+            #return SimpleTerm(dsp, token, summary)
         except (IndexError, AttributeError):
             # Either the DSP was None or there is no publishing history.
             raise LookupError(distribution, spn_or_dsp)

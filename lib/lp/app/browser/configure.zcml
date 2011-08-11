@@ -411,7 +411,7 @@
     />
 
   <adapter
-    factory="lp.app.browser.vocabulary.SourcePackageNamePickerEntrySourceAdapter"
+    factory="lp.app.browser.vocabulary.DistributionSourcePackagePickerEntrySourceAdapter"
     />
 
   <adapter
