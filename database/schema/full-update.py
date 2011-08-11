@@ -105,16 +105,16 @@ def main():
     # work unattended.
     #
 
-    # We initially ignore open connections, as they will shortly be
-    # killed.
-    if not NoConnectionCheckPreflight(log).check_all():
-        return 99
-
     # Confirm we can invoke PGBOUNCER_INITD
     log.debug("Confirming sudo access to pgbouncer startup script")
     pgbouncer_rc = run_pgbouncer(log, 'status')
     if pgbouncer_rc != 0:
         return pgbouncer_rc
+
+    # We initially ignore open connections, as they will shortly be
+    # killed.
+    if not NoConnectionCheckPreflight(log).check_all():
+        return 99
 
     #
     # Start the actual upgrade. Failures beyond this point need to
