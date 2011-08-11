@@ -499,11 +499,11 @@ def reset_permissions(con, config, options):
     else:
         log.info("Not resetting ownership of database objects")
 
-    controlled_roles = set(['read', 'admin'])
+    managed_roles = set(['read', 'admin'])
     for section_name in config.sections():
-        controlled_roles.add(section_name)
+        managed_roles.add(section_name)
         if section_name != 'public':
-            controlled_roles.add(section_name + "_ro")
+            managed_roles.add(section_name + "_ro")
 
     # Set of all tables we have granted permissions on. After we have assigned
     # permissions, we can use this to determine what tables have been
@@ -593,20 +593,20 @@ def reset_permissions(con, config, options):
             desired_permissions[obj]['public'].add('SELECT')
 
     # For every object in the DB, ensure that the privileges held by our
-    # controlled roles match our expectations. If not, store the delta
+    # managed roles match our expectations. If not, store the delta
     # to be applied later.
     # Also grants/revokes access by the admin role, which isn't a
-    # traditionally controlled role.
+    # traditionally managed role.
     unmanaged_roles = set()
     required_grants = []
     required_revokes = []
     for obj in schema.values():
         # We only care about roles that are in either the desired or
-        # existing ACL, and are also our controlled roles.
+        # existing ACL, and are also our managed roles. But skip admin,
+        # because it's done at the end.
         interesting_roles = set(desired_permissions[obj]).union(obj.acl)
-        unmanaged_roles.update(interesting_roles.difference(controlled_roles))
-        for role in controlled_roles.intersection(interesting_roles):
-            # admin is special, and is done at the end.
+        unmanaged_roles.update(interesting_roles.difference(managed_roles))
+        for role in managed_roles.intersection(interesting_roles):
             if role == 'admin':
                 continue
             new = desired_permissions[obj][role]
