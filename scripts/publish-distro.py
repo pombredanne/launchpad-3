@@ -13,4 +13,4 @@ from lp.soyuz.scripts.publishdistro import PublishDistro
 
 if __name__ == "__main__":
     script = PublishDistro(dbuser=config.archivepublisher.dbuser)
-    script.run()
+    script.lock_and_run()
