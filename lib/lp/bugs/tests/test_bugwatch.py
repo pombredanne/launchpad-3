@@ -9,12 +9,12 @@ from datetime import (
     datetime,
     timedelta,
     )
-from storm.store import Store
 import unittest
 from urlparse import urlunsplit
 
 from lazr.lifecycle.snapshot import Snapshot
 from pytz import utc
+from storm.store import Store
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
