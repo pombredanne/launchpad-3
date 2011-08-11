@@ -8,6 +8,8 @@ __all__ = [
     "MaloneHandler",
     ]
 
+import os
+
 from lazr.lifecycle.event import ObjectCreatedEvent
 from lazr.lifecycle.interfaces import IObjectCreatedEvent
 from zope.component import getUtility
@@ -49,6 +51,9 @@ from lp.bugs.interfaces.bugattachment import (
     )
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.services.mail.sendmail import simple_sendmail
+
+
+error_templates = os.path.join(os.path.dirname(__file__), 'errortemplates')
 
 
 class MaloneHandler:
@@ -146,7 +151,8 @@ class MaloneHandler:
                                 rollback()
                                 raise IncomingEmailError(
                                     get_error_message(
-                                        'no-affects-target-on-submit.txt'))
+                                        'no-affects-target-on-submit.txt',
+                                        error_templates=error_templates))
                         if (bugtask_event is not None and
                             not IObjectCreatedEvent.providedBy(bug_event)):
                             notify(bugtask_event)
@@ -200,12 +206,14 @@ class MaloneHandler:
                                 rollback()
                                 raise IncomingEmailError(
                                     get_error_message(
-                                        'no-affects-target-on-submit.txt'))
+                                        'no-affects-target-on-submit.txt',
+                                        error_templates=error_templates))
                             bugtask = guess_bugtask(
                                 bug, getUtility(ILaunchBag).user)
                             if bugtask is None:
                                 raise IncomingEmailError(get_error_message(
                                     'no-default-affects.txt',
+                                    error_templates=error_templates,
                                     bug_id=bug.id,
                                     nr_of_bugtasks=len(bug.bugtasks)))
                         bugtask, bugtask_event = command.execute(
@@ -231,7 +239,9 @@ class MaloneHandler:
                 except CreatedBugWithNoBugTasksError:
                     rollback()
                     raise IncomingEmailError(
-                        get_error_message('no-affects-target-on-submit.txt'))
+                        get_error_message(
+                            'no-affects-target-on-submit.txt',
+                            error_templates=error_templates))
             if bugtask_event is not None:
                 if not IObjectCreatedEvent.providedBy(bug_event):
                     notify(bugtask_event)
@@ -274,7 +284,7 @@ class MaloneHandler:
     # seem to store no more than an RTF representation of an email.
 
     irrelevant_content_types = set((
-        'application/applefile', # the resource fork of a MacOS file
+        'application/applefile',  # the resource fork of a MacOS file
         'application/pgp-signature',
         'application/pkcs7-signature',
         'application/x-pkcs7-signature',

@@ -6,6 +6,8 @@ __all__ = [
     'BugEmailCommands',
     ]
 
+import os
+
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
     ObjectModifiedEvent,
@@ -74,6 +76,9 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 
 
+error_templates = os.path.join(os.path.dirname(__file__), 'errortemplates')
+
+
 class BugEmailCommand(EmailCommand):
     """Creates new bug, or returns an existing one."""
     implements(IBugEmailCommand)
@@ -96,7 +101,9 @@ class BugEmailCommand(EmailCommand):
                 # The report for a new bug must contain an affects command,
                 # since the bug must have at least one task
                 raise EmailProcessingError(
-                    get_error_message('no-affects-target-on-submit.txt'),
+                    get_error_message(
+                        'no-affects-target-on-submit.txt',
+                        error_templates=error_templates),
                     stop_processing=True)
 
             # Check the message validator.
@@ -124,7 +131,9 @@ class BugEmailCommand(EmailCommand):
                 bugid = int(bugid)
             except ValueError:
                 raise EmailProcessingError(
-                    get_error_message('bug-argument-mismatch.txt'))
+                    get_error_message(
+                        'bug-argument-mismatch.txt',
+                        error_templates=error_templates))
 
             try:
                 bug = getUtility(IBugSet).get(bugid)
@@ -132,7 +141,10 @@ class BugEmailCommand(EmailCommand):
                 bug = None
             if bug is None or not check_permission('launchpad.View', bug):
                 raise EmailProcessingError(
-                    get_error_message('no-such-bug.txt', bug_id=bugid))
+                    get_error_message(
+                        'no-such-bug.txt',
+                        error_templates=error_templates,
+                        bug_id=bugid))
             return bug, None
 
 
@@ -161,7 +173,9 @@ class PrivateEmailCommand(EmailCommand):
             private = False
         else:
             raise EmailProcessingError(
-                get_error_message('private-parameter-mismatch.txt'),
+                get_error_message(
+                    'private-parameter-mismatch.txt',
+                    error_templates=error_templates),
                 stop_processing=True)
 
         # Snapshot.
@@ -207,7 +221,9 @@ class SecurityEmailCommand(EmailCommand):
             security_related = False
         else:
             raise EmailProcessingError(
-                get_error_message('security-parameter-mismatch.txt'),
+                get_error_message(
+                    'security-parameter-mismatch.txt',
+                    error_templates=error_templates),
                 stop_processing=True)
 
         # Take a snapshot.
@@ -262,7 +278,9 @@ class SubscribeEmailCommand(EmailCommand):
             person = user
         else:
             raise EmailProcessingError(
-                get_error_message('subscribe-too-many-arguments.txt'))
+                get_error_message(
+                    'subscribe-too-many-arguments.txt',
+                    error_templates=error_templates))
 
         if bug.isSubscribed(person):
             # but we still need to find the subscription
@@ -292,7 +310,9 @@ class UnsubscribeEmailCommand(EmailCommand):
             person = getUtility(ILaunchBag).user
         else:
             raise EmailProcessingError(
-                get_error_message('unsubscribe-too-many-arguments.txt'))
+                get_error_message(
+                    'unsubscribe-too-many-arguments.txt',
+                    error_templates=error_templates))
 
         if bug.isSubscribed(person):
             try:
@@ -301,6 +321,7 @@ class UnsubscribeEmailCommand(EmailCommand):
                 raise EmailProcessingError(
                     get_error_message(
                         'user-cannot-unsubscribe.txt',
+                        error_templates=error_templates,
                         person=person.displayname))
         if bug.isSubscribedToDupes(person):
             bug.unsubscribeFromDupes(person, person)
@@ -318,14 +339,18 @@ class SummaryEmailCommand(EditEmailCommand):
         """See IEmailCommand."""
         if bug is None:
             raise EmailProcessingError(
-                get_error_message('command-with-no-bug.txt'),
+                get_error_message(
+                    'command-with-no-bug.txt',
+                    error_templates=error_templates),
                 stop_processing=True)
 
         # Do a manual control of the number of arguments, in order to
         # provide a better error message than the default one.
         if len(self.string_args) > 1:
             raise EmailProcessingError(
-                get_error_message('summary-too-many-arguments.txt'))
+                get_error_message(
+                    'summary-too-many-arguments.txt',
+                    error_templates=error_templates))
 
         return EditEmailCommand.execute(self, bug, current_event)
 
@@ -350,7 +375,10 @@ class DuplicateEmailCommand(EmailCommand):
                 bug = getUtility(IBugSet).getByNameOrID(bug_id)
             except NotFoundError:
                 raise EmailProcessingError(
-                    get_error_message('no-such-bug.txt', bug_id=bug_id))
+                    get_error_message(
+                        'no-such-bug.txt',
+                        error_templates=error_templates,
+                        bug_id=bug_id))
         else:
             # 'no' is a special value for unmarking a bug as a duplicate.
             bug = None
@@ -512,7 +540,9 @@ class AffectsEmailCommand(EmailCommand):
         """See IEmailCommand."""
         if bug is None:
             raise EmailProcessingError(
-                get_error_message('command-with-no-bug.txt'),
+                get_error_message(
+                    'command-with-no-bug.txt',
+                    error_templates=error_templates),
                 stop_processing=True)
 
         string_args = list(self.string_args)
@@ -520,7 +550,9 @@ class AffectsEmailCommand(EmailCommand):
             path = string_args.pop(0)
         except IndexError:
             raise EmailProcessingError(
-                get_error_message('affects-no-arguments.txt'),
+                get_error_message(
+                    'affects-no-arguments.txt',
+                    error_templates=error_templates),
                 stop_processing=True)
         try:
             bug_target = self.getBugTarget(path)
@@ -751,7 +783,10 @@ class ReplacedByImportanceCommand(EmailCommand):
 
     def execute(self, context, current_event):
         raise EmailProcessingError(
-                get_error_message('bug-importance.txt', argument=self.name))
+                get_error_message(
+                    'bug-importance.txt',
+                    error_templates=error_templates,
+                    argument=self.name))
 
 
 class TagEmailCommand(EmailCommand):
@@ -784,13 +819,19 @@ class TagEmailCommand(EmailCommand):
             # Tag must be a valid name.
             if not valid_name(tag):
                 raise EmailProcessingError(
-                    get_error_message('invalid-tag.txt', tag=tag))
+                    get_error_message(
+                        'invalid-tag.txt',
+                        error_templates=error_templates,
+                        tag=tag))
             if remove:
                 try:
                     tags.remove(tag)
                 except ValueError:
                     raise EmailProcessingError(
-                        get_error_message('unassigned-tag.txt', tag=tag))
+                        get_error_message(
+                            'unassigned-tag.txt',
+                            error_templates=error_templates,
+                            tag=tag))
             else:
                 tags.append(arg)
 
