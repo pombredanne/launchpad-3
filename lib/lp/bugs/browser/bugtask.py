@@ -1337,15 +1337,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
                 BugTaskAssigneeWidget)
 
-        if (bool(getFeatureFlag('disclosure.dsp_picker.enabled')) and
-            'sourcepackagename' in self.form_fields):
-            # Replace the default field with a field that uses the better
-            # vocabulary.
-            self.form_fields = self.form_fields.omit('sourcepackagename')
-            self.form_fields += formlib.form.Fields(Choice(
-                __name__='sourcepackagename', title=_('SourcePackageName'),
-                required=False, vocabulary='DistributionSourcePackage'))
-
     def _getReadOnlyFieldNames(self):
         """Return the names of fields that will be rendered read only."""
         if self.context.target_uses_malone:
