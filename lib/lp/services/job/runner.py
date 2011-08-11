@@ -147,7 +147,7 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     def notifyOops(self, oops):
         """Report this oops."""
-        ctrl = self.getOopsMailController(oops.id)
+        ctrl = self.getOopsMailController(oops['id'])
         if ctrl is None:
             return
         ctrl.send()
@@ -306,7 +306,7 @@ class JobRunner(BaseJobRunner):
             transaction.commit()
             oops = self.runJobHandleError(job)
             if oops is not None:
-                self._logOopsId(oops.id)
+                self._logOopsId(oops['id'])
 
 
 class RunJobCommand(amp.Command):
@@ -384,7 +384,7 @@ class JobRunnerProcess(child.AMPChild):
         if oops is None:
             oops_id = ''
         else:
-            oops_id = oops.id
+            oops_id = oops['id']
         return {'success': len(runner.completed_jobs), 'oops_id': oops_id}
 
 
@@ -452,7 +452,7 @@ class TwistedJobRunner(BaseJobRunner):
             else:
                 info = (failure.type, failure.value, failure.tb)
                 oops = self._doOops(job, info)
-                self._logOopsId(oops.id)
+                self._logOopsId(oops['id'])
         deferred.addCallbacks(update, job_raised)
         return deferred
 
@@ -461,7 +461,7 @@ class TwistedJobRunner(BaseJobRunner):
             raise TimeoutError
         except TimeoutError:
             oops = self._doOops(job, sys.exc_info())
-            self._logOopsId(oops.id)
+            self._logOopsId(oops['id'])
 
     def getTaskSource(self):
         """Return a task source for all jobs in job_source."""

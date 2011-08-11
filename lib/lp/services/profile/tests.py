@@ -566,18 +566,16 @@ class TestOOPSRequestEndHandler(BaseRequestEndHandlerTest):
     def test_profiling_oops_is_informational(self):
         self.pushProfilingConfig(profiling_allowed='True')
         request = self.endRequest('/++profile++show/')
-        self.assertIsInstance(request.oops, ErrorReport)
-        self.assertTrue(request.oops.informational)
-        self.assertEquals(request.oops.type, 'ProfilingOops')
+        self.assertTrue(request.oops['informational'])
+        self.assertEquals(request.oops['type'], 'ProfilingOops')
         self.assertCleanProfilerState()
 
     def test_real_oops_trumps_profiling_oops(self):
         self.pushProfilingConfig(profiling_allowed='True')
         request = self.endRequest('/++profile++show/no-such-file',
                                   KeyError('foo'))
-        self.assertIsInstance(request.oops, ErrorReport)
-        self.assertFalse(request.oops.informational)
-        self.assertEquals(request.oops.type, 'KeyError')
+        self.assertFalse(request.oops['informational'])
+        self.assertEquals(request.oops['type'], 'KeyError')
         response = self.getAddedResponse(request)
         self.assertIn('Exception-Type: KeyError', response)
         self.assertCleanProfilerState()

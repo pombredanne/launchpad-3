@@ -79,8 +79,8 @@ class LoggingSupportTests(TestCase):
         fail = makeFailure(RuntimeError)
         log.err(fail, error_time=error_time)
         flush_logged_errors(RuntimeError)
-        oops = globalErrorUtility.getOopsReport(error_time)
-        self.assertEqual(oops.type, 'RuntimeError')
+        oops = self.oopses[-1]
+        self.assertEqual(oops['type'], 'RuntimeError')
         self.assertLogMatches('^Logged OOPS id.*')
 
 

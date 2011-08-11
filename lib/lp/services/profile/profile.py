@@ -16,6 +16,7 @@ import StringIO
 
 from bzrlib import errors
 from bzrlib.lsprof import BzrProfiler
+import oops.serializer_rfc822
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.app.publication.interfaces import IEndRequestEvent
 from zope.component import (
@@ -230,10 +231,10 @@ def end_request(event):
             # information.
             info = (ProfilingOops, None, None)
             error_utility = getUtility(IErrorReportingUtility)
-            oops = error_utility.handling(info, request)
-            oopsid = oops.id
+            oops_report = error_utility.handling(info, request)
+            oopsid = oops_report['id']
         else:
-            oops = request.oops
+            oops_report = request.oops
         if actions.intersection(('callgrind', 'pstats')):
             filename = '%s-%s-%s-%s' % (
                 timestamp, pageid, oopsid,
@@ -250,10 +251,10 @@ def end_request(event):
             prof_stats.save(dump_path)
             template_context['dump_path'] = os.path.abspath(dump_path)
         if is_html and 'show' in actions:
-            # Generate raw OOPS results.
-            f = StringIO.StringIO()
-            oops.write(f)
-            template_context['oops'] = f.getvalue()
+            # Generate rfc822 OOPS result (might be nice to have an html
+            # serializer..).
+            template_context['oops'] = ''.join(
+                    oops.serializer_rfc822.to_chunks(oops_report))
             # Generate profile summaries.
             for name in ('inlinetime', 'totaltime', 'callcount'):
                 prof_stats.sort(name)
