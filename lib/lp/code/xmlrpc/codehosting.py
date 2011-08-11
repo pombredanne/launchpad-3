@@ -64,7 +64,10 @@ from lp.code.interfaces.codehosting import (
     LAUNCHPAD_SERVICES,
     )
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
-from lp.registry.errors import NoSuchSourcePackageName
+from lp.registry.errors import (
+    InvalidName,
+    NoSuchSourcePackageName,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
     NoSuchPerson,
@@ -223,7 +226,10 @@ class CodehostingAPI(LaunchpadXMLRPCView):
                 return faults.NotFound(
                     "Project '%s' does not exist." % e.name)
             except NoSuchSourcePackageName as e:
-                getUtility(ISourcePackageNameSet).new(e.name)
+                try:
+                    getUtility(ISourcePackageNameSet).new(e.name)
+                except InvalidName:
+                    return faults.InvalidSourcePackageName(e.name)
                 return self.createBranch(login_id, branch_path)
             except NameLookupFailed, e:
                 return faults.NotFound(str(e))

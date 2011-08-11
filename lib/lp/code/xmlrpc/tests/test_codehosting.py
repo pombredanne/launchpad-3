@@ -439,6 +439,19 @@ class CodehostingTest(TestCaseWithFactory):
         self.assertEqual(owner, branch.registrant)
         self.assertEqual(BranchType.HOSTED, branch.branch_type)
 
+    def test_createBranch_invalid_sourcepackagename(self):
+        # If createBranch is called with an invalid path, it will fault.
+        owner = self.factory.makePerson()
+        distroseries = self.factory.makeDistroSeries()
+        branch_name = self.factory.getUniqueString()
+        unique_name = '/~%s/%s/%s/ningn%%20angnong/%s' % (
+            owner.name, distroseries.distribution.name, distroseries.name,
+            branch_name)
+        fault = self.codehosting_api.createBranch(
+            owner.id, escape(unique_name))
+        self.assertEqual(
+            faults.InvalidSourcePackageName('ningn%20angnong'), fault)
+
     def test_createBranch_using_branch_alias(self):
         # Branches can be created using the branch alias and the full unique
         # name of the branch.
