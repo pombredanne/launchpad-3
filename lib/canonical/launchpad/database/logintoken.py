@@ -39,7 +39,7 @@ from canonical.launchpad.interfaces.logintoken import (
     ILoginTokenSet,
     )
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
-from canonical.launchpad.mail import (
+from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )

@@ -90,7 +90,7 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.mail import (
+from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )

@@ -19,7 +19,7 @@ import datetime
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.helpers import get_contact_email_addresses
-from canonical.launchpad.mail import (
+from lp.services.mail.sendmail import (
     format_address,
     sendmail,
     )

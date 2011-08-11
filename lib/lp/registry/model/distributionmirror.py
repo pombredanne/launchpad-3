@@ -51,7 +51,7 @@ from canonical.launchpad.helpers import (
     shortlist,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.mail import (
+from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )

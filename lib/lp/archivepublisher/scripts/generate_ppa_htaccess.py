@@ -19,7 +19,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.mail import (
+from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )

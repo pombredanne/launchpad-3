@@ -39,7 +39,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from canonical.launchpad.mail import (
+from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )

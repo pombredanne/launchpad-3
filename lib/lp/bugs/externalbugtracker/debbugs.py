@@ -25,7 +25,7 @@ from zope.interface import implements
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from lp.services.messages.interfaces.message import IMessageSet
-from canonical.launchpad.mail import simple_sendmail
+from lp.services.mail.sendmail import simple_sendmail
 from canonical.launchpad.webapp import urlsplit
 from lp.bugs.externalbugtracker import (
     BATCH_SIZE_UNLIMITED,

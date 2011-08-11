@@ -41,7 +41,7 @@ Let's look at the one we use in tests:
 Now it's empty, so let's add some mails to it by using simple_sendmail:
 
     >>> import transaction
-    >>> from canonical.launchpad.mail import simple_sendmail
+    >>> from lp.services.mail.sendmail import simple_sendmail
     >>> msgid = simple_sendmail('test@canonical.com',
     ...                         '123@bugs.canonical.com',
     ...                         'Hello',

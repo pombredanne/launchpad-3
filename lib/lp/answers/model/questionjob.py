@@ -30,7 +30,7 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     )
-from canonical.launchpad.mail import (
+from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )

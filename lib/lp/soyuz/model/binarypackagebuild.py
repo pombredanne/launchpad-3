@@ -56,7 +56,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     ISlaveStore,
     IStore,
     )
-from canonical.launchpad.mail import (
+from lp.services.mail.sendmail import (
     format_address,
     simple_sendmail,
     )

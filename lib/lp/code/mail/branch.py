@@ -7,7 +7,7 @@ __metaclass__ = type
 
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.mail import format_address
+from lp.services.mail.sendmail import format_address
 from canonical.launchpad.webapp import canonical_url
 from lp.code.adapters.branch import BranchDelta
 from lp.code.enums import (

@@ -14,7 +14,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.mail import format_address
+from lp.services.mail.sendmail import format_address
 from canonical.launchpad.scripts import log
 from canonical.testing import DatabaseFunctionalLayer
 from lp.answers.enums import (

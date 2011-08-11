@@ -28,7 +28,7 @@ from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     QuotaReachedError,
     )
-from canonical.launchpad.mail import (
+from lp.services.mail.sendmail import (
     format_address,
     sendmail,
     simple_sendmail,

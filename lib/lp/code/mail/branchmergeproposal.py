@@ -7,7 +7,7 @@ __metaclass__ = type
 
 
 from canonical.config import config
-from canonical.launchpad.mail import get_msgid
+from lp.services.mail.sendmail import get_msgid
 from canonical.launchpad.webapp import canonical_url
 from lp.code.enums import CodeReviewNotificationLevel
 from lp.code.mail.branch import BranchMailer
