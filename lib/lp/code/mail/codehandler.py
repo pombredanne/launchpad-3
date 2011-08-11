@@ -28,7 +28,7 @@ from lp.services.mail.interfaces import (
     IMailHandler,
     )
 from lp.services.messages.interfaces.message import IMessageSet
-from canonical.launchpad.mail.commands import (
+from lp.services.mail.commands import (
     EmailCommand,
     EmailCommandCollection,
     )
