@@ -50,7 +50,7 @@ on the series' details.
     Project drivers: Ubuntu Team
     Release manager: None
     Status: Current Stable Release
-    Successor to: Warty (4.10) did not succeed any earlier series.
+    Derives from: Warty (4.10) is not derived from another series.
     Derived series: No derived series.
     Source packages: 3
     Binary packages: 4
