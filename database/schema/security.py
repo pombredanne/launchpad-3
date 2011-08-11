@@ -63,26 +63,30 @@ def _split_postgres_aclitem(aclitem):
     inside_quoted = False
     maybe_finished_quoted = False
     for char in aclitem:
-        if char == '"':
-            if not inside_quoted:
-                inside_quoted = True
-            elif maybe_finished_quoted:
-                components[current_component] += '"'
-                maybe_finished_quoted = False
-            else:
-                maybe_finished_quoted = True
-        else:
+        if inside_quoted:
             if maybe_finished_quoted:
                 maybe_finished_quoted = False
-                inside_quoted = False
-            if not inside_quoted:
-                if char == '=':
-                    current_component = 'privs'
+                if char == '"':
+                    components[current_component] += '"'
                     continue
-                if char == '/':
-                    current_component = 'grantor'
-                    continue
-            components[current_component] += char
+                else:
+                    inside_quoted = False
+            elif char == '"':
+                maybe_finished_quoted = True
+                continue
+        # inside_quoted may have just been made False, so no else block
+        # for you.
+        if not inside_quoted:
+            if char == '"':
+                inside_quoted = True
+                continue
+            elif char == '=':
+                current_component = 'privs'
+                continue
+            elif char == '/':
+                current_component = 'grantor'
+                continue
+        components[current_component] += char
     return components['grantee'], components['privs'], components['grantor']
 
 
