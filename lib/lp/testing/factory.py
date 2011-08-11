@@ -3372,8 +3372,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             return self.makeSourcePackageName()
         return getUtility(ISourcePackageNameSet).getOrCreateByName(name)
 
-    def makeSourcePackage(self, sourcepackagename=None, distroseries=None):
-        """Make an `ISourcePackage`."""
+    def makeSourcePackage(self, sourcepackagename=None, distroseries=None,
+                          publish=False):
+        """Make an `ISourcePackage`.
+
+        :param publish: if true, create a corresponding
+            SourcePackagePublishingHistory.
+        """
         # Make sure we have a real sourcepackagename object.
         if (sourcepackagename is None or
             isinstance(sourcepackagename, basestring)):
@@ -3381,6 +3386,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 sourcepackagename)
         if distroseries is None:
             distroseries = self.makeDistroSeries()
+        if publish:
+            self.makeSourcePackagePublishingHistory(
+                distroseries=distroseries,
+                sourcepackagename=sourcepackagename)
         return distroseries.getSourcePackage(sourcepackagename)
 
     def getAnySourcePackageUrgency(self):
