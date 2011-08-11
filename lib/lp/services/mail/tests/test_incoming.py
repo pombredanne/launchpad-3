@@ -15,7 +15,7 @@ from canonical.launchpad.ftests import import_secret_test_key
 from canonical.launchpad.mail.ftests.helpers import testmails_path
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.launchpad.mail import helpers
+from lp.services.mail import helpers
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.log.logger import BufferLogger
 from lp.services.mail.incoming import (

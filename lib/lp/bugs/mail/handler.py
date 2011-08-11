@@ -29,7 +29,7 @@ from canonical.launchpad.mail.commands import (
     BugEmailCommands,
     get_error_message,
     )
-from canonical.launchpad.mail.helpers import (
+from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,
     get_main_body,
     guess_bugtask,

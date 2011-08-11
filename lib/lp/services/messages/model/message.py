@@ -308,7 +308,7 @@ class MessageSet:
         file_alias_set = getUtility(ILibraryFileAliasSet)  # Reused later
         if filealias is None:
             # Avoid circular import.
-            from canonical.launchpad.mail.helpers import (
+            from lp.services.mail.helpers import (
                 save_mail_to_librarian,
                 )
             raw_email_message = save_mail_to_librarian(email_message)

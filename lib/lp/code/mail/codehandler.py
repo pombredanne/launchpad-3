@@ -32,7 +32,7 @@ from canonical.launchpad.mail.commands import (
     EmailCommand,
     EmailCommandCollection,
     )
-from canonical.launchpad.mail.helpers import (
+from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,
     get_error_message,
     get_main_body,

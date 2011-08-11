@@ -16,7 +16,7 @@ from lp.services.mail.interfaces import (
     EmailProcessingError,
     IWeaklyAuthenticatedPrincipal,
     )
-from canonical.launchpad.mail.helpers import (
+from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,
     ensure_sane_signature_timestamp,
     get_person_or_team,
@@ -223,6 +223,6 @@ class TestGetPersonOrTeam(TestCaseWithFactory):
 
 
 def test_suite():
-    suite = DocTestSuite('canonical.launchpad.mail.helpers')
+    suite = DocTestSuite('lp.services.mail.helpers')
     suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
     return suite

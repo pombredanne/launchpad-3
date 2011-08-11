@@ -16,7 +16,7 @@ from zope.interface import implements
 
 from canonical.config import config
 from lp.services.mail.interfaces import IMailHandler
-from canonical.launchpad.mail.helpers import get_main_body
+from lp.services.mail.helpers import get_main_body
 from canonical.launchpad.webapp import urlparse
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.services.mail.sendmail import sendmail
