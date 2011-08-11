@@ -201,7 +201,6 @@ from lp.bugs.browser.widgets.bugtask import (
     AssigneeDisplayWidget,
     BugTaskAssigneeWidget,
     BugTaskBugWatchWidget,
-    BugTaskSourcePackageNameWidget,
     DBItemDisplayWidget,
     NewLineToSpacesWidget,
     NominationReviewActionWidget,
@@ -246,7 +245,6 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.bugs.model.bugtask import validate_target
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -268,7 +266,6 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
 from lp.registry.vocabularies import MilestoneVocabulary
-from lp.services.features import getFeatureFlag
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
 
