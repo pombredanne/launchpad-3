@@ -201,6 +201,7 @@ from lp.bugs.browser.widgets.bugtask import (
     AssigneeDisplayWidget,
     BugTaskAssigneeWidget,
     BugTaskBugWatchWidget,
+    BugTaskSourcePackageNameWidget,
     DBItemDisplayWidget,
     NewLineToSpacesWidget,
     NominationReviewActionWidget,
@@ -1130,6 +1131,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     default_field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
                            'status', 'statusexplanation']
     custom_widget('target', LaunchpadTargetWidget)
+    custom_widget('sourcepackagename', BugTaskSourcePackageNameWidget)
     custom_widget('bugwatch', BugTaskBugWatchWidget)
     custom_widget('assignee', BugTaskAssigneeWidget)
 
@@ -1145,6 +1147,14 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     def show_target_widget(self):
         # Only non-series tasks can be retargetted.
         return not ISeriesBugTarget.providedBy(self.context.target)
+
+    @property
+    def show_sourcepackagename_widget(self):
+        # SourcePackage tasks can have only their sourcepackagename changed.
+        # Conjoinment means we can't rely on editing the
+        # DistributionSourcePackage task for this :(
+        return (IDistroSeries.providedBy(self.context.target) or
+                ISourcePackage.providedBy(self.context.target))
 
     @cachedproperty
     def field_names(self):
@@ -1194,6 +1204,8 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
 
         if self.show_target_widget:
             editable_field_names.add('target')
+        elif self.show_sourcepackagename_widget:
+            editable_field_names.add('sourcepackagename')
 
         # To help with caching, return an immutable object.
         return frozenset(editable_field_names)
@@ -1366,12 +1378,22 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         return self.context.userCanEditImportance(self.user)
 
     def validate(self, data):
+        if self.show_sourcepackagename_widget and 'sourcepackagename' in data:
+            data['target'] = self.context.distroseries
+            spn = data.get('sourcepackagename')
+            if spn:
+                data['target'] = data['target'].getSourcePackage(spn)
+            del data['sourcepackagename']
+            error_field = 'sourcepackagename'
+        else:
+            error_field = 'target'
+
         new_target = data.get('target')
         if new_target and new_target != self.context.target:
             try:
                 self.context.validateTransitionToTarget(new_target)
             except IllegalTarget as e:
-                self.setFieldError('target', e[0])
+                self.setFieldError(error_field, e[0])
 
     def updateContextFromData(self, data, context=None):
         """Updates the context object using the submitted form data.
@@ -1553,15 +1575,20 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                     object_before_modification=bugtask_before_modification,
                     edited_fields=field_names))
 
-        if bugtask.sourcepackagename and self.widgets.get('target'):
+        if (bugtask.sourcepackagename and (
+            self.widgets.get('target') or
+            self.widgets.get('sourcepackagename'))):
             real_package_name = bugtask.sourcepackagename.name
 
             # We get entered_package_name directly from the form here, since
             # validating the sourcepackagename field mutates its value in to
             # the one already in real_package_name, which makes our comparison
             # of the two below useless.
-            entered_package_name = self.request.form.get(
-                self.widgets['target'].package_widget.name)
+            if self.widgets.get('sourcepackagename'):
+                field_name = self.widgets['sourcepackagename'].name
+            else:
+                field_name = self.widgets['target'].package_widget.name
+            entered_package_name = self.request.form.get(field_name)
 
             if real_package_name != entered_package_name:
                 # The user entered a binary package name which got
