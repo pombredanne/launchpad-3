@@ -565,6 +565,8 @@ def reset_permissions(con, config, options):
                         desired_permissions[seq][who].add(seqperm)
                     desired_permissions[seq][who_ro].add("SELECT")
 
+    # read gets read access to all non-secure objects that we've granted
+    # anybody access to.
     for obj in granted_objs:
         is_secure = (obj.fullname in SECURE_TABLES)
         if obj.type == 'function':
@@ -591,9 +593,16 @@ def reset_permissions(con, config, options):
         else:
             desired_permissions[obj]['public'].add('SELECT')
 
+    # For every object in the DB, ensure that the privileges held by our
+    # controlled roles match our expectations. If not, store the delta
+    # to be applied later.
+    # Also grants/revokes access by the admin role, which isn't a
+    # traditionally controlled role.
     required_grants = []
     required_revokes = []
     for obj in schema.values():
+        # We only care about roles that are in either the desired or
+        # existing ACL, and are also our controlled roles.
         interesting_roles = set(desired_permissions[obj]).union(obj.acl)
         for role in controlled_roles.intersection(interesting_roles):
             new = desired_permissions[obj][role]
