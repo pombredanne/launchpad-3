@@ -15,7 +15,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces.mail import IMailHandler
+from lp.services.mail.interfaces import IMailHandler
 from canonical.launchpad.mail.helpers import get_main_body
 from canonical.launchpad.webapp import urlparse
 from lp.blueprints.interfaces.specification import ISpecificationSet

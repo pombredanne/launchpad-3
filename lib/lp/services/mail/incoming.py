@@ -31,7 +31,7 @@ from canonical.launchpad.interfaces.gpghandler import (
     GPGVerificationError,
     IGPGHandler,
     )
-from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
+from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
 from canonical.launchpad.interfaces.mailbox import IMailBox
 from canonical.launchpad.mail.commands import get_error_message
 from canonical.launchpad.mail.helpers import (

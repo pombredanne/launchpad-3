@@ -23,7 +23,7 @@ from canonical.launchpad.ftests import (
     import_secret_test_key,
     )
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
-from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
+from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
 from lp.services.mail.signedmessage import signed_message_from_string
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet

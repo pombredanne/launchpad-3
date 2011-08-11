@@ -28,7 +28,7 @@ from zope.schema.interfaces import (
     ValidationError,
     )
 
-from canonical.launchpad.interfaces.mail import (
+from lp.services.mail.interfaces import (
     BugTargetNotFound,
     EmailProcessingError,
     IBugEditEmailCommand,

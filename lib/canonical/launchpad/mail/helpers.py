@@ -11,7 +11,7 @@ from uuid import uuid1
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.mail import (
+from lp.services.mail.interfaces import (
     EmailProcessingError,
     IWeaklyAuthenticatedPrincipal,
     )

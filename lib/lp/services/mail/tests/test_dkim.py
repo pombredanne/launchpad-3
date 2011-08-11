@@ -12,7 +12,7 @@ import unittest
 import dkim
 import dns.resolver
 
-from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
+from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
 from lp.services.mail.signedmessage import signed_message_from_string
 from lp.services.features.testing import FeatureFixture
 from lp.services.mail import incoming

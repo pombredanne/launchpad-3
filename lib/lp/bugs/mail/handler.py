@@ -16,7 +16,7 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import rollback
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces.mail import (
+from lp.services.mail.interfaces import (
     EmailProcessingError,
     IBugEditEmailCommand,
     IBugEmailCommand,

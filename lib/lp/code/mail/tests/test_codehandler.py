@@ -23,7 +23,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from lp.services.messages.model.message import MessageSet
-from canonical.launchpad.interfaces.mail import (
+from lp.services.mail.interfaces import (
     EmailProcessingError,
     IWeaklyAuthenticatedPrincipal,
     )

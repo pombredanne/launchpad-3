@@ -16,7 +16,7 @@ import re
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces.mail import ISignedMessage
+from lp.services.mail.interfaces import ISignedMessage
 
 
 clearsigned_re = re.compile(

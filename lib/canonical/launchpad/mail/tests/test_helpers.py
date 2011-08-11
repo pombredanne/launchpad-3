@@ -12,7 +12,7 @@ from zope.interface import (
     directlyProvides,
     )
 
-from canonical.launchpad.interfaces.mail import (
+from lp.services.mail.interfaces import (
     EmailProcessingError,
     IWeaklyAuthenticatedPrincipal,
     )
