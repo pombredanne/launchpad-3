@@ -511,10 +511,14 @@ def reset_permissions(con, config, options):
     found = set()
 
     # Set permissions as per config file
-    controlled_objs = set()
     desired_permissions = defaultdict(lambda: defaultdict(set))
 
     valid_objs = set(schema.iterkeys())
+
+    # Any object with permissions granted is accessible to the 'read'
+    # role. Some (eg. the lp_* replicated tables and internal or trigger
+    # functions) aren't readable.
+    readable_objs = set()
 
     for username in config.sections():
         who = username
@@ -538,7 +542,7 @@ def reset_permissions(con, config, options):
                 # No perm means no rights. We can't grant no rights, so skip.
                 continue
 
-            controlled_objs.add(obj)
+            readable_objs.add(obj)
 
             if obj.type == 'function':
                 desired_permissions[obj][who].update(perm.split(', '))
@@ -550,7 +554,7 @@ def reset_permissions(con, config, options):
                     desired_permissions[obj][who_ro].add("SELECT")
                 if obj.seqname in valid_objs:
                     seq = schema[obj.seqname]
-                    controlled_objs.add(seq)
+                    readable_objs.add(seq)
                     if 'INSERT' in perm:
                         seqperm = 'USAGE'
                     elif 'SELECT' in perm:
