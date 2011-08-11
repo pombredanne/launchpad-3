@@ -499,7 +499,7 @@ def reset_permissions(con, config, options):
     else:
         log.info("Not resetting ownership of database objects")
 
-    controlled_roles = set(['read'])
+    controlled_roles = set(['read', 'admin'])
     for section_name in config.sections():
         controlled_roles.add(section_name)
         if section_name != 'public':
@@ -597,13 +597,18 @@ def reset_permissions(con, config, options):
     # to be applied later.
     # Also grants/revokes access by the admin role, which isn't a
     # traditionally controlled role.
+    unmanaged_roles = set()
     required_grants = []
     required_revokes = []
     for obj in schema.values():
         # We only care about roles that are in either the desired or
         # existing ACL, and are also our controlled roles.
         interesting_roles = set(desired_permissions[obj]).union(obj.acl)
+        unmanaged_roles.update(interesting_roles.difference(controlled_roles))
         for role in controlled_roles.intersection(interesting_roles):
+            # admin is special, and is done at the end.
+            if role == 'admin':
+                continue
             new = desired_permissions[obj][role]
             old_privs = obj.acl.get(role, {})
             old = set(old_privs)
@@ -627,6 +632,8 @@ def reset_permissions(con, config, options):
         else:
             if "admin" in obj.acl:
                 required_revokes.append((obj, "admin", ("ALL",)))
+
+    log.debug("Unmanaged roles on managed objects: %r", list(unmanaged_roles))
 
     alter_permissions(cur, required_grants)
     if options.revoke:
