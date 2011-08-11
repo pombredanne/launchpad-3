@@ -36,6 +36,7 @@ __all__ = [
     'BugWatchRemoved',
     'CveLinkedToBug',
     'CveUnlinkedFromBug',
+    'DeferredBugDuplicateChange',
     'SeriesNominated',
     'UnsubscribedFromBug',
     'get_bug_change_class',

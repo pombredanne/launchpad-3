@@ -147,6 +147,17 @@ class TestBug(TestCaseWithFactory):
             self.assertThat(len(subscribers), Equals(10 + 1))
             self.assertThat(recorder, HasQueryCount(Equals(1)))
 
+    @staticmethod
+    def analyze_queries(queries):
+        query_counts = {}
+        for query in queries:
+            q = query[3].strip()
+            if q not in query_counts:
+                query_counts[q] = 0
+            query_counts[q] += 1
+        for k in sorted(query_counts, key=query_counts.get, reverse=True):
+            print "%2d: %s" % (query_counts[k], k)
+
     def test_mark_as_duplicate_query_count(self):
         bug = self.factory.makeBug()
         # Make lots of duplicate bugs.
@@ -166,7 +177,9 @@ class TestBug(TestCaseWithFactory):
             Store.of(bug).flush()
             with StormStatementRecorder() as recorder:
                 previous_dup.markAsDuplicate(bug)
-                self.assertThat(recorder, HasQueryCount(LessThan(130)))
+                print "num queries = ", recorder.count
+                #self.analyze_queries(recorder.queries)
+                self.assertThat(recorder, HasQueryCount(LessThan(100)))
 
     def test_get_subscribers_from_duplicates_with_private_team(self):
         product = self.factory.makeProduct()
