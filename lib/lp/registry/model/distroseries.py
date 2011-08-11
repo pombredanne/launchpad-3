@@ -61,7 +61,7 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.mail import signed_message_from_string
+from lp.services.mail.signedmessage import signed_message_from_string
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,

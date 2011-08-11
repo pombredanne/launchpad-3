@@ -24,7 +24,7 @@ from canonical.launchpad.ftests import (
     )
 from canonical.launchpad.interfaces.gpghandler import IGPGHandler
 from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
-from canonical.launchpad.mail import signed_message_from_string
+from lp.services.mail.signedmessage import signed_message_from_string
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.mail.incoming import (

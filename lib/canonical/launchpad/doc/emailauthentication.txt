@@ -112,7 +112,7 @@ be canonicalised to \r\n. In order to ensure that the line endings in
 signed_canonicalised.txt are not already '\r\n', we recreate the test
 message.
 
-    >>> from canonical.launchpad.mail import SignedMessage
+    >>> from lp.services.mail.signedmessage import SignedMessage
     >>> msg = read_test_message('signed_canonicalised.txt')
     >>> msg_lines = msg.as_string().splitlines()
     >>> msg = email.message_from_string(

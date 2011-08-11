@@ -75,7 +75,7 @@ from lp.services.messages.interfaces.message import (
     IUserToUserEmail,
     UnknownSender,
     )
-from canonical.launchpad.mail import (
+from lp.services.mail.signedmessage import (
     signed_message_from_string,
     )
 from lp.app.errors import NotFoundError
