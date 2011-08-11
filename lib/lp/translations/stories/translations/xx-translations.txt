@@ -223,7 +223,7 @@ Finally, lets also check that translated entries show up as well.
 
 == Links to filtered pages ==
 
-The DistroRelease per-language overview page shows different statistics:
+The DistroSeries per-language overview page shows different statistics:
 a count of untranslated messages, messages with new, unreviewed suggestions,
 and a count of messages which had their imported translations changed in
 Ubuntu.

@@ -20,6 +20,8 @@ import urllib
 import urlparse
 
 from lazr.restful.utils import get_current_browser_request
+from oops.uniquefileallocator import UniqueFileAllocator
+import oops.serializer_rfc822
 import pytz
 from zope.component.interfaces import ObjectEvent
 from zope.error.interfaces import IErrorReportingUtility
@@ -45,7 +47,6 @@ from canonical.launchpad.webapp.opstats import OpStats
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.utils import safe_hasattr
 from lp.app import versioninfo
-from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from lp.services.timeline.requesttimeline import get_request_timeline
 
 
@@ -128,20 +129,6 @@ def _is_sensitive(request, name):
     return True
 
 
-def parse_iso8601_date(datestring):
-    """Parses a standard ISO 8601 format date, ignoring time zones.
-
-    Performs no validation whatsoever. It just plucks up to the first
-    7 numbers from the string and passes them to `datetime.datetime`,
-    so would in fact parse any string containing reasonable numbers.
-
-    This function can be replaced with `datetime.datetime.strptime()`
-    once we move to Python 2.5.
-    """
-    return datetime.datetime(
-        *(int(elem) for elem in re.findall('[0-9]+', datestring)[:7]))
-
-
 class ErrorReportEvent(ObjectEvent):
     """A new error report has been created."""
     implements(IErrorReportEvent)
@@ -204,54 +191,9 @@ class ErrorReport:
 
     @classmethod
     def read(cls, fp):
-        msg = rfc822.Message(fp)
-        id = msg.getheader('oops-id')
-        exc_type = msg.getheader('exception-type')
-        exc_value = msg.getheader('exception-value')
-        date = parse_iso8601_date(msg.getheader('date'))
-        pageid = msg.getheader('page-id')
-        username = msg.getheader('user')
-        url = msg.getheader('url')
-        duration = int(float(msg.getheader('duration', '-1')))
-        informational = msg.getheader('informational')
-
-        # Explicitly use an iterator so we can process the file
-        # sequentially. In most instances the iterator will actually
-        # be the file object passed in because file objects should
-        # support iteration.
-        lines = iter(msg.fp)
-
-        # Request variables until the first blank line.
-        req_vars = []
-        for line in lines:
-            line = line.strip()
-            if line == '':
-                break
-            key, value = line.split('=', 1)
-            req_vars.append((urllib.unquote(key), urllib.unquote(value)))
-
-        # Statements until the next blank line.
-        statements = []
-        for line in lines:
-            line = line.strip()
-            if line == '':
-                break
-            match = re.match(
-                r'^(\d+)-(\d+)(?:@([\w-]+))?\s+(.*)', line)
-            assert match is not None, (
-                "Unable to interpret oops line: %s" % line)
-            start, end, db_id, statement = match.groups()
-            if db_id is not None:
-                db_id = intern(db_id)  # This string is repeated lots.
-            statements.append(
-                (int(start), int(end), db_id, statement))
-
-        # The rest is traceback.
-        tb_text = ''.join(lines)
-
-        return cls(id, exc_type, exc_value, date, pageid, tb_text,
-                   username, url, duration, req_vars, statements,
-                   informational)
+        # Deprecated: use the oops module directly now, when possible.
+        report = oops.serializer_rfc822.read(fp)
+        return cls(**report)
 
 
 class ErrorReportingUtility:

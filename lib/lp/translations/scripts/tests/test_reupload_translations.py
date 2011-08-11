@@ -1,6 +1,6 @@
 #! /usr/bin/python
 #
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test `reupload_translations` and `ReuploadPackageTranslations`."""
@@ -108,7 +108,7 @@ class TestReuploadPackageTranslations(TestCaseWithFactory):
     def setUp(self):
         super(TestReuploadPackageTranslations, self).setUp()
         sourcepackagename = self.factory.makeSourcePackageName()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         self.sourcepackage = SourcePackage(sourcepackagename, distroseries)
         self.script = ReuploadPackageTranslations('reupload', test_args=[
             '-d', distroseries.distribution.name,
@@ -177,7 +177,7 @@ class TestReuploadScript(TestCaseWithFactory):
 
     def setUp(self):
         super(TestReuploadScript, self).setUp()
-        self.distroseries = self.factory.makeDistroRelease()
+        self.distroseries = self.factory.makeDistroSeries()
         self.sourcepackagename1 = self.factory.makeSourcePackageName()
         self.sourcepackagename2 = self.factory.makeSourcePackageName()
         transaction.commit()
