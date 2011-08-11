@@ -12,7 +12,7 @@ from zope.security.management import setSecurityPolicy
 
 from canonical.config import config
 from canonical.launchpad.ftests import import_secret_test_key
-from canonical.launchpad.mail.ftests.helpers import testmails_path
+from lp.services.mail.tests.helpers import testmails_path
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from lp.services.mail import helpers

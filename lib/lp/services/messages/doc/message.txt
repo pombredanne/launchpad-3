@@ -143,7 +143,7 @@ add only noise to the comment. For the sake of completeness, since this
 has been a problem before, let's look at text_contents of a message
 containing a signature.asc attachment.
 
-    >>> from canonical.launchpad.mail.ftests import read_test_message
+    >>> from lp.services.mail.tests.helpers import read_test_message
     >>> signed_msg = read_test_message('signed_detached.txt')
     >>> signed_msg['Message-Id'] = '<signeddetached@testmsg>'
     >>> print signed_msg.as_string()

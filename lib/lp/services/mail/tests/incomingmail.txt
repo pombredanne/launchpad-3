@@ -46,7 +46,7 @@ handle, and register them for some domains:
 Now we send a few test mails to foo.com, bar.com, and baz.com:
 
     >>> from canonical.database.sqlbase import commit
-    >>> from canonical.launchpad.mail.ftests import read_test_message
+    >>> from lp.services.mail.tests.helpers import read_test_message
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
     >>> from lp.services.mail.sendmail import sendmail as original_sendmail
 

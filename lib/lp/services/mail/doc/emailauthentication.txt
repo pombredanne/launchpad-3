@@ -29,7 +29,7 @@ date:
 Now Sample Person and Foo Bar have one OpenPGP key each. Next, let's get
 a test email that's signed and try to authenticate the user who sent it:
 
-    >>> from canonical.launchpad.mail.ftests import read_test_message
+    >>> from lp.services.mail.tests.helpers import read_test_message
     >>> msg = read_test_message('signed_detached.txt')
     >>> principal = authenticateEmail(msg, accept_any_timestamp)
 
