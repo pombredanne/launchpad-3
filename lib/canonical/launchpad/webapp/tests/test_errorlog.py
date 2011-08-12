@@ -23,7 +23,6 @@ from lazr.restful.declarations import error_status
 from oops.uniquefileallocator import UniqueFileAllocator
 import pytz
 import testtools
-from testtools.matchers import Equals
 from zope.app.publication.tests.test_zopepublication import (
     UnauthenticatedPrincipal,
     )

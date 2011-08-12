@@ -13,7 +13,6 @@ from itertools import repeat
 import logging
 import os
 import re
-import rfc822
 import stat
 import types
 import urllib
