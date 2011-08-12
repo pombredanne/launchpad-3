@@ -2,6 +2,19 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Profiling for Python and Zope applications.
-
-Tests for this package are currently services stories.
 """
+
+__all__ = ['profiling',
+           'start',
+           'stop',
+          ]
+
+# Re-export for convenience.
+from lp.services.profile.profile import (
+    profiling,
+    start,
+    stop,
+    )
+
+# Quiet the linter.
+(profiling, start, stop)
