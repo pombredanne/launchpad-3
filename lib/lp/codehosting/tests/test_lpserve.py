@@ -102,3 +102,13 @@ class TestLaunchpadServe(TestCaseWithSubprocess):
         result = self.finish_lpserve_subprocess(process)
         self.assertFinishedCleanly(result)
         self.assertIsNot(None, error_utility.getLastOopsReport())
+
+
+def test_suite():
+    from bzrlib import tests
+    from bzrlib.plugins import lpserve
+
+    loader = tests.TestLoader()
+    suite = loader.loadTestsFromName(__name__)
+    suite = lpserve.load_tests(suite, lpserve, loader)
+    return suite
