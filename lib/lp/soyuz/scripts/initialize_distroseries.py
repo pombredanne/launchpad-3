@@ -398,7 +398,7 @@ class InitializeDistroSeries:
 
     def _create_source_names_by_parent(self):
         """If only a subset of the packagesets was selected to be copied,
-        create a dict by the list of source names to be copied for each
+        create a dict with the list of source names to be copied for each
         parent.
         """
         source_names_by_parent = {}
