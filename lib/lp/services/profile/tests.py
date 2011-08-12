@@ -362,7 +362,7 @@ class TestBasicRequestEndHandler(BaseRequestEndHandlerTest):
         self.pushProfilingConfig(
             profiling_allowed='True', profile_all_requests='True')
         request = self.endRequest('/')
-        self.assertIsInstance(request.oops, ErrorReport)
+        self.assertNotEqual(None, request.oops)
         response = self.getAddedResponse(request)
         self.assertIn('Profile was logged to', response)
         self.assertIn('profile_all_requests: True', response)
@@ -392,7 +392,7 @@ class TestBasicRequestEndHandler(BaseRequestEndHandlerTest):
         self.pushProfilingConfig(
             profiling_allowed='True', profile_all_requests='True')
         request = self.endRequest('/++profile++')
-        self.assertIsInstance(request.oops, ErrorReport)
+        self.assertNotEqual(None, request.oops)
         response = self.getAddedResponse(request)
         self.assertIn('<h2>Help</h2>', response)
         self.assertIn('Profile was logged to', response)
@@ -423,7 +423,7 @@ class TestBzrProfilerRequestEndHandler(BaseRequestEndHandlerTest):
         # URL segment is made, profiling starts.
         self.pushProfilingConfig(profiling_allowed='True')
         request = self.endRequest('/++profile++show/')
-        self.assertIsInstance(request.oops, ErrorReport)
+        self.assertNotEqual(None, request.oops)
         self.assertIn('Top Inline Time', self.getAddedResponse(request))
         self.assertEqual(self.getMemoryLog(), [])
         self.assertEqual(self.getProfilePaths(), [])
@@ -434,7 +434,7 @@ class TestBzrProfilerRequestEndHandler(BaseRequestEndHandlerTest):
         # URL segment is made, profiling starts.
         self.pushProfilingConfig(profiling_allowed='True')
         request = self.endRequest('/++profile++callgrind/')
-        self.assertIsInstance(request.oops, ErrorReport)
+        self.assertNotEqual(None, request.oops)
         response = self.getAddedResponse(request)
         self.assertIn('Profile was logged to', response)
         self.assertNotIn('Top Inline Time', response)
@@ -449,7 +449,7 @@ class TestBzrProfilerRequestEndHandler(BaseRequestEndHandlerTest):
         # "show" marker URL segment is made, profiling starts.
         self.pushProfilingConfig(profiling_allowed='True')
         request = self.endRequest('/++profile++callgrind,show')
-        self.assertIsInstance(request.oops, ErrorReport)
+        self.assertNotEqual(None, request.oops)
         response = self.getAddedResponse(request)
         self.assertIn('Profile was logged to', response)
         self.assertIn('Top Inline Time', response)
@@ -487,7 +487,7 @@ class TestConflictingProfilerRequestEndHandler(BaseRequestEndHandlerTest):
         # approach only.
         self.pushProfilingConfig(profiling_allowed='True')
         request = self.endRequest('/++profile++callgrind,pstats/')
-        self.assertIsInstance(request.oops, ErrorReport)
+        self.assertNotEqual(None, request.oops)
         response = self.getAddedResponse(request)
         self.assertIn('Profile was logged to', response)
         self.assertNotIn('Top Inline Time', response)
@@ -546,7 +546,7 @@ class TestMemoryProfilerRequestEndHandler(BaseRequestEndHandlerTest):
             profiling_allowed='True',
             memory_profile_log=self.memory_profile_log)
         request = self.endRequest('/++profile++show/')
-        self.assertIsInstance(request.oops, ErrorReport)
+        self.assertNotEqual(None, request.oops)
         self.assertIn('Top Inline Time', self.getAddedResponse(request))
         self.assertEqual(len(self.getMemoryLog()), 1)
         self.assertEqual(self.getProfilePaths(), [])
