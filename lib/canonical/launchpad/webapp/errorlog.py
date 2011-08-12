@@ -13,7 +13,6 @@ from itertools import repeat
 import logging
 import os
 import re
-import rfc822
 import stat
 import types
 import urllib
@@ -44,6 +43,7 @@ from canonical.launchpad.webapp.interfaces import (
     IUnloggedException,
     )
 from canonical.launchpad.webapp.opstats import OpStats
+from canonical.launchpad.webapp.pgsession import PGSessionBase
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.utils import safe_hasattr
 from lp.app import versioninfo
@@ -157,6 +157,13 @@ class ErrorReport:
     def __repr__(self):
         return '<ErrorReport %s %s: %s>' % (self.id, self.type, self.value)
 
+    def filter_session_statement(self, database_id, statement):
+        """Replace quoted strings with '%s' in statements on session DB."""
+        if database_id == 'SQL-' + PGSessionBase.store_name:
+            return re.sub("'[^']*'", "'%s'", statement)
+        else:
+            return statement
+
     def get_chunks(self):
         """Returns a list of bytestrings making up the oops disk content."""
         chunks = []
@@ -180,6 +187,7 @@ class ErrorReport:
                                   urllib.quote(value, safe_chars)))
         chunks.append('\n')
         for (start, end, database_id, statement) in self.db_statements:
+            statement = self.filter_session_statement(database_id, statement)
             chunks.append('%05d-%05d@%s %s\n' % (
                 start, end, database_id, _normalise_whitespace(statement)))
         chunks.append('\n')
