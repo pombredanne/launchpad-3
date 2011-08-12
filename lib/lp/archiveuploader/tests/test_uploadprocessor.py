@@ -1179,12 +1179,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # And an oops should be filed for the error.
         error_utility = ErrorReportingUtility()
         error_report = error_utility.getLastOopsReport()
-        fp = StringIO()
-        error_report.write(fp)
-        error_text = fp.getvalue()
         expected_explanation = (
             "Verification failed 3 times: ['No data', 'No data', 'No data']")
-        self.assertIn(expected_explanation, error_text)
+        self.assertStartsWith(error_report.value, expected_explanation)
 
         # Housekeeping so the next test won't fail.
         shutil.rmtree(upload_dir)
