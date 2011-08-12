@@ -1186,7 +1186,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Housekeeping so the next test won't fail.
         shutil.rmtree(upload_dir)
 
-    def testPartnerUploadToNonReleaseOrProposedPocket(self):
+    def disabled_per_bug_825486_testPartnerUploadToNonReleaseOrProposedPocket(self):
+        # XXX: bug 825486 robertcollins 2011-08-13 this test is broken.
         """Test partner upload pockets.
 
         Partner uploads must be targeted to the RELEASE pocket only,
