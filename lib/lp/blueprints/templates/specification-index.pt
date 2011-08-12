@@ -319,7 +319,7 @@
     </div>
 
   <script type="text/javascript">
-    LPS.use('lazr.anim', 'lp.ui', function(Y) {
+    LPS.use('lp.anim', 'lp.ui', function(Y) {
 
         Y.on('lp:context:implementation_status:changed', function(e) {
             var icon = Y.one('#informational-icon');
@@ -337,7 +337,7 @@
             if (e.new_value) {
               started.removeClass('unseen');
               started.one('dd').setContent(e.entry.getHTML('starter'));
-              Y.lazr.anim.green_flash({node:started}).run();
+              Y.lp.anim.green_flash({node:started}).run();
             } else {
               started.addClass('unseen');
             }
@@ -347,7 +347,7 @@
             if (e.new_value) {
               completed.removeClass('unseen');
               completed.one('dd').setContent(e.entry.getHTML('completer'));
-              Y.lazr.anim.green_flash({node:completed}).run();
+              Y.lp.anim.green_flash({node:completed}).run();
             } else {
               completed.addClass('unseen');
             }

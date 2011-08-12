@@ -8,7 +8,7 @@ browsing to it.
     >>> from lp.registry.model.sourcepackage import SourcePackage
     >>> def make_source_package(distro, series, name):
     ...     distro = factory.makeDistribution(name=distro, displayname=distro)
-    ...     distroseries = factory.makeDistroRelease(
+    ...     distroseries = factory.makeDistroSeries(
     ...         name=series, distribution=distro)
     ...     sourcepackagename = factory.makeSourcePackageName(name=name)
     ...     return SourcePackage(sourcepackagename, distroseries)
@@ -49,7 +49,7 @@ distribution.
 
     >>> login(ANONYMOUS)
     >>> distro = branch1.distroseries.distribution
-    >>> next_series = factory.makeDistroRelease(
+    >>> next_series = factory.makeDistroSeries(
     ...     name='next', distribution=distro)
     >>> source_package = factory.makeSourcePackage(
     ...     sourcepackagename=branch1.sourcepackagename,

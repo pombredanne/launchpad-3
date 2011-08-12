@@ -100,7 +100,8 @@
                     can_confirm_answer can_reopen
                     subscriptions isSubscribed getRecipients
                     direct_recipients indirect_recipients
-                    getDirectSubscribers getIndirectSubscribers"
+                    getDirectSubscribers getIndirectSubscribers
+                    getDirectSubscribersWithDetails removeAnswerContact"
       />
     <require
       permission="launchpad.Owner"

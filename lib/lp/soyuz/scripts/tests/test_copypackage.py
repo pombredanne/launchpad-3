@@ -84,7 +84,6 @@ from lp.soyuz.scripts.packagecopier import (
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
-    person_logged_in,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
@@ -1348,7 +1347,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             bin_i386.component, bin_i386, copied_bin_i386)
         self.assertComponentSectionAndPriority(
             bin_hppa.component, bin_hppa, copied_bin_hppa)
-        
+
     def test_existing_publication_no_overrides(self):
         # When we copy source/binaries into a PPA, we don't respect their
         # component and section.
@@ -1462,7 +1461,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
             Date: %s
             Changed-By: Foo Bar <foo.bar@canonical.com>
-            http://launchpad.dev/ubuntutest/breezy-autotest/+source/foo/1.0-2
+            http://launchpad.dev/ubuntutest/nobby/+source/foo/1.0-2
             """ % source.sourcepackagerelease.dateuploaded)
         self.assertIn(expected_text, notification.as_string())
         self.assertIn(expected_text, announcement.as_string())
@@ -1484,6 +1483,29 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             person=target_archive.owner, check_permissions=False,
             send_email=False)
         self.assertEquals([], pop_notifications())
+
+    def test_copying_unsupported_arch_with_override(self):
+        # When the copier is passed an unsupported arch with an override
+        # on the destination series, no binary is copied.
+        archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest, virtualized=False)
+        source = self.test_publisher.getPubSource(
+            archive=archive, architecturehintlist='all')
+        self.test_publisher.getPubBinaries(pub_source=source)
+
+        # Now make a new distroseries with only one architecture:
+        # 'hppa'.
+        nobby = self.createNobby(('hppa', ))
+
+        # Copy the package with binaries.
+        target_archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PRIMARY,
+            distribution=self.test_publisher.ubuntutest, virtualized=False)
+        copies = _do_direct_copy(source, target_archive, nobby, source.pocket,
+            include_binaries=True, close_bugs=False, create_dsd_job=False)
+
+        # Only the source package has been copied.
+        self.assertEqual(1, len(copies))
 
 
 class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):

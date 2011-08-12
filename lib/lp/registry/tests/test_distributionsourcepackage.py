@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for DistributionSourcePackage."""
@@ -68,7 +68,6 @@ class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
             creator=self.person_nightly,
             status=PackagePublishingStatus.PUBLISHED)
 
-
         self.person_beta = self.factory.makePerson()
         self.gedit_beta_src_hist = self.publisher.getPubSource(
             sourcename="gedit", archive=self.archives['gedit-beta'],
@@ -135,7 +134,7 @@ class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
         # IDistributionSourcePackage.development_version is the ISourcePackage
         # for the current series of the distribution.
         dsp = self.factory.makeDistributionSourcePackage()
-        series = self.factory.makeDistroRelease(distribution=dsp.distribution)
+        series = self.factory.makeDistroSeries(distribution=dsp.distribution)
         self.assertEqual(series, dsp.distribution.currentseries)
         development_version = dsp.distribution.currentseries.getSourcePackage(
             dsp.sourcepackagename)

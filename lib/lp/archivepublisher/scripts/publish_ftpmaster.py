@@ -9,27 +9,27 @@ __all__ = [
     ]
 
 from datetime import datetime
-from optparse import OptionParser
 import os
+
 from pytz import utc
 from zope.component import getUtility
 
 from canonical.config import config
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
+from lp.archivepublisher.publishing import GLOBAL_PUBLISHER_LOCK
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import pocketsuffix
+from lp.registry.interfaces.series import SeriesStatus
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LaunchpadScriptFailure,
     )
-from lp.registry.interfaces.series import SeriesStatus
 from lp.services.utils import file_exists
 from lp.soyuz.enums import ArchivePurpose
-from lp.soyuz.scripts import publishdistro
 from lp.soyuz.scripts.ftpmaster import LpQueryDistro
 from lp.soyuz.scripts.processaccepted import ProcessAccepted
-
+from lp.soyuz.scripts.publishdistro import PublishDistro
 
 # XXX JeroenVermeulen 2011-03-31 bug=746229: to start publishing debug
 # archives, get rid of this list.
@@ -161,6 +161,8 @@ class PublishFTPMaster(LaunchpadCronScript):
     back in their original places (though with updated contents).
     """
 
+    lockfilename = GLOBAL_PUBLISHER_LOCK
+
     def add_my_options(self):
         """See `LaunchpadScript`."""
         self.parser.add_option(
@@ -286,16 +288,17 @@ class PublishFTPMaster(LaunchpadCronScript):
         """Run the process-accepted script."""
         self.logger.debug(
             "Processing the accepted queue into the publishing records...")
-        script = ProcessAccepted(test_args=[self.distribution.name])
+        script = ProcessAccepted(
+            test_args=[self.distribution.name], logger=self.logger)
         script.txn = self.txn
-        script.logger = self.logger
         script.main()
 
     def getDirtySuites(self):
         """Return list of suites that have packages pending publication."""
         self.logger.debug("Querying which suites are pending publication...")
         query_distro = LpQueryDistro(
-            test_args=['-d', self.distribution.name, "pending_suites"])
+            test_args=['-d', self.distribution.name, "pending_suites"],
+            logger=self.logger)
         receiver = StoreArgument()
         query_distro.runAction(presenter=receiver)
         return receiver.argument.split()
@@ -321,6 +324,19 @@ class PublishFTPMaster(LaunchpadCronScript):
                 failure=LaunchpadScriptFailure(
                     "Failed to rsync new dists for %s." % purpose.title))
 
+    def recoverArchiveWorkingDir(self, archive_config):
+        """Recover working dists dir for `archive_config`.
+
+        If there is a dists directory for `archive_config` in the working
+        location, kick it back to the backup location.
+        """
+        working_location = get_working_dists(archive_config)
+        if file_exists(working_location):
+            self.logger.info(
+                "Recovering working directory %s from failed run.",
+                working_location)
+            os.rename(working_location, get_backup_dists(archive_config))
+
     def recoverWorkingDists(self):
         """Look for and recover any dists left in transient working state.
 
@@ -330,12 +346,7 @@ class PublishFTPMaster(LaunchpadCronScript):
         permanent location.
         """
         for archive_config in self.configs.itervalues():
-            working_location = get_working_dists(archive_config)
-            if file_exists(working_location):
-                self.logger.info(
-                    "Recovering working directory %s from failed run.",
-                    working_location)
-                os.rename(working_location, get_backup_dists(archive_config))
+            self.recoverArchiveWorkingDir(archive_config)
 
     def setUpDirs(self):
         """Create archive roots and such if they did not yet exist."""
@@ -363,10 +374,11 @@ class PublishFTPMaster(LaunchpadCronScript):
             args +
             sum([['-s', suite] for suite in suites], []))
 
-        parser = OptionParser()
-        publishdistro.add_options(parser)
-        options, args = parser.parse_args(arguments)
-        publishdistro.run_publisher(options, self.txn, log=self.logger)
+        publish_distro = PublishDistro(
+            test_args=arguments, logger=self.logger)
+        publish_distro.logger = self.logger
+        publish_distro.txn = self.txn
+        publish_distro.main()
 
     def publishDistroArchive(self, archive, security_suites=None):
         """Publish the results for an archive.
@@ -427,25 +439,6 @@ class PublishFTPMaster(LaunchpadCronScript):
             os.rename(dists, temp_dists)
             os.rename(backup_dists, dists)
             os.rename(temp_dists, backup_dists)
-
-    def runCommercialCompat(self):
-        """Generate the -commercial pocket.
-
-        This is done for backwards compatibility with dapper, edgy, and
-        feisty releases.  Failure here is not fatal.
-        """
-        # XXX JeroenVermeulen 2011-03-24 bug=741683: Retire
-        # commercial-compat.sh (and this method) as soon as Dapper
-        # support ends.
-        if self.distribution.name != 'ubuntu':
-            return
-        if not config.archivepublisher.run_commercial_compat:
-            return
-
-        env = {"LPCONFIG": shell_quote(config.instance_name)}
-        self.executeShell(
-            "env %s commercial-compat.sh"
-            % compose_env_string(env, extend_PATH()))
 
     def generateListings(self):
         """Create ls-lR.gz listings."""
@@ -571,13 +564,11 @@ class PublishFTPMaster(LaunchpadCronScript):
 
         self.rsyncBackupDists()
         self.publish(security_only=True)
-        self.runCommercialCompat()
         self.runFinalizeParts(security_only=True)
 
         if not self.options.security_only:
             self.rsyncBackupDists()
             self.publish(security_only=False)
-            self.runCommercialCompat()
             self.generateListings()
             self.clearEmptyDirs()
             self.runFinalizeParts(security_only=False)

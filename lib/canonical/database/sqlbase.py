@@ -535,12 +535,15 @@ def quote(x):
 
     >>> quote(set([1,2,3]))
     '(1, 2, 3)'
+
+    >>> quote(frozenset([1,2,3]))
+    '(1, 2, 3)'
     """
     if isinstance(x, datetime):
         return "'%s'" % x
     elif ISQLBase(x, None) is not None:
         return str(x.id)
-    elif isinstance(x, set):
+    elif isinstance(x, (set, frozenset)):
         # SQLObject can't cope with sets, so convert to a list, which it
         # /does/ know how to handle.
         x = list(x)

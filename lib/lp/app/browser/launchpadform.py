@@ -503,10 +503,6 @@ class ReturnToReferrerMixin:
         if referrer is None:
             # "referer" is misspelled in the HTTP specification.
             referrer = self.request.getHeader('referer')
-            # Windmill doesn't pass in a correct referer.
-            if (referrer is not None
-                and '/windmill-serv/remote.html' in referrer):
-                referrer = None
         else:
             attribute_name = self.request.form.get('_return_attribute_name')
             attribute_value = self.request.form.get('_return_attribute_value')

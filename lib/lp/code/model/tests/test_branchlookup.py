@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the IBranchLookup implementation."""
@@ -249,7 +249,7 @@ class TestGetByPath(TestCaseWithFactory):
 
     def test_missing_package_branch(self):
         owner = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         namespace = get_branch_namespace(
             owner, distroseries=distroseries,
@@ -259,7 +259,7 @@ class TestGetByPath(TestCaseWithFactory):
 
     def test_missing_suffixed_package_branch(self):
         owner = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         namespace = get_branch_namespace(
             owner, distroseries=distroseries,
@@ -495,7 +495,7 @@ class TestLinkedBranchTraverser(TestCaseWithFactory):
     def test_no_such_sourcepackagename(self):
         # `traverse` raises `NoSuchSourcePackageName` if the package in
         # distro/series/package doesn't exist.
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         path = '%s/%s/doesntexist' % (
             distroseries.distribution.name, distroseries.name)
         self.assertRaises(

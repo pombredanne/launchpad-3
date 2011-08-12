@@ -263,8 +263,7 @@ class ProjectMilestoneTest(unittest.TestCase):
             owner=sample_person,
             status=BugTaskStatus.CONFIRMED)
         bug = product.createBug(params)
-        getUtility(IBugTaskSet).createTask(bug, owner=sample_person,
-                                           productseries=series)
+        getUtility(IBugTaskSet).createTask(bug, sample_person, series)
         for bugtask in bug.bugtasks:
             if bugtask.productseries is not None:
                 bugtask.milestone = milestone

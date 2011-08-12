@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.errors import UserCannotUnsubscribePerson
 from lp.code.enums import (
@@ -119,6 +117,30 @@ class TestBranchSubscriptionCanBeUnsubscribedbyUser(TestCaseWithFactory):
             person=team, subscribed_by=subscribed_by)
         self.assertTrue(subscription.canBeUnsubscribedByUser(subscribed_by))
 
+    def test_branch_person_owner_can_unsubscribe(self):
+        """Branch owner can unsubscribe someone from a branch."""
+        branch_owner = self.factory.makePerson()
+        branch = self.factory.makeBranch(owner=branch_owner)
+        subscribed_by = self.factory.makePerson()
+        subscriber = self.factory.makePerson()
+        subscription = self.factory.makeBranchSubscription(
+            branch=branch, person=subscriber, subscribed_by=subscribed_by)
+        self.assertTrue(subscription.canBeUnsubscribedByUser(branch_owner))
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    def test_branch_team_owner_can_unsubscribe(self):
+        """Branch team owner can unsubscribe someone from a branch.
+
+        If the owner of a branch is a team, then the team members can
+        unsubscribe someone.
+        """
+        team_owner = self.factory.makePerson()
+        team_member = self.factory.makePerson()
+        branch_owner = self.factory.makeTeam(
+            owner=team_owner, members=[team_member])
+        branch = self.factory.makeBranch(owner=branch_owner)
+        subscribed_by = self.factory.makePerson()
+        subscriber = self.factory.makePerson()
+        subscription = self.factory.makeBranchSubscription(
+            branch=branch, person=subscriber, subscribed_by=subscribed_by)
+        self.assertTrue(subscription.canBeUnsubscribedByUser(team_owner))
+        self.assertTrue(subscription.canBeUnsubscribedByUser(team_member))

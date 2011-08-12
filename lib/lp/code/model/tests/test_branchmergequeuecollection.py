@@ -188,14 +188,3 @@ class TestGenericBranchMergeQueueCollectionVisibleFilter(TestCaseWithFactory):
         self.assertEqual(
             sorted(self.all_queues.getMergeQueues()),
             sorted(queues.getMergeQueues()))
-
-    def test_bazaar_experts_see_all(self):
-        # Members of the bazaar_experts team see *everything*.
-        bzr_experts = removeSecurityProxy(
-            getUtility(ILaunchpadCelebrities).bazaar_experts)
-        expert = self.factory.makePerson()
-        bzr_experts.addMember(expert, bzr_experts.teamowner)
-        queues = self.all_queues.visibleByUser(expert)
-        self.assertEqual(
-            sorted(self.all_queues.getMergeQueues()),
-            sorted(queues.getMergeQueues()))
