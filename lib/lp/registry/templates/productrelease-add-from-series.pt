@@ -41,7 +41,7 @@
             var last_index = children.size() - 1;
             children.item(last_index).set('selected', true);
             var div = select_menu.ancestor();
-            Y.lazr.anim.green_flash({node: div}).run();
+            Y.lp.anim.green_flash({node: div}).run();
         };
 
         Y.on('domready', function () {

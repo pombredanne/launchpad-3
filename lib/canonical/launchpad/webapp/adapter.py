@@ -37,6 +37,7 @@ from storm.exceptions import TimeoutError
 from storm.store import Store
 from storm.tracer import install_tracer
 from storm.zope.interfaces import IZStorm
+from timeline.timeline import Timeline
 import transaction
 from zope.component import getUtility
 from zope.interface import (
@@ -73,7 +74,6 @@ from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 from canonical.lazr.timeout import set_default_timeout_function
 from lp.services import features
 from lp.services.log.loglevels import DEBUG2
-from lp.services.timeline.timeline import Timeline
 from lp.services.timeline.requesttimeline import (
     get_request_timeline,
     set_request_timeline,

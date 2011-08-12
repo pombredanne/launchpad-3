@@ -1,7 +1,7 @@
 <tal:bugtask
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  define="expandable view/canSeeTaskDetails;
+  define="expandable view/expandable;
           indent_task view/shouldIndentTask;
           is_conjoined_slave view/is_conjoined_slave;
           tasklink view/taskLink;
