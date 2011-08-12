@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table ArchiveSubscriber."""
@@ -13,8 +13,13 @@ import pytz
 from storm.expr import (
     And,
     Desc,
-    LeftJoin,
+    In,
     Join,
+    LeftJoin,
+    Not,
+    Select,
+    SQL,
+    With,
     )
 from storm.locals import (
     DateTime,
@@ -96,26 +101,22 @@ class ArchiveSubscriber(Storm):
         store = Store.of(self)
         if self.subscriber.is_team:
 
+            # We get all the people who already have active tokens for
+            # this archive (for example, through separate subscriptions).
+            active_subscribers = With(
+                "active_subscribers",
+                Select(ArchiveAuthToken.person_id,
+                       And(ArchiveAuthToken.archive_id == self.archive_id,
+                           ArchiveAuthToken.date_deactivated == None)))
             # We want to get all participants who are themselves
             # individuals, not teams:
-            all_subscribers = store.find(
+            non_active_subscribers = store.with_(active_subscribers).find(
                 Person,
                 TeamParticipation.teamID == self.subscriber_id,
                 TeamParticipation.personID == Person.id,
-                Person.teamowner == None)
-
-            # Then we get all the people who already have active
-            # tokens for this archive (for example, through separate
-            # subscriptions).
-            active_subscribers = store.find(
-                Person,
-                Person.id == ArchiveAuthToken.person_id,
-                ArchiveAuthToken.archive_id == self.archive_id,
-                ArchiveAuthToken.date_deactivated == None)
-
-            # And return just the non active subscribers:
-            non_active_subscribers = all_subscribers.difference(
-                active_subscribers)
+                Person.teamowner == None,
+                Not(In(Person.id,
+                       SQL("SELECT person FROM active_subscribers"))))
             non_active_subscribers.order_by(Person.name)
             return non_active_subscribers
         else:
