@@ -653,9 +653,9 @@ class IPackageUploadSet(Interface):
         filtering.
 
         :param distroseries: the `IDistroSeries` to consider.
-        :param status: Filter results by this list of `PackageUploadStatus`.
+        :param status: Filter results by this list of `PackageUploadStatus`s.
         :param pockets: Filter results by this list of
-            `PackagePublishingPocket`
+            `PackagePublishingPocket`s.
         :param names: Filter results by this list of package names.
 
         :return: A result set containing `IPackageUpload`s.
