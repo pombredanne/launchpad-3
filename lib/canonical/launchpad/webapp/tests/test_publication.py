@@ -18,6 +18,7 @@ from storm.database import (
     )
 from storm.exceptions import DisconnectionError
 from storm.zope.interfaces import IZStorm
+from testtools.testcase import ExpectedException
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import directlyProvides
@@ -42,6 +43,7 @@ from canonical.launchpad.tests.readonly import (
     remove_read_only_file,
     touch_read_only_file,
     )
+from canonical.launchpad.webapp import canonical_url
 import canonical.launchpad.webapp.adapter as dbadapter
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
@@ -68,6 +70,7 @@ from canonical.testing.layers import (
     FunctionalLayer,
     )
 from lp.testing import (
+    logout,
     TestCase,
     TestCaseWithFactory,
     )
@@ -96,6 +99,30 @@ class TestLaunchpadBrowserPublication(TestCase):
         publication.callTraversalHooks(request, obj1)
         publication.callTraversalHooks(request, obj2)
         self.assertEquals(request.traversed_objects, [obj1])
+
+    def test_validTraversalStack_ascii_no_space(self):
+        # ascii path with no whitespace is valid.
+        request = LaunchpadTestRequest(PATH_INFO="foo")
+        result = LaunchpadBrowserPublication._validTraversalStack(request)
+        self.assertTrue(result)
+
+    def test_validTraversalStack_space(self):
+        # ascii path with whitespace is invalid.
+        request = LaunchpadTestRequest(PATH_INFO="foo ")
+        result = LaunchpadBrowserPublication._validTraversalStack(request)
+        self.assertFalse(result)
+
+    def test_validTraversalStack_nonascii(self):
+        # path with non-ascii is invalid.
+        request = LaunchpadTestRequest(PATH_INFO=u"foo\xC0".encode('utf-8'))
+        result = LaunchpadBrowserPublication._validTraversalStack(request)
+        self.assertFalse(result)
+
+    def test_validTraversalStack_nonascii_space(self):
+        # path with non-ascii whitespace is invalid.
+        request = LaunchpadTestRequest(PATH_INFO=u"foo\xa0".encode('utf-8'))
+        result = LaunchpadBrowserPublication._validTraversalStack(request)
+        self.assertFalse(result)
 
 
 class TestReadOnlyModeSwitches(TestCase):
@@ -466,3 +493,26 @@ class TestUnicodePath(TestCaseWithFactory):
             browser.open,
             'http://launchpad.dev/%ED%B4%B5')
         self.assertEqual(0, len(self.oopses))
+
+    def test_beforeTraversal_non_ascii_url(self):
+        # The NotFound is raised by beforeTraversal
+        publication = LaunchpadBrowserPublication(None)
+        request = LaunchpadTestRequest(PATH_INFO='\xED\xB4\xB5')
+        logout()
+        with ExpectedException(NotFound, ''):
+            publication.beforeTraversal(request)
+        # Remove database policy created by beforeTraversal
+        getUtility(IStoreSelector).pop()
+
+
+class TestWhitespacePath(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_whitespace_bugtask(self):
+        # Bug tasks should not permit whitespace in their number.
+        bugtask = self.factory.makeBugTask()
+        url = canonical_url(bugtask) + '%20'
+        browser = self.getUserBrowser()
+        with ExpectedException(NotFound, ''):
+            browser.open(url)

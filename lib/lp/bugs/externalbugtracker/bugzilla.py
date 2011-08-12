@@ -251,6 +251,7 @@ class Bugzilla(ExternalBugTracker):
         'major': BugTaskImportance.HIGH,
         'high': BugTaskImportance.HIGH,
         'p4': BugTaskImportance.HIGH,
+        'nor': BugTaskImportance.MEDIUM,
         'normal': BugTaskImportance.MEDIUM,
         'medium': BugTaskImportance.MEDIUM,
         'p3': BugTaskImportance.MEDIUM,

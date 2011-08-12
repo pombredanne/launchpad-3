@@ -102,6 +102,40 @@ class TestErrorReport(testtools.TestCase):
             entry.db_statements[1],
             (5, 10, 'store_b', 'SELECT 2'))
 
+    def test_filter_session_statement(self):
+        """Removes quoted strings if database_id is SQL-session."""
+        entry = ErrorReport('OOPS-A0001', '', '', datetime.datetime.now(),
+                            '', '', '', '', 42, [], [], False)
+
+        statement = "SELECT 'gone'"
+        self.assertEqual(
+            "SELECT '%s'",
+            entry.filter_session_statement('SQL-session', statement))
+
+    def test_filter_session_statement_noop(self):
+        """If database_id is not SQL-session, it's a no-op."""
+        entry = ErrorReport('OOPS-A0001', '', '', datetime.datetime.now(), '',
+                            '', '', '', 42, [], [], False)
+
+        statement = "SELECT 'gone'"
+        self.assertEqual(
+            statement,
+            entry.filter_session_statement('SQL-launchpad', statement))
+
+    def test_session_queries_filtered(self):
+        """Test that session queries are filtered."""
+        entry = ErrorReport('OOPS-A0001', '', '', datetime.datetime.now(),
+                            '', '', '', '', 42, [],
+                            [(1, 5, 'store_a', "SELECT 'stays'"),
+                             (5, 10, 'SQL-session', "SELECT 'gone'")], False)
+        # Skip unrelated chunks and just get the SQL queries.
+        sql_chunks = entry.get_chunks()[13:-2]
+
+        self.assertEqual(
+            ["00001-00005@store_a SELECT 'stays'\n",
+             "00005-00010@SQL-session SELECT '%s'\n"],
+            sql_chunks)
+
     def test_write(self):
         """Test ErrorReport.write()"""
         entry = ErrorReport('OOPS-A0001', 'NotFound', 'error message',

@@ -49,14 +49,15 @@ class TestSendbranchmail(TestCaseWithFactory):
         """Ensure sendbranchmail runs and sends email."""
         self.useBzrBranches()
         branch, tree = self.createBranch()
-        RevisionMailJob.create(
+        mail_job = RevisionMailJob.create(
             branch, 1, 'from@example.org', 'body', True, 'foo')
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/sendbranchmail.py', [])
         self.assertEqual(
             'INFO    Creating lockfile: /var/lock/launchpad-sendbranchmail.lock\n'
-            'INFO    Ran 1 RevisionMailJobs.\n', stderr)
+            'INFO    Running RevisionMailJob (ID %d) in status Waiting\n'
+            'INFO    Ran 1 RevisionMailJobs.\n' % mail_job.job.id, stderr)
         self.assertEqual('', stdout)
         self.assertEqual(0, retcode)
 
@@ -86,14 +87,15 @@ class TestSendbranchmail(TestCaseWithFactory):
         # required to generate the revision-id.
         with override_environ(BZR_EMAIL='me@example.com'):
             tree.commit('Added foo.', rev_id='rev2')
-        RevisionsAddedJob.create(
+        job = RevisionsAddedJob.create(
             branch, 'rev1', 'rev2', 'from@example.org')
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/sendbranchmail.py', [])
         self.assertEqual(
             'INFO    Creating lockfile: /var/lock/launchpad-sendbranchmail.lock\n'
-            'INFO    Ran 1 RevisionMailJobs.\n',
+            'INFO    Running RevisionsAddedJob (ID %d) in status Waiting\n'
+            'INFO    Ran 1 RevisionMailJobs.\n' % job.job.id,
             stderr)
         self.assertEqual('', stdout)
         self.assertEqual(0, retcode)
