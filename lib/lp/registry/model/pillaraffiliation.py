@@ -72,23 +72,26 @@ class PillarAffiliation(object):
 
         A person is affiliated with a pillar if they are in the list of
         drivers or are the maintainer.
+        The return result is a list of tuples (pillar displayanme, role).
         """
+        result = []
         if person.inTeam(pillar.owner):
-            return pillar.displayname, 'maintainer'
+            result.append((pillar.displayname, 'maintainer'))
         for driver in pillar.drivers:
             if person.inTeam(driver):
-                return pillar.displayname, 'driver'
-        return  None
+                result.append((pillar.displayname, 'driver'))
+                break
+        return result
 
     def getAffiliationBadges(self, persons):
-        """ Return the affiliation badge details for a person given a context.
+        """ Return the affiliation badge details for people given a context.
         """
         pillar = self.getPillar()
         result = []
         for person in persons:
             affiliation_details = self._getAffiliationDetails(person, pillar)
             if not affiliation_details:
-                result.append(None)
+                result.append([])
                 continue
 
             def getIconUrl(context, pillar, default_url):
@@ -100,13 +103,16 @@ class PillarAffiliation(object):
                     return icon_url
                 return default_url
 
-            alt_text = "%s %s" % affiliation_details
             if IDistribution.providedBy(pillar):
                 default_icon_url = "/@@/distribution-badge"
             else:
                 default_icon_url = "/@@/product-badge"
             icon_url = getIconUrl(self.context, pillar, default_icon_url)
-            result.append(BadgeDetails(icon_url, alt_text))
+            badges = []
+            for affiliation in affiliation_details:
+                alt_text = "%s %s" % affiliation
+                badges.append(BadgeDetails(icon_url, alt_text))
+            result.append(badges)
         return result
 
 
@@ -124,12 +130,11 @@ class BugTaskPillarAffiliation(PillarAffiliation):
         """
         result = super(BugTaskPillarAffiliation, self)._getAffiliationDetails(
             person, pillar)
-        if result is not None:
-            return result
         if person.inTeam(pillar.bug_supervisor):
-            return pillar.displayname, 'bug supervisor'
+            result.append((pillar.displayname, 'bug supervisor'))
         if person.inTeam(pillar.security_contact):
-            return pillar.displayname, 'security contact'
+            result.append((pillar.displayname, 'security contact'))
+        return result
 
 
 class BranchPillarAffiliation(BugTaskPillarAffiliation):
@@ -167,6 +172,8 @@ class QuestionPillarAffiliation(PillarAffiliation):
         - owner of question target
         - driver of question target
         """
+        result = (super(QuestionPillarAffiliation, self)
+                                ._getAffiliationDetails(person, pillar))
         target = self.context.target
         if IDistributionSourcePackage.providedBy(target):
             question_targets = (target, target.distribution)
@@ -175,9 +182,8 @@ class QuestionPillarAffiliation(PillarAffiliation):
         questions_person = IQuestionsPerson(person)
         for target in questions_person.getDirectAnswerQuestionTargets():
             if target in question_targets:
-                return target.displayname, 'answer contact'
+                result.append((target.displayname, 'answer contact'))
         for target in questions_person.getTeamAnswerQuestionTargets():
             if target in question_targets:
-                return target.displayname, 'answer contact'
-        return super(QuestionPillarAffiliation, self)._getAffiliationDetails(
-            person, pillar)
+                result.append((target.displayname, 'answer contact'))
+        return result

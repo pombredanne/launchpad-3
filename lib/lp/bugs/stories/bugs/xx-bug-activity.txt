@@ -291,7 +291,8 @@ If a target of a bug task is changed the old and new value will be shown.
     ...     'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/'
     ...     '1/+editstatus')
     >>> admin_browser.getControl(
-    ...     'Package').value = 'linux-source-2.6.15'
+    ...     name='ubuntu_mozilla-firefox.target.package'
+    ...     ).value = 'linux-source-2.6.15'
     >>> admin_browser.getControl("Save Changes").click()
     >>> print_comments(admin_browser.contents)
     Foo Bar (name16)

@@ -66,7 +66,9 @@ class TestReclaimBranchSpaceScript(TestCaseWithFactory):
         self.assertEqual('', stdout)
         self.assertEqual(
             'INFO    Creating lockfile: /var/lock/launchpad-reclaimbranchspace.lock\n'
-            'INFO    Reclaimed space for 1 branches.\n', stderr)
+            'INFO    Running ReclaimBranchSpaceJob (ID %d) in status Waiting\n'
+            'INFO    Reclaimed space for 1 branches.\n' % reclaim_job.job.id,
+            stderr)
         self.assertEqual(0, retcode)
         self.assertFalse(
             os.path.exists(mirrored_path))

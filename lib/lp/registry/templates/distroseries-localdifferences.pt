@@ -223,9 +223,10 @@
     </div>
 <script type="text/javascript">
 LPS.use('lp.registry.distroseriesdifferences_details', function(Y) {
-  diff_module = Y.lp.registry.distroseriesdifferences_details
 
-  Y.on('domready', diff_module.setup_expandable_rows);
+  Y.on('domready', function() {
+    Y.lp.registry.distroseriesdifferences_details.setup();
+  });
 });
 </script>
 <script type="text/javascript">
