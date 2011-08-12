@@ -3,20 +3,39 @@
 
 __metaclass__ = type
 
+from testtools.testcase import ExpectedException
+
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.model.bug import BugSubscriptionInfo
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
+    feature_flags,
     login_person,
     person_logged_in,
+    set_feature_flag,
+    StormStatementRecorder,
     TestCaseWithFactory,
+    )
+from lp.testing.matchers import (
+    HasQueryCount,
+    LessThan,
     )
 
 
 class TestBug(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def test_markAsDuplicate_None(self):
+        # Calling markAsDuplicate(None) on a bug that is not currently a
+        # duplicate works correctly, and does not raise an AttributeError.
+        bug = self.factory.makeBug()
+        with ExpectedException(AssertionError, 'AttributeError not raised'):
+            with ExpectedException(AttributeError, ''):
+                with person_logged_in(self.factory.makePerson()):
+                    bug.markAsDuplicate(None)
 
     def test_get_subscribers_for_person_unsubscribed(self):
         bug = self.factory.makeBug()
@@ -202,9 +221,27 @@ class TestBug(TestCaseWithFactory):
             set(subscribers), set(direct_subscribers),
             "Subscribers did not match expected value.")
 
-    def test_get_direct_subscribers_with_details(self):
-        # getDirectSubscribersWithDetails() returns both
-        # Person and BugSubscription records in one go.
+    def test_get_direct_subscribers_with_details_other_subscriber(self):
+        # getDirectSubscribersWithDetails() returns
+        # Person and BugSubscription records in one go as well as the
+        # BugSubscription.subscribed_by person.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            # Unsubscribe bug owner so it doesn't taint the result.
+            bug.unsubscribe(bug.owner, bug.owner)
+        subscriber = self.factory.makePerson()
+        subscribee = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            subscription = bug.subscribe(
+                subscribee, subscriber, level=BugNotificationLevel.LIFECYCLE)
+        self.assertContentEqual(
+            [(subscribee, subscriber, subscription)],
+            bug.getDirectSubscribersWithDetails())
+
+    def test_get_direct_subscribers_with_details_self_subscribed(self):
+        # getDirectSubscribersWithDetails() returns
+        # Person and BugSubscription records in one go as well as the
+        # BugSubscription.subscribed_by person.
         bug = self.factory.makeBug()
         with person_logged_in(bug.owner):
             # Unsubscribe bug owner so it doesn't taint the result.
@@ -213,9 +250,8 @@ class TestBug(TestCaseWithFactory):
         with person_logged_in(subscriber):
             subscription = bug.subscribe(
                 subscriber, subscriber, level=BugNotificationLevel.LIFECYCLE)
-
         self.assertContentEqual(
-            [(subscriber, subscription)],
+            [(subscriber, subscriber, subscription)],
             bug.getDirectSubscribersWithDetails())
 
     def test_get_direct_subscribers_with_details_mute_excludes(self):
@@ -313,3 +349,130 @@ class TestBug(TestCaseWithFactory):
             bug.subscribe(team, person)
             bug.setPrivate(True, person)
             self.assertFalse(bug.personIsDirectSubscriber(person))
+
+    def test_getVisibleLinkedBranches_doesnt_return_inaccessible_branches(self):
+        # If a Bug has branches linked to it that the current user
+        # cannot access, those branches will not be returned in its
+        # linked_branches property.
+        bug = self.factory.makeBug()
+        private_branch_owner = self.factory.makePerson()
+        private_branch = self.factory.makeBranch(
+            owner=private_branch_owner, private=True)
+        with person_logged_in(private_branch_owner):
+            bug.linkBranch(private_branch, private_branch.registrant)
+        public_branch_owner = self.factory.makePerson()
+        public_branches = [
+            self.factory.makeBranch() for i in range(4)]
+        with person_logged_in(public_branch_owner):
+            for public_branch in public_branches:
+                bug.linkBranch(public_branch, public_branch.registrant)
+        with StormStatementRecorder() as recorder:
+            linked_branches = [
+                bug_branch.branch for bug_branch in
+                bug.getVisibleLinkedBranches(user=public_branch_owner)]
+            # We check that the query count is low, since that's
+            # part of the point of the way that linked_branches is
+            # implemented. If we try eager-loading all the linked
+            # branches the query count jumps up by 6, which is not
+            # what we want.
+            self.assertThat(recorder, HasQueryCount(LessThan(7)))
+        self.assertContentEqual(public_branches, linked_branches)
+        self.assertNotIn(private_branch, linked_branches)
+
+
+class TestBugAutoConfirmation(TestCaseWithFactory):
+    """Tests for auto confirming bugs"""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_shouldConfirmBugtasks_initial_False(self):
+        # After a bug is created, only one person is affected, and we should
+        # not try to confirm bug tasks.
+        bug = self.factory.makeBug()
+        self.assertFalse(bug.shouldConfirmBugtasks())
+
+    def test_shouldConfirmBugtasks_after_another_positively_affected(self):
+        # We should confirm bug tasks if the number of affected users is
+        # more than one.
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            bug.markUserAffected(person)
+        self.assertTrue(bug.shouldConfirmBugtasks())
+
+    def test_shouldConfirmBugtasks_after_another_persons_dupe(self):
+        # We should confirm bug tasks if someone else files a dupe.
+        bug = self.factory.makeBug()
+        duplicate_bug = self.factory.makeBug()
+        with person_logged_in(duplicate_bug.owner):
+            duplicate_bug.markAsDuplicate(bug)
+        self.assertTrue(bug.shouldConfirmBugtasks())
+
+    def test_shouldConfirmBugtasks_after_same_persons_dupe_False(self):
+        # We should not confirm bug tasks if same person files a dupe.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            duplicate_bug = self.factory.makeBug(owner=bug.owner)
+            duplicate_bug.markAsDuplicate(bug)
+        self.assertFalse(bug.shouldConfirmBugtasks())
+
+    def test_shouldConfirmBugtasks_honors_negatively_affected(self):
+        # We should confirm bug tasks if the number of affected users is
+        # more than one.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            bug.markUserAffected(bug.owner, False)
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            bug.markUserAffected(person)
+        self.assertFalse(bug.shouldConfirmBugtasks())
+
+    def test_markUserAffected_autoconfirms(self):
+        # markUserAffected will auto confirm if appropriate.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            bug = self.factory.makeBug()
+            person = self.factory.makePerson()
+            with person_logged_in(person):
+                bug.markUserAffected(person)
+            self.assertEqual(BugTaskStatus.CONFIRMED, bug.bugtasks[0].status)
+
+    def test_markUserAffected_does_not_autoconfirm_wrongly(self):
+        # markUserAffected will not auto confirm if incorrect.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            bug = self.factory.makeBug()
+            person = self.factory.makePerson()
+            with person_logged_in(bug.owner):
+                bug.markUserAffected(bug.owner, False)
+            with person_logged_in(person):
+                bug.markUserAffected(person)
+            self.assertEqual(BugTaskStatus.NEW, bug.bugtasks[0].status)
+
+    def test_markAsDuplicate_autoconfirms(self):
+        # markAsDuplicate will auto confirm if appropriate.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            bug = self.factory.makeBug()
+            duplicate_bug = self.factory.makeBug()
+            with person_logged_in(duplicate_bug.owner):
+                duplicate_bug.markAsDuplicate(bug)
+            self.assertEqual(BugTaskStatus.CONFIRMED, bug.bugtasks[0].status)
+
+    def test_markAsDuplicate_does_not_autoconfirm_wrongly(self):
+        # markAsDuplicate will not auto confirm if incorrect.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            bug = self.factory.makeBug()
+            with person_logged_in(bug.owner):
+                duplicate_bug = self.factory.makeBug(owner=bug.owner)
+                duplicate_bug.markAsDuplicate(bug)
+            self.assertEqual(BugTaskStatus.NEW, bug.bugtasks[0].status)

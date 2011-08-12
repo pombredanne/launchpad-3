@@ -51,9 +51,11 @@ class BugzillaRemoteComponentScraper:
         self.products = {}
 
     def getPage(self):
+        """Download and return content from the Bugzilla page"""
         return urlopen(self.url).read()
 
     def parsePage(self, page_text):
+        """Builds self.product using HTML content in page_text"""
         soup = BeautifulSoup(page_text)
         if soup is None:
             return None
@@ -118,6 +120,7 @@ class BugzillaRemoteComponentFinder:
         self.static_bugzilla_scraper = static_bugzilla_scraper
 
     def getRemoteProductsAndComponents(self, bugtracker_name=None):
+        """Retrieves, parses, and stores component data for each bugtracker"""
         lp_bugtrackers = getUtility(IBugTrackerSet)
         if bugtracker_name is not None:
             lp_bugtrackers = [
@@ -162,6 +165,7 @@ class BugzillaRemoteComponentFinder:
                 bz_bugtracker, lp_bugtracker)
 
     def storeRemoteProductsAndComponents(self, bz_bugtracker, lp_bugtracker):
+        """Stores parsed product/component data from bz_bugtracker"""
         components_to_add = []
         for product in bz_bugtracker.products.itervalues():
             # Look up the component group id from Launchpad for the product
@@ -185,7 +189,11 @@ class BugzillaRemoteComponentFinder:
                     else:
                         # Component is now missing from Bugzilla,
                         # so drop it here too
-                        component.remove()
+                        store = IStore(BugTrackerComponent)
+                        store.find(
+                            BugTrackerComponent,
+                            BugTrackerComponent.id == component.id,
+                            ).remove()
 
             # The remaining components in the collection will need to be
             # added to launchpad.  Record them for now.

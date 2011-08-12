@@ -39,7 +39,7 @@ MULTIPROC=-j 4
 
 DEV_CONFIG=replicated-development
 NEW_STAGING_CONFIG=staging-setup # For building the db with a different name.
-STAGING_CONFIG=staging # For swapping fresh db into place.
+STAGING_CONFIG=staging-db # For swapping fresh db into place.
 STAGING_DUMP=launchpad.dump # Dumpfile to build new staging from.
 STAGING_TABLESPACE=pg_default # 'pg_default' for default
 STAGING_LOGDIR=/srv/staging.launchpad.net/staging-logs

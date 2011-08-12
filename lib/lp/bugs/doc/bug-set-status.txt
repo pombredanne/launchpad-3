@@ -90,7 +90,7 @@ is edited.
     ...     firefox = getUtility(IProductSet).getByName('firefox')
     ...     firefox_trunk = firefox.getSeries('trunk')
     ...     ignore = getUtility(IBugTaskSet).createTask(
-    ...         bug, productseries=firefox_trunk, owner=no_priv)
+    ...         bug, no_priv, firefox_trunk)
 
     >>> bug = getUtility(IBugSet).get(bug_id)
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
@@ -164,7 +164,7 @@ will be edited.
 If the bug is targeted to a source package, that bugtask is of course
 edited.
 
-    >>> ubuntu_bugtask.sourcepackagename = ubuntu_firefox.sourcepackagename
+    >>> ubuntu_bugtask.transitionToTarget(ubuntu_firefox)
     >>> ubuntu_firefox_task = bug.setStatus(
     ...     ubuntu_firefox, BugTaskStatus.INCOMPLETE, no_priv)
     >>> ubuntu_firefox_task.target.displayname

@@ -37,7 +37,10 @@ import operator
 from lazr.delegates import delegates
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.restful.interface import copy_field
-from lazr.restful.interfaces import IWebServiceClientRequest
+from lazr.restful.interfaces import (
+    IJSONRequestCache,
+    IWebServiceClientRequest,
+    )
 import simplejson
 from zope.app.form.browser import TextAreaWidget
 from zope.component import (
@@ -105,6 +108,7 @@ from lp.code.enums import (
 from lp.code.errors import (
     BranchMergeProposalExists,
     ClaimReviewFailed,
+    InvalidBranchMergeProposal,
     WrongBranchMergeProposal,
     )
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
@@ -601,6 +605,13 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     def initialize(self):
         super(BranchMergeProposalView, self).initialize()
+        cache = IJSONRequestCache(self.request)
+        cache.objects.update({
+            'branch_diff_link':
+                'https://%s/+loggerhead/%s/diff/' %
+                (config.launchpad.code_domain,
+                 self.context.source_branch.unique_name)
+            })
         if self.next_preview_diff_job is not None:
             self.pending_diff_event = subscribe(
                 self.next_preview_diff_job, JobStatus.COMPLETED)
@@ -1041,6 +1052,9 @@ class BranchMergeProposalResubmitView(LaunchpadFormView,
                 url=canonical_url(e.existing_proposal))
             self.request.response.addErrorNotification(message)
             self.next_url = canonical_url(self.context)
+            return None
+        except InvalidBranchMergeProposal as e:
+            self.addError(str(e))
             return None
         self.next_url = canonical_url(proposal)
         return proposal

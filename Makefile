@@ -18,7 +18,6 @@ LPCONFIG?=development
 
 ICING=lib/canonical/launchpad/icing
 LP_BUILT_JS_ROOT=${ICING}/build
-LAZR_BUILT_JS_ROOT=lazr-js/build
 
 ifeq ($(LPCONFIG), development)
 JS_BUILD := raw
@@ -26,16 +25,16 @@ else
 JS_BUILD := min
 endif
 
-define JS_LP_FIND
-find lib/lp/*/javascript ! -path '*/tests/*' \
-    ! -path '*/app/javascript/lazr/*' -name '*.js' ! -name '.*.js'
+define JS_LP_PATHS
+lib -path 'lib/lp/*/javascript/*' \
+! -path '*/tests/*' ! -path '*/testing/*' \
+! -path 'lib/lp/services/*'
 endef
 
 JS_YUI := $(shell utilities/yui-deps.py $(JS_BUILD:raw=))
-JS_LAZR := $(LAZR_BUILT_JS_ROOT)/lazr.js
 JS_OTHER := $(wildcard lib/canonical/launchpad/javascript/*/*.js)
-JS_LP := $(shell $(JS_LP_FIND))
-JS_ALL := $(JS_YUI) $(JS_LAZR) $(JS_OTHER) $(JS_LP)
+JS_LP := $(shell find $(JS_LP_PATHS) -name '*.js' ! -name '.*.js')
+JS_ALL := $(JS_YUI) $(JS_OTHER) $(JS_LP)
 JS_OUT := $(LP_BUILT_JS_ROOT)/launchpad.js
 
 MINS_TO_SHUTDOWN=15
@@ -45,7 +44,7 @@ CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
 BZR_VERSION_INFO = bzr-version-info.py
 
 APIDOC_DIR = lib/canonical/launchpad/apidoc
-WADL_TEMPLATE = $(APIDOC_DIR).tmp/wadl-$(LPCONFIG)-%(version)s.xml
+APIDOC_TMPDIR = $(APIDOC_DIR).tmp/
 API_INDEX = $(APIDOC_DIR)/index.html
 
 # Do not add bin/buildout to this list.
@@ -59,8 +58,8 @@ BUILDOUT_BIN = \
     bin/fl-credential-ctl bin/fl-install-demo bin/fl-monitor-ctl \
     bin/fl-record bin/fl-run-bench bin/fl-run-test bin/googletestservice \
     bin/i18ncompile bin/i18nextract bin/i18nmergeall bin/i18nstats \
-    bin/harness bin/iharness bin/ipy bin/jsbuild bin/jslint bin/jssize \
-    bin/jstest bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
+    bin/harness bin/iharness bin/ipy bin/jsbuild \
+    bin/killservice bin/kill-test-services bin/lint.sh bin/retest \
     bin/run bin/sprite-util bin/start_librarian bin/stxdocs bin/tags \
     bin/test bin/tracereport bin/twistd bin/update-download-cache
 
@@ -83,8 +82,8 @@ $(API_INDEX): $(BZR_VERSION_INFO) $(PY)
 	rm -rf $(APIDOC_DIR) $(APIDOC_DIR).tmp
 	mkdir -p $(APIDOC_DIR).tmp
 	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl-and-apidoc.py \
-	    --force "$(WADL_TEMPLATE)"
-	mv $(APIDOC_DIR).tmp $(APIDOC_DIR)
+	    --force "$(APIDOC_TMPDIR)"
+	mv $(APIDOC_TMPDIR) $(APIDOC_DIR)
 
 apidoc: compile $(API_INDEX)
 
@@ -96,31 +95,12 @@ doc:
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
 
-check_schema: build
-	${PY} utilities/check-db-revision.py
-
 # Clean before running the test suite, since the build might fail depending
 # what source changes happened. (e.g. apidoc depends on interfaces)
 check: clean build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS)
-
-jscheck: build
-	# Run all JavaScript integration tests.  The test runner takes care of
-	# setting up the test environment.
-	@echo
-	@echo "Running the JavaScript integration test suite"
-	@echo
-	bin/test $(VERBOSITY) $(TESTOPTS) --layer=WindmillLayer
-
-jscheck_functest: build
-    # Run the old functest Windmill integration tests.  The test runner
-    # takes care of setting up the test environment.
-	@echo
-	@echo "Running Windmill funtest integration test suite"
-	@echo
-	bin/jstest
 
 check_mailman: build
 	# Run all tests, including the Mailman integration
@@ -183,22 +163,18 @@ ${ICING}/icon-sprites.positioning ${ICING}/icon-sprites: bin/sprite-util \
 		${ICING}/sprite.css.in
 	${SHHH} bin/sprite-util create-image
 
-# We absolutely do not want to include the lazr.testing module and
-# its jsTestDriver test harness modifications in the lazr.js and
-# launchpad.js roll-up files.  They fiddle with built-in functions!
-# See Bug 482340.
-jsbuild_minify: bin/jsbuild
+jsbuild_widget_css: bin/jsbuild
 	${SHHH} bin/jsbuild \
-	    --builddir $(LAZR_BUILT_JS_ROOT) \
-	    --exclude testing/ --filetype $(JS_BUILD)
+	    --srcdir lib/lp/app/javascript \
+	    --builddir $(LP_BUILT_JS_ROOT)
 
-$(JS_YUI) $(JS_LAZR): jsbuild_minify
+$(JS_LP): jsbuild_widget_css
 
 $(JS_OUT): $(JS_ALL)
 ifeq ($(JS_BUILD), min)
 	cat $^ | $(PY) -m lp.scripts.utilities.js.jsmin > $@
 else
-	cat $^ > $@
+	awk 'FNR == 1 {print "/* " FILENAME " */"} {print}' $^ > $@
 endif
 
 jsbuild: $(PY) $(JS_OUT)
@@ -253,14 +229,11 @@ $(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py \
 
 $(subst $(PY),,$(BUILDOUT_BIN)): $(PY)
 
-# bin/compile_templates is responsible for building all chameleon templates,
-# of which there is currently one, but of which many more are coming.
 compile: $(PY) $(BZR_VERSION_INFO)
 	mkdir -p /var/tmp/vostok-archive
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
-	bin/compile_templates
 
 test_build: build
 	bin/test $(TESTFLAGS) $(TESTOPTS)
@@ -278,20 +251,21 @@ merge-proposal-jobs:
 	# Handle merge proposal email jobs.
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
-run: check_schema inplace stop
+run: build inplace stop
 	bin/run -r librarian,google-webservice,memcached,rabbitmq -i $(LPCONFIG)
 
 run.gdb:
 	echo 'run' > run.gdb
 
-start-gdb: check_schema inplace stop support_files run.gdb
+start-gdb: build inplace stop support_files run.gdb
 	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
 		-r librarian,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
-run_all: check_schema inplace stop
-	bin/run -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached,rabbitmq \
-	    -i $(LPCONFIG)
+run_all: build inplace stop
+	bin/run \
+	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached,rabbitmq \
+	 -i $(LPCONFIG)
 
 run_codebrowse: build
 	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py -f
@@ -302,7 +276,7 @@ start_codebrowse: build
 stop_codebrowse:
 	$(PY) scripts/stop-loggerhead.py
 
-run_codehosting: check_schema inplace stop
+run_codehosting: build inplace stop
 	bin/run -r librarian,sftp,forker,codebrowse -i $(LPCONFIG)
 
 start_librarian: compile
@@ -393,8 +367,7 @@ clean: clean_js clean_buildout clean_logs
 	fi
 	find . -path ./eggs -prune -false -o \
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
-	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' -o \
-	    -name '*.pt.py' \) \
+	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
 	$(RM) -r lib/mailman
 	$(RM) -rf $(LP_BUILT_JS_ROOT)/*
@@ -486,11 +459,12 @@ pydoctor:
 		--docformat restructuredtext --verbose-about epytext-summary \
 		$(PYDOCTOR_OPTIONS)
 
-.PHONY: apidoc buildout_bin check doc tags TAGS zcmldocs realclean \
-	clean debug stop start run ftest_build ftest_inplace \
-	test_build test_inplace pagetests check schema default \
-	launchpad.pot pull_branches scan_branches sync_branches	\
-	reload-apache hosted_branches check_mailman check_config \
-	jsbuild jsbuild_minify clean_js clean_buildout buildonce_eggs \
-	build_eggs sprite_css sprite_image css_combine compile \
-	check_schema pydoctor clean_logs
+.PHONY: \
+	apidoc build_eggs buildonce_eggs buildout_bin check check \
+	check_config check_mailman clean clean_buildout clean_js \
+	clean_logs compile css_combine debug default doc ftest_build \
+	ftest_inplace hosted_branches jsbuild jsbuild_widget_css \
+	launchpad.pot pagetests pull_branches pydoctor realclean \
+	reload-apache run scan_branches schema sprite_css sprite_image \
+	start stop sync_branches TAGS tags test_build test_inplace \
+	zcmldocs

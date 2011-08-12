@@ -45,6 +45,7 @@ from zope.interface import (
     )
 from zope.publisher.interfaces import (
     IPublishTraverse,
+    NotFound,
     Retry,
     )
 from zope.publisher.interfaces.browser import (
@@ -83,6 +84,7 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     ITeam,
     )
+from lp.services.encoding import is_ascii_only
 from lp.services import features
 from lp.services.features.flags import NullFeatureController
 from lp.services.osutils import open_for_writing
@@ -151,7 +153,7 @@ def maybe_block_offsite_form_post(request):
         # exception was added as a result of bug 597324 (message #10 in
         # particular).
         return
-    referrer = request.getHeader('referer') # match HTTP spec misspelling
+    referrer = request.getHeader('referer')  # match HTTP spec misspelling
     if not referrer:
         raise NoReferrerError('No value for REFERER header')
     # XXX: jamesh 2007-04-26 bug=98437:
@@ -308,6 +310,19 @@ class LaunchpadBrowserPublication(
         self.maybeRestrictToTeam(request)
         maybe_block_offsite_form_post(request)
         self.maybeNotifyReadOnlyMode(request)
+        if not self._validTraversalStack(request):
+            raise NotFound(self.getApplication(request), '')
+
+    @staticmethod
+    def _validTraversalStack(request):
+        """Elements of the traversal stack must be ascii non-whitespace."""
+        whitespace_re = re.compile(r'\s')
+        for element in request.getTraversalStack():
+            if not is_ascii_only(element):
+                return False
+            if whitespace_re.search(element):
+                return False
+        return True
 
     def maybeNotifyReadOnlyMode(self, request):
         """Hook to notify about read-only mode."""
@@ -533,7 +548,7 @@ class LaunchpadBrowserPublication(
         if request.method in ['GET', 'HEAD']:
             self.finishReadOnlyRequest(txn)
         elif txn.isDoomed():
-            txn.abort() # Sends an abort to the database, even though
+            txn.abort()  # Sends an abort to the database, even though
             # transaction is still doomed.
         else:
             txn.commit()
@@ -734,11 +749,11 @@ class LaunchpadBrowserPublication(
             if IBrowserRequest.providedBy(request):
                 OpStats.stats['http requests'] += 1
                 status = request.response.getStatus()
-                if status == 404: # Not Found
+                if status == 404:  # Not Found
                     OpStats.stats['404s'] += 1
-                elif status == 500: # Unhandled exceptions
+                elif status == 500:  # Unhandled exceptions
                     OpStats.stats['500s'] += 1
-                elif status == 503: # Timeouts
+                elif status == 503:  # Timeouts
                     OpStats.stats['503s'] += 1
 
                 # Increment counters for status code groups.

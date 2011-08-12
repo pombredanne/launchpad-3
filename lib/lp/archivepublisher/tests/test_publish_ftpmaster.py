@@ -262,14 +262,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         self.assertEqual(1, len(sections))
         return dict(sections[0])
 
-    def enableCommercialCompat(self):
-        """Enable commercial-compat.sh runs for the duration of the test."""
-        config.push("commercial-compat", dedent("""\
-            [archivepublisher]
-            run_commercial_compat: true
-            """))
-        self.addCleanup(config.pop, "commercial-compat")
-
     def installRunPartsScript(self, distro, parts_dir, script_code):
         """Set up a run-parts script, and configure it to run.
 
@@ -505,38 +497,6 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
             "ARCHIVEROOT", "DISTSROOT", "OVERRIDEROOT"])
         missing_parameters = required_parameters.difference(set(env.keys()))
         self.assertEqual(set(), missing_parameters)
-
-    def test_runCommercialCompat_runs_commercial_compat_script(self):
-        # XXX JeroenVermeulen 2011-03-29 bug=741683: Retire
-        # runCommercialCompat as soon as Dapper support ends.
-        self.enableCommercialCompat()
-        script = self.makeScript(self.prepareUbuntu())
-        script.setUp()
-        script.executeShell = FakeMethod()
-        script.runCommercialCompat()
-        self.assertEqual(1, script.executeShell.call_count)
-        args, kwargs = script.executeShell.calls[0]
-        command_line, = args
-        self.assertIn("commercial-compat.sh", command_line)
-
-    def test_runCommercialCompat_runs_only_for_ubuntu(self):
-        # XXX JeroenVermeulen 2011-03-29 bug=741683: Retire
-        # runCommercialCompat as soon as Dapper support ends.
-        self.enableCommercialCompat()
-        script = self.makeScript(self.makeDistroWithPublishDirectory())
-        script.setUp()
-        script.executeShell = FakeMethod()
-        script.runCommercialCompat()
-        self.assertEqual(0, script.executeShell.call_count)
-
-    def test_runCommercialCompat_runs_only_if_configured(self):
-        # XXX JeroenVermeulen 2011-03-29 bug=741683: Retire
-        # runCommercialCompat as soon as Dapper support ends.
-        script = self.makeScript(self.prepareUbuntu())
-        script.setUp()
-        script.executeShell = FakeMethod()
-        script.runCommercialCompat()
-        self.assertEqual(0, script.executeShell.call_count)
 
     def test_generateListings_writes_ls_lR_gz(self):
         distro = self.makeDistroWithPublishDirectory()
@@ -775,6 +735,67 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
                 read_marker_file([archive_root, "marker file"]).rstrip(),
                 "Did not find expected marker for %s."
                 % archive.purpose.title)
+
+    def test_publish_reraises_exception(self):
+        # If an Exception comes up while publishing, it bubbles up out
+        # of the publish method even though the method must intercept
+        # it for its own purposes.
+        class MoonPhaseError(Exception):
+            """Simulated failure."""
+
+        message = self.factory.getUniqueString()
+        script = self.makeScript()
+        script.publishAllUploads = FakeMethod(failure=MoonPhaseError(message))
+        script.setUp()
+        self.assertRaisesWithContent(MoonPhaseError, message, script.publish)
+
+    def test_publish_obeys_keyboard_interrupt(self):
+        # Similar to an Exception, a keyboard interrupt does not get
+        # swallowed.
+        message = self.factory.getUniqueString()
+        script = self.makeScript()
+        script.publishAllUploads = FakeMethod(
+            failure=KeyboardInterrupt(message))
+        script.setUp()
+        self.assertRaisesWithContent(
+            KeyboardInterrupt, message, script.publish)
+
+    def test_publish_recovers_working_dists_on_exception(self):
+        # If an Exception comes up while publishing, the publish method
+        # recovers its working directory.
+        class MoonPhaseError(Exception):
+            """Simulated failure."""
+
+        failure = MoonPhaseError(self.factory.getUniqueString())
+
+        script = self.makeScript()
+        script.publishAllUploads = FakeMethod(failure=failure)
+        script.recoverArchiveWorkingDir = FakeMethod()
+        script.setUp()
+
+        try:
+            script.publish()
+        except MoonPhaseError:
+            pass
+
+        self.assertEqual(1, script.recoverArchiveWorkingDir.call_count)
+
+    def test_publish_recovers_working_dists_on_ctrl_C(self):
+        # If the user hits ctrl-C while publishing, the publish method
+        # recovers its working directory.
+        failure = KeyboardInterrupt("Ctrl-C!")
+
+        script = self.makeScript()
+        script.publishAllUploads = FakeMethod(failure=failure)
+        script.recoverArchiveWorkingDir = FakeMethod()
+        script.setUp()
+
+        try:
+            script.publish()
+        except KeyboardInterrupt:
+            pass
+
+        self.assertEqual(1, script.recoverArchiveWorkingDir.call_count)
 
 
 class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
