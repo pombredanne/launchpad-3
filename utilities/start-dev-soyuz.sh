@@ -13,9 +13,9 @@ start_twistd() {
 
 start_twistd testkeyserver lib/lp/testing/keyserver/testkeyserver.tac
 start_twistd buildd-manager daemons/buildd-manager.tac
-
-echo "Starting poppy."
 mkdir -p /var/tmp/poppy
-bin/py daemons/poppy-upload.py /var/tmp/poppy/incoming 2121 &
+export POPPY_ROOT=/var/tmp/poppy/incoming
+start_twistd poppy-sftp daemons/poppy-sftp.tac
+
 
 echo "Done."

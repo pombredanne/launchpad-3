@@ -21,7 +21,6 @@ __all__ = [
     'BranchNavigation',
     'BranchEditMenu',
     'BranchInProductView',
-    'BranchSparkView',
     'BranchUpgradeView',
     'BranchURL',
     'BranchView',
@@ -108,7 +107,6 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.browser.lazrjs import (
     EnumChoiceWidget,
-    vocabulary_to_choice_edit_items,
     )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -118,7 +116,6 @@ from lp.blueprints.interfaces.specificationbranch import ISpecificationBranch
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJobSet
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch,
     )
@@ -126,7 +123,6 @@ from lp.code.browser.branchref import BranchRef
 from lp.code.browser.decorations import DecoratedBranch
 from lp.code.browser.sourcepackagerecipelisting import HasRecipesMenuMixin
 from lp.code.enums import (
-    BranchLifecycleStatus,
     BranchType,
     CodeImportResultStatus,
     CodeImportReviewStatus,
@@ -836,8 +832,7 @@ class BranchMirrorStatusView(LaunchpadFormView):
         else:
             celebs = getUtility(ILaunchpadCelebrities)
             return (self.user.inTeam(self.context.owner) or
-                    self.user.inTeam(celebs.admin) or
-                    self.user.inTeam(celebs.bazaar_experts))
+                    self.user.inTeam(celebs.admin))
 
     @property
     def mirror_of_ssh(self):
@@ -1039,7 +1034,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             owner_field = self.schema['owner']
             any_owner_choice = Choice(
                 __name__='owner', title=owner_field.title,
-                description = _("As an administrator you are able to reassign"
+                description=_("As an administrator you are able to reassign"
                                 " this branch to any person or team."),
                 required=True, vocabulary='ValidPersonOrTeam')
             any_owner_field = form.Fields(
@@ -1061,7 +1056,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 owner_field = self.schema['owner']
                 owner_choice = Choice(
                     __name__='owner', title=owner_field.title,
-                    description = owner_field.description,
+                    description=owner_field.description,
                     required=True, vocabulary=SimpleVocabulary(terms))
                 new_owner_field = form.Fields(
                     owner_choice, render_context=self.render_context)
@@ -1467,59 +1462,3 @@ class TryImportAgainView(LaunchpadFormView):
     @property
     def prefix(self):
         return "tryagain"
-
-
-class BranchSparkView(LaunchpadView):
-    """This view generates the JSON data for the commit sparklines."""
-
-    __for__ = IBranch
-
-    # How many days to look for commits.
-    COMMIT_DAYS = 90
-
-    def _commitCounts(self):
-        """Return a dict of commit counts for rendering."""
-        epoch = (
-            datetime.now(tz=pytz.UTC) - timedelta(days=(self.COMMIT_DAYS-1)))
-        # Make a datetime for that date, but midnight.
-        epoch = epoch.replace(hour=0, minute=0, second=0, microsecond=0)
-        commits = dict(self.context.commitsForDays(epoch))
-        # However storm returns tz-unaware datetime objects.
-        day = datetime(year=epoch.year, month=epoch.month, day=epoch.day)
-        days = [day + timedelta(days=count)
-                for count in range(self.COMMIT_DAYS)]
-
-        commit_list = []
-        total_commits = 0
-        most_commits = 0
-        for index, day in enumerate(days):
-            count = commits.get(day, 0)
-            commit_list.append(count)
-            total_commits += count
-            if count >= most_commits:
-                most_commits = count
-                max_index = index
-        return {'count': total_commits,
-                'commits': commit_list,
-                'max_commits': max_index}
-
-    def render(self):
-        """Write out the commit data as a JSON string."""
-        # We want:
-        #  count: total commit count
-        #  last_commit: string to say when the last commit was
-        #  commits: an array of COMMIT_DAYS values for commits for that day
-        #  max_commits: an index into the commits array with the most commits,
-        #     most recent wins any ties.
-        values = {'count': 0, 'max_commits': 0}
-        # Check there have been commits.
-        if self.context.revision_count == 0:
-            values['last_commit'] = 'empty branch'
-        else:
-            tip = self.context.getTipRevision()
-            adapter = queryAdapter(tip.revision_date, IPathAdapter, 'fmt')
-            values['last_commit'] = adapter.approximatedate()
-            values.update(self._commitCounts())
-
-        self.request.response.setHeader('content-type', 'application/json')
-        return simplejson.dumps(values)

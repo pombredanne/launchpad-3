@@ -351,13 +351,6 @@
         handler="canonical.launchpad.webapp.sigdumpmem.setup_sigdumpmem"
         />
 
-
-    <!-- Confirm the database is the correct revision level -->
-    <subscriber
-        for="zope.app.appsetup.IProcessStartingEvent"
-        handler="canonical.database.revision.confirm_dbrevision_on_startup"
-        />
-
     <!-- Confirm that no main thread event handlers use the connection cache -->
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"
@@ -439,6 +432,25 @@
         provides="zope.traversing.interfaces.ITraversable" for="*"
         factory="canonical.launchpad.webapp.namespace.FormNamespaceView"
         />
+
+    <!-- Expose LaunchpadView methods. -->
+    <class class="canonical.launchpad.webapp.publisher.LaunchpadView">
+      <allow attributes="getCacheJson initialize" />
+    </class>
+
+    <!-- Create a namespace to render the model of any LaunchpadView-->
+    <view
+        name="model" type="*"
+        provides="zope.traversing.interfaces.ITraversable" for="*"
+        factory="canonical.launchpad.webapp.namespace.JsonModelNamespaceView"
+        permission="zope.Public"
+        />
+
+    <class class="canonical.launchpad.webapp.namespace.JsonModelNamespaceView">
+        <allow
+          attributes="__call__"
+          interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
+    </class>
 
     <!-- Registrations to support +haproxy status url. -->
     <browser:page

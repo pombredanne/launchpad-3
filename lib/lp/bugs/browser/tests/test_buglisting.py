@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -86,8 +86,7 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
 
     def _makeSourcePackage(self):
         distro = self.factory.makeDistribution('test-distro')
-        series = self.factory.makeDistroRelease(
-            distribution=distro, name='test-series')
+        self.factory.makeDistroSeries(distribution=distro, name='test-series')
         return self.factory.makeSourcePackage('test-sp', distro.currentseries)
 
     def test_sourcepackage_unknown_bugtracker_message(self):
@@ -146,7 +145,9 @@ class TestBugTaskSearchListingPage(BrowserTestCase):
         view = create_initialized_view(product, '+bugs')
         Store.of(product).invalidate()
         with StormStatementRecorder() as recorder:
-            prejoins=[(Person, LeftJoin(Person, BugTask.owner==Person.id))]
+            prejoins = [
+                (Person, LeftJoin(Person, BugTask.owner == Person.id)),
+                ]
             bugtasks = list(view.searchUnbatched(prejoins=prejoins))
             self.assertEqual(
                 [bugtask_1, bugtask_2], bugtasks)

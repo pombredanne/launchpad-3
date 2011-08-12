@@ -227,7 +227,7 @@ If a product is translatable, translations is enabled in the involvment menu.
 
 DistroSeries can use this view. The distribution is used to set the links.
 
-    >>> series = factory.makeDistroRelease(distribution=distribution)
+    >>> series = factory.makeDistroSeries(distribution=distribution)
     >>> view = create_view(series, '+get-involved')
     >>> for link in view.enabled_links:
     ...     print link.name

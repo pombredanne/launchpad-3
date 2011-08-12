@@ -239,15 +239,6 @@ There is a cancel_url property too.
     >>> print view.cancel_url
     http://launchpad.dev/app/simple
 
-Bazaar experts can change the branch links.
-
-    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-    >>> celebrities = getUtility(ILaunchpadCelebrities)
-    >>> login_person(celebrities.bazaar_experts.teamowner)
-    >>> check_permission('launchpad.Edit', view)
-    True
-
-
 Delete ProductSeries
 --------------------
 
@@ -257,11 +248,14 @@ mistake.
 
     >>> from datetime import datetime
     >>> from pytz import UTC
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> celebrities = getUtility(ILaunchpadCelebrities)
 
     >>> test_date = datetime(2009, 05, 01, 19, 34, 24, tzinfo=UTC)
     >>> product = factory.makeProduct(name="field", displayname='Field')
     >>> productseries = factory.makeProductSeries(
     ...     product=product, name='rabbit', date_created=test_date)
+    >>> login_person(celebrities.admin.teamowner)
     >>> productseries.releasefileglob = 'http://eg.dom/rabbit/*'
 
 Users without edit permission cannot access the view.
@@ -403,7 +397,7 @@ The delete action will not delete a series that is linked to a package.
     ...     IPackagingUtil, PackagingType)
 
     >>> sourcepackagename = factory.makeSourcePackageName('sausage')
-    >>> distro_series = factory.makeDistroRelease()
+    >>> distro_series = factory.makeDistroSeries()
     >>> linked_series = factory.makeProductSeries(product=product)
     >>> packaging = getUtility(IPackagingUtil).createPackaging(
     ...     linked_series, sourcepackagename, distro_series,
