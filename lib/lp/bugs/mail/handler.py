@@ -96,7 +96,8 @@ class MaloneHandler:
         # bug.
         if to_user.lower() == 'new':
             ensure_not_weakly_authenticated(signed_msg, CONTEXT,
-                'unauthenticated-bug-creation.txt')
+                'unauthenticated-bug-creation.txt',
+                error_templates=error_templates)
         elif len(commands) > 0:
             ensure_not_weakly_authenticated(signed_msg, CONTEXT)
         if to_user.lower() == 'new':

@@ -10,7 +10,6 @@ import os
 from zope.security.management import setSecurityPolicy
 
 from canonical.config import config
-from canonical.launchpad.ftests import login
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
@@ -48,8 +47,6 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
 
     doctests = [
         '../../../answers/tests/emailinterface.txt',
-        '../../../bugs/tests/bugs-emailinterface.txt',
-        '../../../bugs/doc/bugs-email-affects-path.txt',
         '../doc/emailauthentication.txt',
         ]
 
@@ -61,28 +58,6 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
             special[filename] = LayeredDocFileSuite(
                 filepath,
                 setUp=setUp, tearDown=tearDown,
-                layer=cls,
-                stdout_logging=False)
-
-        # Adds a copy of some bug doctests that will be run with
-        # the processmail user.
-        def bugSetStatusSetUp(test):
-            setUp(test)
-            test.globs['test_dbuser'] = config.processmail.dbuser
-
-        special['bug-set-status.txt-processmail'] = LayeredDocFileSuite(
-                '../../../bugs/doc/bug-set-status.txt',
-                setUp=bugSetStatusSetUp, tearDown=tearDown,
-                layer=cls,
-                stdout_logging=False)
-
-        def bugmessageSetUp(test):
-            setUp(test)
-            login('no-priv@canonical.com')
-
-        special['bugmessage.txt-processmail'] = LayeredDocFileSuite(
-                '../../../bugs/doc/bugmessage.txt',
-                setUp=bugmessageSetUp, tearDown=tearDown,
                 layer=cls,
                 stdout_logging=False)
 
