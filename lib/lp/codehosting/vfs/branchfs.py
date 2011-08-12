@@ -46,9 +46,6 @@ branch if appropriate.
 __metaclass__ = type
 __all__ = [
     'AsyncLaunchpadTransport',
-    'BadUrlLaunchpad',
-    'BadUrlScheme',
-    'BadUrlSsh',
     'branch_id_to_path',
     'DirectDatabaseLaunchpadServer',
     'get_lp_server',
@@ -748,4 +745,3 @@ def get_lp_server(user_id, codehosting_endpoint_url=None, branch_url=None,
         DeferredBlockingProxy(codehosting_client), user_id, branch_transport,
         seen_new_branch_hook)
     return lp_server
-

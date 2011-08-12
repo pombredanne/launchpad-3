@@ -59,7 +59,7 @@ from lp.testing import TestCaseWithFactory
 
 
 class ForkingServerForTests(object):
-    """Map starting/stopping a LPForkingService with setUp() and tearDown()."""
+    """Map starting/stopping a LPForkingService to setUp() and tearDown()."""
 
     def __init__(self):
         self.process = None
@@ -71,8 +71,8 @@ class ForkingServerForTests(object):
         env = os.environ.copy()
         env['BZR_PLUGIN_PATH'] = BZR_PLUGIN_PATH
         # TODO: We probably want to use a random disk path for
-        #       forking_daemon_socket, but we need to update config so that the
-        #       CodeHosting service can find it.
+        #       forking_daemon_socket, but we need to update config so that
+        #       the CodeHosting service can find it.
         #       The main problem is that CodeHostingTac seems to start a tac
         #       server directly from the disk configs, and doesn't use the
         #       in-memory config. So we can't just override the memory
@@ -86,14 +86,14 @@ class ForkingServerForTests(object):
         self.process = process
         # Wait for it to indicate it is running
         # The first line should be "Preloading" indicating it is ready
-        preloading_line = process.stderr.readline()
+        process.stderr.readline()
         # The next line is the "Listening on socket" line
-        socket_line = process.stderr.readline()
+        process.stderr.readline()
         # Now it is ready
 
     def tearDown(self):
-        # SIGTERM is the graceful exit request, potentially we could wait a bit
-        # and send something stronger?
+        # SIGTERM is the graceful exit request, potentially we could wait a
+        # bit and send something stronger?
         if self.process is not None and self.process.poll() is None:
             os.kill(self.process.pid, signal.SIGTERM)
             self.process.wait()
@@ -103,7 +103,6 @@ class ForkingServerForTests(object):
         if os.path.exists(self.socket_path):
             # Should there be a warning/error here?
             os.remove(self.socket_path)
-
 
 
 class SSHServerLayer(ZopelessAppServerLayer):
@@ -706,7 +705,6 @@ class SmartserverTests(SSHTestCase):
         port = int(config.codehosting.web_status_port[4:])
         web_status_url = 'http://localhost:%d/' % port
         urllib2.urlopen(web_status_url)
-
 
 
 def make_server_tests(base_suite, servers):

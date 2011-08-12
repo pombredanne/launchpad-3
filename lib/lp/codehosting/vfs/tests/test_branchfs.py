@@ -58,9 +58,6 @@ from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT,
     CONTROL_TRANSPORT,
     )
-from lp.code.tests.helpers import (
-    get_non_existant_source_package_branch_unique_name,
-    )
 from lp.codehosting.inmemory import (
     InMemoryFrontend,
     XMLRPCWrapper,
@@ -1168,7 +1165,8 @@ class TestLaunchpadTransportReadOnly(BzrTestCase):
         self.addCleanup(memory_server.stop_server)
         return memory_server
 
-    def _setUpLaunchpadServer(self, user_id, codehosting_api, backing_transport):
+    def _setUpLaunchpadServer(self, user_id, codehosting_api,
+                              backing_transport):
         server = LaunchpadServer(
             XMLRPCWrapper(codehosting_api), user_id, backing_transport)
         server.start_server()
