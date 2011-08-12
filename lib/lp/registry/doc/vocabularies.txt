@@ -999,7 +999,6 @@ will be returned.
     >>> sorted((team.displayname, team.teamowner.displayname)
     ...        for team in vocab.search(None))
     [(u'Bass Players', u'David Allouche'),
-     (u'Bazaar Experts', u'Tim Penhey'),
      (u'Canonical Partner Developers', u'Celso Providelo'),
      (u'Commercial Subscription Admins', u'Commercial Member'),
      (u'Commercial Subscription Approvers', u'Brad Crittenden'),
@@ -1171,7 +1170,7 @@ Aliases are not among the terms when their name does not match the
 token/name.
 
     >>> [term.token for term in vocab.searchForTerms(query='ubuntu')]
-    ['kubuntu', 'ubuntu', 'ubuntutest']
+    ['ubuntu', 'kubuntu', 'ubuntutest']
 
     >>> vocab.getTermByToken('ubuntu').token
     'ubuntu'

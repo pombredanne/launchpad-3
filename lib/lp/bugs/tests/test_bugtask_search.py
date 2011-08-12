@@ -35,6 +35,7 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTaskSet,
     )
+from lp.bugs.model.bugsummary import BugSummary
 from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
@@ -76,11 +77,13 @@ class SearchTestBase:
         if self.group_on is None:
             # Not a useful/valid permutation.
             return
-        params = self.getBugTaskSearchParams(user=None, multitarget=True)
+        self.getBugTaskSearchParams(user=None, multitarget=True)
         # The test data has 3 bugs for searchtarget and 6 for searchtarget2.
         expected = {(self.targetToGroup(self.searchtarget),): 3,
             (self.targetToGroup(self.searchtarget2),): 6}
-        self.assertEqual(expected, self.bugtask_set.countBugs(params,
+        user = self.factory.makePerson()
+        self.assertEqual(expected, self.bugtask_set.countBugs(user,
+            (self.searchtarget, self.searchtarget2),
             group_on=self.group_on))
 
     def test_search_all_bugtasks_for_target(self):
@@ -696,7 +699,7 @@ class ProductTarget(BugTargetTestBase, ProductAndDistributionTests,
 
     def setUp(self):
         super(ProductTarget, self).setUp()
-        self.group_on = (BugTask.productID,)
+        self.group_on = (BugSummary.product_id,)
         self.searchtarget = self.factory.makeProduct()
         self.owner = self.searchtarget.owner
         self.makeBugTasks()
@@ -727,7 +730,7 @@ class ProductSeriesTarget(BugTargetTestBase):
 
     def setUp(self):
         super(ProductSeriesTarget, self).setUp()
-        self.group_on = (BugTask.productseriesID,)
+        self.group_on = (BugSummary.productseries_id,)
         self.searchtarget = self.factory.makeProductSeries()
         self.owner = self.searchtarget.owner
         self.makeBugTasks()
@@ -884,7 +887,7 @@ class MilestoneTarget(BugTargetTestBase):
     def setUp(self):
         super(MilestoneTarget, self).setUp()
         self.product = self.factory.makeProduct()
-        self.group_on = (BugTask.milestoneID,)
+        self.group_on = (BugSummary.milestone_id,)
         self.searchtarget = self.factory.makeMilestone(product=self.product)
         self.owner = self.product.owner
         self.makeBugTasks(bugtarget=self.product)
@@ -930,7 +933,7 @@ class DistributionTarget(BugTargetTestBase, ProductAndDistributionTests,
 
     def setUp(self):
         super(DistributionTarget, self).setUp()
-        self.group_on = (BugTask.distributionID,)
+        self.group_on = (BugSummary.distribution_id,)
         self.searchtarget = self.factory.makeDistribution()
         self.owner = self.searchtarget.owner
         self.makeBugTasks()
@@ -968,7 +971,7 @@ class DistroseriesTarget(BugTargetTestBase):
 
     def setUp(self):
         super(DistroseriesTarget, self).setUp()
-        self.group_on = (BugTask.distroseriesID,)
+        self.group_on = (BugSummary.distroseries_id,)
         self.searchtarget = self.factory.makeDistroSeries()
         self.owner = self.searchtarget.owner
         self.makeBugTasks()
@@ -991,7 +994,7 @@ class SourcePackageTarget(BugTargetTestBase):
 
     def setUp(self):
         super(SourcePackageTarget, self).setUp()
-        self.group_on = (BugTask.sourcepackagenameID,)
+        self.group_on = (BugSummary.sourcepackagename_id,)
         self.searchtarget = self.factory.makeSourcePackage()
         self.owner = self.searchtarget.distroseries.owner
         self.makeBugTasks()
@@ -1028,7 +1031,7 @@ class DistributionSourcePackageTarget(BugTargetTestBase,
 
     def setUp(self):
         super(DistributionSourcePackageTarget, self).setUp()
-        self.group_on = (BugTask.sourcepackagenameID,)
+        self.group_on = (BugSummary.sourcepackagename_id,)
         self.searchtarget = self.factory.makeDistributionSourcePackage()
         self.owner = self.searchtarget.distribution.owner
         self.makeBugTasks()

@@ -136,6 +136,13 @@
     rootsite="answers"
     />
 
+  <browser:url
+    for="lp.answers.interfaces.questionsubscription.IQuestionSubscription"
+    path_expression="string:subscriptions/${person}"
+    attribute_to_parent="question"
+    rootsite="answers"
+    />
+
   <adapter
     provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
     for="lp.answers.interfaces.question.IQuestion"
@@ -170,6 +177,13 @@
       template="../templates/question-portlet-details.pt"
       />
   </browser:pages>
+
+  <browser:page
+      for="lp.answers.interfaces.question.IQuestion"
+      name="+portlet-subscribers-details"
+      class="
+        lp.answers.browser.questionsubscription.QuestionPortletSubscribersWithDetails"
+      permission="zope.Public"/>
 
   <browser:page
     name="+index"

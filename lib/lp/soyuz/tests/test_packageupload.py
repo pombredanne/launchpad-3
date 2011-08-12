@@ -12,6 +12,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.archiveuploader.tests import datadir
@@ -428,6 +429,16 @@ class TestPackageUploadWithPackageCopyJob(TestCaseWithFactory):
             pu.overrideSource,
             disallowed_component, section, [current_component])
 
+    def test_overrideSource_ignores_None_component_change(self):
+        # overrideSource accepts None as a component; it will not object
+        # based on permissions for the new component.
+        pu, pcj = self.makeUploadWithPackageCopyJob()
+        current_component = getUtility(IComponentSet)[pcj.component_name]
+        new_section = self.factory.makeSection()
+        pu.overrideSource(None, new_section, [current_component])
+        self.assertEqual(current_component.name, pcj.component_name)
+        self.assertEqual(new_section.name, pcj.section_name)
+
     def test_acceptFromQueue_with_copy_job(self):
         # acceptFromQueue should accept the upload and resume the copy
         # job.
@@ -805,3 +816,32 @@ class TestPackageUploadSet(TestCaseWithFactory):
             [upload],
             upload_set.getAll(
                 distroseries, name=spn.name, version=upload.displayversion))
+
+    def test_getAll_orders_in_reverse_historical_order(self):
+        # The results from getAll are returned in order of creation,
+        # newest to oldest, regardless of upload type.
+        series = self.factory.makeDistroSeries()
+        store = IStore(series)
+        ordered_uploads = []
+        ordered_uploads.append(self.factory.makeCopyJobPackageUpload(series))
+        store.flush()
+        ordered_uploads.append(self.factory.makeBuildPackageUpload(series))
+        store.flush()
+        ordered_uploads.append(self.factory.makeSourcePackageUpload(series))
+        store.flush()
+        ordered_uploads.append(self.factory.makeCustomPackageUpload(series))
+        store.flush()
+        ordered_uploads.append(self.factory.makeCopyJobPackageUpload(series))
+        store.flush()
+        ordered_uploads.append(self.factory.makeSourcePackageUpload(series))
+        store.flush()
+        self.assertEqual(
+            list(reversed(ordered_uploads)),
+            list(getUtility(IPackageUploadSet).getAll(series)))
+
+    def test_rejectFromQueue_no_changes_file(self):
+        # If the PackageUpload has no changesfile, we can still reject it.
+        pu = self.factory.makePackageUpload()
+        pu.changesfile = None
+        pu.rejectFromQueue()
+        self.assertEqual(PackageUploadStatus.REJECTED, pu.status)
