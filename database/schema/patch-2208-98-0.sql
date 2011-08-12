@@ -7,5 +7,5 @@ ALTER TABLE BinaryPackagePublishingHistory ADD COLUMN binarypackagename INTEGER;
 
 -- INDICES?
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 98, 0);
 
