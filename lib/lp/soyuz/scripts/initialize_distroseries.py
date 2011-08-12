@@ -176,6 +176,9 @@ class InitializeDistroSeries:
 
         Only cares about the RELEASE, SECURITY and UPDATES pockets, which are
         the only ones inherited via initializeFromParent method.
+        Restrict the check to the select architectures (if applicable).
+        Restrict the check to the selected packages if a limited set of
+        packagesets is used by the initialization.
         """
         spns = self.source_names_by_parent.get(parent, None)
         if spns is not None and len(spns) == 0:
@@ -195,14 +198,14 @@ class InitializeDistroSeries:
 
         Only cares about the RELEASE, SECURITY and UPDATES pockets, which are
         the only ones inherited via initializeFromParent method.
-        """
+        Restrict the check to the selected packages if a limited set of
+        packagesets is used by the initialization.
+         """
         statuses = [
             PackageUploadStatus.NEW,
             PackageUploadStatus.ACCEPTED,
             PackageUploadStatus.UNAPPROVED,
             ]
-        # items = parent.getPackageUploads(
-        #    status=statuses, pocket=INIT_POCKETS)
         spns = self.source_names_by_parent.get(parent, None)
         if spns is not None and len(spns) == 0:
             # If no sources are selected in this parent, skip the check.
