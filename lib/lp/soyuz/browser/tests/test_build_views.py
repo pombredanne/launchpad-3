@@ -36,7 +36,6 @@ from lp.testing.views import create_initialized_view
 
 
 class TestBuildViews(TestCaseWithFactory):
-    
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
@@ -65,7 +64,8 @@ class TestBuildViews(TestCaseWithFactory):
     def test_build_menu_ppa(self):
         # The 'PPA' action-menu item will be enabled if we target the build
         # to a PPA.
-        build = self.factory.makeBinaryPackageBuild()
+        ppa = self.factory.makeArchive(purpose='PPA')
+        build = self.factory.makeBinaryPackageBuild(archive=ppa)
         build_menu = BuildContextMenu(build)
         self.assertEquals(build_menu.links,
             ['ppa', 'records', 'retry', 'rescore'])
@@ -153,8 +153,8 @@ class TestBuildViews(TestCaseWithFactory):
         package_upload = build.distro_series.createQueueEntry(
             PackagePublishingPocket.UPDATES, build.archive,
             'changes.txt', 'my changes')
-        package_upload_build = PackageUploadBuild(
-            packageupload =package_upload, build=build)
+        # Old SQL Object: creating it, adds it automatically to the store.
+        PackageUploadBuild(packageupload=package_upload, build=build)
         self.assertEquals(package_upload.status.name, 'NEW')
         build_view = getMultiAdapter(
             (build, self.empty_request), name="+index")
@@ -195,7 +195,7 @@ class TestBuildViews(TestCaseWithFactory):
         view = create_initialized_view(build, name='+rescore')
         self.assertEquals(view.request.response.getStatus(), 302)
         self.assertEquals(view.request.response.getHeader('Location'),
-            canonical_url(build)) 
+            canonical_url(build))
         pending_build = self.factory.makeBinaryPackageBuild()
         view = create_initialized_view(pending_build, name='+rescore')
         self.assertEquals(view.cancel_url, canonical_url(pending_build))
@@ -283,7 +283,7 @@ class TestBuildViews(TestCaseWithFactory):
         self.assertFalse(view.dispatch_time_estimate_available)
 
     def test_old_url_redirection(self):
-        # When users go to the old build URLs, they are redirected to the 
+        # When users go to the old build URLs, they are redirected to the
         # equivalent new URLs.
         build = self.factory.makeBinaryPackageBuild()
         build.queueBuild()
@@ -291,4 +291,3 @@ class TestBuildViews(TestCaseWithFactory):
         expected_url = canonical_url(build)
         browser = self.getUserBrowser(url)
         self.assertEquals(expected_url, browser.url)
-

@@ -21,6 +21,7 @@ from optparse import (
     Option,
     OptionValueError,
     )
+
 from storm.locals import ClassAlias
 import transaction
 from zope.component import getUtility
@@ -30,11 +31,11 @@ from canonical.database.sqlbase import (
     quote_identifier,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.utilities.looptuner import TunableLoop
 from lp.registry.enum import (
     DistroSeriesDifferenceStatus,
     DistroSeriesDifferenceType,
     )
-from canonical.launchpad.utilities.looptuner import TunableLoop
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -109,7 +110,6 @@ def compose_sql_find_differences(derived_series, parent_series):
         FROM (%(parent_query)s) AS parent
         FULL OUTER JOIN (%(derived_query)s) AS derived
         ON derived.sourcepackagename = parent.sourcepackagename
-        WHERE derived.version IS DISTINCT FROM parent.version
         """ % parameters
 
 
@@ -205,8 +205,17 @@ def populate_distroseriesdiff(logger, derived_series, parent_series):
 
     store = IStore(derived_series)
     drop_table(store, temp_table)
-    store.execute("CREATE TEMP TABLE %s AS %s" % (
-        quote_identifier(temp_table),
+    quoted_temp_table = quote_identifier(temp_table)
+    store.execute("""
+        CREATE TEMP TABLE %s(
+            sourcepackagename INTEGER,
+            source_version debversion,
+            parent_source_version debversion)
+            ON COMMIT DROP
+        """ % (
+        quoted_temp_table))
+    store.execute("INSERT INTO %s %s" % (
+        quoted_temp_table,
         compose_sql_find_differences(derived_series, parent_series)))
     logger.info(
         "Found %d potential difference(s).",
@@ -214,7 +223,6 @@ def populate_distroseriesdiff(logger, derived_series, parent_series):
     store.execute(
         compose_sql_populate_distroseriesdiff(
             derived_series, parent_series, temp_table))
-    drop_table(store, temp_table)
 
 
 def find_derived_series():
@@ -353,7 +361,7 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
         relationships = self.getDistroSeries()
         for child in relationships:
             for parent in relationships[child]:
-               self.logger.info(
+                self.logger.info(
                     "%s %s with a parent of %s %s", child.distribution.name,
                     child.name, parent.distribution.name, parent.name)
 

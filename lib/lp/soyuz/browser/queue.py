@@ -27,6 +27,7 @@ from lp.services.database.bulk import (
     load_referencing,
     load_related,
     )
+from lp.services.job.model.job import Job
 from lp.soyuz.enums import (
     PackagePublishingPriority,
     PackageUploadStatus,
@@ -190,6 +191,19 @@ class QueueItemsView(LaunchpadView):
         return getUtility(IPackagesetSet).getForPackages(
             self.context, set(spr.sourcepackagenameID for spr in sprs))
 
+    def loadPackageCopyJobs(self, uploads):
+        """Batch-load `PackageCopyJob`s and related information."""
+        # Avoid circular imports.
+        from lp.registry.model.person import Person
+        from lp.soyuz.model.archive import Archive
+        from lp.soyuz.model.packagecopyjob import PackageCopyJob
+
+        package_copy_jobs = load_related(
+            PackageCopyJob, uploads, ['package_copy_job_id'])
+        load_related(Archive, package_copy_jobs, ['source_archive_id'])
+        jobs = load_related(Job, package_copy_jobs, ['job_id'])
+        load_related(Person, jobs, ['requester_id'])
+
     def decoratedQueueBatch(self):
         """Return the current batch, converted to decorated objects.
 
@@ -244,6 +258,8 @@ class QueueItemsView(LaunchpadView):
             binary_package_names)
 
         package_sets = self.getPackagesetsFor(source_sprs)
+
+        self.loadPackageCopyJobs(uploads)
 
         return [
             CompletePackageUpload(
@@ -557,6 +573,7 @@ class CompletePackageUpload:
         potential_icons = [
             (self.contains_source, ("Source", 'package-source')),
             (self.contains_build, ("Build", 'package-binary', "Binary")),
+            (self.package_copy_job, ("Sync", 'package-sync')),
             (self.contains_translation, ("Translation", 'translation-file')),
             (self.contains_installer, ("Installer", 'ubuntu-icon')),
             (self.contains_upgrader, ("Upgrader", 'ubuntu-icon')),

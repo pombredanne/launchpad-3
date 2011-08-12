@@ -304,9 +304,8 @@ Add an Ubuntu bugtask for a bug that is confirmed upstream.
     >>> test_helper = BugTaskSearchBugsElsewhereTest(helper_only=True)
     >>> bug_twelve =  getUtility(IBugSet).get(12)
     >>> task_open_upstream = bugtask_set.createTask(
-    ...     bug=bug_twelve, distribution=ubuntu, owner=foo_bar,
-    ...     status=BugTaskStatus.NEW,
-    ...     importance=BugTaskImportance.MEDIUM)
+    ...     bug_twelve, foo_bar, ubuntu,
+    ...     status=BugTaskStatus.NEW, importance=BugTaskImportance.MEDIUM)
     >>> test_helper.assertBugTaskIsOpenUpstream(task_open_upstream)
 
 Pass the resolved_upstream flag to include only bugtasks linked to
@@ -510,7 +509,7 @@ same milestone...
 
     >>> firefox_1_0 = firefox.getSeries("1.0")
     >>> productseries_task = bugtask_set.createTask(
-    ...     owner=no_priv, bug=bug_one, productseries=firefox_1_0)
+    ...     bug_one, no_priv, firefox_1_0)
     >>> productseries_task.milestone = product_milestone
     >>> print bugTaskInfo(productseries_task)
     40 1 Mozilla Firefox 1.0 Firefox does not support SVG

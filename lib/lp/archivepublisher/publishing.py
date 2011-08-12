@@ -1,7 +1,8 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __all__ = [
+    'GLOBAL_PUBLISHER_LOCK',
     'Publisher',
     'getPublisher',
     ]
@@ -19,12 +20,9 @@ from debian.deb822 import Release
 from canonical.database.sqlbase import sqlvalues
 from canonical.librarian.client import LibrarianClient
 from lp.archivepublisher import HARDCODED_COMPONENT_ORDER
-from lp.archivepublisher.config import (
-    getPubConfig,
-    )
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.archivepublisher.domination import Dominator
-from lp.archivepublisher.model.ftparchive import FTPArchiveHandler
 from lp.archivepublisher.htaccess import (
     htpasswd_credentials_for_archive,
     write_htaccess,
@@ -33,6 +31,7 @@ from lp.archivepublisher.htaccess import (
 from lp.archivepublisher.interfaces.archivesigningkey import (
     IArchiveSigningKey,
     )
+from lp.archivepublisher.model.ftparchive import FTPArchiveHandler
 from lp.archivepublisher.utils import (
     get_ppa_reference,
     RepositoryIndexFile,
@@ -44,6 +43,11 @@ from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingStatus,
     )
+
+# Use this as the lock file name for all scripts that may manipulate
+# archives in the filesystem.  In a Launchpad(Cron)Script, set
+# lockfilename to this value to make it use the shared lock.
+GLOBAL_PUBLISHER_LOCK = 'launchpad-publisher.lock'
 
 
 def reorder_components(components):
@@ -636,6 +640,8 @@ class Publisher(object):
                 self.archive.owner.name, self.archive.name, root_dir))
 
         for directory in (root_dir, self._config.metaroot):
+            if not os.path.exists(directory):
+                continue
             try:
                 shutil.rmtree(directory)
             except (shutil.Error, OSError), e:

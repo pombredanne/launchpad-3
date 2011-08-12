@@ -120,7 +120,7 @@ when a subscriber to the new package is already subscribed to the bug:
     >>> import transaction
     >>> from lazr.lifecycle.event import ObjectModifiedEvent
     >>> from lazr.lifecycle.snapshot import Snapshot
-    >>> from lp.bugs.interfaces.bugtask import IDistroBugTask
+    >>> from lp.bugs.interfaces.bugtask import IBugTask
     >>> from lp.services.mail import stub
 
     >>> daf = personset.getByName("daf")
@@ -130,10 +130,9 @@ when a subscriber to the new package is already subscribed to the bug:
     <...StructuralSubscription object at ...>
 
     >>> old_state = Snapshot(
-    ...     bug_one_in_ubuntu_firefox, providing=IDistroBugTask)
+    ...     bug_one_in_ubuntu_firefox, providing=IBugTask)
 
-    >>> bug_one_in_ubuntu_firefox.sourcepackagename = (
-    ...     ubuntu_pmount.sourcepackagename)
+    >>> bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu_pmount)
 
     >>> source_package_changed = ObjectModifiedEvent(
     ...     bug_one_in_ubuntu_firefox, old_state,
@@ -223,9 +222,9 @@ Let's see that nothing unexpected happens when we set the source
 package to None.
 
     >>> old_state = Snapshot(
-    ...     bug_one_in_ubuntu_firefox, providing=IDistroBugTask)
+    ...     bug_one_in_ubuntu_firefox, providing=IBugTask)
 
-    >>> bug_one_in_ubuntu_firefox.sourcepackagename = None
+    >>> bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu)
 
     >>> source_package_changed = ObjectModifiedEvent(
     ...     bug_one_in_ubuntu_firefox, old_state, ["sourcepackagename"])
@@ -250,10 +249,9 @@ add such a team as a subscriber.
     <...StructuralSubscription object at ...>
 
     >>> old_state = Snapshot(
-    ...     bug_one_in_ubuntu_firefox, providing=IDistroBugTask)
+    ...     bug_one_in_ubuntu_firefox, providing=IBugTask)
 
-    >>> bug_one_in_ubuntu_firefox.sourcepackagename = (
-    ...     ubuntu_pmount.sourcepackagename)
+    >>> bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu_pmount)
 
     >>> source_package_changed = ObjectModifiedEvent(
     ...     bug_one_in_ubuntu_firefox, old_state, ["sourcepackagename"])
@@ -284,10 +282,9 @@ So, if Martin Pitt subscribes to ubuntu mozilla-firefox:
 and then the bug gets reassigned to mozilla firefox:
 
     >>> old_state = Snapshot(
-    ...     bug_one_in_ubuntu_firefox, providing=IDistroBugTask)
+    ...     bug_one_in_ubuntu_firefox, providing=IBugTask)
 
-    >>> bug_one_in_ubuntu_firefox.sourcepackagename = (
-    ...     ubuntu_firefox.sourcepackagename)
+    >>> bug_one_in_ubuntu_firefox.transitionToTarget(ubuntu_firefox)
 
     >>> source_package_changed = ObjectModifiedEvent(
     ...     bug_one_in_ubuntu_firefox, old_state,
@@ -322,8 +319,6 @@ Let's make Foo Bar a bug supervisor for upstream firefox:
 Then we'll reassign bug #2 in Ubuntu to be in Firefox, noting that Foo
 Bar gets subscribed to the bug in the process:
 
-    >>> from lp.bugs.interfaces.bugtask import IUpstreamBugTask
-
     >>> bug_two_in_ubuntu = getUtility(IBugTaskSet).get(3)
     >>> print bug_two_in_ubuntu.bug.id
     2
@@ -335,10 +330,9 @@ Bar gets subscribed to the bug in the process:
     ...      bug_two_in_ubuntu.bug.subscriptions])
     [u'Steve Alexander']
 
-    >>> old_state = Snapshot(
-    ...     bug_two_in_ubuntu, providing=IUpstreamBugTask)
+    >>> old_state = Snapshot(bug_two_in_ubuntu, providing=IBugTask)
 
-    >>> bug_two_in_ubuntu.product = mozilla_firefox
+    >>> bug_two_in_ubuntu.transitionToTarget(mozilla_firefox)
 
     >>> product_changed = ObjectModifiedEvent(
     ...     bug_two_in_ubuntu, old_state, ["id", "title", "product"])

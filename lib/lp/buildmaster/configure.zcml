@@ -10,6 +10,7 @@
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
     <include package=".browser"/>
+    <authorizations module=".security" />
 
     <!-- Builder -->
     <class

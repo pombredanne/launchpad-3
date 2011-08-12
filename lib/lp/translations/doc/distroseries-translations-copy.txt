@@ -8,8 +8,8 @@ script once after the release series is created.
 
     >>> login("foo.bar@canonical.com")
     >>> foobuntu = factory.makeDistribution('foobuntu', 'Foobuntu')
-    >>> barty = factory.makeDistroRelease(foobuntu, '99.0', name='barty')
-    >>> carty = factory.makeDistroRelease(
+    >>> barty = factory.makeDistroSeries(foobuntu, '99.0', name='barty')
+    >>> carty = factory.makeDistroSeries(
     ...     foobuntu, '99.1', name='carty', previous_series=barty)
 
 Functions to create source packages, templates and and translations.
@@ -174,7 +174,7 @@ copyTranslationsFromParent. For that we create a new child series to receive
 those translations. For testing purposes this series has translation imports
 enabled.
 
-    >>> darty = factory.makeDistroRelease(
+    >>> darty = factory.makeDistroSeries(
     ...     foobuntu, '99.2', name='darty', previous_series=barty)
     >>> darty_id = darty.id
     >>> darty.defer_translation_imports = False

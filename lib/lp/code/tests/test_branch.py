@@ -124,13 +124,6 @@ class TestAccessBranch(PermissionTest):
         branch = self.factory.makeAnyBranch(private=True, owner=team)
         self.assertAuthenticatedView(branch, person, True)
 
-    def test_privateBranchBazaarExperts(self):
-        # The Bazaar experts can access any branch.
-        celebs = getUtility(ILaunchpadCelebrities)
-        branch = self.factory.makeAnyBranch(private=True)
-        self.assertAuthenticatedView(
-            branch, celebs.bazaar_experts.teamowner, True)
-
     def test_privateBranchAdmins(self):
         # Launchpad admins can access any branch.
         celebs = getUtility(ILaunchpadCelebrities)

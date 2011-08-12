@@ -24,9 +24,7 @@ Person:
     ...    'ubuntu_thunderbird.importance':
     ...        ubuntu_thunderbird_task.importance.title,
     ...    'ubuntu_thunderbird.ubuntu_thunderbird.assignee.option':
-    ...        'ubuntu_thunderbird.assignee.assign_to_nobody',
-    ...    'ubuntu_thunderbird.sourcepackagename':
-    ...        ubuntu_thunderbird_task.sourcepackagename.name}
+    ...        'ubuntu_thunderbird.assignee.assign_to_nobody'}
     >>> request = LaunchpadTestRequest(method='POST', form=edit_form)
     >>> edit_view = getMultiAdapter(
     ...     (ubuntu_thunderbird_task, request), name='+editstatus')
@@ -46,8 +44,10 @@ if linux-2.6.12 is entered in the package field, the bugtask will be
 assigned to linux-source-2.6.15 instead.
 
 
-    >>> ubuntu_thunderbird = ubuntu_thunderbird_task.sourcepackagename
-    >>> edit_form['ubuntu_thunderbird.sourcepackagename'] = u'linux-2.6.12'
+    >>> ubuntu_thunderbird = ubuntu_thunderbird_task.target
+    >>> edit_form['ubuntu_thunderbird.target'] = 'package'
+    >>> edit_form['ubuntu_thunderbird.target.distribution'] = 'ubuntu'
+    >>> edit_form['ubuntu_thunderbird.target.package'] = u'linux-2.6.12'
     >>> request = LaunchpadTestRequest(method='POST', form=edit_form)
     >>> edit_view = getMultiAdapter(
     ...     (ubuntu_thunderbird_task, request), name='+editstatus')
@@ -62,23 +62,29 @@ changed to the corresponding source package.
     ...     print notification.message
     'linux-2.6.12' is a binary package. This bug has been assigned to
     its source package 'linux-source-2.6.15' instead.
-    The bug supervisor for linux-source-2.6.15 (Ubuntu) has been
-    subscribed to this bug.
 
-    >>> ubuntu_thunderbird_task.sourcepackagename = ubuntu_thunderbird
+    >>> # The sampledata is bad -- the original thunderbird task should
+    >>> # not exist, as there is no publication. Create one so we can
+    >>> # set it back.
+    >>> ignored = factory.makeSourcePackagePublishingHistory(
+    ...     distroseries=
+    ...         ubuntu_thunderbird_task.target.distribution.currentseries,
+    ...     sourcepackagename='thunderbird')
+    >>> ubuntu_thunderbird_task.transitionToTarget(ubuntu_thunderbird)
 
 If we try to change the source package to package name that doesn't
 exist in Launchpad. we'll get an error message.
 
-    >>> edit_form['ubuntu_thunderbird.sourcepackagename'] = u'no-such-package'
+    >>> edit_form['ubuntu_thunderbird.target.package'] = u'no-such-package'
     >>> request = LaunchpadTestRequest(form=edit_form, method='POST')
     >>> edit_view = getMultiAdapter(
     ...     (ubuntu_thunderbird_task, request), name='+editstatus')
     >>> edit_view.initialize()
     >>> for error in edit_view.errors:
     ...     print error
-    (u"Launchpad doesn't know of any source package named 'no-such-package'
-     in Ubuntu.", None)
+    (u'ubuntu_thunderbird.target', u'Target',
+     LaunchpadValidationError(u"There is no package name 'no-such-package'
+     published in Ubuntu"))
 
 An error is reported to the user when a bug is retargeted and there is
 an existing task for the same target.
@@ -100,7 +106,8 @@ an existing task for the same target.
     ...        product_task.importance.title,
     ...    'evolution.evolution.assignee.option':
     ...        'evolution.assignee.assign_to_nobody',
-    ...    'evolution.product': 'firefox',
+    ...    'evolution.target': 'product',
+    ...    'evolution.target.product': 'firefox',
     ...     }
     >>> request = LaunchpadTestRequest(form=edit_form, method='POST')
     >>> edit_view = getMultiAdapter(
@@ -120,7 +127,8 @@ If no product name is given, an error message is displayed.
     ...        product_task.importance.title,
     ...    'firefox.firefox.assignee.option':
     ...        'firefox.assignee.assign_to_nobody',
-    ...    'firefox.product': '',
+    ...    'firefox.target': 'product',
+    ...    'firefox.target.product': '',
     ...     }
     >>> request = LaunchpadTestRequest(form=edit_form, method='POST')
     >>> edit_view = getMultiAdapter(
@@ -128,7 +136,7 @@ If no product name is given, an error message is displayed.
     >>> edit_view.initialize()
     >>> for error in edit_view.errors:
     ...     print error
-    Enter a project name
+    ('product', u'Project', RequiredMissing())
 
 
 == Bug Watch Linkage ==

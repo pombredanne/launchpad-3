@@ -25,6 +25,9 @@ from contrib.glock import (
 import multiprocessing
 from psycopg2 import IntegrityError
 import pytz
+from storm.expr import (
+    In,
+    )
 from storm.locals import (
     Max,
     Min,
@@ -36,6 +39,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database import postgresql
+from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     cursor,
     session_store,
@@ -45,6 +49,7 @@ from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.utilities.looptuner import TunableLoop
@@ -53,6 +58,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
@@ -74,6 +80,7 @@ from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.registry.model.person import Person
 from lp.services.job.model.job import Job
 from lp.services.log.logger import PrefixFilter
+from lp.services.propertycache import cachedproperty
 from lp.services.scripts.base import (
     LaunchpadCronScript,
     LOCK_PATH,
@@ -82,9 +89,14 @@ from lp.services.scripts.base import (
 from lp.services.session.model import SessionData
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.model.potranslation import POTranslation
+from lp.translations.model.potmsgset import POTMsgSet
+from lp.translations.model.translationmessage import TranslationMessage
+from lp.translations.model.translationtemplateitem import (
+    TranslationTemplateItem,
+    )
 
 
-ONE_DAY_IN_SECONDS = 24*60*60
+ONE_DAY_IN_SECONDS = 24 * 60 * 60
 
 
 class BulkPruner(TunableLoop):
@@ -119,7 +131,7 @@ class BulkPruner(TunableLoop):
     target_table_key = 'id'
 
     # SQL type of the target_table_key. May be overridden.
-    target_table_key_type = 'integer'
+    target_table_key_type = 'id integer'
 
     # An SQL query returning a list of ids to remove from target_table.
     # The query must return a single column named 'id' and should not
@@ -164,9 +176,9 @@ class BulkPruner(TunableLoop):
         """See `ITunableLoop`."""
         result = self.store.execute("""
             DELETE FROM %s
-            WHERE %s IN (
-                SELECT id FROM
-                cursor_fetch('%s', %d) AS f(id %s))
+            WHERE (%s) IN (
+                SELECT * FROM
+                cursor_fetch('%s', %d) AS f(%s))
             """
             % (
                 self.target_table_name, self.target_table_key,
@@ -216,7 +228,7 @@ class SessionPruner(BulkPruner):
 
     target_table_class = SessionData
     target_table_key = 'client_id'
-    target_table_key_type = 'text'
+    target_table_key_type = 'id text'
 
 
 class AntiqueSessionPruner(SessionPruner):
@@ -278,9 +290,13 @@ class OAuthNoncePruner(BulkPruner):
 
     We remove all OAuthNonce records older than 1 day.
     """
+    target_table_key = 'access_token, request_timestamp, nonce'
+    target_table_key_type = (
+        'access_token integer, request_timestamp timestamp without time zone,'
+        ' nonce text')
     target_table_class = OAuthNonce
     ids_to_prune_query = """
-        SELECT id FROM OAuthNonce
+        SELECT access_token, request_timestamp, nonce FROM OAuthNonce
         WHERE request_timestamp
             < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - CAST('1 day' AS interval)
         """
@@ -291,7 +307,7 @@ class OpenIDConsumerNoncePruner(TunableLoop):
 
     We remove all OpenIDConsumerNonce records older than 1 day.
     """
-    maximum_chunk_size = 6*60*60 # 6 hours in seconds.
+    maximum_chunk_size = 6 * 60 * 60  # 6 hours in seconds.
 
     def __init__(self, log, abort_time=None):
         super(OpenIDConsumerNoncePruner, self).__init__(log, abort_time)
@@ -597,7 +613,7 @@ class PersonPruner(TunableLoop):
         self.max_offset = self.store.execute(
             "SELECT MAX(id) FROM UnlinkedPeople").get_one()[0]
         if self.max_offset is None:
-            self.max_offset = -1 # Trigger isDone() now.
+            self.max_offset = -1  # Trigger isDone() now.
             self.log.debug("No Person records to remove.")
         else:
             self.log.info("%d Person records to remove." % self.max_offset)
@@ -663,6 +679,34 @@ class BugNotificationPruner(BulkPruner):
         """
 
 
+class AnswerContactPruner(BulkPruner):
+    """Remove old answer contacts which are no longer required.
+
+    Remove a person as an answer contact if:
+      their account has been deactivated for more than one day, or
+      suspended for more than one week.
+    """
+    target_table_class = AnswerContact
+    ids_to_prune_query = """
+        SELECT DISTINCT AnswerContact.id
+        FROM AnswerContact, Person, Account
+        WHERE
+            AnswerContact.person = Person.id
+            AND Person.account = Account.id
+            AND (
+                (Account.date_status_set <
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('1 day' AS interval)
+                AND Account.status = %s)
+                OR
+                (Account.date_status_set <
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('7 days' AS interval)
+                AND Account.status = %s)
+            )
+        """ % (AccountStatus.DEACTIVATED.value, AccountStatus.SUSPENDED.value)
+
+
 class BranchJobPruner(BulkPruner):
     """Prune `BranchJob`s that are in a final state and more than a month old.
 
@@ -686,8 +730,8 @@ class MirrorBugMessageOwner(TunableLoop):
     Only needed until they are all set, after that triggers will maintain it.
     """
 
-    # Test migration did 3M in 2 hours, so 5000 is ~ 10 seconds - and thats the
-    # max we want to hold a DB lock open for.
+    # Test migration did 3M in 2 hours, so 5000 is ~ 10 seconds - and that's
+    # the max we want to hold a DB lock open for.
     minimum_chunk_size = 1000
     maximum_chunk_size = 5000
 
@@ -695,7 +739,7 @@ class MirrorBugMessageOwner(TunableLoop):
         super(MirrorBugMessageOwner, self).__init__(log, abort_time)
         self.store = IMasterStore(BugMessage)
         self.isDone = IMasterStore(BugMessage).find(
-            BugMessage, BugMessage.ownerID==None).is_empty
+            BugMessage, BugMessage.ownerID == None).is_empty
 
     def __call__(self, chunk_size):
         """See `ITunableLoop`."""
@@ -713,7 +757,7 @@ class MirrorBugMessageOwner(TunableLoop):
 class BugHeatUpdater(TunableLoop):
     """A `TunableLoop` for bug heat calculations."""
 
-    maximum_chunk_size = 1000
+    maximum_chunk_size = 5000
 
     def __init__(self, log, abort_time=None, max_heat_age=None):
         super(BugHeatUpdater, self).__init__(log, abort_time)
@@ -747,17 +791,16 @@ class BugHeatUpdater(TunableLoop):
 
         See `ITunableLoop`.
         """
-        # We multiply chunk_size by 1000 for the sake of doing updates
-        # quickly.
-        chunk_size = int(chunk_size * 1000)
-
-        transaction.begin()
+        chunk_size = int(chunk_size + 0.5)
         outdated_bugs = self._outdated_bugs[:chunk_size]
-        self.log.debug("Updating heat for %s bugs" % outdated_bugs.count())
-        outdated_bugs.set(
-            heat=SQL('calculate_bug_heat(Bug.id)'),
-            heat_last_updated=datetime.now(pytz.utc))
-
+        # We don't use outdated_bugs.set() here to work around
+        # Storm Bug #820290.
+        outdated_bug_ids = [bug.id for bug in outdated_bugs]
+        self.log.debug("Updating heat for %s bugs", len(outdated_bug_ids))
+        IMasterStore(Bug).find(
+            Bug, Bug.id.is_in(outdated_bug_ids)).set(
+                heat=SQL('calculate_bug_heat(Bug.id)'),
+                heat_last_updated=UTC_NOW)
         transaction.commit()
 
 
@@ -798,7 +841,7 @@ class ObsoleteBugAttachmentPruner(BulkPruner):
 class OldTimeLimitedTokenDeleter(TunableLoop):
     """Delete expired url access tokens from the session DB."""
 
-    maximum_chunk_size = 24*60*60 # 24 hours in seconds.
+    maximum_chunk_size = 24 * 60 * 60  # 24 hours in seconds.
 
     def __init__(self, log, abort_time=None):
         super(OldTimeLimitedTokenDeleter, self).__init__(log, abort_time)
@@ -855,12 +898,75 @@ class SuggestiveTemplatesCacheUpdater(TunableLoop):
         self.done = True
 
 
+class UnusedPOTMsgSetPruner(TunableLoop):
+    """Cleans up unused POTMsgSets."""
+
+    done = False
+    offset = 0
+    maximum_chunk_size = 50000
+
+    def isDone(self):
+        """See `TunableLoop`."""
+        return self.offset >= len(self.msgset_ids_to_remove)
+
+    @cachedproperty
+    def msgset_ids_to_remove(self):
+        """Return the IDs of the POTMsgSets to remove."""
+        query = """
+            -- Get all POTMsgSet IDs which are obsolete (sequence == 0)
+            -- and are not used (sequence != 0) in any other template.
+            SELECT POTMsgSet
+              FROM TranslationTemplateItem tti
+              WHERE sequence=0 AND
+              NOT EXISTS(
+                SELECT id
+                  FROM TranslationTemplateItem
+                  WHERE potmsgset = tti.potmsgset AND sequence != 0)
+            UNION
+            -- Get all POTMsgSet IDs which are not referenced
+            -- by any of the templates (they must have TTI rows for that).
+            (SELECT POTMsgSet.id
+               FROM POTMsgSet
+               LEFT OUTER JOIN TranslationTemplateItem
+                 ON TranslationTemplateItem.potmsgset = POTMsgSet.id
+               WHERE
+                 TranslationTemplateItem.potmsgset IS NULL);
+            """
+        store = IMasterStore(POTMsgSet)
+        results = store.execute(query)
+        ids_to_remove = [id for (id,) in results.get_all()]
+        return ids_to_remove
+
+    def __call__(self, chunk_size):
+        """See `TunableLoop`."""
+        # We cast chunk_size to an int to avoid issues with slicing
+        # (DBLoopTuner passes in a float).
+        chunk_size = int(chunk_size)
+        msgset_ids_to_remove = (
+            self.msgset_ids_to_remove[self.offset:][:chunk_size])
+        # Remove related TranslationTemplateItems.
+        store = IMasterStore(POTMsgSet)
+        related_ttis = store.find(
+            TranslationTemplateItem,
+            In(TranslationTemplateItem.potmsgsetID, msgset_ids_to_remove))
+        related_ttis.remove()
+        # Remove related TranslationMessages.
+        related_translation_messages = store.find(
+            TranslationMessage,
+            In(TranslationMessage.potmsgsetID, msgset_ids_to_remove))
+        related_translation_messages.remove()
+        store.find(
+            POTMsgSet, In(POTMsgSet.id, msgset_ids_to_remove)).remove()
+        self.offset = self.offset + chunk_size
+        transaction.commit()
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
-    script_name = None # Script name for locking and database user. Override.
-    tunable_loops = None # Collection of TunableLoops. Override.
-    continue_on_failure = False # If True, an exception in a tunable loop
-                                # does not cause the script to abort.
+    script_name = None  # Script name for locking and database user. Override.
+    tunable_loops = None  # Collection of TunableLoops. Override.
+    continue_on_failure = False  # If True, an exception in a tunable loop
+                                 # does not cause the script to abort.
 
     # Default run time of the script in seconds. Override.
     default_abort_script_time = None
@@ -911,7 +1017,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         for count in range(0, self.options.threads):
             thread = threading.Thread(
                 target=self.run_tasks_in_thread,
-                name='Worker-%d' % (count+1,),
+                name='Worker-%d' % (count + 1,),
                 args=(tunable_loops,))
             thread.start()
             threads.add(thread)
@@ -945,7 +1051,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
 
     @property
     def script_timeout(self):
-        a_very_long_time = 31536000 # 1 year
+        a_very_long_time = 31536000  # 1 year
         return self.options.abort_script or a_very_long_time
 
     def get_loop_logger(self, loop_name):
@@ -958,7 +1064,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
         loop_logger = logging.getLogger('garbo.' + loop_name)
         for filter in loop_logger.filters:
             if isinstance(filter, PrefixFilter):
-                return loop_logger # Already have a PrefixFilter attached.
+                return loop_logger  # Already have a PrefixFilter attached.
         loop_logger.addFilter(PrefixFilter(loop_name))
         return loop_logger
 
@@ -1030,7 +1136,7 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
                     loop_logger.debug3(
                         "Unable to acquire lock %s. Running elsewhere?",
                         loop_lock_path)
-                    time.sleep(0.3) # Avoid spinning.
+                    time.sleep(0.3)  # Avoid spinning.
                     tunable_loops.append(tunable_loop_class)
                 # Otherwise, emit a warning and skip the task.
                 else:
@@ -1093,6 +1199,7 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-daily'
     tunable_loops = [
+        AnswerContactPruner,
         BranchJobPruner,
         BugNotificationPruner,
         BugWatchActivityPruner,
@@ -1104,6 +1211,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         RevisionAuthorEmailLinker,
         SuggestiveTemplatesCacheUpdater,
         POTranslationPruner,
+        UnusedPOTMsgSetPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,
