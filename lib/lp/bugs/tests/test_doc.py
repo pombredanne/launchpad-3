@@ -33,7 +33,6 @@ from lp.services.mail.tests.test_doc import (
 from lp.soyuz.tests.test_doc import (
     lobotomize_stevea,
     uploaderSetUp,
-    uploaderTearDown,
     uploadQueueSetUp,
     )
 
@@ -218,13 +217,13 @@ special = {
     'bugmessage.txt-uploader': LayeredDocFileSuite(
         '../doc/bugmessage.txt',
         setUp=uploaderSetUp,
-        tearDown=uploaderTearDown,
+        tearDown=tearDown,
         layer=LaunchpadZopelessLayer
         ),
     'bugmessage.txt-checkwatches': LayeredDocFileSuite(
         '../doc/bugmessage.txt',
         setUp=checkwatchesSetUp,
-        tearDown=uploaderTearDown,
+        tearDown=tearDown,
         layer=LaunchpadZopelessLayer
         ),
     'bug-private-by-default.txt': LayeredDocFileSuite(
@@ -236,7 +235,7 @@ special = {
     'bugtracker-person.txt': LayeredDocFileSuite(
         '../doc/bugtracker-person.txt',
         setUp=checkwatchesSetUp,
-        tearDown=uploaderTearDown,
+        tearDown=tearDown,
         layer=LaunchpadZopelessLayer
         ),
     'bugwatch.txt':
