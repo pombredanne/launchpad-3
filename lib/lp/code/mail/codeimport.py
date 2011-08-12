@@ -127,7 +127,7 @@ def make_email_body_for_code_import_update(
         if CodeImportEventDataType.OLD_URL in event_data:
             old_url = event_data[CodeImportEventDataType.OLD_URL]
             body.append(
-                details_change_prefix + '\n    ' +code_import.url +
+                details_change_prefix + '\n    ' + code_import.url +
                 "\ninstead of:\n    " + old_url)
     else:
         raise AssertionError(

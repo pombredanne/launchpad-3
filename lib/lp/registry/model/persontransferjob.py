@@ -298,8 +298,8 @@ class MembershipNotificationJob(PersonTransferJobDerived):
             # Use the default template and subject.
             pass
 
-        # Must have someone to mail, and be a non-open team (because open teams
-        # are unrestricted, notifications on join/ leave do not help the
+        # Must have someone to mail, and be a non-open team (because open
+        # teams are unrestricted, notifications on join/ leave do not help the
         # admins.
         if (len(admin_emails) != 0 and
             self.team.subscriptionpolicy != TeamSubscriptionPolicy.OPEN):
@@ -348,7 +348,7 @@ class PersonMergeJob(PersonTransferJobDerived):
     @classmethod
     def create(cls, from_person, to_person, reviewer=None, delete=False):
         """See `IPersonMergeJobSource`."""
-        if (from_person.is_merge_pending or 
+        if (from_person.is_merge_pending or
             (not delete and to_person.is_merge_pending)):
             return None
         if from_person.is_team:

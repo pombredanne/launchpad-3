@@ -107,7 +107,6 @@ class DebBugs(ExternalBugTracker):
         # trust it being correct.
         return datetime.now(pytz.timezone('UTC'))
 
-
     def initializeRemoteBugDB(self, bug_ids):
         """See `ExternalBugTracker`.
 
@@ -137,7 +136,6 @@ class DebBugs(ExternalBugTracker):
             raise UnknownRemoteStatusError(remote_status)
 
         status = parts[0]
-        severity = parts[1]
         tags = parts[2:]
 
         # For the moment we convert only the status, not the severity.

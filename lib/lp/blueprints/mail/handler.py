@@ -26,14 +26,14 @@ MOIN_URL_RE = re.compile(r'(https?://[^ \r\n]+)')
 
 
 def get_spec_url_from_moin_mail(moin_text):
-     """Extract a specification URL from Moin change notification."""
-     if not isinstance(moin_text, basestring):
-         return None
-     match = MOIN_URL_RE.search(moin_text)
-     if match:
-          return match.group(1)
-     else:
-          return None
+    """Extract a specification URL from Moin change notification."""
+    if not isinstance(moin_text, basestring):
+        return None
+    match = MOIN_URL_RE.search(moin_text)
+    if match:
+        return match.group(1)
+    else:
+        return None
 
 
 class BlueprintHandler:

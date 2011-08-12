@@ -148,7 +148,7 @@ class BMPMailer(BranchMailer):
             'comment': '',
             'gap': '',
             'reviews': '',
-            'whiteboard': '', # No more whiteboard.
+            'whiteboard': '',  # No more whiteboard.
             'diff_cutoff_warning': '',
             }
         if self.delta_text is not None:

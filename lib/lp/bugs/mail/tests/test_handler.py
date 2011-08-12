@@ -247,7 +247,7 @@ class TestSignatureTimestampValidation(TestCaseWithFactory):
             body='I really hope this bug gets fixed.')
         now = time.time()
         one_week = 60 * 60 * 24 * 7
-        msg.signature = FakeSignature(timestamp=now+one_week)
+        msg.signature = FakeSignature(timestamp=now + one_week)
         handler = MaloneHandler()
         # Clear old emails before potentially generating more.
         del stub.test_emails[:]

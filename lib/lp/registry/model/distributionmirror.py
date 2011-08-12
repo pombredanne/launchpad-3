@@ -169,7 +169,7 @@ class DistributionMirror(SQLBase):
     def last_probe_record(self):
         """See IDistributionMirror"""
         return MirrorProbeRecord.selectFirst(
-            MirrorProbeRecord.q.distribution_mirrorID==self.id,
+            MirrorProbeRecord.q.distribution_mirrorID == self.id,
             orderBy='-date_created')
 
     @property
@@ -313,7 +313,6 @@ class DistributionMirror(SQLBase):
             if (arch_mirror_freshness is None and
                 source_mirror_freshness is None):
                 return MirrorFreshness.UNKNOWN
-
 
             # Return arch_mirror freshness if we have no source mirror.
             if  (arch_mirror_freshness is not None and
