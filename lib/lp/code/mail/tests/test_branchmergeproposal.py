@@ -6,7 +6,6 @@
 from difflib import unified_diff
 import operator
 from textwrap import dedent
-from unittest import TestLoader
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot

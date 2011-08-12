@@ -12,7 +12,6 @@ from subprocess import (
     PIPE,
     Popen,
     )
-import unittest
 
 from bzrlib import errors
 from bzrlib.branch import Branch

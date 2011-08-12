@@ -9,7 +9,6 @@ from cStringIO import StringIO
 from datetime import datetime
 import logging
 import os
-from unittest import TestLoader
 
 import pytz
 from zope.component import getUtility

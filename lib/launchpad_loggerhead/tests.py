@@ -4,7 +4,6 @@
 import cStringIO
 import errno
 import logging
-import unittest
 import urllib
 import socket
 import re

@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
     ObjectDeletedEvent,

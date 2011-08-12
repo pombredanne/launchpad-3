@@ -9,7 +9,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import unittest
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 import pytz

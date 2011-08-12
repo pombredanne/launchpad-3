@@ -5,8 +5,6 @@
 
 As found in canonical.launchpad.webapp.initialization.py."""
 
-import unittest
-
 from zope.component import getSiteManager
 from zope.interface import Interface
 from zope.publisher.interfaces.browser import IBrowserRequest

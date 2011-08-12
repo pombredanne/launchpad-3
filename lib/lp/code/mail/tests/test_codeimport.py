@@ -4,7 +4,6 @@
 """Tests for code import related mailings"""
 
 from email import message_from_string
-from unittest import TestLoader
 
 import transaction
 

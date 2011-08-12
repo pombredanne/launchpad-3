@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from bzrlib.branch import BranchFormat as BzrBranchFormat
 from bzrlib.bzrdir import BzrProber
 from bzrlib.repository import format_registry as repo_format_registry

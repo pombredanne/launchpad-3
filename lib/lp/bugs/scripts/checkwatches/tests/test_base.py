@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from contextlib import contextmanager
-import unittest
 
 import transaction
 

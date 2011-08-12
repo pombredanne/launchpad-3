@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from lazr.restfulclient.errors import Unauthorized
 import transaction
 from zope.component import getUtility

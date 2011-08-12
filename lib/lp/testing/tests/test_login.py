@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 

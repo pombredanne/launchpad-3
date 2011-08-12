@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from datetime import datetime
-import unittest
 
 from pytz import UTC
 from zope.component import getUtility

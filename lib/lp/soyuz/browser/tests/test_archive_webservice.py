@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from lazr.restfulclient.errors import (
     BadRequest,
     NotFound,

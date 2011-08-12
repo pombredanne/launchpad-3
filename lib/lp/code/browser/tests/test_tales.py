@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from difflib import unified_diff
-import unittest
 
 from storm.store import Store
 from testtools.matchers import Equals

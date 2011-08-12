@@ -14,7 +14,6 @@ from datetime import datetime
 import logging
 import os
 from textwrap import dedent
-from unittest import TestLoader
 
 import pytz
 

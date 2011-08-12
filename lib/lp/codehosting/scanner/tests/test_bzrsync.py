@@ -9,7 +9,6 @@ import datetime
 import os
 import random
 import time
-import unittest
 
 from bzrlib.revision import (
     NULL_REVISION,

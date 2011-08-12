@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,

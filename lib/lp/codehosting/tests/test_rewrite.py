@@ -9,7 +9,6 @@ import os
 import re
 import signal
 import subprocess
-import unittest
 
 import transaction
 from zope.security.proxy import removeSecurityProxy

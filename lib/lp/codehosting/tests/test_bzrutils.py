@@ -24,7 +24,6 @@ from bzrlib.tests import (
     test_server,
     TestCase,
     TestCaseWithTransport,
-    TestLoader,
     TestNotApplicable,
     )
 from bzrlib.tests.per_branch import (

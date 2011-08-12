@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import email
-import unittest
 
 from zope.component import getUtility
 from zope.event import notify

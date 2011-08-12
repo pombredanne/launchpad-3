@@ -5,7 +5,6 @@ from datetime import datetime
 import os
 from StringIO import StringIO
 import subprocess
-import unittest
 
 from zope.component import getUtility
 

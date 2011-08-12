@@ -9,7 +9,6 @@ import datetime
 import os
 import shutil
 import tempfile
-from unittest import TestLoader
 
 from bzrlib import errors as bzr_errors
 from bzrlib.branch import (

@@ -9,7 +9,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import unittest
 
 from pytz import utc
 import transaction

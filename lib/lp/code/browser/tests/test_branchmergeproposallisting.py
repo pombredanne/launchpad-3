@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from datetime import datetime
-from unittest import TestLoader
 
 import pytz
 import transaction

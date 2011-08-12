@@ -12,7 +12,6 @@ import shutil
 from subprocess import Popen, PIPE, STDOUT
 import sys
 import tempfile
-from unittest import TestLoader
 
 from sqlobject import SQLObjectNotFound
 import transaction

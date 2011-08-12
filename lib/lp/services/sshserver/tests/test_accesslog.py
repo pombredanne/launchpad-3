@@ -11,7 +11,6 @@ import os
 from StringIO import StringIO
 import sys
 import tempfile
-import unittest
 
 from bzrlib.tests import TestCase as BzrTestCase
 import zope.component.event

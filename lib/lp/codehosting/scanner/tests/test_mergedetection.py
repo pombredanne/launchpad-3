@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import logging
-import unittest
 
 from bzrlib.revision import NULL_REVISION
 import transaction

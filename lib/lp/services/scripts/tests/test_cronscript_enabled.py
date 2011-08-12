@@ -12,7 +12,6 @@ import subprocess
 import sys
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
-import unittest
 
 from lp.services.log.logger import BufferLogger
 from lp.services.scripts.base import cronscript_enabled

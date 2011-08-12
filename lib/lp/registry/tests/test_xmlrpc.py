@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
 import xmlrpclib
 
 from zope.component import getUtility

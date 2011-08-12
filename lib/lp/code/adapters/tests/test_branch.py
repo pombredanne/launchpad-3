@@ -3,10 +3,7 @@
 
 """Functional tests for branch-related components"""
 
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+from unittest import TestCase
 
 from canonical.launchpad.ftests import login
 from canonical.testing.layers import LaunchpadFunctionalLayer

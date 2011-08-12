@@ -6,7 +6,6 @@
 import datetime
 import os
 import shutil
-import unittest
 
 import transaction
 from zope.component import getUtility

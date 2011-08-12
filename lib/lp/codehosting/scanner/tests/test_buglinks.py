@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from bzrlib.revision import Revision
 from zope.component import getUtility
 from zope.event import notify

@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from lp.testing.breadcrumbs import BaseBreadcrumbTestCase
 
 

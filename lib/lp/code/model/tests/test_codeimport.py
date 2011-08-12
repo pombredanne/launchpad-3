@@ -7,7 +7,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import unittest
 
 import pytz
 from sqlobject import SQLObjectNotFound

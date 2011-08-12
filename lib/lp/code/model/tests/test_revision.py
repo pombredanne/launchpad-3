@@ -10,10 +10,7 @@ from datetime import (
     timedelta,
     )
 import time
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+from unittest import TestCase
 
 import psycopg2
 import pytz

@@ -9,7 +9,6 @@ __metaclass__ = type
 
 from textwrap import dedent
 import transaction
-import unittest
 
 from testtools import run_test_with
 from testtools.deferredruntest import (

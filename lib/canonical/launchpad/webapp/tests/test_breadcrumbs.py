@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.i18nmessageid import Message
 from zope.interface import implements
 

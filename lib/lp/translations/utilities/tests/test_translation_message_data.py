@@ -5,10 +5,7 @@
 
 __metaclass__ = type
 
-from unittest import (
-    defaultTestLoader,
-    TestCase,
-    )
+from unittest import TestCase
 
 from lp.translations.interfaces.translationimporter import (
     TranslationFormatSyntaxError,

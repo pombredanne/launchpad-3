@@ -5,8 +5,9 @@
 
 __metaclass__ = type
 
+from unittest import TestCase
+
 from datetime import timedelta
-import unittest
 
 from zope.publisher.browser import TestRequest
 from zope.security.management import (
@@ -37,7 +38,7 @@ class PicklingTest:
         return self.value == obj.value
 
 
-class TestPgSession(unittest.TestCase):
+class TestPgSession(TestCase):
     dbuser = 'session'
     layer = LaunchpadFunctionalLayer
 

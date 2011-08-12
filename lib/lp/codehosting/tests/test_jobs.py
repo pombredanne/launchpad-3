@@ -3,8 +3,6 @@
 
 """Tests for Job-running facilities."""
 
-from unittest import TestLoader
-
 from canonical.config import config
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.enums import (

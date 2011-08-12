@@ -4,9 +4,6 @@
 """Test for links between branches and bugs or specs."""
 
 __metaclass__ = type
-__all__ = []
-
-import unittest
 
 import transaction
 import windmill

@@ -6,8 +6,6 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
 from zope.component import getUtilitiesFor
 from zope.proxy import isProxy
 from zope.schema.interfaces import IVocabularyFactory

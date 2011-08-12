@@ -5,7 +5,6 @@ import os
 from StringIO import StringIO
 import tarfile
 from textwrap import dedent
-import unittest
 
 from bzrlib.bzrdir import BzrDir
 

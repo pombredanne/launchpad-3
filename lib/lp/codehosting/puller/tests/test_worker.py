@@ -9,7 +9,6 @@ __metaclass__ = type
 
 import gc
 from StringIO import StringIO
-import unittest
 
 import bzrlib.branch
 from bzrlib.branch import (

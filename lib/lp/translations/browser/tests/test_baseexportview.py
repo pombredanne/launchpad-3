@@ -4,7 +4,6 @@
 __metaclass__ = type
 
 from datetime import timedelta
-import unittest
 
 import transaction
 

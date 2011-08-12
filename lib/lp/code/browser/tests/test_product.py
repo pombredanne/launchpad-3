@@ -9,7 +9,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import unittest
 from mechanize import LinkNotFoundError
 import pytz
 from zope.component import getUtility

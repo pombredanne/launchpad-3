@@ -4,9 +4,6 @@
 """Test for the popup diff."""
 
 __metaclass__ = type
-__all__ = []
-
-import unittest
 
 import transaction
 import windmill

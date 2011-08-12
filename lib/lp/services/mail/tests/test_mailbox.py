@@ -8,7 +8,6 @@ __metaclass__ = type
 import os
 from shutil import rmtree
 import tempfile
-from unittest import TestLoader
 
 from canonical.launchpad.interfaces.mailbox import IMailBox
 from canonical.launchpad.webapp.testing import verifyObject

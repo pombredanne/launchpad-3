@@ -3,8 +3,6 @@
 
 """Unit tests for methods of PillarName and PillarNameSet."""
 
-import unittest
-
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login

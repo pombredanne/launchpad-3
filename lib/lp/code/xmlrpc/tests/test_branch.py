@@ -4,11 +4,8 @@
 """Unit tests for the public codehosting API."""
 
 __metaclass__ = type
-__all__ = []
-
 
 import os
-import unittest
 import xmlrpclib
 
 from bzrlib import urlutils

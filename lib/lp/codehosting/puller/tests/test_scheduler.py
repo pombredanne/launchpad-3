@@ -9,7 +9,6 @@ from datetime import datetime
 import logging
 import os
 import textwrap
-import unittest
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import (

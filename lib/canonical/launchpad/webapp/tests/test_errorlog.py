@@ -16,7 +16,6 @@ import sys
 import tempfile
 from textwrap import dedent
 import traceback
-import unittest
 
 from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 from lazr.restful.declarations import error_status

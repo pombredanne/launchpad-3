@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 import storm
 
 from lp.testing import TestCase

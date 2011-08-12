@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from itertools import count
-import unittest
 
 from windmill.authoring import WindmillTestClientException
 

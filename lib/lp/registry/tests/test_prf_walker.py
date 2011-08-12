@@ -5,7 +5,6 @@
 
 import logging
 import StringIO
-import unittest
 import urlparse
 
 

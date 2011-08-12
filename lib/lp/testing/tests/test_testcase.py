@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from StringIO import StringIO
 import sys
-import unittest
 
 from storm.store import Store
 from zope.component import getUtility

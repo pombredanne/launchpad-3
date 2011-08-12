@@ -6,8 +6,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from twisted.internet.defer import (
     Deferred,
     succeed,

@@ -7,8 +7,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from lp.codehosting.codeimport.uifactory import LoggingUIFactory
 from lp.services.log.logger import BufferLogger
 from lp.testing import (

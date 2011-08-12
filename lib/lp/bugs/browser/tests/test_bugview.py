@@ -3,9 +3,6 @@
 
 __metaclass__ = type
 
-
-import unittest
-
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login

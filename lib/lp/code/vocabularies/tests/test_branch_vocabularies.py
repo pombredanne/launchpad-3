@@ -5,10 +5,7 @@
 
 __metaclass__ = type
 
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+from unittest import TestCase
 
 from zope.component import getUtility
 

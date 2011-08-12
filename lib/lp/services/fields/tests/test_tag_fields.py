@@ -3,8 +3,6 @@
 
 """Tests for tag related fields."""
 
-import unittest
-
 from zope.schema.interfaces import ConstraintNotSatisfied
 
 from canonical.testing.layers import LaunchpadFunctionalLayer

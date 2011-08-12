@@ -5,11 +5,9 @@
 
 __metaclass__ = type
 
-
 from cStringIO import StringIO
 from difflib import unified_diff
 import logging
-from unittest import TestLoader
 
 from bzrlib import trace
 from bzrlib.patches import (

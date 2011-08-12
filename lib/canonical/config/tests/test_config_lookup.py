@@ -9,7 +9,6 @@ __all__ = []
 import os
 import shutil
 from tempfile import mkdtemp, NamedTemporaryFile
-import unittest
 
 from canonical import config
 from lp.testing import TestCase

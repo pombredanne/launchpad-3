@@ -7,7 +7,6 @@ import os
 from StringIO import StringIO
 import tempfile
 from operator import itemgetter
-import unittest
 
 from zope.component import getUtility
 

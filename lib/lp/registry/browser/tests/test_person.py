@@ -5,9 +5,7 @@
 
 __metaclass__ = type
 
-
 from textwrap import dedent
-import unittest
 
 from canonical.config import config
 from canonical.launchpad.ftests import login_person

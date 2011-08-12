@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import logging
 from StringIO import StringIO
-import unittest
 
 import dkim
 import dns.resolver

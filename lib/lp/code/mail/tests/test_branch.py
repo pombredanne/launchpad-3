@@ -3,8 +3,6 @@
 
 """Tests for Branch-related mailings"""
 
-from unittest import TestLoader
-
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer

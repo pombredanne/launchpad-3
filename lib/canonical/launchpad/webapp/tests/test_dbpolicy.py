@@ -6,8 +6,6 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
 from lazr.restful.interfaces import IWebServiceConfiguration
 from zope.component import (
     getAdapter,

@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from lp.scripts.utilities.pageperformancereport import (
     Category,
     Histogram,

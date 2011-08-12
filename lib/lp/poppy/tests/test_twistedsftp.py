@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import os
 import tempfile
-import unittest
 
 from lp.poppy.twistedsftp import SFTPServer
 from lp.services.sshserver.sftp import FileIsADirectory

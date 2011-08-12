@@ -4,7 +4,6 @@
 """Unit tests for CodeReviewComment"""
 
 from textwrap import dedent
-import unittest
 
 from lp.services.messages.model.message import MessageSet
 from canonical.testing.layers import (

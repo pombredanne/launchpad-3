@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from storm.exceptions import DataError
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy

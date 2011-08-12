@@ -13,7 +13,6 @@ from email.Utils import (
     make_msgid,
     )
 from textwrap import dedent
-import unittest
 
 import gpgme
 from zope.component import getUtility

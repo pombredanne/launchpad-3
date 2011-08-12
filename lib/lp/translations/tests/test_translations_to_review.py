@@ -9,7 +9,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from unittest import TestLoader
 
 from pytz import timezone
 import transaction

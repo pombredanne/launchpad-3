@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import connection
 

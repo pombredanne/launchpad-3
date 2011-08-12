@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import (

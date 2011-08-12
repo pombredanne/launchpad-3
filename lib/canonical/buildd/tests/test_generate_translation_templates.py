@@ -3,7 +3,6 @@
 
 import os
 from StringIO import StringIO
-from unittest import TestLoader
 import tarfile
 
 from lp.testing.fakemethod import FakeMethod

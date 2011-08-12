@@ -3,8 +3,6 @@
 
 """Tests for notification strings of duplicate Bugs."""
 
-from unittest import TestLoader
-
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 import transaction

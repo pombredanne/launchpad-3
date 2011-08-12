@@ -4,7 +4,6 @@
 """Tests for bug duplicate validation."""
 
 from textwrap import dedent
-import unittest
 
 from zope.security.interfaces import ForbiddenAttribute
 

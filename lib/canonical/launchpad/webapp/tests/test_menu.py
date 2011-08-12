@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.security.management import newInteraction
 
 from canonical.launchpad.webapp.menu import (

@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from lp.codehosting.vfs.hooks import SetProcTitleHook
 from lp.testing import TestCase
 

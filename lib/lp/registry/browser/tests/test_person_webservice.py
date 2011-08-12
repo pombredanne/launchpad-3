@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 

@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from canonical.launchpad.ftests import login_person
 from canonical.launchpad.ftests.event import TestEventListener
 from canonical.testing.layers import DatabaseFunctionalLayer

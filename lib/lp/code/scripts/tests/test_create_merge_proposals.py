@@ -6,7 +6,6 @@
 """Test the create_merge_proposals script"""
 
 from cStringIO import StringIO
-import unittest
 
 from bzrlib import errors as bzr_errors
 from bzrlib.branch import Branch

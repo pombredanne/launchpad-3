@@ -6,7 +6,6 @@ __metaclass__ = type
 from datetime import datetime
 import pytz
 import simplejson
-from unittest import TestLoader
 
 from lazr.batchnavigator.interfaces import IRangeFactory
 from storm.expr import (

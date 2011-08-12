@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import mimetypes
-import unittest
 
 from lp.services.mime import customizeMimetypes
 from lp.testing import TestCase

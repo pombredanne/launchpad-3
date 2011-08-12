@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from lazr.uri import URI
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy

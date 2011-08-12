@@ -3,8 +3,6 @@
 
 """Tests for branch traversal."""
 
-import unittest
-
 from lazr.restful.testing.webservice import FakeRequest
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound

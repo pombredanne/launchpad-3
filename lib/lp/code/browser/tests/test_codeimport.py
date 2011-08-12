@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import re
-import unittest
 
 from canonical.launchpad.testing.pages import (
     extract_text,

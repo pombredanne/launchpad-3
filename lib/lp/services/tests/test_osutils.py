@@ -9,7 +9,6 @@ import errno
 import os
 import socket
 import tempfile
-import unittest
 
 from lp.services.osutils import (
     ensure_directory_exists,

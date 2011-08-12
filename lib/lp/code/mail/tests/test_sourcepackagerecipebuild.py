@@ -6,7 +6,6 @@ __metaclass__ = type
 
 
 from datetime import timedelta
-from unittest import TestLoader
 
 from storm.locals import Store
 from zope.security.proxy import removeSecurityProxy

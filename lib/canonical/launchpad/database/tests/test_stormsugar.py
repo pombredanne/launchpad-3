@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from psycopg2 import IntegrityError
 from storm.locals import (
     Int,

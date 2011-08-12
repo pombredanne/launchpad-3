@@ -12,7 +12,6 @@ import os
 import shutil
 import StringIO
 import tempfile
-import unittest
 import urllib
 
 from bzrlib.branch import Branch

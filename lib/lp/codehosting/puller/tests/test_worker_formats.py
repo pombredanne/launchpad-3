@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import (
     BzrDirFormat6,

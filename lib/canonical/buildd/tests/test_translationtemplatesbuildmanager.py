@@ -5,8 +5,6 @@ __metaclass__ = type
 
 import os
 
-from unittest import TestLoader
-
 from lp.testing import TestCase
 from lp.testing.fakemethod import FakeMethod
 

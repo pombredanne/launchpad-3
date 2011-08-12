@@ -3,7 +3,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
 import urllib
 
 from zope.security.proxy import removeSecurityProxy

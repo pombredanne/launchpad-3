@@ -11,7 +11,6 @@ import os
 import shutil
 import socket
 import tempfile
-from unittest import TestLoader
 
 from canonical.launchpad import scripts
 from canonical.testing.layers import BaseLayer

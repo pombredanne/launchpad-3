@@ -6,7 +6,6 @@ __metaclass__ = type
 from datetime import timedelta
 import gc
 from logging import ERROR
-from unittest import TestLoader
 
 import transaction
 from zope.component import getUtility

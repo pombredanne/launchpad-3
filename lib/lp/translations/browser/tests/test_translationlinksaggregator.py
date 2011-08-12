@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url

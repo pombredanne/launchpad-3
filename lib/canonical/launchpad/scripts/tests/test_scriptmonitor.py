@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 import logging
-import unittest
+from unittest import TestCase
 
 from canonical import lp
 from canonical.database.sqlbase import connect
@@ -15,7 +15,7 @@ from canonical.launchpad.scripts.scriptmonitor import check_script
 from canonical.testing.layers import DatabaseLayer
 
 
-class CheckScriptTestCase(unittest.TestCase):
+class CheckScriptTestCase(TestCase):
     """Test script activity."""
     layer = DatabaseLayer
 

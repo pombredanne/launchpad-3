@@ -4,10 +4,6 @@
 """Tests for BranchURIField."""
 
 __metaclass__ = type
-__all__ = []
-
-
-import unittest
 
 from canonical.config import config
 from canonical.launchpad.webapp.vhosts import allvhosts

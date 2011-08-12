@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from bzrlib.tests import per_transport
 from bzrlib.transport import (
     chroot,

@@ -3,7 +3,6 @@
 
 import cgi
 from datetime import datetime
-import unittest
 
 import lazr.uri
 from zope.component import getUtility

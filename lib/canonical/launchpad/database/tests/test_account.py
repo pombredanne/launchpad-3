@@ -6,8 +6,6 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
 from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility

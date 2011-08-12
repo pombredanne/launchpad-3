@@ -3,9 +3,6 @@
 
 """Unit tests for DiffView."""
 
-
-from unittest import TestLoader
-
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.code.browser.diff import PreviewDiffFormatterAPI
 from lp.testing import TestCaseWithFactory

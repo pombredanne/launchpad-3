@@ -5,8 +5,6 @@
 
 Other tests are in codeimport-machine.txt."""
 
-import unittest
-
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW

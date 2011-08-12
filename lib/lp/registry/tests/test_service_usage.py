@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.app.enums import ServiceUsage

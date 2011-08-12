@@ -3,8 +3,6 @@
 
 """Test for emails sent after bug task modification."""
 
-from unittest import TestLoader
-
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 import transaction

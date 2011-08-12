@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import os
 import time
-import unittest
 
 from bzrlib.tests import TestCaseWithTransport
 import CVS

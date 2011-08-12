@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import os
-import unittest
 
 from zope.publisher.defaultview import getDefaultViewName
 

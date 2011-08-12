@@ -14,7 +14,6 @@ from datetime import (
     timedelta,
     )
 from difflib import unified_diff
-import unittest
 
 import pytz
 from soupmatchers import HTMLContains, Tag

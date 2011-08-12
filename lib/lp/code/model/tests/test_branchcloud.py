@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from datetime import datetime, timedelta
 import transaction
-import unittest
 
 import pytz
 from storm.locals import Store

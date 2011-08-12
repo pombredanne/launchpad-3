@@ -5,8 +5,6 @@
 
 """Test the sendbranchmail script"""
 
-import unittest
-
 import transaction
 
 from canonical.launchpad.scripts.tests import run_script

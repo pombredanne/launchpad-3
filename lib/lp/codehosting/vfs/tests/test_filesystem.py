@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import stat
-import unittest
 
 from bzrlib import errors
 from bzrlib.bzrdir import BzrDir

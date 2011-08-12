@@ -3,8 +3,6 @@
 
 """Tests for Bug subscription-related email tests."""
 
-from unittest import TestLoader
-
 import transaction
 
 from canonical.testing.layers import DatabaseFunctionalLayer

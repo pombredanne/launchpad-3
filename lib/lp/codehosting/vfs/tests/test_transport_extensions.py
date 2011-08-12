@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from bzrlib.transport.memory import MemoryTransport
 
 from lp.codehosting.vfs.transport import get_readonly_transport

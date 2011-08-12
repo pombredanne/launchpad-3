@@ -15,9 +15,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from unittest import (
-    TestLoader,
-    )
 
 from zope.component import getUtility
 
