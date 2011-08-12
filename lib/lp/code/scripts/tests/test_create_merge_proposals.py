@@ -33,7 +33,7 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         email, file_alias, source, target = (
             self.factory.makeMergeDirectiveEmail(
                 signing_context=signing_context))
-        CreateMergeProposalJob.create(file_alias)
+        job = CreateMergeProposalJob.create(file_alias)
         self.assertEqual(0, source.landing_targets.count())
         transaction.commit()
         retcode, stdout, stderr = run_script(
@@ -41,7 +41,8 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         self.assertEqual(0, retcode)
         self.assertEqual(
             'INFO    Creating lockfile: /var/lock/launchpad-create_merge_proposals.lock\n'
-            'INFO    Ran 1 CreateMergeProposalJobs.\n', stderr)
+            'INFO    Running CreateMergeProposalJob (ID %d) in status Waiting\n'
+            'INFO    Ran 1 CreateMergeProposalJobs.\n' % job.job.id, stderr)
         self.assertEqual('', stdout)
         self.assertEqual(1, source.landing_targets.count())
 
