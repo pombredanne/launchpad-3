@@ -13,7 +13,6 @@ from itertools import repeat
 import logging
 import os
 import re
-import rfc822
 import stat
 import types
 import urllib
@@ -44,6 +43,7 @@ from canonical.launchpad.webapp.interfaces import (
     IUnloggedException,
     )
 from canonical.launchpad.webapp.opstats import OpStats
+from canonical.launchpad.webapp.pgsession import PGSessionBase
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.utils import safe_hasattr
 from lp.app import versioninfo
@@ -335,6 +335,13 @@ class ErrorReportingUtility:
                     return True
         return False
 
+    def filter_session_statement(self, database_id, statement):
+        """Replace quoted strings with '%s' in statements on session DB."""
+        if database_id == 'SQL-' + PGSessionBase.store_name:
+            return re.sub("'[^']*'", "'%s'", statement)
+        else:
+            return statement
+
     def _makeErrorReport(self, info, request=None, now=None,
                          informational=False):
         """Return an ErrorReport for the supplied data.
@@ -436,6 +443,7 @@ class ErrorReportingUtility:
         statements = []
         for action in timeline.actions:
             start, end, category, detail = action.logTuple()
+            detail = self.filter_session_statement(category, detail)
             statements.append(
                 (start, end, _safestr(category), _safestr(detail)))
 

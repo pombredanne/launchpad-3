@@ -36,6 +36,10 @@ from zope.testing.loggingsupport import InstalledHandler
 from canonical.config import config
 from lp.app import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
+from canonical.launchpad.webapp.adapter import (
+    clear_request_started,
+    set_request_started,
+    )
 from canonical.launchpad.webapp.errorlog import (
     _is_sensitive,
     ErrorReport,
@@ -53,6 +57,7 @@ from lp.app.errors import (
     TranslationUnavailable,
     )
 from lp.services.osutils import remove_tree
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.testing import TestCase
 from lp_sitecustomize import customize_get_converter
 
@@ -804,6 +809,40 @@ class TestErrorReportingUtility(testtools.TestCase):
                 self.assertEqual(
                     [('<oops-message-0>', "{'a': 'b'}"), ('c', 'd')],
                     oops['req_vars'])
+
+    def test_filter_session_statement(self):
+        """Removes quoted strings if database_id is SQL-session."""
+        utility = ErrorReportingUtility()
+        statement = "SELECT 'gone'"
+        self.assertEqual(
+            "SELECT '%s'",
+            utility.filter_session_statement('SQL-session', statement))
+
+    def test_filter_session_statement_noop(self):
+        """If database_id is not SQL-session, it's a no-op."""
+        utility = ErrorReportingUtility()
+        statement = "SELECT 'gone'"
+        self.assertEqual(
+            statement,
+            utility.filter_session_statement('SQL-launchpad', statement))
+
+    def test_session_queries_filtered(self):
+        """Test that session queries are filtered."""
+        utility = ErrorReportingUtility()
+        request = ScriptRequest([], URL="test_session_queries_filtered")
+        set_request_started()
+        try:
+            timeline = get_request_timeline(request)
+            timeline.start("SQL-session", "SELECT 'gone'").finish()
+            try:
+                raise ArbitraryException('foo')
+            except ArbitraryException:
+                info = sys.exc_info()
+                oops, _ = utility._makeErrorReport(info)
+            self.assertEqual("SELECT '%s'", oops['db_statements'][0][3])
+        finally:
+            clear_request_started()
+
 
 
 class TestSensitiveRequestVariables(testtools.TestCase):

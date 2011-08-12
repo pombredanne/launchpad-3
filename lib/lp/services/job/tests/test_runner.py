@@ -539,6 +539,8 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         self.assertThat(logger.getLogBuffer(), MatchesRegex(
             dedent("""\
             INFO Running through Twisted.
+            INFO Running StuckJob \(ID .*\).
+            INFO Running StuckJob \(ID .*\).
             INFO Job resulted in OOPS: .*
             """)))
 
@@ -559,13 +561,16 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         oops = self.getOopsReport(runner, 0)
         self.assertEqual(
             (1, 1), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
-        self.assertEqual(
-            (dedent("""\
-             INFO Running through Twisted.
-             INFO Job resulted in OOPS: %s
-             """) % oops.id,
-             'TimeoutError', 'Job ran too long.'),
-            (logger.getLogBuffer(), oops.type, oops.value))
+        self.assertThat(
+            logger.getLogBuffer(), MatchesRegex(
+                dedent("""\
+                INFO Running through Twisted.
+                INFO Running ShorterStuckJob \(ID .*\).
+                INFO Running ShorterStuckJob \(ID .*\).
+                INFO Job resulted in OOPS: %s
+                """) % oops.id))
+        self.assertEqual(('TimeoutError', 'Job ran too long.'),
+                         (oops.type, oops.value))
 
     def test_previous_failure_gives_new_process(self):
         """Failed jobs cause their worker to be terminated.
