@@ -257,7 +257,3 @@ class BugWatchUpdaterTestCase(TestCaseWithFactory):
         self.assertFalse(bug_watch_updater.import_bug_comments_called)
         self.assertFalse(bug_watch_updater.push_bug_comments_called)
         self.assertFalse(bug_watch_updater.link_launchpad_bug_called)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

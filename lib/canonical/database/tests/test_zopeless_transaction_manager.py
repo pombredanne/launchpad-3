@@ -25,7 +25,3 @@ class TestZopelessTransactionManager(TestCase):
         new_active_stores = [
             item[0] for item in getUtility(IZStorm).iterstores()]
         self.assertContentEqual(active_stores, new_active_stores)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

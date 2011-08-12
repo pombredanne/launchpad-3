@@ -50,7 +50,3 @@ class TestModificationNotification(TestCaseWithFactory):
                          'email notification not created')
         headers = [msg['X-Launchpad-Bug-Modifier'] for msg in messages]
         self.assertEqual(len(headers), len(messages))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

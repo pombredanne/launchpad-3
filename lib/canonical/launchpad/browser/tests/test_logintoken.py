@@ -65,7 +65,3 @@ class TestCancelActionOnLoginTokenViews(TestCaseWithFactory):
         self.assertEquals(actions['field.actions.cancel'].submitted(), True)
         self.assertEquals(harness.view.errors, [])
         self.assertEquals(harness.view.next_url, self.expected_next_url)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

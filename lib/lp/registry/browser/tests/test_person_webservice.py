@@ -76,7 +76,3 @@ class TestPersonRepresentation(TestCaseWithFactory):
         self.assertEquals(
             rendered_comment,
             '<a href="/~test-person" class="sprite person">Test Person</a>')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

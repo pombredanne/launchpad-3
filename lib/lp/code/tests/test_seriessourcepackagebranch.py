@@ -124,7 +124,3 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
         find_branch_links = getUtility(IFindOfficialBranchLinks)
         self.assertEqual(
             [], list(find_branch_links.findForSourcePackage(package)))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

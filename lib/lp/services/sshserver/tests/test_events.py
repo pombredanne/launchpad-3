@@ -90,8 +90,3 @@ class TestLoggingEvent(TestCase):
             level = logging.INFO
         self.assertEventLogs(
             (logging.INFO, 'foo happened.'), SomeEvent(something='foo'))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

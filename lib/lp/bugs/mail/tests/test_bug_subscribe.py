@@ -63,7 +63,3 @@ class TestSubscribedBySomeoneElseNotification(TestCaseWithFactory):
             person_subscribed, person_subscribing)
         transaction.commit()
         self.assertEqual(len(stub.test_emails), 0)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

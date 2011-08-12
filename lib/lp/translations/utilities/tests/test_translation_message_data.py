@@ -77,7 +77,3 @@ class TranslationMessageDataTestCase(TestCase):
             self.assertEqual(
                 error.represent("(Default text, should not be returned.)"),
                 "Message has more than one translation for plural form 0.")
-
-
-def test_suite():
-    return defaultTestLoader.loadTestsFromName(__name__)

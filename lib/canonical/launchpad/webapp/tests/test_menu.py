@@ -85,7 +85,3 @@ class TestMenuBaseLinkCaching(TestCase):
         self.assertEquals(len(cache.keys()), 1)
         self.assertContentEqual(
             cache.keys()[0], (menu.__class__, context, 'test_link'))
-
-    
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

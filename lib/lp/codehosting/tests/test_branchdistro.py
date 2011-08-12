@@ -643,7 +643,3 @@ class TestDistroBrancher(TestCaseWithFactory):
         self.assertEqual(
             textwrap.dedent(expected), output)
         self.assertEqual(1, returncode)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

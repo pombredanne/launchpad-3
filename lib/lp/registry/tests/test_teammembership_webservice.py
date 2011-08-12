@@ -62,7 +62,3 @@ class TestTeamMembershipTransitions(TestCaseWithFactory):
             team_membership.setStatus,
             status='Proposed')
         self.assertEqual(400, api_exception.response.status)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

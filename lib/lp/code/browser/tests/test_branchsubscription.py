@@ -24,7 +24,3 @@ class TestBranchSubscriptionPrimaryContext(TestCaseWithFactory):
         self.assertEqual(
             IPrimaryContext(subscription).context,
             IPrimaryContext(subscription.branch).context)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

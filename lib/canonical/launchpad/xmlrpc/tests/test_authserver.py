@@ -55,7 +55,3 @@ class GetUserAndSSHKeysTests(TestCaseWithFactory):
             dict(id=new_person.id, name=new_person.name,
                  keys=[(key.keytype.title, key.keytext)]),
             self.authserver.getUserAndSSHKeys(new_person.name))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

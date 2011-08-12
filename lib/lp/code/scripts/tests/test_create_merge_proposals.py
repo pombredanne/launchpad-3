@@ -104,7 +104,3 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         self.assertIn('INFO    Job resulted in OOPS:', stderr)
         self.assertIn('INFO    Ran 0 CreateMergeProposalJobs.\n', stderr)
         self.assertEqual('', stdout)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

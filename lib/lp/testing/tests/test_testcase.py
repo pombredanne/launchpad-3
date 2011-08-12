@@ -100,8 +100,3 @@ class TestCaptureOops(TestCaseWithFactory):
         self.assertEqual(
             oops.get_chunks(),
             from_details.get_chunks())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

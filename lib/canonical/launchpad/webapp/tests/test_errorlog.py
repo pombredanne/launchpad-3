@@ -1044,7 +1044,3 @@ class TestWrappedParameterConverter(testtools.TestCase):
         customize_get_converter(module)
         converter = module.get_converter('int')
         self.assertTrue(converter is None)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

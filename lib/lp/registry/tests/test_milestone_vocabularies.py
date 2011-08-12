@@ -163,7 +163,3 @@ class TestMilestoneVocabulary(TestCase):
         self.assertEqual(
             [term.title for term in vocabulary],
             [u'Debian 3.1', u'Debian 3.1-rc1', u'Mozilla Firefox 1.0'])
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

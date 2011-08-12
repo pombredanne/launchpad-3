@@ -275,8 +275,3 @@ class TestBranchRewriterScript(TestCaseWithFactory):
         # The script produces logging output, but not to stderr.
         self.assertEqual('', err)
         self.assertEqual(expected_lines, output_lines)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

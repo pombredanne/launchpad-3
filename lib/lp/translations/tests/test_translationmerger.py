@@ -872,7 +872,3 @@ class TestFindMergablePackagings(TestCaseWithFactory):
         self.factory.makePOTemplate(sourcepackage=packaging.sourcepackage)
         self.assertContentEqual(
             [], TranslationMerger.findMergeablePackagings())
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -166,7 +166,3 @@ class TestSignedMessage(TestCaseWithFactory):
         self.assertEqual(sender, principle.person)
         self.assertFalse(
             IWeaklyAuthenticatedPrincipal.providedBy(principle))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

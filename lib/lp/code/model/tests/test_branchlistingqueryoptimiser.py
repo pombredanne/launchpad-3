@@ -160,7 +160,3 @@ class TestGetOfficialSourcePackageLinksForBranches(TestCaseWithFactory):
         # Nor does getting the path or displayname.
         self.assertStatementCount(0, getattr, sp, "displayname")
         self.assertStatementCount(0, getattr, sp, "path")
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -257,7 +257,3 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
         # And all the counts are zero.
         self.assertPSLStatistics(psl, (3, 0, 0, 0, 0, 0,
             None))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

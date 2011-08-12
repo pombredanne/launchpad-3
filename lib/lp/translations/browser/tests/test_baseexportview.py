@@ -226,13 +226,3 @@ class TestPOExportQueueStatusDescriptions(TestCaseWithFactory):
         status = "%s %s" % (size, backlog)
         self.assertEqual(
             status.strip(), self.view.export_queue_status.strip())
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    loader = unittest.TestLoader()
-    suite.addTest(loader.loadTestsFromTestCase(TestProductSeries))
-    suite.addTest(loader.loadTestsFromTestCase(TestSourcePackage))
-    suite.addTest(loader.loadTestsFromTestCase(
-        TestPOExportQueueStatusDescriptions))
-    return suite

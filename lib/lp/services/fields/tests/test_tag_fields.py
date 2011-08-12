@@ -94,7 +94,3 @@ class TestSearchTag(TestTag):
         self.assertRaises(
             ConstraintNotSatisfied,
             self.field.validate, u'sn*t-allowed')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

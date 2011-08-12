@@ -292,7 +292,3 @@ class ReadOnlyLaunchpadDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
             self.assertRaises(
                 ReadOnlyModeDisallowedStore,
                 store_selector.get, store, MASTER_FLAVOR)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

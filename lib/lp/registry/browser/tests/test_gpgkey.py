@@ -24,7 +24,3 @@ class TestCanonicalUrl(TestCaseWithFactory):
             '%s/+gpg-keys/%s' % (
                 canonical_url(person, rootsite='api'), gpgkey.keyid),
             canonical_url(gpgkey))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -2818,7 +2818,3 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             submission_id, result,
             'Extra element context in interleave',
             'detection of an invalid sub.node of <info> failed')
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

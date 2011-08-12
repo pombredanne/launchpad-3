@@ -166,7 +166,3 @@ class TestCodeImportDispatcherUnit(TestCase):
         dispatcher._getSleepInterval = lambda : interval
         dispatcher.findAndDispatchJobs(StubSchedulerClient([10, 0]))
         self.assertEqual([interval], sleep_calls)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

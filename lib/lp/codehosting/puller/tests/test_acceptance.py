@@ -331,7 +331,3 @@ class TestBranchPuller(PullerBranchTestCase, LoomTestMixin):
     # - different branch exists in new location
     # - running puller while another puller is running
     # - expected output on non-quiet runs
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

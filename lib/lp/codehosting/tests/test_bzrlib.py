@@ -17,7 +17,3 @@ class TestBzrlib(TestCase):
             import bzrlib._dirstate_helpers_pyx
         except ImportError:
             self.fail("Bzr not built with C extensions.")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

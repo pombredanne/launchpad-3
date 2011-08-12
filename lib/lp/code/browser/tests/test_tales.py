@@ -209,8 +209,3 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             Equals(
                 '<a href="%s">build for deleted recipe [eric/ppa]</a>'
                 % (canonical_url(build, path_only_if_possible=True), )))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

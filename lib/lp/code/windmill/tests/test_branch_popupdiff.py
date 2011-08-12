@@ -136,7 +136,3 @@ class TestPopupOnBugPage(WindmillTestCase):
         client.waits.forElement(xpath=BRANCH_SEARCCH_RESULT)
         client.click(xpath=BRANCH_SEARCCH_RESULT)
         client.waits.forElement(xpath=POPUP_DIFF)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

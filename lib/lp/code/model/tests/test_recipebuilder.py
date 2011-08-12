@@ -305,7 +305,3 @@ class TestRecipeBuilder(TestCaseWithFactory):
         logger = BufferLogger()
         d = defer.maybeDeferred(job.dispatchBuildToSlave, "someid", logger)
         return assert_fails_with(d, CannotBuild)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

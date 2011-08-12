@@ -28,7 +28,3 @@ class TestPoll(TestCaseWithFactory):
         # Force closing of the poll so that we can call getWinners().
         poll.datecloses = datetime.now(pytz.UTC)
         self.failUnless(poll.getWinners() is None, poll.getWinners())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

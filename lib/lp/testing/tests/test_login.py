@@ -293,7 +293,3 @@ class TestLoginHelpers(TestCaseWithFactory):
         # anonymous_logged_in is a context logged in as anonymous.
         with anonymous_logged_in():
             self.assertLoggedIn(ANONYMOUS)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

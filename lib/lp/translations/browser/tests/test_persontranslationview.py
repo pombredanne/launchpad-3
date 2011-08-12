@@ -423,7 +423,3 @@ class TestPersonTranslationView(TestCaseWithFactory):
         # languages.
         self.view.context.removeLanguage(self.language)
         self.assertTrue(self.view.requires_preferred_languages)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -200,7 +200,3 @@ class EmailManagementTests(TestCaseWithFactory):
             EmailAddressStatus.OLD)
         transaction.commit()
         self.assertContentEqual(account.guessed_emails, [new_email])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

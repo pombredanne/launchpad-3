@@ -25,7 +25,3 @@ class OpenIDConsumerStoreTests(BaseStormOpenIDStoreTestsMixin, TestCase):
     def setUp(self):
         super(OpenIDConsumerStoreTests, self).setUp()
         self.store = getUtility(IOpenIDConsumerStore)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

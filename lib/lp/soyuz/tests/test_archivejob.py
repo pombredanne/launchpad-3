@@ -47,7 +47,3 @@ class ArchiveJobDerivedTestCase(TestCaseWithFactory):
         archive = self.factory.makeArchive()
         self.assertRaises(
             AttributeError, ArchiveJobDerived.create, archive)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

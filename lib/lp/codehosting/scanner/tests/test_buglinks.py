@@ -282,7 +282,3 @@ class TestSubscription(TestCaseWithFactory):
             db_branch, tree.branch, db_revision, bzr_revision, revno))
         bug_branch = getUtility(IBugBranchSet).getBugBranch(bug, db_branch)
         self.assertIsNot(None, bug_branch)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

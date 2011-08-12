@@ -96,15 +96,3 @@ class TestConfigureBugTrackerDSP(TestConfigureBugTrackerDistro):
 
     def getOwner(self):
         return self.target.distribution.owner
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestConfigureBugTrackerProduct))
-    suite.addTest(unittest.makeSuite(TestConfigureBugTrackerDistro))
-    suite.addTest(unittest.makeSuite(TestConfigureBugTrackerDSP))
-    return suite
-
-
-if __name__ == '__main__':
-    unittest.TextTestRunner().run(test_suite())

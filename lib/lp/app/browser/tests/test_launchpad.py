@@ -427,7 +427,3 @@ class TestErrorViews(TestCaseWithFactory):
         view = create_view(error, 'index.html')
         self.assertEqual('Error: Page gone', view.page_title)
         self.assertEqual(410, view.request.response.getStatus())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

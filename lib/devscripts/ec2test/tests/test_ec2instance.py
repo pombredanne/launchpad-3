@@ -137,7 +137,3 @@ class TestEC2Instance(TestCase):
         self._runInstance(instance, runnee=runnee, headless=True)
 
         self.assertEqual(1, instance.shutdown.call_count)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

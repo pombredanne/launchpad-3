@@ -543,9 +543,3 @@ class TestConfigFile(TestCase):
         # A quote that's only on one end doesn't get stripped.
         configfile = self._makeConfigFile('')
         self.assertEqual('"foo', configfile._stripQuotes('"foo'))
-
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

@@ -262,7 +262,3 @@ class TestDKIM(TestCaseWithFactory):
         self.assertEqual(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
         self.assertDkimLogContains('body hash mismatch')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

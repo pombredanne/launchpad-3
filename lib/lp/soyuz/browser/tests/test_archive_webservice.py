@@ -375,6 +375,3 @@ class TestCopyPackage(WebServiceTestCase):
         job_source = getUtility(IPlainPackageCopyJobSource)
         copy_job = job_source.getActiveJobs(target_archive).one()
         self.assertEqual(target_archive, copy_job.target_archive)
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

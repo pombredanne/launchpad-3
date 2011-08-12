@@ -108,7 +108,3 @@ class TestBaseBranchVisibilityRules(TestCaseWithFactory):
             InvalidVisibilityPolicy,
             product.setBranchVisibilityTeamPolicy,
             team, BranchVisibilityRule.FORBIDDEN)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -99,7 +99,3 @@ class TestDoNothing(TestCase):
     def test_eofReceivedDoesNothingWhenNoCommand(self):
         # When no process has been created, 'eofReceived' is a no-op.
         self.assertEqual(None, self.session.eofReceived())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

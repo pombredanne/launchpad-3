@@ -5486,7 +5486,3 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             'Unexpected status of submission 1: %s' % submission_2.status)
 
         SubmissionParser.processSubmission = process_submission_regular
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

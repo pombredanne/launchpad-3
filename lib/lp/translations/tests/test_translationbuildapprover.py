@@ -251,7 +251,3 @@ class TestTranslationBuildApprover(TestCaseWithFactory):
 
         self.assertEqual(RosettaImportStatus.APPROVED, entries[0].status)
         self.assertEqual(filenames[0], domain1_pot.path)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -150,7 +150,3 @@ class TestNameblacklistBreadcrumb(BaseBreadcrumbTestCase):
              'http://launchpad.dev/+nameblacklist/1/+edit'),
             ]
         self.assertBreadcrumbs(expected, blacklist, view_name='+edit')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

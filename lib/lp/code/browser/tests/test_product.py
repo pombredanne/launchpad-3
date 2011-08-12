@@ -357,7 +357,3 @@ class TestCanConfigureBranches(TestCaseWithFactory):
         login_person(product.owner)
         view = create_view(product, '+branches', layer=CodeLayer)
         self.assertEqual(True, view.can_configure_branches())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

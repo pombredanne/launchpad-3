@@ -145,7 +145,3 @@ class TestLoggingManager(TestCase, LoggingManagerMixin):
         [handler] = access_log.handlers
         self.assertIsInstance(handler, WatchedFileHandler)
         self.assertEqual(access_log_path, handler.baseFilename)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

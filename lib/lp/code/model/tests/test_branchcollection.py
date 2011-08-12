@@ -1204,7 +1204,3 @@ class TestBranchCollectionOwnerCounts(TestCaseWithFactory):
             *DEFAULT_BRANCH_STATUS_IN_LISTING)
         person_count, team_count = collection.ownerCounts()
         self.assertEqual(1, person_count)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

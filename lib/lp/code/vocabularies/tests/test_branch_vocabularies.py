@@ -220,7 +220,3 @@ class TestRestrictedBranchVocabularyOnBranch(
         """Restrict using a branch on widget."""
         return getUtility(IBranchLookup).getByUniqueName(
             '~spotty/widget/hill')
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -225,7 +225,3 @@ class TestDistroseriesPackagingMemcache(MemcacheTestCase):
             self.hoary, name='+packaging', principal=self.observer)
         self.assertCacheHit(
             '<table id="packagings"', 'public, 30 minute', view.render())
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

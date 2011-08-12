@@ -60,7 +60,3 @@ class TestFormatSupport(TestCase):
                 description = description[:-1]
             self.assertTrue(len(description.split('\n')) == 1,
                             item.description)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

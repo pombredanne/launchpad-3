@@ -665,8 +665,3 @@ class CustomTestLoader(unittest.TestLoader):
         else:
             return super(CustomTestLoader, self).getTestCaseNames(
                 testCaseClass)
-
-
-def test_suite():
-    """Return the `IStructuralSubscriptionTarget` TestSuite."""
-    return CustomTestLoader().loadTestsFromName(__name__)

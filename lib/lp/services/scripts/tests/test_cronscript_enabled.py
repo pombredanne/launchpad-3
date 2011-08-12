@@ -137,7 +137,3 @@ class TestCronscriptEnabled(TestCase):
             '-qqqqq', 'disabled',
             ]
         self.assertEqual(0, subprocess.call(cmd))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

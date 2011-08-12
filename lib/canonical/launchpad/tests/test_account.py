@@ -73,7 +73,3 @@ class TestPersonlessAccountPermissions(TestCaseWithFactory):
         login(ANONYMOUS)
         self.failIf(check_permission(
             'launchpad.View', self.account.preferredemail))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

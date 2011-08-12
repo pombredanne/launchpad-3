@@ -80,7 +80,3 @@ class TestTranslationValidation(TestCase):
             GettextValidationError,
             validate_translation, english_singular, english_plural,
             translations, flags)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

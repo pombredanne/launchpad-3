@@ -18,7 +18,3 @@ class TestStorm(TestCase):
         self.assert_(
             storm.has_cextensions,
             'Storm not running with C extensions')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

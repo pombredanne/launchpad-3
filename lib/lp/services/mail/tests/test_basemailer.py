@@ -185,9 +185,3 @@ class TestBaseMailer(TestCaseWithFactory):
         self.assertEqual(
             'Excessively large attachments removed.',
             bad_parts[1].get_payload(decode=True))
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
-    return suite

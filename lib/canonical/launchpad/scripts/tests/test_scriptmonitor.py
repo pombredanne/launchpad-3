@@ -58,7 +58,3 @@ class CheckScriptTestCase(unittest.TestCase):
                          'script-monitor-test',
                          '2007-05-23 00:30:00', '2007-05-23 01:30:00'),
             output)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

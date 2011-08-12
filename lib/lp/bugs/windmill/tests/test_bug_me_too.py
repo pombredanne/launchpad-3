@@ -120,6 +120,3 @@ class TestMeToo(WindmillTestCase):
             client.asserts.assertText(
                 xpath=VALUE_LOCATION_XPATH,
                 validator=u"This bug affects you")
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

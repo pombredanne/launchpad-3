@@ -85,7 +85,3 @@ class LoneObject:
 def adapt_loneobject_to_container(loneobj):
     """Adapt a LoneObject to an `ILaunchpadContainer`."""
     return loneobj
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

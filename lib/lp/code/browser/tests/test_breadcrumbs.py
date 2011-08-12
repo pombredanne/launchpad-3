@@ -19,7 +19,3 @@ class TestCodeImportMachineBreadcrumb(BaseBreadcrumbTestCase):
             ('apollo',
              'http://code.launchpad.dev/+code-imports/+machines/apollo')]
         self.assertBreadcrumbs(expected, machine)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

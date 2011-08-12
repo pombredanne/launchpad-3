@@ -266,7 +266,3 @@ class TestCodeReviewVoteReferenceReassignReview(TestCaseWithFactory):
             reviewer=reviewer_team, registrant=bmp.registrant)
         review.reassignReview(reviewer_team)
         self.assertEqual(reviewer_team, review.reviewer)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -31,7 +31,3 @@ class TestVocabularies(TestCase):
                 raise AssertionError(
                     '%s.%s vocabulary is not wrapped in a security proxy.' % (
                     vocab.__module__, name))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

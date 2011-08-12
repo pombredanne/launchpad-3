@@ -402,7 +402,3 @@ class TestFindMergedRevno(TestCase):
         self.assertFoundRevisionNumber(3, 'rev-3b')
         self.assertFoundRevisionNumber(2, 'rev-2-1c')
         self.assertFoundRevisionNumber(1, 'rev-1')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

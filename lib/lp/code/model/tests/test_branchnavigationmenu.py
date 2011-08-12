@@ -35,8 +35,3 @@ class TestBranchNavigation(TestCaseWithFactory):
         """Review comments implement IBranchNavigation"""
         comment = self.factory.makeCodeReviewComment()
         self.assertTrue(IBranchNavigationMenu.providedBy(comment))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
-

@@ -82,7 +82,3 @@ class TestFakeMethod(TestCase):
         func(1)
         func(2, kwarg=3)
         self.assertEqual(3, func.call_count)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -67,7 +67,3 @@ class TestDirectoryMailBox(TestCase):
         for id, content in box.items():
             box.delete(id)
         self.assertEqual(0, len(list(box.items())))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

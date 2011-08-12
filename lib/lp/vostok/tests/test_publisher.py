@@ -59,7 +59,3 @@ class TestVostokBrowserResponse(TestCase):
         response._request = request
         self.assertRaises(
             ValueError, response.redirect, 'http://launchpad.dev')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

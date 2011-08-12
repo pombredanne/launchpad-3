@@ -303,7 +303,3 @@ class TestOopsMiddleware(TestCase):
         self.assertTrue(self.start_response_called)
         # Output content is empty because of no_body_app
         self.assertEqual('', ''.join(self._response_chunks))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

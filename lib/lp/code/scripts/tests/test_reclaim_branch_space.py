@@ -98,7 +98,3 @@ class TestReclaimBranchSpaceScript(TestCaseWithFactory):
         self.assertIn('INFO    Creating lockfile: ', stderr)
         self.assertIn('INFO    Job resulted in OOPS:', stderr)
         self.assertIn('INFO    Reclaimed space for 0 branches.\n', stderr)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -162,7 +162,3 @@ class TestScriptRunning(TestCase):
         self.assertEqual(libraryfile_set[1].hits, 1)
         self.assertEqual(libraryfile_set[2].hits, 1)
         self.assertEqual(libraryfile_set[3].hits, 1)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

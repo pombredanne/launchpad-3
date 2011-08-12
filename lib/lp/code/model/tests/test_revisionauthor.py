@@ -208,7 +208,3 @@ class TestRevisionAuthor(TestCase):
         # name_without_email is an empty string.
         author = RevisionAuthor(name=u'jml@localhost')
         self.assertEqual('', author.name_without_email)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

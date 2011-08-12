@@ -30,8 +30,3 @@ class TestReadOnly(TestCase):
         readonly_transport = get_readonly_transport(transport)
         double_readonly = get_readonly_transport(readonly_transport)
         self.assertIs(readonly_transport, double_readonly)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

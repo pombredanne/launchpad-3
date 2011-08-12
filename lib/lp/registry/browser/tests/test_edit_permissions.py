@@ -121,13 +121,3 @@ class DistroSourcePackageEditViewPermissionTestCase(EditViewPermissionBase):
         login_person(self.supervisor_member)
         view = create_initialized_view(self.target, '+edit')
         self.assertTrue(check_permission('launchpad.BugSupervisor', view))
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-    return suite
-
-
-if __name__ == '__main__':
-    unittest.main()

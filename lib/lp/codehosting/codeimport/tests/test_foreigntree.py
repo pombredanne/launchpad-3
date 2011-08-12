@@ -204,7 +204,3 @@ class TestCVSWorkingTree(TestCaseWithTransport):
         tree2.update()
         readme_path = os.path.join(tree2.local_path, 'README')
         self.assertFileEqual(new_content, readme_path)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

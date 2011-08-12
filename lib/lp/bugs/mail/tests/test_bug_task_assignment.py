@@ -114,7 +114,3 @@ class TestAssignmentNotification(TestCaseWithFactory):
         receivers = [message['To'] for message in messages]
         self.assertFalse(self.team_member_email in receivers,
             'Team member was emailed about the bug task change')
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

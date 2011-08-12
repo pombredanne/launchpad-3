@@ -44,7 +44,3 @@ class TestIHasMergeProposals(TestCaseWithFactory):
         # DistributionSourcePackages should implement IHasMergeProposals.
         dsp = self.factory.makeDistributionSourcePackage()
         verifyObject(IHasMergeProposals, dsp)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

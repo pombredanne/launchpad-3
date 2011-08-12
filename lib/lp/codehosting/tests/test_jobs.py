@@ -48,7 +48,3 @@ class TestRevisionMailJob(TestCaseWithFactory):
         existing_diff = StaticDiff.selectOneBy(
             from_revision_id='null:', to_revision_id=to_revision_id)
         self.assertIsNot(None, existing_diff)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -1091,7 +1091,3 @@ class TestLatestProposalsForEachBranch(TestCaseWithFactory):
                 datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
         self.assertEqual(
             [bmp2], latest_proposals_for_each_branch([bmp1, bmp2]))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

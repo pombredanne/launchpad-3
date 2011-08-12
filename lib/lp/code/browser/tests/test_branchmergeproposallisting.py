@@ -360,7 +360,3 @@ class ActiveReviewSortingTest(TestCaseWithFactory):
         self.assertEqual(
             [bmp3, bmp2, bmp1],
             [item.context for item in view.review_groups[view.OTHER]])
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -540,6 +540,3 @@ class TestGenerateChanges(TestCase):
             'Urgency',
             'Version',
             ], read_changes.keys())
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

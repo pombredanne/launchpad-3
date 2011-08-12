@@ -299,7 +299,3 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         specific_job = self.jobsource.create(branch, testing=True)
         naked_job = removeSecurityProxy(specific_job)
         self.assertEquals(naked_job._constructed_build, specific_job.build)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

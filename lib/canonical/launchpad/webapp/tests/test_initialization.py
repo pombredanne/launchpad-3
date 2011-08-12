@@ -57,8 +57,3 @@ class TestURLNamespace(TestCase):
                 pass
             else:
                 self.assertNotEqual(factory, not_the_namespace_factory)
-
-
-def test_suite():
-    suite = unittest.TestLoader().loadTestsFromName(__name__)
-    return suite

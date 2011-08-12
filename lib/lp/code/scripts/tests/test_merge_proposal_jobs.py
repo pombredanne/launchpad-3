@@ -36,7 +36,3 @@ class TestMergeProposalJobScript(TestCaseWithFactory):
             'INFO    Running through Twisted.\n'
             'INFO    Ran 1 GenerateIncrementalDiffJob jobs.\n', stderr)
         self.assertEqual(JobStatus.COMPLETED, job.status)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

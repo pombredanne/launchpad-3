@@ -123,7 +123,3 @@ class TestBranchLinks(WindmillTestCase):
         for (href, title) in invalid_links.items():
             self.assertEqual(title, result_invalid_links[href])
         self.assertEqual(set(valid_links), set(result_valid_links))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -242,7 +242,3 @@ class TestQuoteTextAsEmail(TestCase):
     def test_trailing_whitespace(self):
         # Trailing whitespace is removed.
         self.assertEqual('>   foo', quote_text_as_email('  foo  \n '))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

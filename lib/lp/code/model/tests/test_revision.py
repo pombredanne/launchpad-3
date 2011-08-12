@@ -929,7 +929,3 @@ class TestPruneRevisionCache(RevisionCacheTestCase):
             self.store.add(cache)
         RevisionSet.pruneRevisionCache(1)
         self.assertEqual(3, len(self._getRevisionCache()))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

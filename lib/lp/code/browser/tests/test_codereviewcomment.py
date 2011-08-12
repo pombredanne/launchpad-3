@@ -46,7 +46,3 @@ class TestCodeReviewComments(TestCaseWithFactory):
         display_comment = CodeReviewDisplayComment(comment)
 
         verifyObject(ICodeReviewDisplayComment, display_comment)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

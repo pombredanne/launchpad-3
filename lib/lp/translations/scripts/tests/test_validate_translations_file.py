@@ -129,7 +129,3 @@ class TestValidateTranslationsFile(TestCase):
         script = 'scripts/rosetta/validate-translations-file.py'
         result, out, err = run_script(script, [test_input])
         self.assertEqual(0, result)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -146,7 +146,3 @@ class TestCodeReviewKarma(TestCaseWithFactory):
         self.karma_events = []
         proposal.rejectBranch(reviewer, "A rev id.")
         self.assertOneKarmaEvent(reviewer, 'branchmergerejectedown')
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

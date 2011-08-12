@@ -27,7 +27,3 @@ class TestAddDependency(BrowserTestCase):
         browser.getControl('Depends On').value = canonical_url(dependency)
         browser.getControl('Continue').click()
         self.assertIn(dependency, spec.dependencies)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

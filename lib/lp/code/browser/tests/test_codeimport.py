@@ -54,9 +54,3 @@ class TestImportDetails(TestCaseWithFactory):
         svn_details = find_tag_by_id(browser.contents, 'svn-import-details')
         self.assertSvnDetailsDisplayed(
             svn_details, RevisionControlSystems.SVN)
-
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

@@ -86,7 +86,3 @@ class TestCodeImportMachineShouldLookForJob(TestCaseWithFactory):
         # When the machine is online, the heartbeat is updated.
         self.machine.shouldLookForJob(10)
         self.assertSqlAttributeEqualsDate(self.machine, 'heartbeat', UTC_NOW)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

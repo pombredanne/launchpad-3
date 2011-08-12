@@ -157,7 +157,3 @@ class TestLaunchpadlibAPI(TestCaseWithFactory):
         self.assertIn(
             'This project cannot be deactivated since it is linked to source '
             'packages.', e.content)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

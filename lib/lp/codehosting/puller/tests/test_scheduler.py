@@ -959,7 +959,3 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
             mirror_fails_to_unlock, 1)
 
         return deferred.addErrback(self._dumpError)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

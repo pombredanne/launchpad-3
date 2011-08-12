@@ -264,7 +264,3 @@ class TestTranslationLinksAggregator(TestCaseWithFactory):
 
         expected = [(package, canonical_url(package), pofiles)]
         self.assertEqual(expected, descriptions)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

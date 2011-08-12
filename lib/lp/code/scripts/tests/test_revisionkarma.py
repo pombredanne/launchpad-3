@@ -123,7 +123,3 @@ class TestRevisionKarma(TestCaseWithFactory):
             'test', config.revisionkarma.dbuser, ['-q'])
         script.main()
         self.assertOneKarmaEvent(author, b2.product)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

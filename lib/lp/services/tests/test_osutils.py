@@ -191,7 +191,3 @@ class TestUntilNoEINTR(TestCase):
             IOError, until_no_eintr, self.MAX_RETRIES, function)
         self.assertEqual(errno.EINTR, error.errno)
         self.assertEqual(self.MAX_RETRIES, len(calls))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

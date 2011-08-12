@@ -275,7 +275,3 @@ class TestDistroSeriesUsageEnums(
         # be current, the series pillar must be marked as using
         # using translations.
         self.series_pillar.translations_usage = ServiceUsage.LAUNCHPAD
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

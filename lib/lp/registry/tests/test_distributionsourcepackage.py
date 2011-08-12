@@ -163,7 +163,3 @@ class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
             archive.name for archive in related_archives]
 
         self.assertEqual(related_archive_names, ['gedit-beta'])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -202,7 +202,3 @@ class TestLoggingInWithPersonlessAccount(TestCaseWithFactory):
             self.request)
         self.failUnless(ILaunchpadPrincipal.providedBy(principal))
         self.failUnless(principal.person is None)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -55,13 +55,3 @@ class TestBugView(TestCaseWithFactory):
             ['patch'],
             [attachment['attachment'].title
              for attachment in self.view.patches])
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestBugView))
-    return suite
-
-
-if __name__ == '__main__':
-    unittest.TextTestRunner().run(test_suite())

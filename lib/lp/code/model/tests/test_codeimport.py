@@ -702,7 +702,3 @@ class TestRequestImport(TestCaseWithFactory):
         self.assertRaises(
             CodeImportAlreadyRunning, code_import.requestImport,
             requester)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

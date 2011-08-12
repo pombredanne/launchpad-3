@@ -533,7 +533,3 @@ class TestMergeProposalUpdatedEmailJob(TestCaseWithFactory):
         self.assertEqual(
             'emailing subscribers about merge proposal changes',
             job.getOperationDescription())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

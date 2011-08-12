@@ -126,7 +126,3 @@ class TestSourcePackageRecipeBuildMailer(TestCaseWithFactory):
         upload_log_fragment = 'Upload Log: %s' % build.upload_log_url
         ctrl = self.makeStatusEmail(build)
         self.assertTrue(upload_log_fragment in ctrl.body)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

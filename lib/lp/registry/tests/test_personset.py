@@ -252,7 +252,3 @@ class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
             u'other-openid-identifier' in [
                 identifier.identifier for identifier in removeSecurityProxy(
                     person.account).openid_identifiers])
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

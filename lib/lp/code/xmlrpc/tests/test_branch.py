@@ -356,7 +356,3 @@ class TestExpandURL(TestCaseWithFactory):
         self.assertFault(
             branch.unique_name,
             faults.NoUrlForBranch(branch.unique_name))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

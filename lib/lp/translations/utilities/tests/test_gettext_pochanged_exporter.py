@@ -46,9 +46,3 @@ class GettextPOChangedExporterTestCase(unittest.TestCase):
             "Expected GettextPOChangedExporter to support no source formats "
             "but got %r instead." % (
                 self.translation_exporter.supported_source_formats))
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(GettextPOChangedExporterTestCase))
-    return suite

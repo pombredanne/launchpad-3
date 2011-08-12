@@ -141,7 +141,3 @@ class TestProductRevisionFeed(TestCaseWithFactory):
         branch.destroySelf()
         feed = self._createFeed(product)
         self.assertEqual([], feed.getItems())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

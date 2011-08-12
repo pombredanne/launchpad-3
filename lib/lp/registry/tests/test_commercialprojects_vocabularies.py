@@ -122,6 +122,3 @@ class TestCommProjVocabulary(TestCase):
         self.assertEqual(0, len(results),
                          "Expected %d results but got %d." %
                          (0, len(results)))
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

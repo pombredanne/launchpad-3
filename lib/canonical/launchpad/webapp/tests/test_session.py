@@ -38,7 +38,3 @@ class GetCookieDomainTestCase(unittest.TestCase):
                          '.launchpad.dev')
         self.assertEqual(get_cookie_domain('bugs.launchpad.dev'),
                          '.launchpad.dev')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

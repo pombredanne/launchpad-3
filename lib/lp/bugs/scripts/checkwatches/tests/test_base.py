@@ -171,7 +171,3 @@ class TestWorkingBaseErrorReporting(TestCaseWithFactory):
     def test_sql_log_cleared_after_error(self):
         with self._test_sql_log_cleared_after_x() as base:
             base.error("Numpty on deck.")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

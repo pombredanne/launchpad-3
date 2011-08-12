@@ -35,7 +35,3 @@ class TestFormatterAPI(TestCaseWithFactory):
         self.assertEqual('bork', diff.conflicts)
         formatter = PreviewDiffFormatterAPI(diff)
         self.assertIn('has conflicts', formatter.link(None))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

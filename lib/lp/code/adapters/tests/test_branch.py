@@ -61,7 +61,3 @@ class TestBranchMergeProposalDelta(TestCase):
             {'old': BranchMergeProposalStatus.WORK_IN_PROGRESS,
             'new': BranchMergeProposalStatus.MERGED},
             delta.queue_status)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

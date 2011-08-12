@@ -1428,7 +1428,3 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
         os.makedirs(branch_path)
         self.runReadyJobs()
         self.assertFalse(os.path.exists(branch_path))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

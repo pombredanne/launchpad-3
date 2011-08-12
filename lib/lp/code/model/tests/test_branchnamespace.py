@@ -1949,7 +1949,3 @@ class TestBranchNamespaceMoveBranch(TestCaseWithFactory):
         self.assertEqual(team, branch.owner)
         # And for paranoia.
         self.assertNamespacesEqual(namespace, branch.namespace)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

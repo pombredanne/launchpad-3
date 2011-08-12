@@ -166,8 +166,3 @@ class TestPgSession(unittest.TestCase):
 
         # also see the page test xx-no-anonymous-session-cookies for tests of
         # the cookie behavior.
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestPgSession))
-    return suite

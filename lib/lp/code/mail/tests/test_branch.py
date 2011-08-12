@@ -267,7 +267,3 @@ class TestBranchMailerSubject(TestCaseWithFactory):
             branch.owner).preferredemail.email
         self.assertEqual('Testing %j foo', mailer._getSubject(
                 branch_owner_email, branch.owner))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

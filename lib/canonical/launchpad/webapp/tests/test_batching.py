@@ -569,7 +569,3 @@ class TestStormRangeFactory(TestCaseWithFactory):
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, memo)
         self.assertEqual(all_results[1:4], list(sliced_result))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

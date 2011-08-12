@@ -31,8 +31,3 @@ class TestIHasBranches(TestCaseWithFactory):
         # ProjectGroups should implement IHasBranches.
         project = self.factory.makeProject()
         self.assertProvides(project, IHasBranches)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

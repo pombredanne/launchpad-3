@@ -106,6 +106,3 @@ class TestCanConfigureTranslations(TestCaseWithFactory):
         login_person(product.owner)
         view = create_view(product, '+translations', layer=TranslationsLayer)
         self.assertEqual(True, view.can_configure_translations())
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

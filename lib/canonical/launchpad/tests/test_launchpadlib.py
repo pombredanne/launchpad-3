@@ -55,7 +55,3 @@ class TestLaunchpadLib(TestCaseWithFactory):
         # so project.milestones[0] doesn't work.
         milestone = self.project.active_milestones[:1][0]
         self.verifyAttributes(milestone)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -870,7 +870,3 @@ class TestBlobCollection(TestCase):
                 ))
         count = cur.fetchone()[0]
         self.failIfEqual(count, 2)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -94,7 +94,3 @@ class TestWebService(WebServiceTestCase):
         self.assertContentEqual(
             [group.name for group in translation_group_set],
             [group.name for group in self.service.translation_groups])
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
