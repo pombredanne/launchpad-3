@@ -619,6 +619,7 @@ class IPackageUploadSet(Interface):
                name=None, version=None, exact_match=False):
         """Get package upload records for a series with optional filtering.
 
+        :param distroseries: the `IDistroSeries` to consider.
         :param status: Filter results by this `PackageUploadStatus`, or list
             of statuses.
         :param created_since_date: If specified, only returns items uploaded
@@ -644,6 +645,20 @@ class IPackageUploadSet(Interface):
         :param distribution: source upload target `IDistribution`.
 
         :return: a matching `IPackageUpload` object.
+        """
+
+    def getBuildsForSources(self, distroseries, status=None, pockets=None,
+                            names=None):
+        """Return binary package upload records for a series with option
+        filtering.
+
+        :param distroseries: the `IDistroSeries` to consider.
+        :param status: Filter results by this list of `PackageUploadStatus`.
+        :param pockets: Filter results by this list of
+            `PackagePublishingPocket`
+        :param names: Filter results by this list of package names.
+
+        :return: A result set containing `IPackageUpload`s.
         """
 
     def getBuildByBuildIDs(build_ids):

@@ -41,6 +41,7 @@ from lp.soyuz.interfaces.packageset import (
     IPackagesetSet,
     NoSuchPackageSet,
     )
+from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.model.packageset import Packageset
 from lp.soyuz.scripts.packagecopier import do_copy
 
@@ -135,6 +136,7 @@ class InitializeDistroSeries:
             if self.parent_ids == []:
                 self.parents = (
                     self.distroseries.previous_series.getParentSeries())
+        self._create_source_names_by_parent()
 
     def check(self):
         if self.distroseries.isDerivedSeries():
@@ -155,6 +157,7 @@ class InitializeDistroSeries:
                 self._checkBuilds(parent)
             self._checkQueue(parent)
         self._checkSeries()
+        return True
 
     def _checkParents(self):
         """If self.first_derivation, the parents list cannot be empty."""
@@ -174,10 +177,15 @@ class InitializeDistroSeries:
         Only cares about the RELEASE, SECURITY and UPDATES pockets, which are
         the only ones inherited via initializeFromParent method.
         """
+        spns = self.source_names_by_parent.get(parent, None)
+        if spns is not None and len(spns) == 0:
+            # If no sources are selected in this parent, skip the check.
+            return
+
         arch_tags = self.arches if self.arches is not () else None
         pending_builds = parent.getBuildRecords(
             BuildStatus.NEEDSBUILD, pocket=INIT_POCKETS,
-            arch_tag=arch_tags)
+            arch_tag=arch_tags, name=spns)
 
         if pending_builds.any():
             raise InitializationError("Parent series has pending builds.")
@@ -193,7 +201,15 @@ class InitializeDistroSeries:
             PackageUploadStatus.ACCEPTED,
             PackageUploadStatus.UNAPPROVED,
             ]
-        items = parent.getPackageUploads(status=statuses, pocket=INIT_POCKETS)
+        # items = parent.getPackageUploads(
+        #    status=statuses, pocket=INIT_POCKETS)
+        spns = self.source_names_by_parent.get(parent, None)
+        if spns is not None and len(spns) == 0:
+            # If no sources are selected in this parent, skip the check.
+            return
+
+        items = getUtility(IPackageUploadSet).getBuildsForSources(
+            parent, statuses, INIT_POCKETS, spns)
         if not items.is_empty():
             raise InitializationError(
                 "Parent series queues are not empty.")
@@ -377,6 +393,24 @@ class InitializeDistroSeries:
                         distroseries=self.distroseries).is_empty()))
         return case_1a or case_1b
 
+    def _create_source_names_by_parent(self):
+        """If only a subset of the packagesets was selected to be copied,
+        create a dict by the list of source names to be copied for each
+        parent.
+        """
+        source_names_by_parent = {}
+        if self.packagesets:
+            for parent in self.derivation_parents:
+                spns = []
+                # The overhead from looking up each packageset is
+                # mitigated by this usually running from a job.
+                for pkgsetid in self.packagesets:
+                    pkgset = self._store.get(Packageset, int(pkgsetid))
+                    if pkgset.distroseries == parent:
+                        spns += list(pkgset.getSourcesIncluded())
+                source_names_by_parent[parent] = spns
+        self.source_names_by_parent = source_names_by_parent
+
     def _copy_publishing_records(self, distroarchseries_lists):
         """Copy the publishing records from the parent arch series
         to the given arch series in ourselves.
@@ -389,21 +423,13 @@ class InitializeDistroSeries:
         archive_set = getUtility(IArchiveSet)
 
         for parent in self.derivation_parents:
-            spns = []
-            # The overhead from looking up each packageset is mitigated by
-            # this usually running from a job.
-            if self.packagesets:
-                for pkgsetid in self.packagesets:
-                    pkgset = self._store.get(Packageset, int(pkgsetid))
-                    if pkgset.distroseries == parent:
-                        spns += list(pkgset.getSourcesIncluded())
-
+            spns = self.source_names_by_parent.get(parent, None)
+            if spns is not None and len(spns) == 0:
                 # Some packagesets where selected but not a single
                 # source from this parent: we skip the copy since
                 # calling copy with spns=[] would copy all the packagesets
                 # from this parent.
-                if len(spns) == 0:
-                    continue
+                continue
 
             distroarchseries_list = distroarchseries_lists[parent]
             for archive in parent.distribution.all_distro_archives:

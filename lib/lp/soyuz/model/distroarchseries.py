@@ -53,9 +53,7 @@ from lp.soyuz.interfaces.distroarchseries import (
     IDistroArchSeriesSet,
     IPocketChroot,
     )
-from lp.soyuz.interfaces.publishing import (
-    ICanPublishPackages,
-    )
+from lp.soyuz.interfaces.publishing import ICanPublishPackages
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.distroarchseriesbinarypackage import (
@@ -203,7 +201,7 @@ class DistroArchSeries(SQLBase):
             find_spec = (
                 BinaryPackageRelease,
                 BinaryPackageName,
-                BinaryPackageName, # dummy value
+                BinaryPackageName,  # dummy value
                 )
         archives = self.distroseries.distribution.getArchiveIDList()
 
@@ -308,7 +306,7 @@ class DistroArchSeries(SQLBase):
 
         published = BinaryPackagePublishingHistory.select(
             " AND ".join(queries),
-            clauseTables = ['BinaryPackageRelease'],
+            clauseTables=['BinaryPackageRelease'],
             orderBy=['-id'])
 
         return shortlist(published)
@@ -392,7 +390,7 @@ class DistroArchSeriesSet:
         if arch_tag is None:
             return [arch.id for arch in architectures]
         else:
-            if type(arch_tag) is not list:
+            if not isinstance(arch_tag, list):
                 arch_tag = (arch_tag, )
             return [arch.id for arch in architectures
                         if arch.architecturetag in arch_tag]
@@ -411,4 +409,3 @@ class PocketChroot(SQLBase):
                      notNull=True)
 
     chroot = ForeignKey(dbName='chroot', foreignKey='LibraryFileAlias')
-
