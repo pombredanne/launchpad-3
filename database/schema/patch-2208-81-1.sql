@@ -5,7 +5,5 @@ SET client_min_messages=ERROR;
 ALTER TABLE SourcePackagePublishingHistory ADD COLUMN sourcepackagename INTEGER;
 ALTER TABLE BinaryPackagePublishingHistory ADD COLUMN binarypackagename INTEGER;
 
--- INDICES?
-
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 98, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 81, 1);
 
