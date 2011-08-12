@@ -1,4 +1,5 @@
-= Messages =
+Messages
+========
 
 The Message table is a central message spool that can be used by
 various parts of launchpad. Currently, it is used by Malone for comments
@@ -510,7 +511,8 @@ Finally, let's test the goldilocks message, where the date is just right:
     2005-06-17 09:45:13+00:00
 
 
-== Unknown encoding ==
+Unknown encoding
+================
 
 Some mail clients (Pine, for example) send messages with the character set
 specified as x-unknown. Python's email package doesn't handle these well and

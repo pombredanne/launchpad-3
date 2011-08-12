@@ -65,7 +65,8 @@ the person's name is encoded properly.
 simple_sendmail_from_person uses the Person's preferred email address:
 
     >>> login('test@canonical.com')
-    >>> from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+    >>> from canonical.launchpad.interfaces.emailaddress import (
+    ...     IEmailAddressSet)
     >>> sample_person = getUtility(IPersonSet).getByEmail(
     ...     'test@canonical.com')
     >>> testing  = getUtility(IEmailAddressSet).getByEmail(
@@ -340,4 +341,3 @@ contain any line breaks.
     >>> sorted(to_addrs)
     ['CC Address <cc.address@example.com>',
      'To Address <to.address@example.com>']
-     

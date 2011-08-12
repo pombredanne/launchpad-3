@@ -159,7 +159,8 @@ hack can be removed.
     ...
 
     >>> print msg.get_payload(i=0).as_string() #doctest: -NORMALIZE_WHITESPACE
-    Content-Type: multipart/mixed; boundary="--------------------EuxKj2iCbKjpUGkD"
+    Content-Type: multipart/mixed;
+     boundary="--------------------EuxKj2iCbKjpUGkD"
     ...
 
     >>> principal = authenticateEmail(msg, accept_any_timestamp)

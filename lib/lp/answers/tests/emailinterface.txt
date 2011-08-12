@@ -129,7 +129,7 @@ possibilities for the user.
     # Define an helper to change the question status easily.
     >>> def setQuestionStatus(question, new_status):
     ...     login('foo.bar@canonical.com')
-    ...     msg = question.setStatus(foo_bar, new_status, 'Status Change',
+    ...     question.setStatus(foo_bar, new_status, 'Status Change',
     ...                            datecreated=now.next())
     ...     login('no-priv@canonical.com')
 

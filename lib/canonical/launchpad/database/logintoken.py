@@ -4,7 +4,10 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['LoginToken', 'LoginTokenSet']
+__all__ = [
+    'LoginToken',
+    'LoginTokenSet',
+    ]
 
 from itertools import chain
 
@@ -70,7 +73,7 @@ class LoginToken(SQLBase):
     fingerprint = StringCol(dbName='fingerprint', notNull=False,
                             default=None)
     date_consumed = UtcDateTimeCol(default=None)
-    password = '' # Quick fix for Bug #2481
+    password = ''  # Quick fix for Bug #2481
 
     title = 'Launchpad Email Verification'
 
