@@ -433,6 +433,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A source package release publishing record."""
     implements(ISourcePackagePublishingHistory)
 
+    sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
+        dbName='sourcepackagename')
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
         dbName='sourcepackagerelease')
     distroseries = ForeignKey(foreignKey='DistroSeries',
@@ -907,6 +909,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     implements(IBinaryPackagePublishingHistory)
 
+    binarypackagename = ForeignKey(foreignKey='BinaryPackageName',
+        dbName='binarypackagename')
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
     distroarchseries = ForeignKey(foreignKey='DistroArchSeries',
