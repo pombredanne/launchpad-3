@@ -285,13 +285,8 @@ def notify_new_ppa_subscription(subscription, event):
 
     template = get_email_template('ppa-subscription-new.txt')
 
-    for person in non_active_subscribers:
-
-        if person.preferredemail is None:
-            # Don't send to people without a preferred email.
-            continue
-
-        to_address = [person.preferredemail.email]
+    for person, preferred_email in non_active_subscribers:
+        to_address = [preferred_email.email]
         root = getUtility(ILaunchpadRoot)
         recipient_subscriptions_url = "%s~/+archivesubscriptions" % (
             canonical_url(root))

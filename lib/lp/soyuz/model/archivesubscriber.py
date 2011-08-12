@@ -30,6 +30,8 @@ from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
+from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from lp.registry.interfaces.person import validate_person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
@@ -108,13 +110,19 @@ class ArchiveSubscriber(Storm):
                 TeamParticipation,
                 TeamParticipation.personID == Person.id)
 
+            # Only return people with preferred email address set.
+            preferred_email = Join(
+                EmailAddress, EmailAddress.personID == Person.id)
+
             # We want to get all participants who are themselves
             # individuals, not teams:
             non_active_subscribers = store.using(
-                Person, team_participation, auth_token).find(
-                Person,
+                Person, team_participation, preferred_email, auth_token).find(
+                (Person, EmailAddress),
+                EmailAddress.status == EmailAddressStatus.PREFERRED,
                 TeamParticipation.teamID == self.subscriber_id,
                 Person.teamowner == None,
+                # There is no existing archive auth token.
                 ArchiveAuthToken.person_id == None)
             non_active_subscribers.order_by(Person.name)
             return non_active_subscribers
@@ -128,8 +136,12 @@ class ArchiveSubscriber(Storm):
                 return EmptyResultSet()
 
             # Otherwise return a result set containing only the
-            # subscriber.
-            return store.find(Person, Person.id == self.subscriber_id)
+            # subscriber and their preferred email address.
+            return store.find(
+                (Person, EmailAddress),
+                Person.id == self.subscriber_id,
+                EmailAddress.personID == Person.id,
+                EmailAddress.status == EmailAddressStatus.PREFERRED)
 
 
 class ArchiveSubscriberSet:

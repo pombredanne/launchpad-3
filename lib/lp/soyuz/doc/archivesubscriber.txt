@@ -461,18 +461,18 @@ via the cprov_team:
 So the getNonActiveSubscribers() method for this team subscription will
 currently include Joe:
 
-    >>> for person in subscription.getNonActiveSubscribers():
-    ...     print person.displayname
-    Celso Providelo
-    Joe Smith
-    John Smith
+    >>> for person, email in subscription.getNonActiveSubscribers():
+    ...     print person.displayname, email.email
+    Celso Providelo   celso.providelo@canonical.com
+    Joe Smith         joe@example.com
+    John Smith        john@example.com
 
 But if we create an auth token for joe to the archive (this could be via
 a separate subscription), then he will no longer be listed as a non-active
 subscriber for this subscription:
 
     >>> joesmith_token = mark_private_ppa.newAuthToken(joesmith)
-    >>> for person in subscription.getNonActiveSubscribers():
+    >>> for person, email in subscription.getNonActiveSubscribers():
     ...     print person.displayname
     Celso Providelo
     John Smith
@@ -487,7 +487,7 @@ will return a list with the single subscriber as expected:
     ...                                 email="harry@example.com")
     >>> subscription = mark_private_ppa.newSubscription(
     ...     harrysmith, mark, description=u"subscription for joesmith")
-    >>> for person in subscription.getNonActiveSubscribers():
+    >>> for person, email in subscription.getNonActiveSubscribers():
     ...     print person.displayname
     Harry Smith
 
@@ -507,7 +507,7 @@ indirect members that are not themselves groups are included:
     ...     team_cprov, mark, force_team_add=True)
     >>> subscription = mark_private_ppa.newSubscription(
     ...     launchpad_devs, mark, description=u"LP team too")
-    >>> for person in subscription.getNonActiveSubscribers():
+    >>> for person, email in subscription.getNonActiveSubscribers():
     ...     print person.displayname
     Celso Providelo
     John Smith
