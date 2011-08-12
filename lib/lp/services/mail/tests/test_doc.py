@@ -24,7 +24,6 @@ from lp.services.testing import build_test_suite
 
 
 here = os.path.dirname(os.path.realpath(__file__))
-special = {}
 
 
 class ProcessMailLayer(LaunchpadZopelessLayer):
@@ -45,24 +44,14 @@ class ProcessMailLayer(LaunchpadZopelessLayer):
         """Tear down the test fixture."""
         setSecurityPolicy(cls._old_policy)
 
-    doctests = [
-        '../../../answers/tests/emailinterface.txt',
+
+special = {
+    'emailauthentication.txt': LayeredDocFileSuite(
         '../doc/emailauthentication.txt',
-        ]
-
-    @classmethod
-    def addTestsToSpecial(cls):
-        """Adds all the tests related to process-mail.py to special"""
-        for filepath in cls.doctests:
-            filename = os.path.basename(filepath)
-            special[filename] = LayeredDocFileSuite(
-                filepath,
-                setUp=setUp, tearDown=tearDown,
-                layer=cls,
-                stdout_logging=False)
-
-
-ProcessMailLayer.addTestsToSpecial()
+        setUp=setUp, tearDown=tearDown,
+        layer=ProcessMailLayer,
+        stdout_logging=False)
+    }
 
 
 def test_suite():
