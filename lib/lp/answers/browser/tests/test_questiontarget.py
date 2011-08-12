@@ -372,8 +372,8 @@ class QuestionTargetPortletAnswerContactsWithDetailsTests(
 
     def test_data_target_owner_answercontact_looks(self):
         # Answercontact_data_js has can_edit set to true for target owner.
-        project = self.factory.makeProject()
-        question = self.factory.makeQuestion(target=project)
+        distro = self.factory.makeDistribution()
+        question = self.factory.makeQuestion(target=distro)
         contact = self.factory.makePerson(
             name='user', displayname='Contact Name')
         contact.addLanguage(getUtility(ILanguageSet)['en'])
@@ -392,7 +392,7 @@ class QuestionTargetPortletAnswerContactsWithDetailsTests(
                 'self_link': absoluteURL(contact, api_request)
                 }
             }
-        with person_logged_in(project.owner):
+        with person_logged_in(distro.owner):
             self.assertEqual(
                 dumps([expected_result]), view.answercontact_data_js)
 
