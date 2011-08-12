@@ -927,3 +927,26 @@ class DoesNotExistView:
 
     def __call__(self):
         raise NotFound(self.context, self.__name__)
+
+
+from zope.traversing.interfaces import ITraversable
+
+class Macro:
+    """TODO write docstring"""
+    implements(IBrowserPublisher, ITraversable)
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def traverse(self, name, furtherPath):
+        return self.index.macros[name]
+
+    def browserDefault(self, request):
+        return self, ()
+
+    def publishTraverse(self, request, name):
+        raise NotFound(self.context, self.__name__)
+
+    def __call__(self):
+        raise NotFound(self.context, self.__name__)

@@ -10,6 +10,7 @@
     i18n_domain="launchpad">
     <browser:page
         for="*"
+        class="lp.app.browser.launchpad.Macro"
         name="+base-layout-macros"
         template="../templates/base-layout-macros.pt"
         permission="zope.Public"
