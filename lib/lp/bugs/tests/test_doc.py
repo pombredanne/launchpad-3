@@ -15,13 +15,6 @@ from canonical.launchpad.ftests import (
     login,
     logout,
     )
-from canonical.launchpad.ftests.test_system_documentation import (
-    branchscannerSetUp,
-    lobotomize_stevea,
-    uploaderSetUp,
-    uploaderTearDown,
-    uploadQueueSetUp,
-    )
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
@@ -33,9 +26,17 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
+from lp.code.tests.test_doc import branchscannerSetUp
 from lp.services.mail.tests.test_doc import (
     ProcessMailLayer,
     )
+from lp.soyuz.tests.test_doc import (
+    lobotomize_stevea,
+    uploaderSetUp,
+    uploaderTearDown,
+    uploadQueueSetUp,
+    )
+
 
 here = os.path.dirname(os.path.realpath(__file__))
 

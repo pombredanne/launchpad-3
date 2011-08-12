@@ -11,15 +11,8 @@ import logging
 import os
 import unittest
 
-from zope.component import getUtility
 from zope.testing.cleanup import cleanUp
 
-from canonical.config import config
-from canonical.database.sqlbase import commit
-from canonical.launchpad.ftests import (
-    ANONYMOUS,
-    login,
-    )
 from canonical.launchpad.testing import browser
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
@@ -34,90 +27,9 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
-from lp.bugs.interfaces.bug import CreateBugParams
-from lp.bugs.interfaces.bugtask import IBugTaskSet
-from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.person import IPersonSet
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.testing.mail_helpers import pop_notifications
 
 
 here = os.path.dirname(os.path.realpath(__file__))
-
-
-def lobotomize_stevea():
-    """Set SteveA's email address' status to NEW.
-
-    Call this method first in a test's setUp where needed. Tests
-    using this function should be refactored to use the unaltered
-    sample data and this function eventually removed.
-
-    In the past, SteveA's account erroneously appeared in the old
-    ValidPersonOrTeamCache materialized view. This materialized view
-    has since been replaced and now SteveA is correctly listed as
-    invalid in the sampledata. This fix broke some tests testing
-    code that did not use the ValidPersonOrTeamCache to determine
-    validity.
-    """
-    from canonical.launchpad.database.emailaddress import EmailAddress
-    from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
-    stevea_emailaddress = EmailAddress.byEmail(
-            'steve.alexander@ubuntulinux.com')
-    stevea_emailaddress.status = EmailAddressStatus.NEW
-    commit()
-
-
-def poExportSetUp(test):
-    """Setup the PO export script tests."""
-    LaunchpadZopelessLayer.switchDbUser('poexport')
-    setUp(test)
-
-
-def poExportTearDown(test):
-    """Tear down the PO export script tests."""
-    # XXX sinzui 2007-11-14:
-    # This function is not needed. The test should be switched to tearDown.
-    tearDown(test)
-
-
-def uploaderSetUp(test):
-    """setup the package uploader script tests."""
-    setUp(test)
-    LaunchpadZopelessLayer.switchDbUser('uploader')
-
-
-def uploaderTearDown(test):
-    """Tear down the package uploader script tests."""
-    # XXX sinzui 2007-11-14:
-    # This function is not needed. The test should be switched to tearDown.
-    tearDown(test)
-
-
-def archivepublisherSetUp(test):
-    """Setup the archive publisher script tests."""
-    setUp(test)
-    LaunchpadZopelessLayer.switchDbUser(config.archivepublisher.dbuser)
-
-
-def branchscannerSetUp(test):
-    """Setup the user for the branch scanner tests."""
-    LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
-    setUp(test)
-
-
-def branchscannerTearDown(test):
-    """Tear down the branch scanner tests."""
-    # XXX sinzui 2007-11-14:
-    # This function is not needed. The test should be switched to tearDown.
-    tearDown(test)
-
-
-def uploadQueueSetUp(test):
-    lobotomize_stevea()
-    test_dbuser = config.uploadqueue.dbuser
-    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
-    setUp(test)
-    test.globs['test_dbuser'] = test_dbuser
 
 
 def layerlessTearDown(test):
