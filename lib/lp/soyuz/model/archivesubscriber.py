@@ -13,13 +13,8 @@ import pytz
 from storm.expr import (
     And,
     Desc,
-    In,
     Join,
     LeftJoin,
-    Not,
-    Select,
-    SQL,
-    With,
     )
 from storm.locals import (
     DateTime,
@@ -103,20 +98,24 @@ class ArchiveSubscriber(Storm):
 
             # We get all the people who already have active tokens for
             # this archive (for example, through separate subscriptions).
-            active_subscribers = With(
-                "active_subscribers",
-                Select(ArchiveAuthToken.person_id,
-                       And(ArchiveAuthToken.archive_id == self.archive_id,
-                           ArchiveAuthToken.date_deactivated == None)))
+            auth_token = LeftJoin(
+                ArchiveAuthToken,
+                And(ArchiveAuthToken.person_id == Person.id,
+                    ArchiveAuthToken.archive_id == self.archive_id,
+                    ArchiveAuthToken.date_deactivated == None))
+
+            team_participation = Join(
+                TeamParticipation,
+                TeamParticipation.personID == Person.id)
+
             # We want to get all participants who are themselves
             # individuals, not teams:
-            non_active_subscribers = store.with_(active_subscribers).find(
+            non_active_subscribers = store.using(
+                Person, team_participation, auth_token).find(
                 Person,
                 TeamParticipation.teamID == self.subscriber_id,
-                TeamParticipation.personID == Person.id,
                 Person.teamowner == None,
-                Not(In(Person.id,
-                       SQL("SELECT person FROM active_subscribers"))))
+                ArchiveAuthToken.person_id == None)
             non_active_subscribers.order_by(Person.name)
             return non_active_subscribers
         else:
