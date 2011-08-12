@@ -29,12 +29,10 @@ from lp.bugs.interfaces.bugattachment import (
     IBugAttachmentSet,
     )
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
-from lp.bugs.mail.commands import (
-    BugEmailCommands,
-    get_error_message,
-    )
+from lp.bugs.mail.commands import BugEmailCommands
 from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,
+    get_error_message,
     get_main_body,
     guess_bugtask,
     IncomingEmailError,

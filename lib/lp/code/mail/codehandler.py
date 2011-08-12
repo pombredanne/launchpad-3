@@ -301,7 +301,7 @@ class CodeHandler:
         try:
             ensure_not_weakly_authenticated(
                 mail, email_addr, 'not-signed-md.txt',
-                'key-not-registered-md.txt')
+                'key-not-registered-md.txt', error_templates)
         except IncomingEmailError, error:
             user = getUtility(ILaunchBag).user
             send_process_error_notification(

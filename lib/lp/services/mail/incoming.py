@@ -44,12 +44,12 @@ from canonical.launchpad.webapp.interaction import (
     )
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.librarian.interfaces import UploadFailed
-from lp.bugs.mail.commands import get_error_message
 from lp.registry.interfaces.person import IPerson
 from lp.services.features import getFeatureFlag
 from lp.services.mail.handlers import mail_handlers
 from lp.services.mail.helpers import (
     ensure_sane_signature_timestamp,
+    get_error_message,
     save_mail_to_librarian,
     )
 from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
