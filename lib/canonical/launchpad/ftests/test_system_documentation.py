@@ -125,65 +125,6 @@ def layerlessTearDown(test):
     cleanUp()
 
 
-def _createUbuntuBugTaskLinkedToQuestion():
-    """Get the id of an Ubuntu bugtask linked to a question.
-
-    The Ubuntu team is set as the answer contact for Ubuntu, and no-priv
-    is used as the submitter..
-    """
-    login('test@canonical.com')
-    sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-    ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
-    ubuntu_team.addLanguage(getUtility(ILanguageSet)['en'])
-    ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    ubuntu.addAnswerContact(ubuntu_team)
-    ubuntu_question = ubuntu.newQuestion(
-        sample_person, "Can't install Ubuntu",
-        "I insert the install CD in the CD-ROM drive, but it won't boot.")
-    no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
-    params = CreateBugParams(
-        owner=no_priv, title="Installer fails on a Mac PPC",
-        comment=ubuntu_question.description)
-    bug = ubuntu.createBug(params)
-    ubuntu_question.linkBug(bug)
-    [ubuntu_bugtask] = bug.bugtasks
-    login(ANONYMOUS)
-    # Remove the notifications for the newly created question.
-    pop_notifications()
-    return ubuntu_bugtask.id
-
-
-def bugLinkedToQuestionSetUp(test):
-    """Setup the question and linked bug for testing."""
-
-    def get_bugtask_linked_to_question():
-        return getUtility(IBugTaskSet).get(bugtask_id)
-
-    setUp(test)
-    bugtask_id = _createUbuntuBugTaskLinkedToQuestion()
-    test.globs['get_bugtask_linked_to_question'] = (
-        get_bugtask_linked_to_question)
-    # Log in here, since we don't want to set up an non-anonymous
-    # interaction in the test.
-    login('no-priv@canonical.com')
-
-
-def uploaderBugLinkedToQuestionSetUp(test):
-    LaunchpadZopelessLayer.switchDbUser('launchpad')
-    bugLinkedToQuestionSetUp(test)
-    LaunchpadZopelessLayer.commit()
-    uploaderSetUp(test)
-    login(ANONYMOUS)
-
-
-def uploadQueueBugLinkedToQuestionSetUp(test):
-    LaunchpadZopelessLayer.switchDbUser('launchpad')
-    bugLinkedToQuestionSetUp(test)
-    LaunchpadZopelessLayer.commit()
-    uploadQueueSetUp(test)
-    login(ANONYMOUS)
-
-
 # Files that have special needs can construct their own suite
 special = {
     # No setup or teardown at all, since it is demonstrating these features.
