@@ -5448,17 +5448,8 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             self.layer.txn, self.log)
         error_utility = ErrorReportingUtility()
         error_report = error_utility.getLastOopsReport()
-        fp = StringIO()
-        error_report.write(fp)
-        error_text = fp.getvalue()
-
-        expected_explanation = (
-            'Exception-Type: LibrarianServerError\n'
-            'Exception-Value: Librarian does not respond')
-        self.failUnless(
-            error_text.find(expected_explanation) >= 0,
-            'Expected Exception type not found in OOPS report:\n%s'
-            % error_text)
+        self.assertEqual('LibrarianServerError', error_report.type)
+        self.assertEqual('Librarian does not respond', error_report.value)
 
         messages = [record.getMessage() for record in self.handler.records]
         messages = '\n'.join(messages)
