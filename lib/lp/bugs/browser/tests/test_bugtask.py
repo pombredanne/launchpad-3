@@ -796,7 +796,7 @@ class TestBugTaskEditView(TestCaseWithFactory):
         expected = ('The milestone setting was ignored')
         self.assertTrue(notifications.pop().message.startswith(expected))
 
-    def createNameChangingViewForSourcePackageTask(bug_task, new_name):
+    def createNameChangingViewForSourcePackageTask(self, bug_task, new_name):
         login_person(bug_task.owner)
         form_prefix = '%s_%s_%s' % (
             bug_task.target.distroseries.distribution.name,
