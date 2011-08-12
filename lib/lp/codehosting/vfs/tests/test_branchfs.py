@@ -49,7 +49,6 @@ from testtools.deferredruntest import (
 from twisted.internet import defer
 
 from canonical.launchpad.webapp import errorlog
-from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.testing.layers import (
     ZopelessDatabaseLayer,
     )
@@ -58,6 +57,9 @@ from lp.code.interfaces.codehosting import (
     branch_id_alias,
     BRANCH_TRANSPORT,
     CONTROL_TRANSPORT,
+    )
+from lp.code.tests.helpers import (
+    get_non_existant_source_package_branch_unique_name,
     )
 from lp.codehosting.inmemory import (
     InMemoryFrontend,
@@ -797,6 +799,17 @@ class LaunchpadTransportTests:
         return self.assertFiresFailureWithSubstring(
             errors.PermissionDenied, message,
             transport.mkdir, '~%s/%s/some-name' % (person.name, product.name))
+
+    def test_createBranch_invalid_package_name(self):
+        # When createBranch raises faults.InvalidSourcePackageName, the
+        # transport should translate this to a PermissionDenied exception
+        transport = self.getTransport()
+        series = self.factory.makeDistroSeries()
+        unique_name = '~%s/%s/%s/spaced%%20name/branch' % (
+            self.requester.name, series.distribution.name, series.name)
+        return self.assertFiresFailureWithSubstring(
+            errors.PermissionDenied, "is not a valid source package name",
+            transport.mkdir, unique_name)
 
     def test_rmdir(self):
         transport = self.getTransport()

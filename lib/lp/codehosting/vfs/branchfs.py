@@ -599,7 +599,8 @@ class LaunchpadServer(_BaseLaunchpadServer):
             # exist. You may supply --create-prefix to create all leading
             # parent directories", which is just misleading.
             fault = trap_fault(
-                fail, faults.NotFound, faults.PermissionDenied)
+                fail, faults.NotFound, faults.PermissionDenied,
+                faults.InvalidSourcePackageName)
             faultString = fault.faultString
             if isinstance(faultString, unicode):
                 faultString = faultString.encode('utf-8')
