@@ -64,7 +64,12 @@ class TestBugSupervisorEditView(TestCaseWithFactory):
         self.assertEqual([], view.errors)
         self.assertEqual(self.product.bug_supervisor, self.owner)
         notifications = view.request.response.notifications
-        self.assertEqual(0, len(notifications))
+        self.assertEqual(1, len(notifications))
+        expected = (
+            'A bug mail subscription was created for the bug supervisor. '
+            'You can <a href="http://launchpad.dev/boing/+subscriptions">'
+            'edit bug mail</a> to change which notifications will be sent.')
+        self.assertEqual(expected, notifications.pop().message)
 
     def test_owner_appoint_self_from_another(self):
         self.product.setBugSupervisor(self.team, self.owner)

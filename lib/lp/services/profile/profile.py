@@ -3,18 +3,23 @@
 
 """Profile requests when enabled."""
 
-__all__ = []
+__all__ = ['profiling',
+           'start',
+           'stop',
+          ]
 
 __metaclass__ = type
 
+import contextlib
+from cProfile import Profile
 from datetime import datetime
 import os
+import pstats
 import threading
 import StringIO
 
-from bzrlib.lsprof import BzrProfiler
-from chameleon.zpt.template import PageTemplateFile
-from zope.app.publication.interfaces import IBeforeTraverseEvent
+from bzrlib import lsprof
+from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.app.publication.interfaces import IEndRequestEvent
 from zope.component import (
     adapter,
@@ -41,15 +46,126 @@ class ProfilingOops(Exception):
     """Fake exception used to log OOPS information when profiling pages."""
 
 
-_profilers = threading.local()
+class Profiler:
+
+    profiler_lock = threading.Lock()
+    """Global lock used to serialise profiles."""
+
+    started = enabled = False
+
+    def disable(self):
+        if self.enabled:
+            self.p.disable()
+            self.enabled = False
+            stats = pstats.Stats(self.p)
+            if self.pstats is None:
+                self.pstats = stats
+            else:
+                self.pstats.add(stats)
+            self.count += 1
+
+    def enable(self):
+        if not self.started:
+            self.start()
+        elif not self.enabled:
+            self.p = Profile()
+            self.p.enable(subcalls=True)
+            self.enabled = True
+
+    def start(self):
+        """Start profiling.
+        """
+        if self.started:
+            return
+        self.count = 0
+        self.pstats = None
+        self.started = True
+        self.profiler_lock.acquire(True)  # Blocks.
+        try:
+            self.enable()
+        except:
+            self.profiler_lock.release()
+            self.started = False
+            raise
+
+    def stop(self):
+        """Stop profiling.
+
+        This unhooks from threading and cleans up the profiler, returning
+        the gathered Stats object.
+
+        :return: A bzrlib.lsprof.Stats object.
+        """
+        try:
+            self.disable()
+            p = self.p
+            del self.p
+            return Stats(self.pstats, p.getstats(), self.count)
+        finally:
+            self.profiler_lock.release()
+            self.started = False
+
+
+class Stats:
+
+    _callgrind_stats = None
+
+    def __init__(self, stats, rawstats, count):
+        self.stats = stats
+        self.rawstats = rawstats
+        self.count = count
+
+    @property
+    def callgrind_stats(self):
+        if self._callgrind_stats is None:
+            self._callgrind_stats = lsprof.Stats(self.rawstats, {})
+        return self._callgrind_stats
+
+    def save(self, filename, callgrind=False):
+        if callgrind:
+            self.callgrind_stats.save(filename, format="callgrind")
+        else:
+            self.stats.dump_stats(filename)
+
+    def strip_dirs(self):
+        self.stats.strip_dirs()
+
+    def sort(self, name):
+        self.stats.sort_stats(name)
+
+    def pprint(self, file):
+        stats = self.stats
+        stream = stats.stream
+        stats.stream = file
+        try:
+            stats.print_stats()
+        finally:
+            stats.stream = stream
+
+
+# Profilers may only run one at a time, but block and serialize.
+
+
+class Profilers(threading.local):
+    """A simple subclass to initialize our thread local values."""
+
+    def __init__(self):
+        self.profiling = False
+        self.actions = None
+        self.profiler = None
+        self.memory_profile_start = None
+        
+_profilers = Profilers()
+
 
 def before_traverse(event):
-    """Handle profiling when enabled via the profiling.enabled feature flag."""
-    # This event is raised on each step of traversal so needs to be lightweight
-    # and not assume that profiling has not started - but this is equally well
-    # done in _maybe_profile so that function takes care of it. We have to use
-    # this event (or add a new one) because we depend on the feature flags
-    # system being configured and usable, and on the principal being known.
+    "Handle profiling when enabled via the profiling.enabled feature flag."
+    # This event is raised on each step of traversal so needs to be
+    # lightweight and not assume that profiling has not started - but this is
+    # equally well done in _maybe_profile so that function takes care of it.
+    # We have to use this event (or add a new one) because we depend on the
+    # feature flags system being configured and usable, and on the principal
+    # being known.
     try:
         if getFeatureFlag('profiling.enabled'):
             _maybe_profile(event)
@@ -67,7 +183,7 @@ def start_request(event):
 
 def _maybe_profile(event):
     """Setup profiling as requested.
-    
+
     If profiling is enabled, start a profiler for this thread. If memory
     profiling is requested, save the VSS and RSS.
 
@@ -76,30 +192,71 @@ def _maybe_profile(event):
     try:
         if _profilers.profiling:
             # Already profiling - e.g. called in from both start_request and
-            # before_traverse, or by successive before_traverse on one request.
+            # before_traverse, or by successive before_traverse on one
+            # request.
             return
     except AttributeError:
         # The first call in on a new thread cannot be profiling at the start.
         pass
+    # If this assertion has reason to fail, we'll need to add code
+    # to try and stop the profiler before we delete it, in case it is
+    # still running.
+    assert _profilers.profiler is None
     actions = get_desired_profile_actions(event.request)
-    if config.profiling.profile_all_requests:
-        actions.add('log')
     _profilers.actions = actions
-    _profilers.profiler = None
     _profilers.profiling = True
+    if config.profiling.profile_all_requests:
+        actions.add('callgrind')
     if actions:
-        if actions.difference(('help', )):
-            # If this assertion has reason to fail, we'll need to add code
-            # to try and stop the profiler before we delete it, in case it is
-            # still running.
-            assert getattr(_profilers, 'profiler', None) is None
-            _profilers.profiler = BzrProfiler()
+        if actions.difference(('help',)):
+            _profilers.profiler = Profiler()
             _profilers.profiler.start()
     if config.profiling.memory_profile_log:
         _profilers.memory_profile_start = (memory(), resident())
 
 template = PageTemplateFile(
     os.path.join(os.path.dirname(__file__), 'profile.pt'))
+
+
+available_profilers = frozenset(('pstats', 'callgrind'))
+
+
+def start():
+    """Turn on profiling from code.
+    """
+    actions = _profilers.actions
+    profiler = _profilers.profiler
+    if actions is None:
+        actions = _profilers.actions = set()
+        _profilers.profiling = True
+    elif actions.difference(('help',)) and 'inline' not in actions:
+        actions.add('inline_ignored')
+        return
+    actions.update(('pstats', 'show', 'inline'))
+    if profiler is None:
+        profiler = _profilers.profiler = Profiler()
+        profiler.start()
+    else:
+        # For simplicity, we just silently ignore start requests when we
+        # have already started.
+        profiler.enable()
+
+
+def stop():
+    """Stop profiling."""
+    # For simplicity, we just silently ignore stop requests when we
+    # have not started.
+    actions = _profilers.actions
+    profiler = _profilers.profiler
+    if actions is not None and 'inline' in actions and profiler is not None:
+        profiler.disable()
+
+
+@contextlib.contextmanager
+def profiling():
+    start()
+    yield
+    stop()
 
 
 @adapter(IEndRequestEvent)
@@ -114,12 +271,12 @@ def end_request(event):
         # a start request event.  Just be quiet about it.
         return
     actions = _profilers.actions
-    del _profilers.actions
+    _profilers.actions = None
     request = event.request
     # Create a timestamp including milliseconds.
     now = datetime.fromtimestamp(da.get_request_start_time())
     timestamp = "%s.%d" % (
-        now.strftime('%Y-%m-%d_%H:%M:%S'), int(now.microsecond/1000.0))
+        now.strftime('%Y-%m-%d_%H:%M:%S'), int(now.microsecond / 1000.0))
     pageid = request._orig_env.get('launchpad.pageid', 'Unknown')
     oopsid = getattr(request, 'oopsid', None)
     content_type = request.response.getHeader('content-type')
@@ -130,12 +287,14 @@ def end_request(event):
         _major, _minor, content_type_params = parse(content_type)
         is_html = _major == 'text' and _minor == 'html'
     template_context = {
-        'actions': actions,
+        # Dicts are easier for tal expressions.
+        'actions': dict((action, True) for action in actions),
         'always_log': config.profiling.profile_all_requests}
+    dump_path = config.profiling.profile_dir
     if _profilers.profiler is not None:
         prof_stats = _profilers.profiler.stop()
-        # Free some memory.
-        del _profilers.profiler
+        # Free some memory (at least for the BzrProfiler).
+        _profilers.profiler = None
         if oopsid is None:
             # Log an OOPS to get a log of the SQL queries, and other
             # useful information,  together with the profiling
@@ -146,28 +305,44 @@ def end_request(event):
             oopsid = oops.id
         else:
             oops = request.oops
-        if 'log' in actions:
-            filename = '%s-%s-%s-%s.prof' % (
-                timestamp, pageid, oopsid,
-                threading.currentThread().getName())
-            dump_path = os.path.join(config.profiling.profile_dir, filename)
-            prof_stats.save(dump_path, format="callgrind")
-            template_context['dump_path'] = os.path.abspath(dump_path)
+        filename = '%s-%s-%s-%s' % (
+            timestamp, pageid, oopsid,
+            threading.currentThread().getName())
+        if 'callgrind' in actions:
+            # The stats class looks at the filename to know to use
+            # callgrind syntax.
+            callgrind_path = os.path.join(
+                dump_path, 'callgrind.out.' + filename)
+            prof_stats.save(callgrind_path, callgrind=True)
+            template_context['callgrind_path'] = os.path.abspath(
+                callgrind_path)
+        if 'pstats' in actions:
+            pstats_path = os.path.join(
+                dump_path, filename + '.prof')
+            prof_stats.save(pstats_path)
+            template_context['pstats_path'] = os.path.abspath(
+                pstats_path)
         if is_html and 'show' in actions:
             # Generate raw OOPS results.
             f = StringIO.StringIO()
             oops.write(f)
             template_context['oops'] = f.getvalue()
             # Generate profile summaries.
-            for name in ('inlinetime', 'totaltime', 'callcount'):
+            prof_stats.strip_dirs()
+            for name in ('time', 'cumulative', 'calls'):
                 prof_stats.sort(name)
                 f = StringIO.StringIO()
                 prof_stats.pprint(file=f)
                 template_context[name] = f.getvalue()
+        template_context['profile_count'] = prof_stats.count
+        template_context['multiple_profiles'] = prof_stats.count > 1
+        # Try to free some more memory.
+        del prof_stats
+    template_context['dump_path'] = os.path.abspath(dump_path)
     if actions and is_html:
         # Hack the new HTML in at the end of the page.
         encoding = content_type_params.get('charset', 'utf-8')
-        added_html = template.render(**template_context).encode(encoding)
+        added_html = template(**template_context).encode(encoding)
         existing_html = request.response.consumeBody()
         e_start, e_close_body, e_end = existing_html.rpartition(
             '</body>')
@@ -175,10 +350,10 @@ def end_request(event):
             (e_start, added_html, e_close_body, e_end))
         request.response.setResult(new_html)
     # Dump memory profiling info.
-    if config.profiling.memory_profile_log:
+    if _profilers.memory_profile_start is not None:
         log = file(config.profiling.memory_profile_log, 'a')
         vss_start, rss_start = _profilers.memory_profile_start
-        del _profilers.memory_profile_start
+        _profilers.memory_profile_start = None
         vss_end, rss_end = memory(), resident()
         if oopsid is None:
             oopsid = '-'
@@ -215,7 +390,16 @@ def get_desired_profile_actions(request):
                 action for action in (
                     item.strip().lower() for item in actions.split(','))
                 if action)
-            result.intersection_update(('log', 'show'))
+            # 'log' is backwards compatible for 'callgrind'.
+            if 'log' in result:
+                result.remove('log')
+                result.add('callgrind')
+            # Only honor the available options.
+            available_options = set(('show',))
+            available_options.update(available_profilers)
+            result.intersection_update(available_options)
+            # If we didn't end up with any known actions, we need to help the
+            # user.
             if not result:
                 result.add('help')
     return result

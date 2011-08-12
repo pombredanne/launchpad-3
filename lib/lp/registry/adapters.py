@@ -9,6 +9,7 @@ __all__ = [
     'distroseries_to_distribution',
     'PollSubset',
     'productseries_to_product',
+    'sourcepackage_to_distribution',
     ]
 
 
@@ -26,6 +27,14 @@ from lp.registry.interfaces.poll import (
     PollAlgorithm,
     PollStatus,
     )
+
+
+def sourcepackage_to_distribution(source_package):
+    """Adapts `ISourcePackage` object to `IDistribution`.
+
+    This also supports `IDistributionSourcePackage`
+    """
+    return source_package.distribution
 
 
 def distroseries_to_distribution(distroseries):

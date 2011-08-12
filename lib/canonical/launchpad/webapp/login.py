@@ -207,7 +207,7 @@ class OpenIDLogin(LaunchpadView):
         finally:
             timeline_action.finish()
         self.openid_request.addExtension(
-            sreg.SRegRequest(optional=['email', 'fullname']))
+            sreg.SRegRequest(required=['email', 'fullname']))
 
         assert not self.openid_request.shouldSendRedirect(), (
             "Our fixed OpenID server should not need us to redirect.")

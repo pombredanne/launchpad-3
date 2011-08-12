@@ -39,3 +39,7 @@ class PackagesetSources(Storm):
     sourcepackagename_id = Int(name='sourcepackagename')
     sourcepackagename = Reference(
         sourcepackagename_id, 'SourcePackageName.id')
+
+    def __init__(self, packageset, sourcepackagename):
+        self.packageset = packageset
+        self.sourcepackagename = sourcepackagename

@@ -105,20 +105,6 @@ A confirmation message is displayed:
     ...     print tag.renderContents()
     Landscape Developers has been removed as an answer contact for Ubuntu.
 
-Since answer contacts are notified of changes to questions, they are
-also listed in the 'Also notified' list in the 'Subscribers' portlet on
-a question.
-
-    >>> browser.open(
-    ...     'http://launchpad.dev/ubuntu/+question/7')
-    >>> portlet = find_tag_by_id(browser.contents, 'subscribers')
-    >>> also_notified = portlet.find('b')
-    >>> also_notified
-    <b>Also notified:</b>
-
-    >>> print extract_text(also_notified.findNextSibling('ul'))
-    Sample Person
-
 
 Product Answer Contacts
 -----------------------
@@ -182,44 +168,3 @@ selects Spanish.
     >>> browser.getControl('English', index=0).selected = False
     >>> browser.getControl('Spanish').selected = True
     >>> browser.getControl('Save').click()
-
-Sample Person then checks a few questions to see that the Landscape
-Developers Team is not subscribed to English questions, and is
-subscribed to Spanish questions.
-
-    >>> browser.open('http://answers.launchpad.dev/ubuntu/')
-    >>> print browser.title
-    Questions : Ubuntu
-
-    >>> browser.getLink('Play DVDs in Totem').click()
-    >>> print extract_text(browser.title)
-    Question #10 : ...
-
-    >>> print extract_text(find_tag_by_id(browser.contents, 'question-lang'))
-    Language: English ...
-
-    >>> portlet = find_tag_by_id(browser.contents, 'subscribers')
-    >>> print extract_text(portlet)
-    Subscribers
-    Sample Person
-    Also notified:
-    Sample Person
-
-The English question is correct, so Sample Person locates a Spanish
-Question:
-
-    >>> browser.open('http://answers.launchpad.dev/ubuntu/+question/12')
-    >>> print browser.title
-    Question #12 : ...
-
-    >>> print extract_text(find_tag_by_id(browser.contents, 'question-lang'))
-    Language: Spanish ...
-
-    >>> portlet = find_tag_by_id(browser.contents, 'subscribers')
-    >>> print extract_text(portlet).encode('ASCII', 'backslashreplace')
-    Subscribers
-    Carlos Perell\xf3 Mar\xedn
-    Also notified:
-    Landscape Developers
-    Sample Person
-

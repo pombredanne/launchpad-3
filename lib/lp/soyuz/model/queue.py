@@ -60,6 +60,7 @@ from lp.app.errors import NotFoundError
 # that it needs a bit of redesigning here around the publication stuff.
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
+from lp.archivepublisher.debversion import Version
 from lp.archiveuploader.tagfiles import parse_tagfile_content
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -562,7 +563,10 @@ class PackageUpload(SQLBase):
             # don't think we need them for sync rejections.
             return
 
-        changes_file_object = StringIO.StringIO(self.changesfile.read())
+        if self.changesfile is None:
+            changes_file_object = None
+        else:
+            changes_file_object = StringIO.StringIO(self.changesfile.read())
         # We allow unsigned uploads since they come from the librarian,
         # which are now stored unsigned.
         self.notify(
@@ -720,6 +724,14 @@ class PackageUpload(SQLBase):
 
     def realiseUpload(self, logger=None):
         """See `IPackageUpload`."""
+        if self.package_copy_job is not None:
+            # PCJs are "realised" in the job runner,
+            # which creates publishing records using the packagecopier.
+            # Because the process-accepted script calls realiseUpload for
+            # any outstanding uploads in the ACCEPTED state we need to skip
+            # them here.  The runner is also responsible for calling
+            # setDone().
+            return
         # Circular imports.
         from lp.soyuz.scripts.packagecopier import update_files_privacy
         assert self.status == PackageUploadStatus.ACCEPTED, (
@@ -816,6 +828,8 @@ class PackageUpload(SQLBase):
     def _getChangesDict(self, changes_file_object=None):
         """Return a dictionary with changes file tags in it."""
         if changes_file_object is None:
+            if self.changesfile is None:
+                return {}, ''
             changes_file_object = self.changesfile
         changes_content = changes_file_object.read()
 
@@ -929,7 +943,7 @@ class PackageUpload(SQLBase):
             # Nothing needs overriding, bail out.
             return False
 
-        if new_component not in allowed_components:
+        if new_component not in list(allowed_components) + [None]:
             raise QueueInconsistentStateError(
                 "No rights to override to %s" % new_component.name)
 
@@ -1285,12 +1299,18 @@ class PackageUploadCustom(SQLBase):
                   "in MAIN_ARCHIVE_PURPOSES.")
             return
 
+        # If the distroseries is 11.10 (oneiric) or later, the valid names
+        # check is not required.  (See bug 788685.)
+        distroseries = sourcepackagerelease.upload_distroseries
+        do_names_check = Version(distroseries.version) < Version('11.10')
+
         valid_pockets = (
             PackagePublishingPocket.RELEASE, PackagePublishingPocket.SECURITY,
             PackagePublishingPocket.UPDATES, PackagePublishingPocket.PROPOSED)
-        valid_component_names = ('main', 'restricted')
+        valid_components = ('main', 'restricted')
         if (self.packageupload.pocket not in valid_pockets or
-            sourcepackagerelease.component.name not in valid_component_names):
+            (do_names_check and
+            sourcepackagerelease.component.name not in valid_components)):
             # XXX: CarlosPerelloMarin 2006-02-16 bug=31665:
             # This should be implemented using a more general rule to accept
             # different policies depending on the distribution.

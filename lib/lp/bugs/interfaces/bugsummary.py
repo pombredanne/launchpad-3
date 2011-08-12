@@ -4,11 +4,15 @@
 """BugSummary interfaces."""
 
 __metaclass__ = type
-__all__ = ['IBugSummary']
+__all__ = [
+    'IBugSummary',
+    'IBugSummaryDimension',
+    ]
 
 
 from zope.interface import Interface
 from zope.schema import (
+    Bool,
     Choice,
     Int,
     Object,
@@ -16,7 +20,10 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
-from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.interfaces.bugtask import (
+    BugTaskImportance,
+    BugTaskStatus,
+    )
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import IMilestone
@@ -51,12 +58,31 @@ class IBugSummary(Interface):
     sourcepackagename_id = Int(readonly=True)
     sourcepackagename = Object(ISourcePackageName, readonly=True)
 
+    milestone_id = Int(readonly=True)
+    milestone = Object(IMilestone, readonly=True)
+
+    status = Choice(
+        title=_('Status'), vocabulary=BugTaskStatus, readonly=True)
+    importance = Choice(
+        title=_('Importance'), vocabulary=BugTaskImportance, readonly=True)
+
+    tag = Text(readonly=True)
+
     viewed_by_id = Int(readonly=True)
     viewed_by = Object(IPerson, readonly=True)
 
-    tag = Text(readonly=True)
-    status = Choice(
-        title=_('Status'), vocabulary=BugTaskStatus, readonly=True)
+    has_patch = Bool(readonly=True)
+    fixed_upstream = Bool(readonly=True)
 
-    milestone_id = Int(readonly=True)
-    milestone = Object(IMilestone, readonly=True)
+
+class IBugSummaryDimension(Interface):
+    """Interface for dimensions used in the BugSummary database class."""
+
+    def getBugSummaryContextWhereClause():
+        """Return a storm clause to filter bugsummaries on this context.
+
+        This method is intentended for in-appserver use only.
+        
+        :return: Either a storm clause to filter bugsummaries, or False if
+            there cannot be any matching bug summaries.
+        """

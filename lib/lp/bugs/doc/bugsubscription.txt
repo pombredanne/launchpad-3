@@ -195,9 +195,7 @@ supervisor is also an indirect subscriber.
     >>> from lp.registry.interfaces.product import IProductSet
     >>> firefox = getUtility(IProductSet).get(4)
 
-    >>> getUtility(IBugTaskSet).createTask(
-    ...     product=firefox, bug=linux_source_bug,
-    ...     owner=foobar)
+    >>> getUtility(IBugTaskSet).createTask(linux_source_bug, foobar, firefox)
     <BugTask ...>
 
     >>> lifeless = personset.getByName("lifeless")
@@ -749,7 +747,7 @@ If we create a bug task on Ubuntu in the same bug, the Ubuntu bug
 supervisor will be subscribed:
 
     >>> ubuntu_task = getUtility(IBugTaskSet).createTask(
-    ...     bug=new_bug, distribution=ubuntu, owner=mark)
+    ...     new_bug, mark, ubuntu)
 
     >>> print '\n'.join(getSubscribers(new_bug))
     foo.bar@canonical.com
@@ -888,14 +886,14 @@ subscriptions themselves, rather than the subscribers.
     >>> ff_bug.subscribe(lifeless, mark)
     <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> subscriptions = [
-    ...     "%s (%s)" % (
+    ...     "%s: %s" % (
     ...         subscription.person.displayname,
     ...         subscription.display_subscribed_by)
     ...     for subscription in ff_bug.getDirectSubscriptions()]
     >>> for subscription in sorted(subscriptions):
     ...     print subscription
-    Mark Shuttleworth (Self-subscribed)
-    Robert Collins (Subscribed by Mark Shuttleworth)
+    Mark Shuttleworth: Self-subscribed
+    Robert Collins: Subscribed by Mark Shuttleworth (mark)
     >>> params = CreateBugParams(
     ...     title="one more dupe test bug",
     ...     comment="one more dupe test description",
@@ -906,8 +904,8 @@ subscriptions themselves, rather than the subscribers.
     >>> dupe_ff_bug.subscribe(foobar, lifeless)
     <lp.bugs.model.bugsubscription.BugSubscription ...>
     >>> for subscription in ff_bug.getSubscriptionsFromDuplicates():
-    ...     print '%s (%s)' % (
+    ...     print '%s: %s' % (
     ...         subscription.person.displayname,
     ...         subscription.display_duplicate_subscribed_by)
-    Scott James Remnant (Self-subscribed to bug ...)
-    Foo Bar (Subscribed to bug ... by Robert Collins)
+    Scott James Remnant: Self-subscribed to bug ...
+    Foo Bar: Subscribed to bug ... by Robert Collins (lifeless)

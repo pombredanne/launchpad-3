@@ -20,5 +20,5 @@ class BugsYUIUnitTestCase(YUIUnitTestCase):
 
 
 def test_suite():
-    app_testing_path = 'lp/bugs/javascript/tests'
+    app_testing_path = 'lp/bugs'
     return build_yui_unittest_suite(app_testing_path, BugsYUIUnitTestCase)

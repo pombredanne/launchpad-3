@@ -175,7 +175,7 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageReleaseDownloadCount,
     )
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
-from lp.soyuz.interfaces.packagecopyjob import IPackageCopyJobEdit
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJob
 from lp.soyuz.interfaces.packageset import (
     IPackageset,
     IPackagesetSet,
@@ -600,6 +600,7 @@ class AdminProductTranslations(AuthorizationBase):
         able to change translation settings for a product.
         """
         return (user.isOwner(self.obj) or
+                user.isOneOfDrivers(self.obj) or
                 user.in_rosetta_experts or
                 user.in_admin)
 
@@ -1037,10 +1038,8 @@ class EditProductSeries(EditByOwnersOrAdmins):
             # The user is the owner of the product, or the release manager.
             return True
         # Rosetta experts need to be able to upload translations.
-        # Bazaar experts need to be able to change the linked branches.
         # Registry admins are just special.
         if (user.in_registry_experts or
-            user.in_bazaar_experts or
             user.in_rosetta_experts):
             return True
         return EditByOwnersOrAdmins.checkAuthenticated(self, user)
@@ -1146,7 +1145,7 @@ class OnlyBazaarExpertsAndAdmins(AuthorizationBase):
     experts."""
 
     def checkAuthenticated(self, user):
-        return user.in_admin or user.in_bazaar_experts
+        return user.in_admin
 
 
 class OnlyVcsImportsAndAdmins(AuthorizationBase):
@@ -1190,7 +1189,7 @@ class EditCodeImportJobWorkflow(OnlyVcsImportsAndAdmins):
 class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
     """Control who can edit the object view of a CodeImportMachine.
 
-    Access is restricted to members of ~bazaar-experts and Launchpad admins.
+    Access is restricted to Launchpad admins.
     """
     permission = 'launchpad.Edit'
     usedfor = ICodeImportMachine
@@ -1199,13 +1198,13 @@ class EditCodeImportMachine(OnlyBazaarExpertsAndAdmins):
 class AdminSourcePackageRecipeBuilds(AuthorizationBase):
     """Control who can edit SourcePackageRecipeBuilds.
 
-    Access is restricted to members of ~bazaar-experts and Buildd Admins.
+    Access is restricted to Buildd Admins.
     """
     permission = 'launchpad.Admin'
     usedfor = ISourcePackageRecipeBuild
 
     def checkAuthenticated(self, user):
-        return user.in_bazaar_experts or user.in_buildd_admin
+        return user.in_buildd_admin
 
 
 class EditBranchMergeQueue(AuthorizationBase):
@@ -1417,7 +1416,13 @@ class AdminTranslationImportQueueEntry(AuthorizationBase):
     usedfor = ITranslationImportQueueEntry
 
     def checkAuthenticated(self, user):
-        return self.obj.canAdmin(user)
+        if self.obj.distroseries is not None:
+            series = self.obj.distroseries
+        else:
+            series = self.obj.productseries
+        return (
+            self.forwardCheckAuthenticated(user, series,
+                                           'launchpad.TranslationsAdmin'))
 
 
 class EditTranslationImportQueueEntry(AuthorizationBase):
@@ -1428,7 +1433,9 @@ class EditTranslationImportQueueEntry(AuthorizationBase):
         """Anyone who can admin an entry, plus its owner or the owner of the
         product or distribution, can edit it.
         """
-        return self.obj.canEdit(user)
+        return (self.forwardCheckAuthenticated(
+                    user, self.obj, 'launchpad.Admin') or
+                user.inTeam(self.obj.importer))
 
 
 class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
@@ -1452,14 +1459,18 @@ class EditPackageUploadQueue(AdminByAdminsTeam):
         return not permissions.is_empty()
 
 
-class EditPackageCopyJob(AuthorizationBase):
+class EditPlainPackageCopyJob(AuthorizationBase):
     permission = 'launchpad.Edit'
-    usedfor = IPackageCopyJobEdit
+    usedfor = IPlainPackageCopyJob
 
     def checkAuthenticated(self, user):
+        archive = self.obj.target_archive
+        if archive.is_ppa:
+            return archive.checkArchivePermission(user.person)
+
         permission_set = getUtility(IArchivePermissionSet)
         permissions = permission_set.componentsForQueueAdmin(
-            self.obj.target_archive, user.person)
+            archive, user.person)
         return not permissions.is_empty()
 
 
@@ -1834,7 +1845,7 @@ class AccessBranch(AuthorizationBase):
 
 
 class EditBranch(AuthorizationBase):
-    """The owner, bazaar experts or admins can edit branches."""
+    """The owner or admins can edit branches."""
     permission = 'launchpad.Edit'
     usedfor = IBranch
 
@@ -1882,13 +1893,12 @@ def can_upload_linked_package(person_role, branch):
 
 
 class AdminBranch(AuthorizationBase):
-    """The bazaar experts or admins can administer branches."""
+    """The admins can administer branches."""
     permission = 'launchpad.Admin'
     usedfor = IBranch
 
     def checkAuthenticated(self, user):
-        return (user.in_admin or
-                user.in_bazaar_experts)
+        return user.in_admin
 
 
 class AdminDistroSeriesTranslations(AuthorizationBase):
@@ -1898,17 +1908,21 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Is the user able to manage `IDistroSeries` translations.
 
-        Distribution managers can also manage IDistroSeries
+        Distribution translation managers and distribution series drivers
+        can manage IDistroSeries translations.
         """
+        return (user.isOneOfDrivers(self.obj) or
+                self.forwardCheckAuthenticated(user, self.obj.distribution))
 
-        return (AdminDistributionTranslations(
-            self.obj.distribution).checkAuthenticated(user))
 
-
-class AdminDistributionSourcePackageTranslations(
-    AdminDistroSeriesTranslations):
-    """DistributionSourcePackage objects link to a distribution, too."""
+class AdminDistributionSourcePackageTranslations(AuthorizationBase):
+    """DistributionSourcePackage objects link to a distribution."""
+    permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistributionSourcePackage
+
+    def checkAuthenticated(self, user):
+        """Distribution admins are admins for source packages as well."""
+        return self.forwardCheckAuthenticated(user, self.obj.distribution)
 
 
 class AdminProductSeriesTranslations(AuthorizationBase):
@@ -1918,7 +1932,9 @@ class AdminProductSeriesTranslations(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Is the user able to manage `IProductSeries` translations."""
 
-        return OnlyRosettaExpertsAndAdmins(self.obj).checkAuthenticated(user)
+        return (user.isOwner(self.obj) or
+                user.isOneOfDrivers(self.obj) or
+                self.forwardCheckAuthenticated(user, self.obj.product))
 
 
 class BranchMergeProposalView(AuthorizationBase):

@@ -20,5 +20,5 @@ class RegistryYUIUnitTestCase(YUIUnitTestCase):
 
 
 def test_suite():
-    app_testing_path = 'lp/registry/javascript/tests'
+    app_testing_path = 'lp/registry'
     return build_yui_unittest_suite(app_testing_path, RegistryYUIUnitTestCase)

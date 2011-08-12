@@ -192,7 +192,8 @@ rescored, which allows us to set an arbitrary value on it.
 
     >>> time6 = LOCAL_NOW
     >>> bq6 = setUpBuildQueueEntry(
-    ...      urgency=SourcePackageUrgency.LOW, date_created=time6, manual=True)
+    ...      urgency=SourcePackageUrgency.LOW, date_created=time6,
+    ...      manual=True)
 
     >>> bq6.lastscore = 5000
 
@@ -250,10 +251,6 @@ Builds in COPY archives have a score below zero, so they will only
 be considered when there is nothing else to build. Even language-packs
 and build retries will be built before them.
 
-No other aspects are considered when scoring builds from COPY archive,
-they all have a fixed score of -10. They will get built in the order
-they were created.
-
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> from lp.soyuz.enums import ArchivePurpose
     >>> from lp.soyuz.interfaces.archive import IArchiveSet
@@ -267,4 +264,4 @@ they were created.
     >>> build = getUtility(IBinaryPackageBuildSet).getByQueueEntry(bqc)
     >>> bqc.score()
     >>> bqc.lastscore
-    -10
+    -85
