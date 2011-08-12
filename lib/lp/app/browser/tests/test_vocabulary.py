@@ -119,19 +119,23 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         self.assertEqual('http://launchpad.dev/~fnord', entry.alt_title_link)
         self.assertEqual(['Team members: 1'], entry.details)
 
-    def test_PersonPickerEntrySourceAdapter_affiliation_badges(self):
-        # The person picker with affiliation enabled provides affilliation
-        # information.
+    def test_PersonPickerEntryAdapter_enhanced_picker_enabled_badges(self):
+        # The enhanced person picker provides affiliation information.
         person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
-        project = self.factory.makeProduct(name='fnord', owner=person)
+        project = self.factory.makeProduct(
+            name='fnord', owner=person, bug_supervisor=person)
         bugtask = self.factory.makeBugTask(target=project)
         [entry] = IPickerEntrySource(person).getPickerEntries(
             [person], bugtask, enhanced_picker_enabled=True,
             picker_expander_enabled=True,
             personpicker_affiliation_enabled=True)
-        self.assertEqual(1, len(entry.badges))
+        self.assertEqual(3, len(entry.badges))
         self.assertEqual('/@@/product-badge', entry.badges[0]['url'])
         self.assertEqual('Fnord maintainer', entry.badges[0]['alt'])
+        self.assertEqual('/@@/product-badge', entry.badges[1]['url'])
+        self.assertEqual('Fnord driver', entry.badges[1]['alt'])
+        self.assertEqual('/@@/product-badge', entry.badges[2]['url'])
+        self.assertEqual('Fnord bug supervisor', entry.badges[2]['alt'])
 
 
 class TestPersonVocabulary:
@@ -223,6 +227,8 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
             "api_uri": "/~%s" % team.name,
             "badges":
                 [{"alt": "%s maintainer" % product.displayname,
+                  "url": "/@@/product-badge"},
+                {"alt": "%s driver" % product.displayname,
                   "url": "/@@/product-badge"}],
             "css": "sprite team",
             "details": ['Team members: 1'],
