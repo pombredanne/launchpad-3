@@ -24,23 +24,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from lp.services.mail.interfaces import (
-    EmailProcessingError,
-    IMailHandler,
-    )
-from lp.services.messages.interfaces.message import IMessageSet
-from lp.services.mail.commands import (
-    EmailCommand,
-    EmailCommandCollection,
-    )
-from lp.services.mail.helpers import (
-    ensure_not_weakly_authenticated,
-    get_error_message,
-    get_main_body,
-    get_person_or_team,
-    IncomingEmailError,
-    parse_commands,
-    )
 from canonical.launchpad.mailnotification import (
     send_process_error_notification,
     )
@@ -69,7 +52,24 @@ from lp.code.interfaces.branchnamespace import (
 from lp.code.interfaces.branchtarget import check_default_stacked_on
 from lp.codehosting.bzrutils import is_branch_stackable
 from lp.codehosting.vfs import get_lp_server
+from lp.services.mail.commands import (
+    EmailCommand,
+    EmailCommandCollection,
+    )
+from lp.services.mail.helpers import (
+    ensure_not_weakly_authenticated,
+    get_error_message,
+    get_main_body,
+    get_person_or_team,
+    IncomingEmailError,
+    parse_commands,
+    )
+from lp.services.mail.interfaces import (
+    EmailProcessingError,
+    IMailHandler,
+    )
 from lp.services.mail.sendmail import simple_sendmail
+from lp.services.messages.interfaces.message import IMessageSet
 
 
 error_templates = os.path.join(os.path.dirname(__file__), 'errortemplates')

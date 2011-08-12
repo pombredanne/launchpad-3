@@ -15,9 +15,9 @@ from zope.schema import (
 from zope.sendmail.interfaces import IMailer
 from zope.sendmail.zcml import IMailerDirective
 
-from lp.services.mail.mailbox import IMailBox
 from lp.services.mail.mailbox import (
     DirectoryMailBox,
+    IMailBox,
     POP3MailBox,
     TestMailBox,
     )

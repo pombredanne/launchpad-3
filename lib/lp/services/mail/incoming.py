@@ -31,13 +31,6 @@ from canonical.launchpad.interfaces.gpghandler import (
     GPGVerificationError,
     IGPGHandler,
     )
-from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
-from lp.services.mail.mailbox import IMailBox
-from lp.bugs.mail.commands import get_error_message
-from lp.services.mail.helpers import (
-    ensure_sane_signature_timestamp,
-    save_mail_to_librarian,
-    )
 from canonical.launchpad.mailnotification import (
     send_process_error_notification,
     )
@@ -51,9 +44,16 @@ from canonical.launchpad.webapp.interaction import (
     )
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.librarian.interfaces import UploadFailed
+from lp.bugs.mail.commands import get_error_message
 from lp.registry.interfaces.person import IPerson
 from lp.services.features import getFeatureFlag
 from lp.services.mail.handlers import mail_handlers
+from lp.services.mail.helpers import (
+    ensure_sane_signature_timestamp,
+    save_mail_to_librarian,
+    )
+from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
+from lp.services.mail.mailbox import IMailBox
 from lp.services.mail.sendmail import do_paranoid_envelope_to_validation
 from lp.services.mail.signedmessage import signed_message_from_string
 

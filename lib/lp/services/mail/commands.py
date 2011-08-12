@@ -10,20 +10,15 @@ __all__ = [
     'NoSuchCommand',
     ]
 
-from lazr.lifecycle.event import (
-    ObjectModifiedEvent,
-    )
+from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.interfaces import (
     IObjectCreatedEvent,
     IObjectModifiedEvent,
     )
 from lazr.lifecycle.snapshot import Snapshot
-from zope.interface import (
-    providedBy,
-    )
-from lp.services.mail.helpers import (
-    get_error_message,
-    )
+from zope.interface import providedBy
+
+from lp.services.mail.helpers import get_error_message
 from lp.services.mail.interfaces import EmailProcessingError
 
 

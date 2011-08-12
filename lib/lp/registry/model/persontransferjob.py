@@ -39,10 +39,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from lp.services.mail.sendmail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import canonical_url
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -66,7 +62,11 @@ from lp.registry.model.person import Person
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.services.mail.sendmail import format_address_for_person
+from lp.services.mail.sendmail import (
+    format_address,
+    format_address_for_person,
+    simple_sendmail,
+    )
 
 
 class PersonTransferJob(StormBase):

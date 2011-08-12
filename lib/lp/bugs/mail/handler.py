@@ -18,15 +18,17 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import rollback
 from canonical.launchpad.helpers import get_email_template
-from lp.services.mail.interfaces import (
-    EmailProcessingError,
-    IBugEditEmailCommand,
-    IBugEmailCommand,
-    IBugTaskEditEmailCommand,
-    IBugTaskEmailCommand,
-    IMailHandler,
+from canonical.launchpad.mailnotification import (
+    MailWrapper,
+    send_process_error_notification,
     )
-from lp.services.messages.interfaces.message import IMessageSet
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.bugs.interfaces.bug import CreatedBugWithNoBugTasksError
+from lp.bugs.interfaces.bugattachment import (
+    BugAttachmentType,
+    IBugAttachmentSet,
+    )
+from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.mail.commands import (
     BugEmailCommands,
     get_error_message,
@@ -39,18 +41,16 @@ from lp.services.mail.helpers import (
     parse_commands,
     reformat_wiki_text,
     )
-from canonical.launchpad.mailnotification import (
-    MailWrapper,
-    send_process_error_notification,
+from lp.services.mail.interfaces import (
+    EmailProcessingError,
+    IBugEditEmailCommand,
+    IBugEmailCommand,
+    IBugTaskEditEmailCommand,
+    IBugTaskEmailCommand,
+    IMailHandler,
     )
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.bugs.interfaces.bug import CreatedBugWithNoBugTasksError
-from lp.bugs.interfaces.bugattachment import (
-    BugAttachmentType,
-    IBugAttachmentSet,
-    )
-from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.services.mail.sendmail import simple_sendmail
+from lp.services.messages.interfaces.message import IMessageSet
 
 
 error_templates = os.path.join(os.path.dirname(__file__), 'errortemplates')

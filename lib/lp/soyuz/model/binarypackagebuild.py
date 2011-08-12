@@ -56,10 +56,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     ISlaveStore,
     IStore,
     )
-from lp.services.mail.sendmail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -83,6 +79,10 @@ from lp.buildmaster.model.packagebuild import (
     PackageBuildDerived,
     )
 from lp.services.job.model.job import Job
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
+    )
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,

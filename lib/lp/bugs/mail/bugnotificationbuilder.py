@@ -20,8 +20,8 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
-from lp.services.mail.sendmail import format_address
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.mail.sendmail import format_address
 
 
 def format_rfc2822_date(date):

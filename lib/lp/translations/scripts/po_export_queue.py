@@ -21,11 +21,11 @@ from zope.component import (
 from canonical.config import config
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.services.mail.sendmail import simple_sendmail
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.dbpolicy import SlaveOnlyDatabasePolicy
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.mail.sendmail import simple_sendmail
 from lp.translations.interfaces.poexportrequest import IPOExportRequestSet
 from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import IPOTemplate

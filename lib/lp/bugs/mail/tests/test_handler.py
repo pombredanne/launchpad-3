@@ -19,13 +19,13 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import import_secret_test_key
-from lp.bugs.mail.commands import BugEmailCommand
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.mail.commands import BugEmailCommand
 from lp.bugs.mail.handler import MaloneHandler
 from lp.services.mail import stub
 from lp.testing import (

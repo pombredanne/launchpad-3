@@ -12,10 +12,8 @@ from zope.interface import (
     directlyProvides,
     )
 
-from lp.services.mail.interfaces import (
-    EmailProcessingError,
-    IWeaklyAuthenticatedPrincipal,
-    )
+from canonical.launchpad.webapp.interaction import get_current_principal
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,
     ensure_sane_signature_timestamp,
@@ -23,8 +21,10 @@ from lp.services.mail.helpers import (
     IncomingEmailError,
     parse_commands,
     )
-from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.mail.interfaces import (
+    EmailProcessingError,
+    IWeaklyAuthenticatedPrincipal,
+    )
 from lp.testing import (
     login_person,
     TestCase,

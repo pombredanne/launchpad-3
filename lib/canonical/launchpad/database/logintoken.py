@@ -42,10 +42,6 @@ from canonical.launchpad.interfaces.logintoken import (
     ILoginTokenSet,
     )
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
-from lp.services.mail.sendmail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
@@ -56,6 +52,10 @@ from lp.app.errors import NotFoundError
 from lp.app.validators.email import valid_email
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
+    )
 
 
 class LoginToken(SQLBase):

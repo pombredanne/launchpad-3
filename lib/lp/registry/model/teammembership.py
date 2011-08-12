@@ -39,10 +39,6 @@ from canonical.launchpad.helpers import (
     get_email_template,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.services.mail.sendmail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import canonical_url
 from lp.app.browser.tales import DurationFormatterAPI
@@ -67,6 +63,10 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     ITeamParticipation,
     TeamMembershipStatus,
+    )
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
     )
 
 

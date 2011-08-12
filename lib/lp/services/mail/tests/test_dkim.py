@@ -12,12 +12,12 @@ import unittest
 import dkim
 import dns.resolver
 
-from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
-from lp.services.mail.signedmessage import signed_message_from_string
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.features.testing import FeatureFixture
 from lp.services.mail import incoming
 from lp.services.mail.incoming import authenticateEmail
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
+from lp.services.mail.signedmessage import signed_message_from_string
 from lp.testing import TestCaseWithFactory
 
 # sample private key made with 'openssl genrsa' and public key using 'openssl

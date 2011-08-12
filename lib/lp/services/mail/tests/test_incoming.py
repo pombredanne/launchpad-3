@@ -6,18 +6,20 @@ import logging
 import os
 import unittest
 
-from testtools.matchers import Equals, Is
+from testtools.matchers import (
+    Equals,
+    Is,
+    )
 import transaction
 from zope.security.management import setSecurityPolicy
 
 from canonical.config import config
 from canonical.launchpad.ftests import import_secret_test_key
-from lp.services.mail.tests.helpers import testmails_path
 from canonical.launchpad.testing.systemdocs import LayeredDocFileSuite
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from lp.services.mail import helpers
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.log.logger import BufferLogger
+from lp.services.mail import helpers
 from lp.services.mail.incoming import (
     authenticateEmail,
     extract_addresses,
@@ -27,6 +29,7 @@ from lp.services.mail.incoming import (
     )
 from lp.services.mail.sendmail import MailController
 from lp.services.mail.stub import TestMailer
+from lp.services.mail.tests.helpers import testmails_path
 from lp.testing import TestCaseWithFactory
 from lp.testing.factory import GPGSigningContext
 from lp.testing.mail_helpers import pop_notifications

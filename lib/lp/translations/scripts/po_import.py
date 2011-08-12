@@ -21,10 +21,10 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad import helpers
-from lp.services.mail.sendmail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import errorlog
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.mail.sendmail import simple_sendmail
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (

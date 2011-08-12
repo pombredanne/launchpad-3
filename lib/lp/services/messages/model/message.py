@@ -62,9 +62,16 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.librarian import (
-    ILibraryFileAliasSet,
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from lp.app.errors import NotFoundError
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    validate_public_person,
     )
+from lp.services.encoding import guess as ensure_unicode
+from lp.services.job.model.job import Job
+from lp.services.mail.signedmessage import signed_message_from_string
 from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     IMessage,
@@ -75,17 +82,6 @@ from lp.services.messages.interfaces.message import (
     IUserToUserEmail,
     UnknownSender,
     )
-from lp.services.mail.signedmessage import (
-    signed_message_from_string,
-    )
-from lp.app.errors import NotFoundError
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    PersonCreationRationale,
-    validate_public_person,
-    )
-from lp.services.encoding import guess as ensure_unicode
-from lp.services.job.model.job import Job
 from lp.services.propertycache import cachedproperty
 
 # this is a hard limit on the size of email we will be willing to store in

@@ -51,10 +51,6 @@ from canonical.launchpad.helpers import (
     shortlist,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
-from lp.services.mail.sendmail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.webapp import (
     canonical_url,
     urlappend,
@@ -94,6 +90,10 @@ from lp.registry.interfaces.pocket import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
+    )
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.model.country import Country
 from lp.soyuz.enums import (

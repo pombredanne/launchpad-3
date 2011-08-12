@@ -27,24 +27,7 @@ from zope.schema.interfaces import (
     TooLong,
     ValidationError,
     )
-from lp.services.mail.commands import (
-    EditEmailCommand,
-    EmailCommand,
-    EmailCommandCollection,
-    )
-from lp.services.mail.interfaces import (
-    BugTargetNotFound,
-    EmailProcessingError,
-    IBugEditEmailCommand,
-    IBugEmailCommand,
-    IBugTaskEditEmailCommand,
-    IBugTaskEmailCommand,
-    )
-from lp.services.messages.interfaces.message import IMessageSet
-from lp.services.mail.helpers import (
-    get_error_message,
-    get_person_or_team,
-    )
+
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.app.errors import (
@@ -74,6 +57,24 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.mail.commands import (
+    EditEmailCommand,
+    EmailCommand,
+    EmailCommandCollection,
+    )
+from lp.services.mail.helpers import (
+    get_error_message,
+    get_person_or_team,
+    )
+from lp.services.mail.interfaces import (
+    BugTargetNotFound,
+    EmailProcessingError,
+    IBugEditEmailCommand,
+    IBugEmailCommand,
+    IBugTaskEditEmailCommand,
+    IBugTaskEmailCommand,
+    )
+from lp.services.messages.interfaces.message import IMessageSet
 
 
 error_templates = os.path.join(os.path.dirname(__file__), 'errortemplates')

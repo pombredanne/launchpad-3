@@ -15,10 +15,6 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from lp.services.mail.sendmail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.webapp import canonical_url
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
@@ -29,6 +25,10 @@ from lp.code.enums import (
     RevisionControlSystems,
     )
 from lp.registry.interfaces.person import IPerson
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
+    )
 
 
 def new_import(code_import, event):
