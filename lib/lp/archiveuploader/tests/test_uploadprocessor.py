@@ -1338,22 +1338,12 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         error_utility = ErrorReportingUtility()
         error_report = error_utility.getLastOopsReport()
-        fp = StringIO()
-        error_report.write(fp)
-        error_text = fp.getvalue()
-        self.failUnless(
-            error_text.find('Exception-Type: FatalUploadError') >= 0,
-            'Expected Exception type not found in OOPS report:\n%s'
-            % error_text)
-
+        self.assertEqual('FatalUploadError', error_report.type)
         # The upload policy requires a signature but none is present, so
         # we get gpg verification errors.
         expected_explanation = (
             "Verification failed 3 times: ['No data', 'No data', 'No data']")
-        self.failUnless(
-            error_text.find(expected_explanation) >= 0,
-            'Expected Exception text not found in OOPS report:\n%s'
-            % error_text)
+        self.assertIn(expected_explanation, error_report.tb_text)
 
     def testLZMADebUpload(self):
         """Make sure that data files compressed with lzma in Debs work.
