@@ -53,3 +53,12 @@ class OAuthConsumerTestCase(BaseOAuthTestCase):
 
 class OAuthNonceTestCase(BaseOAuthTestCase):
     class_ = OAuthNonce
+
+
+def test_suite():
+    return unittest.TestSuite((
+        unittest.makeSuite(OAuthAccessTokenTestCase),
+        unittest.makeSuite(OAuthRequestTokenTestCase),
+        unittest.makeSuite(OAuthNonceTestCase),
+        unittest.makeSuite(OAuthConsumerTestCase),
+            ))

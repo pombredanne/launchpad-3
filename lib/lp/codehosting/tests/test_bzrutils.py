@@ -24,6 +24,7 @@ from bzrlib.tests import (
     test_server,
     TestCase,
     TestCaseWithTransport,
+    TestLoader,
     TestNotApplicable,
     )
 from bzrlib.tests.per_branch import (
@@ -235,3 +236,8 @@ def load_tests(basic_tests, module, loader):
     result.addTests(loader.loadTestsFromTestCase(TestExceptionLoggingHooks))
     result.addTests(loader.loadTestsFromTestCase(TestGetVfsFormatClasses))
     return result
+
+
+def test_suite():
+    loader = TestLoader()
+    return loader.loadTestsFromName(__name__)
