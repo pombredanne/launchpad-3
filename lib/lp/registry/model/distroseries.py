@@ -61,7 +61,6 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.mail import signed_message_from_string
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
@@ -86,9 +85,7 @@ from lp.bugs.interfaces.bugtarget import (
     ISeriesBugTarget,
     )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import (
-    get_bug_tags,
-    )
+from lp.bugs.model.bug import get_bug_tags
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,
@@ -130,6 +127,7 @@ from lp.registry.model.person import Person
 from lp.registry.model.series import SeriesMixin
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.mail.signedmessage import signed_message_from_string
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
