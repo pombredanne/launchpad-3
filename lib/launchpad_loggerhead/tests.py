@@ -17,7 +17,6 @@ from paste.httpexceptions import HTTPExceptionHandler
 import zope.event
 
 from canonical.config import config
-from canonical.launchpad.webapp.errorlog import ErrorReport, ErrorReportEvent
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.testing.layers import DatabaseFunctionalLayer
 from launchpad_loggerhead.app import (
@@ -249,11 +248,11 @@ class TestOopsMiddleware(TestCase):
         # event
         self.assertEqual(1, len(self.oopses))
         oops = self.oopses[0]
-        self.assertEqual('RuntimeError', oops.type)
+        self.assertEqual('RuntimeError', oops['type'])
         # runtime_failing_app doesn't call start_response, but oops_middleware
         # does because it tries to send the OOPS information to the user.
         self.assertTrue(self.start_response_called)
-        self.assertEqual(_oops_html_template % {'oopsid': oops.id},
+        self.assertEqual(_oops_html_template % {'oopsid': oops['id']},
                          ''.join(self._response_chunks))
 
     def test_ignores_socket_exceptions(self):

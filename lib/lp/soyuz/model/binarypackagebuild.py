@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -56,10 +56,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     ISlaveStore,
     IStore,
     )
-from canonical.launchpad.mail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -83,6 +79,10 @@ from lp.buildmaster.model.packagebuild import (
     PackageBuildDerived,
     )
 from lp.services.job.model.job import Job
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
+    )
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagebuild import (
     BuildSetStatus,
@@ -570,7 +570,7 @@ class BinaryPackageBuild(PackageBuildDerived, SQLBase):
                 # Analysis of previous build data shows that a build rate
                 # of 6 KB/second is realistic. Furthermore we have to add
                 # another minute for generic build overhead.
-                estimate = int(package_size/6.0/60 + 1)
+                estimate = int(package_size / 6.0 / 60 + 1)
             else:
                 # No historic build times and no package size available,
                 # assume a build time of 5 minutes.

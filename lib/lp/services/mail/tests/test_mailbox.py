@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for mail boxes."""
@@ -9,9 +9,11 @@ import os
 from shutil import rmtree
 import tempfile
 
-from canonical.launchpad.interfaces.mailbox import IMailBox
 from canonical.launchpad.webapp.testing import verifyObject
-from lp.services.mail.mailbox import DirectoryMailBox
+from lp.services.mail.mailbox import (
+    DirectoryMailBox,
+    IMailBox,
+    )
 from lp.testing import TestCase
 
 

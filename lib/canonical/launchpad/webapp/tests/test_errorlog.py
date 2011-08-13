@@ -35,6 +35,10 @@ from zope.testing.loggingsupport import InstalledHandler
 from canonical.config import config
 from lp.app import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
+from canonical.launchpad.webapp.adapter import (
+    clear_request_started,
+    set_request_started,
+    )
 from canonical.launchpad.webapp.errorlog import (
     _is_sensitive,
     ErrorReport,
@@ -52,6 +56,7 @@ from lp.app.errors import (
     TranslationUnavailable,
     )
 from lp.services.osutils import remove_tree
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.testing import TestCase
 from lp_sitecustomize import customize_get_converter
 
@@ -100,43 +105,6 @@ class TestErrorReport(testtools.TestCase):
         self.assertEqual(
             entry.db_statements[1],
             (5, 10, 'store_b', 'SELECT 2'))
-
-    def test_write(self):
-        """Test ErrorReport.write()"""
-        entry = ErrorReport('OOPS-A0001', 'NotFound', 'error message',
-                            datetime.datetime(2005, 04, 01, 00, 00, 00,
-                                              tzinfo=UTC),
-                            'IFoo:+foo-template',
-                            'traceback-text', 'Sample User',
-                            'http://localhost:9000/foo', 42,
-                            [('HTTP_USER_AGENT', 'Mozilla/5.0'),
-                             ('HTTP_REFERER', 'http://localhost:9000/'),
-                             ('name=foo', 'hello\nworld')],
-                            [(1, 5, 'store_a', 'SELECT 1'),
-                             (5, 10, 'store_b', 'SELECT\n2')], False)
-        fp = StringIO.StringIO()
-        entry.write(fp)
-        self.assertEqual(fp.getvalue(), dedent("""\
-            Oops-Id: OOPS-A0001
-            Exception-Type: NotFound
-            Exception-Value: error message
-            Date: 2005-04-01T00:00:00+00:00
-            Page-Id: IFoo:+foo-template
-            Branch: %s
-            Revision: %s
-            User: Sample User
-            URL: http://localhost:9000/foo
-            Duration: 42
-            Informational: False
-
-            HTTP_USER_AGENT=Mozilla/5.0
-            HTTP_REFERER=http://localhost:9000/
-            name%%3Dfoo=hello%%0Aworld
-
-            00001-00005@store_a SELECT 1
-            00005-00010@store_b SELECT 2
-
-            traceback-text""" % (versioninfo.branch_nick, versioninfo.revno)))
 
     def test_read(self):
         """Test ErrorReport.read()."""
@@ -378,7 +346,7 @@ class TestErrorReportingUtility(testtools.TestCase):
 
         # verify that the oopsid was set on the request
         self.assertEqual(request.oopsid, 'OOPS-91T1')
-        self.assertEqual(request.oops.id, 'OOPS-91T1')
+        self.assertEqual(request.oops['id'], 'OOPS-91T1')
 
     def test_raising_with_xmlrpc_request(self):
         # Test ErrorReportingUtility.raising() with an XML-RPC request.
@@ -822,10 +790,10 @@ class TestErrorReportingUtility(testtools.TestCase):
                 raise ArbitraryException('foo')
             except ArbitraryException:
                 info = sys.exc_info()
-                oops = utility._makeErrorReport(info)
+                oops, _ = utility._makeErrorReport(info)
                 self.assertEqual(
                     [('<oops-message-0>', "{'a': 'b', 'c': 'd'}")],
-                    oops.req_vars)
+                    oops['req_vars'])
 
     def test__makeErrorReport_combines_request_and_error_vars(self):
         """The oops messages should be distinct from real request vars."""
@@ -836,10 +804,44 @@ class TestErrorReportingUtility(testtools.TestCase):
                 raise ArbitraryException('foo')
             except ArbitraryException:
                 info = sys.exc_info()
-                oops = utility._makeErrorReport(info, request)
+                oops, _ = utility._makeErrorReport(info, request)
                 self.assertEqual(
                     [('<oops-message-0>', "{'a': 'b'}"), ('c', 'd')],
-                    oops.req_vars)
+                    oops['req_vars'])
+
+    def test_filter_session_statement(self):
+        """Removes quoted strings if database_id is SQL-session."""
+        utility = ErrorReportingUtility()
+        statement = "SELECT 'gone'"
+        self.assertEqual(
+            "SELECT '%s'",
+            utility.filter_session_statement('SQL-session', statement))
+
+    def test_filter_session_statement_noop(self):
+        """If database_id is not SQL-session, it's a no-op."""
+        utility = ErrorReportingUtility()
+        statement = "SELECT 'gone'"
+        self.assertEqual(
+            statement,
+            utility.filter_session_statement('SQL-launchpad', statement))
+
+    def test_session_queries_filtered(self):
+        """Test that session queries are filtered."""
+        utility = ErrorReportingUtility()
+        request = ScriptRequest([], URL="test_session_queries_filtered")
+        set_request_started()
+        try:
+            timeline = get_request_timeline(request)
+            timeline.start("SQL-session", "SELECT 'gone'").finish()
+            try:
+                raise ArbitraryException('foo')
+            except ArbitraryException:
+                info = sys.exc_info()
+                oops, _ = utility._makeErrorReport(info)
+            self.assertEqual("SELECT '%s'", oops['db_statements'][0][3])
+        finally:
+            clear_request_started()
+
 
 
 class TestSensitiveRequestVariables(testtools.TestCase):

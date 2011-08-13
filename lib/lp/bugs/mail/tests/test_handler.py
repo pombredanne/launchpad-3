@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test MaloneHandler."""
@@ -19,13 +19,13 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import import_secret_test_key
-from canonical.launchpad.mail.commands import BugEmailCommand
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.mail.commands import BugEmailCommand
 from lp.bugs.mail.handler import MaloneHandler
 from lp.services.mail import stub
 from lp.testing import (
@@ -247,7 +247,7 @@ class TestSignatureTimestampValidation(TestCaseWithFactory):
             body='I really hope this bug gets fixed.')
         now = time.time()
         one_week = 60 * 60 * 24 * 7
-        msg.signature = FakeSignature(timestamp=now+one_week)
+        msg.signature = FakeSignature(timestamp=now + one_week)
         handler = MaloneHandler()
         # Clear old emails before potentially generating more.
         del stub.test_emails[:]
