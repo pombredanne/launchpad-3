@@ -13,7 +13,6 @@ from email.Utils import (
     make_msgid,
     )
 from textwrap import dedent
-import unittest
 
 import gpgme
 from zope.component import getUtility
@@ -166,7 +165,3 @@ class TestSignedMessage(TestCaseWithFactory):
         self.assertEqual(sender, principle.person)
         self.assertFalse(
             IWeaklyAuthenticatedPrincipal.providedBy(principle))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

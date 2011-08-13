@@ -7,7 +7,6 @@ __metaclass__ = type
 
 import logging
 from StringIO import StringIO
-import unittest
 
 import dkim
 import dns.resolver
@@ -262,7 +261,3 @@ class TestDKIM(TestCaseWithFactory):
         self.assertEqual(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
         self.assertDkimLogContains('body hash mismatch')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -9,7 +9,6 @@ from cStringIO import StringIO
 from datetime import datetime
 import logging
 import os
-from unittest import TestLoader
 
 import pytz
 from zope.component import getUtility
@@ -5466,7 +5465,3 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
             'Unexpected status of submission 1: %s' % submission_2.status)
 
         SubmissionParser.processSubmission = process_submission_regular
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

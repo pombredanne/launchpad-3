@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -1949,7 +1947,3 @@ class TestBranchNamespaceMoveBranch(TestCaseWithFactory):
         self.assertEqual(team, branch.owner)
         # And for paranoia.
         self.assertNamespacesEqual(namespace, branch.namespace)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -9,7 +9,6 @@ import errno
 import os
 import socket
 import tempfile
-import unittest
 
 from lp.services.osutils import (
     ensure_directory_exists,
@@ -191,7 +190,3 @@ class TestUntilNoEINTR(TestCase):
             IOError, until_no_eintr, self.MAX_RETRIES, function)
         self.assertEqual(errno.EINTR, error.errno)
         self.assertEqual(self.MAX_RETRIES, len(calls))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

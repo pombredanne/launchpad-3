@@ -6,7 +6,6 @@
 """Test the create_merge_proposals script"""
 
 from cStringIO import StringIO
-import unittest
 
 from bzrlib import errors as bzr_errors
 from bzrlib.branch import Branch
@@ -105,7 +104,3 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         self.assertIn('INFO    Job resulted in OOPS:', stderr)
         self.assertIn('INFO    Ran 0 CreateMergeProposalJobs.\n', stderr)
         self.assertEqual('', stdout)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
