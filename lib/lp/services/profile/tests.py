@@ -326,7 +326,7 @@ class BaseRequestEndHandlerTest(BaseTest):
         return self.getPStatsProfilePaths() + self.getCallgrindProfilePaths()
 
     def assertBasicProfileExists(self, request, show=False):
-        self.assertIsInstance(request.oops, ErrorReport)
+        self.assertNotEqual(None, request.oops)
         response = self.getAddedResponse(request)
         self.assertIn('Profile was logged to', response)
         if show:
@@ -431,7 +431,7 @@ class TestBasicRequestEndHandler(BaseRequestEndHandlerTest):
         # URL segment is made, profiling starts.
         self.pushProfilingConfig(profiling_allowed='True')
         request = self.endRequest('/++profile++show/')
-        self.assertIsInstance(request.oops, ErrorReport)
+        self.assertNotEqual(None, request.oops)
         self.assertIn('Top Inline Time', self.getAddedResponse(request))
         self.assertEqual(self.getMemoryLog(), [])
         self.assertEqual(self.getCallgrindProfilePaths(), [])
@@ -554,7 +554,7 @@ class TestMemoryProfilerRequestEndHandler(BaseRequestEndHandlerTest):
             profiling_allowed='True',
             memory_profile_log=self.memory_profile_log)
         request = self.endRequest('/++profile++show/')
-        self.assertIsInstance(request.oops, ErrorReport)
+        self.assertNotEqual(None, request.oops)
         self.assertIn('Top Inline Time', self.getAddedResponse(request))
         self.assertEqual(len(self.getMemoryLog()), 1)
         self.assertNoProfiles()
@@ -574,18 +574,16 @@ class TestOOPSRequestEndHandler(BaseRequestEndHandlerTest):
     def test_profiling_oops_is_informational(self):
         self.pushProfilingConfig(profiling_allowed='True')
         request = self.endRequest('/++profile++show/')
-        self.assertIsInstance(request.oops, ErrorReport)
-        self.assertTrue(request.oops.informational)
-        self.assertEquals(request.oops.type, 'ProfilingOops')
+        self.assertTrue(request.oops['informational'])
+        self.assertEquals(request.oops['type'], 'ProfilingOops')
         self.assertCleanProfilerState()
 
     def test_real_oops_trumps_profiling_oops(self):
         self.pushProfilingConfig(profiling_allowed='True')
         request = self.endRequest('/++profile++show/no-such-file',
                                   KeyError('foo'))
-        self.assertIsInstance(request.oops, ErrorReport)
-        self.assertFalse(request.oops.informational)
-        self.assertEquals(request.oops.type, 'KeyError')
+        self.assertFalse(request.oops['informational'])
+        self.assertEquals(request.oops['type'], 'KeyError')
         response = self.getAddedResponse(request)
         self.assertIn('Exception-Type: KeyError', response)
         self.assertCleanProfilerState()

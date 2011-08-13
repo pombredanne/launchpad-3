@@ -182,11 +182,10 @@ not shown to the user.
     >>> from sys import stdout
     >>> error_utility = getUtility(IErrorReportingUtility)
     >>> report = error_utility.getLastOopsReport()
-    >>> report.write(stdout)
-    Oops-Id: OOPS-...
-    Exception-Type: SVPNotFoundException
-    Exception-Value: Something was not found.
-    Date: ...
+    >>> report.type
+    'SVPNotFoundException'
+    >>> report.value
+    'Something was not found.'
 
 Reset the class variable to disable forced faults.
 
