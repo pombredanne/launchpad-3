@@ -16,7 +16,6 @@ import sys
 import tempfile
 from textwrap import dedent
 import traceback
-import unittest
 
 from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 from lazr.restful.declarations import error_status
@@ -1046,7 +1045,3 @@ class TestWrappedParameterConverter(testtools.TestCase):
         customize_get_converter(module)
         converter = module.get_converter('int')
         self.assertTrue(converter is None)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

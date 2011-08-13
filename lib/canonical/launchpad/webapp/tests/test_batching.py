@@ -6,7 +6,6 @@ __metaclass__ = type
 from datetime import datetime
 import pytz
 import simplejson
-from unittest import TestLoader
 
 from lazr.batchnavigator.interfaces import IRangeFactory
 from storm.expr import (
@@ -569,7 +568,3 @@ class TestStormRangeFactory(TestCaseWithFactory):
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, memo)
         self.assertEqual(all_results[1:4], list(sliced_result))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

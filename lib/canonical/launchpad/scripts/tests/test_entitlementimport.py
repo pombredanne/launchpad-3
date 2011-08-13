@@ -182,6 +182,3 @@ class EntitlementImporterTestCase(unittest.TestCase):
         self.handler.assertLogsMessage(
             "[E0] You may not change the person for the entitlement.",
             level=logging.INFO)
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

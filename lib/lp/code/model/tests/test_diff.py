@@ -5,11 +5,9 @@
 
 __metaclass__ = type
 
-
 from cStringIO import StringIO
 from difflib import unified_diff
 import logging
-from unittest import TestLoader
 
 from bzrlib import trace
 from bzrlib.patches import (
@@ -608,7 +606,3 @@ class TestIncrementalDiff(DiffTestCase):
         inserted, removed = self.diff_changes(incremental_diff.text)
         self.assertEqual(['c\n'], inserted)
         self.assertEqual(['b\n'], removed)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

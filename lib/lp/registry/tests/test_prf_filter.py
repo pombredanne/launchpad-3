@@ -110,7 +110,3 @@ class Filter_IsPossibleParentUrl(unittest.TestCase):
         self.assertTrue(f.isPossibleParent("file:///subdir/1.42"))
         self.assertTrue(f.isPossibleParent("file:///subdir/1.abc/"))
         self.assertFalse(f.isPossibleParent("file:///subdir/2.0"))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

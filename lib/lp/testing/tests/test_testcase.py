@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from StringIO import StringIO
 import sys
-import unittest
 
 import oops.serializer_rfc822
 from storm.store import Store
@@ -96,4 +95,3 @@ class TestCaptureOops(TestCaseWithFactory):
         from_details = oops.serializer_rfc822.read(content)
         oops_report = errorlog.globalErrorUtility.getLastOopsReport()
         self.assertEqual(dict(oops_report.__dict__), from_details)
-
