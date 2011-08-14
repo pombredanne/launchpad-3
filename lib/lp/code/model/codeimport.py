@@ -260,12 +260,8 @@ class CodeImportSet:
                 "Don't know how to sanity check source details for unknown "
                 "rcs_type %s"%rcs_type)
         if review_status is None:
-            # Auto approve git and hg imports.
-            if rcs_type in (
-                RevisionControlSystems.GIT, RevisionControlSystems.HG):
-                review_status = CodeImportReviewStatus.REVIEWED
-            else:
-                review_status = CodeImportReviewStatus.NEW
+            # Auto approve imports.
+            review_status = CodeImportReviewStatus.REVIEWED
         if not target.supports_code_imports:
             raise AssertionError("%r doesn't support code imports" % target)
         if owner is None:

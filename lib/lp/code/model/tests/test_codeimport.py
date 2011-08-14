@@ -57,20 +57,6 @@ class TestCodeImportCreation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_new_svn_import(self):
-        """A new subversion code import should have NEW status."""
-        code_import = CodeImportSet().new(
-            registrant=self.factory.makePerson(),
-            target=IBranchTarget(self.factory.makeProduct()),
-            branch_name='imported',
-            rcs_type=RevisionControlSystems.SVN,
-            url=self.factory.getUniqueURL())
-        self.assertEqual(
-            CodeImportReviewStatus.NEW,
-            code_import.review_status)
-        # No job is created for the import.
-        self.assertIs(None, code_import.import_job)
-
     def test_reviewed_svn_import(self):
         """A specific review status can be set for a new import."""
         code_import = CodeImportSet().new(
@@ -86,23 +72,8 @@ class TestCodeImportCreation(TestCaseWithFactory):
         # A job is created for the import.
         self.assertIsNot(None, code_import.import_job)
 
-    def test_new_cvs_import(self):
-        """A new CVS code import should have NEW status."""
-        code_import = CodeImportSet().new(
-            registrant=self.factory.makePerson(),
-            target=IBranchTarget(self.factory.makeProduct()),
-            branch_name='imported',
-            rcs_type=RevisionControlSystems.CVS,
-            cvs_root=self.factory.getUniqueURL(),
-            cvs_module='module')
-        self.assertEqual(
-            CodeImportReviewStatus.NEW,
-            code_import.review_status)
-        # No job is created for the import.
-        self.assertIs(None, code_import.import_job)
-
     def test_reviewed_cvs_import(self):
-        """A specific review status can be set for a new import."""
+        """A new CVS code import should have REVIEWED status."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
             target=IBranchTarget(self.factory.makeProduct()),
@@ -114,8 +85,8 @@ class TestCodeImportCreation(TestCaseWithFactory):
         self.assertEqual(
             CodeImportReviewStatus.REVIEWED,
             code_import.review_status)
-        # A job is created for the import.
-        self.assertIsNot(None, code_import.import_job)
+        # No job is created for the import.
+        self.assertIs(None, code_import.import_job)
 
     def test_git_import_reviewed(self):
         """A new git import is always reviewed by default."""
