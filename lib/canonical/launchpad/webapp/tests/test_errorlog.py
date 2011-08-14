@@ -161,7 +161,6 @@ class TestErrorReportingUtility(testtools.TestCase):
         # current error directory.
         test_data = dedent("""
             [error_reports]
-            copy_to_zlog: true
             error_dir: %s
             """ % tempfile.mkdtemp())
         config.push('test_data', test_data)
@@ -186,8 +185,6 @@ class TestErrorReportingUtility(testtools.TestCase):
             utility.oops_prefix)
         self.assertEqual(config.error_reports.error_dir,
             utility.log_namer._output_root)
-        self.assertEqual(
-            config.error_reports.copy_to_zlog, utility.copy_to_zlog)
         # Some external processes may use another config section to
         # provide the error log configuration.
         utility.configure(section_name='branchscanner')
@@ -195,8 +192,6 @@ class TestErrorReportingUtility(testtools.TestCase):
             utility.oops_prefix)
         self.assertEqual(config.branchscanner.error_dir,
             utility.log_namer._output_root)
-        self.assertEqual(
-            config.branchscanner.copy_to_zlog, utility.copy_to_zlog)
 
         # The default error section can be restored.
         utility.configure()
@@ -204,8 +199,6 @@ class TestErrorReportingUtility(testtools.TestCase):
             utility.oops_prefix)
         self.assertEqual(config.error_reports.error_dir,
             utility.log_namer._output_root)
-        self.assertEqual(
-            config.error_reports.copy_to_zlog, utility.copy_to_zlog)
 
     def test_setOopsToken(self):
         """Test ErrorReportingUtility.setOopsToken()."""

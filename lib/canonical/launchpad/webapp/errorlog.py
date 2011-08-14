@@ -189,7 +189,6 @@ class ErrorReportingUtility:
         """
         if section_name is None:
             section_name = self._default_config_section
-        self.copy_to_zlog = config[section_name].copy_to_zlog
         # Start a new UniqueFileAllocator to activate the new configuration.
         self.log_namer = UniqueFileAllocator(
             output_root=config[section_name].error_dir,
@@ -300,9 +299,6 @@ class ErrorReportingUtility:
             request.oopsid = entry['id']
             request.oops = entry
 
-        if self.copy_to_zlog:
-            self._do_copy_to_zlog(
-                entry['time'], entry['type'], entry['url'], info, entry['id'])
         notify(ErrorReportEvent(entry))
         return entry
 
@@ -479,29 +475,6 @@ class ErrorReportingUtility:
         """
         return self._raising(
             info, request=request, now=now, informational=True)
-
-    def _do_copy_to_zlog(self, now, strtype, url, info, oopsid):
-        distant_past = datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=UTC)
-        when = _rate_restrict_pool.get(strtype, distant_past)
-        if now > when:
-            next_when = max(
-                when, now - _rate_restrict_burst * _rate_restrict_period)
-            next_when += _rate_restrict_period
-            _rate_restrict_pool[strtype] = next_when
-            # Sometimes traceback information can be passed in as a string. In
-            # those cases, we don't (can't!) log the traceback. The traceback
-            # information is still preserved in the actual OOPS report.
-            traceback = info[2]
-            if not isinstance(traceback, types.TracebackType):
-                traceback = None
-            # The logging module doesn't provide a way to pass in exception
-            # info, so we temporarily raise the exception so it can be logged.
-            # We disable the pylint warning for the blank except.
-            try:
-                raise info[0], info[1], traceback
-            except info[0]:
-                logging.getLogger('SiteError').exception(
-                    '%s (%s)' % (url, oopsid))
 
     @contextlib.contextmanager
     def oopsMessage(self, message):
