@@ -33,6 +33,7 @@ __all__ = [
     'DistributionSourcePackageVocabulary',
     'DistributionVocabulary',
     'DistroSeriesDerivationVocabulary',
+    'DistroSeriesDifferencesVocabulary',
     'DistroSeriesVocabulary',
     'FeaturedProjectVocabulary',
     'FilteredDistroSeriesVocabulary',
@@ -94,6 +95,8 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
+from lazr.restful.interfaces import IReference
+
 from canonical.database.sqlbase import (
     quote,
     quote_like,
@@ -138,6 +141,9 @@ from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.distroseriesdifference import (
+    IDistroSeriesDifference,
+    )
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet,
     MailingListStatus,
@@ -167,6 +173,7 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
+from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.distroseriesparent import DistroSeriesParent
 from lp.registry.model.featuredproject import FeaturedProject
 from lp.registry.model.karma import KarmaCategory
@@ -194,9 +201,7 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.distroarchseries import DistroArchSeries
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory,
-    )
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 
@@ -1866,14 +1871,87 @@ class DistroSeriesDerivationVocabulary:
             return self.find_terms(where)
 
 
+class DistroSeriesDifferencesVocabulary:
+    """A vocabulary source for differences relating to a series.
+
+    Specifically, all `DistroSeriesDifference`s relating to a derived series.
+    """
+
+    implements(IHugeVocabulary)
+
+    displayname = "Choose a difference"
+    step_title = 'Search'
+
+    def __init__(self, context):
+        """Create a new vocabulary for the context.
+
+        :type context: `IDistroSeries`.
+        """
+        assert IDistroSeries.providedBy(context)
+        self.distroseries = context
+
+    def __len__(self):
+        """See `IIterableVocabulary`."""
+        return self.searchForDifferences().count()
+
+    def __iter__(self):
+        """See `IIterableVocabulary`."""
+        for difference in self.searchForDifferences():
+            yield self.toTerm(difference)
+
+    def __contains__(self, value):
+        """See `IVocabulary`."""
+        return (
+            IDistroSeriesDifference.providedBy(value) and
+            value.derived_series == self.distroseries)
+
+    def getTerm(self, value):
+        """See `IVocabulary`."""
+        if value not in self:
+            raise LookupError(value)
+        return self.toTerm(value)
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        if not token.isdigit():
+            raise LookupError(token)
+        difference = IStore(DistroSeriesDifference).get(
+            DistroSeriesDifference, int(token))
+        if difference is None:
+            raise LookupError(token)
+        elif difference.derived_series != self.distroseries:
+            raise LookupError(token)
+        else:
+            return self.toTerm(difference)
+
+    @staticmethod
+    def toTerm(dsd):
+        """Return the term for a `DistroSeriesDifference`."""
+        return SimpleTerm(dsd, dsd.id)
+
+    def searchForTerms(self, query=None):
+        """See `IHugeVocabulary`."""
+        results = self.searchForDifferences()
+        return CountableIterator(results.count(), results, self.toTerm)
+
+    def searchForDifferences(self):
+        """The set of `DistroSeriesDifference`s related to the context.
+
+        :return: `IResultSet` yielding `IDistroSeriesDifference`.
+        """
+        return DistroSeriesDifference.getForDistroSeries(self.distroseries)
+
+
 class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
     """Active `IPillar` objects vocabulary."""
     displayname = 'Needs to be overridden'
     _table = PillarName
-    _orderBy = 'name'
+    _limit = 100
 
     def toTerm(self, obj):
         """See `IVocabulary`."""
+        if type(obj) == int:
+            return self.toTerm(PillarName.get(obj))
         if IPillarName.providedBy(obj):
             assert obj.active, 'Inactive object %s %d' % (
                     obj.__class__.__name__, obj.id)
@@ -1894,23 +1972,37 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
     def __contains__(self, obj):
         raise NotImplementedError
 
+    def searchForTerms(self, query=None):
+        if not query:
+            return self.emptySelectResults()
+        query = ensure_unicode(query).lower()
+        store = IStore(PillarName)
+        equal_clauses = [PillarName.name == query]
+        like_clauses = [
+            PillarName.name != query, PillarName.name.contains_string(query)]
+        if self._filter:
+            equal_clauses.extend(self._filter)
+            like_clauses.extend(self._filter)
+        ranked_results = store.execute(
+            Union(
+                Select(
+                    (PillarName.id, PillarName.name, SQL('100 AS rank')),
+                    tables=[PillarName],
+                    where=And(*equal_clauses)),
+                Select(
+                    (PillarName.id, PillarName.name, SQL('50 AS rank')),
+                    tables=[PillarName],
+                    where=And(*like_clauses)),
+                limit=self._limit, order_by=(
+                    Desc(SQL('rank')), PillarName.name), all=True))
+        results = [row[0] for row in list(ranked_results)]
+        return self.iterator(len(results), results, self.toTerm)
+
 
 class DistributionOrProductVocabulary(PillarVocabularyBase):
     """Active `IDistribution` or `IProduct` objects vocabulary."""
     displayname = 'Select a project'
-    _filter = """
-        -- An active product/distro.
-        ((active IS TRUE
-         AND (product IS NOT NULL OR distribution IS NOT NULL)
-        )
-        OR
-        -- Or an alias for an active product/distro.
-        (alias_for IN (
-            SELECT id FROM PillarName
-            WHERE active IS TRUE AND
-                (product IS NOT NULL OR distribution IS NOT NULL))
-        ))
-        """
+    _filter = [PillarName.project == None, PillarName.active == True]
 
     def __contains__(self, obj):
         if IProduct.providedBy(obj):
@@ -1923,7 +2015,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
 class DistributionOrProductOrProjectGroupVocabulary(PillarVocabularyBase):
     """Active `IProduct`, `IProjectGroup` or `IDistribution` vocabulary."""
     displayname = 'Select a project'
-    _filter = PillarName.q.active == True
+    _filter = [PillarName.active == True]
 
     def __contains__(self, obj):
         if IProduct.providedBy(obj) or IProjectGroup.providedBy(obj):
@@ -1989,7 +2081,9 @@ class DistributionSourcePackageVocabulary:
         self.context = context
         # Avoid circular import issues.
         from lp.answers.interfaces.question import IQuestion
-        if IBugTask.providedBy(context) or IQuestion.providedBy(context):
+        if IReference.providedBy(context):
+            target = context.context.target
+        elif IBugTask.providedBy(context) or IQuestion.providedBy(context):
             target = context.target
         else:
             target = context
@@ -2033,13 +2127,14 @@ class DistributionSourcePackageVocabulary:
             if distribution is not None and spn_or_dsp is not None:
                 dsp = distribution.getSourcePackage(spn_or_dsp)
         try:
+            token = '%s/%s' % (dsp.distribution.name, dsp.name)
             binaries = dsp.publishing_history[0].getBuiltBinaries()
             binary_names = [binary.binary_package_name for binary in binaries]
             if binary_names != []:
                 summary = ', '.join(binary_names)
             else:
                 summary = 'Not yet built.'
-            token = '%s/%s' % (dsp.distribution.name, dsp.name)
+            summary = token + ' ' + summary
             return SimpleTerm(dsp.sourcepackagename, token, summary)
         except (IndexError, AttributeError):
             # Either the DSP was None or there is no publishing history.

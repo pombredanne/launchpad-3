@@ -11,7 +11,6 @@ __all__ = [
     'get_ro_server',
     'get_rw_server',
     'LaunchpadServer',
-    'make_branch_mirrorer',
     ]
 
 from lp.codehosting.vfs.branchfs import (
@@ -21,7 +20,6 @@ from lp.codehosting.vfs.branchfs import (
     get_ro_server,
     get_rw_server,
     LaunchpadServer,
-    make_branch_mirrorer,
     )
 from lp.codehosting.vfs.branchfsclient import (
     BranchFileSystemClient,

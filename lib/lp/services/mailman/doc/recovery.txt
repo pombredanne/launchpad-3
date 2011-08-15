@@ -23,7 +23,7 @@ automatically.
     ...     'Open Team']
     >>> browser.getControl('Create').click()
     >>> browser.getLink('Create a mailing list').click()
-    >>> browser.getControl('Apply for Mailing List').click()
+    >>> browser.getControl('Create new Mailing List').click()
 
     >>> from lp.services.mailman.testing import helpers
     >>> list_one = helpers.review_list('itest-one')

@@ -47,6 +47,7 @@ class LinkCheckerAPI:
         # Each link type has it's own validation method.
         self.link_checkers = dict(
             branch_links=self.check_branch_links,
+            bug_links=self.check_bug_links,
         )
 
     def __call__(self):

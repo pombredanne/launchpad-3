@@ -736,6 +736,67 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
                 "Did not find expected marker for %s."
                 % archive.purpose.title)
 
+    def test_publish_reraises_exception(self):
+        # If an Exception comes up while publishing, it bubbles up out
+        # of the publish method even though the method must intercept
+        # it for its own purposes.
+        class MoonPhaseError(Exception):
+            """Simulated failure."""
+
+        message = self.factory.getUniqueString()
+        script = self.makeScript()
+        script.publishAllUploads = FakeMethod(failure=MoonPhaseError(message))
+        script.setUp()
+        self.assertRaisesWithContent(MoonPhaseError, message, script.publish)
+
+    def test_publish_obeys_keyboard_interrupt(self):
+        # Similar to an Exception, a keyboard interrupt does not get
+        # swallowed.
+        message = self.factory.getUniqueString()
+        script = self.makeScript()
+        script.publishAllUploads = FakeMethod(
+            failure=KeyboardInterrupt(message))
+        script.setUp()
+        self.assertRaisesWithContent(
+            KeyboardInterrupt, message, script.publish)
+
+    def test_publish_recovers_working_dists_on_exception(self):
+        # If an Exception comes up while publishing, the publish method
+        # recovers its working directory.
+        class MoonPhaseError(Exception):
+            """Simulated failure."""
+
+        failure = MoonPhaseError(self.factory.getUniqueString())
+
+        script = self.makeScript()
+        script.publishAllUploads = FakeMethod(failure=failure)
+        script.recoverArchiveWorkingDir = FakeMethod()
+        script.setUp()
+
+        try:
+            script.publish()
+        except MoonPhaseError:
+            pass
+
+        self.assertEqual(1, script.recoverArchiveWorkingDir.call_count)
+
+    def test_publish_recovers_working_dists_on_ctrl_C(self):
+        # If the user hits ctrl-C while publishing, the publish method
+        # recovers its working directory.
+        failure = KeyboardInterrupt("Ctrl-C!")
+
+        script = self.makeScript()
+        script.publishAllUploads = FakeMethod(failure=failure)
+        script.recoverArchiveWorkingDir = FakeMethod()
+        script.setUp()
+
+        try:
+            script.publish()
+        except KeyboardInterrupt:
+            pass
+
+        self.assertEqual(1, script.recoverArchiveWorkingDir.call_count)
+
 
 class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
     """Test initial creation of archive indexes for a `DistroSeries`."""

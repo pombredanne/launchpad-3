@@ -8,27 +8,8 @@
 >
   <body>
     <metal:block fill-slot="head_epilogue">
-    <script>
-        LPS.use('base', 'node', 'lp.app.privacy', function(Y) {
-            Y.on("domready", function () {
-                if (Y.one(document.body).hasClass('private')) {
-                    Y.lp.app.privacy.display_privacy_notification(false);
-                }
-            });
-        });
-    </script>
     </metal:block>
     <div metal:fill-slot="main" tal:define="comment view/comment">
-      <tal:if condition="request/features/bugs.private_notification.enabled">
-        <div tal:attributes="class string: global-notification ${view/privacy_notice_classes}">
-          <span class="sprite notification-private"></span>
-          This comment is on a private bug
-          <a href="#" class="global-notification-close">
-            <span class="sprite notification-close"></span>
-            Hide
-          </a>
-        </div>
-      </tal:if>
       <h1 tal:content="view/page_title">Foo doesn't work</h1>
       <tal:comment replace="structure comment/@@+box-expanded-reply">
       </tal:comment>

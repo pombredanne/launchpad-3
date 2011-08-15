@@ -34,6 +34,17 @@
             });
          });
       </script>
+      <tal:if condition="request/features/bugs.private_notification.enabled">
+      <script type="text/javascript">
+          // We need to set up some bugtask
+            var privacy_notification_enabled = true;
+      </script>
+      </tal:if>
+      <tal:if condition="not: request/features/bugs.private_notification.enabled">
+      <script type="text/javascript">
+            var privacy_notification_enabled = false;
+      </script>
+      </tal:if>
       <style type="text/css">
         /* Align the 'add comment' link to the right of the comment box. */
         #add-comment-form textarea { width: 100%; }
@@ -89,16 +100,6 @@
     </metal:heading>
 
     <div metal:fill-slot="main" tal:define="context_menu context/menu:context">
-      <tal:if condition="request/features/bugs.private_notification.enabled">
-        <div tal:attributes="class string: global-notification ${view/privacy_notice_classes}">
-          <span class="sprite notification-private"></span>
-          This bug is private
-          <a href="#" class="global-notification-close">
-            <span class="sprite notification-close"></span>
-            Hide
-          </a>
-        </div>
-      </tal:if>
       <div id="tags-autocomplete">
        <div id="tags-autocomplete-content"></div>
       </div>
