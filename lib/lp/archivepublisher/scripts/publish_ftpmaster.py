@@ -607,3 +607,4 @@ class PublishFTPMaster(LaunchpadCronScript):
 
         for distribution in self.distributions:
             self.processDistro(distribution)
+            self.txn.commit()
