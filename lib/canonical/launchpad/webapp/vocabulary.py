@@ -248,9 +248,6 @@ class VocabularyFilterAll(VocabularyFilter):
         return super(VocabularyFilter, cls).__new__(
             cls, 'ALL', 'All', 'Display all search results')
 
-    def __contains__(self, item):
-        return True
-
 
 class FilteredVocabularyBase:
     """A mixin to provide base filtering support."""
