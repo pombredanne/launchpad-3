@@ -1076,16 +1076,22 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
     def test_getForDistroSeries_filters_by_multiple_statuses(self):
         # Multiple statuses can be passed for filtering.
         derived_series = self.makeDerivedSeries()
-        diffs = self.makeDiffsForDistroSeries(derived_series)
+        dsds = [
+            self.factory.makeDistroSeriesDifference(
+                derived_series, status=status)
+            for status in DistroSeriesDifferenceStatus.items]
 
-        result = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
-            derived_series,
-            status=(
-                DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
-                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-                ))
+        statuses = (
+            DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
+            DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
+            )
 
-        self.assertContentEqual(diffs['normal'] + diffs['ignored'], result)
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        self.assertContentEqual(
+            statuses, [
+                dsd.status
+                for dsd in dsd_source.getForDistroSeries(
+                    derived_series, status=statuses)])
 
     def test_getForDistroSeries_matches_by_package_name(self):
         dsd = self.factory.makeDistroSeriesDifference()
