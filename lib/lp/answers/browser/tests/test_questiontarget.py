@@ -13,7 +13,10 @@ from BeautifulSoup import BeautifulSoup
 from zope.component import getUtility
 from zope.traversing.browser import absoluteURL
 
-from lazr.restful.interfaces import IWebServiceClientRequest
+from lazr.restful.interfaces import (
+    IJSONRequestCache,
+    IWebServiceClientRequest,
+    )
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.testing.pages import find_tag_by_id
@@ -425,3 +428,26 @@ class QuestionTargetPortletAnswerContactsWithDetailsTests(
         with person_logged_in(admin):
             self.assertEqual(
                 dumps([expected_result]), view.answercontact_data_js)
+
+
+class TestQuestionTargetPortletAnswerContacts(TestCaseWithFactory):
+    """Tests for IQuestionTarget:+portlet-answercontacts."""
+    layer = LaunchpadFunctionalLayer
+
+    def test_jsoncache_contents(self):
+        product = self.factory.makeProduct()
+        question = self.factory.makeQuestion(target=product)
+        login_person(product.owner)
+
+        # It works even for anonymous users, so no log-in is needed.
+        view = create_initialized_view(
+            question.target, '+portlet-answercontacts', rootsite='answers')
+
+        cache = IJSONRequestCache(view.request).objects
+        context_url_data = {
+            'web_link': canonical_url(product, rootsite='mainsite'),
+            'self_link': absoluteURL(product,
+                                     IWebServiceClientRequest(view.request)),
+            }
+        self.assertEqual(cache[product.name + '_answer_portlet_url_data'],
+                         context_url_data)

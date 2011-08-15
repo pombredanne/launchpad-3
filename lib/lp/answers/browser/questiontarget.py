@@ -27,7 +27,10 @@ from operator import attrgetter
 from simplejson import dumps
 from urllib import urlencode
 
-from lazr.restful.interfaces import IWebServiceClientRequest
+from lazr.restful.interfaces import (
+    IJSONRequestCache,
+    IWebServiceClientRequest,
+    )
 
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
@@ -814,6 +817,23 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                       'languages: $languages.',
                       mapping={'languages': language_str})
             response.addNotification(structured(msgid))
+
+
+class QuestionTargetPortletAnswerContacts(LaunchpadView):
+    """View sets up the required url data for the answer contacts portlet."""
+
+    @cachedproperty
+    def api_request(self):
+        return IWebServiceClientRequest(self.request)
+
+    def initialize(self):
+        cache = IJSONRequestCache(self.request).objects
+        context_url_data = {
+            'web_link': canonical_url(self.context, rootsite='mainsite'),
+            'self_link': absoluteURL(self.context, self.api_request),
+            }
+        cache[self.context.name + '_answer_portlet_url_data'] = (
+            context_url_data)
 
 
 class QuestionTargetPortletAnswerContactsWithDetails(LaunchpadView):
