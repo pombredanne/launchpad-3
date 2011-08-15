@@ -189,7 +189,6 @@ class ErrorReportingUtility:
         """
         if section_name is None:
             section_name = self._default_config_section
-        self.copy_to_zlog = config[section_name].copy_to_zlog
         # Start a new UniqueFileAllocator to activate the new configuration.
         self.log_namer = UniqueFileAllocator(
             output_root=config[section_name].error_dir,
@@ -288,44 +287,59 @@ class ErrorReportingUtility:
 
     def _raising(self, info, request=None, now=None, informational=False):
         """Private method used by raising() and handling()."""
-        entry, filename = self._makeErrorReport(info, request, now, informational)
-        if entry is None:
+        report = self._makeReport(info, request, now, informational)
+        if self._filterReport(report):
             return
-        oops.serializer_rfc822.write(entry, open(filename, 'wb'))
+        self._sendReport(report, now=now)
+        if request:
+            request.oopsid = report['id']
+            request.oops = report
+        return report
+
+    def _sendReport(self, report, now=None):
+        if now is not None:
+            now = now.astimezone(UTC)
+        else:
+            now = datetime.datetime.now(UTC)
+        oopsid, filename = self.log_namer.newId(now)
+        report['id'] = oopsid
+        oops.serializer_rfc822.write(report, open(filename, 'wb'))
         # Set file permission to: rw-r--r--
         wanted_permission = (
             stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
         os.chmod(filename, wanted_permission)
-        if request:
-            request.oopsid = entry['id']
-            request.oops = entry
+        notify(ErrorReportEvent(report))
 
-        if self.copy_to_zlog:
-            self._do_copy_to_zlog(
-                entry['time'], entry['type'], entry['url'], info, entry['id'])
-        notify(ErrorReportEvent(entry))
-        return entry
+    def filter_session_statement(self, database_id, statement):
+        """Replace quoted strings with '%s' in statements on session DB."""
+        if database_id == 'SQL-' + PGSessionBase.store_name:
+            return re.sub("'[^']*'", "'%s'", statement)
+        else:
+            return statement
 
-    def _isIgnoredException(self, strtype, request=None, exception=None):
-        """Should the given exception generate an OOPS or be ignored?
+    def _filterReport(self, report):
+        """Return True if the report should be filtered and not emitted.
 
-        Exceptions will be ignored if they
-            - are specially tagged as being ignorable by having the marker
-              interface IUnloggedException
-            - are of a type included in self._ignored_exceptions, or
-            - were requested with an off-site REFERRER header and are of a
-              type included in self._ignored_exceptions_for_offsite_referer
+        Reports are filtered if:
+         - There is a key 'ignore':True in the report. This is set during
+           _makeReport.
+         - have a type listed in self._ignored_exceptions.
+         - have a missing or offset REFERER header with a type listed in
+           self._ignored_exceptions_for_offsite_referer
         """
-        if IUnloggedException.providedBy(exception):
+        if report.get('ignore'):
             return True
-        if strtype in self._ignored_exceptions:
+        if report['type'] in self._ignored_exceptions:
             return True
-        if strtype in self._ignored_exceptions_for_offsite_referer:
-            if request is not None:
-                referer = request.get('HTTP_REFERER')
-                # If there is no referrer then we can't tell if this exception
-                # should be ignored or not, so we'll be conservative and
-                # ignore it.
+        if report['type'] in self._ignored_exceptions_for_offsite_referer:
+            was_http = report.get('url', '').lower().startswith('http')
+            if was_http:
+                req_vars = dict(report.get('req_vars', ()))
+                referer = req_vars.get('HTTP_REFERER')
+                # If there is no referrer then either the user has refer
+                # disabled, or its someone coming from offsite or from some
+                # saved bookmark. Any which way, its not a sign of a current
+                # broken-url-generator in LP: ignore it.
                 if referer is None:
                     return True
                 referer_parts = urlparse.urlparse(referer)
@@ -335,16 +349,8 @@ class ErrorReportingUtility:
                     return True
         return False
 
-    def filter_session_statement(self, database_id, statement):
-        """Replace quoted strings with '%s' in statements on session DB."""
-        if database_id == 'SQL-' + PGSessionBase.store_name:
-            return re.sub("'[^']*'", "'%s'", statement)
-        else:
-            return statement
-
-    def _makeErrorReport(self, info, request=None, now=None,
-                         informational=False):
-        """Return an ErrorReport for the supplied data.
+    def _makeReport(self, info, request=None, now=None, informational=False):
+        """Create an unallocated OOPS.
 
         :param info: Output of sys.exc_info()
         :param request: The IErrorReportRequest which provides context to the
@@ -358,82 +364,35 @@ class ErrorReportingUtility:
             now = now.astimezone(UTC)
         else:
             now = datetime.datetime.now(UTC)
-        tb_text = None
-
-        strtype = str(getattr(info[0], '__name__', info[0]))
-        if self._isIgnoredException(strtype, request, info[1]):
-            return None, None
-
+        report = {}
+        report['type'] = _safestr(getattr(info[0], '__name__', info[0]))
+        report['value'] = _safestr(info[1])
         if not isinstance(info[2], basestring):
             tb_text = ''.join(format_exception(*info,
                                                **{'as_html': False}))
         else:
             tb_text = info[2]
-        tb_text = _safestr(tb_text)
-
-        url = None
-        username = None
-        req_vars = []
-        pageid = ''
-
+        report['tb_text'] = _safestr(tb_text)
+        report['req_vars'] = []
+        report['time'] = now
+        report['informational'] = informational
+        report['branch_nick'] = versioninfo.branch_nick
+        report['revno'] = versioninfo.revno
+        # Because of IUnloggedException being a sidewards lookup we must
+        # capture this here to filter on later.
+        report['ignore'] = IUnloggedException.providedBy(info[1])
         if request:
-            # XXX jamesh 2005-11-22: Temporary fix, which Steve should
-            #      undo. URL is just too HTTPRequest-specific.
-            if safe_hasattr(request, 'URL'):
-                url = request.URL
-
-            if WebServiceLayer.providedBy(request):
-                webservice_error = getattr(
-                    info[1], '__lazr_webservice_error__', 500)
-                if webservice_error / 100 != 5:
-                    request.oopsid = None
-                    # Return so the OOPS is not generated.
-                    return None, None
-
-            missing = object()
-            principal = getattr(request, 'principal', missing)
-            if safe_hasattr(principal, 'getLogin'):
-                login = principal.getLogin()
-            elif principal is missing or principal is None:
-                # Request has no principal.
-                login = None
-            else:
-                # Request has an UnauthenticatedPrincipal.
-                login = 'unauthenticated'
-                if strtype in (
-                    self._ignored_exceptions_for_unauthenticated_users):
-                    return None, None
-
-            if principal is not None and principal is not missing:
-                username = _safestr(
-                    ', '.join([
-                            unicode(login),
-                            unicode(request.principal.id),
-                            unicode(request.principal.title),
-                            unicode(request.principal.description)]))
-
-            if getattr(request, '_orig_env', None):
-                pageid = request._orig_env.get('launchpad.pageid', '')
-
-            for key, value in request.items():
-                if _is_sensitive(request, key):
-                    req_vars.append((_safestr(key), '<hidden>'))
-                else:
-                    req_vars.append((_safestr(key), _safestr(value)))
-            if IXMLRPCRequest.providedBy(request):
-                args = request.getPositionalArguments()
-                req_vars.append(('xmlrpc args', _safestr(args)))
+            self._gather_request(report, request, info)
         # XXX AaronBentley 2009-11-26 bug=488950: There should be separate
         # storage for oops messages.
-        req_vars.extend(
+        report['req_vars'].extend(
             ('<oops-message-%d>' % key, str(message)) for key, message
              in self._oops_messages.iteritems())
-        req_vars.sort()
-        strv = _safestr(info[1])
+        report['req_vars'].sort()
 
-        strurl = _safestr(url)
-
-        duration = get_request_duration()
+        # More generic than HTTP requests - e.g. how long a script was running
+        # for.
+        report['duration'] = get_request_duration()
         # In principle the timeline is per-request, but see bug=623199 -
         # at this point the request is optional, but get_request_timeline
         # does not care; when it starts caring, we will always have a
@@ -446,26 +405,60 @@ class ErrorReportingUtility:
             detail = self.filter_session_statement(category, detail)
             statements.append(
                 (start, end, _safestr(category), _safestr(detail)))
+        report['db_statements'] = statements
+        return report
 
-        oopsid, filename = self.log_namer.newId(now)
+    def _gather_request(self, report, request, info):
+        """Add request metadata into the error report."""
+        # XXX jamesh 2005-11-22: Temporary fix, which Steve should
+        #      undo. URL is just too HTTPRequest-specific.
+        if safe_hasattr(request, 'URL'):
+            report['url'] = _safestr(request.URL)
 
-        result = {
-            'id': oopsid,
-            'type': strtype,
-            'value': strv,
-            'time': now,
-            'pageid': pageid,
-            'tb_text': tb_text,
-            'username': username,
-            'url': strurl,
-            'duration': duration,
-            'req_vars': req_vars,
-            'db_statements': statements,
-            'informational': informational,
-            'branch_nick': versioninfo.branch_nick,
-            'revno': versioninfo.revno,
-            }
-        return result, filename
+        if WebServiceLayer.providedBy(request):
+            webservice_error = getattr(
+                info[1], '__lazr_webservice_error__', 500)
+            if webservice_error / 100 != 5:
+                request.oopsid = None
+                # Tell the oops machinery to ignore this error
+                report['ignore'] = True
+
+        missing = object()
+        principal = getattr(request, 'principal', missing)
+        if safe_hasattr(principal, 'getLogin'):
+            login = principal.getLogin()
+        elif principal is missing or principal is None:
+            # Request has no principal (e.g. scriptrequest)
+            login = None
+        else:
+            # Request has an UnauthenticatedPrincipal.
+            login = 'unauthenticated'
+            if report['type'] in (
+                self._ignored_exceptions_for_unauthenticated_users):
+                report['ignore'] = True
+
+        if principal is not None and principal is not missing:
+            username = _safestr(
+                ', '.join([
+                        unicode(login),
+                        unicode(request.principal.id),
+                        unicode(request.principal.title),
+                        unicode(request.principal.description)]))
+            report['username'] = username
+
+        if getattr(request, '_orig_env', None):
+            report['pageid'] = request._orig_env.get(
+                    'launchpad.pageid', '')
+
+        for key, value in request.items():
+            if _is_sensitive(request, key):
+                report['req_vars'].append((_safestr(key), '<hidden>'))
+            else:
+                report['req_vars'].append(
+                        (_safestr(key), _safestr(value)))
+        if IXMLRPCRequest.providedBy(request):
+            args = request.getPositionalArguments()
+            report['req_vars'].append(('xmlrpc args', _safestr(args)))
 
     def handling(self, info, request=None, now=None):
         """Flag ErrorReport as informational only.
@@ -479,29 +472,6 @@ class ErrorReportingUtility:
         """
         return self._raising(
             info, request=request, now=now, informational=True)
-
-    def _do_copy_to_zlog(self, now, strtype, url, info, oopsid):
-        distant_past = datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=UTC)
-        when = _rate_restrict_pool.get(strtype, distant_past)
-        if now > when:
-            next_when = max(
-                when, now - _rate_restrict_burst * _rate_restrict_period)
-            next_when += _rate_restrict_period
-            _rate_restrict_pool[strtype] = next_when
-            # Sometimes traceback information can be passed in as a string. In
-            # those cases, we don't (can't!) log the traceback. The traceback
-            # information is still preserved in the actual OOPS report.
-            traceback = info[2]
-            if not isinstance(traceback, types.TracebackType):
-                traceback = None
-            # The logging module doesn't provide a way to pass in exception
-            # info, so we temporarily raise the exception so it can be logged.
-            # We disable the pylint warning for the blank except.
-            try:
-                raise info[0], info[1], traceback
-            except info[0]:
-                logging.getLogger('SiteError').exception(
-                    '%s (%s)' % (url, oopsid))
 
     @contextlib.contextmanager
     def oopsMessage(self, message):
