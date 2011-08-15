@@ -11,6 +11,8 @@ __all__ = [
 import simplejson
 from zope.component import getUtility
 
+from canonical.launchpad.searchbuilder import any
+from lazr.restful.declarations import call_with, REQUEST_USER
 from lp.app.errors import NotFoundError
 from lp.code.errors import (
     CannotHaveLinkedBranch,
@@ -19,7 +21,7 @@ from lp.code.errors import (
     NoSuchBranch,
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
 from lp.registry.interfaces.product import InvalidProductName
 
 
@@ -79,18 +81,27 @@ class LinkCheckerAPI:
                     NotFoundError) as e:
                 invalid_links[link] = self._error_message(e)
         return invalid_links
-    
-    def check_bug_links(self, links):
+
+    @call_with(user=REQUEST_USER)
+    def check_bug_links(self, links, user=None):
         """Checks if links of the form /bugs/100"""
         invalid_links = {}
-        bug_lookup = getUtility(IBugSet)
-        for link in links:
-            number = link[len('/bugs/'):]
-            try:
-                bug_lookup.get(number)
-            except NotFoundError as e:
-                invalid_links[link] = self._error_message(e)
+#        bug_lookup = getUtility(IBugSet)
+        bugs = [link[len('/bugs/'):] for link in links]
+        if bugs:
+            params = BugTaskSearchParams(
+                user=user, status=None,
+                bug=any(*bugs))
+            bug_ids = getUtility(IBugTaskSet).searchBugIds(params)
+            for bug in bug_ids:
+                    invalid_links[bug] = "Bug %s cannot be found" % bug
         return invalid_links
+#        for link in links:
+#            number = link[len('/bugs/'):]
+#            try:
+#                bug_lookup.get(number)
+#            except NotFoundError as e:
+#                invalid_links[link] = self._error_message(e)
          
     def _error_message(self, ex):
         if hasattr(ex, 'display_message'):
