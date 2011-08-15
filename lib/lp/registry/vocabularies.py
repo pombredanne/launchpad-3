@@ -2132,9 +2132,7 @@ class DistributionSourcePackageVocabulary:
 
             # We try to get the binaries for the dsp; if this fails, we return
             # lookup error instead.
-            binaries = dsp.publishing_history[0].getBuiltBinaries()
-            binary_names = [binary.binary_package_name for binary in binaries]
-
+            dsp.publishing_history[0].getBuiltBinaries()
             return SimpleTerm(dsp, token, summary)
             #return SimpleTerm(dsp, token, summary)
         except (IndexError, AttributeError):

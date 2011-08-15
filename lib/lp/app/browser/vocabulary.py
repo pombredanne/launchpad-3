@@ -46,6 +46,7 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.pillaraffiliation import IHasAffiliation
+from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
 from lp.services.features import getFeatureFlag
 from lp.soyuz.interfaces.archive import IArchive
 
