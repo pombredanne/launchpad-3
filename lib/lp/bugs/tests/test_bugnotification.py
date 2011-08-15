@@ -6,6 +6,8 @@
 __metaclass__ = type
 
 from itertools import chain
+from datetime import datetime
+import pytz
 import transaction
 import unittest
 
@@ -13,6 +15,7 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from storm.store import Store
 from testtools.matchers import Not
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import providedBy
 
@@ -30,12 +33,14 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     IBugTask,
     )
+from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationFilter,
     BugNotificationSet,
     )
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilterMute
+from lp.services.messages.interfaces.message import IMessageSet
 from lp.testing import (
     TestCaseWithFactory,
     person_logged_in,
@@ -640,3 +645,24 @@ class TestBug778847(TestCaseWithFactory):
             {team.teamowner: [notification.recipients[0]],
              team: [notification.recipients[1]]},
             [notification]))
+
+class TestGetDeferredNotifications(TestCaseWithFactory):
+    """Test the getDeferredNotifications method."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_no_deferred_notifications(self):
+        results = BugNotificationSet().getDeferredNotifications()
+        self.assertEqual([], list(results))
+
+    def test_some_deferred_notifications(self):
+        bug = self.factory.makeBug()
+        bns = BugNotificationSet()
+        empty_recipients = BugNotificationRecipients()
+        message = getUtility(IMessageSet).fromText(
+            'subject', 'a comment.', bug.owner,
+            datecreated=datetime.now(pytz.UTC))
+        bns.addNotification(
+            bug, False, message, empty_recipients, None, deferred=True)
+        results = bns.getDeferredNotifications()
+        self.assertEqual(1, results.count())

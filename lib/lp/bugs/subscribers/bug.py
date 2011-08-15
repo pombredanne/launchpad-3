@@ -142,7 +142,6 @@ def get_bug_delta(old_bug, new_bug, user):
         return None
 
 
-
 def add_bug_change_notifications(bug_delta, old_bugtask=None,
                                  new_subscribers=None):
     """Generate bug notifications and add them to the bug."""

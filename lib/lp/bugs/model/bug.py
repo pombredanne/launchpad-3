@@ -77,7 +77,6 @@ from zope.contenttype import guess_content_type
 from zope.event import notify
 from zope.interface import (
     implements,
-    implementsOnly,
     providedBy,
     )
 from zope.security.proxy import (
@@ -932,11 +931,11 @@ BugMessage""" % sqlvalues(self.id))
         """
         if level is None:
             level = BugNotificationLevel.LIFECYCLE
-        subscription_set = self.getSubscriptionInfo(level)
+        direct_subscribers = self.getSubscriptionInfo(level).direct_subscribers
         if recipients is not None:
-            for subscriber in subscription_set.direct_subscribers:
+            for subscriber in direct_subscribers:
                 recipients.addDirectSubscriber(subscriber)
-        return subscription_set.direct_subscribers.sorted
+        return direct_subscribers.sorted
 
     def getDirectSubscribersWithDetails(self):
         """See `IBug`."""
@@ -1101,7 +1100,7 @@ BugMessage""" % sqlvalues(self.id))
              bug=self, is_comment=True,
              message=message, recipients=recipients, activity=activity)
 
-    def addChange(self, change, recipients=None):
+    def addChange(self, change, recipients=None, deferred=False):
         """See `IBug`."""
         when = change.when
         if when is None:
@@ -1130,7 +1129,8 @@ BugMessage""" % sqlvalues(self.id))
                     level=BugNotificationLevel.METADATA)
             getUtility(IBugNotificationSet).addNotification(
                 bug=self, is_comment=False, message=message,
-                recipients=recipients, activity=activity)
+                recipients=recipients, activity=activity,
+                deferred=deferred)
 
         self.updateHeat()
 
@@ -1838,7 +1838,8 @@ BugMessage""" % sqlvalues(self.id))
                         old_value=old_value,
                         new_value=duplicate_of)
                     empty_recipients = BugNotificationRecipients()
-                    duplicate.addChange(change, empty_recipients)
+                    duplicate.addChange(
+                        change, empty_recipients, deferred=True)
 
             self.duplicateof = duplicate_of
         except LaunchpadValidationError, validation_error:
@@ -2293,20 +2294,28 @@ class BugSubscriptionInfo:
         self.level = level
 
     @cachedproperty
+    @freeze(BugSubscriptionSet)
+    def old_direct_subscriptions(self):
+        """The bug's direct subscriptions."""
+        return IStore(BugSubscription).find(
+            BugSubscription,
+            BugSubscription.bug_notification_level >= self.level,
+            BugSubscription.bug == self.bug,
+            Not(In(BugSubscription.person_id,
+                   Select(BugMute.person_id, BugMute.bug_id == self.bug.id))))
+
+    @cachedproperty
     def direct_subscriptions_and_subscribers(self):
         """The bug's direct subscriptions."""
-        if self.bug.private:
-            return ((), ())
-        else:
-            res = IStore(BugSubscription).find(
-                (BugSubscription, Person),
-                BugSubscription.bug_notification_level >= self.level,
-                BugSubscription.bug_id == Bug.id,
-                BugSubscription.person_id == Person.id,
-                Bug.duplicateof == self.bug,
-                Not(In(BugSubscription.person_id,
-                       Select(BugMute.person_id, BugMute.bug_id == Bug.id))))
-            return zip(*res) or ((),())
+        res = IStore(BugSubscription).find(
+            (BugSubscription, Person),
+            BugSubscription.bug_notification_level >= self.level,
+            BugSubscription.bug == self.bug,
+            BugSubscription.person_id == Person.id,
+            Not(In(BugSubscription.person_id,
+                   Select(BugMute.person_id,
+                          BugMute.bug_id == self.bug.id))))
+        return zip(*res) or ((),())
 
     @cachedproperty
     @freeze(BugSubscriptionSet)

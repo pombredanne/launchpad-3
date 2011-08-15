@@ -163,12 +163,16 @@ class BugNotificationSet:
             BugNotification.status == BugNotificationStatus.DEFERRED)
         return results
 
-    def addNotification(self, bug, is_comment, message, recipients, activity):
+    def addNotification(self, bug, is_comment, message, recipients, activity,
+                        deferred=False):
         """See `IBugNotificationSet`."""
-        if not recipients:
+        if deferred:
             status = BugNotificationStatus.DEFERRED
         else:
+            if not recipients:
+                return
             status = BugNotificationStatus.PENDING
+
         bug_notification = BugNotification(
             bug=bug, is_comment=is_comment,
             message=message, date_emailed=None, activity=activity,
