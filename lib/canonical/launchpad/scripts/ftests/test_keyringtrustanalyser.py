@@ -290,7 +290,3 @@ class TestMergeClusters(unittest.TestCase):
         self.assertNotEqual(person, None)
         self.assertEqual(person.preferredemail, None)
         self.assertTrue('newemail@canonical.com' in self._getEmails(person))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

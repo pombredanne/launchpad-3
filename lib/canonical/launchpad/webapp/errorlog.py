@@ -13,13 +13,14 @@ from itertools import repeat
 import logging
 import os
 import re
-import rfc822
 import stat
 import types
 import urllib
 import urlparse
 
 from lazr.restful.utils import get_current_browser_request
+from oops.uniquefileallocator import UniqueFileAllocator
+import oops.serializer_rfc822
 import pytz
 from zope.component.interfaces import ObjectEvent
 from zope.error.interfaces import IErrorReportingUtility
@@ -42,10 +43,10 @@ from canonical.launchpad.webapp.interfaces import (
     IUnloggedException,
     )
 from canonical.launchpad.webapp.opstats import OpStats
+from canonical.launchpad.webapp.pgsession import PGSessionBase
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.utils import safe_hasattr
 from lp.app import versioninfo
-from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from lp.services.timeline.requesttimeline import get_request_timeline
 
 
@@ -128,20 +129,6 @@ def _is_sensitive(request, name):
     return True
 
 
-def parse_iso8601_date(datestring):
-    """Parses a standard ISO 8601 format date, ignoring time zones.
-
-    Performs no validation whatsoever. It just plucks up to the first
-    7 numbers from the string and passes them to `datetime.datetime`,
-    so would in fact parse any string containing reasonable numbers.
-
-    This function can be replaced with `datetime.datetime.strptime()`
-    once we move to Python 2.5.
-    """
-    return datetime.datetime(
-        *(int(elem) for elem in re.findall('[0-9]+', datestring)[:7]))
-
-
 class ErrorReportEvent(ObjectEvent):
     """A new error report has been created."""
     implements(IErrorReportEvent)
@@ -151,7 +138,8 @@ class ErrorReport:
     implements(IErrorReport)
 
     def __init__(self, id, type, value, time, pageid, tb_text, username,
-                 url, duration, req_vars, db_statements, informational):
+                 url, duration, req_vars, db_statements, informational,
+                 branch_nick=None, revno=None):
         self.id = id
         self.type = type
         self.value = value
@@ -163,95 +151,18 @@ class ErrorReport:
         self.duration = duration
         self.req_vars = req_vars
         self.db_statements = db_statements
-        self.branch_nick = versioninfo.branch_nick
-        self.revno = versioninfo.revno
+        self.branch_nick = branch_nick or versioninfo.branch_nick
+        self.revno = revno or versioninfo.revno
         self.informational = informational
 
     def __repr__(self):
         return '<ErrorReport %s %s: %s>' % (self.id, self.type, self.value)
 
-    def get_chunks(self):
-        """Returns a list of bytestrings making up the oops disk content."""
-        chunks = []
-        chunks.append('Oops-Id: %s\n' % _normalise_whitespace(self.id))
-        chunks.append(
-            'Exception-Type: %s\n' % _normalise_whitespace(self.type))
-        chunks.append(
-            'Exception-Value: %s\n' % _normalise_whitespace(self.value))
-        chunks.append('Date: %s\n' % self.time.isoformat())
-        chunks.append('Page-Id: %s\n' % _normalise_whitespace(self.pageid))
-        chunks.append('Branch: %s\n' % _safestr(self.branch_nick))
-        chunks.append('Revision: %s\n' % self.revno)
-        chunks.append('User: %s\n' % _normalise_whitespace(self.username))
-        chunks.append('URL: %s\n' % _normalise_whitespace(self.url))
-        chunks.append('Duration: %s\n' % self.duration)
-        chunks.append('Informational: %s\n' % self.informational)
-        chunks.append('\n')
-        safe_chars = ';/\\?:@&+$, ()*!'
-        for key, value in self.req_vars:
-            chunks.append('%s=%s\n' % (urllib.quote(key, safe_chars),
-                                  urllib.quote(value, safe_chars)))
-        chunks.append('\n')
-        for (start, end, database_id, statement) in self.db_statements:
-            chunks.append('%05d-%05d@%s %s\n' % (
-                start, end, database_id, _normalise_whitespace(statement)))
-        chunks.append('\n')
-        chunks.append(self.tb_text)
-        return chunks
-
-    def write(self, fp):
-        fp.writelines(self.get_chunks())
-
     @classmethod
     def read(cls, fp):
-        msg = rfc822.Message(fp)
-        id = msg.getheader('oops-id')
-        exc_type = msg.getheader('exception-type')
-        exc_value = msg.getheader('exception-value')
-        date = parse_iso8601_date(msg.getheader('date'))
-        pageid = msg.getheader('page-id')
-        username = msg.getheader('user')
-        url = msg.getheader('url')
-        duration = int(float(msg.getheader('duration', '-1')))
-        informational = msg.getheader('informational')
-
-        # Explicitly use an iterator so we can process the file
-        # sequentially. In most instances the iterator will actually
-        # be the file object passed in because file objects should
-        # support iteration.
-        lines = iter(msg.fp)
-
-        # Request variables until the first blank line.
-        req_vars = []
-        for line in lines:
-            line = line.strip()
-            if line == '':
-                break
-            key, value = line.split('=', 1)
-            req_vars.append((urllib.unquote(key), urllib.unquote(value)))
-
-        # Statements until the next blank line.
-        statements = []
-        for line in lines:
-            line = line.strip()
-            if line == '':
-                break
-            match = re.match(
-                r'^(\d+)-(\d+)(?:@([\w-]+))?\s+(.*)', line)
-            assert match is not None, (
-                "Unable to interpret oops line: %s" % line)
-            start, end, db_id, statement = match.groups()
-            if db_id is not None:
-                db_id = intern(db_id)  # This string is repeated lots.
-            statements.append(
-                (int(start), int(end), db_id, statement))
-
-        # The rest is traceback.
-        tb_text = ''.join(lines)
-
-        return cls(id, exc_type, exc_value, date, pageid, tb_text,
-                   username, url, duration, req_vars, statements,
-                   informational)
+        # Deprecated: use the oops module directly now, when possible.
+        report = oops.serializer_rfc822.read(fp)
+        return cls(**report)
 
 
 class ErrorReportingUtility:
@@ -377,22 +288,21 @@ class ErrorReportingUtility:
 
     def _raising(self, info, request=None, now=None, informational=False):
         """Private method used by raising() and handling()."""
-        entry = self._makeErrorReport(info, request, now, informational)
+        entry, filename = self._makeErrorReport(info, request, now, informational)
         if entry is None:
             return
-        filename = entry._filename
-        entry.write(open(filename, 'wb'))
+        oops.serializer_rfc822.write(entry, open(filename, 'wb'))
         # Set file permission to: rw-r--r--
         wanted_permission = (
             stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
         os.chmod(filename, wanted_permission)
         if request:
-            request.oopsid = entry.id
+            request.oopsid = entry['id']
             request.oops = entry
 
         if self.copy_to_zlog:
             self._do_copy_to_zlog(
-                entry.time, entry.type, entry.url, info, entry.id)
+                entry['time'], entry['type'], entry['url'], info, entry['id'])
         notify(ErrorReportEvent(entry))
         return entry
 
@@ -425,6 +335,13 @@ class ErrorReportingUtility:
                     return True
         return False
 
+    def filter_session_statement(self, database_id, statement):
+        """Replace quoted strings with '%s' in statements on session DB."""
+        if database_id == 'SQL-' + PGSessionBase.store_name:
+            return re.sub("'[^']*'", "'%s'", statement)
+        else:
+            return statement
+
     def _makeErrorReport(self, info, request=None, now=None,
                          informational=False):
         """Return an ErrorReport for the supplied data.
@@ -445,7 +362,7 @@ class ErrorReportingUtility:
 
         strtype = str(getattr(info[0], '__name__', info[0]))
         if self._isIgnoredException(strtype, request, info[1]):
-            return
+            return None, None
 
         if not isinstance(info[2], basestring):
             tb_text = ''.join(format_exception(*info,
@@ -471,7 +388,7 @@ class ErrorReportingUtility:
                 if webservice_error / 100 != 5:
                     request.oopsid = None
                     # Return so the OOPS is not generated.
-                    return
+                    return None, None
 
             missing = object()
             principal = getattr(request, 'principal', missing)
@@ -485,7 +402,7 @@ class ErrorReportingUtility:
                 login = 'unauthenticated'
                 if strtype in (
                     self._ignored_exceptions_for_unauthenticated_users):
-                    return
+                    return None, None
 
             if principal is not None and principal is not missing:
                 username = _safestr(
@@ -526,17 +443,29 @@ class ErrorReportingUtility:
         statements = []
         for action in timeline.actions:
             start, end, category, detail = action.logTuple()
+            detail = self.filter_session_statement(category, detail)
             statements.append(
                 (start, end, _safestr(category), _safestr(detail)))
 
         oopsid, filename = self.log_namer.newId(now)
 
-        result = ErrorReport(oopsid, strtype, strv, now, pageid, tb_text,
-                           username, strurl, duration,
-                           req_vars, statements,
-                           informational)
-        result._filename = filename
-        return result
+        result = {
+            'id': oopsid,
+            'type': strtype,
+            'value': strv,
+            'time': now,
+            'pageid': pageid,
+            'tb_text': tb_text,
+            'username': username,
+            'url': strurl,
+            'duration': duration,
+            'req_vars': req_vars,
+            'db_statements': statements,
+            'informational': informational,
+            'branch_nick': versioninfo.branch_nick,
+            'revno': versioninfo.revno,
+            }
+        return result, filename
 
     def handling(self, info, request=None, now=None):
         """Flag ErrorReport as informational only.

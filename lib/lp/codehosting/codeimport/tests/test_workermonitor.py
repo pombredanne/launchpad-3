@@ -12,7 +12,6 @@ import os
 import shutil
 import StringIO
 import tempfile
-import unittest
 import urllib
 
 from bzrlib.branch import Branch
@@ -832,7 +831,3 @@ class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
             [interpreter, script_path, str(job_id), '-q'],
             childFDs={0:0, 1:1, 2:2}, env=os.environ)
         return process_end_deferred
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

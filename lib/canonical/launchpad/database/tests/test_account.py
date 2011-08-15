@@ -6,8 +6,6 @@
 __metaclass__ = type
 __all__ = []
 
-import unittest
-
 from testtools.testcase import ExpectedException
 import transaction
 from zope.component import getUtility
@@ -200,7 +198,3 @@ class EmailManagementTests(TestCaseWithFactory):
             EmailAddressStatus.OLD)
         transaction.commit()
         self.assertContentEqual(account.guessed_emails, [new_email])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

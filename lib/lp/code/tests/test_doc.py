@@ -9,9 +9,7 @@ import os
 
 from zope.security.management import setSecurityPolicy
 
-from canonical.launchpad.ftests.test_system_documentation import (
-    branchscannerSetUp,
-    )
+from canonical.config import config
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
     setGlobs,
@@ -27,6 +25,12 @@ from lp.services.testing import build_test_suite
 
 
 here = os.path.dirname(os.path.realpath(__file__))
+
+
+def branchscannerSetUp(test):
+    """Setup the user for the branch scanner tests."""
+    LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+    setUp(test)
 
 
 def zopelessLaunchpadSecuritySetUp(test):

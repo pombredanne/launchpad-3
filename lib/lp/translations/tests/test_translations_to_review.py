@@ -9,7 +9,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from unittest import TestLoader
 
 from pytz import timezone
 import transaction
@@ -250,7 +249,3 @@ class TestSuggestReviewableTranslationFiles(TestCaseWithFactory,
         # Translations without unreviewed suggestions are ignored.
         other_pofile = self._makeOtherPOFile(with_unreviewed=False)
         self.assertFalse(other_pofile in self._suggestReviewables())
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

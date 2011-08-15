@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from datetime import datetime, timedelta
 import transaction
-import unittest
 
 import pytz
 from storm.locals import Store
@@ -148,8 +147,3 @@ class TestBranchCloud(TestCaseWithFactory):
             [product3.name, product2.name],
             [name for name, commits, count, last_commit
              in self.getProductsWithInfo(num_products=2)])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

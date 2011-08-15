@@ -6,8 +6,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from twisted.internet.defer import (
     Deferred,
     succeed,
@@ -667,7 +665,3 @@ class TestParallelLimitedTaskConsumer(TestCase):
         d.callback(None)
         self.assertEqual([], task_log)
         self.assertEqual([('start', consumer)], source_log)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -252,6 +252,7 @@ class LaunchpadView(UserAttributeCache):
     - render()     <-- used to render the page.  override this if you have
                        many templates not set via zcml, or you want to do
                        rendering from Python.
+    - publishTraverse() <-- override this to support traversing-through.
     """
 
     def __init__(self, context, request):
@@ -358,6 +359,12 @@ class LaunchpadView(UserAttributeCache):
         return simplejson.dumps(
             cache, cls=ResourceJSONEncoder,
             media_type=EntryResource.JSON_TYPE)
+
+    def publishTraverse(self, request, name):
+        """See IBrowserPublisher."""
+        # By default, any LaunchpadView cannot be traversed through. Those that
+        # can override this method.
+        raise NotFound(self, name, request=request)
 
 
 class LaunchpadXMLRPCView(UserAttributeCache):

@@ -178,10 +178,3 @@ class KdePOImporterTestCase(unittest.TestCase):
             (singular == u'Message' and context == u'Context' and
              translations[0] == u'Contextual translation'),
             "KdePOImporter didn't import translated KDE context correctly.")
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(KdePOImporterTestCase))
-    return suite
-

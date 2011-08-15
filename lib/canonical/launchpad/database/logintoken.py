@@ -1,10 +1,13 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['LoginToken', 'LoginTokenSet']
+__all__ = [
+    'LoginToken',
+    'LoginTokenSet',
+    ]
 
 from itertools import chain
 
@@ -39,10 +42,6 @@ from canonical.launchpad.interfaces.logintoken import (
     ILoginTokenSet,
     )
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
-from canonical.launchpad.mail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
@@ -53,6 +52,10 @@ from lp.app.errors import NotFoundError
 from lp.app.validators.email import valid_email
 from lp.registry.interfaces.gpg import IGPGKeySet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
+    )
 
 
 class LoginToken(SQLBase):
@@ -70,7 +73,7 @@ class LoginToken(SQLBase):
     fingerprint = StringCol(dbName='fingerprint', notNull=False,
                             default=None)
     date_consumed = UtcDateTimeCol(default=None)
-    password = '' # Quick fix for Bug #2481
+    password = ''  # Quick fix for Bug #2481
 
     title = 'Launchpad Email Verification'
 

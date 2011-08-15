@@ -44,7 +44,3 @@ class Test_create_unique_token_for_table(unittest.TestCase):
         random.seed(0)
         token3 = create_unique_token_for_table(99, LoginToken.token)
         self.assertNotEquals(token1, token3)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
