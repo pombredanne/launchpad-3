@@ -320,7 +320,7 @@ class EC2TestRunner:
         if self.timeout is not None:
             # Activate a fail-safe shutdown just in case something goes
             # really wrong with the server or suite.
-            user_connection.perform("sudo shutdown -P +%d" % self.timeout)
+            user_connection.perform("sudo shutdown -P +%d &" % self.timeout)
         as_user = user_connection.perform
         # Set up bazaar.conf with smtp information if necessary
         if self.email or self.message:
