@@ -300,7 +300,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         reference_config = getPubConfig(distro.main_archive)
         config = script.getConfigs()[distro][ArchivePurpose.PRIMARY]
         self.assertThat(
-            config, MatchesStructure.from_example(
+            config, MatchesStructure.fromExample(
                 reference_config, 'temproot', 'distroroot', 'archiveroot'))
 
     def test_getConfigs_maps_distros(self):
