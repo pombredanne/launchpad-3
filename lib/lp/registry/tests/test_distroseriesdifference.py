@@ -1028,8 +1028,7 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         result = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
             derived_series)
 
-        self.assertContentEqual(
-            diffs['normal'], result)
+        self.assertContentEqual(diffs['normal'], result)
 
     def test_getForDistroSeries_filters_by_distroseries(self):
         # Differences for other series are not included.
@@ -1041,6 +1040,16 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         results = set(dsd_source.getForDistroSeries(derived_series))
 
         self.assertFalse(diff_for_other_series in results)
+
+    def test_getForDistroSeries_does_not_filter_dsd_type_by_default(self):
+        derived_series = self.makeDerivedSeries()
+        dsds = [
+            self.factory.makeDistroSeriesDifference(
+                derived_series, difference_type=diff_type)
+            for diff_type in DistroSeriesDifferenceType.items]
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        self.assertContentEqual(
+            dsds, dsd_source.getForDistroSeries(derived_series))
 
     def test_getForDistroSeries_filters_by_type(self):
         # Only differences for the specified types are returned.
