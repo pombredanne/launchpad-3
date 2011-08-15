@@ -19,6 +19,7 @@ from lp.code.errors import (
     NoSuchBranch,
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.bugs.interfaces.bug import IBugSet
 from lp.registry.interfaces.product import InvalidProductName
 
 
@@ -78,7 +79,19 @@ class LinkCheckerAPI:
                     NotFoundError) as e:
                 invalid_links[link] = self._error_message(e)
         return invalid_links
-
+    
+    def check_bug_links(self, links):
+        """Checks if links of the form /bugs/100"""
+        invalid_links = {}
+        bug_lookup = getUtility(IBugSet)
+        for link in links:
+            number = link[len('/bugs/'):]
+            try:
+                bug_lookup.get(number)
+            except NotFoundError as e:
+                invalid_links[link] = self._error_message(e)
+        return invalid_links
+         
     def _error_message(self, ex):
         if hasattr(ex, 'display_message'):
             return ex.display_message
