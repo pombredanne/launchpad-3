@@ -68,13 +68,23 @@ class ForgivingSimpleVocabulary(SimpleVocabulary):
             return self._default_term
 
 
-# A VocabularyFilter is used to filter the results of searchForTerms().
-# A filter has a the following attributes:
-#   name: the filter name, eg ALL, PRODUCT
-#   title: the text displayed in the ui, as presented to the user eg 'All'
-#   description: the tooltip text
-VocabularyFilter = namedtuple('VocabularyFilter',
-                                ('name', 'title', 'description'))
+class VocabularyFilter(namedtuple('VocabularyFilter',
+                                ('name', 'title', 'description'))):
+    """A VocabularyFilter is used to filter the results of searchForTerms()
+
+    A filter has the following attributes:
+    name: the filter name, eg ALL, PRODUCT
+    title: the text displayed in the ui, as presented to the user eg 'All'
+    description: the tooltip text
+    """
+
+    @property
+    def filter_terms(self):
+        """Query terms used to perform the required filtering."""
+        return []
+
+    def __contains__(self, item):
+        raise NotImplementedError
 
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
@@ -231,10 +241,21 @@ class BatchedCountableIterator(CountableIterator):
         raise NotImplementedError
 
 
+class VocabularyFilterAll(VocabularyFilter):
+    # A filter returning all objects.
+
+    def __new__(cls):
+        return super(VocabularyFilter, cls).__new__(
+            cls, 'ALL', 'All', 'Display all search results')
+
+    def __contains__(self, item):
+        return True
+
+
 class FilteredVocabularyBase:
     """A mixin to provide base filtering support."""
 
-    ALL_FILTER = VocabularyFilter('ALL', 'All', 'Display all search results')
+    ALL_FILTER = VocabularyFilterAll()
 
     # We need to convert any string values passed in for the vocab_filter
     # parameter to a VocabularyFilter instance.

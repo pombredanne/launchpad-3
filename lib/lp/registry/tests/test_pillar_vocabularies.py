@@ -31,7 +31,7 @@ class TestPillarVocabularyBase(TestCaseWithFactory):
     def test_supported_filters(self):
         # The vocab supports the correct filters.
         self.assertEqual([
-            DistributionOrProductVocabulary.ALL_FILTER],
+            PillarVocabularyBase.ALL_FILTER],
             self.vocabulary.supportedFilters()
         )
 
@@ -76,8 +76,8 @@ class TestDistributionOrProductVocabulary(TestCaseWithFactory):
         # The vocab supports the correct filters.
         self.assertEqual([
             DistributionOrProductVocabulary.ALL_FILTER,
-            DistributionOrProductVocabulary.PRODUCT_FILTER,
-            DistributionOrProductVocabulary.DISTRO_FILTER
+            DistributionOrProductVocabulary.PROJECT_FILTER,
+            DistributionOrProductVocabulary.DISTRO_FILTER,
             ],
             self.vocabulary.supportedFilters()
         )
@@ -114,10 +114,10 @@ class TestDistributionOrProductOrProjectGroupVocabulary(TestCaseWithFactory):
     def test_supported_filters(self):
         # The vocab supports the correct filters.
         self.assertEqual([
-            DistributionOrProductVocabulary.ALL_FILTER,
-            DistributionOrProductVocabulary.PRODUCT_FILTER,
-            DistributionOrProductVocabulary.PROJECTGROUP_FILTER,
-            DistributionOrProductVocabulary.DISTRO_FILTER
+            DistributionOrProductOrProjectGroupVocabulary.ALL_FILTER,
+            DistributionOrProductOrProjectGroupVocabulary.PROJECT_FILTER,
+            DistributionOrProductOrProjectGroupVocabulary.PROJECTGROUP_FILTER,
+            DistributionOrProductOrProjectGroupVocabulary.DISTRO_FILTER,
             ],
             self.vocabulary.supportedFilters()
         )

@@ -21,6 +21,7 @@ class TestVocabulary(FilteredVocabularyBase):
     def searchForTerms(self, query=None, vocab_filter=None):
         assert(isinstance(vocab_filter, VocabularyFilter))
         assert(vocab_filter.name == "ALL")
+        assert(vocab_filter.title == "All")
 
 
 class FilteredVocabularyBaseTestCase(TestCaseWithFactory):

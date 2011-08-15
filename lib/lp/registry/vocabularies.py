@@ -128,7 +128,8 @@ from canonical.launchpad.webapp.vocabulary import (
     NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,
-    VocabularyFilter)
+    VocabularyFilter,
+    )
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
@@ -1942,21 +1943,42 @@ class DistroSeriesDifferencesVocabulary:
         return DistroSeriesDifference.getForDistroSeries(self.distroseries)
 
 
+class VocabularyFilterProject(VocabularyFilter):
+    # A filter returning just projects.
+
+    def __new__(cls):
+        return super(VocabularyFilter, cls).__new__(
+            cls, 'PROJECT', 'Project',
+            'Display search results associated with projects')
+
+
+class VocabularyFilterProjectGroup(VocabularyFilter):
+    # A filter returning just project groups.
+
+    def __new__(cls):
+        return super(VocabularyFilter, cls).__new__(
+            cls, 'PROJECTGROUP', 'Project Group',
+            'Display search results associated with project groups')
+
+
+class VocabularyFilterDistribution(VocabularyFilter):
+    # A filter returning just distros.
+
+    def __new__(cls):
+        return super(VocabularyFilter, cls).__new__(
+            cls, 'DISTRO', 'Distribution',
+            'Display search results associated with distributions')
+
+
 class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
     """Active `IPillar` objects vocabulary."""
     displayname = 'Needs to be overridden'
     _table = PillarName
     _limit = 100
 
-    PRODUCT_FILTER = VocabularyFilter(
-        'PRODUCT', 'Project',
-        'Display search results associated with projects')
-    PROJECTGROUP_FILTER = VocabularyFilter(
-        'PROJECTGROUP', 'Project Group',
-        'Display search results associated with project groups')
-    DISTRO_FILTER = VocabularyFilter(
-        'DISTRO', 'Distribution',
-        'Display search results associated with distributions')
+    PROJECT_FILTER = VocabularyFilterProject()
+    PROJECTGROUP_FILTER = VocabularyFilterProjectGroup()
+    DISTRO_FILTER = VocabularyFilterDistribution()
 
     def supportedFilters(self):
         return [self.ALL_FILTER]
@@ -2027,7 +2049,7 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
     def supportedFilters(self):
         return [
             self.ALL_FILTER,
-            self.PRODUCT_FILTER,
+            self.PROJECT_FILTER,
             self.DISTRO_FILTER]
 
 
@@ -2046,7 +2068,7 @@ class DistributionOrProductOrProjectGroupVocabulary(PillarVocabularyBase):
     def supportedFilters(self):
         return [
             self.ALL_FILTER,
-            self.PRODUCT_FILTER,
+            self.PROJECT_FILTER,
             self.PROJECTGROUP_FILTER,
             self.DISTRO_FILTER]
 
