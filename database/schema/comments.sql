@@ -1129,6 +1129,7 @@ COMMENT ON COLUMN Distribution.reviewer_whiteboard IS 'A whiteboard for Launchpa
 COMMENT ON COLUMN Distribution.max_bug_heat IS 'The highest heat value across bugs for this distribution.';
 COMMENT ON COLUMN Distribution.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
 COMMENT ON COLUMN Distribution.registrant IS 'The person in launchpad who registered this distribution.';
+COMMENT ON COLUMN Distribution.package_derivatives_email IS 'The optional email address template to use when sending emails about package updates in a distributrion. The string {package_name} in the template will be replaced with the actual package name being updated.';
 
 -- DistroSeries
 
@@ -1901,6 +1902,7 @@ COMMENT ON COLUMN PackagingJob.job_type IS 'An enumeration specifying the type o
 COMMENT ON COLUMN PackagingJob.productseries IS 'The productseries of the Packaging.';
 COMMENT ON COLUMN PackagingJob.sourcepackagename IS 'The sourcepackage of the Packaging.';
 COMMENT ON COLUMN PackagingJob.distroseries IS 'The distroseries of the Packaging.';
+COMMENT ON COLUMN PackagingJob.potemplate IS 'A POTemplate to restrict the job to or NULL if all templates need to be handled.';
 
 -- Translator / TranslationGroup
 
