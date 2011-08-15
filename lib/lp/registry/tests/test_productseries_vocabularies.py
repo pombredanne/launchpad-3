@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from operator import attrgetter
-from unittest import TestLoader
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.vocabularies import ProductSeriesVocabulary
@@ -75,7 +74,3 @@ class TestProductSeriesVocabulary(TestCaseWithFactory):
         self.assertRaises(
             LookupError,
             self.vocabulary.getTermByToken, 'does/notexist')
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

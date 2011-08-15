@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -46,7 +44,3 @@ class TestCodeReviewComments(TestCaseWithFactory):
         display_comment = CodeReviewDisplayComment(comment)
 
         verifyObject(ICodeReviewDisplayComment, display_comment)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

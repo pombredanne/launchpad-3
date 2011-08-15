@@ -86,7 +86,3 @@ class TestTransactionDecorators(unittest.TestCase):
                 "Store wasn't reset properly.")
         finally:
             transaction.manager.unregisterSynch(aborter)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

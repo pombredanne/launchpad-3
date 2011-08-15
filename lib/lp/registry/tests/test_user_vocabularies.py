@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from zope.component import getUtility
 from zope.schema.vocabulary import getVocabularyRegistry
 
@@ -144,7 +142,3 @@ class TestAllUserTeamsParticipationVocabulary(TestCaseWithFactory):
         # AllUserTeamsPariticipationVocabulary is empty for anoymous users.
         login(ANONYMOUS)
         self.assertEqual([], self._vocabTermValues())
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

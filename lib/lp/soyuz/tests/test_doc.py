@@ -59,13 +59,6 @@ def uploaderSetUp(test):
     LaunchpadZopelessLayer.switchDbUser('uploader')
 
 
-def uploaderTearDown(test):
-    """Tear down the package uploader script tests."""
-    # XXX sinzui 2007-11-14:
-    # This function is not needed. The test should be switched to tearDown.
-    tearDown(test)
-
-
 def builddmasterSetUp(test):
     """Setup the connection for the build master tests."""
     test_dbuser = config.builddmaster.dbuser

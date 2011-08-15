@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Handle incoming Blueprints email."""
@@ -15,10 +15,10 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces.mail import IMailHandler
-from canonical.launchpad.mail.helpers import get_main_body
 from canonical.launchpad.webapp import urlparse
 from lp.blueprints.interfaces.specification import ISpecificationSet
+from lp.services.mail.helpers import get_main_body
+from lp.services.mail.interfaces import IMailHandler
 from lp.services.mail.sendmail import sendmail
 
 
@@ -26,14 +26,14 @@ MOIN_URL_RE = re.compile(r'(https?://[^ \r\n]+)')
 
 
 def get_spec_url_from_moin_mail(moin_text):
-     """Extract a specification URL from Moin change notification."""
-     if not isinstance(moin_text, basestring):
-         return None
-     match = MOIN_URL_RE.search(moin_text)
-     if match:
-          return match.group(1)
-     else:
-          return None
+    """Extract a specification URL from Moin change notification."""
+    if not isinstance(moin_text, basestring):
+        return None
+    match = MOIN_URL_RE.search(moin_text)
+    if match:
+        return match.group(1)
+    else:
+        return None
 
 
 class BlueprintHandler:

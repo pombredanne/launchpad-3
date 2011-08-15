@@ -357,7 +357,3 @@ class TestPrecachePermissionForObjects(TestCase):
         # Confirm that the objects have the permission set.
         self.assertTrue(check_permission('launchpad.View', objects[0]))
         self.assertTrue(check_permission('launchpad.View', objects[1]))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

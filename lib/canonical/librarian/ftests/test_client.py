@@ -297,7 +297,3 @@ class LibrarianClientTestCase(unittest.TestCase):
             client.getFileByAlias(alias_id), 'This is a fake file object', 3)
 
         client_module._File = _File
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

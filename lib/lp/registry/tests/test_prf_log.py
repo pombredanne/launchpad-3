@@ -42,7 +42,3 @@ class GetLogger(unittest.TestCase):
         parent1 = getLogger("foo")
         parent2 = getLogger("foo.bar")
         self.assertEquals(get_logger("test", parent2).name, "foo.bar.test")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

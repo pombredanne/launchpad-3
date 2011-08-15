@@ -14,7 +14,6 @@ from datetime import datetime
 import logging
 import os
 from textwrap import dedent
-from unittest import TestLoader
 
 import pytz
 
@@ -2576,7 +2575,3 @@ invalid line
             'Consistency check detects circular parent-child relationships',
             "Found HAL devices with circular parent/child "
                 "relationship: ['/foo', '/bar']")
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

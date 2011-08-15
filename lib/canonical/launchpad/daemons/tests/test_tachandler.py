@@ -43,10 +43,3 @@ class TacTestSetupTestCase(unittest.TestCase):
                 pass
 
         self.assertRaises(TacException, CouldNotListenTac().setUp)
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TacTestSetupTestCase))
-    return suite
-
