@@ -770,37 +770,45 @@ class TestOopsIgnoring(testtools.TestCase):
         # A request originating from another site that generates a NotFound
         # (404) is ignored (i.e., no OOPS is logged).
         utility = ErrorReportingUtility()
-        request = dict(HTTP_REFERER='example.com')
-        self.assertTrue(utility._isIgnoredException('NotFound', request))
+        report = {'type': 'NotFound',
+                'url': 'http://example.com',
+                'req_vars': [('HTTP_REFERER', 'example.com')]}
+        self.assertTrue(utility._filterReport(report))
 
     def test_onsite_404_not_ignored(self):
         # A request originating from a local site that generates a NotFound
         # (404) produces an OOPS.
         utility = ErrorReportingUtility()
-        request = dict(HTTP_REFERER='canonical.com')
-        self.assertTrue(utility._isIgnoredException('NotFound', request))
+        report = {'type': 'NotFound',
+                'url': 'http://example.com',
+                'req_vars': [('HTTP_REFERER', 'http://launchpad.dev/')]}
+        self.assertFalse(utility._filterReport(report))
 
     def test_404_without_referer_is_ignored(self):
         # If a 404 is generated and there is no HTTP referer, we don't produce
         # an OOPS.
         utility = ErrorReportingUtility()
-        request = dict()
-        self.assertTrue(utility._isIgnoredException('NotFound', request))
+        report = {'type': 'NotFound',
+                'url': 'http://example.com',
+                'req_vars': []}
+        self.assertTrue(utility._filterReport(report))
+
+    def test_ignored_report_filtered(self):
+        utility = ErrorReportingUtility()
+        report = {'ignore': True}
+        self.assertTrue(utility._filterReport(report))
 
     def test_marked_exception_is_ignored(self):
-        # If an exception has been marked as ignorable, then it is ignored.
+        # If an exception has been marked as ignorable, then it is ignored in
+        # the report.
         utility = ErrorReportingUtility()
-        exception = Exception()
-        directlyProvides(exception, IUnloggedException)
-        self.assertTrue(
-            utility._isIgnoredException('RuntimeError', exception=exception))
-
-    def test_unmarked_exception_generates_oops(self):
-        # If an exception has not been marked as ignorable, then it is not.
-        utility = ErrorReportingUtility()
-        exception = Exception()
-        self.assertFalse(
-            utility._isIgnoredException('RuntimeError', exception=exception))
+        try:
+            raise ArbitraryException('xyz\nabc')
+        except ArbitraryException:
+            exc_info = sys.exc_info()
+            directlyProvides(exc_info[1], IUnloggedException)
+        report = utility._makeReport(exc_info)
+        self.assertTrue(report['ignore'])
 
 
 class TestWrappedParameterConverter(testtools.TestCase):

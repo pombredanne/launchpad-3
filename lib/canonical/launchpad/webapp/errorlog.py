@@ -310,35 +310,6 @@ class ErrorReportingUtility:
         os.chmod(filename, wanted_permission)
         notify(ErrorReportEvent(report))
 
-    def _isIgnoredException(self, strtype, request=None, exception=None):
-        """Should the given exception generate an OOPS or be ignored?
-
-        Exceptions will be ignored if they
-            - are specially tagged as being ignorable by having the marker
-              interface IUnloggedException
-            - are of a type included in self._ignored_exceptions, or
-            - were requested with an off-site REFERRER header and are of a
-              type included in self._ignored_exceptions_for_offsite_referer
-        """
-        if IUnloggedException.providedBy(exception):
-            return True
-        if strtype in self._ignored_exceptions:
-            return True
-        if strtype in self._ignored_exceptions_for_offsite_referer:
-            if request is not None:
-                referer = request.get('HTTP_REFERER')
-                # If there is no referrer then we can't tell if this exception
-                # should be ignored or not, so we'll be optimistic and ignore
-                # it.
-                if referer is None:
-                    return True
-                referer_parts = urlparse.urlparse(referer)
-                root_parts = urlparse.urlparse(
-                    allvhosts.configs['mainsite'].rooturl)
-                if root_parts.netloc not in referer_parts.netloc:
-                    return True
-        return False
-
     def filter_session_statement(self, database_id, statement):
         """Replace quoted strings with '%s' in statements on session DB."""
         if database_id == 'SQL-' + PGSessionBase.store_name:
