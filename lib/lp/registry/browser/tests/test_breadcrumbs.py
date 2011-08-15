@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.publisher import canonical_url
@@ -150,7 +148,3 @@ class TestNameblacklistBreadcrumb(BaseBreadcrumbTestCase):
              'http://launchpad.dev/+nameblacklist/1/+edit'),
             ]
         self.assertBreadcrumbs(expected, blacklist, view_name='+edit')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -116,9 +116,9 @@ def get_a_suite(distroseries):
 
 
 def get_marker_files(script, distroseries):
+    """Return filesystem paths for all indexes markers for `distroseries`."""
     suites = [
-        distroseries.getSuite(pocket)
-        for pocket in pocketsuffix.iterkeys()]
+        distroseries.getSuite(pocket) for pocket in pocketsuffix.iterkeys()]
     distro = distroseries.distribution
     return [script.locateIndexesMarker(distro, suite) for suite in suites]
 
@@ -635,7 +635,7 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script.runParts = FakeMethod()
         script.runFinalizeParts(distro)
         args, kwargs = script.runParts.calls[0]
-        distro, parts_dir, env = args
+        run_distro, parts_dir, env = args
         required_parameters = set(["ARCHIVEROOTS", "SECURITY_UPLOAD_ONLY"])
         missing_parameters = required_parameters.difference(set(env.keys()))
         self.assertEqual(set(), missing_parameters)

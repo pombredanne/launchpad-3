@@ -93,11 +93,10 @@ class TestProcessAccepted(TestCaseWithFactory):
         # And an oops should be filed for the first.
         error_utility = ErrorReportingUtility()
         error_report = error_utility.getLastOopsReport()
-        fp = StringIO()
-        error_report.write(fp)
-        error_text = fp.getvalue()
-        expected_error = "error-explanation=Failure processing queue_item"
-        self.assertTrue(expected_error in error_text)
+        expected_error = "Failure processing queue_item"
+        self.assertStartsWith(
+                dict(error_report.req_vars)['error-explanation'],
+                expected_error)
 
     def test_accept_copy_archives(self):
         """Test that publications in a copy archive are accepted properly."""

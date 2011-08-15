@@ -11,7 +11,6 @@ import shutil
 import subprocess
 import tempfile
 import time
-import unittest
 
 from bzrlib.branch import (
     Branch,
@@ -1158,7 +1157,3 @@ class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
         return BzrSvnImportWorker(
             source_details, self.get_transport('import_data'),
             self.bazaar_store, logging.getLogger())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

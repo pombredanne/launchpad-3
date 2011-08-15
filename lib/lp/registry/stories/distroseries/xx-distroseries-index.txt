@@ -67,7 +67,7 @@ change its text slightly to annouce this:
     Project drivers: Jeff Waugh, Mark Shuttleworth
     Release manager: Jeff Waugh
     Status: Pre-release Freeze
-    Derives from: Woody (3.0)
+    Successor to: Woody (3.0)
     Source packages: No sources imported or published.
     Binary packages: No binaries imported or published.
 

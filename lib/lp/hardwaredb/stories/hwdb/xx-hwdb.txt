@@ -222,18 +222,12 @@ Also, an OOPS is reported.
     >>> from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
     >>> error_utility = ErrorReportingUtility()
     >>> error_report = error_utility.getLastOopsReport()
-    >>> fp = StringIO()
-    >>> error_report.write(fp)
-    >>> print fp.getvalue()
-    Oops-Id:...
-    Exception-Type: HWSubmissionMissingFields
-    Exception-Value: Missing form fields: submission_data
-    Date:...
-    Page-Id: HWDBApplication:+submit
-    ...
-    Traceback (most recent call last):
-    HWSubmissionMissingFields: Missing form fields: submission_data
-    <BLANKLINE>
+    >>> error_report.type
+    'HWSubmissionMissingFields'
+    >>> error_report.value
+    'Missing form fields: submission_data'
+    >>> error_report.pageid
+    'HWDBApplication:+submit'
 
     >>> del form_data['field.distribution']
     >>> browser.open('http://launchpad.dev/+hwdb/+submit',
@@ -246,21 +240,14 @@ Also, an OOPS is reported.
     ...
 
     >>> error_report = error_utility.getLastOopsReport()
-    >>> fp = StringIO()
-    >>> error_report.write(fp)
-    >>> print fp.getvalue()
-    Oops-Id:...
-    Exception-Type: HWSubmissionMissingFields
-    Exception-Value: Missing form fields: distribution, submission_data
-    Date:...
-    Page-Id: HWDBApplication:+submit
-    ...
-    Informational: True
-    ...
-    Traceback (most recent call last):
-    HWSubmissionMissingFields: Missing form fields: distribution,
-    submission_data
-    <BLANKLINE>
+    >>> error_report.type
+    'HWSubmissionMissingFields'
+    >>> error_report.value
+    'Missing form fields: distribution, submission_data'
+    >>> error_report.pageid
+    'HWDBApplication:+submit'
+    >>> error_report.informational
+    'True'
 
 = Views for raw submission data. =
 

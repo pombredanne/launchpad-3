@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -62,9 +62,16 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces.librarian import (
-    ILibraryFileAliasSet,
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from lp.app.errors import NotFoundError
+from lp.registry.interfaces.person import (
+    IPersonSet,
+    PersonCreationRationale,
+    validate_public_person,
     )
+from lp.services.encoding import guess as ensure_unicode
+from lp.services.job.model.job import Job
+from lp.services.mail.signedmessage import signed_message_from_string
 from lp.services.messages.interfaces.message import (
     IDirectEmailAuthorization,
     IMessage,
@@ -75,17 +82,6 @@ from lp.services.messages.interfaces.message import (
     IUserToUserEmail,
     UnknownSender,
     )
-from canonical.launchpad.mail import (
-    signed_message_from_string,
-    )
-from lp.app.errors import NotFoundError
-from lp.registry.interfaces.person import (
-    IPersonSet,
-    PersonCreationRationale,
-    validate_public_person,
-    )
-from lp.services.encoding import guess as ensure_unicode
-from lp.services.job.model.job import Job
 from lp.services.propertycache import cachedproperty
 
 # this is a hard limit on the size of email we will be willing to store in
@@ -308,7 +304,7 @@ class MessageSet:
         file_alias_set = getUtility(ILibraryFileAliasSet)  # Reused later
         if filealias is None:
             # Avoid circular import.
-            from canonical.launchpad.mail.helpers import (
+            from lp.services.mail.helpers import (
                 save_mail_to_librarian,
                 )
             raw_email_message = save_mail_to_librarian(email_message)

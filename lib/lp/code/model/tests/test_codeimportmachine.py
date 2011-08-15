@@ -5,8 +5,6 @@
 
 Other tests are in codeimport-machine.txt."""
 
-import unittest
-
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
@@ -86,7 +84,3 @@ class TestCodeImportMachineShouldLookForJob(TestCaseWithFactory):
         # When the machine is online, the heartbeat is updated.
         self.machine.shouldLookForJob(10)
         self.assertSqlAttributeEqualsDate(self.machine, 'heartbeat', UTC_NOW)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

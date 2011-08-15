@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.browser.branding import BrandingChangeView
@@ -27,7 +25,3 @@ class TestBrandingChangeView(TestCaseWithFactory):
         label = 'Change the images used to represent Cow in Launchpad'
         self.assertEqual(label, self.view.label)
         self.assertEqual('Change branding', self.view.page_title)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

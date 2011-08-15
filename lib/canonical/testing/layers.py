@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # We like global!
@@ -110,7 +110,6 @@ from canonical.database.sqlbase import (
     session_store,
     ZopelessTransactionManager,
     )
-from canonical.launchpad.interfaces.mailbox import IMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -137,7 +136,10 @@ from canonical.testing.smtpd import SMTPController
 from lp.services.googlesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup,
     )
-from lp.services.mail.mailbox import TestMailBox
+from lp.services.mail.mailbox import (
+    IMailBox,
+    TestMailBox,
+    )
 import lp.services.mail.stub
 from lp.services.memcache.client import memcache_client_factory
 from lp.services.osutils import kill_by_pidfile
