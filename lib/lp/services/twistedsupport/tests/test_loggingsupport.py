@@ -51,7 +51,6 @@ class LoggingSupportTests(TestCase):
             [error_reports]
             oops_prefix: O
             error_dir: %s
-            copy_to_zlog: False
             """ % self.temp_dir))
         globalErrorUtility.configure()
         self.log_stream = StringIO.StringIO()
