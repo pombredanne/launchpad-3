@@ -651,18 +651,40 @@ class TestGetDeferredNotifications(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_no_deferred_notifications(self):
-        results = BugNotificationSet().getDeferredNotifications()
-        self.assertEqual([], list(results))
+    def setUp(self):
+        super(TestGetDeferredNotifications, self).setUp()
+        self.bns = BugNotificationSet()
 
-    def test_some_deferred_notifications(self):
+    def test_no_deferred_notifications(self):
+        results = self.bns.getDeferredNotifications()
+        self.assertEqual(0, results.count())
+
+    def _make_deferred_notification(self):
         bug = self.factory.makeBug()
-        bns = BugNotificationSet()
         empty_recipients = BugNotificationRecipients()
         message = getUtility(IMessageSet).fromText(
             'subject', 'a comment.', bug.owner,
             datecreated=datetime.now(pytz.UTC))
-        bns.addNotification(
+        self.bns.addNotification(
             bug, False, message, empty_recipients, None, deferred=True)
-        results = bns.getDeferredNotifications()
+
+    def test_one_deferred_notification(self):
+        self._make_deferred_notification()
+        results = self.bns.getDeferredNotifications()
         self.assertEqual(1, results.count())
+
+    def test_many_deferred_notification(self):
+        num = 5
+        for i in xrange(num):
+            self._make_deferred_notification()
+        results = self.bns.getDeferredNotifications()
+        self.assertEqual(num, results.count())
+
+    def test_destroy_notifications(self):
+        self._make_deferred_notification()
+        results = self.bns.getDeferredNotifications()
+        self.assertEqual(1, results.count())
+        notification = results[0]
+        notification.destroySelf()
+        results = self.bns.getDeferredNotifications()
+        self.assertEqual(0, results.count())

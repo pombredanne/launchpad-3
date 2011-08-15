@@ -33,7 +33,8 @@ class SendBugNotifications(LaunchpadCronScript):
     def main(self):
         notifications_sent = False
         bug_notification_set = getUtility(IBugNotificationSet)
-        deferred_notifications = bug_notification_set.getDeferredNotifications()
+        deferred_notifications = \
+            bug_notification_set.getDeferredNotifications()
         process_deferred_notifications(deferred_notifications)
         pending_notifications = get_email_notifications(
             bug_notification_set.getNotificationsToSend())
