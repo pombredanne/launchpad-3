@@ -207,6 +207,10 @@ def get_parent_msgids(parsed_message):
 class MessageSet:
     implements(IMessageSet)
 
+    extra_encoding_aliases = {
+        'macintosh': 'mac_roman',
+    }
+
     def get(self, rfc822msgid):
         messages = list(Message.selectBy(rfc822msgid=rfc822msgid))
         if len(messages) == 0:
@@ -251,6 +255,7 @@ class MessageSet:
         # characters with question marks.
         re_encoded_bits = []
         for bytes, charset in bits:
+            charset = self.extra_encoding_aliases.get(charset, charset)
             if charset is None:
                 charset = 'us-ascii'
             # 2008-09-26 gary:
@@ -441,6 +446,7 @@ class MessageSet:
                 charset = part.get_content_charset()
                 if charset is None or str(charset).lower() == 'x-unknown':
                     charset = 'latin-1'
+                charset = self.extra_encoding_aliases.get(charset, charset)
 
                 content = content.decode(charset, 'replace')
 

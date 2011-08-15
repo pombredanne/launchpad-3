@@ -4,10 +4,13 @@
 __metaclass__ = type
 
 from cStringIO import StringIO
-from email.Message import Message
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText
-from email.Utils import (
+from email.header import Header
+from email import (
+    Message,
+    MIMEMultipart,
+    MIMEText,
+    )
+from email.utils import (
     formatdate,
     make_msgid,
     )
@@ -126,7 +129,7 @@ class TestMessageSet(unittest.TestCase):
         msg.attach(MIMEText('This is the body of the email.'))
         attachment = Message()
         attachment.set_payload('This is the diff, honest.')
-        attachment['Content-Type'] = 'text/x-diff'
+        attachment['content-type'] = 'text/x-diff'
         attachment['Content-Disposition'] = (
             'attachment; filename="/tmp/foo/review.diff"')
         msg.attach(attachment)
@@ -148,6 +151,20 @@ class TestMessageSet(unittest.TestCase):
         transaction.commit()
         dupe_message = MessageSet().fromEmail(email.as_string())
         self.assertNotEqual(orig_message.id, dupe_message.id)
+
+    def test_fromEmail_decodes_macintosh_encoding(self):
+        """"macintosh encoding is equivalent to MacRoman."""
+        high_characters = ''.join(chr(c) for c in range(128, 256))
+        high_decoded = high_characters.decode('macroman')
+        email = self.factory.makeEmailMessage(body=high_characters)
+        email.set_type('text/plain')
+        email.set_charset('macintosh')
+        macroman = Header(high_characters, 'macroman').encode()
+        macintosh_header = macroman.replace('macroman', 'macintosh')
+        email.replace_header('Subject', macintosh_header)
+        message = MessageSet().fromEmail(email.as_string())
+        self.assertEqual(high_decoded, message.subject)
+        self.assertEqual(high_decoded, message.text_contents)
 
 
 class TestMessageJob(TestCaseWithFactory):
