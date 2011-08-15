@@ -19,6 +19,7 @@ import urllib
 import urlparse
 
 from lazr.restful.utils import get_current_browser_request
+import oops
 from oops_datedir_repo.uniquefileallocator import UniqueFileAllocator
 import oops_datedir_repo.serializer_rfc822
 import pytz
@@ -181,6 +182,9 @@ class ErrorReportingUtility:
         self._oops_messages = {}
         self._oops_message_key_iter = (
             index for index, _ignored in enumerate(repeat(None)))
+        self._oops_config = oops.Config()
+        self._oops_config.template['branch_nick'] = versioninfo.branch_nick
+        self._oops_config.template['revno'] = versioninfo.revno
 
     def configure(self, section_name=None):
         """Configure the utility using the named section from the config.
@@ -360,11 +364,11 @@ class ErrorReportingUtility:
         :param informational: If true, the report is flagged as informational
             only.
         """
+        report = self._oops_config.create()
         if now is not None:
             now = now.astimezone(UTC)
         else:
             now = datetime.datetime.now(UTC)
-        report = {}
         report['type'] = _safestr(getattr(info[0], '__name__', info[0]))
         report['value'] = _safestr(info[1])
         if not isinstance(info[2], basestring):
@@ -376,8 +380,6 @@ class ErrorReportingUtility:
         report['req_vars'] = []
         report['time'] = now
         report['informational'] = informational
-        report['branch_nick'] = versioninfo.branch_nick
-        report['revno'] = versioninfo.revno
         # Because of IUnloggedException being a sidewards lookup we must
         # capture this here to filter on later.
         report['ignore'] = IUnloggedException.providedBy(info[1])
