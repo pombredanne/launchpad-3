@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from datetime import datetime
-from unittest import TestLoader
 
 import pytz
 import transaction
@@ -192,6 +191,11 @@ class TestMerges(BrowserTestCase):
         self.getViewBrowser(personproduct, '+merges',
                 rootsite='code')
 
+    def test_DistributionSourcePackage(self):
+        """The merges view should be enabled for DistributionSourcePackage."""
+        package = self.factory.makeDistributionSourcePackage()
+        self.getViewBrowser(package, '+merges', rootsite='code')
+
 
 class ActiveReviewGroupsTest(TestCaseWithFactory):
     """Tests for groupings used in for active reviews."""
@@ -355,7 +359,3 @@ class ActiveReviewSortingTest(TestCaseWithFactory):
         self.assertEqual(
             [bmp3, bmp2, bmp1],
             [item.context for item in view.review_groups[view.OTHER]])
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

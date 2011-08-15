@@ -10,6 +10,7 @@ import difflib
 import re
 from textwrap import TextWrapper
 from urllib import urlencode
+from urlparse import urlparse
 
 from BeautifulSoup import BeautifulSoup
 from lazr.restful.interfaces import IJSONRequestCache
@@ -42,6 +43,7 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
 from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.url import urlappend
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -50,8 +52,8 @@ from canonical.testing.layers import (
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.archivepublisher.debversion import Version
 from lp.registry.browser.distroseries import (
-    HIGHER_VERSION_THAN_PARENT,
     ALL,
+    HIGHER_VERSION_THAN_PARENT,
     NON_IGNORED,
     RESOLVED,
     seriesToVocab,
@@ -1378,6 +1380,27 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
                 dsd.source_package_release.dscsigningkey.owner.displayname),
             normalize_whitespace(creator_cell.text_content()))
 
+    def test_diff_row_links_to_parent_changelog(self):
+        # After the parent's version, there should be text "(changelog)"
+        # linked to the parent distro source package +changelog page.  The
+        # text is styled with "discreet".
+        set_derived_series_ui_feature_flag(self)
+        dsd = self.makePackageUpgrade()
+        view = self.makeView(dsd.derived_series)
+        soup = BeautifulSoup(view())
+        diff_table = soup.find('table', {'class': 'listing'})
+        row = diff_table.tbody.tr
+
+        changelog_span = row.findAll('span', {'class': 'discreet'})
+        self.assertEqual(1, len(changelog_span))
+        link = changelog_span[0].a
+        self.assertEqual("changelog", link.string)
+
+        parent_dsp = dsd.parent_series.distribution.getSourcePackage(
+            dsd.source_package_name)
+        expected_url = urlappend(canonical_url(parent_dsp), '+changelog')
+        self.assertEqual(expected_url, link.attrs[0][1])
+
     def test_getUpgrades_shows_updates_in_parent(self):
         # The view's getUpgrades methods lists packages that can be
         # trivially upgraded: changed in the parent, not changed in the
@@ -1637,6 +1660,23 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
 
         self.assertContentEqual(diffs, all_view.cached_differences.batch)
 
+    def test_batch_wrong_param(self):
+        # If a wrong parameter is passed then an error is displayed
+        # and no differences are shown.
+        set_derived_series_ui_feature_flag(self)
+        derived_series, parent_series = self._createChildAndParent()
+        self.factory.makeDistroSeriesDifference(
+            derived_series=derived_series,
+            source_package_name_str="my-src-package")
+        view = create_initialized_view(
+            derived_series,
+            '+localpackagediffs',
+            query_string='field.package_type=%s' % 'unexpected')
+        view()  # Render the view.
+
+        self.assertEqual('Invalid option', view.getFieldError('package_type'))
+        self.assertContentEqual([], view.cached_differences.batch)
+
     def test_batch_blacklisted_differences_with_higher_version(self):
         # field.package_type parameter allows to list only
         # blacklisted differences with a child's version higher than parent's.
@@ -1781,18 +1821,18 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             dsd.derived_series, '+localpackagediffs')
         self.assertTrue(view.hasPendingDSDUpdate(dsd))
 
-    def test_hasPendingSync_returns_False_if_no_pending_sync(self):
+    def test_pendingSync_returns_None_if_no_pending_sync(self):
         dsd = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
-        self.assertFalse(view.hasPendingSync(dsd))
+        self.assertIs(None, view.pendingSync(dsd))
 
-    def test_hasPendingSync_returns_True_if_pending_sync(self):
+    def test_pendingSync_returns_not_None_if_pending_sync(self):
         dsd = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
         view.pending_syncs = {dsd.source_package_name.name: object()}
-        self.assertTrue(view.hasPendingSync(dsd))
+        self.assertIsNot(None, view.pendingSync(dsd))
 
     def test_isNewerThanParent_compares_versions_not_strings(self):
         # isNewerThanParent compares Debian-style version numbers, not
@@ -1877,7 +1917,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
         view.hasPendingDSDUpdate = FakeMethod(result=True)
-        view.hasPendingSync = FakeMethod(result=False)
+        view.pendingSync = FakeMethod(result=None)
         self.assertEqual("updating&hellip;", view.describeJobs(dsd))
 
     def test_describeJobs_reports_pending_sync(self):
@@ -1885,15 +1925,36 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
         view.hasPendingDSDUpdate = FakeMethod(result=False)
-        view.hasPendingSync = FakeMethod(result=True)
+        pcj = self.factory.makePlainPackageCopyJob()
+        view.pending_syncs = {dsd.source_package_name.name: pcj}
         self.assertEqual("synchronizing&hellip;", view.describeJobs(dsd))
+
+    def test_describeJobs_reports_pending_queue(self):
+        dsd = self.factory.makeDistroSeriesDifference()
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        view.hasPendingDSDUpdate = FakeMethod(result=False)
+        pcj = self.factory.makePlainPackageCopyJob()
+        pu = self.factory.makePackageUpload(distroseries=dsd.derived_series)
+        # A copy job with an attached packageupload means the job is
+        # waiting in the queues.
+        removeSecurityProxy(pu).package_copy_job=pcj.id
+        view.pending_syncs = {dsd.source_package_name.name: pcj}
+        expected = (
+            'waiting in <a href="%s/+queue?queue_state=%s">%s</a>&hellip;'
+            % (canonical_url(dsd.derived_series), pu.status.value,
+               pu.status.name))
+        self.assertEqual(expected, view.describeJobs(dsd))
 
     def test_describeJobs_reports_pending_sync_and_update(self):
         dsd = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(
             dsd.derived_series, '+localpackagediffs')
         view.hasPendingDSDUpdate = FakeMethod(result=True)
-        view.hasPendingSync = FakeMethod(result=True)
+        pcj = self.factory.makePlainPackageCopyJob()
+        self.factory.makePackageUpload(distroseries=dsd.derived_series,
+                                       package_copy_job=pcj.id)
+        view.pending_syncs = {dsd.source_package_name.name: pcj}
         self.assertEqual(
             "updating and synchronizing&hellip;", view.describeJobs(dsd))
 
@@ -2007,11 +2068,10 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         # 302 is a redirect back to the same page.
         self.assertEqual(302, view.request.response.getStatus())
 
-    def test_sync_notification_on_success(self):
-        # A user with upload rights on the destination archive can
-        # sync packages. Notifications about the synced packages are
-        # displayed and the packages are copied inside the destination
-        # series.
+    def test_sync_success(self):
+        # A user with upload rights on the destination archive can sync
+        # packages. Notifications about the synced packages are displayed and
+        # the packages are copied inside the destination series.
         versions = {
             'base': '1.0',
             'derived': '1.0derived1',
@@ -2034,12 +2094,19 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         # Now, sync the source from the parent using the form.
         set_derived_series_sync_feature_flag(self)
         view = self._syncAndGetView(
-            derived_series, person, [diff_id])
+            derived_series, person, [diff_id], query_string=(
+                "batch=12&start=24&my-old-man=dustman"))
 
         # The parent's version should now be in the derived series and
         # the notifications displayed:
         self.assertPackageCopied(
             derived_series, 'my-src-name', versions['parent'], view)
+
+        # The URL to which the browser is redirected has same batch and
+        # filtering options as where the sync request was made.
+        self.assertEqual(
+            "batch=12&start=24&my-old-man=dustman",
+            urlparse(view.next_url).query)
 
     def test_sync_success_not_yet_in_derived_series(self):
         # If the package to sync does not exist yet in the derived series,

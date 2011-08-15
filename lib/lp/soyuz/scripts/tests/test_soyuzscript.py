@@ -231,7 +231,3 @@ class TestSoyuzScript(unittest.TestCase):
         # asks the user for confirmation via raw_input.
         soyuz.options.dryrun = True
         self.assertFalse(soyuz.finishProcedure())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

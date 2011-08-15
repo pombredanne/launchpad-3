@@ -95,9 +95,6 @@ doc:
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
 
-check_schema: build
-	${PY} utilities/check-db-revision.py
-
 # Clean before running the test suite, since the build might fail depending
 # what source changes happened. (e.g. apidoc depends on interfaces)
 check: clean build
@@ -232,14 +229,11 @@ $(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py \
 
 $(subst $(PY),,$(BUILDOUT_BIN)): $(PY)
 
-# bin/compile_templates is responsible for building all chameleon templates,
-# of which there is currently one, but of which many more are coming.
 compile: $(PY) $(BZR_VERSION_INFO)
 	mkdir -p /var/tmp/vostok-archive
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
-	bin/compile_templates
 
 test_build: build
 	bin/test $(TESTFLAGS) $(TESTOPTS)
@@ -257,20 +251,21 @@ merge-proposal-jobs:
 	# Handle merge proposal email jobs.
 	$(PY) cronscripts/merge-proposal-jobs.py -v
 
-run: check_schema inplace stop
+run: build inplace stop
 	bin/run -r librarian,google-webservice,memcached -i $(LPCONFIG)
 
 run.gdb:
 	echo 'run' > run.gdb
 
-start-gdb: check_schema inplace stop support_files run.gdb
+start-gdb: build inplace stop support_files run.gdb
 	nohup gdb -x run.gdb --args bin/run -i $(LPCONFIG) \
 		-r librarian,google-webservice
 		> ${LPCONFIG}-nohup.out 2>&1 &
 
-run_all: check_schema inplace stop
-	bin/run -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached \
-	    -i $(LPCONFIG)
+run_all: build inplace stop
+	bin/run \
+	 -r librarian,sftp,forker,mailman,codebrowse,google-webservice,memcached \
+	 -i $(LPCONFIG)
 
 run_codebrowse: build
 	BZR_PLUGIN_PATH=bzrplugins $(PY) scripts/start-loggerhead.py -f
@@ -281,7 +276,7 @@ start_codebrowse: build
 stop_codebrowse:
 	$(PY) scripts/stop-loggerhead.py
 
-run_codehosting: check_schema inplace stop
+run_codehosting: build inplace stop
 	bin/run -r librarian,sftp,forker,codebrowse -i $(LPCONFIG)
 
 start_librarian: compile
@@ -372,8 +367,7 @@ clean: clean_js clean_buildout clean_logs
 	fi
 	find . -path ./eggs -prune -false -o \
 		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
-	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' -o \
-	    -name '*.pt.py' \) \
+	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
 	$(RM) -r lib/mailman
 	$(RM) -rf $(LP_BUILT_JS_ROOT)/*
@@ -465,11 +459,12 @@ pydoctor:
 		--docformat restructuredtext --verbose-about epytext-summary \
 		$(PYDOCTOR_OPTIONS)
 
-.PHONY: apidoc buildout_bin check doc tags TAGS zcmldocs realclean \
-	clean debug stop start run ftest_build ftest_inplace \
-	test_build test_inplace pagetests check schema default \
-	launchpad.pot pull_branches scan_branches sync_branches	\
-	reload-apache hosted_branches check_mailman check_config \
-	jsbuild jsbuild_widget_css clean_js clean_buildout buildonce_eggs \
-	build_eggs sprite_css sprite_image css_combine compile \
-	check_schema pydoctor clean_logs
+.PHONY: \
+	apidoc build_eggs buildonce_eggs buildout_bin check check \
+	check_config check_mailman clean clean_buildout clean_js \
+	clean_logs compile css_combine debug default doc ftest_build \
+	ftest_inplace hosted_branches jsbuild jsbuild_widget_css \
+	launchpad.pot pagetests pull_branches pydoctor realclean \
+	reload-apache run scan_branches schema sprite_css sprite_image \
+	start stop sync_branches TAGS tags test_build test_inplace \
+	zcmldocs

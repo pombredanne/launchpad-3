@@ -12,7 +12,6 @@ import subprocess
 import sys
 from tempfile import NamedTemporaryFile
 from textwrap import dedent
-import unittest
 
 from lp.services.log.logger import BufferLogger
 from lp.services.scripts.base import cronscript_enabled
@@ -137,7 +136,3 @@ class TestCronscriptEnabled(TestCase):
             '-qqqqq', 'disabled',
             ]
         self.assertEqual(0, subprocess.call(cmd))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

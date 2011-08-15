@@ -3,9 +3,6 @@
 
 """Unit tests for DiffView."""
 
-
-from unittest import TestLoader
-
 from canonical.testing.layers import LaunchpadFunctionalLayer
 from lp.code.browser.diff import PreviewDiffFormatterAPI
 from lp.testing import TestCaseWithFactory
@@ -35,7 +32,3 @@ class TestFormatterAPI(TestCaseWithFactory):
         self.assertEqual('bork', diff.conflicts)
         formatter = PreviewDiffFormatterAPI(diff)
         self.assertIn('has conflicts', formatter.link(None))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

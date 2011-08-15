@@ -8,10 +8,14 @@ __all__ = [
     ]
 
 from optparse import OptionValueError
+
 from zope.component import getUtility
 
 from lp.app.errors import NotFoundError
-from lp.archivepublisher.publishing import getPublisher
+from lp.archivepublisher.publishing import (
+    getPublisher,
+    GLOBAL_PUBLISHER_LOCK,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.scripts.base import (
     LaunchpadCronScript,
@@ -39,6 +43,8 @@ def is_ppa_public(ppa):
 
 class PublishDistro(LaunchpadCronScript):
     """Distro publisher."""
+
+    lockfilename = GLOBAL_PUBLISHER_LOCK
 
     def add_my_options(self):
         self.parser.add_option(

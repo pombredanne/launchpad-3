@@ -9,7 +9,6 @@ import os
 import re
 import signal
 import subprocess
-import unittest
 
 import transaction
 from zope.security.proxy import removeSecurityProxy
@@ -275,8 +274,3 @@ class TestBranchRewriterScript(TestCaseWithFactory):
         # The script produces logging output, but not to stderr.
         self.assertEqual('', err)
         self.assertEqual(expected_lines, output_lines)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

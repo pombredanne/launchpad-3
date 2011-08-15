@@ -3,8 +3,6 @@
 
 """Tests for Job-running facilities."""
 
-from unittest import TestLoader
-
 from canonical.config import config
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.code.enums import (
@@ -48,7 +46,3 @@ class TestRevisionMailJob(TestCaseWithFactory):
         existing_diff = StaticDiff.selectOneBy(
             from_revision_id='null:', to_revision_id=to_revision_id)
         self.assertIsNot(None, existing_diff)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

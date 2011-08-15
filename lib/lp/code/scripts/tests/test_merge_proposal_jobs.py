@@ -5,8 +5,6 @@
 
 """Test the sendbranchmail script"""
 
-import unittest
-
 import transaction
 
 from canonical.launchpad.scripts.tests import run_script
@@ -34,9 +32,7 @@ class TestMergeProposalJobScript(TestCaseWithFactory):
             'INFO    Creating lockfile:'
             ' /var/lock/launchpad-merge-proposal-jobs.lock\n'
             'INFO    Running through Twisted.\n'
-            'INFO    Ran 1 GenerateIncrementalDiffJob jobs.\n', stderr)
+            'INFO    Running GenerateIncrementalDiffJob (ID %d).\n'
+            'INFO    Ran 1 GenerateIncrementalDiffJob jobs.\n' % job.job.id,
+            stderr)
         self.assertEqual(JobStatus.COMPLETED, job.status)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

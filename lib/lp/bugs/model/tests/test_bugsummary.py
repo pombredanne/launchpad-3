@@ -556,7 +556,7 @@ class TestBugSummary(TestCaseWithFactory):
             0)
 
     def test_addDistroSeries(self):
-        series = self.factory.makeDistroRelease()
+        series = self.factory.makeDistroSeries()
         distribution = series.distribution
 
         # This first creates a BugTask on the distribution. We can't
@@ -572,8 +572,8 @@ class TestBugSummary(TestCaseWithFactory):
 
     def test_changeDistroSeries(self):
         distribution = self.factory.makeDistribution()
-        series_a = self.factory.makeDistroRelease(distribution=distribution)
-        series_b = self.factory.makeDistroRelease(distribution=distribution)
+        series_a = self.factory.makeDistroSeries(distribution=distribution)
+        series_b = self.factory.makeDistroSeries(distribution=distribution)
 
         bug_task = self.factory.makeBugTask(target=series_a)
 
@@ -600,7 +600,7 @@ class TestBugSummary(TestCaseWithFactory):
             1)
 
     def test_removeDistroSeries(self):
-        series = self.factory.makeDistroRelease()
+        series = self.factory.makeDistroSeries()
         distribution = series.distribution
         bug_task = self.factory.makeBugTask(target=series)
 
@@ -722,7 +722,7 @@ class TestBugSummary(TestCaseWithFactory):
 
     def test_addDistroSeriesSourcePackage(self):
         distribution = self.factory.makeDistribution()
-        series = self.factory.makeDistroRelease(distribution=distribution)
+        series = self.factory.makeDistroSeries(distribution=distribution)
         package = self.factory.makeSourcePackage(distroseries=series)
         sourcepackagename = package.sourcepackagename
         self.factory.makeBugTask(target=package)
@@ -750,7 +750,7 @@ class TestBugSummary(TestCaseWithFactory):
 
     def test_changeDistroSeriesSourcePackage(self):
         distribution = self.factory.makeDistribution()
-        series = self.factory.makeDistroRelease(distribution=distribution)
+        series = self.factory.makeDistroSeries(distribution=distribution)
         package_a = self.factory.makeSourcePackage(distroseries=series)
         package_b = self.factory.makeSourcePackage(distroseries=series)
         sourcepackagename_a = package_a.sourcepackagename
@@ -823,7 +823,7 @@ class TestBugSummary(TestCaseWithFactory):
 
     def test_removeDistroSeriesSourcePackage(self):
         distribution = self.factory.makeDistribution()
-        series = self.factory.makeDistroRelease(distribution=distribution)
+        series = self.factory.makeDistroSeries(distribution=distribution)
         package = self.factory.makeSourcePackage(distroseries=series)
         sourcepackagename = package.sourcepackagename
         bug_task = self.factory.makeBugTask(target=package)

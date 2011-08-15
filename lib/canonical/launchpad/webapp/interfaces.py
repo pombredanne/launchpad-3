@@ -347,6 +347,13 @@ class IBasicLaunchpadRequest(Interface):
         If no matching object is found, the tuple (None, None) is returned.
         """
 
+    def getURL(level=0, path_only=False, include_query=False):
+        """See `IHTTPApplicationRequest`.
+
+        Additionally, if `include_query` is `True`, the query string is
+        included in the returned URL.
+        """
+
 
 class IBrowserFormNG(Interface):
     """Interface to manipulate submitted form data."""
@@ -880,7 +887,7 @@ except ImportError:
             self.request = request
 
 
-class StormRangeFactoryError(AssertionError):
+class StormRangeFactoryError(Exception):
     """Raised when a Storm result set cannot be used for slicing by a
     StormRangeFactory.
     """

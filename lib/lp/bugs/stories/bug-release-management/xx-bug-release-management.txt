@@ -243,9 +243,6 @@ for Ubuntu:
     >>> admin_browser.getControl('Bug Supervisor').value = 'no-priv'
     >>> admin_browser.getControl('Change').click()
 
-    >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
-    ...     print tag.renderContents()
-
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'bug-supervisor'))
     Bug supervisor:
     No Privileges Person
@@ -331,9 +328,6 @@ for Firefox:
     >>> admin_browser.open('http://bugs.launchpad.dev/firefox/+bugsupervisor')
     >>> admin_browser.getControl('Bug Supervisor').value = 'no-priv'
     >>> admin_browser.getControl('Change').click()
-
-    >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
-    ...     print tag.renderContents()
 
     >>> print extract_text(find_tag_by_id(admin_browser.contents,
     ...     'bug-supervisor'))

@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import stat
-import unittest
 
 from bzrlib import errors
 from bzrlib.bzrdir import BzrDir
@@ -308,7 +307,3 @@ class TestFilesystem(TestCaseWithTransport):
         # returned_path is equivalent but not equal to escaped_path.
         [returned_path] = list(transport.list_dir('.'))
         self.assertEqual(content, transport.get_bytes(returned_path))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

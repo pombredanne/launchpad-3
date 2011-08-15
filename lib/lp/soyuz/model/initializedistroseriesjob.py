@@ -16,6 +16,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
+from lp.registry.model.distroseries import DistroSeries
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.distributionjob import (
@@ -29,6 +30,7 @@ from lp.soyuz.model.distributionjob import (
     DistributionJob,
     DistributionJobDerived,
     )
+from lp.soyuz.model.packageset import Packageset
 from lp.soyuz.scripts.initialize_distroseries import InitializeDistroSeries
 
 
@@ -43,7 +45,32 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
     def create(cls, child, parents, arches=(), packagesets=(),
                rebuild=False, overlays=(), overlay_pockets=(),
                overlay_components=()):
-        """See `IInitializeDistroSeriesJob`."""
+        """Create a new `InitializeDistroSeriesJob`.
+
+        :param child: The child `IDistroSeries` to initialize
+        :param parents: An iterable of `IDistroSeries` of parents to
+            initialize from.
+        :param arches: An iterable of architecture tags which lists the
+            architectures to enable in the child.
+        :param packagesets: An iterable of `PackageSet` IDs from which to
+            copy packages in parents.
+        :param rebuild: A boolean to say whether the child should rebuild
+            all the copied sources (if True), or to copy the parents'
+            binaries (if False).
+        :param overlays: An iterable of booleans corresponding exactly to
+            each parent in the "parents" parameter.  Each boolean says
+            whether this corresponding parent is an overlay for the child
+            or not.  An overlay allows the child to use the parent's
+            packages for build dependencies, and the overlay_pockets and
+            overlay_components parameters dictate from where the
+            dependencies may be used in the parent.
+        :param overlay_pockets: An iterable of textual pocket names
+            corresponding exactly to each parent.  The  name *must* be set
+            if the corresponding overlays boolean is True.
+        :param overlay_components: An iterable of textual component names
+            corresponding exactly to each parent.  The  name *must* be set
+            if the corresponding overlays boolean is True.
+        """
         store = IMasterStore(DistributionJob)
         # Only one InitializeDistroSeriesJob can be present at a time.
         distribution_job = store.find(
@@ -83,6 +110,31 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
             DistributionJob.job_type == cls.class_job_type,
             DistributionJob.distroseries_id == distroseries.id).one()
         return None if distribution_job is None else cls(distribution_job)
+
+    def __repr__(self):
+        """Returns an informative representation of the job."""
+        # This code assumes the job is referentially intact with good data,
+        # or it will blow up.
+        parts = "%s for" % self.__class__.__name__
+        parts += " distribution: %s" % self.distribution.name
+        parts += ", distroseries: %s" % self.distroseries.name
+        parts += ", parent[overlay?/pockets/components]: "
+        parents = []
+        for i in range(len(self.overlays)):
+            series = DistroSeries.get(self.parents[i])
+            parents.append("%s[%s/%s/%s]" % (
+                series.name,
+                self.overlays[i],
+                self.overlay_pockets[i],
+                self.overlay_components[i]))
+        parts += ",".join(parents)
+        pkgsets = [
+            IStore(Packageset).get(Packageset, int(pkgsetid)).name
+            for pkgsetid in  self.packagesets]
+        parts += ", architectures: %s" % (self.arches,)
+        parts += ", packagesets: %s" % pkgsets
+        parts += ", rebuild: %s" % self.rebuild
+        return "<%s>" % parts
 
     @property
     def parents(self):

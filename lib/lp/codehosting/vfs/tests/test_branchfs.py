@@ -1055,7 +1055,7 @@ class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
             f = sys.exc_info()
             report = errorlog.globalErrorUtility.raising(f, request)
             # Record the id for checking later.
-            self.generated_oopsids.append(report.id)
+            self.generated_oopsids.append(report['id'])
             raise xmlrpclib.Fault(-1, report)
 
     def get_server(self):
@@ -1113,10 +1113,10 @@ class TestBranchChangedErrorHandling(TestCaseWithTransport, TestCase):
         self.assertEqual(len(oopsids), 2)
         error_report = self.oopses[-1]
         # The error report oopsid should match what's print to stderr.
-        self.assertEqual(error_report.id, oopsids[1])
+        self.assertEqual(error_report['id'], oopsids[1])
         # The error report text should contain the root cause oopsid.
         self.assertContainsString(
-            error_report.tb_text, self.generated_oopsids[1])
+            error_report['tb_text'], self.generated_oopsids[1])
 
 
 class TestLaunchpadTransportReadOnly(BzrTestCase):

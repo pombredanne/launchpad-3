@@ -51,23 +51,6 @@
     });
   "/>
 
-  <tal:if condition="request/features/bugs.private_notification.enabled">
-  <script>
-      LPS.use('base', 'node', 'lp.app.privacy', function(Y) {
-          Y.on("domready", function () {
-              if (Y.one(document.body).hasClass('private')) {
-                  var config = {
-                      notification_text: 'This is a private branch',
-                      hidden: true
-                  };
-                  Y.lp.app.privacy.setup_privacy_notification(config);
-                  Y.lp.app.privacy.display_privacy_notification(true);
-              }
-          });
-      });
-  </script>
-  </tal:if>
-
 </metal:block>
 
 <body>

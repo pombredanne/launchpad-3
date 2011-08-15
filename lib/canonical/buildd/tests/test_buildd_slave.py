@@ -196,7 +196,3 @@ class XMLRPCBuildDSlaveTests(unittest.TestCase):
         self.assertTrue(
             info.startswith("%s not in [" % buildername),
             'UNKNOWNBUILDER info is "%s"' % info)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
