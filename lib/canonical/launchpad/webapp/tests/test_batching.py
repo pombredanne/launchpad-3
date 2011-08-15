@@ -23,6 +23,7 @@ from canonical.launchpad.webapp.batching import (
     BatchNavigator,
     DateTimeJSONEncoder,
     StormRangeFactory,
+    timestamp_regex,
     )
 from canonical.launchpad.webapp.interfaces import StormRangeFactoryError
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -277,34 +278,61 @@ class TestStormRangeFactory(TestCaseWithFactory):
         resultset = self.makeStormResultSet()
         resultset.order_by(Person.datecreated, Person.name, Person.id)
         range_factory = StormRangeFactory(resultset, self.logError)
-        valid_memo = [datetime(2011, 7, 25, 11, 30, 30, 45), 'foo', 1]
+        valid_memo = [
+            datetime(2011, 7, 25, 11, 30, 30, 45, tzinfo=pytz.UTC), 'foo', 1]
         json_data = simplejson.dumps(valid_memo, cls=DateTimeJSONEncoder)
         self.assertEqual(valid_memo, range_factory.parseMemo(json_data))
         self.assertEqual(0, len(self.error_messages))
 
     def test_parseMemo__short_iso_timestamp(self):
         # An ISO timestamp without fractions of a second
-        # (YYYY-MM-DDThh:mm:ss) is a valid value for colums which
+        # (YYYY-MM-DDThh:mm:ss) is a valid value for columns which
         # store datetime values.
         resultset = self.makeStormResultSet()
         resultset.order_by(Person.datecreated)
         range_factory = StormRangeFactory(resultset, self.logError)
         valid_short_timestamp_json = '["2011-07-25T11:30:30"]'
         self.assertEqual(
-            [datetime(2011, 7, 25, 11, 30, 30)],
+            [datetime(2011, 7, 25, 11, 30, 30, tzinfo=pytz.UTC)],
             range_factory.parseMemo(valid_short_timestamp_json))
         self.assertEqual(0, len(self.error_messages))
 
     def test_parseMemo__long_iso_timestamp(self):
         # An ISO timestamp with fractions of a second
-        # (YYYY-MM-DDThh:mm:ss.ffffff) is a valid value for colums
+        # (YYYY-MM-DDThh:mm:ss.ffffff) is a valid value for columns
         # which store datetime values.
         resultset = self.makeStormResultSet()
         resultset.order_by(Person.datecreated)
         range_factory = StormRangeFactory(resultset, self.logError)
         valid_long_timestamp_json = '["2011-07-25T11:30:30.123456"]'
         self.assertEqual(
-            [datetime(2011, 7, 25, 11, 30, 30, 123456)],
+            [datetime(2011, 7, 25, 11, 30, 30, 123456, tzinfo=pytz.UTC)],
+            range_factory.parseMemo(valid_long_timestamp_json))
+        self.assertEqual(0, len(self.error_messages))
+
+    def test_parseMemo__short_iso_timestamp_with_tzoffset(self):
+        # An ISO timestamp with fractions of a second and a time zone
+        # offset (YYYY-MM-DDThh:mm:ss.ffffff+hh:mm) is a valid value
+        # for columns which store datetime values.
+        resultset = self.makeStormResultSet()
+        resultset.order_by(Person.datecreated)
+        range_factory = StormRangeFactory(resultset, self.logError)
+        valid_long_timestamp_json = '["2011-07-25T11:30:30-01:00"]'
+        self.assertEqual(
+            [datetime(2011, 7, 25, 12, 30, 30, tzinfo=pytz.UTC)],
+            range_factory.parseMemo(valid_long_timestamp_json))
+        self.assertEqual(0, len(self.error_messages))
+
+    def test_parseMemo__long_iso_timestamp_with_tzoffset(self):
+        # An ISO timestamp with fractions of a second and a time zone
+        # offset (YYYY-MM-DDThh:mm:ss.ffffff+hh:mm) is a valid value
+        # for columns which store datetime values.
+        resultset = self.makeStormResultSet()
+        resultset.order_by(Person.datecreated)
+        range_factory = StormRangeFactory(resultset, self.logError)
+        valid_long_timestamp_json = '["2011-07-25T11:30:30.123456+01:00"]'
+        self.assertEqual(
+            [datetime(2011, 7, 25, 10, 30, 30, 123456, tzinfo=pytz.UTC)],
             range_factory.parseMemo(valid_long_timestamp_json))
         self.assertEqual(0, len(self.error_messages))
 
@@ -321,7 +349,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
             ["Invalid datetime value: '2011-05-35T11:30:30'"],
             self.error_messages)
 
-    def test_parseMemo__nonsencial_iso_timestamp_value(self):
+    def test_parseMemo__nonsensical_iso_timestamp_value(self):
         # A memo string is rejected when an ISO timespamp is expected
         # but a nonsensical string is provided.
         resultset = self.makeStormResultSet()
@@ -333,6 +361,66 @@ class TestStormRangeFactory(TestCaseWithFactory):
         self.assertEqual(
             ["Invalid datetime value: 'bar'"],
             self.error_messages)
+
+    def test_timestamp_regex__without_second_fraction_without_tzinfo(self):
+        # An ISO time string without fractions of a second and without
+        # time zone data is accepted by timestamp_regex.
+        mo = timestamp_regex.search('2011-01-02T12:03:04')
+        self.assertEqual('2011', mo.group('year'))
+        self.assertEqual('01', mo.group('month'))
+        self.assertEqual('02', mo.group('day'))
+        self.assertEqual('12', mo.group('hour'))
+        self.assertEqual('03', mo.group('minute'))
+        self.assertEqual('04', mo.group('second'))
+        self.assertIs(None, mo.group('sec_fraction'))
+        self.assertIs(None, mo.group('tzsign'))
+        self.assertIs(None, mo.group('tzhour'))
+        self.assertIs(None, mo.group('tzminute'))
+
+    def test_timestamp_regex__with_second_fraction_without_tzinfo(self):
+        # An ISO time string without fractions of a second and without
+        # time zone data is accepted by timestamp_regex.
+        mo = timestamp_regex.search('2011-01-02T12:03:04.123456')
+        self.assertEqual('2011', mo.group('year'))
+        self.assertEqual('01', mo.group('month'))
+        self.assertEqual('02', mo.group('day'))
+        self.assertEqual('12', mo.group('hour'))
+        self.assertEqual('03', mo.group('minute'))
+        self.assertEqual('04', mo.group('second'))
+        self.assertEqual('123456', mo.group('sec_fraction'))
+        self.assertIs(None, mo.group('tzsign'))
+        self.assertIs(None, mo.group('tzhour'))
+        self.assertIs(None, mo.group('tzminute'))
+
+    def test_timestamp_regex__without_second_fraction_with_tzinfo(self):
+        # An ISO time string without fractions of a second and without
+        # time zone data is accepted by timestamp_regex.
+        mo = timestamp_regex.search('2011-01-02T12:03:04+05:00')
+        self.assertEqual('2011', mo.group('year'))
+        self.assertEqual('01', mo.group('month'))
+        self.assertEqual('02', mo.group('day'))
+        self.assertEqual('12', mo.group('hour'))
+        self.assertEqual('03', mo.group('minute'))
+        self.assertEqual('04', mo.group('second'))
+        self.assertIs(None, mo.group('sec_fraction'))
+        self.assertEqual('+', mo.group('tzsign'))
+        self.assertEqual('05', mo.group('tzhour'))
+        self.assertEqual('00', mo.group('tzminute'))
+
+    def test_timestamp_regex__with_second_fraction_with_tzinfo(self):
+        # An ISO time string without fractions of a second and without
+        # time zone data is accepted by timestamp_regex.
+        mo = timestamp_regex.search('2011-01-02T12:03:04.123456-06:07')
+        self.assertEqual('2011', mo.group('year'))
+        self.assertEqual('01', mo.group('month'))
+        self.assertEqual('02', mo.group('day'))
+        self.assertEqual('12', mo.group('hour'))
+        self.assertEqual('03', mo.group('minute'))
+        self.assertEqual('04', mo.group('second'))
+        self.assertEqual('123456', mo.group('sec_fraction'))
+        self.assertEqual('-', mo.group('tzsign'))
+        self.assertEqual('06', mo.group('tzhour'))
+        self.assertEqual('07', mo.group('tzminute'))
 
     def test_parseMemo__descending_sort_order(self):
         # Validation of a memo string against a descending sort order works.
@@ -492,7 +580,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         all_results = list(resultset)
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3)
-        self.assertEqual(all_results[:3], list(sliced_result))
+        self.assertEqual(all_results[:3], sliced_result)
 
     def test_getSlice__forward_with_memo(self):
         resultset = self.makeStormResultSet()
@@ -501,7 +589,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         memo = simplejson.dumps([all_results[0].name, all_results[0].id])
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, memo)
-        self.assertEqual(all_results[1:4], list(sliced_result))
+        self.assertEqual(all_results[1:4], sliced_result)
 
     def test_getSlice__backward_without_memo(self):
         resultset = self.makeStormResultSet()
@@ -511,7 +599,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         expected.reverse()
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, forwards=False)
-        self.assertEqual(expected, list(sliced_result))
+        self.assertEqual(expected, sliced_result)
 
     def test_getSlice_backward_with_memo(self):
         resultset = self.makeStormResultSet()
@@ -522,7 +610,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         memo = simplejson.dumps([all_results[4].name, all_results[4].id])
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, memo, forwards=False)
-        self.assertEqual(expected, list(sliced_result))
+        self.assertEqual(expected, sliced_result)
 
     def makeResultSetWithPartiallyIdenticalSortData(self):
         # Create a result set, where each value of
@@ -559,7 +647,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
             [memo_lfa.mimetype, memo_lfa.filename, memo_lfa.id])
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, memo)
-        self.assertEqual(all_results[3:6], list(sliced_result))
+        self.assertEqual(all_results[3:6], sliced_result)
 
     def test_getSlice__decorated_resultset(self):
         resultset = self.makeDecoratedStormResultSet()
@@ -568,7 +656,19 @@ class TestStormRangeFactory(TestCaseWithFactory):
         memo = simplejson.dumps([resultset.get_plain_result_set()[0][1].id])
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, memo)
-        self.assertEqual(all_results[1:4], list(sliced_result))
+        self.assertEqual(all_results[1:4], sliced_result)
+
+    def test_getSlice__returns_list(self):
+        # getSlice() returns lists.
+        resultset = self.makeStormResultSet()
+        resultset.order_by(Person.id)
+        all_results = list(resultset)
+        range_factory = StormRangeFactory(resultset)
+        sliced_result = range_factory.getSlice(3)
+        self.assertIsInstance(sliced_result, list)
+        memo = simplejson.dumps([all_results[0].name])
+        sliced_result = range_factory.getSlice(3, memo)
+        self.assertIsInstance(sliced_result, list)
 
 
 def test_suite():
