@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from bzrlib.branch import BranchFormat as BzrBranchFormat
 from bzrlib.bzrdir import BzrProber
 from bzrlib.repository import format_registry as repo_format_registry
@@ -60,7 +58,3 @@ class TestFormatSupport(TestCase):
                 description = description[:-1]
             self.assertTrue(len(description.split('\n')) == 1,
                             item.description)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -3,7 +3,6 @@
 
 import cgi
 from datetime import datetime
-import unittest
 
 import lazr.uri
 from zope.component import getUtility
@@ -202,7 +201,3 @@ class TestLoggingInWithPersonlessAccount(TestCaseWithFactory):
             self.request)
         self.failUnless(ILaunchpadPrincipal.providedBy(principal))
         self.failUnless(principal.person is None)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

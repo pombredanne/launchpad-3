@@ -1,8 +1,6 @@
 # Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from unittest import TestLoader
-
 from zope.security.interfaces import Unauthorized
 
 from canonical.database.constants import UTC_NOW
@@ -266,7 +264,3 @@ class TestCodeReviewVoteReferenceReassignReview(TestCaseWithFactory):
             reviewer=reviewer_team, registrant=bmp.registrant)
         review.reassignReview(reviewer_team)
         self.assertEqual(reviewer_team, review.reviewer)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

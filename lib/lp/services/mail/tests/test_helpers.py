@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -12,19 +12,19 @@ from zope.interface import (
     directlyProvides,
     )
 
-from canonical.launchpad.interfaces.mail import (
-    EmailProcessingError,
-    IWeaklyAuthenticatedPrincipal,
-    )
-from canonical.launchpad.mail.helpers import (
+from canonical.launchpad.webapp.interaction import get_current_principal
+from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.mail.helpers import (
     ensure_not_weakly_authenticated,
     ensure_sane_signature_timestamp,
     get_person_or_team,
     IncomingEmailError,
     parse_commands,
     )
-from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.mail.interfaces import (
+    EmailProcessingError,
+    IWeaklyAuthenticatedPrincipal,
+    )
 from lp.testing import (
     login_person,
     TestCase,
@@ -100,7 +100,7 @@ class TestEnsureSaneSignatureTimestamp(unittest.TestCase):
         one_week = 60 * 60 * 24 * 7
         self.assertRaises(
             IncomingEmailError, ensure_sane_signature_timestamp,
-            now-one_week, 'bug report')
+            now - one_week, 'bug report')
 
     def test_future_timestamp(self):
         # signature timestamps shouldn't be (far) in the future
@@ -108,21 +108,21 @@ class TestEnsureSaneSignatureTimestamp(unittest.TestCase):
         one_week = 60 * 60 * 24 * 7
         self.assertRaises(
             IncomingEmailError, ensure_sane_signature_timestamp,
-            now+one_week, 'bug report')
+            now + one_week, 'bug report')
 
     def test_near_future_timestamp(self):
         # signature timestamps in the near future are OK
         now = time.time()
         one_minute = 60
         # this should not raise an exception
-        ensure_sane_signature_timestamp(now+one_minute, 'bug report')
+        ensure_sane_signature_timestamp(now + one_minute, 'bug report')
 
     def test_recent_timestamp(self):
         # signature timestamps in the recent past are OK
         now = time.time()
         one_hour = 60 * 60
         # this should not raise an exception
-        ensure_sane_signature_timestamp(now-one_hour, 'bug report')
+        ensure_sane_signature_timestamp(now - one_hour, 'bug report')
 
 
 class TestEnsureNotWeaklyAuthenticated(TestCaseWithFactory):
@@ -223,6 +223,6 @@ class TestGetPersonOrTeam(TestCaseWithFactory):
 
 
 def test_suite():
-    suite = DocTestSuite('canonical.launchpad.mail.helpers')
+    suite = DocTestSuite('lp.services.mail.helpers')
     suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
     return suite

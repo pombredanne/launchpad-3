@@ -31,7 +31,7 @@ AnswerTrackerHandler.
     # Define a helper function to send email to the Answer Tracker handler.
     >>> from lp.answers.mail.handler import AnswerTrackerHandler
     >>> from email.Utils import formatdate, make_msgid, mktime_tz
-    >>> from canonical.launchpad.mail import signed_message_from_string
+    >>> from lp.services.mail.signedmessage import signed_message_from_string
     >>> handler = AnswerTrackerHandler()
     >>> def send_question_email(question_id, from_addr, subject, body):
     ...     login(from_addr)
@@ -129,7 +129,7 @@ possibilities for the user.
     # Define an helper to change the question status easily.
     >>> def setQuestionStatus(question, new_status):
     ...     login('foo.bar@canonical.com')
-    ...     msg = question.setStatus(foo_bar, new_status, 'Status Change',
+    ...     question.setStatus(foo_bar, new_status, 'Status Change',
     ...                            datecreated=now.next())
     ...     login('no-priv@canonical.com')
 
