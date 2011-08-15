@@ -967,6 +967,7 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         diffs = {
             'normal': [],
             'unique': [],
+            'missing': [],
             'ignored': [],
             }
         diffs['normal'].append(
@@ -978,6 +979,12 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
                 parent_series=parent_series,
                 difference_type=(
                     DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES)))
+        diffs['missing'].append(
+            self.factory.makeDistroSeriesDifference(
+                derived_series=derived_series,
+                parent_series=parent_series,
+                difference_type=(
+                    DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES)))
         diffs['ignored'].append(
             self.factory.makeDistroSeriesDifference(
                 derived_series=derived_series,
@@ -1028,7 +1035,8 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         result = getUtility(IDistroSeriesDifferenceSource).getForDistroSeries(
             derived_series)
 
-        self.assertContentEqual(diffs['normal'], result)
+        self.assertContentEqual(
+            diffs['normal'] + diffs['unique'] + diffs['missing'], result)
 
     def test_getForDistroSeries_filters_by_distroseries(self):
         # Differences for other series are not included.
@@ -1076,10 +1084,9 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
     def test_getForDistroSeries_filters_by_multiple_statuses(self):
         # Multiple statuses can be passed for filtering.
         derived_series = self.makeDerivedSeries()
-        dsds = [
+        for status in DistroSeriesDifferenceStatus.items:
             self.factory.makeDistroSeriesDifference(
                 derived_series, status=status)
-            for status in DistroSeriesDifferenceStatus.items]
 
         statuses = (
             DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT,
@@ -1152,28 +1159,20 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
 
     def test_getForDistroSeries_filters_by_parent(self):
         # The differences can be filtered by parent series.
-        dsp = self.factory.makeDistroSeriesParent()
-        derived_series = dsp.derived_series
-        parent_series = dsp.parent_series
-
-        # Add another parent to this series.
-        parent_series2 = self.factory.makeDistroSeriesParent(
-            derived_series=derived_series).parent_series
-
-        diffs = self.makeDiffsForDistroSeries(
-            derived_series, parent_series=parent_series)
-        diffs2 = self.makeDiffsForDistroSeries(
-            derived_series, parent_series=parent_series2)
-
-        results = getUtility(
-            IDistroSeriesDifferenceSource).getForDistroSeries(
-                derived_series, parent_series=parent_series)
-        results2 = getUtility(
-            IDistroSeriesDifferenceSource).getForDistroSeries(
-                derived_series, parent_series=parent_series2)
-
-        self.assertContentEqual(diffs['normal'], results)
-        self.assertContentEqual(diffs2['normal'], results2)
+        derived_series = self.factory.makeDistroSeries()
+        dsps = [
+            self.factory.makeDistroSeriesParent(derived_series=derived_series)
+            for counter in xrange(2)]
+        dsds = [
+            self.factory.makeDistroSeriesDifference(
+                parent_series=dsp.parent_series,
+                derived_series=derived_series)
+            for dsp in dsps]
+        dsd_source = getUtility(IDistroSeriesDifferenceSource)
+        self.assertContentEqual(
+            [dsds[0]],
+            dsd_source.getForDistroSeries(
+                derived_series, parent_series=dsps[0].parent_series))
 
     def test_getForDistroSeries_matches_packageset(self):
         dsd = self.factory.makeDistroSeriesDifference()
