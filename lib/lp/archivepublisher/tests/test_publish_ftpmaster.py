@@ -118,8 +118,7 @@ def get_a_suite(distroseries):
 def get_marker_files(script, distroseries):
     """Return filesystem paths for all indexes markers for `distroseries`."""
     suites = [
-        distroseries.getSuite(pocket)
-        for pocket in pocketsuffix.iterkeys()]
+        distroseries.getSuite(pocket) for pocket in pocketsuffix.iterkeys()]
     distro = distroseries.distribution
     return [script.locateIndexesMarker(distro, suite) for suite in suites]
 
