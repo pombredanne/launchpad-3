@@ -931,7 +931,8 @@ BugMessage""" % sqlvalues(self.id))
         """
         if level is None:
             level = BugNotificationLevel.LIFECYCLE
-        direct_subscribers = self.getSubscriptionInfo(level).direct_subscribers
+        direct_subscribers = (
+            self.getSubscriptionInfo(level).direct_subscribers)
         if recipients is not None:
             for subscriber in direct_subscribers:
                 recipients.addDirectSubscriber(subscriber)
@@ -2315,7 +2316,9 @@ class BugSubscriptionInfo:
             Not(In(BugSubscription.person_id,
                    Select(BugMute.person_id,
                           BugMute.bug_id == self.bug.id))))
-        return zip(*res) or ((),())
+        if res is None:
+            return ((), ())
+        return zip(*res)
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
@@ -2331,7 +2334,7 @@ class BugSubscriptionInfo:
     def duplicate_subscriptions_and_subscribers(self):
         """Subscriptions to duplicates of the bug."""
         if self.bug.private:
-            return ((), ())
+            return (), ()
         else:
             res = IStore(BugSubscription).find(
                 (BugSubscription, Person),
@@ -2341,7 +2344,9 @@ class BugSubscriptionInfo:
                 Bug.duplicateof == self.bug,
                 Not(In(BugSubscription.person_id,
                        Select(BugMute.person_id, BugMute.bug_id == Bug.id))))
-            return zip(*res) or ((),())
+            if res is None:
+                return (), ()
+            return zip(*res)
 
     @cachedproperty
     @freeze(BugSubscriptionSet)

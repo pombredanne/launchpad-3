@@ -110,10 +110,10 @@ class BugNotificationSet:
         store = IStore(BugNotification)
         source = store.using(BugNotification,
                              Join(Message,
-                                  BugNotification.message==Message.id),
+                                  BugNotification.message == Message.id),
                              LeftJoin(
                                 BugActivity,
-                                BugNotification.activity==BugActivity.id))
+                                BugNotification.activity == BugActivity.id))
         results = list(source.find(
             (BugNotification, BugActivity, Message),
             BugNotification.date_emailed == None).order_by(
@@ -274,9 +274,12 @@ class BugNotificationSet:
             source_person_id_map[source_person_id]['filters'][filter_id] = (
                 filter_description)
             filter_ids.append(filter_id)
-        no_filter_marker = -1 # This is only necessary while production and
-        # sample data have structural subscriptions without filters.
-        # Assign the filters to each recipient.
+
+        # This is only necessary while production and sample data have
+        # structural subscriptions without filters.  Assign the filters to
+        # each recipient.
+        no_filter_marker = -1
+
         for recipient_data in recipient_id_map.values():
             for source_person_id in recipient_data['source person ids']:
                 recipient_data['filters'].update(
@@ -309,7 +312,7 @@ class BugNotificationSet:
                 filter_descriptions = [
                     description for description
                     in recipient_data['filters'].values() if description]
-                filter_descriptions.sort() # This is good for tests.
+                filter_descriptions.sort()  # This is good for tests.
                 result[recipient_data['principal']] = {
                     'sources': recipient_data['sources'],
                     'filter descriptions': filter_descriptions}

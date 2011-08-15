@@ -646,6 +646,7 @@ class TestBug778847(TestCaseWithFactory):
              team: [notification.recipients[1]]},
             [notification]))
 
+
 class TestGetDeferredNotifications(TestCaseWithFactory):
     """Test the getDeferredNotifications method."""
 

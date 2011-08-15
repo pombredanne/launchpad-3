@@ -102,6 +102,7 @@ class IBugNotificationSet(Interface):
         that caused them to be sent.
         """
 
+
 class IBugNotificationRecipient(Interface):
     """A recipient of a bug notification."""
 

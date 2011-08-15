@@ -397,7 +397,7 @@ class TestBug(TestCaseWithFactory):
             bug.setPrivate(True, person)
             self.assertFalse(bug.personIsDirectSubscriber(person))
 
-    def test_getVisibleLinkedBranches_doesnt_return_inaccessible_branches(self):
+    def test_getVisibleLinkedBranches_doesnt_rtn_inaccessible_branches(self):
         # If a Bug has branches linked to it that the current user
         # cannot access, those branches will not be returned in its
         # linked_branches property.

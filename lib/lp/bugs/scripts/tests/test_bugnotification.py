@@ -57,7 +57,6 @@ from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationFilter,
     BugNotificationRecipient,
-    BugNotificationSet,
     )
 from lp.bugs.model.bugsubscriptionfilter import BugSubscriptionFilterMute
 from lp.bugs.model.bugtask import BugTask
