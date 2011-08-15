@@ -182,7 +182,7 @@ Admins can see the status field for full functionality distributions.
 Series that belong to derivative distributions also contain the status field.
 
     >>> youbuntu = factory.makeDistribution(name='youbuntu')
-    >>> yo_series = factory.makeDistroRelease(name='melon')
+    >>> yo_series = factory.makeDistroSeries(name='melon')
     >>> yo_series.title = 'Melon'
     >>> youbuntu.full_functionality
     False

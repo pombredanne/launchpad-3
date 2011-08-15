@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from storm.store import Store
 import transaction
 
@@ -123,7 +121,3 @@ class TestRevisionKarma(TestCaseWithFactory):
             'test', config.revisionkarma.dbuser, ['-q'])
         script.main()
         self.assertOneKarmaEvent(author, b2.product)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for ISeriesSourcePackageBranch."""
@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from datetime import datetime
-import unittest
 
 import pytz
 import transaction
@@ -32,7 +31,7 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
     def test_new_sets_attributes(self):
         # SeriesSourcePackageBranchSet.new sets all the defined attributes on
         # the interface.
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         registrant = self.factory.makePerson()
         branch = self.factory.makeAnyBranch()
@@ -50,7 +49,7 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
     def test_new_inserts_into_db(self):
         # SeriesSourcePackageBranchSet.new inserts the new object into the
         # database, giving it an ID.
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         registrant = self.factory.makePerson()
         branch = self.factory.makeAnyBranch()
@@ -63,7 +62,7 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
     def test_new_returns_ISeriesSourcePackageBranch(self):
         # SeriesSourcePackageBranchSet.new returns an
         # ISeriesSourcePackageBranch, know what I mean?
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         registrant = self.factory.makePerson()
         branch = self.factory.makeAnyBranch()
@@ -124,7 +123,3 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
         find_branch_links = getUtility(IFindOfficialBranchLinks)
         self.assertEqual(
             [], list(find_branch_links.findForSourcePackage(package)))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

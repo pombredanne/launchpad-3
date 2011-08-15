@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the choice of "translations to review" for a user."""
@@ -9,7 +9,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from unittest import TestLoader
 
 from pytz import timezone
 import transaction
@@ -62,7 +61,7 @@ class ReviewTestMixin:
             self.productseries = None
             self.product = None
             self.distroseries = removeSecurityProxy(
-                self.factory.makeDistroRelease())
+                self.factory.makeDistroSeries())
             self.distribution = self.distroseries.distribution
             self.distribution.translation_focus = self.distroseries
             self.sourcepackagename = self.factory.makeSourcePackageName()
@@ -250,7 +249,3 @@ class TestSuggestReviewableTranslationFiles(TestCaseWithFactory,
         # Translations without unreviewed suggestions are ignored.
         other_pofile = self._makeOtherPOFile(with_unreviewed=False)
         self.assertFalse(other_pofile in self._suggestReviewables())
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

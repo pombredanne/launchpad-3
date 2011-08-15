@@ -14,6 +14,7 @@ from email.MIMEMessage import MIMEMessage
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 import re
+
 from zope.component import getUtility
 
 from canonical.config import config
@@ -22,24 +23,22 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from canonical.launchpad.mail import (
-    format_address,
-    sendmail,
-    simple_sendmail,
-    simple_sendmail_from_person,
-    )
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.bugs.mail.bugnotificationbuilder import get_bugmail_error_address
-from lp.registry.interfaces.person import (
-    IPerson,
-    )
+from lp.registry.interfaces.person import IPerson
 from lp.services.mail.mailwrapper import MailWrapper
 # XXX 2010-06-16 gmb bug=594985
 #     This shouldn't be here, but if we take it out lots of things cry,
 #     which is sad.
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
+from lp.services.mail.sendmail import (
+    format_address,
+    sendmail,
+    simple_sendmail,
+    simple_sendmail_from_person,
+    )
 
 # Silence lint warnings.
 NotificationRecipientSet

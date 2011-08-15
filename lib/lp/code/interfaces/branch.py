@@ -911,7 +911,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         You can only call this if a server returned by `get_ro_server` or
         `get_rw_server` is running.
 
-        :raise lp.codehosting.bzrutils.UnsafeUrlSeen: If the branch is stacked
+        :raise lp.codehosting.safe_open.BadUrl: If the branch is stacked
             on or a reference to an unacceptable URL.
         """
 

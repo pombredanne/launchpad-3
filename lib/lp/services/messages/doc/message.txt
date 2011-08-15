@@ -1,4 +1,5 @@
-= Messages =
+Messages
+========
 
 The Message table is a central message spool that can be used by
 various parts of launchpad. Currently, it is used by Malone for comments
@@ -143,7 +144,7 @@ add only noise to the comment. For the sake of completeness, since this
 has been a problem before, let's look at text_contents of a message
 containing a signature.asc attachment.
 
-    >>> from canonical.launchpad.mail.ftests import read_test_message
+    >>> from lp.services.mail.tests.helpers import read_test_message
     >>> signed_msg = read_test_message('signed_detached.txt')
     >>> signed_msg['Message-Id'] = '<signeddetached@testmsg>'
     >>> print signed_msg.as_string()
@@ -510,7 +511,8 @@ Finally, let's test the goldilocks message, where the date is just right:
     2005-06-17 09:45:13+00:00
 
 
-== Unknown encoding ==
+Unknown encoding
+================
 
 Some mail clients (Pine, for example) send messages with the character set
 specified as x-unknown. Python's email package doesn't handle these well and
@@ -518,8 +520,7 @@ raises a LookupError, but Message.fromEmail() tries parsing them as latin-1,
 which often works.
 
     >>> import os.path
-    >>> mail_path = ('../../../../canonical/launchpad/mail/'
-    ...              'ftests/emails/x-unknown-encoding.txt')
+    >>> mail_path = ('../../mail/tests/emails/x-unknown-encoding.txt')
     >>> msg_path = os.path.join(os.path.dirname(__file__), mail_path)
     >>> raw_msg = open(msg_path).read()
     >>> print raw_msg

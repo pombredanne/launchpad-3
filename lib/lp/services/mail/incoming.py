@@ -31,13 +31,6 @@ from canonical.launchpad.interfaces.gpghandler import (
     GPGVerificationError,
     IGPGHandler,
     )
-from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
-from canonical.launchpad.interfaces.mailbox import IMailBox
-from canonical.launchpad.mail.commands import get_error_message
-from canonical.launchpad.mail.helpers import (
-    ensure_sane_signature_timestamp,
-    save_mail_to_librarian,
-    )
 from canonical.launchpad.mailnotification import (
     send_process_error_notification,
     )
@@ -52,18 +45,17 @@ from canonical.launchpad.webapp.interaction import (
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.librarian.interfaces import UploadFailed
 from lp.registry.interfaces.person import IPerson
-from lp.services.features import (
-    getFeatureFlag,
-    UseFeatureController,
-    )
+from lp.services.features import getFeatureFlag
 from lp.services.mail.handlers import mail_handlers
+from lp.services.mail.helpers import (
+    ensure_sane_signature_timestamp,
+    get_error_message,
+    save_mail_to_librarian,
+    )
+from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
+from lp.services.mail.mailbox import IMailBox
 from lp.services.mail.sendmail import do_paranoid_envelope_to_validation
 from lp.services.mail.signedmessage import signed_message_from_string
-
-from lp.services.features.flags import FeatureController
-from lp.services.features.rulesource import StormFeatureRuleSource
-from lp.services.features.scopes import ScopesForMail
-
 
 # Match '\n' and '\r' line endings. That is, all '\r' that are not
 # followed by a '\n', and all '\n' that are not preceded by a '\r'.
@@ -140,7 +132,7 @@ def _authenticateDkim(signed_message):
     signing_details = []
     try:
         # NB: if this fails with a keyword argument error, you need the
-        # python-dkim 0.3-3.2 that adds it.
+        # python-dkim 0.3-3.2 that adds it
         dkim_result = dkim.verify(
             signed_message.parsed_string, dkim_log, details=signing_details)
     except dkim.DKIMException, e:
@@ -328,12 +320,6 @@ def report_oops(file_alias_url=None, error_msg=None):
     return request.oopsid
 
 
-def mail_feature_controller(mail):
-    return FeatureController(
-        ScopesForMail(mail),
-        StormFeatureRuleSource())
-
-
 def handleMail(trans=transaction,
                signature_timestamp_checker=None):
 
@@ -374,16 +360,10 @@ def handleMail(trans=transaction,
                 continue
             try:
                 trans.begin()
-                controller = mail_feature_controller(mail)
-                with UseFeatureController(controller):
-                    handle_one_mail(log, mail, file_alias, file_alias_url,
-                        signature_timestamp_checker)
-                    trans.commit()
-                    mailbox.delete(mail_id)
-                    log.debug(
-                        "usedFlags=%r, usedScopes=%r" % (
-                        controller.usedFlags(),
-                        controller.usedScopes()))
+                handle_one_mail(log, mail, file_alias, file_alias_url,
+                    signature_timestamp_checker)
+                trans.commit()
+                mailbox.delete(mail_id)
             except (KeyboardInterrupt, SystemExit):
                 raise
             except:

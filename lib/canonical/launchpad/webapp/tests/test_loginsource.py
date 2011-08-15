@@ -44,7 +44,3 @@ class LaunchpadLoginSourceTest(unittest.TestCase):
         principal = self.login_source.getPrincipalByLogin(
             removeSecurityProxy(self.mark).preferredemail.email, AccessLevel.READ_PUBLIC)
         self.assertEqual(principal.access_level, AccessLevel.READ_PUBLIC)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -225,7 +225,3 @@ class TestBranchPopupWidget(unittest.TestCase):
     # XXX: JonathanLange 2008-04-17 bug=219019: Not sure how to test what
     # happens when this widget has a good value but other fields have bad
     # values. The correct behavior is to *not* create the branch.
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -244,21 +244,36 @@ class IDistroSeriesDifferenceEdit(Interface):
 class IDistroSeriesDifferenceAdmin(Interface):
     """Difference attributes requiring launchpad.Admin."""
 
+    @call_with(commenter=REQUEST_USER)
     @operation_parameters(
-        all=Bool(title=_("All"), required=False))
+        all=Bool(title=_("All"), required=False),
+        comment=TextLine(title=_('Comment text'), required=False),
+        )
     @export_write_operation()
-    def blacklist(all=False):
-        """Blacklist this version or all versions of this source package.
+    def blacklist(commenter, all=False, comment=None):
+        """Blacklist this version or all versions of this source package and
+        adds a comment on this difference.
 
-        :param all: indicates whether all versions of this package should
+        :param commenter: The requestor `IPerson`.
+        :param comment: The comment string.
+        :param all: Indicates whether all versions of this package should
             be blacklisted or just the current (default).
+        :return: The created `DistroSeriesDifferenceComment` object.
         """
 
+    @call_with(commenter=REQUEST_USER)
+    @operation_parameters(
+        comment=TextLine(title=_('Comment text'), required=False))
     @export_write_operation()
-    def unblacklist():
-        """Removes this difference from the blacklist.
+    def unblacklist(commenter, comment=None):
+        """Removes this difference from the blacklist and adds a comment on
+        this difference.
 
         The status will be updated based on the versions.
+
+        :param commenter: The requestor `IPerson`.
+        :param comment: The comment string.
+        :return: The created `DistroSeriesDifferenceComment` object.
         """
 
 
@@ -283,22 +298,18 @@ class IDistroSeriesDifferenceSource(Interface):
             package with a difference.
         :type source_package_name: `ISourcePackageName`.
         :param parent_series: The distribution series which has the derived
-            series as a child.
+            series as a child. If there is only one parent, it does not need
+            to be specified.
         :type parent_series: `IDistroSeries`.
         :raises NotADerivedSeriesError: When the passed distro series
             is not a derived series.
         :return: A new `DistroSeriesDifference` object.
         """
 
-    def getForDistroSeries(
-        distro_series,
-        difference_type=None,
-        name_filter=None,
-        status=None,
-        child_version_higher=False,
-        parent_series=None,
-        packagesets=None,
-        changed_by=None):
+    def getForDistroSeries(distro_series, difference_type=None,
+                           name_filter=None, status=None,
+                           child_version_higher=False, parent_series=None,
+                           packagesets=None, changed_by=None):
         """Return differences for the derived distro series sorted by
         package name.
 

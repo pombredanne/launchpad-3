@@ -117,6 +117,10 @@
                    class="parent-version">
                    <tal:replace
                         replace="difference/parent_source_version"/></a>
+                <span class="discreet">
+                  (<a tal:define="changelog_url python:view.parent_changelog_url(difference)"
+                      tal:attributes="href changelog_url">changelog</a>)
+                </span>
                 <span tal:condition="not: difference/parent_source_package_release"
                       class="parent-version"
                       tal:content="difference/parent_source_version">
@@ -219,9 +223,10 @@
     </div>
 <script type="text/javascript">
 LPS.use('lp.registry.distroseriesdifferences_details', function(Y) {
-  diff_module = Y.lp.registry.distroseriesdifferences_details
 
-  Y.on('domready', diff_module.setup_expandable_rows);
+  Y.on('domready', function() {
+    Y.lp.registry.distroseriesdifferences_details.setup();
+  });
 });
 </script>
 <script type="text/javascript">

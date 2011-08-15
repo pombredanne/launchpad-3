@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -9,7 +9,13 @@ import lazr.batchnavigator
 from lazr.batchnavigator.interfaces import IRangeFactory
 import simplejson
 from storm import Undef
-from storm.expr import Desc
+from storm.expr import (
+    And,
+    compile,
+    Desc,
+    Or,
+    SQL,
+    )
 from storm.properties import PropertyColumn
 from storm.zope.interfaces import IResultSet
 from zope.component import adapts
@@ -22,6 +28,7 @@ from zope.security.proxy import (
     )
 
 from canonical.config import config
+from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
@@ -175,6 +182,10 @@ class StormRangeFactory:
           store.find(Bug, Bug.id < 10)
 
       works.
+
+    Note: This factory assumes that the result set is fully sorted,
+    i.e. that the set of the column values used for sorting is
+    distinct for each result row.
     """
     implements(IRangeFactory)
 
@@ -189,12 +200,12 @@ class StormRangeFactory:
         """
         self.resultset = resultset
         if zope_isinstance(resultset, DecoratedResultSet):
-            self.plain_resultset = resultset.getPlainResultSet()
+            self.plain_resultset = resultset.get_plain_result_set()
         else:
             self.plain_resultset = resultset
         self.error_cb = error_cb
 
-    def getSortExpressions(self):
+    def getOrderBy(self):
         """Return the order_by expressions of the result set."""
         return removeSecurityProxy(self.plain_resultset)._order_by
 
@@ -204,7 +215,7 @@ class StormRangeFactory:
         sort_values = []
         if not zope_isinstance(row, tuple):
             row = (row, )
-        sort_expressions = self.getSortExpressions()
+        sort_expressions = self.getOrderBy()
         if sort_expressions is Undef:
             raise StormRangeFactoryError(
                 'StormRangeFactory requires a sorted result set.')
@@ -213,7 +224,7 @@ class StormRangeFactory:
                 expression = expression.expr
             if not zope_isinstance(expression, PropertyColumn):
                 raise StormRangeFactoryError(
-                    'StormRangeFactory supports only sorting by '
+                    'StormRangeFactory only supports sorting by '
                     'PropertyColumn, not by %r.' % expression)
             class_instance_found = False
             for row_part in row:
@@ -267,7 +278,7 @@ class StormRangeFactory:
                 'memo must be the JSON representation of a list.')
             return None
 
-        sort_expressions = self.getSortExpressions()
+        sort_expressions = self.getOrderBy()
         if len(sort_expressions) != len(parsed_memo):
             self.reportError(
                 'Invalid number of elements in memo string. '
@@ -323,17 +334,139 @@ class StormRangeFactory:
 
         return [
             invert_sort_expression(expression)
-            for expression in self.getSortExpressions()]
+            for expression in self.getOrderBy()]
 
-    def whereExpressionFromSortExpression(self, expression, memo):
-        """Create a Storm expression to be used in the WHERE clause of the
-        slice query.
+    def limitsGroupedByOrderDirection(self, sort_expressions, memos):
+        """Group sort expressions and memo values by order direction."""
+        descending = isinstance(sort_expressions[0], Desc)
+        grouped_limits = []
+        expression_group = []
+        memo_group = []
+        for expression, memo in zip(sort_expressions, memos):
+            if descending == isinstance(expression, Desc):
+                expression_group.append(expression)
+                memo_group.append(memo)
+            else:
+                grouped_limits.append((expression_group, memo_group))
+                descending = isinstance(expression, Desc)
+                expression_group = [expression]
+                memo_group = [memo]
+        grouped_limits.append((expression_group, memo_group))
+        return grouped_limits
+
+    def lessThanOrGreaterThanExpression(self, expressions, memos):
+        """Return an SQL expression "(expressions) OP (memos)".
+
+        OP is >, if the elements of expressions are PropertyColumns; else
+        the elements of expressions are instances of Desc(PropertyColumn)
+        and OP is <.
         """
-        if isinstance(expression, Desc):
-            expression = expression.expr
-            return expression < memo
+        descending = isinstance(expressions[0], Desc)
+        if descending:
+            expressions = [expression.expr for expression in expressions]
+        expressions = map(compile, expressions)
+        expressions = ', '.join(expressions)
+        memos = ', '.join(sqlvalues(*memos))
+        if descending:
+            return SQL('(%s) < (%s)' % (expressions, memos))
         else:
-            return expression > memo
+            return SQL('(%s) > (%s)' % (expressions, memos))
+
+    def equalsExpressionsFromLimits(self, limits):
+        """Return a list [expression == memo, ...] for the given limits."""
+        def plain_expression(expression):
+            if isinstance(expression, Desc):
+                return expression.expr
+            else:
+                return expression
+
+        result = []
+        for expressions, memos in limits:
+            result.extend(
+                plain_expression(expression) == memo
+                for expression, memo in zip(expressions, memos))
+        return result
+
+    def whereExpressionsFromGroupedLimits(self, limits):
+        """Build a sequence of WHERE expressions from the given limits.
+
+        limits is a list of tuples (expressions, memos), where
+        expressions is a list of PropertyColumn instances or of
+        instances of Desc(PropertyColumn). Desc(PropertyColumn)
+        and PropertyColumn instances must not appear in the same
+        expressions list.
+
+        memos are the memo values asociated with the columns in
+        expressions.
+
+        Given a limits value of
+            [([c11, c12 ...], [m11, m12 ...]),
+             ([c21, c22 ...], [m21, m22 ...]),
+             ...
+             ([cN1, cN2 ...], [mN1, mN2 ...])]
+
+        this method returns a sequence of these Storm/SQL expressions:
+
+            * (c11, c12 ...) = (m11, m12 ...) AND
+              (c21, c22 ...) = (m21, m22 ...) AND
+              ...
+              (cN1, cN2 ...) < (mN1, mN2 ...)
+            * (c11, c12 ...) = (m11, m12 ...) AND
+              (c21, c22 ...) = (m21, m22 ...) AND
+              ...
+              (cM1, cM2 ...) < (mM1, mM2 ...)
+
+              (where M = N - 1)
+            ...
+            * (c11, c12 ...) < (m11, m12 ...)
+
+        The getSlice() should return rows matching any of these
+        expressions. Note that the result sets returned by each
+        expression are disjuct, hence they can be simply ORed,
+        as well as used in a UNION ALL query.
+        """
+        start = limits[:-1]
+        last_expressions, last_memos = limits[-1]
+        last_clause = self.lessThanOrGreaterThanExpression(
+            last_expressions, last_memos)
+        if len(start) > 0:
+            clauses = self.equalsExpressionsFromLimits(start)
+            clauses.append(last_clause)
+            clauses = [And(*clauses)]
+            return clauses + self.whereExpressionsFromGroupedLimits(start)
+        else:
+            return [last_clause]
+
+    def whereExpressions(self, sort_expressions, memos):
+        """WHERE expressions for the given sort columns and memos values."""
+        grouped_limits = self.limitsGroupedByOrderDirection(
+            sort_expressions, memos)
+        return self.whereExpressionsFromGroupedLimits(grouped_limits)
+
+    def getSliceFromMemo(self, size, memo):
+        """Return a result set for the given memo values.
+
+        Note that at least two other implementations are possible:
+        Instead of OR-combining the expressions returned by
+        whereExpressions(), these expressions could be used for
+        separate SELECTs which are then merged with UNION ALL.
+
+        We could also issue separate Storm queries for each
+        expression and combine the results here.
+
+        Which variant is more efficient is yet unknown; it may
+        differ between different queries.
+        """
+        sort_expressions = self.getOrderBy()
+        where = self.whereExpressions(sort_expressions, memo)
+        where = reduce(Or, where)
+        # From storm.zope.interfaces.IResultSet.__doc__:
+        #     - C{find()}, C{group_by()} and C{having()} are really
+        #       used to configure result sets, so are mostly intended
+        #       for use on the model side.
+        naked_result = removeSecurityProxy(self.resultset).find(where)
+        result = ProxyFactory(naked_result)
+        return result.config(limit=size)
 
     def getSlice(self, size, endpoint_memo='', forwards=True):
         """See `IRangeFactory`."""
@@ -343,14 +476,4 @@ class StormRangeFactory:
         if parsed_memo is None:
             return self.resultset.config(limit=size)
         else:
-            sort_expressions = self.getSortExpressions()
-            where = [
-                self.whereExpressionFromSortExpression(expression, memo)
-                for expression, memo in zip(sort_expressions, parsed_memo)]
-            # From storm.zope.interfaces.IResultSet.__doc__:
-            #     - C{find()}, C{group_by()} and C{having()} are really
-            #       used to configure result sets, so are mostly intended
-            #       for use on the model side.
-            naked_result = removeSecurityProxy(self.resultset).find(*where)
-            result = ProxyFactory(naked_result)
-            return result.config(limit=size)
+            return self.getSliceFromMemo(size, parsed_memo)

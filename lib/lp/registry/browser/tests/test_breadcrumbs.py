@@ -1,9 +1,7 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-
-import unittest
 
 from zope.component import getUtility
 
@@ -20,7 +18,7 @@ class TestDistroseriesBreadcrumb(BaseBreadcrumbTestCase):
         super(TestDistroseriesBreadcrumb, self).setUp()
         self.distribution = self.factory.makeDistribution(
             name='youbuntu', displayname='Youbuntu')
-        self.distroseries = self.factory.makeDistroRelease(
+        self.distroseries = self.factory.makeDistroSeries(
             name='groovy', version="1.06", distribution=self.distribution)
         self.distroseries_url = canonical_url(self.distroseries)
 
@@ -150,7 +148,3 @@ class TestNameblacklistBreadcrumb(BaseBreadcrumbTestCase):
              'http://launchpad.dev/+nameblacklist/1/+edit'),
             ]
         self.assertBreadcrumbs(expected, blacklist, view_name='+edit')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

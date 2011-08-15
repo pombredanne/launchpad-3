@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from lazr.restfulclient.errors import Unauthorized
 import transaction
 from zope.component import getUtility
@@ -94,7 +92,3 @@ class TestWebService(WebServiceTestCase):
         self.assertContentEqual(
             [group.name for group in translation_group_set],
             [group.name for group in self.service.translation_groups])
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

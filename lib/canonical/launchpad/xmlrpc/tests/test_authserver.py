@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 from zope.publisher.xmlrpc import TestRequest
 
@@ -55,7 +53,3 @@ class GetUserAndSSHKeysTests(TestCaseWithFactory):
             dict(id=new_person.id, name=new_person.name,
                  keys=[(key.keytype.title, key.keytext)]),
             self.authserver.getUserAndSSHKeys(new_person.name))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
