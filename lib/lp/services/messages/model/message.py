@@ -27,6 +27,7 @@ from email.Utils import (
     parseaddr,
     parsedate_tz,
     )
+import logging
 from operator import attrgetter
 import os.path
 
@@ -235,6 +236,19 @@ class MessageSet:
         Store.of(message).flush()
         return message
 
+    @classmethod
+    def decode(self, encoded, encoding):
+        encoding = self.extra_encoding_aliases.get(encoding, encoding)
+        try:
+            return encoded.decode(encoding, 'replace')
+        except LookupError:
+            try:
+                return encoded.decode('us-ascii')
+            except UnicodeDecodeError:
+                logging.getLogger().warning(
+                    'Treating unknown encoding "%s" as latin-1.' % encoding)
+                return encoded.decode('latin-1')
+
     def _decode_header(self, header):
         r"""Decode an RFC 2047 encoded header.
 
@@ -255,7 +269,6 @@ class MessageSet:
         # characters with question marks.
         re_encoded_bits = []
         for bytes, charset in bits:
-            charset = self.extra_encoding_aliases.get(charset, charset)
             if charset is None:
                 charset = 'us-ascii'
             # 2008-09-26 gary:
@@ -269,7 +282,7 @@ class MessageSet:
             # cause problems in unusual encodings that we are hopefully
             # unlikely to encounter in this part of the code.
             re_encoded_bits.append(
-                (bytes.decode(charset, 'replace').encode('utf-8'), 'utf-8'))
+                (self.decode(bytes, charset).encode('utf-8'), 'utf-8'))
 
         return unicode(email.Header.make_header(re_encoded_bits))
 
@@ -446,9 +459,7 @@ class MessageSet:
                 charset = part.get_content_charset()
                 if charset is None or str(charset).lower() == 'x-unknown':
                     charset = 'latin-1'
-                charset = self.extra_encoding_aliases.get(charset, charset)
-
-                content = content.decode(charset, 'replace')
+                content = self.decode(content, charset)
 
                 if content.strip():
                     MessageChunk(
