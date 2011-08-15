@@ -10,7 +10,10 @@ import os
 from textwrap import dedent
 
 from apt_pkg import TagFile
-from testtools.matchers import StartsWith
+from testtools.matchers import (
+    MatchesStructure,
+    StartsWith,
+    )
 from zope.component import getUtility
 
 from canonical.config import config
@@ -296,9 +299,9 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script.setUp()
         reference_config = getPubConfig(distro.main_archive)
         config = script.getConfigs()[distro][ArchivePurpose.PRIMARY]
-        self.assertEqual(reference_config.temproot, config.temproot)
-        self.assertEqual(reference_config.distroroot, config.distroroot)
-        self.assertEqual(reference_config.archiveroot, config.archiveroot)
+        self.assertThat(
+            config, MatchesStructure.from_example(
+                reference_config, 'temproot', 'distroroot', 'archiveroot'))
 
     def test_getConfigs_maps_distros(self):
         distro = self.makeDistroWithPublishDirectory()
