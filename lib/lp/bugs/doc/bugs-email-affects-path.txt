@@ -6,7 +6,7 @@ When choosing which bugtask certain e-mail commands should modify, the
 bug target the bugtask should target. The conversion of a name to an
 IBugTarget is done by the AffectsEmailCommand.getBugTarget method.
 
-    >>> from canonical.launchpad.mail.commands import AffectsEmailCommand
+    >>> from lp.bugs.mail.commands import AffectsEmailCommand
 
 It accepts a single parameter, the name/path of the bugtarget. If a
 non-existant name/path is given an exception is raised with an

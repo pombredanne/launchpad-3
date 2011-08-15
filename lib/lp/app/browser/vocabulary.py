@@ -151,10 +151,11 @@ class PersonPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
             # can display a badge.
             badges = IHasAffiliation(
                 context_object).getAffiliationBadges(term_values)
-            for picker_entry, badge_info in izip(picker_entries, badges):
-                if badge_info:
-                    picker_entry.badges = [
-                        dict(url=badge_info.url, alt=badge_info.alt_text)]
+            for picker_entry, badges in izip(picker_entries, badges):
+                picker_entry.badges = []
+                for badge_info in badges:
+                    picker_entry.badges.append(
+                        dict(url=badge_info.url, alt=badge_info.alt_text))
 
         picker_expander_enabled = kwarg.get('picker_expander_enabled', False)
         for person, picker_entry in izip(term_values, picker_entries):
@@ -370,7 +371,7 @@ class HugeVocabularyJSONView:
                 entry['alt_title_link'] = picker_entry.alt_title_link
             if picker_entry.link_css is not None:
                 entry['link_css'] = picker_entry.link_css
-            if picker_entry.badges is not None:
+            if picker_entry.badges:
                 entry['badges'] = picker_entry.badges
             if picker_entry.metadata is not None:
                 entry['metadata'] = picker_entry.metadata

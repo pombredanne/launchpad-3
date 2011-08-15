@@ -15,6 +15,12 @@
   <script type="text/javascript" src="../../../app/javascript/client.js"></script>
   <script type="text/javascript" src="../../../soyuz/javascript/base.js"></script>
   <script type="text/javascript" src="../../../soyuz/javascript/lp_dynamic_dom_updater.js"></script>
+  <script type="text/javascript" src="../../../app/javascript/lazr/lazr.js"></script>
+  <script type="text/javascript" src="../../../app/javascript/extras/extras.js"></script>
+  <script type="text/javascript" src="../../../app/javascript/anim/anim.js"></script>
+  <script type="text/javascript" src="../../../app/javascript/effects/effects.js"></script>
+  <script type="text/javascript" src="../../../app/javascript/overlay/overlay.js"></script>
+  <script type="text/javascript" src="../../../app/javascript/formoverlay/formoverlay.js"></script>
 
   <!-- The module under test -->
   <script type="text/javascript" src="../distroseriesdifferences_details.js"></script>
@@ -24,7 +30,7 @@
 </head>
 
 <body class="yui3-skin-sam">
-  <h1>Testing the Source package differences javascript</h1>
+  <h1>Testing the DistroSeriesDifferenceDetails javascript</h1>
 
   <h2>Errors</h2>
   <div id="errors"></div>
@@ -32,38 +38,5 @@
   <div id="placeholder" style="display:none;">
   </div>
 
-  <div id="placeholder_base" style="display:none;">
-    <table class="listing">
-      <tbody><tr><td>
-        <div class="diff-extra-container">
-          <input name="field.selected_differences" type="checkbox" />
-          <a class="toggle-extra"
-            href="/deribuntu/deriwarty/+source/evolution/+difference/ubuntu/warty">
-            evolution</a>
-          <span class="package-diff-button"></span>
-          <dt class="package-diff-placeholder">
-          <span class="package-diff-compute-request">
-            <a class="js-action sprite add" href="">
-              Compute differences from last common version:
-            </a>
-          </span></dt>
-          <dd>
-            <ul class="package-diff-status">
-              <li>
-                <span id="derived" class="PENDING">
-                1.2.1 to Derilucid version: 1.2.4
-                </span>
-              </li>
-              <li>
-                <span id="parent" class="request-derived-diff">
-                  1.2.1 to Lucid version: 1.2.3
-                </span>
-              </li>
-            </ul>
-          </dd>
-        </div>
-      </td></tr></tbody>
-    </table>
-  </div>
 </body>
 </html>

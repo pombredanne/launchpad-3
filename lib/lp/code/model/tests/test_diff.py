@@ -5,11 +5,9 @@
 
 __metaclass__ = type
 
-
 from cStringIO import StringIO
 from difflib import unified_diff
 import logging
-from unittest import TestLoader
 
 from bzrlib import trace
 from bzrlib.patches import (
@@ -288,7 +286,7 @@ class TestDiffInScripts(DiffTestCase):
         diff_bytes = "not a real diff"
         diff = Diff.fromFile(StringIO(diff_bytes), len(diff_bytes))
         oops = self.oopses[0]
-        self.assertEqual('MalformedPatchHeader', oops.type)
+        self.assertEqual('MalformedPatchHeader', oops['type'])
         self.assertIs(None, diff.diffstat)
         self.assertIs(None, diff.added_lines_count)
         self.assertIs(None, diff.removed_lines_count)
@@ -608,7 +606,3 @@ class TestIncrementalDiff(DiffTestCase):
         inserted, removed = self.diff_changes(incremental_diff.text)
         self.assertEqual(['c\n'], inserted)
         self.assertEqual(['b\n'], removed)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

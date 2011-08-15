@@ -233,8 +233,3 @@ class TestErrorCatching(unittest.TestCase):
             BzrError('A generic bzr error'))
         expected_msg = 'A generic bzr error'
         self.assertEqual(msg, expected_msg)
-
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

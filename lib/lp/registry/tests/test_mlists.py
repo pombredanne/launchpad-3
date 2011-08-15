@@ -501,7 +501,3 @@ class TestImportToRestrictedList(BaseMailingListImportTest):
             u'anne.person@example.com', u'bperson@example.org',
             u'cris.person@example.com', u'dperson@example.org',
             u'elly.person@example.com')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

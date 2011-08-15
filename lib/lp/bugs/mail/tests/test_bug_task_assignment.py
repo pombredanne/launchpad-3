@@ -3,8 +3,6 @@
 
 """Tests for Bug task assignment-related email tests."""
 
-from unittest import TestLoader
-
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 import transaction
@@ -114,7 +112,3 @@ class TestAssignmentNotification(TestCaseWithFactory):
         receivers = [message['To'] for message in messages]
         self.assertFalse(self.team_member_email in receivers,
             'Team member was emailed about the bug task change')
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

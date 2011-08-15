@@ -1656,20 +1656,24 @@ class TestValidateTransitionToTarget(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def makeAndCheckTransition(self, old, new):
+    def makeAndCheckTransition(self, old, new, extra=None):
         task = self.factory.makeBugTask(target=old)
+        if extra:
+            self.factory.makeBugTask(bug=task.bug, target=extra)
         with person_logged_in(task.owner):
             task.validateTransitionToTarget(new)
 
-    def assertTransitionWorks(self, a, b):
+    def assertTransitionWorks(self, a, b, extra=None):
         """Check that a transition between two targets works both ways."""
-        self.makeAndCheckTransition(a, b)
-        self.makeAndCheckTransition(b, a)
+        self.makeAndCheckTransition(a, b, extra)
+        self.makeAndCheckTransition(b, a, extra)
 
-    def assertTransitionForbidden(self, a, b):
+    def assertTransitionForbidden(self, a, b, extra=None):
         """Check that a transition between two targets fails both ways."""
-        self.assertRaises(IllegalTarget, self.makeAndCheckTransition, a, b)
-        self.assertRaises(IllegalTarget, self.makeAndCheckTransition, b, a)
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition, a, b, extra)
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition, b, a, extra)
 
     def test_product_to_product_works(self):
         self.assertTransitionWorks(
@@ -1742,6 +1746,73 @@ class TestValidateTransitionToTarget(TestCaseWithFactory):
         ds2 = self.factory.makeDistroSeries(distribution=distro)
         sp2 = self.factory.makeSourcePackage(distroseries=ds2)
         self.assertTransitionForbidden(sp1, sp2)
+
+    # If series tasks for a distribution exist, the pillar of the
+    # non-series task cannot be changed. This is due to the strange
+    # rules around creation of DS/SP tasks.
+    def test_cannot_transition_pillar_of_distro_task_if_series_involved(self):
+        # If a Distribution task has subordinate DistroSeries tasks, its
+        # pillar cannot be changed.
+        series = self.factory.makeDistroSeries()
+        product = self.factory.makeProduct()
+        distro = self.factory.makeDistribution()
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition,
+            series.distribution, product, series)
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition,
+            series.distribution, distro, series)
+
+    def test_cannot_transition_dsp_task_if_sp_tasks_exist(self):
+        # If a DistributionSourcePackage task has subordinate
+        # SourcePackage tasks, its pillar cannot be changed.
+        sp = self.factory.makeSourcePackage(publish=True)
+        product = self.factory.makeProduct()
+        distro = self.factory.makeDistribution()
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition,
+            sp.distribution_sourcepackage, product, sp)
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition,
+            sp.distribution_sourcepackage, distro, sp)
+
+    def test_cannot_transition_to_distro_with_series_tasks(self):
+        # If there are any series (DistroSeries or SourcePackage) tasks
+        # for a distribution, you can't transition from another pillar
+        # to that distribution.
+        ds = self.factory.makeDistroSeries()
+        sp1 = self.factory.makeSourcePackage(distroseries=ds, publish=True)
+        sp2 = self.factory.makeSourcePackage(distroseries=ds, publish=True)
+        product = self.factory.makeProduct()
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition,
+            product, ds.distribution, ds)
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition,
+            product, ds.distribution, sp2)
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition,
+            product, sp1.distribution_sourcepackage, ds)
+        self.assertRaises(
+            IllegalTarget, self.makeAndCheckTransition,
+            product, sp1.distribution_sourcepackage, sp2)
+
+    def test_can_transition_dsp_task_with_sp_task_to_different_spn(self):
+        # Even if a Distribution or DistributionSourcePackage task has
+        # subordinate series tasks, the sourcepackagename can be
+        # changed, added or removed. A Storm validator on
+        # sourcepackagename changes all the related tasks.
+        ds = self.factory.makeDistroSeries()
+        sp1 = self.factory.makeSourcePackage(distroseries=ds, publish=True)
+        sp2 = self.factory.makeSourcePackage(distroseries=ds, publish=True)
+        dsp1 = sp1.distribution_sourcepackage
+        dsp2 = sp2.distribution_sourcepackage
+        # The sourcepackagename can be changed
+        self.makeAndCheckTransition(dsp1, dsp2, sp1)
+        self.makeAndCheckTransition(dsp2, dsp1, sp2)
+        # Or removed or added.
+        self.makeAndCheckTransition(dsp1, ds.distribution, sp1)
+        self.makeAndCheckTransition(ds.distribution, dsp1, ds)
 
     def test_validate_target_is_called(self):
         p = self.factory.makeProduct()
