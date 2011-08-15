@@ -19,7 +19,7 @@ import traceback
 
 from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 from lazr.restful.declarations import error_status
-from oops.uniquefileallocator import UniqueFileAllocator
+from oops_datedir_repo.uniquefileallocator import UniqueFileAllocator
 import pytz
 import testtools
 from zope.app.publication.tests.test_zopepublication import (

@@ -19,8 +19,8 @@ import urllib
 import urlparse
 
 from lazr.restful.utils import get_current_browser_request
-from oops.uniquefileallocator import UniqueFileAllocator
-import oops.serializer_rfc822
+from oops_datedir_repo.uniquefileallocator import UniqueFileAllocator
+import oops_datedir_repo.serializer_rfc822
 import pytz
 from zope.component.interfaces import ObjectEvent
 from zope.error.interfaces import IErrorReportingUtility
@@ -161,7 +161,7 @@ class ErrorReport:
     @classmethod
     def read(cls, fp):
         # Deprecated: use the oops module directly now, when possible.
-        report = oops.serializer_rfc822.read(fp)
+        report = oops_datedir_repo.serializer_rfc822.read(fp)
         return cls(**report)
 
 
@@ -303,7 +303,7 @@ class ErrorReportingUtility:
             now = datetime.datetime.now(UTC)
         oopsid, filename = self.log_namer.newId(now)
         report['id'] = oopsid
-        oops.serializer_rfc822.write(report, open(filename, 'wb'))
+        oops_datedir_repo.serializer_rfc822.write(report, open(filename, 'wb'))
         # Set file permission to: rw-r--r--
         wanted_permission = (
             stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
