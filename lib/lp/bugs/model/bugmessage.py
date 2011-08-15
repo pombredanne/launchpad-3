@@ -9,7 +9,6 @@ __all__ = ['BugMessage', 'BugMessageSet']
 from email.Utils import make_msgid
 
 from sqlobject import (
-    BoolCol,
     ForeignKey,
     IntCol,
     StringCol,
@@ -73,7 +72,7 @@ class BugMessageSet:
         msg = Message(
             parent=bug.initial_message, owner=owner,
             rfc822msgid=make_msgid('malone'), subject=subject)
-        chunk = MessageChunk(message=msg, content=content, sequence=1)
+        MessageChunk(message=msg, content=content, sequence=1)
         bugmsg = BugMessage(bug=bug, message=msg,
             index=bug.bug_messages.count())
 
