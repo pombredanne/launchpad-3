@@ -145,7 +145,7 @@ class TableReplicationInfo:
         self.table_id, self.replication_set_id, self.master_node_id = row
 
 
-def sync(timeout):
+def sync(timeout, exit_on_fail=True):
     """Generate a sync event and wait for it to complete on all nodes.
 
     This means that all pending events have propagated and are in sync
@@ -154,8 +154,14 @@ def sync(timeout):
 
     :param timeout: Number of seconds to wait for the sync. 0 to block
                     indefinitely.
+
+    :param exit_on_fail: If True, on failure of the sync
+                         SystemExit is raised using the slonik return code.
+
+    :returns: True if the sync completed successfully. False if
+              exit_on_fail is False and the script failed for any reason.
     """
-    return execute_slonik("", sync=timeout)
+    return execute_slonik("", sync=timeout, exit_on_fail=exit_on_fail)
 
 
 def execute_slonik(script, sync=None, exit_on_fail=True, auto_preamble=True):
