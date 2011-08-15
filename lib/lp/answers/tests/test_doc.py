@@ -23,6 +23,7 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.projectgroup import IProjectGroupSet
+from lp.services.mail.tests.test_doc import ProcessMailLayer
 from lp.services.testing import build_test_suite
 
 
@@ -114,6 +115,11 @@ special = {
          ('distribution', distributionSetUp),
          ('project', projectSetUp),
          ]),
+    'emailinterface.txt': LayeredDocFileSuite(
+        'emailinterface.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=ProcessMailLayer,
+        stdout_logging=False)
     }
 
 

@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -51,13 +49,3 @@ class TestQuestionMenus(TestCaseWithFactory):
         self.question.linkFAQ(self.person, faq, 'message')
         link = menu.linkfaq()
         self.assertEqual('edit', link.icon)
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-    return suite
-
-
-if __name__ == '__main__':
-    unittest.TextTestRunner().run(test_suite())

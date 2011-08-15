@@ -268,8 +268,3 @@ class TestDistributionMirrorSet(unittest.TestCase):
             france, MirrorContent.RELEASE)
         self.failUnless(len(mirrors) > 1, "Not enough mirrors")
         self.failUnlessEqual(main_mirror, mirrors[-1])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

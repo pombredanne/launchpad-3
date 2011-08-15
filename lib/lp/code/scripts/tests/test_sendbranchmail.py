@@ -5,8 +5,6 @@
 
 """Test the sendbranchmail script"""
 
-import unittest
-
 import transaction
 
 from canonical.launchpad.scripts.tests import run_script
@@ -99,7 +97,3 @@ class TestSendbranchmail(TestCaseWithFactory):
             stderr)
         self.assertEqual('', stdout)
         self.assertEqual(0, retcode)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

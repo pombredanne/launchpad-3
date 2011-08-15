@@ -304,8 +304,3 @@ class TestOopsPrune(unittest.TestCase):
             self.failIf(
                 os.path.isdir(os.path.join(self.oops_dir, date))
                 )
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

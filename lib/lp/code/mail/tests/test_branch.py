@@ -3,8 +3,6 @@
 
 """Tests for Branch-related mailings"""
 
-from unittest import TestLoader
-
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -267,7 +265,3 @@ class TestBranchMailerSubject(TestCaseWithFactory):
             branch.owner).preferredemail.email
         self.assertEqual('Testing %j foo', mailer._getSubject(
                 branch_owner_email, branch.owner))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

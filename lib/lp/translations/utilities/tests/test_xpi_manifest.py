@@ -305,8 +305,3 @@ class XpiManifestTestCase(unittest.TestCase):
             XpiManifest, """
             locale browser en-US jar:locales
             """)
-
-
-def test_suite():
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)
-
