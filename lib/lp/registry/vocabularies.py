@@ -1221,7 +1221,7 @@ class ActiveMailingListVocabulary:
             """ % sqlvalues(text, MailingListStatus.ACTIVE),
             clauseTables=['Person'])
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         results = self.search(query)
         return CountableIterator(results.count(), results, self.toTerm)
