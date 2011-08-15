@@ -13,7 +13,7 @@ distribution.
     >>> browser.addHeader('Accept-Language', 'en, es')
     >>> browser.open('http://launchpad.dev/ubuntu/+questions')
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'portlet-answer-contacts'))
+    ...     find_tag_by_id(browser.contents, 'portlet-answer-contacts-ubuntu'))
     Answer contacts for Ubuntu
 
 Anybody can become an answer contact. To register as an answer contact,
