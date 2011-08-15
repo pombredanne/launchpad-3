@@ -23,7 +23,6 @@ from canonical.launchpad.webapp.batching import (
     BatchNavigator,
     DateTimeJSONEncoder,
     StormRangeFactory,
-    timestamp_regex,
     )
 from canonical.launchpad.webapp.interfaces import StormRangeFactoryError
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -361,66 +360,6 @@ class TestStormRangeFactory(TestCaseWithFactory):
         self.assertEqual(
             ["Invalid datetime value: 'bar'"],
             self.error_messages)
-
-    def test_timestamp_regex__without_second_fraction_without_tzinfo(self):
-        # An ISO time string without fractions of a second and without
-        # time zone data is accepted by timestamp_regex.
-        mo = timestamp_regex.search('2011-01-02T12:03:04')
-        self.assertEqual('2011', mo.group('year'))
-        self.assertEqual('01', mo.group('month'))
-        self.assertEqual('02', mo.group('day'))
-        self.assertEqual('12', mo.group('hour'))
-        self.assertEqual('03', mo.group('minute'))
-        self.assertEqual('04', mo.group('second'))
-        self.assertIs(None, mo.group('sec_fraction'))
-        self.assertIs(None, mo.group('tzsign'))
-        self.assertIs(None, mo.group('tzhour'))
-        self.assertIs(None, mo.group('tzminute'))
-
-    def test_timestamp_regex__with_second_fraction_without_tzinfo(self):
-        # An ISO time string without fractions of a second and without
-        # time zone data is accepted by timestamp_regex.
-        mo = timestamp_regex.search('2011-01-02T12:03:04.123456')
-        self.assertEqual('2011', mo.group('year'))
-        self.assertEqual('01', mo.group('month'))
-        self.assertEqual('02', mo.group('day'))
-        self.assertEqual('12', mo.group('hour'))
-        self.assertEqual('03', mo.group('minute'))
-        self.assertEqual('04', mo.group('second'))
-        self.assertEqual('123456', mo.group('sec_fraction'))
-        self.assertIs(None, mo.group('tzsign'))
-        self.assertIs(None, mo.group('tzhour'))
-        self.assertIs(None, mo.group('tzminute'))
-
-    def test_timestamp_regex__without_second_fraction_with_tzinfo(self):
-        # An ISO time string without fractions of a second and without
-        # time zone data is accepted by timestamp_regex.
-        mo = timestamp_regex.search('2011-01-02T12:03:04+05:00')
-        self.assertEqual('2011', mo.group('year'))
-        self.assertEqual('01', mo.group('month'))
-        self.assertEqual('02', mo.group('day'))
-        self.assertEqual('12', mo.group('hour'))
-        self.assertEqual('03', mo.group('minute'))
-        self.assertEqual('04', mo.group('second'))
-        self.assertIs(None, mo.group('sec_fraction'))
-        self.assertEqual('+', mo.group('tzsign'))
-        self.assertEqual('05', mo.group('tzhour'))
-        self.assertEqual('00', mo.group('tzminute'))
-
-    def test_timestamp_regex__with_second_fraction_with_tzinfo(self):
-        # An ISO time string without fractions of a second and without
-        # time zone data is accepted by timestamp_regex.
-        mo = timestamp_regex.search('2011-01-02T12:03:04.123456-06:07')
-        self.assertEqual('2011', mo.group('year'))
-        self.assertEqual('01', mo.group('month'))
-        self.assertEqual('02', mo.group('day'))
-        self.assertEqual('12', mo.group('hour'))
-        self.assertEqual('03', mo.group('minute'))
-        self.assertEqual('04', mo.group('second'))
-        self.assertEqual('123456', mo.group('sec_fraction'))
-        self.assertEqual('-', mo.group('tzsign'))
-        self.assertEqual('06', mo.group('tzhour'))
-        self.assertEqual('07', mo.group('tzminute'))
 
     def test_parseMemo__descending_sort_order(self):
         # Validation of a memo string against a descending sort order works.

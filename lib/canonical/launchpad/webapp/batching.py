@@ -4,8 +4,11 @@
 __metaclass__ = type
 
 from datetime import datetime
-import re
 
+from iso8601 import (
+    parse_date,
+    ParseError,
+    )
 import lazr.batchnavigator
 from lazr.batchnavigator.interfaces import IRangeFactory
 import pytz
@@ -163,15 +166,6 @@ class DateTimeJSONEncoder(simplejson.JSONEncoder):
         return simplejson.JSONEncoder.default(self, obj)
 
 
-# An ISO timestamp has the format yyyy-mm-ddThh:mm:ss.ffffff+hh:mm
-# The fractions of a second and the time zone offset are optional.
-timestamp_regex = re.compile(
-    r'^(?P<year>\d\d\d\d)-(?P<month>\d\d)-(?P<day>\d\d)'
-    'T(?P<hour>\d\d):(?P<minute>\d\d):(?P<second>\d\d)'
-    '(\.(?P<sec_fraction>\d\d\d\d\d\d))?'
-    '((?P<tzsign>[+-])(?P<tzhour>\d\d):(?P<tzminute>\d\d))?$')
-
-
 class StormRangeFactory:
     """A range factory for Storm result sets.
 
@@ -313,35 +307,14 @@ class StormRangeFactory:
                 # value.
                 if (str(error).startswith('Expected datetime') and
                     isinstance(value, str)):
-                    mo = timestamp_regex.search(value)
-                    if mo is None:
-                        self.reportError(
-                            'Invalid datetime value: %r' % value)
-                        return None
-                    sec_fraction = mo.group('sec_fraction')
-                    if sec_fraction is None:
-                        sec_fraction = 0
-                    else:
-                        sec_fraction = int(sec_fraction)
-                    tzsign = mo.group('tzsign')
-                    if tzsign is None:
-                        tzinfo = pytz.UTC
-                    else:
-                        tzhour = int(mo.group('tzhour'))
-                        tzminute = int(mo.group('tzminute'))
-                        tzoffset = 60 * tzhour + tzminute
-                        if tzsign == '-':
-                            tzoffset = -tzoffset
-                        tzinfo = pytz.FixedOffset(tzoffset)
                     try:
-                        value = datetime(
-                            int(mo.group('year')), int(mo.group('month')),
-                            int(mo.group('day')), int(mo.group('hour')),
-                            int(mo.group('minute')), int(mo.group('second')),
-                            sec_fraction, tzinfo)
-                    except ValueError:
-                        self.reportError(
-                            'Invalid datetime value: %r' % value)
+                        value = parse_date(value)
+                    except (ParseError, ValueError):
+                        # We get a ParseError if value does not match
+                        # a certain regex, and we get a ValueError
+                        # for formally correct but invalid dates,
+                        # like May 35.
+                        self.reportError('Invalid datetime value: %r' % value)
                         return None
                 else:
                     self.reportError(
