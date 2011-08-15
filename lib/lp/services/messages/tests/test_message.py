@@ -133,7 +133,7 @@ class TestMessageSet(TestCase):
         msg.attach(MIMEText('This is the body of the email.'))
         attachment = Message()
         attachment.set_payload('This is the diff, honest.')
-        attachment['content-type'] = 'text/x-diff'
+        attachment['Content-Type'] = 'text/x-diff'
         attachment['Content-Disposition'] = (
             'attachment; filename="/tmp/foo/review.diff"')
         msg.attach(attachment)
