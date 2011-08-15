@@ -210,14 +210,14 @@ class PublishFTPMaster(LaunchpadCronScript):
                 self.logger.debug("Command failed: %s", failure)
                 raise failure
 
-    def getArchives(self):
+    def getArchives(self, distribution):
         """Find archives for `self.distribution` that should be published."""
         # XXX JeroenVermeulen 2011-03-31 bug=746229: to start publishing
         # debug archives, change this to return
-        # list(self.distribution.all_distro_archives).
+        # list(distribution.all_distro_archives).
         return [
             archive
-            for archive in self.distribution.all_distro_archives
+            for archive in distribution.all_distro_archives
                 if archive.purpose in ARCHIVES_TO_PUBLISH]
 
     def getConfigs(self):
@@ -230,7 +230,7 @@ class PublishFTPMaster(LaunchpadCronScript):
             (archive.purpose, getPubConfig(archive))
             for archive in self.archives)
 
-    def locateIndexesMarker(self, suite):
+    def locateIndexesMarker(self, distribution, suite):
         """Give path for marker file whose presence marks index creation.
 
         The file will be created once the archive indexes for `suite`
@@ -265,50 +265,51 @@ class PublishFTPMaster(LaunchpadCronScript):
             for pocket in pocketsuffix.iterkeys()]
         return [
             suite for suite in suites
-                if not file_exists(self.locateIndexesMarker(suite))]
+                if not file_exists(self.locateIndexesMarker(distro, suite))]
 
-    def markIndexCreationComplete(self, suite):
+    def markIndexCreationComplete(self, distribution, suite):
         """Note that archive indexes for `suite` have been created.
 
         This tells `listSuitesNeedingIndexes` that no, this suite no
         longer needs archive indexes to be set up.
         """
-        with file(self.locateIndexesMarker(suite), "w") as marker:
+        marker_name = self.locateIndexesMarker(distribution, suite)
+        with file(marker_name, "w") as marker:
             marker.write(
                 "Indexes for %s were created on %s.\n"
                 % (suite, datetime.now(utc)))
 
-    def createIndexes(self, suite):
+    def createIndexes(self, distribution, suite):
         """Create archive indexes for `distroseries`."""
         self.logger.info("Creating archive indexes for %s.", suite)
-        self.runPublishDistro(args=['-A'], suites=[suite])
-        self.markIndexCreationComplete(suite)
+        self.runPublishDistro(distribution, args=['-A'], suites=[suite])
+        self.markIndexCreationComplete(distribution, suite)
 
-    def processAccepted(self):
+    def processAccepted(self, distribution):
         """Run the process-accepted script."""
         self.logger.debug(
             "Processing the accepted queue into the publishing records...")
         script = ProcessAccepted(
-            test_args=[self.distribution.name], logger=self.logger)
+            test_args=[distribution.name], logger=self.logger)
         script.txn = self.txn
         script.main()
 
-    def getDirtySuites(self):
+    def getDirtySuites(self, distribution):
         """Return list of suites that have packages pending publication."""
         self.logger.debug("Querying which suites are pending publication...")
         query_distro = LpQueryDistro(
-            test_args=['-d', self.distribution.name, "pending_suites"],
+            test_args=['-d', distribution.name, "pending_suites"],
             logger=self.logger)
         receiver = StoreArgument()
         query_distro.runAction(presenter=receiver)
         return receiver.argument.split()
 
-    def getDirtySecuritySuites(self):
+    def getDirtySecuritySuites(self, distribution):
         """List security suites with pending publications."""
-        suites = self.getDirtySuites()
+        suites = self.getDirtySuites(distribution)
         return [suite for suite in suites if suite.endswith('-security')]
 
-    def rsyncBackupDists(self):
+    def rsyncBackupDists(self, distribution):
         """Populate the backup dists with a copy of distsroot.
 
         Uses "rsync -aH --delete" so that any obsolete files that may
@@ -365,12 +366,12 @@ class PublishFTPMaster(LaunchpadCronScript):
                     "Creating backup dists directory %s", distscopy)
                 os.makedirs(distscopy)
 
-    def runPublishDistro(self, args=[], suites=None):
+    def runPublishDistro(self, distribution, args=[], suites=None):
         """Execute `publish-distro`."""
         if suites is None:
             suites = []
         arguments = (
-            ['-d', self.distribution.name] +
+            ['-d', distribution.name] +
             args +
             sum([['-s', suite] for suite in suites], []))
 
@@ -380,7 +381,8 @@ class PublishFTPMaster(LaunchpadCronScript):
         publish_distro.txn = self.txn
         publish_distro.main()
 
-    def publishDistroArchive(self, archive, security_suites=None):
+    def publishDistroArchive(self, distribution, archive,
+                             security_suites=None):
         """Publish the results for an archive.
 
         :param archive: Archive to publish.
@@ -390,7 +392,7 @@ class PublishFTPMaster(LaunchpadCronScript):
         purpose = archive.purpose
         archive_config = self.configs[purpose]
         self.logger.debug(
-            "Publishing the %s %s...", self.distribution.name, purpose.title)
+            "Publishing the %s %s...", distribution.name, purpose.title)
 
         # For reasons unknown, publishdistro only seems to work with a
         # directory that's inside the archive root.  So we move it there
@@ -403,13 +405,14 @@ class PublishFTPMaster(LaunchpadCronScript):
 
         os.rename(get_backup_dists(archive_config), temporary_dists)
         try:
-            self.runPublishDistro(args=arguments, suites=security_suites)
+            self.runPublishDistro(
+                distribution, args=arguments, suites=security_suites)
         finally:
             os.rename(temporary_dists, get_backup_dists(archive_config))
 
-        self.runPublishDistroParts(archive)
+        self.runPublishDistroParts(distribution, archive)
 
-    def runPublishDistroParts(self, archive):
+    def runPublishDistroParts(self, distribution, archive):
         """Execute the publish-distro hooks."""
         archive_config = self.configs[archive.purpose]
         env = {
@@ -418,9 +421,9 @@ class PublishFTPMaster(LaunchpadCronScript):
             }
         if archive_config.overrideroot is not None:
             env["OVERRIDEROOT"] = shell_quote(archive_config.overrideroot)
-        self.runParts('publish-distro.d', env)
+        self.runParts(distribution, 'publish-distro.d', env)
 
-    def installDists(self):
+    def installDists(self, distribution):
         """Put the new dists into place, as near-atomically as possible.
 
         For each archive, this switches the dists directory and the
@@ -440,7 +443,7 @@ class PublishFTPMaster(LaunchpadCronScript):
             os.rename(backup_dists, dists)
             os.rename(temp_dists, backup_dists)
 
-    def generateListings(self):
+    def generateListings(self, distribution):
         """Create ls-lR.gz listings."""
         self.logger.debug("Creating ls-lR.gz...")
         lslr = "ls-lR.gz"
@@ -457,14 +460,14 @@ class PublishFTPMaster(LaunchpadCronScript):
                     "Failed to create %s for %s." % (lslr, purpose.title)))
             os.rename(new_lslr_file, lslr_file)
 
-    def clearEmptyDirs(self):
+    def clearEmptyDirs(self, distribution):
         """Clear out any redundant empty directories."""
         for archive_config in self.configs.itervalues():
             self.executeShell(
                 "find '%s' -type d -empty | xargs -r rmdir"
                 % archive_config.archiveroot)
 
-    def runParts(self, parts, env):
+    def runParts(self, distribution, parts, env):
         """Execute run-parts.
 
         :param parts: The run-parts directory to execute:
@@ -472,7 +475,7 @@ class PublishFTPMaster(LaunchpadCronScript):
         :param env: A dict of environment variables to pass to the
             scripts in the run-parts directory.
         """
-        parts_dir = find_run_parts_dir(self.distribution, parts)
+        parts_dir = find_run_parts_dir(distribution, parts)
         if parts_dir is None:
             self.logger.debug("Skipping run-parts %s: not configured.", parts)
             return
@@ -482,7 +485,7 @@ class PublishFTPMaster(LaunchpadCronScript):
             failure=LaunchpadScriptFailure(
                 "Failure while executing run-parts %s." % parts_dir))
 
-    def runFinalizeParts(self, security_only=False):
+    def runFinalizeParts(self, distribution, security_only=False):
         """Run the finalize.d parts to finalize publication."""
         archive_roots = shell_quote(' '.join([
             archive_config.archiveroot
@@ -492,28 +495,29 @@ class PublishFTPMaster(LaunchpadCronScript):
             'SECURITY_UPLOAD_ONLY': compose_shell_boolean(security_only),
             'ARCHIVEROOTS': archive_roots,
         }
-        self.runParts('finalize.d', env)
+        self.runParts(distribution, 'finalize.d', env)
 
-    def publishSecurityUploads(self):
+    def publishSecurityUploads(self, distribution):
         """Quickly process just the pending security uploads."""
         self.logger.debug("Expediting security uploads.")
-        security_suites = self.getDirtySecuritySuites()
+        security_suites = self.getDirtySecuritySuites(distribution)
         if len(security_suites) == 0:
             self.logger.debug("Nothing to do for security publisher.")
             return
 
         self.publishDistroArchive(
-            self.distribution.main_archive, security_suites=security_suites)
+            distribution, distribution.main_archive,
+            security_suites=security_suites)
 
-    def publishAllUploads(self):
+    def publishDistroUploads(self, distribution):
         """Publish the distro's complete uploads."""
         self.logger.debug("Full publication.  This may take some time.")
         for archive in self.archives:
             # This, for the main archive, is where the script spends
             # most of its time.
-            self.publishDistroArchive(archive)
+            self.publishDistroArchive(distribution, archive)
 
-    def publish(self, security_only=False):
+    def publish(self, distribution, security_only=False):
         """Do the main publishing work.
 
         :param security_only: If True, limit publication to security
@@ -523,13 +527,13 @@ class PublishFTPMaster(LaunchpadCronScript):
         """
         try:
             if security_only:
-                self.publishSecurityUploads()
+                self.publishSecurityUploads(distribution)
             else:
-                self.publishAllUploads()
+                self.publishDistroUploads(distribution)
 
             # Swizzle the now-updated backup dists and the current dists
             # around.
-            self.installDists()
+            self.installDists(distribution)
         except:
             # If we failed here, there's a chance that we left a
             # working dists directory in its temporary location.  If so,
@@ -542,7 +546,7 @@ class PublishFTPMaster(LaunchpadCronScript):
     def setUp(self):
         """Process options, and set up internal state."""
         self.processOptions()
-        self.archives = self.getArchives()
+        self.archives = self.getArchives(self.distribution)
         self.configs = self.getConfigs()
 
     def main(self):
@@ -550,32 +554,34 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.setUp()
         self.recoverWorkingDists()
 
-        for series in self.distribution.series:
+        distribution = self.distribution
+
+        for series in distribution.series:
             suites_needing_indexes = self.listSuitesNeedingIndexes(series)
             if len(suites_needing_indexes) > 0:
                 for suite in suites_needing_indexes:
-                    self.createIndexes(suite)
+                    self.createIndexes(distribution, suite)
                 # Don't try to do too much in one run.  Leave the rest
                 # of the work for next time.
                 return
 
-        self.processAccepted()
+        self.processAccepted(distribution)
         self.setUpDirs()
 
-        self.rsyncBackupDists()
-        self.publish(security_only=True)
-        self.runFinalizeParts(security_only=True)
+        self.rsyncBackupDists(distribution)
+        self.publish(distribution, security_only=True)
+        self.runFinalizeParts(distribution, security_only=True)
 
         if not self.options.security_only:
-            self.rsyncBackupDists()
-            self.publish(security_only=False)
-            self.generateListings()
-            self.clearEmptyDirs()
-            self.runFinalizeParts(security_only=False)
+            self.rsyncBackupDists(distribution)
+            self.publish(distribution, security_only=False)
+            self.generateListings(distribution)
+            self.clearEmptyDirs(distribution)
+            self.runFinalizeParts(distribution, security_only=False)
 
         if self.options.post_rsync:
             #  Update the backup dists with the published changes.  The
             #  initial rsync on the next run will not need to make any
             #  changes, and so it'll take the next run a little less
             #  time to publish its security updates.
-            self.rsyncBackupDists()
+            self.rsyncBackupDists(distribution)
