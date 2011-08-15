@@ -115,7 +115,8 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
 
     def makeJob(self, state, date_due_delta, requesting_user=None):
         """Create a CodeImportJob object from a spec."""
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeCodeImport(
+            review_status=CodeImportReviewStatus.NEW)
         job = self.factory.makeCodeImportJob(code_import)
         if state == CodeImportJobState.RUNNING:
             getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
@@ -387,11 +388,12 @@ class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
     def test_wrongReviewStatus(self):
         # CodeImportJobWorkflow.newJob fails if the CodeImport review_status
         # is different from REVIEWED.
-        new_import = self.factory.makeCodeImport()
+        new_import = self.factory.makeCodeImport(
+            review_status=CodeImportReviewStatus.SUSPENDED)
         branch_name = new_import.branch.unique_name
         # Testing newJob failure.
         self.assertFailure(
-            "Review status of %s is not REVIEWED: NEW" % (branch_name,),
+            "Review status of %s is not REVIEWED: SUSPENDED" % (branch_name,),
             getUtility(ICodeImportJobWorkflow).newJob, new_import)
 
     def test_existingJob(self):
@@ -578,7 +580,7 @@ class TestCodeImportJobWorkflowRequestJob(TestCaseWithFactory,
         # CodeImportJobWorkflow.requestJob sets requesting_user and
         # date_due if the current date_due is in the future.
         code_import = self.factory.makeCodeImport()
-        pending_job = self.factory.makeCodeImportJob(code_import)
+        pending_job = code_import.import_job
         person = self.factory.makePerson()
         # Set date_due in the future. ICodeImportJob does not allow setting
         # date_due, so we must use removeSecurityProxy.

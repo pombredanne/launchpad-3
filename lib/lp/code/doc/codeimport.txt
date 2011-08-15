@@ -243,7 +243,7 @@ any changes were made, or None if not.
     >>> code_import = factory.makeProductCodeImport(
     ...     svn_branch_url='http://svn.example.com/project')
     >>> print code_import.review_status.title
-    Pending Review
+    Reviewed
 
 When an import operator updates the code import emails are sent out to
 the branch subscribers and members of VCS Imports that describe the
