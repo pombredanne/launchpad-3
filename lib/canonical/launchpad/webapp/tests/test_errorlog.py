@@ -237,7 +237,6 @@ class TestErrorReportingUtility(testtools.TestCase):
     def test_raising_with_request(self):
         """Test ErrorReportingUtility.raising() with a request"""
         utility = ErrorReportingUtility()
-        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
         request = TestRequestWithPrincipal(
                 environ={
@@ -255,59 +254,27 @@ class TestErrorReportingUtility(testtools.TestCase):
         try:
             raise ArbitraryException('xyz\nabc')
         except ArbitraryException:
-            utility.raising(sys.exc_info(), request, now=now)
+            report = utility.raising(sys.exc_info(), request)
 
-        errorfile = os.path.join(
-            utility.log_namer.output_dir(now), '01800.T1')
-        self.assertTrue(os.path.exists(errorfile))
-        lines = open(errorfile, 'r').readlines()
-
-        # the header
-        self.assertEqual(lines.pop(0), 'Oops-Id: OOPS-91T1\n')
-        self.assertEqual(lines.pop(0), 'Exception-Type: ArbitraryException\n')
-        self.assertEqual(lines.pop(0), 'Exception-Value: xyz abc\n')
-        self.assertEqual(lines.pop(0), 'Date: 2006-04-01T00:30:00+00:00\n')
-        self.assertEqual(lines.pop(0), 'Page-Id: IFoo:+foo-template\n')
-        self.assertEqual(
-            lines.pop(0), 'Branch: %s\n' % versioninfo.branch_nick)
-        self.assertEqual(lines.pop(0), 'Revision: %s\n' % versioninfo.revno)
-        self.assertEqual(
-            lines.pop(0), 'User: Login, 42, title, description |\\u25a0|\n')
-        self.assertEqual(lines.pop(0), 'URL: http://localhost:9000/foo\n')
-        self.assertEqual(lines.pop(0), 'Duration: -1\n')
-        self.assertEqual(lines.pop(0), 'Informational: False\n')
-        self.assertEqual(lines.pop(0), '\n')
-
-        # request vars
-        self.assertEqual(lines.pop(0), 'CONTENT_LENGTH=0\n')
-        self.assertEqual(
-            lines.pop(0), 'GATEWAY_INTERFACE=TestFooInterface/1.0\n')
-        self.assertEqual(lines.pop(0), 'HTTP_COOKIE=%3Chidden%3E\n')
-        self.assertEqual(lines.pop(0), 'HTTP_HOST=127.0.0.1\n')
-        self.assertEqual(
-            lines.pop(0), 'SERVER_URL=http://localhost:9000/foo\n')
-
-        # non-ASCII request var
-        self.assertEqual(lines.pop(0), '\\u25a0=value4\n')
-        self.assertEqual(lines.pop(0), 'lp=%3Chidden%3E\n')
-        self.assertEqual(lines.pop(0), 'name1=value3 \\xa7\n')
-        self.assertEqual(lines.pop(0), 'name2=value2\n')
-        self.assertEqual(lines.pop(0), '\n')
-
-        # no database statements
-        self.assertEqual(lines.pop(0), '\n')
-
-        # traceback
-        self.assertEqual(lines.pop(0), 'Traceback (most recent call last):\n')
-        #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
-        #    raise ArbitraryException(\'xyz\')
-        lines.pop(0)
-        lines.pop(0)
-        self.assertEqual(lines.pop(0), 'ArbitraryException: xyz\n')
-
+        # page id is obtained from the request
+        self.assertEqual('IFoo:+foo-template', report['pageid'])
+        self.assertEqual('Login, 42, title, description |\\u25a0|',
+                report['username'])
+        self.assertEqual('http://localhost:9000/foo', report['url'])
+        self.assertEqual({
+            'CONTENT_LENGTH': '0',
+            'GATEWAY_INTERFACE': 'TestFooInterface/1.0',
+            'HTTP_COOKIE': '<hidden>',
+            'HTTP_HOST': '127.0.0.1',
+            'SERVER_URL': 'http://localhost:9000/foo',
+            '\\u25a0': 'value4',
+            'lp': '<hidden>',
+            'name1': 'value3 \\xa7',
+            'name2': 'value2',
+            }, dict(report['req_vars']))
         # verify that the oopsid was set on the request
-        self.assertEqual(request.oopsid, 'OOPS-91T1')
-        self.assertEqual(request.oops['id'], 'OOPS-91T1')
+        self.assertEqual(request.oopsid, report['id'])
+        self.assertEqual(request.oops, report)
 
     def test_raising_with_xmlrpc_request(self):
         # Test ErrorReportingUtility.raising() with an XML-RPC request.
@@ -327,14 +294,13 @@ class TestErrorReportingUtility(testtools.TestCase):
         request = TestRequest()
         directlyProvides(request, WebServiceLayer)
         utility = ErrorReportingUtility()
-        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
         # Exceptions that don't use error_status result in OOPSes.
         try:
             raise ArbitraryException('xyz\nabc')
         except ArbitraryException:
-            utility.raising(sys.exc_info(), request, now=now)
-            self.assertNotEqual(request.oopsid, None)
+            self.assertNotEqual(None,
+                    utility.raising(sys.exc_info(), request))
 
         # Exceptions with a error_status in the 500 range result
         # in OOPSes.
@@ -344,8 +310,8 @@ class TestErrorReportingUtility(testtools.TestCase):
         try:
             raise InternalServerError("")
         except InternalServerError:
-            utility.raising(sys.exc_info(), request, now=now)
-            self.assertNotEqual(request.oopsid, None)
+            self.assertNotEqual(None,
+                    utility.raising(sys.exc_info(), request))
 
         # Exceptions with any other error_status do not result
         # in OOPSes.
@@ -355,8 +321,7 @@ class TestErrorReportingUtility(testtools.TestCase):
         try:
             raise BadDataError("")
         except BadDataError:
-            utility.raising(sys.exc_info(), request, now=now)
-            self.assertEqual(request.oopsid, None)
+            self.assertEqual(None, utility.raising(sys.exc_info(), request))
 
     def test_raising_for_script(self):
         """Test ErrorReportingUtility.raising with a ScriptRequest."""
@@ -407,43 +372,33 @@ class TestErrorReportingUtility(testtools.TestCase):
         """Unauthorized exceptions are logged when the request has no
         principal."""
         utility = ErrorReportingUtility()
-        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
         request = ScriptRequest([('name2', 'value2')])
         try:
             raise Unauthorized('xyz')
         except Unauthorized:
-            utility.raising(sys.exc_info(), request, now=now)
-        errorfile = os.path.join(
-            utility.log_namer.output_dir(now), '01800.T1')
-        self.failUnless(os.path.exists(errorfile))
+            self.assertNotEqual(None,
+                    utility.raising(sys.exc_info(), request))
 
     def test_raising_unauthorized_with_unauthenticated_principal(self):
         """Unauthorized exceptions are not logged when the request has an
         unauthenticated principal."""
         utility = ErrorReportingUtility()
-        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
         request = TestRequestWithUnauthenticatedPrincipal()
         try:
             raise Unauthorized('xyz')
         except Unauthorized:
-            utility.raising(sys.exc_info(), request, now=now)
-        errorfile = os.path.join(
-            utility.log_namer.output_dir(now), '01800.T1')
-        self.failIf(os.path.exists(errorfile))
+            self.assertEqual(None, utility.raising(sys.exc_info(), request))
 
     def test_raising_unauthorized_with_authenticated_principal(self):
         """Unauthorized exceptions are logged when the request has an
         authenticated principal."""
         utility = ErrorReportingUtility()
-        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
         request = TestRequestWithPrincipal()
         try:
             raise Unauthorized('xyz')
         except Unauthorized:
-            utility.raising(sys.exc_info(), request, now=now)
-        errorfile = os.path.join(
-            utility.log_namer.output_dir(now), '01800.T1')
-        self.failUnless(os.path.exists(errorfile))
+            self.assertNotEqual(None,
+                    utility.raising(sys.exc_info(), request))
 
     def test_raising_translation_unavailable(self):
         """Test ErrorReportingUtility.raising() with a TranslationUnavailable
@@ -453,19 +408,13 @@ class TestErrorReportingUtility(testtools.TestCase):
         raised.
         """
         utility = ErrorReportingUtility()
-        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
-
-        try:
-            raise TranslationUnavailable('xyz')
-        except TranslationUnavailable:
-            utility.raising(sys.exc_info(), now=now)
-
         self.assertTrue(
             TranslationUnavailable.__name__ in utility._ignored_exceptions,
             'TranslationUnavailable is not in _ignored_exceptions.')
-        errorfile = os.path.join(
-            utility.log_namer.output_dir(now), '01800.T1')
-        self.assertFalse(os.path.exists(errorfile))
+        try:
+            raise TranslationUnavailable('xyz')
+        except TranslationUnavailable:
+            self.assertEqual(None, utility.raising(sys.exc_info()))
 
     def test_ignored_exceptions_for_offsite_referer(self):
         # Exceptions caused by bad URLs that may not be an Lp code issue.
@@ -480,7 +429,6 @@ class TestErrorReportingUtility(testtools.TestCase):
         # Oopses are reported when Launchpad is the referer for a URL
         # that caused an exception.
         utility = ErrorReportingUtility()
-        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
         request = TestRequest(
             environ={
                 'SERVER_URL': 'http://launchpad.dev/fnord',
@@ -488,16 +436,13 @@ class TestErrorReportingUtility(testtools.TestCase):
         try:
             raise GoneError('fnord')
         except GoneError:
-            utility.raising(sys.exc_info(), request, now=now)
-        errorfile = os.path.join(
-            utility.log_namer.output_dir(now), '01800.T1')
-        self.assertTrue(os.path.exists(errorfile))
+            self.assertNotEqual(None,
+                    utility.raising(sys.exc_info(), request))
 
     def test_ignored_exceptions_for_cross_vhost_referer_reported(self):
         # Oopses are reported when a Launchpad  vhost is the referer for a URL
         # that caused an exception.
         utility = ErrorReportingUtility()
-        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
         request = TestRequest(
             environ={
                 'SERVER_URL': 'http://launchpad.dev/fnord',
@@ -505,16 +450,13 @@ class TestErrorReportingUtility(testtools.TestCase):
         try:
             raise GoneError('fnord')
         except GoneError:
-            utility.raising(sys.exc_info(), request, now=now)
-        errorfile = os.path.join(
-            utility.log_namer.output_dir(now), '01800.T1')
-        self.assertTrue(os.path.exists(errorfile))
+            self.assertNotEqual(None,
+                    utility.raising(sys.exc_info(), request))
 
     def test_ignored_exceptions_for_criss_cross_vhost_referer_reported(self):
         # Oopses are reported when a Launchpad referer for a bad URL on a
         # vhost that caused an exception.
         utility = ErrorReportingUtility()
-        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
         request = TestRequest(
             environ={
                 'SERVER_URL': 'http://bazaar.launchpad.dev/fnord',
@@ -522,25 +464,19 @@ class TestErrorReportingUtility(testtools.TestCase):
         try:
             raise GoneError('fnord')
         except GoneError:
-            utility.raising(sys.exc_info(), request, now=now)
-        errorfile = os.path.join(
-            utility.log_namer.output_dir(now), '01800.T1')
-        self.assertTrue(os.path.exists(errorfile))
+            self.assertNotEqual(
+                    None, utility.raising(sys.exc_info(), request))
 
     def test_ignored_exceptions_for_offsite_referer_not_reported(self):
         # Oopses are not reported when Launchpad is not the referer.
         utility = ErrorReportingUtility()
-        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
         # There is no HTTP_REFERER header in this request
         request = TestRequest(
             environ={'SERVER_URL': 'http://launchpad.dev/fnord'})
         try:
             raise GoneError('fnord')
         except GoneError:
-            utility.raising(sys.exc_info(), request, now=now)
-        errorfile = os.path.join(
-            utility.log_namer.output_dir(now), '01800.T1')
-        self.assertFalse(os.path.exists(errorfile))
+            self.assertEqual(None, utility.raising(sys.exc_info(), request))
 
     def test_raising_no_referrer_error(self):
         """Test ErrorReportingUtility.raising() with a NoReferrerError
@@ -550,16 +486,10 @@ class TestErrorReportingUtility(testtools.TestCase):
         raised.
         """
         utility = ErrorReportingUtility()
-        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
-
         try:
             raise NoReferrerError('xyz')
         except NoReferrerError:
-            utility.raising(sys.exc_info(), now=now)
-
-        errorfile = os.path.join(
-            utility.log_namer.output_dir(now), '01800.T1')
-        self.assertFalse(os.path.exists(errorfile))
+            self.assertEqual(None, utility.raising(sys.exc_info()))
 
     def test_raising_with_string_as_traceback(self):
         # ErrorReportingUtility.raising() can be called with a string in the

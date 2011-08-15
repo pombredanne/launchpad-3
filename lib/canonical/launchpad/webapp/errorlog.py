@@ -279,28 +279,28 @@ class ErrorReportingUtility:
         finally:
             oops_report.close()
 
-    def raising(self, info, request=None, now=None):
-        """See IErrorReportingUtility.raising()
-
-        :param now: The datetime to use as the current time.  Will be
-            determined if not supplied.  Useful for testing.  Not part of
-            IErrorReportingUtility).
-        """
+    def raising(self, info, request=None):
+        """See IErrorReportingUtility.raising()"""
         return self._raising(
-            info, request=request, now=now, informational=False)
+            info, request=request, informational=False)
 
-    def _raising(self, info, request=None, now=None, informational=False):
+    def _raising(self, info, request=None, informational=False):
         """Private method used by raising() and handling()."""
-        report = self._makeReport(info, request, now, informational)
+        report = self._makeReport(info, request, informational)
         if self._filterReport(report):
             return
-        self._sendReport(report, now=now)
+        self._sendReport(report)
         if request:
             request.oopsid = report['id']
             request.oops = report
         return report
 
     def _sendReport(self, report, now=None):
+        """Send the report to its destination.
+
+        :param now: The datetime to use as the current time.  Will be
+            determined if not supplied.  Useful for testing.
+        """
         if now is not None:
             now = now.astimezone(UTC)
         else:
@@ -353,22 +353,16 @@ class ErrorReportingUtility:
                     return True
         return False
 
-    def _makeReport(self, info, request=None, now=None, informational=False):
+    def _makeReport(self, info, request=None, informational=False):
         """Create an unallocated OOPS.
 
         :param info: Output of sys.exc_info()
         :param request: The IErrorReportRequest which provides context to the
             info.
-        :param now: The datetime to use as the current time.  Will be
-            determined if not supplied.  Useful for testing.
         :param informational: If true, the report is flagged as informational
             only.
         """
         report = self._oops_config.create()
-        if now is not None:
-            now = now.astimezone(UTC)
-        else:
-            now = datetime.datetime.now(UTC)
         report['type'] = _safestr(getattr(info[0], '__name__', info[0]))
         report['value'] = _safestr(info[1])
         if not isinstance(info[2], basestring):
@@ -378,7 +372,7 @@ class ErrorReportingUtility:
             tb_text = info[2]
         report['tb_text'] = _safestr(tb_text)
         report['req_vars'] = []
-        report['time'] = now
+        report['time'] = datetime.datetime.now(UTC)
         report['informational'] = informational
         # Because of IUnloggedException being a sidewards lookup we must
         # capture this here to filter on later.
@@ -462,18 +456,15 @@ class ErrorReportingUtility:
             args = request.getPositionalArguments()
             report['req_vars'].append(('xmlrpc args', _safestr(args)))
 
-    def handling(self, info, request=None, now=None):
+    def handling(self, info, request=None):
         """Flag ErrorReport as informational only.
 
         :param info: Output of sys.exc_info()
         :param request: The IErrorReportRequest which provides context to the
             info.
-        :param now: The datetime to use as the current time.  Will be
-            determined if not supplied.  Useful for testing.
         :return: The ErrorReport created.
         """
-        return self._raising(
-            info, request=request, now=now, informational=True)
+        return self._raising(info, request=request, informational=True)
 
     @contextlib.contextmanager
     def oopsMessage(self, message):
