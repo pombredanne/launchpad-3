@@ -11,6 +11,8 @@ from bzrlib.bzrdir import BzrDir
 
 from lazr.uri import URI
 
+import threading
+
 __all__ = [
     'AcceptAnythingPolicy',
     'BadUrl',
@@ -159,6 +161,8 @@ class SafeBranchOpener(object):
     * transformFallbackLocation
     """
 
+    _threading_data = threading.local()
+
     def __init__(self, policy):
         self.policy = policy
         self._seen_urls = set()
@@ -210,26 +214,30 @@ class SafeBranchOpener(object):
             if not self.policy.shouldFollowReferences():
                 raise BranchReferenceForbidden(url)
 
-    def transformFallbackLocationHook(self, branch, url):
+    @classmethod
+    def transformFallbackLocationHook(cls, branch, url):
         """Installed as the 'transform_fallback_location' Branch hook.
 
         This method calls `transformFallbackLocation` on the policy object and
         either returns the url it provides or passes it back to
         checkAndFollowBranchReference.
         """
-        new_url, check = self.policy.transformFallbackLocation(branch, url)
+        opener = getattr(cls._threading_data, "opener")
+        new_url, check = opener.policy.transformFallbackLocation(branch, url)
         if check:
-            return self.checkAndFollowBranchReference(new_url)
+            return opener.checkAndFollowBranchReference(new_url)
         else:
             return new_url
 
     def runWithTransformFallbackLocationHookInstalled(
             self, callable, *args, **kw):
+        self._threading_data.opener = self
         self.install_hook()
         try:
             return callable(*args, **kw)
         finally:
             self.uninstall_hook()
+            del self._threading_data.opener
             # We reset _seen_urls here to avoid multiple calls to open giving
             # spurious loop exceptions.
             self._seen_urls = set()
