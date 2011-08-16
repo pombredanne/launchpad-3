@@ -1403,9 +1403,9 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             [source], target_archive, dsp.derived_series, source.pocket,
             check_permissions=False, overrides=[override])
 
-        matcher = MatchesStructure(
-            component=Equals(override.component),
-            section=Equals(override.section))
+        matcher = MatchesStructure.byEquality(
+            component=override.component,
+            section=override.section)
         self.assertThat(copied_source, matcher)
 
     def test_copy_ppa_generates_notification(self):

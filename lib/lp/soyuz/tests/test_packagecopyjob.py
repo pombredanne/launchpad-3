@@ -5,10 +5,7 @@
 
 import operator
 from testtools.content import text_content
-from testtools.matchers import (
-    Equals,
-    MatchesStructure,
-    )
+from testtools.matchers import MatchesStructure
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import (
@@ -871,9 +868,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             IComponentSet)[pcj.metadata["component_override"]]
         metadata_section = getUtility(
             ISectionSet)[pcj.metadata["section_override"]]
-        matcher = MatchesStructure(
-            component=Equals(metadata_component),
-            section=Equals(metadata_section))
+        matcher = MatchesStructure.byEquality(
+            component=metadata_component,
+            section=metadata_section)
         self.assertThat(override, matcher)
 
     def test_addSourceOverride_accepts_None_component_as_no_change(self):

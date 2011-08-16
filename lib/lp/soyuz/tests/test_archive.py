@@ -12,7 +12,6 @@ import doctest
 
 from testtools.matchers import (
     DocTestMatches,
-    Equals,
     MatchesRegex,
     MatchesStructure,
     )
@@ -2109,15 +2108,15 @@ class TestSyncSource(TestCaseWithFactory):
         copy_job = job_source.getActiveJobs(target_archive).one()
 
         # Its data should reflect the requested copy.
-        self.assertThat(copy_job, MatchesStructure(
-            package_name=Equals(source_name),
-            package_version=Equals(version),
-            target_archive=Equals(target_archive),
-            source_archive=Equals(source_archive),
-            target_distroseries=Equals(to_series),
-            target_pocket=Equals(to_pocket),
-            include_binaries=Equals(False),
-            copy_policy=Equals(PackageCopyPolicy.INSECURE)))
+        self.assertThat(copy_job, MatchesStructure.byEquality(
+            package_name=source_name,
+            package_version=version,
+            target_archive=target_archive,
+            source_archive=source_archive,
+            target_distroseries=to_series,
+            target_pocket=to_pocket,
+            include_binaries=False,
+            copy_policy=PackageCopyPolicy.INSECURE))
 
     def test_copyPackage_disallows_non_primary_archive_uploaders(self):
         # If copying to a primary archive and you're not an uploader for
@@ -2191,15 +2190,15 @@ class TestSyncSource(TestCaseWithFactory):
         # There should be one copy job.
         job_source = getUtility(IPlainPackageCopyJobSource)
         copy_job = job_source.getActiveJobs(target_archive).one()
-        self.assertThat(copy_job, MatchesStructure(
-            package_name=Equals(source_name),
-            package_version=Equals(version),
-            target_archive=Equals(target_archive),
-            source_archive=Equals(source_archive),
-            target_distroseries=Equals(to_series),
-            target_pocket=Equals(to_pocket),
-            include_binaries=Equals(False),
-            copy_policy=Equals(PackageCopyPolicy.MASS_SYNC)))
+        self.assertThat(copy_job, MatchesStructure.byEquality(
+            package_name=source_name,
+            package_version=version,
+            target_archive=target_archive,
+            source_archive=source_archive,
+            target_distroseries=to_series,
+            target_pocket=to_pocket,
+            include_binaries=False,
+            copy_policy=PackageCopyPolicy.MASS_SYNC))
 
     def test_copyPackages_with_multiple_packages(self):
         # PENDING and PUBLISHED packages should both be copied.
