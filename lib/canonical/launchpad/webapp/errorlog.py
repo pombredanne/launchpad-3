@@ -281,8 +281,7 @@ class ErrorReportingUtility:
 
     def raising(self, info, request=None):
         """See IErrorReportingUtility.raising()"""
-        return self._raising(
-            info, request=request, informational=False)
+        return self._raising(info, request=request, informational=False)
 
     def _raising(self, info, request=None, informational=False):
         """Private method used by raising() and handling()."""
