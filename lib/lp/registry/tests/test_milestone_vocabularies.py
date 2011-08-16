@@ -5,10 +5,7 @@
 
 __metaclass__ = type
 
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+from unittest import TestCase
 
 from zope.component import getUtility
 
@@ -163,7 +160,3 @@ class TestMilestoneVocabulary(TestCase):
         self.assertEqual(
             [term.title for term in vocabulary],
             [u'Debian 3.1', u'Debian 3.1-rc1', u'Mozilla Firefox 1.0'])
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

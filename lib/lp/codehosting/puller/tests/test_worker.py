@@ -9,7 +9,6 @@ __metaclass__ = type
 
 import gc
 from StringIO import StringIO
-import unittest
 
 import bzrlib.branch
 from bzrlib.branch import (
@@ -534,7 +533,3 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
             http_server.get_url() + 'some-other-branch')
         b1.pull(b2_http)
         self.assertSubset([WORKER_ACTIVITY_NETWORK], p.calls)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

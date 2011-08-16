@@ -23,7 +23,7 @@ from canonical.launchpad.scripts import db_options, logger_options, logger
 from canonical.lp import initZopeless
 from canonical.database.sqlbase import SQLBase
 from canonical.config import config
-from canonical.launchpad.mail import simple_sendmail
+from lp.services.mail.sendmail import simple_sendmail
 
 
 class CheckedLink(SQLBase):

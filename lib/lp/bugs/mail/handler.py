@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Handle incoming Bugs email."""
@@ -8,6 +8,8 @@ __all__ = [
     "MaloneHandler",
     ]
 
+import os
+
 from lazr.lifecycle.event import ObjectCreatedEvent
 from lazr.lifecycle.interfaces import IObjectCreatedEvent
 from zope.component import getUtility
@@ -16,27 +18,6 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import rollback
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.interfaces.mail import (
-    EmailProcessingError,
-    IBugEditEmailCommand,
-    IBugEmailCommand,
-    IBugTaskEditEmailCommand,
-    IBugTaskEmailCommand,
-    IMailHandler,
-    )
-from lp.services.messages.interfaces.message import IMessageSet
-from canonical.launchpad.mail.commands import (
-    BugEmailCommands,
-    get_error_message,
-    )
-from canonical.launchpad.mail.helpers import (
-    ensure_not_weakly_authenticated,
-    get_main_body,
-    guess_bugtask,
-    IncomingEmailError,
-    parse_commands,
-    reformat_wiki_text,
-    )
 from canonical.launchpad.mailnotification import (
     MailWrapper,
     send_process_error_notification,
@@ -48,7 +29,29 @@ from lp.bugs.interfaces.bugattachment import (
     IBugAttachmentSet,
     )
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
+from lp.bugs.mail.commands import BugEmailCommands
+from lp.services.mail.helpers import (
+    ensure_not_weakly_authenticated,
+    get_error_message,
+    get_main_body,
+    guess_bugtask,
+    IncomingEmailError,
+    parse_commands,
+    reformat_wiki_text,
+    )
+from lp.services.mail.interfaces import (
+    EmailProcessingError,
+    IBugEditEmailCommand,
+    IBugEmailCommand,
+    IBugTaskEditEmailCommand,
+    IBugTaskEmailCommand,
+    IMailHandler,
+    )
 from lp.services.mail.sendmail import simple_sendmail
+from lp.services.messages.interfaces.message import IMessageSet
+
+
+error_templates = os.path.join(os.path.dirname(__file__), 'errortemplates')
 
 
 class MaloneHandler:
@@ -93,7 +96,8 @@ class MaloneHandler:
         # bug.
         if to_user.lower() == 'new':
             ensure_not_weakly_authenticated(signed_msg, CONTEXT,
-                'unauthenticated-bug-creation.txt')
+                'unauthenticated-bug-creation.txt',
+                error_templates=error_templates)
         elif len(commands) > 0:
             ensure_not_weakly_authenticated(signed_msg, CONTEXT)
         if to_user.lower() == 'new':
@@ -146,7 +150,8 @@ class MaloneHandler:
                                 rollback()
                                 raise IncomingEmailError(
                                     get_error_message(
-                                        'no-affects-target-on-submit.txt'))
+                                        'no-affects-target-on-submit.txt',
+                                        error_templates=error_templates))
                         if (bugtask_event is not None and
                             not IObjectCreatedEvent.providedBy(bug_event)):
                             notify(bugtask_event)
@@ -200,12 +205,14 @@ class MaloneHandler:
                                 rollback()
                                 raise IncomingEmailError(
                                     get_error_message(
-                                        'no-affects-target-on-submit.txt'))
+                                        'no-affects-target-on-submit.txt',
+                                        error_templates=error_templates))
                             bugtask = guess_bugtask(
                                 bug, getUtility(ILaunchBag).user)
                             if bugtask is None:
                                 raise IncomingEmailError(get_error_message(
                                     'no-default-affects.txt',
+                                    error_templates=error_templates,
                                     bug_id=bug.id,
                                     nr_of_bugtasks=len(bug.bugtasks)))
                         bugtask, bugtask_event = command.execute(
@@ -231,7 +238,9 @@ class MaloneHandler:
                 except CreatedBugWithNoBugTasksError:
                     rollback()
                     raise IncomingEmailError(
-                        get_error_message('no-affects-target-on-submit.txt'))
+                        get_error_message(
+                            'no-affects-target-on-submit.txt',
+                            error_templates=error_templates))
             if bugtask_event is not None:
                 if not IObjectCreatedEvent.providedBy(bug_event):
                     notify(bugtask_event)
@@ -274,7 +283,7 @@ class MaloneHandler:
     # seem to store no more than an RTF representation of an email.
 
     irrelevant_content_types = set((
-        'application/applefile', # the resource fork of a MacOS file
+        'application/applefile',  # the resource fork of a MacOS file
         'application/pgp-signature',
         'application/pkcs7-signature',
         'application/x-pkcs7-signature',

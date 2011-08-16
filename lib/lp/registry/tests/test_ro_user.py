@@ -50,9 +50,3 @@ class RoUserTestCase(unittest.TestCase):
                 psycopg2.Error, cur.execute, "DELETE FROM WikiName"
                 )
         cur.execute("ROLLBACK TO SAVEPOINT attempt")
-
-
-def test_suite():
-    """Create the test suite."""
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

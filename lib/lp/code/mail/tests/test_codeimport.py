@@ -4,7 +4,6 @@
 """Tests for code import related mailings"""
 
 from email import message_from_string
-from unittest import TestLoader
 
 import transaction
 
@@ -141,7 +140,3 @@ class TestNewCodeImports(TestCaseWithFactory):
             '\n'
             '-- \nYou are getting this email because you are a member of the '
             'vcs-imports team.\n', msg.get_payload(decode=True))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

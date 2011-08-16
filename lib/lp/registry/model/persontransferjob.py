@@ -39,10 +39,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
     )
-from canonical.launchpad.mail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import canonical_url
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -66,7 +62,11 @@ from lp.registry.model.person import Person
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.services.mail.sendmail import format_address_for_person
+from lp.services.mail.sendmail import (
+    format_address,
+    format_address_for_person,
+    simple_sendmail,
+    )
 
 
 class PersonTransferJob(StormBase):
@@ -298,8 +298,8 @@ class MembershipNotificationJob(PersonTransferJobDerived):
             # Use the default template and subject.
             pass
 
-        # Must have someone to mail, and be a non-open team (because open teams
-        # are unrestricted, notifications on join/ leave do not help the
+        # Must have someone to mail, and be a non-open team (because open
+        # teams are unrestricted, notifications on join/ leave do not help the
         # admins.
         if (len(admin_emails) != 0 and
             self.team.subscriptionpolicy != TeamSubscriptionPolicy.OPEN):
@@ -348,7 +348,7 @@ class PersonMergeJob(PersonTransferJobDerived):
     @classmethod
     def create(cls, from_person, to_person, reviewer=None, delete=False):
         """See `IPersonMergeJobSource`."""
-        if (from_person.is_merge_pending or 
+        if (from_person.is_merge_pending or
             (not delete and to_person.is_merge_pending)):
             return None
         if from_person.is_team:

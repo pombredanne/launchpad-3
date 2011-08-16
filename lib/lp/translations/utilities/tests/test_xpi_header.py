@@ -127,7 +127,3 @@ class XpiHeaderTestCase(unittest.TestCase):
             u"\u0e40\u0e2d\u0e4b <eai@example.com>"])
         self.assertEqual(header.getLastTranslator(),
             (u"\u0e40\u0e2d\u0e4b", 'eai@example.com'))
-
-def test_suite():
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)
-

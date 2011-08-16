@@ -144,10 +144,3 @@ class StubLibrary:
     def add(self, digest, size):
         self.id += 1
         return self.id
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(LibrarianStorageTestCase))
-    return suite
-

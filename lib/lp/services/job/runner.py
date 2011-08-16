@@ -147,7 +147,7 @@ class BaseRunnableJob(BaseRunnableJobSource):
 
     def notifyOops(self, oops):
         """Report this oops."""
-        ctrl = self.getOopsMailController(oops.id)
+        ctrl = self.getOopsMailController(oops['id'])
         if ctrl is None:
             return
         ctrl.send()
@@ -182,8 +182,11 @@ class BaseJobRunner(object):
         """Attempt to run a job, updating its status as appropriate."""
         job = IRunnableJob(job)
 
-        self.logger.debug(
-            'Running job in status %s' % (job.status.title,))
+        class_name = job.__class__.__name__
+        job_id = removeSecurityProxy(job).job.id
+        self.logger.info(
+            'Running %s (ID %d) in status %s' % (
+                class_name, job_id, job.status.title,))
         job.start()
         transaction.commit()
         do_retry = False
@@ -306,7 +309,7 @@ class JobRunner(BaseJobRunner):
             transaction.commit()
             oops = self.runJobHandleError(job)
             if oops is not None:
-                self._logOopsId(oops.id)
+                self._logOopsId(oops['id'])
 
 
 class RunJobCommand(amp.Command):
@@ -384,7 +387,7 @@ class JobRunnerProcess(child.AMPChild):
         if oops is None:
             oops_id = ''
         else:
-            oops_id = oops.id
+            oops_id = oops['id']
         return {'success': len(runner.completed_jobs), 'oops_id': oops_id}
 
 
@@ -402,10 +405,10 @@ class TwistedJobRunner(BaseJobRunner):
             packages=('_pythonpath', 'twisted', 'ampoule'), env=env)
         super(TwistedJobRunner, self).__init__(logger, error_utility)
         self.job_source = job_source
-        import_name = '%s.%s' % (
+        self.import_name = '%s.%s' % (
             removeSecurityProxy(job_source).__module__, job_source.__name__)
         self.pool = pool.ProcessPool(
-            JobRunnerProcess, ampChildArgs=[import_name, str(dbuser)],
+            JobRunnerProcess, ampChildArgs=[self.import_name, str(dbuser)],
             starter=starter, min=0, timeout_signal=SIGHUP)
 
     def runJobInSubprocess(self, job):
@@ -423,6 +426,12 @@ class TwistedJobRunner(BaseJobRunner):
         transaction.commit()
         job_id = job.id
         deadline = timegm(job.lease_expires.timetuple())
+
+        # Log the job class and database ID for debugging purposes.
+        class_name = job.__class__.__name__
+        ijob_id = removeSecurityProxy(job).job.id
+        self.logger.info(
+            'Running %s (ID %d).' % (class_name, ijob_id))
         self.logger.debug(
             'Running %r, lease expires %s', job, job.lease_expires)
         deferred = self.pool.doWork(
@@ -452,7 +461,7 @@ class TwistedJobRunner(BaseJobRunner):
             else:
                 info = (failure.type, failure.value, failure.tb)
                 oops = self._doOops(job, info)
-                self._logOopsId(oops.id)
+                self._logOopsId(oops['id'])
         deferred.addCallbacks(update, job_raised)
         return deferred
 
@@ -461,7 +470,7 @@ class TwistedJobRunner(BaseJobRunner):
             raise TimeoutError
         except TimeoutError:
             oops = self._doOops(job, sys.exc_info())
-            self._logOopsId(oops.id)
+            self._logOopsId(oops['id'])
 
     def getTaskSource(self):
         """Return a task source for all jobs in job_source."""
@@ -603,9 +612,8 @@ class JobCronScript(LaunchpadCronScript):
     def main(self):
         section = self.config_section
         if (getattr(section, 'error_dir', None) is not None
-            and getattr(section, 'oops_prefix', None) is not None
-            and getattr(section, 'copy_to_zlog', None) is not None):
-            # If the three variables are not set, we will let the error
+            and getattr(section, 'oops_prefix', None) is not None):
+            # If the two variables are not set, we will let the error
             # utility default to using the [error_reports] config.
             errorlog.globalErrorUtility.configure(self.config_name)
         job_source = getUtility(self.source_interface)
