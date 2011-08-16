@@ -41,8 +41,10 @@ from canonical.launchpad.webapp.adapter import (
     )
 from canonical.launchpad.webapp.errorlog import (
     _is_sensitive,
+    DateDirRepo,
     ErrorReport,
     ErrorReportingUtility,
+    notify_publisher,
     OopsLoggingHandler,
     ScriptRequest,
     )
@@ -158,18 +160,13 @@ class TestErrorReportingUtility(testtools.TestCase):
         super(TestErrorReportingUtility, self).setUp()
         # ErrorReportingUtility reads the global config to get the
         # current error directory.
+        tempdir = self.useFixture(TempDir()).path
         test_data = dedent("""
             [error_reports]
             error_dir: %s
-            """ % tempfile.mkdtemp())
+            """ % tempdir)
         config.push('test_data', test_data)
-        shutil.rmtree(config.error_reports.error_dir, ignore_errors=True)
-
-    def tearDown(self):
-        shutil.rmtree(config.error_reports.error_dir, ignore_errors=True)
-        config.pop('test_data')
-        reset_logging()
-        super(TestErrorReportingUtility, self).tearDown()
+        self.addCleanup(config.pop, 'test_data')
 
     def test_sets_log_namer_to_a_UniqueFileAllocator(self):
         utility = ErrorReportingUtility()
@@ -200,6 +197,15 @@ class TestErrorReportingUtility(testtools.TestCase):
         self.assertEqual(config.error_reports.error_dir,
             utility._oops_datedir_repo.log_namer._output_root)
 
+        # We should have had two publishers setup:
+        oops_config = utility._oops_config
+        self.assertEqual(2, len(oops_config.publishers))
+        # - a datedir publisher
+        datedir_repo = utility._oops_datedir_repo
+        self.assertEqual(oops_config.publishers[0], datedir_repo.publish)
+        # - a notify publisher
+        self.assertEqual(oops_config.publishers[1], notify_publisher)
+
     def test_setOopsToken(self):
         """Test ErrorReportingUtility.setOopsToken()."""
         utility = ErrorReportingUtility()
@@ -212,7 +218,8 @@ class TestErrorReportingUtility(testtools.TestCase):
 
     def test_raising_permissions(self):
         """Test ErrorReportingUtility.raising() with no request"""
-        utility = ErrorReportingUtility()
+        errordir = self.useFixture(TempDir()).path
+        repo = DateDirRepo(errordir, 'T')
         report = {'id': 'OOPS-91T1'}
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
@@ -221,10 +228,9 @@ class TestErrorReportingUtility(testtools.TestCase):
         umask_permission = stat.S_IRWXG | stat.S_IRWXO
         old_umask = os.umask(umask_permission)
         self.addCleanup(os.umask, old_umask)
-        utility._oops_datedir_repo.publish(report, now)
+        repo.publish(report, now)
 
-        errorfile = os.path.join(
-            utility._oops_datedir_repo.log_namer.output_dir(now), '01800.T1')
+        errorfile = os.path.join(repo.log_namer.output_dir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
 
         # Check errorfile is set with the correct permission: rw-r--r--
