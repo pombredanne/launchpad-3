@@ -1495,6 +1495,17 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
+        [notification] = notifications
+        self.assertEquals(
+            'Foo Bar <foo.bar@canonical.com>', notification['To'])
+        self.assertEquals(
+            '[ubuntutest/nobby] foo 1.0-2 (Rejected)',
+            notification['Subject'])
+        expected_text = (
+            "Rejected:\n"
+            "foo 1.0-2 in breezy-autotest (a different source with the same "
+                "version is p=\nublished in the destination archive)\n")
+        self.assertIn(expected_text, notification.as_string())
 
     def test_copy_does_not_generate_notification(self):
         # When notify = False is passed to do_copy, no notification is
