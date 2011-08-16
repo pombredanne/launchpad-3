@@ -42,6 +42,13 @@ class QuestionTargetAnswerContactTestCase(TestCaseWithFactory):
             self.project.canUserAlterAnswerContact(
                 self.user, self.project.owner))
 
+    def test_canUserAlterAnswerContact_DistributionSourcePackage_owner(self):
+        login_person(self.user)
+        distro = self.factory.makeDistribution()
+        dsp = self.factory.makeDistributionSourcePackage(distribution=distro)
+        self.assertTrue(
+            dsp.canUserAlterAnswerContact(self.user, distro.owner))
+
     def test_canUserAlterAnswerContact_other_user(self):
         login_person(self.user)
         other_user = self.factory.makePerson()

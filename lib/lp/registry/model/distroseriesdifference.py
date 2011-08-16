@@ -443,8 +443,6 @@ class DistroSeriesDifference(StormBase):
                            child_version_higher=False, parent_series=None,
                            packagesets=None, changed_by=None):
         """See `IDistroSeriesDifferenceSource`."""
-        if difference_type is None:
-            difference_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
         if status is None:
             status = (DistroSeriesDifferenceStatus.NEEDS_ATTENTION,)
         elif isinstance(status, DBItem):
@@ -462,10 +460,11 @@ class DistroSeriesDifference(StormBase):
 
         conditions = [
             DSD.derived_series == distro_series,
-            DSD.difference_type == difference_type,
             DSD.source_package_name == SPN.id,  # For ordering.
             DSD.status.is_in(status),
             ]
+        if difference_type is not None:
+            conditions.append(DSD.difference_type == difference_type)
 
         if child_version_higher:
             conditions.append(DSD.source_version > DSD.parent_source_version)
