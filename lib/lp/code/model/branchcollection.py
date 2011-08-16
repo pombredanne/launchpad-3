@@ -63,6 +63,10 @@ from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.codeimport import CodeImport
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import CodeReviewVoteReference
+from lp.code.model.diff import (
+    Diff,
+    PreviewDiff,
+    )
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distroseries import DistroSeries
@@ -291,21 +295,28 @@ class GenericBranchCollection:
         def do_eager_load(rows):
             branch_ids = set()
             person_ids = set()
+            diff_ids = set()
             for mp in rows:
                 branch_ids.add(mp.target_branchID)
                 branch_ids.add(mp.source_branchID)
-                person_ids = person_ids.union(set([
-                    mp.registrantID,
-                    mp.merge_reporterID,
-                    ]))
+                person_ids.add(mp.registrantID)
+                person_ids.add(mp.merge_reporterID)
+                diff_ids.add(mp.preview_diff_id)
             if not branch_ids:
                 return
 
+            # Pre-load Person and ValidPersonCache.
             list(self.store.find(
                 (Person, ValidPersonCache),
                 ValidPersonCache.id==Person.id,
                 Person.id.is_in(person_ids),
                 ))
+
+            # Pre-load PreviewDiffs and Diffs.
+            list(self.store.find(
+                (PreviewDiff, Diff),
+                PreviewDiff.id.is_in(diff_ids),
+                Diff.id == PreviewDiff.diff_id))
 
             branches = set(
                 self.store.find(Branch, Branch.id.is_in(branch_ids)))
