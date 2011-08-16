@@ -124,7 +124,7 @@ from lp.bugs.adapters.bugchange import (
     BugConvertedToQuestion,
     BugWatchAdded,
     BugWatchRemoved,
-    DeferredBugDuplicateChange,
+    BugDuplicateChange,
     SeriesNominated,
     UnsubscribedFromBug,
     )
@@ -1833,7 +1833,7 @@ BugMessage""" % sqlvalues(self.id))
 
                     # Put an entry into the BugNotification table for
                     # later processing.
-                    change = DeferredBugDuplicateChange(
+                    change = BugDuplicateChange(
                         when=None, person=user,
                         what_changed='duplicateof',
                         old_value=old_value,
