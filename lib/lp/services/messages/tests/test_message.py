@@ -6,10 +6,8 @@ __metaclass__ = type
 from cStringIO import StringIO
 from email.header import Header
 from email.message import Message
-from email import (
-    MIMEMultipart,
-    MIMEText,
-    )
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from email.utils import (
     formatdate,
     make_msgid,
