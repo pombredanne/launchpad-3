@@ -101,10 +101,6 @@ from lp.translations.model.potemplate import TranslationTemplatesCollection
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
     """Implementation of IQuestionTarget for SourcePackage."""
 
-    @property
-    def owner(self):
-        return self.distribution.owner
-
     def getTargetTypes(self):
         """See `QuestionTargetMixin`.
 
@@ -191,6 +187,10 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         answer_contacts.update(
             self.distribution.answer_contacts_with_languages)
         return sorted(answer_contacts, key=attrgetter('displayname'))
+
+    @property
+    def owner(self):
+        return self.distribution.owner
 
 
 class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
