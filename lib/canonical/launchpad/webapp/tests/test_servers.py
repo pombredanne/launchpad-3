@@ -279,6 +279,7 @@ class TestWebServiceRequestTraversal(WebServiceTestCase):
 
     def setUp(self):
         super(TestWebServiceRequestTraversal, self).setUp()
+
         # For this test we need to make the URL "/foo" resolve to a
         # resource.  To this end, we'll define a top-level collection
         # named 'foo'.
