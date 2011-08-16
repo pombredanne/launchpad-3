@@ -30,7 +30,6 @@ __all__ = [
     'SourcePackageBranchesView',
     ]
 
-from datetime import datetime
 from operator import attrgetter
 
 from lazr.delegates import delegates
@@ -38,8 +37,6 @@ from lazr.enum import (
     EnumeratedType,
     Item,
     )
-import pytz
-import simplejson
 from storm.expr import (
     Asc,
     Desc,
@@ -557,9 +554,11 @@ class BranchListingView(LaunchpadFormView, FeedsMixin,
             'displayname': self.context.displayname,
             'title': getattr(self.context, 'title', 'no-title')}
 
-    # Provide a default page_title for distros and other things without
-    # breadcrumbs..
-    page_title = label
+    @property
+    def page_title(self):
+        """Provide a default for distros and other things without breadcrumbs.
+        """
+        return self.label
 
     @property
     def initial_values(self):

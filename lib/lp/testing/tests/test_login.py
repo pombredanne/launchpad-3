@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
 
@@ -293,7 +291,3 @@ class TestLoginHelpers(TestCaseWithFactory):
         # anonymous_logged_in is a context logged in as anonymous.
         with anonymous_logged_in():
             self.assertLoggedIn(ANONYMOUS)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

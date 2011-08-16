@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
@@ -77,7 +75,3 @@ class TestSuiteSourcePackage(TestCaseWithFactory):
         self.assertEqual(
             '%s in %s' % (ssp.sourcepackagename.name, ssp.suite),
             ssp.displayname)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

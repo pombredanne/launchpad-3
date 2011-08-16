@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 import lp.codehosting # for bzr plugins
 
 from bzrlib.branch import Branch
@@ -130,7 +128,3 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         # The mirrored branch should now be in knit format.
         self.assertMirrored(
             Branch.open(self.worker.source), Branch.open(self.worker.dest))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

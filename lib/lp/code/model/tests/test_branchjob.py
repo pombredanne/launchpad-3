@@ -9,7 +9,6 @@ import datetime
 import os
 import shutil
 import tempfile
-from unittest import TestLoader
 
 from bzrlib import errors as bzr_errors
 from bzrlib.branch import (
@@ -1428,7 +1427,3 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
         os.makedirs(branch_path)
         self.runReadyJobs()
         self.assertFalse(os.path.exists(branch_path))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

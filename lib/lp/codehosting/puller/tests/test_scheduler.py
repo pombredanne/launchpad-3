@@ -9,7 +9,6 @@ from datetime import datetime
 import logging
 import os
 import textwrap
-import unittest
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import (
@@ -959,7 +958,3 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
             mirror_fails_to_unlock, 1)
 
         return deferred.addErrback(self._dumpError)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

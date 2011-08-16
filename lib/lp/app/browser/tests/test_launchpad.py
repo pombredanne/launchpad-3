@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.interfaces import Unauthorized
@@ -427,7 +425,3 @@ class TestErrorViews(TestCaseWithFactory):
         view = create_view(error, 'index.html')
         self.assertEqual('Error: Page gone', view.page_title)
         self.assertEqual(410, view.request.response.getStatus())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

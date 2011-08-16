@@ -5,8 +5,13 @@ __metaclass__ = type
 
 from datetime import datetime
 
+from iso8601 import (
+    parse_date,
+    ParseError,
+    )
 import lazr.batchnavigator
 from lazr.batchnavigator.interfaces import IRangeFactory
+import pytz
 import simplejson
 from storm import Undef
 from storm.expr import (
@@ -200,7 +205,7 @@ class StormRangeFactory:
         """
         self.resultset = resultset
         if zope_isinstance(resultset, DecoratedResultSet):
-            self.plain_resultset = resultset.getPlainResultSet()
+            self.plain_resultset = resultset.get_plain_result_set()
         else:
             self.plain_resultset = resultset
         self.error_cb = error_cb
@@ -303,20 +308,14 @@ class StormRangeFactory:
                 if (str(error).startswith('Expected datetime') and
                     isinstance(value, str)):
                     try:
-                        value = datetime.strptime(
-                            value, '%Y-%m-%dT%H:%M:%S.%f')
-                    except ValueError:
-                        # One more attempt: If the fractions of a second
-                        # are zero, datetime.isoformat() omits the
-                        # entire part '.000000', so we need a different
-                        # format for strptime().
-                        try:
-                            value = datetime.strptime(
-                                value, '%Y-%m-%dT%H:%M:%S')
-                        except ValueError:
-                            self.reportError(
-                                'Invalid datetime value: %r' % value)
-                            return None
+                        value = parse_date(value)
+                    except (ParseError, ValueError):
+                        # We get a ParseError if value does not match
+                        # a certain regex, and we get a ValueError
+                        # for formally correct but invalid dates,
+                        # like May 35.
+                        self.reportError('Invalid datetime value: %r' % value)
+                        return None
                 else:
                     self.reportError(
                         'Invalid parameter: %r' % value)
@@ -336,76 +335,112 @@ class StormRangeFactory:
             invert_sort_expression(expression)
             for expression in self.getOrderBy()]
 
-    def andClausesForLeadingColumns(self, limits):
+    def limitsGroupedByOrderDirection(self, sort_expressions, memos):
+        """Group sort expressions and memo values by order direction."""
+        descending = isinstance(sort_expressions[0], Desc)
+        grouped_limits = []
+        expression_group = []
+        memo_group = []
+        for expression, memo in zip(sort_expressions, memos):
+            if descending == isinstance(expression, Desc):
+                expression_group.append(expression)
+                memo_group.append(memo)
+            else:
+                grouped_limits.append((expression_group, memo_group))
+                descending = isinstance(expression, Desc)
+                expression_group = [expression]
+                memo_group = [memo]
+        grouped_limits.append((expression_group, memo_group))
+        return grouped_limits
+
+    def lessThanOrGreaterThanExpression(self, expressions, memos):
+        """Return an SQL expression "(expressions) OP (memos)".
+
+        OP is >, if the elements of expressions are PropertyColumns; else
+        the elements of expressions are instances of Desc(PropertyColumn)
+        and OP is <.
+        """
+        descending = isinstance(expressions[0], Desc)
+        if descending:
+            expressions = [expression.expr for expression in expressions]
+        expressions = map(compile, expressions)
+        expressions = ', '.join(expressions)
+        memos = ', '.join(sqlvalues(*memos))
+        if descending:
+            return SQL('(%s) < (%s)' % (expressions, memos))
+        else:
+            return SQL('(%s) > (%s)' % (expressions, memos))
+
+    def equalsExpressionsFromLimits(self, limits):
+        """Return a list [expression == memo, ...] for the given limits."""
         def plain_expression(expression):
-            # Strip a possible Desc from an expression.
             if isinstance(expression, Desc):
                 return expression.expr
             else:
                 return expression
-        return [plain_expression(column) == memo for column, memo in limits]
 
-    def genericWhereExpressions(self, limits):
-        """Generate WHERE expressions for the given sort columns and
-        memos values.
+        result = []
+        for expressions, memos in limits:
+            result.extend(
+                plain_expression(expression) == memo
+                for expression, memo in zip(expressions, memos))
+        return result
 
-        :return: A list of where expressions which should be OR-ed
-        :param limits: A sequence of (column, mem_value) tuples.
+    def whereExpressionsFromGroupedLimits(self, limits):
+        """Build a sequence of WHERE expressions from the given limits.
 
-        Note that the result set may be ordered by more than one column.
-        Given the sort columns c[1], c[2] ... c[N] and assuming ascending
-        sorting, we must look for all rows where
-          * c[1] == memo[1], c[2] == memo[2] ... c[N-1] == memo[N-1] and
-            c[N] > memo[N]
-          * c[1] == memo[1], c[2] == memo[2] ... c[N-2] == memo[N-2] and
-            c[N-1] > memo[N-1]
-          ...
-          * c[1] == memo[1], c[2] > memo[2]
-          * c[1] > memo[1]
+        limits is a list of tuples (expressions, memos), where
+        expressions is a list of PropertyColumn instances or of
+        instances of Desc(PropertyColumn). Desc(PropertyColumn)
+        and PropertyColumn instances must not appear in the same
+        expressions list.
+
+        memos are the memo values asociated with the columns in
+        expressions.
+
+        Given a limits value of
+            [([c11, c12 ...], [m11, m12 ...]),
+             ([c21, c22 ...], [m21, m22 ...]),
+             ...
+             ([cN1, cN2 ...], [mN1, mN2 ...])]
+
+        this method returns a sequence of these Storm/SQL expressions:
+
+            * (c11, c12 ...) = (m11, m12 ...) AND
+              (c21, c22 ...) = (m21, m22 ...) AND
+              ...
+              (cN1, cN2 ...) < (mN1, mN2 ...)
+            * (c11, c12 ...) = (m11, m12 ...) AND
+              (c21, c22 ...) = (m21, m22 ...) AND
+              ...
+              (cM1, cM2 ...) < (mM1, mM2 ...)
+
+              (where M = N - 1)
+            ...
+            * (c11, c12 ...) < (m11, m12 ...)
+
+        The getSlice() should return rows matching any of these
+        expressions. Note that the result sets returned by each
+        expression are disjuct, hence they can be simply ORed,
+        as well as used in a UNION ALL query.
         """
         start = limits[:-1]
-        last_expression, last_memo = limits[-1]
-        if isinstance(last_expression, Desc):
-            last_expression = last_expression.expr
-            last_limit = last_expression < last_memo
-        else:
-            last_limit = last_expression > last_memo
+        last_expressions, last_memos = limits[-1]
+        last_clause = self.lessThanOrGreaterThanExpression(
+            last_expressions, last_memos)
         if len(start) > 0:
-            clauses = self.andClausesForLeadingColumns(start)
-            clauses.append(last_limit)
-            clause_for_last_column = reduce(And, clauses)
-            return (
-                [clause_for_last_column]
-                + self.genericWhereExpressions(start))
+            clauses = self.equalsExpressionsFromLimits(start)
+            clauses.append(last_clause)
+            clauses = [And(*clauses)]
+            return clauses + self.whereExpressionsFromGroupedLimits(start)
         else:
-            return [last_limit]
+            return [last_clause]
 
     def whereExpressions(self, sort_expressions, memos):
         """WHERE expressions for the given sort columns and memos values."""
-        expression = sort_expressions[0]
-        descending = isinstance(expression, Desc)
-        consistent = True
-        for expression in sort_expressions[1:]:
-            if isinstance(expression, Desc) != descending:
-                consistent = False
-                break
-        if not consistent or len(sort_expressions) == 1:
-            return self.genericWhereExpressions(zip(sort_expressions, memos))
-
-        # If the columns are sorted either only ascending or only
-        # descending, we can specify a single WHERE condition
-        # (col1, col2...) > (memo1, memo2...)
-        if descending:
-            sort_expressions = [
-                expression.expr for expression in sort_expressions]
-        sort_expressions = map(compile, sort_expressions)
-        sort_expressions = ', '.join(sort_expressions)
-        memos = sqlvalues(*memos)
-        memos = ', '.join(memos)
-        if descending:
-            return [SQL('(%s) < (%s)' % (sort_expressions, memos))]
-        else:
-            return [SQL('(%s) > (%s)' % (sort_expressions, memos))]
+        grouped_limits = self.limitsGroupedByOrderDirection(
+            sort_expressions, memos)
+        return self.whereExpressionsFromGroupedLimits(grouped_limits)
 
     def getSliceFromMemo(self, size, memo):
         """Return a result set for the given memo values.
@@ -437,7 +472,9 @@ class StormRangeFactory:
         if not forwards:
             self.resultset.order_by(*self.reverseSortOrder())
         parsed_memo = self.parseMemo(endpoint_memo)
+        # Note that lazr.batchnavigator calls len(slice), so we can't
+        # return the plain result set.
         if parsed_memo is None:
-            return self.resultset.config(limit=size)
+            return list(self.resultset.config(limit=size))
         else:
-            return self.getSliceFromMemo(size, parsed_memo)
+            return list(self.getSliceFromMemo(size, parsed_memo))

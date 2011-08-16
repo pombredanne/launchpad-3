@@ -4,8 +4,8 @@
 __metaclass__ = type
 
 from datetime import datetime
+import pytz
 import simplejson
-from unittest import TestLoader
 
 from lazr.batchnavigator.interfaces import IRangeFactory
 from storm.expr import (
@@ -135,7 +135,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         # of any Storm table class instance which appear in a result row.
         resultset = self.makeDecoratedStormResultSet()
         resultset = resultset.order_by(LibraryFileAlias.id)
-        plain_resultset = resultset.getPlainResultSet()
+        plain_resultset = resultset.get_plain_result_set()
         range_factory = StormRangeFactory(resultset)
         self.assertEqual(
             [plain_resultset[0][1].id],
@@ -211,9 +211,10 @@ class TestStormRangeFactory(TestCaseWithFactory):
         range_factory = StormRangeFactory(resultset)
         first, last = range_factory.getEndpointMemos(batchnav.batch)
         expected_first = simplejson.dumps(
-            [resultset.getPlainResultSet()[0][1].id], cls=DateTimeJSONEncoder)
+            [resultset.get_plain_result_set()[0][1].id],
+            cls=DateTimeJSONEncoder)
         expected_last = simplejson.dumps(
-            [resultset.getPlainResultSet()[2][1].id],
+            [resultset.get_plain_result_set()[2][1].id],
             cls=DateTimeJSONEncoder)
         self.assertEqual(expected_first, first)
         self.assertEqual(expected_last, last)
@@ -275,34 +276,61 @@ class TestStormRangeFactory(TestCaseWithFactory):
         resultset = self.makeStormResultSet()
         resultset.order_by(Person.datecreated, Person.name, Person.id)
         range_factory = StormRangeFactory(resultset, self.logError)
-        valid_memo = [datetime(2011, 7, 25, 11, 30, 30, 45), 'foo', 1]
+        valid_memo = [
+            datetime(2011, 7, 25, 11, 30, 30, 45, tzinfo=pytz.UTC), 'foo', 1]
         json_data = simplejson.dumps(valid_memo, cls=DateTimeJSONEncoder)
         self.assertEqual(valid_memo, range_factory.parseMemo(json_data))
         self.assertEqual(0, len(self.error_messages))
 
     def test_parseMemo__short_iso_timestamp(self):
         # An ISO timestamp without fractions of a second
-        # (YYYY-MM-DDThh:mm:ss) is a valid value for colums which
+        # (YYYY-MM-DDThh:mm:ss) is a valid value for columns which
         # store datetime values.
         resultset = self.makeStormResultSet()
         resultset.order_by(Person.datecreated)
         range_factory = StormRangeFactory(resultset, self.logError)
         valid_short_timestamp_json = '["2011-07-25T11:30:30"]'
         self.assertEqual(
-            [datetime(2011, 7, 25, 11, 30, 30)],
+            [datetime(2011, 7, 25, 11, 30, 30, tzinfo=pytz.UTC)],
             range_factory.parseMemo(valid_short_timestamp_json))
         self.assertEqual(0, len(self.error_messages))
 
     def test_parseMemo__long_iso_timestamp(self):
         # An ISO timestamp with fractions of a second
-        # (YYYY-MM-DDThh:mm:ss.ffffff) is a valid value for colums
+        # (YYYY-MM-DDThh:mm:ss.ffffff) is a valid value for columns
         # which store datetime values.
         resultset = self.makeStormResultSet()
         resultset.order_by(Person.datecreated)
         range_factory = StormRangeFactory(resultset, self.logError)
         valid_long_timestamp_json = '["2011-07-25T11:30:30.123456"]'
         self.assertEqual(
-            [datetime(2011, 7, 25, 11, 30, 30, 123456)],
+            [datetime(2011, 7, 25, 11, 30, 30, 123456, tzinfo=pytz.UTC)],
+            range_factory.parseMemo(valid_long_timestamp_json))
+        self.assertEqual(0, len(self.error_messages))
+
+    def test_parseMemo__short_iso_timestamp_with_tzoffset(self):
+        # An ISO timestamp with fractions of a second and a time zone
+        # offset (YYYY-MM-DDThh:mm:ss.ffffff+hh:mm) is a valid value
+        # for columns which store datetime values.
+        resultset = self.makeStormResultSet()
+        resultset.order_by(Person.datecreated)
+        range_factory = StormRangeFactory(resultset, self.logError)
+        valid_long_timestamp_json = '["2011-07-25T11:30:30-01:00"]'
+        self.assertEqual(
+            [datetime(2011, 7, 25, 12, 30, 30, tzinfo=pytz.UTC)],
+            range_factory.parseMemo(valid_long_timestamp_json))
+        self.assertEqual(0, len(self.error_messages))
+
+    def test_parseMemo__long_iso_timestamp_with_tzoffset(self):
+        # An ISO timestamp with fractions of a second and a time zone
+        # offset (YYYY-MM-DDThh:mm:ss.ffffff+hh:mm) is a valid value
+        # for columns which store datetime values.
+        resultset = self.makeStormResultSet()
+        resultset.order_by(Person.datecreated)
+        range_factory = StormRangeFactory(resultset, self.logError)
+        valid_long_timestamp_json = '["2011-07-25T11:30:30.123456+01:00"]'
+        self.assertEqual(
+            [datetime(2011, 7, 25, 10, 30, 30, 123456, tzinfo=pytz.UTC)],
             range_factory.parseMemo(valid_long_timestamp_json))
         self.assertEqual(0, len(self.error_messages))
 
@@ -319,7 +347,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
             ["Invalid datetime value: '2011-05-35T11:30:30'"],
             self.error_messages)
 
-    def test_parseMemo__nonsencial_iso_timestamp_value(self):
+    def test_parseMemo__nonsensical_iso_timestamp_value(self):
         # A memo string is rejected when an ISO timespamp is expected
         # but a nonsensical string is provided.
         resultset = self.makeStormResultSet()
@@ -352,6 +380,69 @@ class TestStormRangeFactory(TestCaseWithFactory):
         self.assertIs(Person.id, reverse_person_id.expr)
         self.assertIs(Person.name, person_name)
 
+    def test_limitsGroupedByOrderDirection(self):
+        # limitsGroupedByOrderDirection() returns a sequence of
+        # (expressions, memos), where expressions is a list of
+        # ORDER BY expressions which either are all instances of
+        # PropertyColumn, or are all instances of Desc(PropertyColumn).
+        # memos are the related limit values.
+        range_factory = StormRangeFactory(None, self.logError)
+        order_by = [
+            Person.id, Person.datecreated, Person.name, Person.displayname]
+        limits = [1, datetime(2011, 07, 25, 0, 0, 0), 'foo', 'bar']
+        result = range_factory.limitsGroupedByOrderDirection(order_by, limits)
+        self.assertEqual([(order_by, limits)], result)
+        order_by = [
+            Desc(Person.id), Desc(Person.datecreated), Desc(Person.name),
+            Desc(Person.displayname)]
+        result = range_factory.limitsGroupedByOrderDirection(order_by, limits)
+        self.assertEqual([(order_by, limits)], result)
+        order_by = [
+            Person.id, Person.datecreated, Desc(Person.name),
+            Desc(Person.displayname)]
+        result = range_factory.limitsGroupedByOrderDirection(order_by, limits)
+        self.assertEqual(
+            [(order_by[:2], limits[:2]), (order_by[2:], limits[2:])], result)
+
+    def test_lessThanOrGreaterThanExpression__asc(self):
+        # beforeOrAfterExpression() returns an expression
+        # (col1, col2,..) > (memo1, memo2...) for ascending sort order.
+        range_factory = StormRangeFactory(None, self.logError)
+        expressions = [Person.id, Person.name]
+        limits = [1, 'foo']
+        limit_expression = range_factory.lessThanOrGreaterThanExpression(
+            expressions, limits)
+        self.assertEqual(
+            "(Person.id, Person.name) > (1, 'foo')",
+            compile(limit_expression))
+
+    def test_lessThanOrGreaterThanExpression__desc(self):
+        # beforeOrAfterExpression() returns an expression
+        # (col1, col2,..) < (memo1, memo2...) for descending sort order.
+        range_factory = StormRangeFactory(None, self.logError)
+        expressions = [Desc(Person.id), Desc(Person.name)]
+        limits = [1, 'foo']
+        limit_expression = range_factory.lessThanOrGreaterThanExpression(
+            expressions, limits)
+        self.assertEqual(
+            "(Person.id, Person.name) < (1, 'foo')",
+            compile(limit_expression))
+
+    def test_equalsExpressionsFromLimits(self):
+        range_factory = StormRangeFactory(None, self.logError)
+        order_by = [
+            Person.id, Person.datecreated, Desc(Person.name),
+            Desc(Person.displayname)]
+        limits = [
+            1, datetime(2011, 07, 25, 0, 0, 0, tzinfo=pytz.UTC), 'foo', 'bar']
+        limits = range_factory.limitsGroupedByOrderDirection(order_by, limits)
+        equals_expressions = range_factory.equalsExpressionsFromLimits(limits)
+        equals_expressions = map(compile, equals_expressions)
+        self.assertEqual(
+            ['Person.id = ?', 'Person.datecreated = ?', 'Person.name = ?',
+             'Person.displayname = ?'],
+            equals_expressions)
+
     def test_whereExpressions__asc(self):
         """For ascending sort order, whereExpressions() returns the
         WHERE clause expression > memo.
@@ -359,7 +450,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         resultset = self.makeStormResultSet()
         range_factory = StormRangeFactory(resultset, self.logError)
         [where_clause] = range_factory.whereExpressions([Person.id], [1])
-        self.assertEquals('Person.id > ?', compile(where_clause))
+        self.assertEquals('(Person.id) > (1)', compile(where_clause))
 
     def test_whereExpressions_desc(self):
         """For descending sort order, whereExpressions() returns the
@@ -369,7 +460,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         range_factory = StormRangeFactory(resultset, self.logError)
         [where_clause] = range_factory.whereExpressions(
             [Desc(Person.id)], [1])
-        self.assertEquals('Person.id < ?', compile(where_clause))
+        self.assertEquals('(Person.id) < (1)', compile(where_clause))
 
     def test_whereExpressions__two_sort_columns_asc_asc(self):
         """If the ascending sort columns c1, c2 and the memo values
@@ -417,8 +508,9 @@ class TestStormRangeFactory(TestCaseWithFactory):
         [where_clause_1, where_clause_2] = range_factory.whereExpressions(
             [Person.id, Desc(Person.name)], [1, 'foo'])
         self.assertEquals(
-            'Person.id = ? AND Person.name < ?', compile(where_clause_1))
-        self.assertEquals('Person.id > ?', compile(where_clause_2))
+            "Person.id = ? AND ((Person.name) < ('foo'))",
+            compile(where_clause_1))
+        self.assertEquals('(Person.id) > (1)', compile(where_clause_2))
 
     def test_getSlice__forward_without_memo(self):
         resultset = self.makeStormResultSet()
@@ -426,7 +518,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         all_results = list(resultset)
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3)
-        self.assertEqual(all_results[:3], list(sliced_result))
+        self.assertEqual(all_results[:3], sliced_result)
 
     def test_getSlice__forward_with_memo(self):
         resultset = self.makeStormResultSet()
@@ -435,7 +527,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         memo = simplejson.dumps([all_results[0].name, all_results[0].id])
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, memo)
-        self.assertEqual(all_results[1:4], list(sliced_result))
+        self.assertEqual(all_results[1:4], sliced_result)
 
     def test_getSlice__backward_without_memo(self):
         resultset = self.makeStormResultSet()
@@ -445,7 +537,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         expected.reverse()
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, forwards=False)
-        self.assertEqual(expected, list(sliced_result))
+        self.assertEqual(expected, sliced_result)
 
     def test_getSlice_backward_with_memo(self):
         resultset = self.makeStormResultSet()
@@ -456,7 +548,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         memo = simplejson.dumps([all_results[4].name, all_results[4].id])
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, memo, forwards=False)
-        self.assertEqual(expected, list(sliced_result))
+        self.assertEqual(expected, sliced_result)
 
     def makeResultSetWithPartiallyIdenticalSortData(self):
         # Create a result set, where each value of
@@ -493,17 +585,25 @@ class TestStormRangeFactory(TestCaseWithFactory):
             [memo_lfa.mimetype, memo_lfa.filename, memo_lfa.id])
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, memo)
-        self.assertEqual(all_results[3:6], list(sliced_result))
+        self.assertEqual(all_results[3:6], sliced_result)
 
     def test_getSlice__decorated_resultset(self):
         resultset = self.makeDecoratedStormResultSet()
         resultset.order_by(LibraryFileAlias.id)
         all_results = list(resultset)
-        memo = simplejson.dumps([resultset.getPlainResultSet()[0][1].id])
+        memo = simplejson.dumps([resultset.get_plain_result_set()[0][1].id])
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, memo)
-        self.assertEqual(all_results[1:4], list(sliced_result))
+        self.assertEqual(all_results[1:4], sliced_result)
 
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+    def test_getSlice__returns_list(self):
+        # getSlice() returns lists.
+        resultset = self.makeStormResultSet()
+        resultset.order_by(Person.id)
+        all_results = list(resultset)
+        range_factory = StormRangeFactory(resultset)
+        sliced_result = range_factory.getSlice(3)
+        self.assertIsInstance(sliced_result, list)
+        memo = simplejson.dumps([all_results[0].name])
+        sliced_result = range_factory.getSlice(3, memo)
+        self.assertIsInstance(sliced_result, list)

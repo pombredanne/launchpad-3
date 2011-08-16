@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -163,7 +161,3 @@ class TestDistributionSourcePackageFindRelatedArchives(TestCaseWithFactory):
             archive.name for archive in related_archives]
 
         self.assertEqual(related_archive_names, ['gedit-beta'])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
