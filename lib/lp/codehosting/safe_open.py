@@ -176,7 +176,7 @@ class SafeBranchOpener(object):
         has a 'opener' attribute in this thread.
 
         This is in a module-level function rather than performed at module level
-        so that it can be called in setUp for testing `checked_open` as
+        so that it can be called in setUp for testing `SafeBranchOpener` as
         bzrlib.tests.TestCase.setUp clears hooks.
         """
         Branch.hooks.install_named_hook(
@@ -236,12 +236,12 @@ class SafeBranchOpener(object):
 
     def runWithTransformFallbackLocationHookInstalled(
             self, callable, *args, **kw):
+        assert (self.transformFallbackLocationHook in
+                Branch.hooks['transform_fallback_location'])
         self._threading_data.opener = self
-        self.install_hook()
         try:
             return callable(*args, **kw)
         finally:
-            self.uninstall_hook()
             del self._threading_data.opener
             # We reset _seen_urls here to avoid multiple calls to open giving
             # spurious loop exceptions.
@@ -291,3 +291,6 @@ def safe_open(allowed_scheme, url):
         `allowed_scheme`.
     """
     return SafeBranchOpener(URLChecker(allowed_scheme)).open(url)
+
+
+SafeBranchOpener.install_hook()

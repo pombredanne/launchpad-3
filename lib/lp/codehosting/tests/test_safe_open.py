@@ -48,6 +48,7 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
         def __init__(self, references, policy):
             parent_cls = TestSafeBranchOpenerCheckAndFollowBranchReference
             super(parent_cls.StubbedSafeBranchOpener, self).__init__(policy)
+            SafeBranchOpener.install_hook()
             self._reference_values = {}
             for i in range(len(references) - 1):
                 self._reference_values[references[i]] = references[i+1]
@@ -122,6 +123,10 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
 
 
 class TestSafeBranchOpenerStacking(TestCaseWithTransport):
+
+    def setUp(self):
+        super(TestSafeBranchOpenerStacking, self).setUp()
+        SafeBranchOpener.install_hook()
 
     def makeBranchOpener(self, allowed_urls):
         policy = WhitelistPolicy(True, allowed_urls, True)
@@ -227,6 +232,10 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
 
 class TestSafeOpen(TestCaseWithTransport):
     """Tests for `safe_open`."""
+
+    def setUp(self):
+        super(TestSafeOpen, self).setUp()
+        SafeBranchOpener.install_hook()
 
     def get_chrooted_scheme(self, relpath):
         """Create a server that is chrooted to `relpath`.
