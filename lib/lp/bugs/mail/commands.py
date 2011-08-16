@@ -428,15 +428,7 @@ class AffectsEmailCommand(EmailCommand):
         """Split the path part into two.
 
         The first part is the part before any slash, and the other is
-        the part behind the slash:
-
-            >>> AffectsEmailCommand._splitPath('foo/bar/baz')
-            ('foo', 'bar/baz')
-
-        If No slash is in the path, the other part will be empty.
-
-            >>> AffectsEmailCommand._splitPath('foo')
-            ('foo', '')
+        the part behind the slash.
         """
         if '/' not in path:
             return path, ''
