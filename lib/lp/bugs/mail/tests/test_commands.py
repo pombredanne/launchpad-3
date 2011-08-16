@@ -69,12 +69,30 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
             BugTargetNotFound, message,
             AffectsEmailCommand.getBugTarget, 'fnord')
 
-    def test_getBugTarget_no_series_error(self):
+    def test_getBugTarget_project(self):
+        project = self.factory.makeProduct(name='fnord')
+        self.assertEqual(project, AffectsEmailCommand.getBugTarget('fnord'))
+
+    def test_getBugTarget_no_project_series_error(self):
         self.factory.makeProduct(name='fnord')
         message = "Fnord doesn't have a series named 'pting'."
         self.assertRaisesWithContent(
             BugTargetNotFound, message,
             AffectsEmailCommand.getBugTarget, 'fnord/pting')
+
+    def test_getBugTarget_project_series(self):
+        project = self.factory.makeProduct(name='fnord')
+        series = self.factory.makeProductSeries(name='pting', product=project)
+        self.assertEqual(
+            series, AffectsEmailCommand.getBugTarget('fnord/pting'))
+
+    def test_getBugTarget_product_extra_path_error(self):
+        product = self.factory.makeProduct(name='fnord')
+        self.factory.makeProductSeries(name='pting', product=product)
+        message = "Unexpected path components: snarf"
+        self.assertRaisesWithContent(
+            BugTargetNotFound, message,
+            AffectsEmailCommand.getBugTarget, 'fnord/pting/snarf')
 
     def test_getBugTarget_no_series_or_package_error(self):
         self.factory.makeDistribution(name='fnord')
@@ -84,13 +102,36 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
             BugTargetNotFound, message,
             AffectsEmailCommand.getBugTarget, 'fnord/pting')
 
-    def test_getBugTarget_product_extra_path_error(self):
-        product = self.factory.makeProduct(name='fnord')
-        self.factory.makeProductSeries(name='pting', product=product)
-        message = "Unexpected path components: snarf"
-        self.assertRaisesWithContent(
-            BugTargetNotFound, message,
-            AffectsEmailCommand.getBugTarget, 'fnord/pting/snarf')
+    def test_getBugTarget_distribution(self):
+        distribution = self.factory.makeDistribution(name='fnord')
+        self.assertEqual(
+            distribution, AffectsEmailCommand.getBugTarget('fnord'))
+
+    def test_getBugTarget_distroseries(self):
+        distribution = self.factory.makeDistribution(name='fnord')
+        series = self.factory.makeDistroSeries(
+            name='pting', distribution=distribution)
+        self.assertEqual(
+            series, AffectsEmailCommand.getBugTarget('fnord/pting'))
+
+    def test_getBugTarget_source_package(self):
+        distribution = self.factory.makeDistribution(name='fnord')
+        series = self.factory.makeDistroSeries(
+            name='pting', distribution=distribution)
+        package = self.factory.makeSourcePackage(
+            sourcepackagename='snarf', distroseries=series, publish=True)
+        self.assertEqual(
+            package, AffectsEmailCommand.getBugTarget('fnord/pting/snarf'))
+
+    def test_getBugTarget_distribution_source_package(self):
+        distribution = self.factory.makeDistribution(name='fnord')
+        series = self.factory.makeDistroSeries(
+            name='pting', distribution=distribution)
+        package = self.factory.makeSourcePackage(
+            sourcepackagename='snarf', distroseries=series, publish=True)
+        dsp = distribution.getSourcePackage(package.name)
+        self.assertEqual(
+            dsp, AffectsEmailCommand.getBugTarget('fnord/snarf'))
 
     def test_getBugTarget_distribution_extra_path_error(self):
         distribution = self.factory.makeDistribution(name='fnord')
