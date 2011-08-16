@@ -81,7 +81,7 @@ class TestErrorReport(testtools.TestCase):
                              ('name1', 'value3')],
                             [(1, 5, 'store_a', 'SELECT 1'),
                              (5, 10, 'store_b', 'SELECT 2')],
-                            False)
+                            )
         self.assertEqual(entry.id, 'id')
         self.assertEqual(entry.type, 'exc-type')
         self.assertEqual(entry.value, 'exc-value')
@@ -92,7 +92,6 @@ class TestErrorReport(testtools.TestCase):
         self.assertEqual(entry.username, 'username')
         self.assertEqual(entry.url, 'url')
         self.assertEqual(entry.duration, 42)
-        self.assertEqual(entry.informational, False)
         self.assertEqual(len(entry.req_vars), 3)
         self.assertEqual(entry.req_vars[0], ('name1', 'value1'))
         self.assertEqual(entry.req_vars[1], ('name2', 'value2'))
@@ -510,17 +509,6 @@ class TestErrorReportingUtility(testtools.TestCase):
         report = utility.raising((exc_type, exc_value, exc_tb))
         # traceback is what we supplied.
         self.assertEqual(exc_tb, report['tb_text'])
-
-    def test_handling(self):
-        """Test ErrorReportingUtility.handling()."""
-        utility = ErrorReportingUtility()
-
-        try:
-            raise ArbitraryException('xyz')
-        except ArbitraryException:
-            report = utility.handling(sys.exc_info())
-
-        self.assertEqual(report['informational'], True)
 
     def test_oopsMessage(self):
         """oopsMessage pushes and pops the messages."""

@@ -139,7 +139,7 @@ class ErrorReport:
     implements(IErrorReport)
 
     def __init__(self, id, type, value, time, pageid, tb_text, username,
-                 url, duration, req_vars, db_statements, informational,
+                 url, duration, req_vars, db_statements, informational=None,
                  branch_nick=None, revno=None):
         self.id = id
         self.type = type
@@ -150,11 +150,11 @@ class ErrorReport:
         self.username = username
         self.url = url
         self.duration = duration
+        # informational is ignored - will be going from the oops module soon too.
         self.req_vars = req_vars
         self.db_statements = db_statements
         self.branch_nick = branch_nick or versioninfo.branch_nick
         self.revno = revno or versioninfo.revno
-        self.informational = informational
 
     def __repr__(self):
         return '<ErrorReport %s %s: %s>' % (self.id, self.type, self.value)
@@ -281,11 +281,7 @@ class ErrorReportingUtility:
 
     def raising(self, info, request=None):
         """See IErrorReportingUtility.raising()"""
-        return self._raising(info, request=request, informational=False)
-
-    def _raising(self, info, request=None, informational=False):
-        """Private method used by raising() and handling()."""
-        report = self._makeReport(info, request, informational)
+        report = self._makeReport(info, request)
         if self._filterReport(report):
             return
         self._sendReport(report)
@@ -352,14 +348,12 @@ class ErrorReportingUtility:
                     return True
         return False
 
-    def _makeReport(self, info, request=None, informational=False):
+    def _makeReport(self, info, request=None):
         """Create an unallocated OOPS.
 
         :param info: Output of sys.exc_info()
         :param request: The IErrorReportRequest which provides context to the
             info.
-        :param informational: If true, the report is flagged as informational
-            only.
         """
         report = self._oops_config.create()
         report['type'] = _safestr(getattr(info[0], '__name__', info[0]))
@@ -372,7 +366,6 @@ class ErrorReportingUtility:
         report['tb_text'] = _safestr(tb_text)
         report['req_vars'] = []
         report['time'] = datetime.datetime.now(UTC)
-        report['informational'] = informational
         # Because of IUnloggedException being a sidewards lookup we must
         # capture this here to filter on later.
         report['ignore'] = IUnloggedException.providedBy(info[1])
@@ -454,16 +447,6 @@ class ErrorReportingUtility:
         if IXMLRPCRequest.providedBy(request):
             args = request.getPositionalArguments()
             report['req_vars'].append(('xmlrpc args', _safestr(args)))
-
-    def handling(self, info, request=None):
-        """Flag ErrorReport as informational only.
-
-        :param info: Output of sys.exc_info()
-        :param request: The IErrorReportRequest which provides context to the
-            info.
-        :return: The ErrorReport created.
-        """
-        return self._raising(info, request=request, informational=True)
 
     @contextlib.contextmanager
     def oopsMessage(self, message):
@@ -575,7 +558,7 @@ def maybe_record_user_requested_oops():
         request.oopsid is not None or
         not request.annotations.get(LAZR_OOPS_USER_REQUESTED_KEY, False)):
         return None
-    globalErrorUtility.handling(
+    globalErrorUtility.raising(
         (UserRequestOops, UserRequestOops(), None), request)
     return request.oopsid
 
