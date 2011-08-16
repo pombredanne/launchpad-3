@@ -20,7 +20,7 @@ import urlparse
 
 from lazr.restful.utils import get_current_browser_request
 import oops
-from oops_datedir_repo.uniquefileallocator import UniqueFileAllocator
+from oops_datedir_repo import DateDirRepo
 import oops_datedir_repo.serializer_rfc822
 import pytz
 from zope.component.interfaces import ObjectEvent
@@ -166,39 +166,11 @@ class ErrorReport:
         return cls(**report)
 
 
-class DateDirRepo:
-    """Publish oopses to a date-dir repository."""
-
-    def __init__(self, error_dir, instance_id):
-        self.log_namer = UniqueFileAllocator(
-            output_root=error_dir,
-            log_type="OOPS",
-            log_subtype=instance_id,
-            )
-
-    def publish(self, report, now=None):
-        """Write the report to disk.
-
-        :param now: The datetime to use as the current time.  Will be
-            determined if not supplied.  Useful for testing.
-        """
-        if now is not None:
-            now = now.astimezone(UTC)
-        else:
-            now = datetime.datetime.now(UTC)
-        oopsid, filename = self.log_namer.newId(now)
-        report['id'] = oopsid
-        oops_datedir_repo.serializer_rfc822.write(report, open(filename, 'wb'))
-        # Set file permission to: rw-r--r--
-        wanted_permission = (
-            stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
-        os.chmod(filename, wanted_permission)
-        return report['id']
-
-
 def notify_publisher(report):
+    if not report.get('id'):
+        report['id'] = str(id(report))
     notify(ErrorReportEvent(report))
-    return report.get('id')
+    return report['id']
 
 
 
@@ -324,7 +296,7 @@ class ErrorReportingUtility:
             return
         self._oops_config.publish(report)
         if request:
-            request.oopsid = report['id']
+            request.oopsid = report.get('id')
             request.oops = report
         return report
 
