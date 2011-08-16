@@ -8,35 +8,6 @@ IBugTarget is done by the AffectsEmailCommand.getBugTarget method.
 
     >>> from lp.bugs.mail.commands import AffectsEmailCommand
 
-It accepts a single parameter, the name/path of the bugtarget. If a
-non-existant name/path is given an exception is raised with an
-appropriate error message
-
-    >>> AffectsEmailCommand.getBugTarget('non-existant')
-    Traceback (most recent call last):
-    ...
-    BugTargetNotFound: There is no project named 'non-existant'
-                       registered in Launchpad.
-
-The same exception is raised also when the name contains slashes:
-
-    >>> AffectsEmailCommand.getBugTarget('non-existant/dapper/evolution')
-    Traceback (most recent call last):
-    ...
-    BugTargetNotFound: There is no project named 'non-existant'
-                       registered in Launchpad.
-
-Even though a ProjectGroup is an IBugTarget, it's not possible to file bugs
-on it, so an exception with an appropriate error message is raised.
-
-    >>> AffectsEmailCommand.getBugTarget('gnome')
-    Traceback (most recent call last):
-    ...
-    BugTargetNotFound: gnome is a group of projects. To report a bug,
-                       you need to specify which of these projects the
-                       bug applies to: evolution, gnome-terminal, applets,
-                       netapplet, gnomebaker
-
 
 Getting a product
 -----------------
@@ -49,18 +20,6 @@ Getting a product is done by specifying the name of the product.
     True
     >>> evolution.name
     u'evolution'
-
-Inactive products are treated like non-existant ones.
-
-    >>> from lp.registry.interfaces.product import IProductSet
-    >>> unassigned = getUtility(IProductSet).getByName('unassigned')
-    >>> unassigned.active
-    False
-    >>> AffectsEmailCommand.getBugTarget(unassigned.name)
-    Traceback (most recent call last):
-    ...
-    BugTargetNotFound: There is no project named 'unassigned'
-                       registered in Launchpad.
 
 
 Getting a product series
@@ -77,22 +36,6 @@ name have to be given, separated with a slash.
     u'evolution'
     >>> evolution_trunk.name
     u'trunk'
-
-If a non-existant product series is given, an exception is raised with
-an appropriate error message.
-
-    >>> AffectsEmailCommand.getBugTarget('evolution/non-existant')
-    Traceback (most recent call last):
-    ...
-    BugTargetNotFound: Evolution doesn't have a series named 'non-existant'.
-
-If some additional path component is included after the series, an
-exception with an appropriate error is raised.
-
-    >>> AffectsEmailCommand.getBugTarget('evolution/trunk/foo')
-    Traceback (most recent call last):
-    ...
-    BugTargetNotFound: Unexpected path components: foo
 
 
 Getting a distribution
@@ -126,23 +69,6 @@ package.
     u'evolution'
     >>> ubuntu_evolution.distribution.name
     u'ubuntu'
-
-If a non-existant source package is given, an exception is raised with
-an appropriate error message.
-
-    >>> AffectsEmailCommand.getBugTarget('ubuntu/non-existant')
-    Traceback (most recent call last):
-    ...
-    BugTargetNotFound: Ubuntu doesn't have a series or source package
-                       named 'non-existant'.
-
-If some additional path component is included after the package, an
-exception with an appropriate error is raised.
-
-    >>> AffectsEmailCommand.getBugTarget('ubuntu/evolution/foo')
-    Traceback (most recent call last):
-    ...
-    BugTargetNotFound: Unexpected path components: foo
 
 
 Getting a distribution series
@@ -182,20 +108,3 @@ package is given after the distribution series.
     u'warty'
     >>> warty_evolution.distroseries.distribution.name
     u'ubuntu'
-
-If a non-existant source package is given, an exception is raised with
-an appropriate error message.
-
-    >>> AffectsEmailCommand.getBugTarget('ubuntu/warty/non-existant')
-    Traceback (most recent call last):
-    ...
-    BugTargetNotFound: Warty doesn't have a series or source package
-                       named 'non-existant'.
-
-If some additional path component is included after the package, an
-exception with an appropriate error is raised.
-
-    >>> AffectsEmailCommand.getBugTarget('ubuntu/warty/evolution/foo')
-    Traceback (most recent call last):
-    ...
-    BugTargetNotFound: Unexpected path components: foo
