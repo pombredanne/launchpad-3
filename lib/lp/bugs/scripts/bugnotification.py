@@ -302,6 +302,11 @@ def get_email_notifications(bug_notifications):
 
 
 def process_deferred_notifications(bug_notifications):
+    """Transform deferred notifications into real ones.
+
+    Deferred notifications must have their recipients list calculated and then
+    re-inserted as real notifications.
+    """
     bug_notification_set = getUtility(IBugNotificationSet)
     for notification in bug_notifications:
         # Construct the real notification with recipients.

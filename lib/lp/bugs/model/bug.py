@@ -2316,9 +2316,9 @@ class BugSubscriptionInfo:
             Not(In(BugSubscription.person_id,
                    Select(BugMute.person_id,
                           BugMute.bug_id == self.bug.id))))
-        if res is None:
-            return ((), ())
-        return zip(*res)
+        # Here we could test for res.count() but that will execute another
+        # query.  This structure avoids the extra query.
+        return zip(*res) or ((), ())
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
@@ -2334,7 +2334,7 @@ class BugSubscriptionInfo:
     def duplicate_subscriptions_and_subscribers(self):
         """Subscriptions to duplicates of the bug."""
         if self.bug.private:
-            return (), ()
+            return ((), ())
         else:
             res = IStore(BugSubscription).find(
                 (BugSubscription, Person),
@@ -2344,9 +2344,9 @@ class BugSubscriptionInfo:
                 Bug.duplicateof == self.bug,
                 Not(In(BugSubscription.person_id,
                        Select(BugMute.person_id, BugMute.bug_id == Bug.id))))
-            if res is None:
-                return (), ()
-            return zip(*res)
+        # Here we could test for res.count() but that will execute another
+        # query.  This structure avoids the extra query.
+        return zip(*res) or ((), ())
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
