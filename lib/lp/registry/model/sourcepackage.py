@@ -101,6 +101,10 @@ from lp.translations.model.potemplate import TranslationTemplatesCollection
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
     """Implementation of IQuestionTarget for SourcePackage."""
 
+    @property
+    def owner(self):
+        return self.distribution.owner
+
     def getTargetTypes(self):
         """See `QuestionTargetMixin`.
 
