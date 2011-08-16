@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -9,6 +9,7 @@ __all__ = [
     'BinaryPackageBuildSet',
     ]
 
+import collections
 import datetime
 import logging
 import operator
@@ -884,7 +885,7 @@ class BinaryPackageBuildSet:
 
         # Add query clause that filters on pocket if the latter is provided.
         if pocket:
-            if not isinstance(pocket, list):
+            if not isinstance(pocket, collections.Sequence):
                 pocket = (pocket,)
 
             queries.append('PackageBuild.pocket IN %s' % sqlvalues(pocket))
@@ -900,7 +901,7 @@ class BinaryPackageBuildSet:
         # Add query clause that filters on source package release name if the
         # latter is provided.
         if name is not None:
-            if not isinstance(name, list):
+            if not isinstance(name, collections.Sequence):
                 queries.append('''
                     BinaryPackageBuild.source_package_release =
                         SourcePackageRelease.id AND

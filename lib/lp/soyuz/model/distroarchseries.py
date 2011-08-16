@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -8,6 +8,8 @@ __all__ = ['DistroArchSeries',
            'DistroArchSeriesSet',
            'PocketChroot'
            ]
+
+import collections
 
 from sqlobject import (
     BoolCol,
@@ -390,7 +392,7 @@ class DistroArchSeriesSet:
         if arch_tag is None:
             return [arch.id for arch in architectures]
         else:
-            if not isinstance(arch_tag, list):
+            if not isinstance(arch_tag, collections.Sequence):
                 arch_tag = (arch_tag, )
             return [arch.id for arch in architectures
                         if arch.architecturetag in arch_tag]
