@@ -42,7 +42,8 @@ class BugMessage(SQLBase):
         # This is maintained by triggers to ensure validity, but we
         # also set it here to ensure it is visible to the transaction
         # creating a BugMessage.
-        kw['owner'] = kw['message'].owner
+        kw['owner'] = owner = kw['message'].owner
+        assert owner is not None, "BugMessage's Message must have an owner"
         super(BugMessage, self).__init__(*args, **kw)
 
     # db field names
