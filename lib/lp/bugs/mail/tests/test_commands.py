@@ -1,8 +1,6 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from doctest import DocTestSuite
-
 from lp.bugs.mail.commands import (
     AffectsEmailCommand,
     )
@@ -19,5 +17,15 @@ class AffectsEmailCommandTestCase(TestCase):
         self.assertEqual(
             ('foo', ''), AffectsEmailCommand._splitPath('foo'))
 
-def test_suite():
-    return DocTestSuite('lp.bugs.mail.commands')
+    def test__normalizePath_leading_slash(self):
+        self.assertEqual(
+            'foo/bar', AffectsEmailCommand._normalizePath('/foo/bar'))
+
+    def test__normalizePath_distros(self):
+        self.assertEqual(
+            'foo/bar', AffectsEmailCommand._normalizePath('/distros/foo/bar'))
+
+    def test__normalizePath_products(self):
+        self.assertEqual(
+            'foo/bar',
+            AffectsEmailCommand._normalizePath('/products/foo/bar'))

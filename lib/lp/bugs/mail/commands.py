@@ -442,16 +442,6 @@ class AffectsEmailCommand(EmailCommand):
         Previously the path had to start with either /distros/ or
         /products/. Simply remove any such prefixes to stay backward
         compatible.
-
-            >>> AffectsEmailCommand._normalizePath('/distros/foo/bar')
-            'foo/bar'
-            >>> AffectsEmailCommand._normalizePath('/distros/foo/bar')
-            'foo/bar'
-
-        Also remove a starting slash, since that's a common mistake.
-
-            >>> AffectsEmailCommand._normalizePath('/foo/bar')
-            'foo/bar'
         """
         for prefix in ['/distros/', '/products/', '/']:
             if path.startswith(prefix):
