@@ -394,7 +394,7 @@ class PullerMaster:
     def log(self, message):
         self.logger.info('From worker: %s', message)
 
-    def unexpectedError(self, failure, now=None):
+    def unexpectedError(self, failure):
         request = errorlog.ScriptRequest([
             ('branch_id', self.branch_id),
             ('source', self.source_url),
@@ -410,8 +410,7 @@ class PullerMaster:
         if tb is None:
             tb = failure.getTraceback()
         errorlog.globalErrorUtility.raising(
-            (failure.type, failure.value, tb), request,
-            now)
+            (failure.type, failure.value, tb), request)
         self.logger.info('Recorded %s', request.oopsid)
 
 

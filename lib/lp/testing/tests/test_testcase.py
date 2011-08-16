@@ -93,5 +93,8 @@ class TestCaptureOops(TestCaseWithFactory):
         # which is slightly better.
         self.assertIsInstance(content.getvalue(), str)
         from_details = oops_datedir_repo.serializer_rfc822.read(content)
+        # informational is deprecated, but the serializer still inserts it in
+        # 0.0.5.
+        from_details.pop('informational', None)
         oops_report = errorlog.globalErrorUtility.getLastOopsReport()
         self.assertEqual(dict(oops_report.__dict__), from_details)

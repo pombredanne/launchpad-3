@@ -703,7 +703,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
             return fault
         return deferred.addCallback(got_path_info).addErrback(handle_error)
 
-    def unexpectedError(self, failure, request=None, now=None):
+    def unexpectedError(self, failure, request=None):
         # If the sub-process exited abnormally, the stderr it produced is
         # probably a much more interesting traceback than the one attached to
         # the Failure we've been passed.
@@ -713,7 +713,7 @@ class LaunchpadServer(_BaseLaunchpadServer):
         if traceback is None:
             traceback = failure.getTraceback()
         errorlog.globalErrorUtility.raising(
-            (failure.type, failure.value, traceback), request, now)
+            (failure.type, failure.value, traceback), request)
 
 
 def get_lp_server(user_id, codehosting_endpoint_url=None, branch_url=None,
