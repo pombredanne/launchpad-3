@@ -17,6 +17,7 @@ import tempfile
 from textwrap import dedent
 import traceback
 
+from fixtures import TempDir
 from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 from lazr.restful.declarations import error_status
 from oops_datedir_repo.uniquefileallocator import UniqueFileAllocator
@@ -172,7 +173,8 @@ class TestErrorReportingUtility(testtools.TestCase):
 
     def test_sets_log_namer_to_a_UniqueFileAllocator(self):
         utility = ErrorReportingUtility()
-        self.assertIsInstance(utility.log_namer, UniqueFileAllocator)
+        self.assertIsInstance(
+                utility._oops_datedir_repo.log_namer, UniqueFileAllocator)
 
     def test_configure(self):
         """Test ErrorReportingUtility.setConfigSection()."""
@@ -182,21 +184,21 @@ class TestErrorReportingUtility(testtools.TestCase):
         self.assertEqual(config.error_reports.oops_prefix,
             utility.oops_prefix)
         self.assertEqual(config.error_reports.error_dir,
-            utility.log_namer._output_root)
+            utility._oops_datedir_repo.log_namer._output_root)
         # Some external processes may use another config section to
         # provide the error log configuration.
         utility.configure(section_name='branchscanner')
         self.assertEqual(config.branchscanner.oops_prefix,
             utility.oops_prefix)
         self.assertEqual(config.branchscanner.error_dir,
-            utility.log_namer._output_root)
+            utility._oops_datedir_repo.log_namer._output_root)
 
         # The default error section can be restored.
         utility.configure()
         self.assertEqual(config.error_reports.oops_prefix,
             utility.oops_prefix)
         self.assertEqual(config.error_reports.error_dir,
-            utility.log_namer._output_root)
+            utility._oops_datedir_repo.log_namer._output_root)
 
     def test_setOopsToken(self):
         """Test ErrorReportingUtility.setOopsToken()."""
@@ -219,10 +221,10 @@ class TestErrorReportingUtility(testtools.TestCase):
         umask_permission = stat.S_IRWXG | stat.S_IRWXO
         old_umask = os.umask(umask_permission)
         self.addCleanup(os.umask, old_umask)
-        utility._sendReport(report, now)
+        utility._oops_datedir_repo.publish(report, now)
 
         errorfile = os.path.join(
-            utility.log_namer.output_dir(now), '01800.T1')
+            utility._oops_datedir_repo.log_namer.output_dir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
 
         # Check errorfile is set with the correct permission: rw-r--r--
@@ -652,11 +654,10 @@ class TestOopsLoggingHandler(TestCase):
         TestCase.setUp(self)
         self.logger = logging.getLogger(self.factory.getUniqueString())
         self.error_utility = ErrorReportingUtility()
-        self.error_utility.log_namer._output_root = tempfile.mkdtemp()
+        tempdir = self.useFixture(TempDir()).path
+        self.error_utility._oops_datedir_repo.log_namer._output_root = tempdir
         self.logger.addHandler(
             OopsLoggingHandler(error_utility=self.error_utility))
-        self.addCleanup(
-            remove_tree, self.error_utility.log_namer._output_root)
 
     def test_exception_records_oops(self):
         # When OopsLoggingHandler is a handler for a logger, any exceptions

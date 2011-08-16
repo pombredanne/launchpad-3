@@ -166,6 +166,42 @@ class ErrorReport:
         return cls(**report)
 
 
+class DateDirRepo:
+    """Publish oopses to a date-dir repository."""
+
+    def __init__(self, error_dir, instance_id):
+        self.log_namer = UniqueFileAllocator(
+            output_root=error_dir,
+            log_type="OOPS",
+            log_subtype=instance_id,
+            )
+
+    def publish(self, report, now=None):
+        """Write the report to disk.
+
+        :param now: The datetime to use as the current time.  Will be
+            determined if not supplied.  Useful for testing.
+        """
+        if now is not None:
+            now = now.astimezone(UTC)
+        else:
+            now = datetime.datetime.now(UTC)
+        oopsid, filename = self.log_namer.newId(now)
+        report['id'] = oopsid
+        oops_datedir_repo.serializer_rfc822.write(report, open(filename, 'wb'))
+        # Set file permission to: rw-r--r--
+        wanted_permission = (
+            stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
+        os.chmod(filename, wanted_permission)
+        return report['id']
+
+
+def notify_publisher(report):
+    notify(ErrorReportEvent(report))
+    return report.get('id')
+
+
+
 class ErrorReportingUtility:
     implements(IErrorReportingUtility)
 
@@ -182,9 +218,6 @@ class ErrorReportingUtility:
         self._oops_messages = {}
         self._oops_message_key_iter = (
             index for index, _ignored in enumerate(repeat(None)))
-        self._oops_config = oops.Config()
-        self._oops_config.template['branch_nick'] = versioninfo.branch_nick
-        self._oops_config.template['revno'] = versioninfo.revno
 
     def configure(self, section_name=None):
         """Configure the utility using the named section from the config.
@@ -193,15 +226,17 @@ class ErrorReportingUtility:
         """
         if section_name is None:
             section_name = self._default_config_section
-        # Start a new UniqueFileAllocator to activate the new configuration.
-        self.log_namer = UniqueFileAllocator(
-            output_root=config[section_name].error_dir,
-            log_type="OOPS",
-            log_subtype=config[section_name].oops_prefix,
-            )
+        self._oops_config = oops.Config()
+        self._oops_config.template['branch_nick'] = versioninfo.branch_nick
+        self._oops_config.template['revno'] = versioninfo.revno
+        self._oops_datedir_repo = DateDirRepo(
+                config[section_name].error_dir,
+                config[section_name].oops_prefix)
+        self._oops_config.publishers.append(self._oops_datedir_repo.publish)
+        self._oops_config.publishers.append(notify_publisher)
 
     def setOopsToken(self, token):
-        return self.log_namer.setToken(token)
+        return self._oops_datedir_repo.log_namer.setToken(token)
 
     @property
     def oops_prefix(self):
@@ -209,17 +244,18 @@ class ErrorReportingUtility:
 
         This is the log subtype + anything set via setOopsToken.
         """
-        return self.log_namer.get_log_infix()
+        return self._oops_datedir_repo.log_namer.get_log_infix()
 
     def getOopsReport(self, time):
         """Return the contents of the OOPS report logged at 'time'."""
         # How this works - get a serial that was logging in the dir
         # that logs for time are logged in.
-        serial_from_time = self.log_namer._findHighestSerial(
-            self.log_namer.output_dir(time))
+        serial_from_time = self._oops_datedir_repo.log_namer._findHighestSerial(
+            self._oops_datedir_repo.log_namer.output_dir(time))
         # Calculate a filename which combines this most recent serial,
         # the current log_namer naming rules and the exact timestamp.
-        oops_filename = self.log_namer.getFilename(serial_from_time, time)
+        oops_filename = self._oops_datedir_repo.log_namer.getFilename(
+                serial_from_time, time)
         # Note that if there were no logs written, or if there were two
         # oops that matched the time window of directory on disk, this
         # call can raise an IOError.
@@ -239,7 +275,8 @@ class ErrorReportingUtility:
         If no report is found, return None.
         """
         suffix = re.search('[0-9]*$', oops_id).group(0)
-        for directory, name in self.log_namer.listRecentReportFiles():
+        for directory, name in \
+            self._oops_datedir_repo.log_namer.listRecentReportFiles():
             if not name.endswith(suffix):
                 continue
             with open(os.path.join(directory, name), 'r') as oops_report_file:
@@ -265,11 +302,12 @@ class ErrorReportingUtility:
         """
         now = datetime.datetime.now(UTC)
         # Check today
-        oopsid, filename = self.log_namer._findHighestSerialFilename(time=now)
+        log_namer = self._oops_datedir_repo.log_namer
+        oopsid, filename = log_namer._findHighestSerialFilename(time=now)
         if filename is None:
             # Check yesterday, we may have just passed midnight.
             yesterday = now - datetime.timedelta(days=1)
-            oopsid, filename = self.log_namer._findHighestSerialFilename(
+            oopsid, filename = log_namer._findHighestSerialFilename(
                 time=yesterday)
             if filename is None:
                 return None
@@ -284,30 +322,11 @@ class ErrorReportingUtility:
         report = self._makeReport(info, request)
         if self._filterReport(report):
             return
-        self._sendReport(report)
+        self._oops_config.publish(report)
         if request:
             request.oopsid = report['id']
             request.oops = report
         return report
-
-    def _sendReport(self, report, now=None):
-        """Send the report to its destination.
-
-        :param now: The datetime to use as the current time.  Will be
-            determined if not supplied.  Useful for testing.
-        """
-        if now is not None:
-            now = now.astimezone(UTC)
-        else:
-            now = datetime.datetime.now(UTC)
-        oopsid, filename = self.log_namer.newId(now)
-        report['id'] = oopsid
-        oops_datedir_repo.serializer_rfc822.write(report, open(filename, 'wb'))
-        # Set file permission to: rw-r--r--
-        wanted_permission = (
-            stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
-        os.chmod(filename, wanted_permission)
-        notify(ErrorReportEvent(report))
 
     def filter_session_statement(self, database_id, statement):
         """Replace quoted strings with '%s' in statements on session DB."""
