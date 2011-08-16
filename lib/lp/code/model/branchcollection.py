@@ -212,6 +212,38 @@ class GenericBranchCollection:
         return [
             With("candidate_branches", SQL("SELECT id from scope_branches"))]
 
+    def _preloadDataForBranches(self, branches):
+        """Preload branches cached associated product series and
+        suite source packages."""
+        caches = dict((branch.id, get_property_cache(branch))
+            for branch in branches)
+        branch_ids = caches.keys()
+        for cache in caches.values():
+            if not safe_hasattr(cache, '_associatedProductSeries'):
+                cache._associatedProductSeries = []
+            if not safe_hasattr(cache, '_associatedSuiteSourcePackages'):
+                cache._associatedSuiteSourcePackages = []
+            if not safe_hasattr(cache, 'code_import'):
+                cache.code_import = None
+        # associatedProductSeries
+        # Imported here to avoid circular import.
+        from lp.registry.model.productseries import ProductSeries
+        for productseries in self.store.find(
+            ProductSeries,
+            ProductSeries.branchID.is_in(branch_ids)):
+            cache = caches[productseries.branchID]
+            cache._associatedProductSeries.append(productseries)
+        # associatedSuiteSourcePackages
+        series_set = getUtility(IFindOfficialBranchLinks)
+        # Order by the pocket to get the release one first. If changing
+        # this be sure to also change BranchCollection.getBranches.
+        links = series_set.findForBranches(branches).order_by(
+            SeriesSourcePackageBranch.pocket)
+        for link in links:
+            cache = caches[link.branchID]
+            cache._associatedSuiteSourcePackages.append(
+                link.suite_sourcepackage)
+
     def getBranches(self, eager_load=False):
         """See `IBranchCollection`."""
         all_tables = set(
@@ -227,33 +259,7 @@ class GenericBranchCollection:
             if not branch_ids:
                 return
             branches = dict((branch.id, branch) for branch in rows)
-            caches = dict((branch.id, get_property_cache(branch))
-                for branch in rows)
-            for cache in caches.values():
-                if not safe_hasattr(cache, '_associatedProductSeries'):
-                    cache._associatedProductSeries = []
-                if not safe_hasattr(cache, '_associatedSuiteSourcePackages'):
-                    cache._associatedSuiteSourcePackages = []
-                if not safe_hasattr(cache, 'code_import'):
-                    cache.code_import = None
-            # associatedProductSeries
-            # Imported here to avoid circular import.
-            from lp.registry.model.productseries import ProductSeries
-            for productseries in self.store.find(
-                ProductSeries,
-                ProductSeries.branchID.is_in(branch_ids)):
-                cache = caches[productseries.branchID]
-                cache._associatedProductSeries.append(productseries)
-            # associatedSuiteSourcePackages
-            series_set = getUtility(IFindOfficialBranchLinks)
-            # Order by the pocket to get the release one first. If changing
-            # this be sure to also change BranchCollection.getBranches.
-            links = series_set.findForBranches(rows).order_by(
-                SeriesSourcePackageBranch.pocket)
-            for link in links:
-                cache = caches[link.branchID]
-                cache._associatedSuiteSourcePackages.append(
-                    link.suite_sourcepackage)
+            self._preloadDataForBranches(rows)
             load_related(Product, rows, ['productID'])
             # So far have only needed the persons for their canonical_url - no
             # need for validity etc in the /branches API call.
@@ -303,27 +309,7 @@ class GenericBranchCollection:
 
             branches = set(
                 self.store.find(Branch, Branch.id.is_in(branch_ids)))
-
-            caches = dict((branch.id,
-                           get_property_cache(branch))
-                          for branch in branches)
-            for cache in caches.values():
-                if not safe_hasattr(cache, '_associatedProductSeries'):
-                    cache._associatedProductSeries = []
-                if not safe_hasattr(cache, '_associatedSuiteSourcePackages'):
-                    cache._associatedSuiteSourcePackages = []
-                if not safe_hasattr(cache, 'code_import'):
-                    cache.code_import = None
-            # associatedProductSeries
-            # Imported here to avoid circular import.
-            from lp.registry.model.productseries import ProductSeries
-            for productseries in self.store.find(
-                ProductSeries,
-                ProductSeries.branchID.is_in(branch_ids)):
-                cache = caches[productseries.branchID]
-                cache._associatedProductSeries.append(productseries)
-
-
+            self._preloadDataForBranches(branches)
 
         Target = ClassAlias(Branch, "target")
         extra_tables = list(set(
