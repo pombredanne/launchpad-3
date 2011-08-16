@@ -167,7 +167,8 @@ class SafeBranchOpener(object):
         self.policy = policy
         self._seen_urls = set()
 
-    def install_hook(self):
+    @classmethod
+    def install_hook(cls):
         """Install the ``transformFallbackLocation`` hook.
 
         This is done at module import time, but transformFallbackLocationHook
@@ -180,15 +181,16 @@ class SafeBranchOpener(object):
         """
         Branch.hooks.install_named_hook(
             'transform_fallback_location',
-            self.transformFallbackLocationHook,
+            cls.transformFallbackLocationHook,
             'SafeBranchOpener.transformFallbackLocationHook')
 
-    def uninstall_hook(self):
+    @classmethod
+    def uninstall_hook(cls):
         # XXX 2008-11-24 MichaelHudson, bug=301472: This is the hacky way
         # to remove a hook.  The linked bug report asks for an API to do
         # it.
         Branch.hooks['transform_fallback_location'].remove(
-            self.transformFallbackLocationHook)
+            cls.transformFallbackLocationHook)
 
     def checkAndFollowBranchReference(self, url):
         """Check URL (and possibly the referenced URL) for safety.
@@ -222,7 +224,10 @@ class SafeBranchOpener(object):
         either returns the url it provides or passes it back to
         checkAndFollowBranchReference.
         """
-        opener = getattr(cls._threading_data, "opener")
+        try:
+            opener = getattr(cls._threading_data, "opener")
+        except AttributeError:
+            return url
         new_url, check = opener.policy.transformFallbackLocation(branch, url)
         if check:
             return opener.checkAndFollowBranchReference(new_url)
