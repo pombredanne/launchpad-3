@@ -138,7 +138,7 @@ class IQuestionTargetPublic(ISearchableByQuestionOwner):
         """Can the user add or remove the answer contact.
 
         Users can add or remove themselves or one of the teams they
-        administered. Admins and target owners can add/remove anyone.
+        administered. Admins can add/remove anyone.
 
         :param person: The `IPerson` that is or will be an answer contact.
         :param subscribed_by: The `IPerson` making the change.

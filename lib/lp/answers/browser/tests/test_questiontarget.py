@@ -373,32 +373,6 @@ class QuestionTargetPortletAnswerContactsWithDetailsTests(
             self.assertEqual(
                 dumps([expected_result]), view.answercontact_data_js)
 
-    def test_data_target_owner_answercontact_looks(self):
-        # Answercontact_data_js has can_edit set to true for target owner.
-        distro = self.factory.makeDistribution()
-        question = self.factory.makeQuestion(target=distro)
-        contact = self.factory.makePerson(
-            name='user', displayname='Contact Name')
-        contact.addLanguage(getUtility(ILanguageSet)['en'])
-        with person_logged_in(contact):
-            question.target.addAnswerContact(contact, contact)
-        view = create_view(question.target, '+portlet-answercontacts-details')
-        api_request = IWebServiceClientRequest(view.request)
-
-        expected_result = {
-            'subscriber': {
-                'name': 'user',
-                'display_name': 'Contact Name',
-                'is_team': False,
-                'can_edit': True,
-                'web_link': canonical_url(contact),
-                'self_link': absoluteURL(contact, api_request)
-                }
-            }
-        with person_logged_in(distro.owner):
-            self.assertEqual(
-                dumps([expected_result]), view.answercontact_data_js)
-
     def test_data_subscription_lp_admin(self):
         # For a subscription, answercontact_data_js has can_edit
         # set to true for a Launchpad admin.
