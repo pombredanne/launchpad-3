@@ -116,6 +116,7 @@ class BugNotificationSet:
                                 BugNotification.activity == BugActivity.id))
         results = list(source.find(
             (BugNotification, BugActivity, Message),
+            BugNotification.status == BugNotificationStatus.PENDING,
             BugNotification.date_emailed == None).order_by(
             'BugNotification.bug', '-BugNotification.id'))
         interval = timedelta(
