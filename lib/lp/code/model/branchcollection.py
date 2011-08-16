@@ -69,6 +69,7 @@ from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.person import (
     Owner,
     Person,
+    ValidPersonCache,
     )
 from lp.registry.model.product import Product
 from lp.registry.model.sourcepackagename import SourcePackageName
@@ -280,8 +281,51 @@ class GenericBranchCollection:
 
     def _naiveGetMergeProposals(self, statuses=None, for_branches=None,
         target_branch=None, merged_revnos=None):
+
+        def do_eager_load(rows):
+            branch_ids = set()
+            person_ids = set()
+            for mp in rows:
+                branch_ids.add(mp.target_branchID)
+                branch_ids.add(mp.source_branchID)
+                person_ids = person_ids.union(set([
+                    mp.registrantID,
+                    mp.merge_reporterID,
+                    ]))
+            if not branch_ids:
+                return
+
+            list(self.store.find(
+                (Person, ValidPersonCache),
+                ValidPersonCache.id==Person.id,
+                Person.id.is_in(person_ids),
+                ))
+
+            branches = set(
+                self.store.find(Branch, Branch.id.is_in(branch_ids)))
+
+            caches = dict((branch.id,
+                           get_property_cache(branch))
+                          for branch in branches)
+            for cache in caches.values():
+                if not safe_hasattr(cache, '_associatedProductSeries'):
+                    cache._associatedProductSeries = []
+                if not safe_hasattr(cache, '_associatedSuiteSourcePackages'):
+                    cache._associatedSuiteSourcePackages = []
+                if not safe_hasattr(cache, 'code_import'):
+                    cache.code_import = None
+            # associatedProductSeries
+            # Imported here to avoid circular import.
+            from lp.registry.model.productseries import ProductSeries
+            for productseries in self.store.find(
+                ProductSeries,
+                ProductSeries.branchID.is_in(branch_ids)):
+                cache = caches[productseries.branchID]
+                cache._associatedProductSeries.append(productseries)
+
+
+
         Target = ClassAlias(Branch, "target")
-        Registrant = ClassAlias(Person, "registrant")
         extra_tables = list(set(
             self._tables.values() + self._asymmetric_tables.values()))
         tables = [Branch] + extra_tables + [
@@ -290,7 +334,6 @@ class GenericBranchCollection:
                 *(self._branch_filter_expressions +
                   self._asymmetric_filter_expressions))),
             Join(Target, Target.id==BranchMergeProposal.target_branchID),
-            Join(Registrant, Registrant.id==BranchMergeProposal.registrantID),
             ]
         expressions = self._getBranchVisibilityExpression()
         expressions.extend(self._getBranchVisibilityExpression(Target))
@@ -307,8 +350,9 @@ class GenericBranchCollection:
         if statuses is not None:
             expressions.append(
                 BranchMergeProposal.queue_status.is_in(statuses))
-        return self.store.using(*tables).find(
-            (BranchMergeProposal, Branch, Target, Registrant), *expressions)
+        resultset = self.store.using(*tables).find(
+            BranchMergeProposal, *expressions)
+        return DecoratedResultSet(resultset, pre_iter_hook=do_eager_load)
 
     def _scopedGetMergeProposals(self, statuses):
         scope_tables = [Branch] + self._tables.values()
