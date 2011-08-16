@@ -36,12 +36,6 @@ class QuestionTargetAnswerContactTestCase(TestCaseWithFactory):
         self.assertTrue(
             self.project.canUserAlterAnswerContact(self.user, self.user))
 
-    def test_canUserAlterAnswerContact_owner(self):
-        login_person(self.user)
-        self.assertTrue(
-            self.project.canUserAlterAnswerContact(
-                self.user, self.project.owner))
-
     def test_canUserAlterAnswerContact_other_user(self):
         login_person(self.user)
         other_user = self.factory.makePerson()
