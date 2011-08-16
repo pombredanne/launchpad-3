@@ -2,8 +2,8 @@
 -- GNU Affero General Public License version 3 (see the file LICENSE).
 SET client_min_messages=ERROR;
 
-CREATE INDEX binarypackagepublishinghistory__binarypackagename__idx ON BinaryPackagePublishingHistory(binarypackagename);
-CREATE INDEX sourcepackagepublishinghistory__sourcepackagename__idx ON SourcePackagePublishingHistory(sourcepackagename);
+CREATE INDEX binarypackagepublishinghistory__bpn__idx ON BinaryPackagePublishingHistory(bpn);
+CREATE INDEX sourcepackagepublishinghistory__spn__idx ON SourcePackagePublishingHistory(spn);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
 
