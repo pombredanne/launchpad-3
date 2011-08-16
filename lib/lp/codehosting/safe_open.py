@@ -152,8 +152,29 @@ class WhitelistPolicy(BranchOpenPolicy):
         return urlutils.join(branch.base, url), self.check
 
 
+class SingleSchemePolicy(BranchOpenPolicy):
+    """Branch open policy that rejects URLs not on the given scheme."""
+
+    def __init__(self, allowed_scheme):
+        self.allowed_scheme = allowed_scheme
+
+    def shouldFollowReferences(self):
+        return True
+
+    def transformFallbackLocation(self, branch, url):
+        return urlutils.join(branch.base, url), True
+
+    def checkOneURL(self, url):
+        """Check that `url` is safe to open."""
+        if URI(url).scheme != self.allowed_scheme:
+            raise BadUrl(url)
+
+
 class SafeBranchOpener(object):
     """Safe branch opener.
+
+    All locations that are opened (stacked-on branches, references) are checked
+    against a policy object.
 
     The policy object is expected to have the following methods:
     * checkOneURL
@@ -183,14 +204,6 @@ class SafeBranchOpener(object):
             'transform_fallback_location',
             cls.transformFallbackLocationHook,
             'SafeBranchOpener.transformFallbackLocationHook')
-
-    @classmethod
-    def uninstall_hook(cls):
-        # XXX 2008-11-24 MichaelHudson, bug=301472: This is the hacky way
-        # to remove a hook.  The linked bug report asks for an API to do
-        # it.
-        Branch.hooks['transform_fallback_location'].remove(
-            cls.transformFallbackLocationHook)
 
     def checkAndFollowBranchReference(self, url):
         """Check URL (and possibly the referenced URL) for safety.
@@ -266,31 +279,13 @@ class SafeBranchOpener(object):
             Branch.open, url)
 
 
-class URLChecker(BranchOpenPolicy):
-    """Branch open policy that rejects URLs not on the given scheme."""
-
-    def __init__(self, allowed_scheme):
-        self.allowed_scheme = allowed_scheme
-
-    def shouldFollowReferences(self):
-        return True
-
-    def transformFallbackLocation(self, branch, url):
-        return urlutils.join(branch.base, url), True
-
-    def checkOneURL(self, url):
-        """Check that `url` is safe to open."""
-        if URI(url).scheme != self.allowed_scheme:
-            raise BadUrl(url)
-
-
 def safe_open(allowed_scheme, url):
     """Open the branch at `url`, only accessing URLs on `allowed_scheme`.
 
     :raises BadUrl: An attempt was made to open a URL that was not on
         `allowed_scheme`.
     """
-    return SafeBranchOpener(URLChecker(allowed_scheme)).open(url)
+    return SafeBranchOpener(SingleSchemePolicy(allowed_scheme)).open(url)
 
 
 SafeBranchOpener.install_hook()

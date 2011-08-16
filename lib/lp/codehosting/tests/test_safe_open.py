@@ -37,6 +37,10 @@ from bzrlib.transport import chroot
 class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
     """Unit tests for `SafeBranchOpener.checkAndFollowBranchReference`."""
 
+    def setUp(self):
+        super(TestSafeBranchOpenerCheckAndFollowBranchReference, self).setUp()
+        SafeBranchOpener.install_hook()
+
     class StubbedSafeBranchOpener(SafeBranchOpener):
         """SafeBranchOpener that provides canned answers.
 
@@ -48,7 +52,6 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
         def __init__(self, references, policy):
             parent_cls = TestSafeBranchOpenerCheckAndFollowBranchReference
             super(parent_cls.StubbedSafeBranchOpener, self).__init__(policy)
-            SafeBranchOpener.install_hook()
             self._reference_values = {}
             for i in range(len(references) - 1):
                 self._reference_values[references[i]] = references[i+1]
@@ -236,6 +239,14 @@ class TestSafeOpen(TestCaseWithTransport):
     def setUp(self):
         super(TestSafeOpen, self).setUp()
         SafeBranchOpener.install_hook()
+
+    def test_hook_does_not_interfere(self):
+        # The transform_fallback_location hook does not interfere with regular
+        # stacked branch access outside of safe_open.
+        self.make_branch('stacked')
+        self.make_branch('stacked-on')
+        Branch.open('stacked').set_stacked_on_url('../stacked-on')
+        Branch.open('stacked')
 
     def get_chrooted_scheme(self, relpath):
         """Create a server that is chrooted to `relpath`.
