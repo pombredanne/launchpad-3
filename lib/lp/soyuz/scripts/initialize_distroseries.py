@@ -400,6 +400,17 @@ class InitializeDistroSeries:
         """If only a subset of the packagesets was selected to be copied,
         create a dict with the list of source names to be copied for each
         parent.
+
+        source_names_by_parent.get(parent) can be 3 different things:
+        - None: this means that no specific packagesets where selected
+        for the initialization. In this case we need to consider *all*
+        the packages in this parent.
+        - []: this means that some specific packagesets where selected
+        for the initialization but none in this parent. We can skip
+        this parent for all the copy/check operations.
+        - [name1, ...]: this means that some specific packagesets
+        where selected for the initialization and some are in this
+        parent so the list of packages to consider in not empty.
         """
         source_names_by_parent = {}
         if self.packagesets:
