@@ -11,6 +11,7 @@ import contextlib
 import datetime
 from itertools import repeat
 import logging
+import operator
 import os
 import re
 import stat
@@ -206,6 +207,18 @@ class ErrorReportingUtility:
                 config[section_name].oops_prefix)
         self._oops_config.publishers.append(self._oops_datedir_repo.publish)
         self._oops_config.publishers.append(notify_publisher)
+        #
+        # Reports are filtered if:
+        #  - There is a key 'ignore':True in the report. This is set during
+        #    _makeReport.
+        self._oops_config.filters.append(
+                operator.methodcaller('get', 'ignore'))
+        #  - have a type listed in self._ignored_exceptions.
+        self._oops_config.filters.append(
+                lambda report:report['type'] in self._ignored_exceptions)
+        #  - have a missing or offset REFERER header with a type listed in
+        #    self._ignored_exceptions_for_offsite_referer
+        self._oops_config.filters.append(self._filter_bad_urls_by_referer)
 
     def setOopsToken(self, token):
         return self._oops_datedir_repo.log_namer.setToken(token)
@@ -292,35 +305,15 @@ class ErrorReportingUtility:
     def raising(self, info, request=None):
         """See IErrorReportingUtility.raising()"""
         report = self._makeReport(info, request)
-        if self._filterReport(report):
+        if self._oops_config.publish(report) is None:
             return
-        self._oops_config.publish(report)
         if request:
             request.oopsid = report.get('id')
             request.oops = report
         return report
 
-    def filter_session_statement(self, database_id, statement):
-        """Replace quoted strings with '%s' in statements on session DB."""
-        if database_id == 'SQL-' + PGSessionBase.store_name:
-            return re.sub("'[^']*'", "'%s'", statement)
-        else:
-            return statement
-
-    def _filterReport(self, report):
-        """Return True if the report should be filtered and not emitted.
-
-        Reports are filtered if:
-         - There is a key 'ignore':True in the report. This is set during
-           _makeReport.
-         - have a type listed in self._ignored_exceptions.
-         - have a missing or offset REFERER header with a type listed in
-           self._ignored_exceptions_for_offsite_referer
-        """
-        if report.get('ignore'):
-            return True
-        if report['type'] in self._ignored_exceptions:
-            return True
+    def _filter_bad_urls_by_referer(self, report):
+        """Filter if the report was generated because of a bad offsite url."""
         if report['type'] in self._ignored_exceptions_for_offsite_referer:
             was_http = report.get('url', '').lower().startswith('http')
             if was_http:
@@ -338,6 +331,13 @@ class ErrorReportingUtility:
                 if root_parts.netloc not in referer_parts.netloc:
                     return True
         return False
+
+    def filter_session_statement(self, database_id, statement):
+        """Replace quoted strings with '%s' in statements on session DB."""
+        if database_id == 'SQL-' + PGSessionBase.store_name:
+            return re.sub("'[^']*'", "'%s'", statement)
+        else:
+            return statement
 
     def _makeReport(self, info, request=None):
         """Create an unallocated OOPS.
