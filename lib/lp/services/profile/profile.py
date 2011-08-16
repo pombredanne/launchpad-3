@@ -303,7 +303,7 @@ def end_request(event):
             # information.
             info = (ProfilingOops, None, None)
             error_utility = getUtility(IErrorReportingUtility)
-            oops_report = error_utility.handling(info, request)
+            oops_report = error_utility.raising(info, request)
             oopsid = oops_report['id']
         else:
             oops_report = request.oops
