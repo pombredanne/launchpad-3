@@ -24,6 +24,7 @@ from oops_datedir_repo import DateDirRepo
 import pytz
 import testtools
 from testtools.matchers import StartsWith
+from timeline.timeline import Timeline
 from zope.app.publication.tests.test_zopepublication import (
     UnauthenticatedPrincipal,
     )
@@ -36,11 +37,8 @@ from zope.security.interfaces import Unauthorized
 from canonical.config import config
 from lp.app import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
-from canonical.launchpad.webapp.adapter import (
-    clear_request_started,
-    set_request_started,
-    )
 from canonical.launchpad.webapp.errorlog import (
+    _filter_session_statement,
     _is_sensitive,
     ErrorReport,
     ErrorReportingUtility,
@@ -58,7 +56,6 @@ from lp.app.errors import (
     TranslationUnavailable,
     )
 from lp.services.osutils import remove_tree
-from lp.services.timeline.requesttimeline import get_request_timeline
 from lp_sitecustomize import customize_get_converter
 
 
@@ -531,7 +528,7 @@ class TestErrorReportingUtility(testtools.TestCase):
                 raise ArbitraryException('foo')
             except ArbitraryException:
                 info = sys.exc_info()
-                oops = utility._makeReport(info)
+                oops = utility._oops_config.create(dict(exc_info=info))
                 self.assertEqual(
                     [('<oops-message-0>', "{'a': 'b', 'c': 'd'}")],
                     oops['req_vars'])
@@ -546,46 +543,39 @@ class TestErrorReportingUtility(testtools.TestCase):
                 raise ArbitraryException('foo')
             except ArbitraryException:
                 info = sys.exc_info()
-                oops = utility._makeReport(info, request)
+                oops = utility._oops_config.create(
+                        dict(exc_info=info, http_request=request))
                 self.assertEqual(
                     [('<oops-message-0>', "{'a': 'b'}"), ('c', 'd')],
-                    oops['req_vars'])
+                    sorted(oops['req_vars']))
 
     def test_filter_session_statement(self):
         """Removes quoted strings if database_id is SQL-session."""
-        utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
         statement = "SELECT 'gone'"
         self.assertEqual(
             "SELECT '%s'",
-            utility.filter_session_statement('SQL-session', statement))
+            _filter_session_statement('SQL-session', statement))
 
     def test_filter_session_statement_noop(self):
         """If database_id is not SQL-session, it's a no-op."""
-        utility = ErrorReportingUtility()
-        del utility._oops_config.publishers[:]
         statement = "SELECT 'gone'"
         self.assertEqual(
             statement,
-            utility.filter_session_statement('SQL-launchpad', statement))
+            _filter_session_statement('SQL-launchpad', statement))
 
     def test_session_queries_filtered(self):
         """Test that session queries are filtered."""
         utility = ErrorReportingUtility()
         del utility._oops_config.publishers[:]
-        request = ScriptRequest([], URL="test_session_queries_filtered")
-        set_request_started()
+        timeline = Timeline()
+        timeline.start("SQL-session", "SELECT 'gone'").finish()
         try:
-            timeline = get_request_timeline(request)
-            timeline.start("SQL-session", "SELECT 'gone'").finish()
-            try:
-                raise ArbitraryException('foo')
-            except ArbitraryException:
-                info = sys.exc_info()
-                oops = utility._makeReport(info)
-            self.assertEqual("SELECT '%s'", oops['db_statements'][0][3])
-        finally:
-            clear_request_started()
+            raise ArbitraryException('foo')
+        except ArbitraryException:
+            info = sys.exc_info()
+            oops = utility._oops_config.create(
+                    dict(exc_info=info, timeline=timeline))
+        self.assertEqual("SELECT '%s'", oops['db_statements'][0][3])
 
 
 
@@ -732,7 +722,7 @@ class TestOopsIgnoring(testtools.TestCase):
         except ArbitraryException:
             exc_info = sys.exc_info()
             directlyProvides(exc_info[1], IUnloggedException)
-        report = utility._makeReport(exc_info)
+        report = utility._oops_config.create(dict(exc_info=exc_info))
         self.assertTrue(report['ignore'])
 
 

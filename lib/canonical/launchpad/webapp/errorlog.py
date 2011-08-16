@@ -174,6 +174,142 @@ def notify_publisher(report):
     return report['id']
 
 
+def attach_adapter_duration(report, context):
+    # More generic than HTTP requests - e.g. how long a script was running
+    # for.
+    report['duration'] = get_request_duration()
+
+def attach_date(report, context):
+    """Set the time key in report to a datetime of now."""
+    report['time'] = datetime.datetime.now(UTC)
+
+
+def attach_exc_info(report, context):
+    """Attach exception info to the report.
+
+    This reads the 'exc_info' key from the context and sets the:
+    * type
+    * value
+    * tb_text 
+    keys in the report.
+    """
+    info = context.get('exc_info')
+    if info is None:
+        return
+    report['type'] = _safestr(getattr(info[0], '__name__', info[0]))
+    report['value'] = _safestr(info[1])
+    if not isinstance(info[2], basestring):
+        tb_text = ''.join(format_exception(*info,
+                                           **{'as_html': False}))
+    else:
+        tb_text = info[2]
+    report['tb_text'] = _safestr(tb_text)
+
+
+_ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
+
+def attach_http_request(report, context):
+    """Add request metadata into the error report.
+    
+    This reads the exc_info and http_request keys from the context and will
+    write to:
+    * url
+    * ignore
+    * username
+    * pageid
+    * req_vars
+    """
+    info = context.get('exc_info')
+    request = context.get('http_request')
+    if request is None:
+        return
+    # XXX jamesh 2005-11-22: Temporary fix, which Steve should
+    #      undo. URL is just too HTTPRequest-specific.
+    if safe_hasattr(request, 'URL'):
+        report['url'] = _safestr(request.URL)
+
+    if WebServiceLayer.providedBy(request) and info is not None:
+        webservice_error = getattr(
+            info[1], '__lazr_webservice_error__', 500)
+        if webservice_error / 100 != 5:
+            request.oopsid = None
+            # Tell the oops machinery to ignore this error
+            report['ignore'] = True
+
+    missing = object()
+    principal = getattr(request, 'principal', missing)
+    if safe_hasattr(principal, 'getLogin'):
+        login = principal.getLogin()
+    elif principal is missing or principal is None:
+        # Request has no principal (e.g. scriptrequest)
+        login = None
+    else:
+        # Request has an UnauthenticatedPrincipal.
+        login = 'unauthenticated'
+        if report['type'] in (
+            _ignored_exceptions_for_unauthenticated_users):
+            report['ignore'] = True
+
+    if principal is not None and principal is not missing:
+        username = _safestr(
+            ', '.join([
+                    unicode(login),
+                    unicode(request.principal.id),
+                    unicode(request.principal.title),
+                    unicode(request.principal.description)]))
+        report['username'] = username
+
+    if getattr(request, '_orig_env', None):
+        report['pageid'] = request._orig_env.get(
+                'launchpad.pageid', '')
+
+    for key, value in request.items():
+        if _is_sensitive(request, key):
+            report['req_vars'].append((_safestr(key), '<hidden>'))
+        else:
+            report['req_vars'].append(
+                    (_safestr(key), _safestr(value)))
+    if IXMLRPCRequest.providedBy(request):
+        args = request.getPositionalArguments()
+        report['req_vars'].append(('xmlrpc args', _safestr(args)))
+
+
+def attach_ignore_from_exception(report, context):
+    """Set the ignore key to True if the excception is ignored."""
+    info = context.get('exc_info')
+    if info is None:
+        return
+    # Because of IUnloggedException being a sidewards lookup we must
+    # capture this here to filter on later.
+    report['ignore'] = IUnloggedException.providedBy(info[1])
+
+
+def _filter_session_statement(database_id, statement):
+    """Replace quoted strings with '%s' in statements on session DB."""
+    if database_id == 'SQL-' + PGSessionBase.store_name:
+        return re.sub("'[^']*'", "'%s'", statement)
+    else:
+        return statement
+
+
+def attach_timeline(report, context):
+    """Attach the timeline of actions to the report.
+
+    Looks for the timeline in content['timeline'] and sets it in
+    report['db_statements'].
+    """
+    timeline = context.get('timeline')
+    if timeline is None:
+        return
+    statements = []
+    for action in timeline.actions:
+        start, end, category, detail = action.logTuple()
+        detail = _filter_session_statement(category, detail)
+        statements.append(
+            (start, end, _safestr(category), _safestr(detail)))
+    report['db_statements'] = statements
+    return report
+
 
 class ErrorReportingUtility:
     implements(IErrorReportingUtility)
@@ -181,7 +317,6 @@ class ErrorReportingUtility:
     _ignored_exceptions = set([
         'ReadOnlyModeDisallowedStore', 'ReadOnlyModeViolation',
         'TranslationUnavailable', 'NoReferrerError'])
-    _ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
     _ignored_exceptions_for_offsite_referer = set([
         'GoneError', 'InvalidBatchSizeError', 'NotFound'])
     _default_config_section = 'error_reports'
@@ -200,12 +335,39 @@ class ErrorReportingUtility:
         if section_name is None:
             section_name = self._default_config_section
         self._oops_config = oops.Config()
+        #
+        # What do we want in our reports?
+        # Constants:
         self._oops_config.template['branch_nick'] = versioninfo.branch_nick
         self._oops_config.template['revno'] = versioninfo.revno
+        # Should go in an HTTP module.
+        self._oops_config.template['req_vars'] = []
+        # Exceptions, with the zope formatter.
+        self._oops_config.on_create.append(attach_exc_info)
+        # Datestamps.
+        self._oops_config.on_create.append(attach_date)
+        # Ignore IUnloggedException exceptions
+        self._oops_config.on_create.append(attach_ignore_from_exception)
+        # Zope HTTP requests have lots of goodies.
+        self._oops_config.on_create.append(attach_http_request)
+        # Timelines are really useful. raising() gets one from
+        # get_request_timeline, other daemons can make one and use the oops
+        # config directly.
+        self._oops_config.on_create.append(attach_timeline)
+        # We permit adding messages during the execution of a script (not
+        # threadsafe - so only scripts) - a todo item is to only add this
+        # for scripts (or to make it threadsafe)
+        self._oops_config.on_create.append(self._attach_messages)
+        # In the zope environment we track how long a script / http request has
+        # been running for - this is useful data!
+        self._oops_config.on_create.append(attach_adapter_duration)
+        # We want to publish reports to disk for gathering to the central
+        # analysis server.
         self._oops_datedir_repo = DateDirRepo(
                 config[section_name].error_dir,
                 config[section_name].oops_prefix)
         self._oops_config.publishers.append(self._oops_datedir_repo.publish)
+        # And within the zope application server (mainly for testing).
         self._oops_config.publishers.append(notify_publisher)
         #
         # Reports are filtered if:
@@ -304,7 +466,20 @@ class ErrorReportingUtility:
 
     def raising(self, info, request=None):
         """See IErrorReportingUtility.raising()"""
-        report = self._makeReport(info, request)
+        context = dict(exc_info=info)
+        if request is not None:
+            context['http_request'] = request
+        # In principle the timeline is per-request, but see bug=623199 -
+        # at this point the request is optional, but get_request_timeline
+        # does not care; when it starts caring, we will always have a
+        # request object (or some annotations containing object).
+        # RBC 20100901
+        timeline = get_request_timeline(request)
+        if timeline is not None:
+            context['timeline'] = timeline
+        report = self._oops_config.create(context)
+        # req_vars should be a dict itself. Needs an oops-datedir-repo tweak.
+        report['req_vars'].sort()
         if self._oops_config.publish(report) is None:
             return
         if request:
@@ -332,112 +507,13 @@ class ErrorReportingUtility:
                     return True
         return False
 
-    def filter_session_statement(self, database_id, statement):
-        """Replace quoted strings with '%s' in statements on session DB."""
-        if database_id == 'SQL-' + PGSessionBase.store_name:
-            return re.sub("'[^']*'", "'%s'", statement)
-        else:
-            return statement
-
-    def _makeReport(self, info, request=None):
-        """Create an unallocated OOPS.
-
-        :param info: Output of sys.exc_info()
-        :param request: The IErrorReportRequest which provides context to the
-            info.
-        """
-        report = self._oops_config.create()
-        report['type'] = _safestr(getattr(info[0], '__name__', info[0]))
-        report['value'] = _safestr(info[1])
-        if not isinstance(info[2], basestring):
-            tb_text = ''.join(format_exception(*info,
-                                               **{'as_html': False}))
-        else:
-            tb_text = info[2]
-        report['tb_text'] = _safestr(tb_text)
-        report['req_vars'] = []
-        report['time'] = datetime.datetime.now(UTC)
-        # Because of IUnloggedException being a sidewards lookup we must
-        # capture this here to filter on later.
-        report['ignore'] = IUnloggedException.providedBy(info[1])
-        if request:
-            self._gather_request(report, request, info)
+    def _attach_messages(self, report, context):
+        """merges self._oops_messages into the report req_vars variable."""
         # XXX AaronBentley 2009-11-26 bug=488950: There should be separate
         # storage for oops messages.
         report['req_vars'].extend(
             ('<oops-message-%d>' % key, str(message)) for key, message
              in self._oops_messages.iteritems())
-        report['req_vars'].sort()
-
-        # More generic than HTTP requests - e.g. how long a script was running
-        # for.
-        report['duration'] = get_request_duration()
-        # In principle the timeline is per-request, but see bug=623199 -
-        # at this point the request is optional, but get_request_timeline
-        # does not care; when it starts caring, we will always have a
-        # request object (or some annotations containing object).
-        # RBC 20100901
-        timeline = get_request_timeline(request)
-        statements = []
-        for action in timeline.actions:
-            start, end, category, detail = action.logTuple()
-            detail = self.filter_session_statement(category, detail)
-            statements.append(
-                (start, end, _safestr(category), _safestr(detail)))
-        report['db_statements'] = statements
-        return report
-
-    def _gather_request(self, report, request, info):
-        """Add request metadata into the error report."""
-        # XXX jamesh 2005-11-22: Temporary fix, which Steve should
-        #      undo. URL is just too HTTPRequest-specific.
-        if safe_hasattr(request, 'URL'):
-            report['url'] = _safestr(request.URL)
-
-        if WebServiceLayer.providedBy(request):
-            webservice_error = getattr(
-                info[1], '__lazr_webservice_error__', 500)
-            if webservice_error / 100 != 5:
-                request.oopsid = None
-                # Tell the oops machinery to ignore this error
-                report['ignore'] = True
-
-        missing = object()
-        principal = getattr(request, 'principal', missing)
-        if safe_hasattr(principal, 'getLogin'):
-            login = principal.getLogin()
-        elif principal is missing or principal is None:
-            # Request has no principal (e.g. scriptrequest)
-            login = None
-        else:
-            # Request has an UnauthenticatedPrincipal.
-            login = 'unauthenticated'
-            if report['type'] in (
-                self._ignored_exceptions_for_unauthenticated_users):
-                report['ignore'] = True
-
-        if principal is not None and principal is not missing:
-            username = _safestr(
-                ', '.join([
-                        unicode(login),
-                        unicode(request.principal.id),
-                        unicode(request.principal.title),
-                        unicode(request.principal.description)]))
-            report['username'] = username
-
-        if getattr(request, '_orig_env', None):
-            report['pageid'] = request._orig_env.get(
-                    'launchpad.pageid', '')
-
-        for key, value in request.items():
-            if _is_sensitive(request, key):
-                report['req_vars'].append((_safestr(key), '<hidden>'))
-            else:
-                report['req_vars'].append(
-                        (_safestr(key), _safestr(value)))
-        if IXMLRPCRequest.providedBy(request):
-            args = request.getPositionalArguments()
-            report['req_vars'].append(('xmlrpc args', _safestr(args)))
 
     @contextlib.contextmanager
     def oopsMessage(self, message):
