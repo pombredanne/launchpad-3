@@ -208,7 +208,8 @@ class SafeBranchOpener(object):
         try:
             return callable(*args, **kw)
         finally:
-            Branch.hooks.uninstall_named_hook('transform_fallback_location',
+            Branch.hooks.uninstall_named_hook(
+                'transform_fallback_location',
                 'SafeBranchOpener.transformFallbackLocationHook')
             # We reset _seen_urls here to avoid multiple calls to open giving
             # spurious loop exceptions.
