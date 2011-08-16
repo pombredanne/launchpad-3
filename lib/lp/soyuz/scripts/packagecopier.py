@@ -593,7 +593,17 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             continue
 
     if len(errors) != 0:
-        raise CannotCopy("\n".join(errors))
+        error_text = "\n".join(errors)
+        if send_email:
+            # You can only reject a single source at once.
+            source = sources[0]
+            if series is None:
+                series = source.distroseries
+            notify(
+                person, source.sourcepackagerelease, [], [], archive,
+                series, pocket, summary_text=error_text,
+                action='rejected')
+        raise CannotCopy(error_text)
 
     overrides_index = 0
     for source in copy_checker.getCheckedCopies():
