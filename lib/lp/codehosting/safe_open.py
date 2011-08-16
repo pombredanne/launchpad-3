@@ -163,6 +163,29 @@ class SafeBranchOpener(object):
         self.policy = policy
         self._seen_urls = set()
 
+    def install_hook(self):
+        """Install the ``transformFallbackLocation`` hook.
+
+        This is done at module import time, but transformFallbackLocationHook
+        doesn't do anything unless the `_active_openers` threading.Local object
+        has a 'opener' attribute in this thread.
+
+        This is in a module-level function rather than performed at module level
+        so that it can be called in setUp for testing `checked_open` as
+        bzrlib.tests.TestCase.setUp clears hooks.
+        """
+        Branch.hooks.install_named_hook(
+            'transform_fallback_location',
+            self.transformFallbackLocationHook,
+            'SafeBranchOpener.transformFallbackLocationHook')
+
+    def uninstall_hook(self):
+        # XXX 2008-11-24 MichaelHudson, bug=301472: This is the hacky way
+        # to remove a hook.  The linked bug report asks for an API to do
+        # it.
+        Branch.hooks['transform_fallback_location'].remove(
+            self.transformFallbackLocationHook)
+
     def checkAndFollowBranchReference(self, url):
         """Check URL (and possibly the referenced URL) for safety.
 
@@ -202,17 +225,11 @@ class SafeBranchOpener(object):
 
     def runWithTransformFallbackLocationHookInstalled(
             self, callable, *args, **kw):
-        Branch.hooks.install_named_hook(
-            'transform_fallback_location', self.transformFallbackLocationHook,
-            'SafeBranchOpener.transformFallbackLocationHook')
+        self.install_hook()
         try:
             return callable(*args, **kw)
         finally:
-            # XXX 2008-11-24 MichaelHudson, bug=301472: This is the hacky way
-            # to remove a hook.  The linked bug report asks for an API to do
-            # it.
-            Branch.hooks['transform_fallback_location'].remove(
-                self.transformFallbackLocationHook)
+            self.uninstall_hook()
             # We reset _seen_urls here to avoid multiple calls to open giving
             # spurious loop exceptions.
             self._seen_urls = set()
