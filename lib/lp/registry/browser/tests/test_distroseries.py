@@ -1042,22 +1042,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             find_tag_by_id(view(), 'distroseries-localdiff-search-filter'),
             "Form filter should be shown when there are differences.")
 
-    def test_filter_noform_if_nodifferences(self):
-        # Test that the page doesn't includes the filter form if no
-        # differences are present
-        simple_user = self.factory.makePerson()
-        login_person(simple_user)
-        derived_series, parent_series = self._createChildAndParent()
-
-        set_derived_series_ui_feature_flag(self)
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs', principal=simple_user)
-
-        self.assertIs(
-            None,
-            find_tag_by_id(view(), 'distroseries-localdiff-search-filter'),
-            "Form filter should not be shown when there are no differences.")
-
     def test_parent_packagesets_localpackagediffs(self):
         # +localpackagediffs displays the packagesets.
         ds_diff = self.factory.makeDistroSeriesDifference()
@@ -1938,7 +1922,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         pu = self.factory.makePackageUpload(distroseries=dsd.derived_series)
         # A copy job with an attached packageupload means the job is
         # waiting in the queues.
-        removeSecurityProxy(pu).package_copy_job=pcj.id
+        removeSecurityProxy(pu).package_copy_job = pcj.id
         view.pending_syncs = {dsd.source_package_name.name: pcj}
         expected = (
             'waiting in <a href="%s/+queue?queue_state=%s">%s</a>&hellip;'
