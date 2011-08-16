@@ -419,9 +419,16 @@ class BranchActiveReviewsView(ActiveReviewsView):
 
     def getProposals(self):
         """See `ActiveReviewsView`."""
-        candidates = self.context.landing_candidates
+        #candidates = self.context.landing_candidates
+        candidates = self.context.getMergeProposals()
+        can_see = lambda proposal: (
+            proposal.source_branch.visibleByUser(self.user) and
+            proposal.target_branch.visibleByUser(self.user) and
+            (proposal.prerequisite_branch is None or
+             proposal.prerequisite_branch.visibleByUser(self.user)))
+
         return [proposal for proposal in candidates
-                if check_permission('launchpad.View', proposal)]
+                if can_see(proposal)]
 
 
 class PersonActiveReviewsView(ActiveReviewsView):

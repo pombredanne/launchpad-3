@@ -281,6 +281,7 @@ class GenericBranchCollection:
     def _naiveGetMergeProposals(self, statuses=None, for_branches=None,
         target_branch=None, merged_revnos=None):
         Target = ClassAlias(Branch, "target")
+        Registrant = ClassAlias(Person, "registrant")
         extra_tables = list(set(
             self._tables.values() + self._asymmetric_tables.values()))
         tables = [Branch] + extra_tables + [
@@ -288,7 +289,8 @@ class GenericBranchCollection:
                 Branch.id==BranchMergeProposal.source_branchID,
                 *(self._branch_filter_expressions +
                   self._asymmetric_filter_expressions))),
-            Join(Target, Target.id==BranchMergeProposal.target_branchID)
+            Join(Target, Target.id==BranchMergeProposal.target_branchID),
+            Join(Registrant, Registrant.id==BranchMergeProposal.registrantID),
             ]
         expressions = self._getBranchVisibilityExpression()
         expressions.extend(self._getBranchVisibilityExpression(Target))
@@ -305,7 +307,8 @@ class GenericBranchCollection:
         if statuses is not None:
             expressions.append(
                 BranchMergeProposal.queue_status.is_in(statuses))
-        return self.store.using(*tables).find(BranchMergeProposal, *expressions)
+        return self.store.using(*tables).find(
+            (BranchMergeProposal, Branch, Target, Registrant), *expressions)
 
     def _scopedGetMergeProposals(self, statuses):
         scope_tables = [Branch] + self._tables.values()

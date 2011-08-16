@@ -381,8 +381,17 @@ class Branch(SQLBase, BzrIdentityMixin):
                 BranchMergeProposalStatus.WORK_IN_PROGRESS)
 
         collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
-        return collection.getMergeProposals(
-            status, target_branch=self, merged_revnos=merged_revnos)
+        self._cached_branches = set()
+        self._cached_persons = set()
+        mps = []
+        for (mp, source, target, registrant) in (
+            collection.getMergeProposals(
+                status, target_branch=self, merged_revnos=merged_revnos)):
+            mps.append(mp)
+            self._cached_branches.add(source)
+            self._cached_branches.add(target)
+            self._cached_persons.add(registrant)
+        return mps
 
     def isBranchMergeable(self, target_branch):
         """See `IBranch`."""
