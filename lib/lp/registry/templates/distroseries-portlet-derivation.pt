@@ -84,4 +84,8 @@
       </tal:cannot_retry>
     </tal:retry>
   </tal:failed_initialization>
+  <p style="margin-top: 0.5em">
+    <img src="/@@/beta" alt="" style="vertical-align: text-bottom" />
+    Derived Distributions are in open beta.
+  </p>
 </div>
