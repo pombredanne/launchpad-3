@@ -649,7 +649,7 @@ class IPackageUploadSet(Interface):
 
     def getBuildsForSources(self, distroseries, status=None, pockets=None,
                             names=None):
-        """Return binary package upload records for a series with option
+        """Return binary package upload records for a series with optional
         filtering.
 
         :param distroseries: the `IDistroSeries` to consider.

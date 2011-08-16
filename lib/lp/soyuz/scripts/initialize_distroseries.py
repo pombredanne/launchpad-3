@@ -114,8 +114,10 @@ class InitializeDistroSeries:
             parents_bulk,
             key=lambda parent: self.parent_ids.index(parent.id))
         self.arches = arches
-        self.packagesets = [
+        self.packagesets_ids = [
             ensure_unicode(packageset) for packageset in packagesets]
+        self.packagesets = bulk.load(Packageset,
+            [int(packageset) for packageset in packagesets])
         self.rebuild = rebuild
         self.overlays = overlays
         self.overlay_pockets = overlay_pockets
@@ -185,14 +187,18 @@ class InitializeDistroSeries:
         if spns is not None and len(spns) == 0:
             # If no sources are selected in this parent, skip the check.
             return
+        # spns=None means no packagesets selected so we need to consider
+        # all sources.
 
         arch_tags = self.arches if self.arches is not () else None
         pending_builds = parent.getBuildRecords(
             BuildStatus.NEEDSBUILD, pocket=INIT_POCKETS,
             arch_tag=arch_tags, name=spns)
 
-        if pending_builds.any():
-            raise InitializationError("Parent series has pending builds.")
+        if not pending_builds.is_empty():
+            raise InitializationError(
+                ("Parent series has pending builds for selected sources, "
+                 "see help text for more information."))
 
     def _checkQueue(self, parent):
         """Assert upload queue is empty on the given parent series.
@@ -211,12 +217,16 @@ class InitializeDistroSeries:
         if spns is not None and len(spns) == 0:
             # If no sources are selected in this parent, skip the check.
             return
+        # spns=None means no packagesets selected so we need to consider
+        # all sources.
 
         items = getUtility(IPackageUploadSet).getBuildsForSources(
             parent, statuses, INIT_POCKETS, spns)
         if not items.is_empty():
             raise InitializationError(
-                "Parent series queues are not empty.")
+                ("Parent series has sources waiting in its upload queues "
+                 "that match your selection, see help text for more "
+                 "information."))
 
     def _checkSeries(self):
         error = (
@@ -281,7 +291,7 @@ class InitializeDistroSeries:
     def _create_dsds(self):
         if not self.first_derivation:
             if (self._has_same_parents_as_previous_series() and
-                not self.packagesets):
+                not self.packagesets_ids):
                 # If the parents are the same as previous_series's
                 # parents and all the packagesets are being copied,
                 # then we simply copy the DSDs from previous_series
@@ -410,17 +420,14 @@ class InitializeDistroSeries:
         for the initialization but none in this parent. We can skip
         this parent for all the copy/check operations.
         - [name1, ...]: this means that some specific packagesets
-        where selected for the initialization and some are in this
+        were selected for the initialization and some are in this
         parent so the list of packages to consider in not empty.
         """
         source_names_by_parent = {}
-        if self.packagesets:
+        if self.packagesets_ids:
             for parent in self.derivation_parents:
                 spns = []
-                # The overhead from looking up each packageset is
-                # mitigated by this usually running from a job.
-                for pkgsetid in self.packagesets:
-                    pkgset = self._store.get(Packageset, int(pkgsetid))
+                for pkgset in self.packagesets:
                     if pkgset.distroseries == parent:
                         spns += list(pkgset.getSourcesIncluded())
                 source_names_by_parent[parent] = spns
@@ -445,6 +452,8 @@ class InitializeDistroSeries:
                 # calling copy with spns=[] would copy all the packagesets
                 # from this parent.
                 continue
+            # spns=None means no packagesets selected so we need to consider
+            # all sources.
 
             distroarchseries_list = distroarchseries_lists[parent]
             for archive in parent.distribution.all_distro_archives:
@@ -588,7 +597,8 @@ class InitializeDistroSeries:
         for parent_ps in packagesets:
             # Cross-distro initializations get packagesets owned by the
             # distro owner, otherwise the old owner is preserved.
-            if self.packagesets and str(parent_ps.id) not in self.packagesets:
+            if (self.packagesets_ids and
+                str(parent_ps.id) not in self.packagesets_ids):
                 continue
             packageset_set = getUtility(IPackagesetSet)
             # First, try to fetch an existing packageset with this name.

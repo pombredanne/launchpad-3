@@ -189,8 +189,28 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
                 distribution=self.parent.parent, previous_series=self.parent)
             ids = InitializeDistroSeries(child, [self.parent.id])
             self.assertRaisesWithContent(
-                InitializationError, "Parent series has pending builds.",
+                InitializationError,
+                ("Parent series has pending builds for selected sources, "
+                 "see help text for more information."),
                 ids.check)
+
+    def test_success_with_builds_in_backports_or_proposed(self):
+        # With pending builds in the BACKPORT or PROPOSED pockets, we
+        # still can initialize.
+        pockets = [
+            PackagePublishingPocket.PROPOSED,
+            PackagePublishingPocket.BACKPORTS,
+            ]
+        for pocket in pockets:
+            self.parent, self.parent_das = self.setupParent()
+            source = self.factory.makeSourcePackagePublishingHistory(
+                distroseries=self.parent,
+                pocket=pocket)
+            source.createMissingBuilds()
+            child = self.factory.makeDistroSeries(
+                distribution=self.parent.parent, previous_series=self.parent)
+            ids = InitializeDistroSeries(child, [self.parent.id])
+            self.assertTrue(ids.check())
 
     def create2archParentAndSource(self, packages):
         # Helper to create a parent series with 2 distroarchseries and
@@ -219,7 +239,9 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             child, arches=[parent_das2.architecturetag])
 
         self.assertRaisesWithContent(
-            InitializationError, "Parent series has pending builds.",
+            InitializationError,
+            ("Parent series has pending builds for selected sources, "
+             "see help text for more information."),
             ids.check)
 
     def test_check_success_with_pending_builds_in_other_arches(self):
@@ -276,7 +298,9 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             child, packagesets=(str(packageset1.id),))
 
         self.assertRaisesWithContent(
-            InitializationError, "Parent series has pending builds.",
+            InitializationError,
+            ("Parent series has pending builds for selected sources, "
+             "see help text for more information."),
             ids.check)
 
     def test_check_success_if_build_present_in_non_selected_packagesets(self):
@@ -391,7 +415,10 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             ids = InitializeDistroSeries(child, [parent.id])
 
             self.assertRaisesWithContent(
-                InitializationError, "Parent series queues are not empty.",
+                InitializationError,
+                ("Parent series has sources waiting in its upload queues "
+                 "that match your selection, see help text for more "
+                 "information."),
                 ids.check)
 
     def test_failure_with_binary_queue_items_status(self):
@@ -414,7 +441,10 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             ids = InitializeDistroSeries(child, [parent.id])
 
             self.assertRaisesWithContent(
-                InitializationError, "Parent series queues are not empty.",
+                InitializationError,
+                ("Parent series has sources waiting in its upload queues "
+                 "that match your selection, see help text for more "
+                 "information."),
                 ids.check)
 
     def test_check_success_with_binary_queue_items_status(self):
@@ -498,7 +528,10 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             child, packagesets=(str(packageset1.id),))
 
         self.assertRaisesWithContent(
-            InitializationError, "Parent series queues are not empty.",
+            InitializationError,
+            ("Parent series has sources waiting in its upload queues "
+             "that match your selection, see help text for more "
+             "information."),
             ids.check)
 
     def assertDistroSeriesInitializedCorrectly(self, child, parent,

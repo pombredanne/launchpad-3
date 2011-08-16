@@ -1471,7 +1471,7 @@ class PackageUploadSet:
                 SourcePackageName.name.is_in(names),
                 ])
 
-        store = IMasterStore(PackageUpload)
+        store = IStore(PackageUpload)
         return store.find(PackageUpload, *clauses)
 
     def count(self, status=None, distroseries=None, pocket=None):
