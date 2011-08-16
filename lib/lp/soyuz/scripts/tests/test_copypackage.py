@@ -1466,6 +1466,36 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         self.assertIn(expected_text, notification.as_string())
         self.assertIn(expected_text, announcement.as_string())
 
+    def test_copy_generates_rejection_email(self):
+        # When a copy into a primary archive fails, we expect a rejection
+        # email if the send_email parameter is True.
+        archive = self.test_publisher.ubuntutest.main_archive
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='any')
+        source.sourcepackagerelease.changelog_entry = '* Foo!'
+        transaction.commit()  # Librarian.
+        nobby = self.createNobby(('i386', 'hppa'))
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            nobby, SourcePackageFormat.FORMAT_1_0)
+        # Ensure the same source is already in the destination so that we
+        # get a rejection.
+        self.test_publisher.getPubSource(
+            sourcename=source.source_package_name,
+            archive=nobby.main_archive, version="1.0-2",
+            architecturehintlist='any')
+        try:
+            do_copy(
+                [source], archive, nobby, source.pocket, False,
+                person=source.sourcepackagerelease.creator,
+                check_permissions=False, send_email=True)
+        except CannotCopy:
+            pass
+        else:
+            self.fail("Didn't get expected CannotCopy exception")
+
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+
     def test_copy_does_not_generate_notification(self):
         # When notify = False is passed to do_copy, no notification is
         # generated.
