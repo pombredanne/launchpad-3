@@ -419,8 +419,7 @@ class BranchActiveReviewsView(ActiveReviewsView):
 
     def getProposals(self):
         """See `ActiveReviewsView`."""
-        #candidates = self.context.landing_candidates
-        candidates = self.context.getMergeProposals()
+        candidates = self.context.landing_candidates
         can_see = lambda proposal: (
             proposal.source_branch.visibleByUser(self.user) and
             proposal.target_branch.visibleByUser(self.user) and
