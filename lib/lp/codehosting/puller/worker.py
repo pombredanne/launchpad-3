@@ -8,15 +8,16 @@ import socket
 import sys
 import urllib2
 
+import lp.codehosting # to load bzr plugins
+
 from bzrlib import (
     errors,
     urlutils,
     )
-from bzrlib.branch import (
-    Branch,
-    BzrBranchFormat4,
-    )
-from bzrlib.repofmt.weaverepo import (
+from bzrlib.branch import Branch
+from bzrlib.bzrdir import BzrDir
+from bzrlib.plugins.weave_fmt.branch import BzrBranchFormat4
+from bzrlib.plugins.weave_fmt.repository import (
     RepositoryFormat4,
     RepositoryFormat5,
     RepositoryFormat6,
