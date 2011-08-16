@@ -47,8 +47,7 @@ class OOPSLoggingObserver(log.PythonLoggingObserver):
         if eventDict.get('isError', False) and 'failure' in eventDict:
             try:
                 failure = eventDict['failure']
-                now = eventDict.get('error_time')
-                request = log_oops_from_failure(failure, now=now)
+                request = log_oops_from_failure(failure)
                 self.logger.info(
                     "Logged OOPS id %s: %s: %s",
                     request.oopsid, failure.type.__name__, failure.value)
@@ -58,11 +57,11 @@ class OOPSLoggingObserver(log.PythonLoggingObserver):
             log.PythonLoggingObserver.emit(self, eventDict)
 
 
-def log_oops_from_failure(failure, now=None, URL=None, **args):
+def log_oops_from_failure(failure, URL=None, **args):
     request = errorlog.ScriptRequest(args.items(), URL=URL)
     errorlog.globalErrorUtility.raising(
         (failure.type, failure.value, failure.getTraceback()),
-        request, now)
+        request)
     return request
 
 

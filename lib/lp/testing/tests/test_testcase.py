@@ -8,7 +8,7 @@ __metaclass__ = type
 from StringIO import StringIO
 import sys
 
-import oops.serializer_rfc822
+import oops_datedir_repo.serializer_rfc822
 from storm.store import Store
 from zope.component import getUtility
 
@@ -92,6 +92,9 @@ class TestCaptureOops(TestCaseWithFactory):
         # Safety net: ensure that no autocasts have occured even on Python 2.6
         # which is slightly better.
         self.assertIsInstance(content.getvalue(), str)
-        from_details = oops.serializer_rfc822.read(content)
+        from_details = oops_datedir_repo.serializer_rfc822.read(content)
+        # informational is deprecated, but the serializer still inserts it in
+        # 0.0.5.
+        from_details.pop('informational', None)
         oops_report = errorlog.globalErrorUtility.getLastOopsReport()
         self.assertEqual(dict(oops_report.__dict__), from_details)
