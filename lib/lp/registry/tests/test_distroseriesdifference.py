@@ -1050,6 +1050,9 @@ class DistroSeriesDifferenceSourceTestCase(TestCaseWithFactory):
         self.assertFalse(diff_for_other_series in results)
 
     def test_getForDistroSeries_does_not_filter_dsd_type_by_default(self):
+        # If no difference_type is given, getForDistroSeries returns
+        # DSDs of all types (missing in derived series, different
+        # versions, or unique to derived series).
         derived_series = self.makeDerivedSeries()
         dsds = [
             self.factory.makeDistroSeriesDifference(
