@@ -58,6 +58,7 @@ from datetime import (
     timedelta,
     )
 from fnmatch import fnmatchcase
+from functools import partial
 from inspect import (
     getargspec,
     getmro,
@@ -82,6 +83,7 @@ from bzrlib.bzrdir import (
     )
 from bzrlib.transport import get_transport
 import fixtures
+import oops_datedir_repo.serializer_rfc822
 import pytz
 import simplejson
 from storm.expr import Variable
@@ -552,8 +554,10 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
 
     def attachOopses(self):
         if len(self.oopses) > 0:
-            for (i, oops) in enumerate(self.oopses):
-                content = Content(UTF8_TEXT, oops.get_chunks)
+            for (i, report) in enumerate(self.oopses):
+                content = Content(UTF8_TEXT,
+                    partial(oops_datedir_repo.serializer_rfc822.to_chunks,
+                    report))
                 self.addDetail("oops-%d" % i, content)
 
     def attachLibrarianLog(self, fixture):

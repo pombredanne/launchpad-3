@@ -78,7 +78,3 @@ class IdenticalFormatsTestCase(unittest.TestCase):
             identical_formats(
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatA()),
                 StubBranch(BzrDirFormatA(), RepoFormatA(), BranchFormatB())))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -57,6 +57,7 @@ setup(
         'mocker',
         'oauth',
         'oops',
+        'oops_datedir_repo',
         'paramiko',
         'psycopg2',
         'python-memcached',

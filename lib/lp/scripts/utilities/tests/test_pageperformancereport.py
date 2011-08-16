@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from lp.scripts.utilities.pageperformancereport import (
     Category,
     Histogram,
@@ -483,7 +481,3 @@ class TestHistogram(TestCase):
 
         hist3 = Histogram.from_bins_data([[0, 5], [1, 4], [2, 7], [3, 6]])
         self.assertEquals(hist3, hist1 + hist2)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

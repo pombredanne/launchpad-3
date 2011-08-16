@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import unittest
-
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
@@ -73,7 +71,3 @@ class TestPersonlessAccountPermissions(TestCaseWithFactory):
         login(ANONYMOUS)
         self.failIf(check_permission(
             'launchpad.View', self.account.preferredemail))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

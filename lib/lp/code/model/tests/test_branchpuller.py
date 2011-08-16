@@ -9,7 +9,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import unittest
 
 import pytz
 import transaction
@@ -294,9 +293,3 @@ class TestAcquireBranchToPullDirectly(TestCaseWithFactory,
     def startMirroring(self, branch):
         """See `AcquireBranchToPullTests`."""
         branch.startMirroring()
-
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

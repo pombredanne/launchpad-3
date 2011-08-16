@@ -44,7 +44,3 @@ class DtdFormatTestCase(unittest.TestCase):
 
         self.assertRaises(TranslationFormatInvalidInputError, DtdFile, None,
             'test.dtd', content)
-
-
-def test_suite():
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

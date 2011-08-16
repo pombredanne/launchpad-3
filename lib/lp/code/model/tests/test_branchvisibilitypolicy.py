@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.code.enums import BranchVisibilityRule
@@ -108,7 +106,3 @@ class TestBaseBranchVisibilityRules(TestCaseWithFactory):
             InvalidVisibilityPolicy,
             product.setBranchVisibilityTeamPolicy,
             team, BranchVisibilityRule.FORBIDDEN)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

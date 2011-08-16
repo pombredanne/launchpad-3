@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -62,7 +60,3 @@ class TestTeamMembershipTransitions(TestCaseWithFactory):
             team_membership.setStatus,
             status='Proposed')
         self.assertEqual(400, api_exception.response.status)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

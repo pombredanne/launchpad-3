@@ -203,6 +203,37 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertDistroSeriesInitializedCorrectly(
             child, self.parent, self.parent_das)
 
+    def test_do_not_copy_superseded_sources(self):
+        # Make sure we don't copy superseded sources from the parent,
+        # we only want (pending, published).
+        self.parent, self.parent_das = self.setupParent()
+        # Add 2 more sources, pending and superseded.
+        superseded = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=self.parent,
+            pocket=PackagePublishingPocket.RELEASE,
+            status=PackagePublishingStatus.SUPERSEDED)
+        superseded_source_name = (
+            superseded.sourcepackagerelease.sourcepackagename.name)
+        pending = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=self.parent,
+            pocket=PackagePublishingPocket.RELEASE,
+            status=PackagePublishingStatus.PENDING)
+        pending_source_name = (
+            pending.sourcepackagerelease.sourcepackagename.name)
+        child = self._fullInitialize([self.parent])
+
+        # Check the superseded source is not copied.
+        superseded_child_sources = child.main_archive.getPublishedSources(
+            name=superseded_source_name, distroseries=child,
+            exact_match=True)
+        self.assertEqual(0, superseded_child_sources.count())
+
+        # Check the pending source is copied.
+        pending_child_sources = child.main_archive.getPublishedSources(
+            name=pending_source_name, distroseries=child,
+            exact_match=True)
+        self.assertEqual(1, pending_child_sources.count())
+
     def test_failure_with_queue_items(self):
         # If the parent series has items in its queues, such as NEW and
         # UNAPPROVED, we can't initialize.

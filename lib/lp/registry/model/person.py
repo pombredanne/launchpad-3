@@ -199,6 +199,7 @@ from lp.code.model.hasbranches import (
     HasRequestedReviewsMixin,
     )
 from lp.registry.errors import (
+    InvalidName,
     JoinNotAllowed,
     NameAlreadyTaken,
     PPACreationError,
@@ -225,7 +226,6 @@ from lp.registry.interfaces.mailinglistsubscription import (
     )
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
-    InvalidName,
     IPerson,
     IPersonSet,
     IPersonSettings,

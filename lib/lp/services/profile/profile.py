@@ -18,7 +18,9 @@ import pstats
 import threading
 import StringIO
 
+from bzrlib import errors
 from bzrlib import lsprof
+import oops_datedir_repo.serializer_rfc822
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.app.publication.interfaces import IEndRequestEvent
 from zope.component import (
@@ -301,10 +303,10 @@ def end_request(event):
             # information.
             info = (ProfilingOops, None, None)
             error_utility = getUtility(IErrorReportingUtility)
-            oops = error_utility.handling(info, request)
-            oopsid = oops.id
+            oops_report = error_utility.raising(info, request)
+            oopsid = oops_report['id']
         else:
-            oops = request.oops
+            oops_report = request.oops
         filename = '%s-%s-%s-%s' % (
             timestamp, pageid, oopsid,
             threading.currentThread().getName())
@@ -323,10 +325,10 @@ def end_request(event):
             template_context['pstats_path'] = os.path.abspath(
                 pstats_path)
         if is_html and 'show' in actions:
-            # Generate raw OOPS results.
-            f = StringIO.StringIO()
-            oops.write(f)
-            template_context['oops'] = f.getvalue()
+            # Generate rfc822 OOPS result (might be nice to have an html
+            # serializer..).
+            template_context['oops'] = ''.join(
+                oops_datedir_repo.serializer_rfc822.to_chunks(oops_report))
             # Generate profile summaries.
             prof_stats.strip_dirs()
             for name in ('time', 'cumulative', 'calls'):

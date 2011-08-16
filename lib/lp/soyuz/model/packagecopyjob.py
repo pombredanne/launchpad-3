@@ -8,8 +8,9 @@ __all__ = [
     "PlainPackageCopyJob",
     ]
 
-from lazr.delegates import delegates
 import logging
+
+from lazr.delegates import delegates
 import simplejson
 from storm.locals import (
     And,
@@ -36,6 +37,7 @@ from canonical.launchpad.interfaces.lpstorm import (
     )
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.enum import DistroSeriesDifferenceStatus
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
@@ -528,7 +530,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         dsd_source = getUtility(IDistroSeriesDifferenceSource)
         target_series = self.target_distroseries
         candidates = dsd_source.getForDistroSeries(
-            distro_series=target_series, name_filter=self.package_name)
+            distro_series=target_series, name_filter=self.package_name,
+            status=DistroSeriesDifferenceStatus.NEEDS_ATTENTION)
 
         # The job doesn't know what distroseries a given package is
         # coming from, and the version number in the DSD may have

@@ -9,7 +9,6 @@ import datetime
 import os
 import random
 import time
-import unittest
 
 from bzrlib.revision import (
     NULL_REVISION,
@@ -775,7 +774,3 @@ class TestRevisionProperty(BzrSyncTestCase):
         # Check that properties are stored in the database.
         db_revision = getUtility(IRevisionSet).getByRevisionId('rev1')
         self.assertEquals(properties, db_revision.getProperties())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
