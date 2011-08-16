@@ -4419,7 +4419,7 @@ class SSHKeySet:
     def new(self, person, sshkey):
         try:
             kind, keytext, comment = sshkey.split(' ', 2)
-        except ValueError:
+        except (ValueError, AttributeError):
             raise SSHKeyAdditionError
 
         if not (kind and keytext and comment):
