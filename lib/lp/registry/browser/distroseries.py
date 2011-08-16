@@ -443,7 +443,7 @@ class DistroSeriesView(LaunchpadView, MilestoneOverlayMixin,
     @property
     def num_unlinked_packages(self):
         """The number of unlinked packagings for this distroseries."""
-        return self.context.sourcecount - self.num_linked_packages
+        return self.context.getPrioritizedUnlinkedSourcePackages().count()
 
     @cachedproperty
     def recently_linked(self):
