@@ -1,13 +1,11 @@
-= SSH Keys =
+SSH Keys
+========
 
 Launchpad models SSH keys in a SSHKey class.
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.registry.interfaces.ssh import (
-    ...     ISSHKeySet,
-    ...     SSHKeyType,
-    ...     )
+    >>> from lp.registry.interfaces.ssh import ISSHKeySet
     >>> personset = getUtility(IPersonSet)
     >>> name12 = personset.getByName('name12')
     >>> [(key.keytype, key.comment) for key in name12.sshkeys]
