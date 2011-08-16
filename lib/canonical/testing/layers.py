@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # We like global!
@@ -106,16 +106,10 @@ from canonical.config.fixture import (
     ConfigFixture,
     ConfigUseFixture,
     )
-from canonical.database.revision import (
-    confirm_dbrevision,
-    confirm_dbrevision_on_startup,
-    )
 from canonical.database.sqlbase import (
-    cursor,
     session_store,
     ZopelessTransactionManager,
     )
-from canonical.launchpad.interfaces.mailbox import IMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -142,7 +136,10 @@ from canonical.testing.smtpd import SMTPController
 from lp.services.googlesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup,
     )
-from lp.services.mail.mailbox import TestMailBox
+from lp.services.mail.mailbox import (
+    IMailBox,
+    TestMailBox,
+    )
 import lp.services.mail.stub
 from lp.services.memcache.client import memcache_client_factory
 from lp.services.osutils import kill_by_pidfile
@@ -225,9 +222,6 @@ def reconnect_stores(database_config_section='launchpad'):
 
     main_store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     assert main_store is not None, 'Failed to reconnect'
-
-    # Confirm the database has the right patchlevel
-    confirm_dbrevision(cursor())
 
     # Confirm that SQLOS is again talking to the database (it connects
     # as soon as SQLBase._connection is accessed
@@ -1884,10 +1878,6 @@ class LayerProcessController:
     @classmethod
     def _runAppServer(cls):
         """Start the app server using runlaunchpad.py"""
-        # The app server will not start at all if the database hasn't been
-        # correctly patched. The app server will make exactly this check,
-        # doing it here makes the error more obvious.
-        confirm_dbrevision_on_startup()
         _config = cls.appserver_config
         cmd = [
             os.path.join(_config.root, 'bin', 'run'),

@@ -26,6 +26,7 @@ from lp.services.database import bulk
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.enums import (
     ArchivePurpose,
+    PackagePublishingStatus,
     PackageUploadStatus,
     )
 from lp.soyuz.interfaces.archive import (
@@ -478,6 +479,8 @@ class InitializeDistroSeries:
                     target_pocket = PackagePublishingPocket.RELEASE
                     sources = archive.getPublishedSources(
                         distroseries=parent, pocket=INIT_POCKETS,
+                        status=(PackagePublishingStatus.PENDING,
+                                PackagePublishingStatus.PUBLISHED),
                         name=spns)
                     # XXX: rvb 2011-06-23 bug=801112: do_copy is atomic (all
                     # or none of the sources will be copied). This might

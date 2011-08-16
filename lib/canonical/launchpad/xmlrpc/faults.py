@@ -22,6 +22,7 @@ __all__ = [
     'InvalidBranchUniqueName',
     'InvalidProductIdentifier',
     'InvalidBranchUrl',
+    'InvalidSourcePackageName',
     'OopsOccurred',
     'NoBranchWithID',
     'NoLinkedBranch',
@@ -476,3 +477,13 @@ class OopsOccurred(LaunchpadFault):
     def __init__(self, server_op, oopsid):
         LaunchpadFault.__init__(self, server_op=server_op, oopsid=oopsid)
         self.oopsid = oopsid
+
+
+class InvalidSourcePackageName(LaunchpadFault):
+
+    error_code = 390
+    msg_template = ("%(name)s is not a valid source package name.")
+
+    def __init__(self, name):
+        self.name = name
+        LaunchpadFault.__init__(self, name=name)

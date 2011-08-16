@@ -351,13 +351,6 @@
         handler="canonical.launchpad.webapp.sigdumpmem.setup_sigdumpmem"
         />
 
-
-    <!-- Confirm the database is the correct revision level -->
-    <subscriber
-        for="zope.app.appsetup.IProcessStartingEvent"
-        handler="canonical.database.revision.confirm_dbrevision_on_startup"
-        />
-
     <!-- Confirm that no main thread event handlers use the connection cache -->
     <subscriber
         for="zope.app.appsetup.IProcessStartingEvent"

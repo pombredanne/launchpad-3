@@ -16,10 +16,10 @@ import sys
 import tempfile
 from textwrap import dedent
 import traceback
-import unittest
 
 from lazr.batchnavigator.interfaces import InvalidBatchSizeError
 from lazr.restful.declarations import error_status
+from oops.uniquefileallocator import UniqueFileAllocator
 import pytz
 import testtools
 from zope.app.publication.tests.test_zopepublication import (
@@ -30,11 +30,14 @@ from zope.publisher.browser import TestRequest
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
 from zope.security.interfaces import Unauthorized
-from zope.testing.loggingsupport import InstalledHandler
 
 from canonical.config import config
 from lp.app import versioninfo
 from canonical.launchpad.layers import WebServiceLayer
+from canonical.launchpad.webapp.adapter import (
+    clear_request_started,
+    set_request_started,
+    )
 from canonical.launchpad.webapp.errorlog import (
     _is_sensitive,
     ErrorReport,
@@ -51,13 +54,13 @@ from lp.app.errors import (
     GoneError,
     TranslationUnavailable,
     )
-from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from lp.services.osutils import remove_tree
+from lp.services.timeline.requesttimeline import get_request_timeline
 from lp.testing import TestCase
 from lp_sitecustomize import customize_get_converter
 
 
-UTC = pytz.timezone('UTC')
+UTC = pytz.utc
 
 
 class ArbitraryException(Exception):
@@ -102,45 +105,9 @@ class TestErrorReport(testtools.TestCase):
             entry.db_statements[1],
             (5, 10, 'store_b', 'SELECT 2'))
 
-    def test_write(self):
-        """Test ErrorReport.write()"""
-        entry = ErrorReport('OOPS-A0001', 'NotFound', 'error message',
-                            datetime.datetime(2005, 04, 01, 00, 00, 00,
-                                              tzinfo=UTC),
-                            'IFoo:+foo-template',
-                            'traceback-text', 'Sample User',
-                            'http://localhost:9000/foo', 42,
-                            [('HTTP_USER_AGENT', 'Mozilla/5.0'),
-                             ('HTTP_REFERER', 'http://localhost:9000/'),
-                             ('name=foo', 'hello\nworld')],
-                            [(1, 5, 'store_a', 'SELECT 1'),
-                             (5, 10, 'store_b', 'SELECT\n2')], False)
-        fp = StringIO.StringIO()
-        entry.write(fp)
-        self.assertEqual(fp.getvalue(), dedent("""\
-            Oops-Id: OOPS-A0001
-            Exception-Type: NotFound
-            Exception-Value: error message
-            Date: 2005-04-01T00:00:00+00:00
-            Page-Id: IFoo:+foo-template
-            Branch: %s
-            Revision: %s
-            User: Sample User
-            URL: http://localhost:9000/foo
-            Duration: 42
-            Informational: False
-
-            HTTP_USER_AGENT=Mozilla/5.0
-            HTTP_REFERER=http://localhost:9000/
-            name%%3Dfoo=hello%%0Aworld
-
-            00001-00005@store_a SELECT 1
-            00005-00010@store_b SELECT 2
-
-            traceback-text""" % (versioninfo.branch_nick, versioninfo.revno)))
-
     def test_read(self):
         """Test ErrorReport.read()."""
+        # Note: this exists to test the compatibility thunk only.
         fp = StringIO.StringIO(dedent("""\
             Oops-Id: OOPS-A0001
             Exception-Type: NotFound
@@ -163,7 +130,8 @@ class TestErrorReport(testtools.TestCase):
         self.assertEqual(entry.id, 'OOPS-A0001')
         self.assertEqual(entry.type, 'NotFound')
         self.assertEqual(entry.value, 'error message')
-        self.assertEqual(entry.time, datetime.datetime(2005, 4, 1))
+        self.assertEqual(
+                entry.time, datetime.datetime(2005, 4, 1, tzinfo=UTC))
         self.assertEqual(entry.pageid, 'IFoo:+foo-template')
         self.assertEqual(entry.tb_text, 'traceback-text')
         self.assertEqual(entry.username, 'Sample User')
@@ -183,46 +151,6 @@ class TestErrorReport(testtools.TestCase):
             entry.db_statements[1],
             (5, 10, 'store_b', 'SELECT 2'))
 
-    def test_read_no_store_id(self):
-        """Test ErrorReport.read() for old logs with no store_id."""
-        fp = StringIO.StringIO(dedent("""\
-            Oops-Id: OOPS-A0001
-            Exception-Type: NotFound
-            Exception-Value: error message
-            Date: 2005-04-01T00:00:00+00:00
-            Page-Id: IFoo:+foo-template
-            User: Sample User
-            URL: http://localhost:9000/foo
-            Duration: 42
-
-            HTTP_USER_AGENT=Mozilla/5.0
-            HTTP_REFERER=http://localhost:9000/
-            name%3Dfoo=hello%0Aworld
-
-            00001-00005 SELECT 1
-            00005-00010 SELECT 2
-
-            traceback-text"""))
-        entry = ErrorReport.read(fp)
-        self.assertEqual(entry.id, 'OOPS-A0001')
-        self.assertEqual(entry.type, 'NotFound')
-        self.assertEqual(entry.value, 'error message')
-        self.assertEqual(entry.time, datetime.datetime(2005, 4, 1))
-        self.assertEqual(entry.pageid, 'IFoo:+foo-template')
-        self.assertEqual(entry.tb_text, 'traceback-text')
-        self.assertEqual(entry.username, 'Sample User')
-        self.assertEqual(entry.url, 'http://localhost:9000/foo')
-        self.assertEqual(entry.duration, 42)
-        self.assertEqual(len(entry.req_vars), 3)
-        self.assertEqual(entry.req_vars[0], ('HTTP_USER_AGENT',
-                                             'Mozilla/5.0'))
-        self.assertEqual(entry.req_vars[1], ('HTTP_REFERER',
-                                             'http://localhost:9000/'))
-        self.assertEqual(entry.req_vars[2], ('name=foo', 'hello\nworld'))
-        self.assertEqual(len(entry.db_statements), 2)
-        self.assertEqual(entry.db_statements[0], (1, 5, None, 'SELECT 1'))
-        self.assertEqual(entry.db_statements[1], (5, 10, None, 'SELECT 2'))
-
 
 class TestErrorReportingUtility(testtools.TestCase):
 
@@ -232,7 +160,6 @@ class TestErrorReportingUtility(testtools.TestCase):
         # current error directory.
         test_data = dedent("""
             [error_reports]
-            copy_to_zlog: true
             error_dir: %s
             """ % tempfile.mkdtemp())
         config.push('test_data', test_data)
@@ -257,8 +184,6 @@ class TestErrorReportingUtility(testtools.TestCase):
             utility.oops_prefix)
         self.assertEqual(config.error_reports.error_dir,
             utility.log_namer._output_root)
-        self.assertEqual(
-            config.error_reports.copy_to_zlog, utility.copy_to_zlog)
         # Some external processes may use another config section to
         # provide the error log configuration.
         utility.configure(section_name='branchscanner')
@@ -266,8 +191,6 @@ class TestErrorReportingUtility(testtools.TestCase):
             utility.oops_prefix)
         self.assertEqual(config.branchscanner.error_dir,
             utility.log_namer._output_root)
-        self.assertEqual(
-            config.branchscanner.copy_to_zlog, utility.copy_to_zlog)
 
         # The default error section can be restored.
         utility.configure()
@@ -275,8 +198,6 @@ class TestErrorReportingUtility(testtools.TestCase):
             utility.oops_prefix)
         self.assertEqual(config.error_reports.error_dir,
             utility.log_namer._output_root)
-        self.assertEqual(
-            config.error_reports.copy_to_zlog, utility.copy_to_zlog)
 
     def test_setOopsToken(self):
         """Test ErrorReportingUtility.setOopsToken()."""
@@ -288,19 +209,18 @@ class TestErrorReportingUtility(testtools.TestCase):
         utility.setOopsToken('1')
         self.assertEqual('T1', utility.oops_prefix)
 
-    def test_raising(self):
+    def test_raising_permissions(self):
         """Test ErrorReportingUtility.raising() with no request"""
         utility = ErrorReportingUtility()
+        report = {'id': 'OOPS-91T1'}
         now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
-        # Set up default file creation mode to rwx------.
+        # Set up default file creation mode to rwx------ as some restrictive
+        # servers do.
         umask_permission = stat.S_IRWXG | stat.S_IRWXO
         old_umask = os.umask(umask_permission)
-
-        try:
-            raise ArbitraryException('xyz')
-        except ArbitraryException:
-            utility.raising(sys.exc_info(), now=now)
+        self.addCleanup(os.umask, old_umask)
+        utility._sendReport(report, now)
 
         errorfile = os.path.join(
             utility.log_namer.output_dir(now), '01800.T1')
@@ -313,36 +233,6 @@ class TestErrorReportingUtility(testtools.TestCase):
         # Get only the permission bits for this file.
         file_permission = stat.S_IMODE(st.st_mode)
         self.assertEqual(file_permission, wanted_permission)
-        # Restore the umask to the original value.
-        os.umask(old_umask)
-
-        lines = open(errorfile, 'r').readlines()
-
-        # the header
-        self.assertEqual(lines[0], 'Oops-Id: OOPS-91T1\n')
-        self.assertEqual(lines[1], 'Exception-Type: ArbitraryException\n')
-        self.assertEqual(lines[2], 'Exception-Value: xyz\n')
-        self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
-        self.assertEqual(lines[4], 'Page-Id: \n')
-        self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
-        self.assertEqual(lines[6], 'Revision: %s\n' % versioninfo.revno)
-        self.assertEqual(lines[7], 'User: None\n')
-        self.assertEqual(lines[8], 'URL: None\n')
-        self.assertEqual(lines[9], 'Duration: -1\n')
-        self.assertEqual(lines[10], 'Informational: False\n')
-        self.assertEqual(lines[11], '\n')
-
-        # no request vars
-        self.assertEqual(lines[12], '\n')
-
-        # no database statements
-        self.assertEqual(lines[13], '\n')
-
-        # traceback
-        self.assertEqual(lines[14], 'Traceback (most recent call last):\n')
-        #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
-        #    raise ArbitraryException(\'xyz\')
-        self.assertEqual(lines[17], 'ArbitraryException: xyz\n')
 
     def test_raising_with_request(self):
         """Test ErrorReportingUtility.raising() with a request"""
@@ -417,7 +307,7 @@ class TestErrorReportingUtility(testtools.TestCase):
 
         # verify that the oopsid was set on the request
         self.assertEqual(request.oopsid, 'OOPS-91T1')
-        self.assertEqual(request.oops.id, 'OOPS-91T1')
+        self.assertEqual(request.oops['id'], 'OOPS-91T1')
 
     def test_raising_with_xmlrpc_request(self):
         # Test ErrorReportingUtility.raising() with an XML-RPC request.
@@ -425,16 +315,11 @@ class TestErrorReportingUtility(testtools.TestCase):
         directlyProvides(request, IXMLRPCRequest)
         request.getPositionalArguments = lambda: (1, 2)
         utility = ErrorReportingUtility()
-        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
         try:
             raise ArbitraryException('xyz\nabc')
         except ArbitraryException:
-            utility.raising(sys.exc_info(), request, now=now)
-        errorfile = os.path.join(
-            utility.log_namer.output_dir(now), '01800.T1')
-        self.assertTrue(os.path.exists(errorfile))
-        lines = open(errorfile, 'r').readlines()
-        self.assertEqual(lines[16], 'xmlrpc args=(1, 2)\n')
+            report = utility.raising(sys.exc_info(), request)
+        self.assertEqual(('xmlrpc args', '(1, 2)'), report['req_vars'][-1])
 
     def test_raising_with_webservice_request(self):
         # Test ErrorReportingUtility.raising() with a WebServiceRequest
@@ -476,120 +361,47 @@ class TestErrorReportingUtility(testtools.TestCase):
     def test_raising_for_script(self):
         """Test ErrorReportingUtility.raising with a ScriptRequest."""
         utility = ErrorReportingUtility()
-        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
+        req_vars = [
+            ('name2', 'value2'), ('name1', 'value1'),
+            ('name1', 'value3')]
+        url='https://launchpad.net/example'
         try:
             raise ArbitraryException('xyz\nabc')
         except ArbitraryException:
             # Do not test escaping of request vars here, it is already tested
             # in test_raising_with_request.
-            request = ScriptRequest([
-                ('name2', 'value2'), ('name1', 'value1'),
-                ('name1', 'value3')], URL='https://launchpad.net/example')
-            utility.raising(sys.exc_info(), request, now=now)
+            request = ScriptRequest(req_vars, URL=url)
+            report = utility.raising(sys.exc_info(), request)
 
-        errorfile = os.path.join(
-            utility.log_namer.output_dir(now), '01800.T1')
-        self.assertTrue(os.path.exists(errorfile))
-        lines = open(errorfile, 'r').readlines()
-
-        # the header
-        self.assertEqual(lines[0], 'Oops-Id: OOPS-91T1\n')
-        self.assertEqual(lines[1], 'Exception-Type: ArbitraryException\n')
-        self.assertEqual(lines[2], 'Exception-Value: xyz abc\n')
-        self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
-        self.assertEqual(lines[4], 'Page-Id: \n')
-        self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
-        self.assertEqual(lines[6], 'Revision: %s\n' % versioninfo.revno)
-        self.assertEqual(lines[7], 'User: None\n')
-        self.assertEqual(lines[8], 'URL: https://launchpad.net/example\n')
-        self.assertEqual(lines[9], 'Duration: -1\n')
-        self.assertEqual(lines[10], 'Informational: False\n')
-        self.assertEqual(lines[11], '\n')
-
-        # request vars
-        self.assertEqual(lines[12], 'name1=value1\n')
-        self.assertEqual(lines[13], 'name1=value3\n')
-        self.assertEqual(lines[14], 'name2=value2\n')
-        self.assertEqual(lines[15], '\n')
-
-        # no database statements
-        self.assertEqual(lines[16], '\n')
-
-        # traceback
-        self.assertEqual(lines[17], 'Traceback (most recent call last):\n')
-        #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
-        #    raise ArbitraryException(\'xyz\')
-        self.assertEqual(lines[20], 'ArbitraryException: xyz\n')
-
-        # verify that the oopsid was set on the request
-        self.assertEqual(request.oopsid, 'OOPS-91T1')
+        self.assertEqual(url, report['url'])
+        self.assertEqual(sorted(req_vars), report['req_vars'])
 
     def test_raising_with_unprintable_exception(self):
-        # Test ErrorReportingUtility.raising() with an unprintable exception.
-        utility = ErrorReportingUtility()
-        now = datetime.datetime(2006, 01, 01, 00, 30, 00, tzinfo=UTC)
-
         class UnprintableException(Exception):
-
             def __str__(self):
                 raise RuntimeError('arrgh')
             __repr__ = __str__
 
-        log = InstalledHandler('SiteError')
+        utility = ErrorReportingUtility()
         try:
             raise UnprintableException()
         except UnprintableException:
-            utility.raising(sys.exc_info(), now=now)
-        log.uninstall()
+            report = utility.raising(sys.exc_info())
 
-        errorfile = os.path.join(
-            utility.log_namer.output_dir(now), '01800.T1')
-        self.assertTrue(os.path.exists(errorfile))
-        lines = open(errorfile, 'r').readlines()
-
-        # the header
-        self.assertEqual(lines[0], 'Oops-Id: OOPS-1T1\n')
-        self.assertEqual(lines[1], 'Exception-Type: UnprintableException\n')
-        self.assertEqual(
-            lines[2],
-            'Exception-Value: <unprintable UnprintableException object>\n')
-        self.assertEqual(lines[3], 'Date: 2006-01-01T00:30:00+00:00\n')
-        self.assertEqual(lines[4], 'Page-Id: \n')
-        self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
-        self.assertEqual(lines[6], 'Revision: %s\n' % versioninfo.revno)
-        self.assertEqual(lines[7], 'User: None\n')
-        self.assertEqual(lines[8], 'URL: None\n')
-        self.assertEqual(lines[9], 'Duration: -1\n')
-        self.assertEqual(lines[10], 'Informational: False\n')
-        self.assertEqual(lines[11], '\n')
-
-        # no request vars
-        self.assertEqual(lines[12], '\n')
-
-        # no database statements
-        self.assertEqual(lines[13], '\n')
-
-        # traceback
-        self.assertEqual(lines[14], 'Traceback (most recent call last):\n')
-        #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
-        #    raise UnprintableException()
-        self.assertEqual(
-            lines[17],
-            'UnprintableException:'
-            ' <unprintable UnprintableException object>\n')
+        unprintable = '<unprintable UnprintableException object>'
+        self.assertEqual(unprintable, report['value'])
+        self.assertIn( 'UnprintableException: ' + unprintable,
+                report['tb_text'])
 
     def test_raising_unauthorized_without_request(self):
         """Unauthorized exceptions are logged when there's no request."""
         utility = ErrorReportingUtility()
-        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
         try:
             raise Unauthorized('xyz')
         except Unauthorized:
-            utility.raising(sys.exc_info(), now=now)
-        errorfile = os.path.join(
-            utility.log_namer.output_dir(now), '01800.T1')
-        self.failUnless(os.path.exists(errorfile))
+            oops = utility.raising(sys.exc_info())
+        self.assertNotEqual(None, oops)
 
     def test_raising_unauthorized_without_principal(self):
         """Unauthorized exceptions are logged when the request has no
@@ -752,9 +564,8 @@ class TestErrorReportingUtility(testtools.TestCase):
     def test_raising_with_string_as_traceback(self):
         # ErrorReportingUtility.raising() can be called with a string in the
         # place of a traceback. This is useful when the original traceback
-        # object is unavailable.
-        utility = ErrorReportingUtility()
-        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+        # object is unavailable - e.g. when logging a failure reported by a
+        # non-oops-enabled service.
 
         try:
             raise RuntimeError('hello')
@@ -765,76 +576,21 @@ class TestErrorReportingUtility(testtools.TestCase):
             # one generated by format_exc is sometimes passed instead.
             exc_tb = traceback.format_exc()
 
-        utility.raising((exc_type, exc_value, exc_tb), now=now)
-        errorfile = os.path.join(
-            utility.log_namer.output_dir(now), '01800.T1')
-
-        self.assertTrue(os.path.exists(errorfile))
-        lines = open(errorfile, 'r').readlines()
-
-        # the header
-        self.assertEqual(lines[0], 'Oops-Id: OOPS-91T1\n')
-        self.assertEqual(lines[1], 'Exception-Type: RuntimeError\n')
-        self.assertEqual(lines[2], 'Exception-Value: hello\n')
-        self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
-        self.assertEqual(lines[4], 'Page-Id: \n')
-        self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
-        self.assertEqual(lines[6], 'Revision: %s\n' % versioninfo.revno)
-        self.assertEqual(lines[7], 'User: None\n')
-        self.assertEqual(lines[8], 'URL: None\n')
-        self.assertEqual(lines[9], 'Duration: -1\n')
-        self.assertEqual(lines[10], 'Informational: False\n')
-        self.assertEqual(lines[11], '\n')
-
-        # no request vars
-        self.assertEqual(lines[12], '\n')
-
-        # no database statements
-        self.assertEqual(lines[13], '\n')
-
-        # traceback
-        self.assertEqual(''.join(lines[14:18]), exc_tb)
+        utility = ErrorReportingUtility()
+        report = utility.raising((exc_type, exc_value, exc_tb))
+        # traceback is what we supplied.
+        self.assertEqual(exc_tb, report['tb_text'])
 
     def test_handling(self):
         """Test ErrorReportingUtility.handling()."""
         utility = ErrorReportingUtility()
-        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
         try:
             raise ArbitraryException('xyz')
         except ArbitraryException:
-            utility.handling(sys.exc_info(), now=now)
+            report = utility.handling(sys.exc_info())
 
-        errorfile = os.path.join(
-            utility.log_namer.output_dir(now), '01800.T1')
-        self.assertTrue(os.path.exists(errorfile))
-        lines = open(errorfile, 'r').readlines()
-
-        # the header
-        self.assertEqual(lines[0], 'Oops-Id: OOPS-91T1\n')
-        self.assertEqual(lines[1], 'Exception-Type: ArbitraryException\n')
-        self.assertEqual(lines[2], 'Exception-Value: xyz\n')
-        self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
-        self.assertEqual(lines[4], 'Page-Id: \n')
-        self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
-        self.assertEqual(lines[6], 'Revision: %s\n' % versioninfo.revno)
-        self.assertEqual(lines[7], 'User: None\n')
-        self.assertEqual(lines[8], 'URL: None\n')
-        self.assertEqual(lines[9], 'Duration: -1\n')
-        self.assertEqual(lines[10], 'Informational: True\n')
-        self.assertEqual(lines[11], '\n')
-
-        # no request vars
-        self.assertEqual(lines[12], '\n')
-
-        # no database statements
-        self.assertEqual(lines[13], '\n')
-
-        # traceback
-        self.assertEqual(lines[14], 'Traceback (most recent call last):\n')
-        #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
-        #    raise ArbitraryException(\'xyz\')
-        self.assertEqual(lines[17], 'ArbitraryException: xyz\n')
+        self.assertEqual(report['informational'], True)
 
     def test_oopsMessage(self):
         """oopsMessage pushes and pops the messages."""
@@ -861,10 +617,10 @@ class TestErrorReportingUtility(testtools.TestCase):
                 raise ArbitraryException('foo')
             except ArbitraryException:
                 info = sys.exc_info()
-                oops = utility._makeErrorReport(info)
+                oops = utility._makeReport(info)
                 self.assertEqual(
                     [('<oops-message-0>', "{'a': 'b', 'c': 'd'}")],
-                    oops.req_vars)
+                    oops['req_vars'])
 
     def test__makeErrorReport_combines_request_and_error_vars(self):
         """The oops messages should be distinct from real request vars."""
@@ -875,10 +631,44 @@ class TestErrorReportingUtility(testtools.TestCase):
                 raise ArbitraryException('foo')
             except ArbitraryException:
                 info = sys.exc_info()
-                oops = utility._makeErrorReport(info, request)
+                oops = utility._makeReport(info, request)
                 self.assertEqual(
                     [('<oops-message-0>', "{'a': 'b'}"), ('c', 'd')],
-                    oops.req_vars)
+                    oops['req_vars'])
+
+    def test_filter_session_statement(self):
+        """Removes quoted strings if database_id is SQL-session."""
+        utility = ErrorReportingUtility()
+        statement = "SELECT 'gone'"
+        self.assertEqual(
+            "SELECT '%s'",
+            utility.filter_session_statement('SQL-session', statement))
+
+    def test_filter_session_statement_noop(self):
+        """If database_id is not SQL-session, it's a no-op."""
+        utility = ErrorReportingUtility()
+        statement = "SELECT 'gone'"
+        self.assertEqual(
+            statement,
+            utility.filter_session_statement('SQL-launchpad', statement))
+
+    def test_session_queries_filtered(self):
+        """Test that session queries are filtered."""
+        utility = ErrorReportingUtility()
+        request = ScriptRequest([], URL="test_session_queries_filtered")
+        set_request_started()
+        try:
+            timeline = get_request_timeline(request)
+            timeline.start("SQL-session", "SELECT 'gone'").finish()
+            try:
+                raise ArbitraryException('foo')
+            except ArbitraryException:
+                info = sys.exc_info()
+                oops = utility._makeReport(info)
+            self.assertEqual("SELECT '%s'", oops['db_statements'][0][3])
+        finally:
+            clear_request_started()
+
 
 
 class TestSensitiveRequestVariables(testtools.TestCase):
@@ -934,9 +724,9 @@ class TestOopsLoggingHandler(TestCase):
         self.assertTrue(
             report.tb_text.startswith('Traceback (most recent call last):\n'),
             report.tb_text)
-        self.assertEqual('', report.pageid)
-        self.assertEqual('None', report.username)
-        self.assertEqual('None', report.url)
+        self.assertEqual(None, report.pageid)
+        self.assertEqual(None, report.username)
+        self.assertEqual(None, report.url)
         self.assertEqual([], report.req_vars)
         self.assertEqual([], report.db_statements)
 
@@ -980,37 +770,45 @@ class TestOopsIgnoring(testtools.TestCase):
         # A request originating from another site that generates a NotFound
         # (404) is ignored (i.e., no OOPS is logged).
         utility = ErrorReportingUtility()
-        request = dict(HTTP_REFERER='example.com')
-        self.assertTrue(utility._isIgnoredException('NotFound', request))
+        report = {'type': 'NotFound',
+                'url': 'http://example.com',
+                'req_vars': [('HTTP_REFERER', 'example.com')]}
+        self.assertTrue(utility._filterReport(report))
 
     def test_onsite_404_not_ignored(self):
         # A request originating from a local site that generates a NotFound
         # (404) produces an OOPS.
         utility = ErrorReportingUtility()
-        request = dict(HTTP_REFERER='canonical.com')
-        self.assertTrue(utility._isIgnoredException('NotFound', request))
+        report = {'type': 'NotFound',
+                'url': 'http://example.com',
+                'req_vars': [('HTTP_REFERER', 'http://launchpad.dev/')]}
+        self.assertFalse(utility._filterReport(report))
 
     def test_404_without_referer_is_ignored(self):
         # If a 404 is generated and there is no HTTP referer, we don't produce
         # an OOPS.
         utility = ErrorReportingUtility()
-        request = dict()
-        self.assertTrue(utility._isIgnoredException('NotFound', request))
+        report = {'type': 'NotFound',
+                'url': 'http://example.com',
+                'req_vars': []}
+        self.assertTrue(utility._filterReport(report))
+
+    def test_ignored_report_filtered(self):
+        utility = ErrorReportingUtility()
+        report = {'ignore': True}
+        self.assertTrue(utility._filterReport(report))
 
     def test_marked_exception_is_ignored(self):
-        # If an exception has been marked as ignorable, then it is ignored.
+        # If an exception has been marked as ignorable, then it is ignored in
+        # the report.
         utility = ErrorReportingUtility()
-        exception = Exception()
-        directlyProvides(exception, IUnloggedException)
-        self.assertTrue(
-            utility._isIgnoredException('RuntimeError', exception=exception))
-
-    def test_unmarked_exception_generates_oops(self):
-        # If an exception has not been marked as ignorable, then it is not.
-        utility = ErrorReportingUtility()
-        exception = Exception()
-        self.assertFalse(
-            utility._isIgnoredException('RuntimeError', exception=exception))
+        try:
+            raise ArbitraryException('xyz\nabc')
+        except ArbitraryException:
+            exc_info = sys.exc_info()
+            directlyProvides(exc_info[1], IUnloggedException)
+        report = utility._makeReport(exc_info)
+        self.assertTrue(report['ignore'])
 
 
 class TestWrappedParameterConverter(testtools.TestCase):
@@ -1082,7 +880,3 @@ class TestWrappedParameterConverter(testtools.TestCase):
         customize_get_converter(module)
         converter = module.get_converter('int')
         self.assertTrue(converter is None)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

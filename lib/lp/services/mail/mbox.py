@@ -41,7 +41,7 @@ class MboxMailer:
     def send(self, fromaddr, toaddrs, message):
         """See IMailer."""
         env_recips = COMMASPACE.join(toaddrs)
-        log = getLogger('canonical.launchpad.mail')
+        log = getLogger('lp.services.mail')
         log.info('Email from %s to %s being stored in mailbox %s',
                  fromaddr, env_recips, self.filename)
         msg = email.message_from_string(message)

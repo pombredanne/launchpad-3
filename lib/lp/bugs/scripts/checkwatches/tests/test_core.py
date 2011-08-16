@@ -512,7 +512,3 @@ class TestTwistedThreadSchedulerInPlace(
              "getRemoteStatus(bug_id=u'strawberry-2')",
              "getRemoteStatus(bug_id=u'strawberry-3')"],
             output_file.output['strawberry'])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

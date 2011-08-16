@@ -110,7 +110,6 @@ def compose_sql_find_differences(derived_series, parent_series):
         FROM (%(parent_query)s) AS parent
         FULL OUTER JOIN (%(derived_query)s) AS derived
         ON derived.sourcepackagename = parent.sourcepackagename
-        WHERE derived.version IS DISTINCT FROM parent.version
         """ % parameters
 
 
@@ -362,7 +361,7 @@ class PopulateDistroSeriesDiff(LaunchpadScript):
         relationships = self.getDistroSeries()
         for child in relationships:
             for parent in relationships[child]:
-               self.logger.info(
+                self.logger.info(
                     "%s %s with a parent of %s %s", child.distribution.name,
                     child.name, parent.distribution.name, parent.name)
 

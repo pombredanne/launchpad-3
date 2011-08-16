@@ -7,8 +7,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from lp.codehosting.codeimport.uifactory import LoggingUIFactory
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
@@ -162,7 +160,3 @@ class TestLoggingUIFactory(TestCase):
         factory = self.makeLoggingUIFactory()
         factory.clear_term()
         self.assertEqual("", self.logger.getLogBuffer())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
