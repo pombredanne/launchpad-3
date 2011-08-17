@@ -236,9 +236,7 @@ class TestImportKeyRing(TestCase):
         self):
         # If the keyserver responds too slowly, GPGHandler.retrieveKey()
         # raises GPGKeyTemporarilyNotFoundError.
-        tac = KeyServerTac()
-        tac.setUp()
-        self.addCleanup(tac.tearDown)
+        tac = self.useFixture(KeyServerTac())
         old_timeout_function = get_default_timeout_function()
         set_default_timeout_function(lambda: 0.01)
         try:
@@ -249,7 +247,6 @@ class TestImportKeyRing(TestCase):
             # An OOPS report is generated for the timeout.
             error_utility = ErrorReportingUtility()
             error_report = error_utility.getLastOopsReport()
-            self.assertEqual('False', error_report.informational)
             self.assertEqual('TimeoutError', error_report.type)
             self.assertEqual('timeout exceeded.', error_report.value)
         finally:

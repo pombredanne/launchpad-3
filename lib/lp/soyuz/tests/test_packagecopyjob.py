@@ -113,6 +113,8 @@ class LocalTestHelper:
         except:
             transaction.abort()
             job.fail()
+        else:
+            job.complete()
 
 
 class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
@@ -577,6 +579,47 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             name='libc', version='2.8-1').one()
         self.assertEqual('restricted', new_publication.component.name)
         self.assertEqual('games', new_publication.section.name)
+
+    def test_copying_to_ppa_archive(self):
+        # Packages can be copied into PPA archives.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        distroseries = publisher.breezy_autotest
+
+        target_archive = self.factory.makeArchive(
+            distroseries.distribution, purpose=ArchivePurpose.PPA)
+        source_archive = self.factory.makeArchive()
+
+        # Publish a package in the source archive with some overridable
+        # properties set to known values.
+        publisher.getPubSource(
+            distroseries=distroseries, sourcename="libc",
+            component='universe', section='web',
+            version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
+            archive=source_archive)
+
+        # Now, run the copy job.
+        source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(requester, "main")
+        job = source.create(
+            package_name="libc",
+            package_version="2.8-1",
+            source_archive=source_archive,
+            target_archive=target_archive,
+            target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False,
+            requester=requester)
+
+        self.runJob(job)
+        self.assertEqual(JobStatus.COMPLETED, job.status)
+
+        new_publication = target_archive.getPublishedSources(
+            name='libc', version='2.8-1').one()
+        self.assertEqual('main', new_publication.component.name)
+        self.assertEqual('web', new_publication.section.name)
 
     def test_copying_to_main_archive_manual_overrides(self):
         # Test processing a packagecopyjob that has manual overrides.
