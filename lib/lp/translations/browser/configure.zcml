@@ -54,7 +54,6 @@
         facet="translations"
         permission="zope.Public"
         class="lp.app.browser.launchpad.Macro"/>
-    </browser:pages>
     <browser:page
         for="lp.translations.interfaces.rosettastats.IRosettaStats"
         class="lp.translations.browser.translations.RosettaStatsView"
