@@ -83,7 +83,7 @@ from bzrlib.bzrdir import (
     )
 from bzrlib.transport import get_transport
 import fixtures
-import oops.serializer_rfc822
+import oops_datedir_repo.serializer_rfc822
 import pytz
 import simplejson
 from storm.expr import Variable
@@ -556,7 +556,8 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         if len(self.oopses) > 0:
             for (i, report) in enumerate(self.oopses):
                 content = Content(UTF8_TEXT,
-                        partial(oops.serializer_rfc822.to_chunks, report))
+                    partial(oops_datedir_repo.serializer_rfc822.to_chunks,
+                    report))
                 self.addDetail("oops-%d" % i, content)
 
     def attachLibrarianLog(self, fixture):
