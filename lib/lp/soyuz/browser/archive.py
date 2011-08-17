@@ -1300,10 +1300,17 @@ def copy_asynchronously_message(source_pubs_count):
     """
     package_or_packages = get_plural_text(
         source_pubs_count, "package", "packages")
-    return structured(
-        "<p>Requested sync of %s %s.</p>"
-        "<p>Please allow some time for these to be processed.</p>",
-        source_pubs_count, package_or_packages)
+    this_or_these = get_plural_text(
+        source_pubs_count, "this", "these")
+    if source_pubs_count == 0:
+        return structured(
+            "<p>Requested sync of %s %s.</p>",
+            source_pubs_count, package_or_packages)
+    else:
+        return structured(
+            "<p>Requested sync of %s %s.</p>"
+            "<p>Please allow some time for %s to be processed.</p>",
+            source_pubs_count, package_or_packages, this_or_these)
 
 
 def render_cannotcopy_as_html(cannotcopy_exception):

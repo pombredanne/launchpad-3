@@ -2287,14 +2287,13 @@ class TestCopyAsynchronouslyMessage(TestCase):
 
     def test_zero_packages(self):
         self.assertEqual(
-            "<p>Requested sync of 0 packages.</p><p>Please allow "
-            "some time for these to be processed.</p>",
+            "<p>Requested sync of 0 packages.</p>",
             copy_asynchronously_message(0).escapedtext)
 
     def test_one_package(self):
         self.assertEqual(
             "<p>Requested sync of 1 package.</p><p>Please allow "
-            "some time for these to be processed.</p>",
+            "some time for this to be processed.</p>",
             copy_asynchronously_message(1).escapedtext)
 
     def test_multiple_packages(self):
