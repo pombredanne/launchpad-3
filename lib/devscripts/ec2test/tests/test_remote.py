@@ -675,20 +675,14 @@ Tests with errors
 ======================================================================
 FAILURE: test_fail...
 ----------------------------------------------------------------------
-Text attachment: traceback
-------------
 Traceback (most recent call last):
 ...
-------------
 <BLANKLINE>
 ======================================================================
 ERROR: test_error...
 ----------------------------------------------------------------------
-Text attachment: traceback
-------------
 Traceback (most recent call last):
 ...
-------------
 <BLANKLINE>
 <BLANKLINE>
 (See the attached file for the complete log)
