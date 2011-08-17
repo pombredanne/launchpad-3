@@ -1212,7 +1212,7 @@ COMMENT ON COLUMN BinaryPackageName.name IS
 
 -- BinaryPackagePublishingHistory
 COMMENT ON TABLE BinaryPackagePublishingHistory IS 'PackagePublishingHistory: The history of a BinaryPackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
-COMMENT ON COLUMN BinaryPackagePublishingHistory.bpn IS 'Reference to a BinaryPackageName.';
+COMMENT ON COLUMN BinaryPackagePublishingHistory.binarypackagename IS 'Reference to a BinaryPackageName.';
 COMMENT ON COLUMN BinaryPackagePublishingHistory.binarypackagerelease IS 'The binarypackage being published.';
 COMMENT ON COLUMN BinaryPackagePublishingHistory.distroarchseries IS 'The distroarchseries into which the binarypackage is being published.';
 COMMENT ON COLUMN BinaryPackagePublishingHistory.status IS 'The current status of the publishing.';
@@ -1840,7 +1840,7 @@ COMMENT ON COLUMN MirrorSourceContent.component IS 'What component of the distro
 -- SourcePackagePublishingHistory
 
 COMMENT ON TABLE SourcePackagePublishingHistory IS 'SourcePackagePublishingHistory: The history of a SourcePackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.spn IS 'Reference to a SourcePackageName.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.sourcepackagename IS 'Reference to a SourcePackageName.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.sourcepackagerelease IS 'The sourcepackagerelease being published.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.distroseries IS 'The distroseries into which the sourcepackagerelease is being published.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.status IS 'The current status of the publishing.';
