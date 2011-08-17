@@ -23,7 +23,7 @@ import sys
 import tempfile
 import unittest
 
-from oops import uniquefileallocator
+from oops_datedir_repo import uniquefileallocator
 from pytz import UTC
 import transaction
 
