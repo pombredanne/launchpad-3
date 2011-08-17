@@ -361,7 +361,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         non_final = tuple(
             set(BranchMergeProposalStatus.items) -
             set(BRANCH_MERGE_PROPOSAL_FINAL_STATES))
-        return self.getMergeProposals(status=non_final, eager_load=True)
+        return self.getMergeProposals(status=non_final)
 
     @property
     def dependent_branches(self):
