@@ -89,7 +89,6 @@ from lp.testing import (
     )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import HasQueryCount
-from lp.testing.sampledata import ADMIN_EMAIL
 
 
 class ReUploadFileTestCase(TestCaseWithFactory):
@@ -1990,7 +1989,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE,
             status=PackagePublishingStatus.PUBLISHED)
 
-        noise_source = test_publisher.getPubSource(
+        test_publisher.getPubSource(
             sourcename='firefox-3.0', version='1.2',
             archive=ubuntu.main_archive, distroseries=hoary,
             pocket=PackagePublishingPocket.UPDATES,
@@ -2962,14 +2961,14 @@ class CopyPackageTestCase(TestCaseWithFactory):
 
         # Create a dummy first package version so we can file bugs on it.
         dummy_changesfile = "Format: 1.7\n"
-        proposed_source = create_source(
+        create_source(
             '666', warty.main_archive, PackagePublishingPocket.PROPOSED,
             dummy_changesfile)
 
         # Copies to -updates close bugs when they exist.
         updates_bug_id = create_bug('bug in -proposed')
         closing_bug_changesfile = changes_template % updates_bug_id
-        proposed_source = create_source(
+        create_source(
             '667', warty.main_archive, PackagePublishingPocket.PROPOSED,
             closing_bug_changesfile)
 
@@ -2989,7 +2988,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         # Copies to the development distroseries close bugs.
         dev_bug_id = create_bug('bug in development')
         closing_bug_changesfile = changes_template % dev_bug_id
-        dev_source = create_source(
+        create_source(
             '668', warty.main_archive, PackagePublishingPocket.UPDATES,
             closing_bug_changesfile)
 
@@ -3009,7 +3008,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         # Copies to -proposed do not close bugs
         ppa_bug_id = create_bug('bug in PPA')
         closing_bug_changesfile = changes_template % ppa_bug_id
-        ppa_source = create_source(
+        create_source(
             '669', cprov.archive, PackagePublishingPocket.RELEASE,
             closing_bug_changesfile)
 

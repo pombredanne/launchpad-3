@@ -857,6 +857,7 @@ class TestEC2Runner(TestCaseWithTransport, RequestHelpers):
         # arguments and keyword arguments it has been given.
         calls = []
         runner = self.make_ec2runner()
+
         def function(*args, **kwargs):
             calls.append((args, kwargs))
         runner.run("boring test method", function, "foo", "bar", baz="qux")
