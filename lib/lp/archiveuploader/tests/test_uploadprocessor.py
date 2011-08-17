@@ -155,10 +155,10 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
         self.log = BufferLogger()
 
+        self.switchToAdmin()
         self.useFixture(FeatureFixture({
             FEATURE_FLAG_ENABLE_MODULE: u'on',
         }))
-
         self.switchToUploader()
 
     def tearDown(self):

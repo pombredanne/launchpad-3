@@ -353,7 +353,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         [queue_item] = self.breezy.getPackageUploads(
             status=PackageUploadStatus.ACCEPTED, name=u"bar",
             version=u"1.0-1", exact_match=True, archive=self.name16.archive)
+        self.switchToAdmin()
         queue_item.realiseUpload()
+        self.switchToUploader()
 
         for binary_package in build.binarypackages:
             self.assertEqual(binary_package.component.name, "universe")
@@ -511,9 +513,11 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
          * The upload is auto-accepted in the overridden target distroseries.
          * The modified PPA is found by getPendingPublicationPPA() lookup.
         """
+        self.switchToAdmin()
         hoary = self.ubuntu['hoary']
         fake_chroot = self.addMockFile('fake_chroot.tar.gz')
         hoary['i386'].addOrUpdateChroot(fake_chroot)
+        self.switchToUploader()
 
         upload_dir = self.queueUpload(
             "bar_1.0-1", "~name16/ubuntu/hoary")
@@ -793,7 +797,9 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEqual(biscuit_pub.status, PackagePublishingStatus.PENDING)
 
         # Remove breezy/i386 PPA support.
+        self.switchToAdmin()
         self.breezy['i386'].supports_virtualized = False
+        self.switchToUploader()
         self.layer.commit()
 
         # Next version can't be accepted because it can't be built.
