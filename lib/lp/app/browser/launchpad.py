@@ -357,9 +357,8 @@ class Macro:
         permission="zope.Public"
         />
 
-    While being a bit of a big hammer, that pattern also has the side effect
-    of making the template URL traversable from any object.  Therefore
-    requests like these would all "work":
+    Without this class, that pattern would make the template URL traversable
+    from any object.  Therefore requests like these would all "work":
 
         http://launchpad.net/+main-template-macros
         http://launchpad.net/ubuntu/+main-template-macros
