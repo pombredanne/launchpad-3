@@ -19,7 +19,10 @@
     </metal:block>
 
     <tal:heading metal:fill-slot="heading">
-      <h1 tal:content="view/label">Package differences between ...</h1>
+      <h1>
+        <span tal:replace="view/label" />
+        <img src="/@@/beta" alt="[BETA]" />
+      </h1>
     </tal:heading>
 
 
@@ -27,12 +30,6 @@
       tal:define="differences view/cached_differences;
                   series_name context/displayname;
                   can_perform_sync view/canPerformSync;">
-
-      <p style="margin-top: 0.5em">
-        <img src="/@@/beta" alt="" style="vertical-align: text-bottom" />
-        Derived Distributions are in open beta.
-      </p>
-
       <p><tal:replace replace="structure view/explanation/escapedtext" /></p>
 
       <tal:distroseries_localdiff_search_form
