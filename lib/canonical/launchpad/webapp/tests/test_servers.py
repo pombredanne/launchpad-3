@@ -42,6 +42,7 @@ from canonical.launchpad.webapp.servers import (
     WebServicePublication,
     WebServiceRequestPublicationFactory,
     WebServiceTestRequest,
+    web_service_request_to_browser_request,
     )
 from lp.testing import TestCase
 
@@ -278,6 +279,7 @@ class TestWebServiceRequestTraversal(WebServiceTestCase):
 
     def setUp(self):
         super(TestWebServiceRequestTraversal, self).setUp()
+
         # For this test we need to make the URL "/foo" resolve to a
         # resource.  To this end, we'll define a top-level collection
         # named 'foo'.
@@ -555,6 +557,18 @@ class TestLaunchpadBrowserRequest(TestCase):
             request.query_string_params,
             "The query_string_params dict correctly interprets encoded "
             "parameters.")
+
+
+class TestWebServiceRequestToBrowserRequest(WebServiceTestCase):
+
+    def test_unicode_path_info(self):
+        web_service_request = WebServiceTestRequest(
+            PATH_INFO=u'/api/devel\u1234'.encode('utf-8'))
+        browser_request = web_service_request_to_browser_request(
+            web_service_request)
+        self.assertEqual(
+            web_service_request.get('PATH_INFO'),
+            browser_request.get('PATH_INFO'))
 
 
 def test_suite():

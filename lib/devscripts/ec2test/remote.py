@@ -173,6 +173,9 @@ class EC2Runner:
 
         time.sleep(self.SHUTDOWN_DELAY)
 
+        # Cancel the running shutdown.
+        subprocess.call(['sudo', 'shutdown', '-c'])
+
         # We'll only get here if --postmortem didn't kill us.  This is our
         # fail-safe shutdown, in case the user got disconnected or suffered
         # some other mishap that would prevent them from shutting down this

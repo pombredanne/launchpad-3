@@ -199,6 +199,7 @@ from lp.code.model.hasbranches import (
     HasRequestedReviewsMixin,
     )
 from lp.registry.errors import (
+    InvalidName,
     JoinNotAllowed,
     NameAlreadyTaken,
     PPACreationError,
@@ -225,7 +226,6 @@ from lp.registry.interfaces.mailinglistsubscription import (
     )
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
-    InvalidName,
     IPerson,
     IPersonSet,
     IPersonSettings,
@@ -2617,16 +2617,18 @@ class Person(
         query_clauses = " AND ".join(clauses)
         query = """
             SourcePackageRelease.id IN (
-                SELECT DISTINCT ON (upload_distroseries, sourcepackagename,
+                SELECT DISTINCT ON (upload_distroseries,
+                                    sourcepackagerelease.sourcepackagename,
                                     upload_archive)
                     sourcepackagerelease.id
                 FROM sourcepackagerelease, archive,
-                    sourcepackagepublishinghistory sspph
+                    sourcepackagepublishinghistory as spph
                 WHERE
-                    sspph.sourcepackagerelease = sourcepackagerelease.id AND
-                    sspph.archive = archive.id AND
+                    spph.sourcepackagerelease = sourcepackagerelease.id AND
+                    spph.archive = archive.id AND
                     %(more_query_clauses)s
-                ORDER BY upload_distroseries, sourcepackagename,
+                ORDER BY upload_distroseries,
+                    sourcepackagerelease.sourcepackagename,
                     upload_archive, dateuploaded DESC
               )
               """ % dict(more_query_clauses=query_clauses)
