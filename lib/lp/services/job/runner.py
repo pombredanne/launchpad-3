@@ -565,7 +565,7 @@ class JobCronScript(LaunchpadCronScript):
         "Takes pending jobs of the given type off the queue and runs them.")
 
     def __init__(self, runner_class=JobRunner, test_args=None, name=None,
-                 commandline_config=False):
+                 commandline_config=False, _log_twisted=False):
         """Initialize a `JobCronScript`.
 
         :param runner_class: The runner class to use.  Defaults to
@@ -583,6 +583,7 @@ class JobCronScript(LaunchpadCronScript):
         super(JobCronScript, self).__init__(
             name=name, dbuser=None, test_args=test_args)
         self._runner_class = runner_class
+        self.log_twisted = _log_twisted
         if not commandline_config:
             return
         self.config_name = self.args[0]
@@ -617,8 +618,11 @@ class JobCronScript(LaunchpadCronScript):
             # utility default to using the [error_reports] config.
             errorlog.globalErrorUtility.configure(self.config_name)
         job_source = getUtility(self.source_interface)
+        kwargs = {}
+        if self.log_twisted:
+            kwargs['_log_twisted'] = True
         runner = self.runner_class.runFromSource(
-            job_source, self.dbuser, self.logger)
+            job_source, self.dbuser, self.logger, **kwargs)
         for name, count in self.job_counts(runner.completed_jobs):
             self.logger.info('Ran %d %s jobs.', count, name)
         for name, count in self.job_counts(runner.incomplete_jobs):
