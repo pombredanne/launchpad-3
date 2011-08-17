@@ -229,7 +229,7 @@ class TestErrorReportingUtility(testtools.TestCase):
 
         # topic is obtained from the request
         self.assertEqual('IFoo:+foo-template', report['topic'])
-        self.assertEqual('Login, 42, title, description |\\u25a0|',
+        self.assertEqual(u'Login, 42, title, description |\u25a0|',
                 report['username'])
         self.assertEqual('http://localhost:9000/foo', report['url'])
         self.assertEqual({
@@ -238,9 +238,9 @@ class TestErrorReportingUtility(testtools.TestCase):
             'HTTP_COOKIE': '<hidden>',
             'HTTP_HOST': '127.0.0.1',
             'SERVER_URL': 'http://localhost:9000/foo',
-            '\\u25a0': 'value4',
+            u'\u25a0': 'value4',
             'lp': '<hidden>',
-            'name1': 'value3 \\xa7',
+            'name1': 'value3 \xa7',
             'name2': 'value2',
             }, dict(report['req_vars']))
         # verify that the oopsid was set on the request
@@ -258,7 +258,7 @@ class TestErrorReportingUtility(testtools.TestCase):
             raise ArbitraryException('xyz\nabc')
         except ArbitraryException:
             report = utility.raising(sys.exc_info(), request)
-        self.assertEqual(('xmlrpc args', '(1, 2)'), report['req_vars'][-1])
+        self.assertEqual(('xmlrpc args', (1, 2)), report['req_vars'][-1])
 
     def test_raising_with_webservice_request(self):
         # Test ErrorReportingUtility.raising() with a WebServiceRequest

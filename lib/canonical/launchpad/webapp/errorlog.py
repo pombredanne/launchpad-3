@@ -20,7 +20,7 @@ import urllib
 import urlparse
 
 from lazr.restful.utils import get_current_browser_request
-import oops
+import oops.createhooks
 from oops_datedir_repo import DateDirRepo
 import oops_datedir_repo.serializer_rfc822
 import pytz
@@ -55,52 +55,6 @@ from lp.services.timeline.requesttimeline import get_request_timeline
 UTC = pytz.utc
 
 LAZR_OOPS_USER_REQUESTED_KEY = 'lazr.oops.user_requested'
-
-# Restrict the rate at which errors are sent to the Zope event Log
-# (this does not affect generation of error reports).
-_rate_restrict_pool = {}
-
-# The number of seconds that must elapse on average between sending two
-# exceptions of the same name into the Event Log. one per minute.
-_rate_restrict_period = datetime.timedelta(seconds=60)
-
-# The number of exceptions to allow in a burst before the above limit
-# kicks in. We allow five exceptions, before limiting them to one per
-# minute.
-_rate_restrict_burst = 5
-
-
-def _normalise_whitespace(s):
-    """Normalise the whitespace in a string to spaces"""
-    if s is None:
-        return None
-    return ' '.join(s.split())
-
-
-def _safestr(obj):
-    if isinstance(obj, unicode):
-        return obj.replace('\\', '\\\\').encode('ASCII',
-                                                'backslashreplace')
-    # A call to str(obj) could raise anything at all.
-    # We'll ignore these errors, and print something
-    # useful instead, but also log the error.
-    # We disable the pylint warning for the blank except.
-    try:
-        value = str(obj)
-    except:
-        logging.getLogger('SiteError').exception(
-            'Error in ErrorReportingService while getting a str '
-            'representation of an object')
-        value = '<unprintable %s object>' % (
-            str(type(obj).__name__))
-    # Some str() calls return unicode objects.
-    if isinstance(value, unicode):
-        return _safestr(value)
-    # encode non-ASCII characters
-    value = value.replace('\\', '\\\\')
-    value = re.sub(r'[\x80-\xff]',
-                   lambda match: '\\x%02x' % ord(match.group(0)), value)
-    return value
 
 
 def _is_sensitive(request, name):
@@ -181,10 +135,6 @@ def attach_adapter_duration(report, context):
     # for.
     report['duration'] = get_request_duration()
 
-def attach_date(report, context):
-    """Set the time key in report to a datetime of now."""
-    report['time'] = datetime.datetime.now(UTC)
-
 
 def attach_exc_info(report, context):
     """Attach exception info to the report.
@@ -198,14 +148,14 @@ def attach_exc_info(report, context):
     info = context.get('exc_info')
     if info is None:
         return
-    report['type'] = _safestr(getattr(info[0], '__name__', info[0]))
-    report['value'] = _safestr(info[1])
+    report['type'] = getattr(info[0], '__name__', info[0])
+    report['value'] = oops.createhooks.safe_unicode(info[1])
     if not isinstance(info[2], basestring):
         tb_text = ''.join(format_exception(*info,
                                            **{'as_html': False}))
     else:
         tb_text = info[2]
-    report['tb_text'] = _safestr(tb_text)
+    report['tb_text'] = tb_text
 
 
 _ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
@@ -228,7 +178,7 @@ def attach_http_request(report, context):
     # XXX jamesh 2005-11-22: Temporary fix, which Steve should
     #      undo. URL is just too HTTPRequest-specific.
     if safe_hasattr(request, 'URL'):
-        report['url'] = _safestr(request.URL)
+        report['url'] = oops.createhooks.safe_unicode(request.URL)
 
     if WebServiceLayer.providedBy(request) and info is not None:
         webservice_error = getattr(
@@ -253,12 +203,11 @@ def attach_http_request(report, context):
             report['ignore'] = True
 
     if principal is not None and principal is not missing:
-        username = _safestr(
-            ', '.join([
-                    unicode(login),
-                    unicode(request.principal.id),
-                    unicode(request.principal.title),
-                    unicode(request.principal.description)]))
+        username = ', '.join([
+                unicode(login),
+                unicode(request.principal.id),
+                unicode(request.principal.title),
+                unicode(request.principal.description)])
         report['username'] = username
 
     if getattr(request, '_orig_env', None):
@@ -267,13 +216,12 @@ def attach_http_request(report, context):
 
     for key, value in request.items():
         if _is_sensitive(request, key):
-            report['req_vars'].append((_safestr(key), '<hidden>'))
+            report['req_vars'].append((key, '<hidden>'))
         else:
-            report['req_vars'].append(
-                    (_safestr(key), _safestr(value)))
+            report['req_vars'].append((key, value))
     if IXMLRPCRequest.providedBy(request):
         args = request.getPositionalArguments()
-        report['req_vars'].append(('xmlrpc args', _safestr(args)))
+        report['req_vars'].append(('xmlrpc args', args))
 
 
 def attach_ignore_from_exception(report, context):
@@ -308,7 +256,7 @@ def attach_timeline(report, context):
         start, end, category, detail = action.logTuple()
         detail = _filter_session_statement(category, detail)
         statements.append(
-            (start, end, _safestr(category), _safestr(detail)))
+            (start, end, category, detail))
     report['db_statements'] = statements
     return report
 
@@ -346,8 +294,6 @@ class ErrorReportingUtility:
         self._oops_config.template['req_vars'] = []
         # Exceptions, with the zope formatter.
         self._oops_config.on_create.append(attach_exc_info)
-        # Datestamps.
-        self._oops_config.on_create.append(attach_date)
         # Ignore IUnloggedException exceptions
         self._oops_config.on_create.append(attach_ignore_from_exception)
         # Zope HTTP requests have lots of goodies.
