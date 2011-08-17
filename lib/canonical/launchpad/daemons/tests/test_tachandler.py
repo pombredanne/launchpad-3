@@ -7,9 +7,9 @@ __metaclass__ = type
 
 import os.path
 import subprocess
-import tempfile
 import warnings
 
+from fixtures import TempDir
 import testtools
 
 from canonical.launchpad.daemons.tachandler import (
@@ -42,11 +42,13 @@ class TacTestSetupTestCase(testtools.TestCase):
         """If the tac fails due to not being able to listen on the needed port,
         TacTestSetup will fail.
         """
+        tempdir = self.useFixture(TempDir()).path
+
         class CouldNotListenTac(TacTestSetup):
             root = os.path.dirname(__file__)
             tacfile = os.path.join(root, 'cannotlisten.tac')
-            pidfile = os.path.join(tempfile.gettempdir(), 'cannotlisten.pid')
-            logfile = os.path.join(tempfile.gettempdir(), 'cannotlisten.log')
+            pidfile = os.path.join(tempdir, 'cannotlisten.pid')
+            logfile = os.path.join(tempdir, 'cannotlisten.log')
             def setUpRoot(self):
                 pass
 
@@ -60,11 +62,13 @@ class TacTestSetupTestCase(testtools.TestCase):
         """If the tac fails due to not being able to listen on the needed port,
         TacTestSetup will fail.
         """
+        tempdir = self.useFixture(TempDir()).path
+
         class OkayTac(TacTestSetup):
             root = os.path.dirname(__file__)
             tacfile = os.path.join(root, 'okay.tac')
-            pidfile = os.path.join(tempfile.gettempdir(), 'okay.pid')
-            logfile = os.path.join(tempfile.gettempdir(), 'okay.log')
+            pidfile = os.path.join(tempdir, 'okay.pid')
+            logfile = os.path.join(tempdir, 'okay.log')
             def setUpRoot(self):
                 pass
 
