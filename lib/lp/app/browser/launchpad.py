@@ -344,6 +344,66 @@ class Hierarchy(LaunchpadView):
         return len(self.items) > 1 and not has_major_heading
 
 
+class Macro:
+    """Keeps templates that are registered as pages from being URL accessable.
+
+    The standard pattern in LP is to register templates that contain macros as
+    views on all objects:
+
+    <browser:page
+        for="*"
+        name="+main-template-macros"
+        template="../templates/base-layout-macros.pt"
+        permission="zope.Public"
+        />
+
+    While being a bit of a big hammer, that pattern also has the side effect
+    of making the template URL traversable from any object.  Therefore
+    requests like these would all "work":
+
+        http://launchpad.net/+main-template-macros
+        http://launchpad.net/ubuntu/+main-template-macros
+        http://launchpad.net/ubuntu/+main-template-macros
+        https://blueprints.launchpad.dev/ubuntu/hoary/+main-template-macros
+
+    Obviously, those requests wouldn't do anything useful and would instead
+    generate an OOPS.
+
+    It would be nice to use a different pattern for macros instead, but we've
+    grown dependent on some of the peculiatrities of registering macro
+    templates in this way.
+
+    This class was created in order to prevent macro templates from being
+    accessable via URL without having to make nontrivial changes to the many,
+    many templates that use macros.  To use the class add a "class" parameter
+    to macro template registrations:
+
+    <browser:page
+        for="*"
+        name="+main-template-macros"
+        template="../templates/base-layout-macros.pt"
+        class="lp.app.browser.launchpad.Macro"
+        permission="zope.Public"
+        />
+    """
+    implements(IBrowserPublisher, ITraversable)
+
+    def __init__(self, context, request):
+        self.context = context
+
+    def traverse(self, name, furtherPath):
+        return self.index.macros[name]
+
+    def browserDefault(self, request):
+        return self, ()
+
+    def publishTraverse(self, request, name):
+        raise NotFound(self.context, self.__name__)
+
+    def __call__(self):
+        raise NotFound(self.context, self.__name__)
+
+
 class MaintenanceMessage(Macro):
     """Display a maintenance message if the control file is present and
     it contains a valid iso format time.
@@ -926,66 +986,6 @@ class DoesNotExistView:
     def browserDefault(self, request):
         """See `IBrowserPublisher`."""
         return self, ()
-
-    def __call__(self):
-        raise NotFound(self.context, self.__name__)
-
-
-class Macro:
-    """Keeps templates that are registered as pages from being URL accessable.
-
-    The standard pattern in LP is to register templates that contain macros as
-    views on all objects:
-
-    <browser:page
-        for="*"
-        name="+main-template-macros"
-        template="../templates/base-layout-macros.pt"
-        permission="zope.Public"
-        />
-
-    While being a bit of a big hammer, that pattern also has the side effect
-    of making the template URL traversable from any object.  Therefore
-    requests like these would all "work":
-
-        http://launchpad.net/+main-template-macros
-        http://launchpad.net/ubuntu/+main-template-macros
-        http://launchpad.net/ubuntu/+main-template-macros
-        https://blueprints.launchpad.dev/ubuntu/hoary/+main-template-macros
-
-    Obviously, those requests wouldn't do anything useful and would instead
-    generate an OOPS.
-
-    It would be nice to use a different pattern for macros instead, but we've
-    grown dependent on some of the peculiatrities of registering macro
-    templates in this way.
-
-    This class was created in order to prevent macro templates from being
-    accessable via URL without having to make nontrivial changes to the many,
-    many templates that use macros.  To use the class add a "class" parameter
-    to macro template registrations:
-
-    <browser:page
-        for="*"
-        name="+main-template-macros"
-        template="../templates/base-layout-macros.pt"
-        class="lp.app.browser.launchpad.Macro"
-        permission="zope.Public"
-        />
-    """
-    implements(IBrowserPublisher, ITraversable)
-
-    def __init__(self, context, request):
-        self.context = context
-
-    def traverse(self, name, furtherPath):
-        return self.index.macros[name]
-
-    def browserDefault(self, request):
-        return self, ()
-
-    def publishTraverse(self, request, name):
-        raise NotFound(self.context, self.__name__)
 
     def __call__(self):
         raise NotFound(self.context, self.__name__)
