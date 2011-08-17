@@ -24,11 +24,14 @@ class TacTestSetupTestCase(testtools.TestCase):
 
     def test_missingTac(self):
         """TacTestSetup raises TacException if the tacfile doesn't exist"""
+
         class MissingTac(TacTestSetup):
+
             root = '/'
             tacfile = '/file/does/not/exist'
             pidfile = tacfile
             logfile = tacfile
+
             def setUpRoot(self):
                 pass
 
@@ -39,16 +42,18 @@ class TacTestSetupTestCase(testtools.TestCase):
             fixture.cleanUp()
 
     def test_couldNotListenTac(self):
-        """If the tac fails due to not being able to listen on the needed port,
-        TacTestSetup will fail.
+        """If the tac fails due to not being able to listen on the needed
+        port, TacTestSetup will fail.
         """
         tempdir = self.useFixture(TempDir()).path
 
         class CouldNotListenTac(TacTestSetup):
+
             root = os.path.dirname(__file__)
             tacfile = os.path.join(root, 'cannotlisten.tac')
             pidfile = os.path.join(tempdir, 'cannotlisten.pid')
             logfile = os.path.join(tempdir, 'cannotlisten.log')
+
             def setUpRoot(self):
                 pass
 
@@ -59,16 +64,16 @@ class TacTestSetupTestCase(testtools.TestCase):
             fixture.cleanUp()
 
     def test_pidForNotRunningProcess(self):
-        """If the tac fails due to not being able to listen on the needed port,
-        TacTestSetup will fail.
-        """
+        """TacTestSetup copes fine if the pidfile contains a stale pid."""
         tempdir = self.useFixture(TempDir()).path
 
         class OkayTac(TacTestSetup):
+
             root = os.path.dirname(__file__)
             tacfile = os.path.join(root, 'okay.tac')
             pidfile = os.path.join(tempdir, 'okay.pid')
             logfile = os.path.join(tempdir, 'okay.log')
+
             def setUpRoot(self):
                 pass
 
