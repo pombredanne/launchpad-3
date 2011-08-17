@@ -277,12 +277,13 @@ class GenericBranchCollection:
         return DecoratedResultSet(resultset, pre_iter_hook=do_eager_load)
 
     def getMergeProposals(self, statuses=None, for_branches=None,
-                          target_branch=None, merged_revnos=None):
+                          target_branch=None, merged_revnos=None,
+                          eager_load=False):
         """See `IBranchCollection`."""
         if (self._asymmetric_filter_expressions or for_branches or
             target_branch or merged_revnos):
             return self._naiveGetMergeProposals(statuses, for_branches,
-                target_branch, merged_revnos)
+                target_branch, merged_revnos, eager_load)
         else:
             # When examining merge proposals in a scope, this is a moderately
             # effective set of constrained queries. It is not effective when
@@ -290,7 +291,7 @@ class GenericBranchCollection:
             return self._scopedGetMergeProposals(statuses)
 
     def _naiveGetMergeProposals(self, statuses=None, for_branches=None,
-        target_branch=None, merged_revnos=None):
+        target_branch=None, merged_revnos=None, eager_load=False):
 
         def do_eager_load(rows):
             branch_ids = set()
@@ -349,7 +350,10 @@ class GenericBranchCollection:
                 BranchMergeProposal.queue_status.is_in(statuses))
         resultset = self.store.using(*tables).find(
             BranchMergeProposal, *expressions)
-        return DecoratedResultSet(resultset, pre_iter_hook=do_eager_load)
+        if not eager_load:
+            return resultset
+        else:
+            return DecoratedResultSet(resultset, pre_iter_hook=do_eager_load)
 
     def _scopedGetMergeProposals(self, statuses):
         scope_tables = [Branch] + self._tables.values()
