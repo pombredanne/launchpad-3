@@ -50,17 +50,19 @@ class TestMacroNontraversability(TestCaseWithFactory):
         '+object-reassignment',
     )
 
-    def assertNotFound(self, path):
+    @staticmethod
+    def is_not_found(path):
         def traverse_and_call():
             view = test_traverse(path)[1]
             view()
-        self.assertRaises(NotFound, traverse_and_call)
+        try:
+            traverse_and_call()
+        except NotFound:
+            return True
+        else:
+            return False
 
     def test_macro_names_not_traversable(self):
         for name in self.macro_names:
-            try:
-                self.assertNotFound('http://launchpad.dev/' + name)
-            except AssertionError, e:
-                # Make any test errors more informative.
-                raise AssertionError(
-                    'macro name %r should not be URL accessable' % name)
+            self.assertTrue(self.is_not_found('http://launchpad.dev/' + name),
+                'macro name %r should not be URL accessable' % name)
