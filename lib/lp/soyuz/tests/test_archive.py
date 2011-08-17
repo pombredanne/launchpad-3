@@ -1366,7 +1366,6 @@ class TestArchiveDependencies(TestCaseWithFactory):
             sources_list = get_sources_list_for_building(
                 build, build.distro_arch_series,
                 build.source_package_release.name)
-            sources_list_str = '\n'.join(sources_list)
             matches = MatchesRegex(
                 "deb http://buildd:sekrit@private-ppa.launchpad.dev/"
                 "person-name-.*/dependency/ubuntu distroseries-.* main")
@@ -1525,7 +1524,7 @@ class TestOverlays(TestCaseWithFactory):
         if type(parent_series) == str:
             depseries = self.factory.makeDistroSeries(
                 name=parent_series, distribution=depdistro)
-            deparchseries = self.factory.makeDistroArchSeries(
+            self.factory.makeDistroArchSeries(
                 distroseries=depseries, architecturetag=arch_tag)
         else:
             depseries = parent_series
@@ -1593,8 +1592,8 @@ class TestOverlays(TestCaseWithFactory):
                 ".../depdistro4 series12-security main "
                     "restricted universe multiverse\n"
                 ".../depdistro4 series12-updates "
-                    "main restricted universe multiverse\n"
-                , doctest.ELLIPSIS))
+                    "main restricted universe multiverse\n",
+                doctest.ELLIPSIS))
 
 
 class TestComponents(TestCaseWithFactory):
@@ -1940,7 +1939,7 @@ class TestGetPublishedSources(TestCaseWithFactory):
     def test_getPublishedSources_name(self):
         # The name parameter allows filtering with a list of
         # names.
-        distroseries =  self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
         # Create some SourcePackagePublishingHistory.
         for package_name in ['package1', 'package2', 'package3']:
             self.factory.makeSourcePackagePublishingHistory(
@@ -1965,7 +1964,7 @@ class TestGetPublishedSources(TestCaseWithFactory):
     def test_getPublishedSources_multi_pockets(self):
         # Passing an iterable of pockets should return publications
         # with any of them in.
-        distroseries =  self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
         pockets = [
             PackagePublishingPocket.RELEASE,
             PackagePublishingPocket.UPDATES,
@@ -1985,7 +1984,8 @@ class TestGetPublishedSources(TestCaseWithFactory):
             pocket=required_pockets)
 
         self.assertContentEqual(
-            [PackagePublishingPocket.RELEASE, PackagePublishingPocket.UPDATES],
+            [PackagePublishingPocket.RELEASE,
+             PackagePublishingPocket.UPDATES],
             [source.pocket for source in filtered])
 
 
@@ -2267,4 +2267,3 @@ class TestSyncSource(TestCaseWithFactory):
             target_archive.copyPackages, [source_name], source_archive,
             to_pocket.name, to_series=to_series.name, include_binaries=False,
             person=person)
-
