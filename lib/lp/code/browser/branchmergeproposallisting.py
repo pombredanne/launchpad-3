@@ -420,14 +420,8 @@ class BranchActiveReviewsView(ActiveReviewsView):
     def getProposals(self):
         """See `ActiveReviewsView`."""
         candidates = self.context.landing_candidates
-        can_see = lambda proposal: (
-            proposal.source_branch.visibleByUser(self.user) and
-            proposal.target_branch.visibleByUser(self.user) and
-            (proposal.prerequisite_branch is None or
-             proposal.prerequisite_branch.visibleByUser(self.user)))
-
         return [proposal for proposal in candidates
-                if can_see(proposal)]
+                if check_permission('launchpad.View', proposal)]
 
 
 class PersonActiveReviewsView(ActiveReviewsView):
