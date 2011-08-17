@@ -116,8 +116,8 @@ class InitializeDistroSeries:
         self.arches = arches
         self.packagesets_ids = [
             ensure_unicode(packageset) for packageset in packagesets]
-        self.packagesets = bulk.load(Packageset,
-            [int(packageset) for packageset in packagesets])
+        self.packagesets = bulk.load(
+            Packageset, [int(packageset) for packageset in packagesets])
         self.rebuild = rebuild
         self.overlays = overlays
         self.overlay_pockets = overlay_pockets
@@ -197,8 +197,8 @@ class InitializeDistroSeries:
 
         if not pending_builds.is_empty():
             raise InitializationError(
-                ("Parent series has pending builds for selected sources, "
-                 "see help text for more information."))
+                "Parent series has pending builds for selected sources, "
+                "see help text for more information.")
 
     def _checkQueue(self, parent):
         """Assert upload queue is empty on the given parent series.
@@ -224,9 +224,9 @@ class InitializeDistroSeries:
             parent, statuses, INIT_POCKETS, spns)
         if not items.is_empty():
             raise InitializationError(
-                ("Parent series has sources waiting in its upload queues "
-                 "that match your selection, see help text for more "
-                 "information."))
+                "Parent series has sources waiting in its upload queues "
+                "that match your selection, see help text for more "
+                "information.")
 
     def _checkSeries(self):
         error = (
