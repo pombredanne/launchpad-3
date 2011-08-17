@@ -647,7 +647,7 @@ class IPackageUploadSet(Interface):
         :return: a matching `IPackageUpload` object.
         """
 
-    def getBuildsForSources(self, distroseries, status=None, pockets=None,
+    def getBuildsForSources(distroseries, status=None, pockets=None,
                             names=None):
         """Return binary package upload records for a series with optional
         filtering.
