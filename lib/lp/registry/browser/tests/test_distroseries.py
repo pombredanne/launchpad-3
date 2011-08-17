@@ -2065,7 +2065,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
         self.assertIn(
-            "<p>Requested sync of 1 package.</p>",
+            "Requested sync of 1 package.",
             notifications[0].message)
         # 302 is a redirect back to the same page.
         self.assertEqual(302, view.request.response.getStatus())
