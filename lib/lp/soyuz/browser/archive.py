@@ -1304,12 +1304,12 @@ def copy_asynchronously_message(source_pubs_count):
         source_pubs_count, "this", "these")
     if source_pubs_count == 0:
         return structured(
-            "<p>Requested sync of %s %s.</p>",
+            "Requested sync of %s %s.",
             source_pubs_count, package_or_packages)
     else:
         return structured(
-            "<p>Requested sync of %s %s.</p>"
-            "<p>Please allow some time for %s to be processed.</p>",
+            "Requested sync of %s %s.<br />"
+            "Please allow some time for %s to be processed.",
             source_pubs_count, package_or_packages, this_or_these)
 
 
