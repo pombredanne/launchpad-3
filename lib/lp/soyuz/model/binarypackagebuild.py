@@ -9,7 +9,6 @@ __all__ = [
     'BinaryPackageBuildSet',
     ]
 
-import collections
 import datetime
 import logging
 import operator
@@ -885,7 +884,7 @@ class BinaryPackageBuildSet:
 
         # Add query clause that filters on pocket if the latter is provided.
         if pocket:
-            if not isinstance(pocket, collections.Sequence):
+            if not isinstance(pocket, (list, tuple)):
                 pocket = (pocket,)
 
             queries.append('PackageBuild.pocket IN %s' % sqlvalues(pocket))
@@ -901,7 +900,7 @@ class BinaryPackageBuildSet:
         # Add query clause that filters on source package release name if the
         # latter is provided.
         if name is not None:
-            if not isinstance(name, collections.Sequence):
+            if not isinstance(name, (list, tuple)):
                 queries.append('''
                     BinaryPackageBuild.source_package_release =
                         SourcePackageRelease.id AND

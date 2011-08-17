@@ -9,8 +9,6 @@ __all__ = ['DistroArchSeries',
            'PocketChroot'
            ]
 
-import collections
-
 from sqlobject import (
     BoolCol,
     ForeignKey,
@@ -392,7 +390,7 @@ class DistroArchSeriesSet:
         if arch_tag is None:
             return [arch.id for arch in architectures]
         else:
-            if not isinstance(arch_tag, collections.Sequence):
+            if not isinstance(arch_tag, (list, tuple)):
                 arch_tag = (arch_tag, )
             return [arch.id for arch in architectures
                         if arch.architecturetag in arch_tag]
