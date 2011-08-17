@@ -2036,8 +2036,9 @@ class BugTaskSet:
                 archive.id
                 for archive in distroseries.distribution.all_distro_archives]
             with_clauses.append("""spns as (
-                SELECT sourcepackagename from SourcePackagePublishingHistory
-                JOIN SourcePackageRelease on SourcePackageRelease.id =
+                SELECT spr.sourcepackagename from
+                SourcePackagePublishingHistory
+                JOIN SourcePackageRelease as spr on spr.id =
                     SourcePackagePublishingHistory.sourcepackagerelease AND
                 SourcePackagePublishingHistory.distroseries = %s AND
                 SourcePackagePublishingHistory.archive IN %s AND
