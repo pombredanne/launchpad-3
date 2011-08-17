@@ -8,7 +8,9 @@ __metaclass__ = type
 import os.path
 import subprocess
 import tempfile
-import unittest
+import warnings
+
+import testtools
 
 from canonical.launchpad.daemons.tachandler import (
     TacException,
@@ -17,7 +19,7 @@ from canonical.launchpad.daemons.tachandler import (
 from lp.services.osutils import get_pid_from_file
 
 
-class TacTestSetupTestCase(unittest.TestCase):
+class TacTestSetupTestCase(testtools.TestCase):
     """Some tests for the error handling of TacTestSetup."""
 
     def test_missingTac(self):
@@ -30,7 +32,11 @@ class TacTestSetupTestCase(unittest.TestCase):
             def setUpRoot(self):
                 pass
 
-        self.assertRaises(TacException, MissingTac().setUp)
+        fixture = MissingTac()
+        try:
+            self.assertRaises(TacException, fixture.setUp)
+        finally:
+            fixture.cleanUp()
 
     def test_couldNotListenTac(self):
         """If the tac fails due to not being able to listen on the needed port,
@@ -44,7 +50,11 @@ class TacTestSetupTestCase(unittest.TestCase):
             def setUpRoot(self):
                 pass
 
-        self.assertRaises(TacException, CouldNotListenTac().setUp)
+        fixture = CouldNotListenTac()
+        try:
+            self.assertRaises(TacException, fixture.setUp)
+        finally:
+            fixture.cleanUp()
 
     def test_pidForNotRunningProcess(self):
         """If the tac fails due to not being able to listen on the needed port,
@@ -70,6 +80,13 @@ class TacTestSetupTestCase(unittest.TestCase):
         with open(OkayTac.pidfile, "wb") as pidfile:
             pidfile.write(str(process.pid))
 
-        with OkayTac() as fixture:
-            self.assertNotEqual(
-                process.pid, get_pid_from_file(fixture.pidfile))
+        # Fire up the fixture, capturing warnings.
+        with warnings.catch_warnings(record=True) as warnings_log:
+            with OkayTac() as fixture:
+                self.assertNotEqual(
+                    get_pid_from_file(fixture.pidfile),
+                    process.pid)
+
+        # One deprecation warning is emitted.
+        self.assertEqual(1, len(warnings_log))
+        self.assertIs(DeprecationWarning, warnings_log[0].category)
