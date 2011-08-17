@@ -126,7 +126,7 @@
     </dl>
   </div>
 
-  <div style="clear:both;">&nbsp;</div>
+  <div class="clear">&nbsp;</div>
 
   <strong>Comments:</strong>
   <tal:conversation replace="structure view/@@+render"/>
