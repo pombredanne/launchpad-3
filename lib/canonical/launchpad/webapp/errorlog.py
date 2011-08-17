@@ -139,14 +139,16 @@ class ErrorReportEvent(ObjectEvent):
 class ErrorReport:
     implements(IErrorReport)
 
-    def __init__(self, id, type, value, time, pageid, tb_text, username,
+    def __init__(self, id, type, value, time, tb_text, username,
                  url, duration, req_vars, db_statements, informational=None,
-                 branch_nick=None, revno=None):
+                 branch_nick=None, revno=None, topic=None, reporter=None):
         self.id = id
         self.type = type
         self.value = value
         self.time = time
-        self.pageid = pageid
+        self.topic = topic
+        if reporter is not None:
+            self.reporter = reporter
         self.tb_text = tb_text
         self.username = username
         self.url = url
@@ -216,7 +218,7 @@ def attach_http_request(report, context):
     * url
     * ignore
     * username
-    * pageid
+    * topic
     * req_vars
     """
     info = context.get('exc_info')
@@ -260,7 +262,7 @@ def attach_http_request(report, context):
         report['username'] = username
 
     if getattr(request, '_orig_env', None):
-        report['pageid'] = request._orig_env.get(
+        report['topic'] = request._orig_env.get(
                 'launchpad.pageid', '')
 
     for key, value in request.items():

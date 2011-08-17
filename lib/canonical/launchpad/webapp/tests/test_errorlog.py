@@ -68,24 +68,21 @@ class ArbitraryException(Exception):
 
 class TestErrorReport(testtools.TestCase):
 
-    def tearDown(self):
-        reset_logging()
-        super(TestErrorReport, self).tearDown()
-
     def test___init__(self):
         """Test ErrorReport.__init__()"""
         entry = ErrorReport('id', 'exc-type', 'exc-value', 'timestamp',
-                            'pageid', 'traceback-text', 'username', 'url', 42,
+                            'traceback-text', 'username', 'url', 42,
                             [('name1', 'value1'), ('name2', 'value2'),
                              ('name1', 'value3')],
                             [(1, 5, 'store_a', 'SELECT 1'),
                              (5, 10, 'store_b', 'SELECT 2')],
+                            topic='pageid',
                             )
         self.assertEqual(entry.id, 'id')
         self.assertEqual(entry.type, 'exc-type')
         self.assertEqual(entry.value, 'exc-value')
         self.assertEqual(entry.time, 'timestamp')
-        self.assertEqual(entry.pageid, 'pageid')
+        self.assertEqual(entry.topic, 'pageid')
         self.assertEqual(entry.branch_nick, versioninfo.branch_nick)
         self.assertEqual(entry.revno, versioninfo.revno)
         self.assertEqual(entry.username, 'username')
@@ -130,7 +127,7 @@ class TestErrorReport(testtools.TestCase):
         self.assertEqual(entry.value, 'error message')
         self.assertEqual(
                 entry.time, datetime.datetime(2005, 4, 1, tzinfo=UTC))
-        self.assertEqual(entry.pageid, 'IFoo:+foo-template')
+        self.assertEqual(entry.topic, 'IFoo:+foo-template')
         self.assertEqual(entry.tb_text, 'traceback-text')
         self.assertEqual(entry.username, 'Sample User')
         self.assertEqual(entry.url, 'http://localhost:9000/foo')
@@ -230,8 +227,8 @@ class TestErrorReportingUtility(testtools.TestCase):
         except ArbitraryException:
             report = utility.raising(sys.exc_info(), request)
 
-        # page id is obtained from the request
-        self.assertEqual('IFoo:+foo-template', report['pageid'])
+        # topic is obtained from the request
+        self.assertEqual('IFoo:+foo-template', report['topic'])
         self.assertEqual('Login, 42, title, description |\\u25a0|',
                 report['username'])
         self.assertEqual('http://localhost:9000/foo', report['url'])
@@ -631,7 +628,7 @@ class TestOopsLoggingHandler(testtools.TestCase):
         self.assertEqual(exc_value, report['value'])
         self.assertThat(report['tb_text'],
                 StartsWith('Traceback (most recent call last):\n'))
-        self.assertEqual(None, report.get('pageid'))
+        self.assertEqual(None, report.get('topic'))
         self.assertEqual(None, report.get('username'))
         self.assertEqual(None, report.get('url'))
         self.assertEqual([], report['req_vars'])
