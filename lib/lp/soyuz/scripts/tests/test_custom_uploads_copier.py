@@ -9,6 +9,7 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     ZopelessLayer,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadCustomFormat,
@@ -395,8 +396,18 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         self.assertEqual(
             original_upload.packageupload.changesfile,
             copied_upload.packageupload.changesfile)
+
+    def test_copyUpload_copies_into_release_pocket(self):
+        # copyUpload copies the original upload into the release pocket,
+        # even though the original is more likely to be in another
+        # pocket.
+        original_upload = self.makeUpload()
+        original_upload.packageupload.pocket = PackagePublishingPocket.UPDATES
+        target_series = self.factory.makeDistroSeries()
+        copier = CustomUploadsCopier(target_series)
+        copied_upload = copier.copyUpload(original_upload)
         self.assertEqual(
-            original_upload.packageupload.pocket,
+            PackagePublishingPocket.RELEASE,
             copied_upload.packageupload.pocket)
 
     def test_copyUpload_accepts_upload(self):

@@ -17,7 +17,7 @@ import re
 
 from zope.component import getUtility
 
-#from canonical.launchpad.database.librarian import LibraryFileAlias
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.database.bulk import load_referencing
 from lp.soyuz.enums import PackageUploadCustomFormat
 from lp.soyuz.interfaces.archive import (
@@ -134,7 +134,7 @@ class CustomUploadsCopier:
         if target_archive is None:
             return None
         package_upload = self.target_series.createQueueEntry(
-            original_upload.packageupload.pocket, target_archive,
+            PackagePublishingPocket.RELEASE, target_archive,
             changes_file_alias=original_upload.packageupload.changesfile)
         custom = package_upload.addCustom(
             original_upload.libraryfilealias, original_upload.customformat)
