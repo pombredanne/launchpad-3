@@ -75,11 +75,13 @@ from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
-from lp.soyuz.model import distroseriesdifferencejob
 from lp.soyuz.model.archivepermission import ArchivePermission
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
+from lp.soyuz.model.distroseriesdifferencejob import (
+    FEATURE_FLAG_ENABLE_MODULE,
+    )
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
@@ -117,11 +119,11 @@ class TestUploadProcessorBase(TestCaseWithFactory):
     """Base class for functional tests over uploadprocessor.py."""
     layer = LaunchpadZopelessLayer
 
-    def useUploader(self):
+    def switchToUploader(self):
         transaction.commit()
         self.layer.switchDbUser("uploader")
 
-    def useMainUser(self):
+    def switchToAdmin(self):
         transaction.commit()
         self.layer.switchDbUser("launchpad_main")
 
@@ -154,18 +156,18 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         self.log = BufferLogger()
 
         self.useFixture(FeatureFixture({
-            distroseriesdifferencejob.FEATURE_FLAG_ENABLE_MODULE: u'on',
+            FEATURE_FLAG_ENABLE_MODULE: u'on',
         }))
 
-        self.useUploader()
+        self.switchToUploader()
 
     def tearDown(self):
         shutil.rmtree(self.queue_folder)
-        self.useMainUser()
+        self.switchToAdmin()
         super(TestUploadProcessorBase, self).tearDown()
 
     def getUploadProcessor(self, txn, builds=None):
-        self.useMainUser()
+        self.switchToAdmin()
         if builds is None:
             builds = self.options.builds
 
@@ -183,12 +185,12 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             self.options.base_fsroot, self.options.dryrun,
             self.options.nomails, builds, self.options.keep, getPolicy, txn,
             self.log)
-        self.useUploader()
+        self.switchToUploader()
         return upload_processor
 
     def publishPackage(self, packagename, version, source=True, archive=None):
         """Publish a single package that is currently NEW in the queue."""
-        self.useMainUser()
+        self.switchToAdmin()
 
         packagename = unicode(packagename)
         if version is not None:
@@ -203,7 +205,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             pubrec = queue_item.sources[0].publish(self.log)
         else:
             pubrec = queue_item.builds[0].publish(self.log)
-        self.useUploader()
+        self.switchToUploader()
         return pubrec
 
     def assertLogContains(self, line):
@@ -246,7 +248,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         :param permitted_formats: list of SourcePackageFormats to allow
             in the new distroseries. Only permits '1.0' by default.
         """
-        self.useMainUser()
+        self.switchToAdmin()
 
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         bat = self.ubuntu['breezy-autotest']
@@ -271,7 +273,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
                 getUtility(ISourcePackageFormatSelectionSet).add(
                     self.breezy, format)
 
-        self.useUploader()
+        self.switchToUploader()
 
     def addMockFile(self, filename, content="anything"):
         """Return a librarian file."""
@@ -323,12 +325,12 @@ class TestUploadProcessorBase(TestCaseWithFactory):
     def setupBreezyAndGetUploadProcessor(self, policy=None):
         """Setup Breezy and return an upload processor for it."""
         self.setupBreezy()
-        self.useMainUser()
+        self.switchToAdmin()
         self.layer.txn.commit()
         if policy is not None:
             self.options.context = policy
         upload_processor = self.getUploadProcessor(self.layer.txn)
-        self.useUploader()
+        self.switchToUploader()
         return upload_processor
 
     def assertEmail(self, contents=None, recipients=None):
@@ -623,7 +625,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Accept and publish the upload.
         # This is required so that the next upload of a later version of
         # the same package will work correctly.
-        self.useMainUser()
+        self.switchToAdmin()
         queue_items = self.breezy.getPackageUploads(
             status=PackageUploadStatus.NEW, name=u"bar",
             version=u"1.0-1", exact_match=True)
@@ -639,7 +641,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # existing package will be allowed, but unapproved.
         self.breezy.status = SeriesStatus.FROZEN
         self.layer.txn.commit()
-        self.useUploader()
+        self.switchToUploader()
 
         # Upload a newer version of bar.
         upload_dir = self.queueUpload("bar_1.0-2")
@@ -705,11 +707,11 @@ class TestUploadProcessor(TestUploadProcessorBase):
         bar_bin_pubs = self.publishPackage('bar', '1.0-1', source=False)
         # Mangle its publishing component to "restricted" so we can check
         # the copy archive ancestry override later.
-        self.useMainUser()
+        self.switchToAdmin()
         restricted = getUtility(IComponentSet)["restricted"]
         for pub in bar_bin_pubs:
             pub.component = restricted
-        self.useUploader()
+        self.switchToUploader()
 
         # Create a COPY archive for building in non-virtual builds.
         uploader = getUtility(IPersonSet).getByName('name16')
@@ -751,11 +753,11 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # The copy archive binary published component should have been
         # inherited from the main archive's.
-        self.useMainUser()
+        self.switchToAdmin()
         copy_bin_pubs = queue_items[0].realiseUpload()
         for pub in copy_bin_pubs:
             self.assertEqual(pub.component.name, restricted.name)
-        self.useUploader()
+        self.switchToUploader()
 
     def testCopyArchiveUploadToCurrentDistro(self):
         """Check binary copy archive uploads to RELEASE pockets.
@@ -811,14 +813,14 @@ class TestUploadProcessor(TestUploadProcessorBase):
         [bar_binary_pub] = self.publishPackage("bar", "1.0-1", source=False)
 
         # Prepare ubuntu/breezy-autotest to build sources in i386.
-        self.useMainUser()
+        self.switchToAdmin()
         breezy_autotest = self.ubuntu['breezy-autotest']
         breezy_autotest_i386 = breezy_autotest['i386']
         breezy_autotest.nominatedarchindep = breezy_autotest_i386
         fake_chroot = self.addMockFile('fake_chroot.tar.gz')
         breezy_autotest_i386.addOrUpdateChroot(fake_chroot)
         self.layer.txn.commit()
-        self.useUploader()
+        self.switchToUploader()
 
         # Copy 'bar-1.0-1' source from breezy to breezy-autotest and
         # create a build there (this would never happen in reality, it
@@ -1225,7 +1227,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Housekeeping so the next test won't fail.
         shutil.rmtree(upload_dir)
 
-
     def disabled_per_bug_825486_testPartnerUploadToNonReleaseOrProposedPocket(self):
         # XXX: bug 825486 robertcollins 2011-08-13 this test is broken.
         """Test partner upload pockets.
@@ -1495,7 +1496,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # permissions to all components at upload time.
         uploader = getUtility(IPersonSet).getByName('name16')
         distro_team = getUtility(IPersonSet).getByName('ubuntu-team')
-        self.useMainUser()
+        self.switchToAdmin()
         uploader.leave(distro_team)
 
         # Now give name16 specific permissions to "restricted" only.
@@ -1504,7 +1505,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             archive=self.ubuntu.main_archive,
             permission=ArchivePermissionType.UPLOAD, person=uploader,
             component=restricted)
-        self.useUploader()
+        self.switchToUploader()
 
         uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
@@ -1527,13 +1528,13 @@ class TestUploadProcessor(TestUploadProcessorBase):
             u"Signer is not permitted to upload to the component 'universe'.")
 
         # Now add permission to upload "bar" for name16.
-        self.useMainUser()
+        self.switchToAdmin()
         bar_package = getUtility(ISourcePackageNameSet).queryByName("bar")
         ArchivePermission(
             archive=self.ubuntu.main_archive,
             permission=ArchivePermissionType.UPLOAD, person=uploader,
             sourcepackagename=bar_package)
-        self.useUploader()
+        self.switchToUploader()
 
         # Upload the package again.
         self.processUpload(uploadprocessor, upload_dir)
@@ -1551,7 +1552,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # permissions to all components at upload time.
         uploader = getUtility(IPersonSet).getByName('name16')
         distro_team = getUtility(IPersonSet).getByName('ubuntu-team')
-        self.useMainUser()
+        self.switchToAdmin()
         uploader.leave(distro_team)
 
         # Now give name16 specific permissions to "restricted" only.
@@ -1560,7 +1561,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             archive=self.ubuntu.main_archive,
             permission=ArchivePermissionType.UPLOAD, person=uploader,
             component=restricted)
-        self.useUploader()
+        self.switchToUploader()
 
         uploadprocessor = self.getUploadProcessor(self.layer.txn)
 
@@ -1584,7 +1585,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Now put in place a package set, add 'bar' to it and define a
         # permission for the former.
-        self.useMainUser()
+        self.switchToAdmin()
         bar_package = getUtility(ISourcePackageNameSet).queryByName("bar")
         ap_set = getUtility(IArchivePermissionSet)
         ps_set = getUtility(IPackagesetSet)
@@ -1596,7 +1597,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         foo_ps.add((bar_package, ))
         ap_set.newPackagesetUploader(
             self.ubuntu.main_archive, uploader, foo_ps)
-        self.useUploader()
+        self.switchToUploader()
 
         # The uploader now does have a package set based upload permissions
         # to 'bar' in 'grumpy' but not in 'breezy'.
@@ -1618,14 +1619,14 @@ class TestUploadProcessor(TestUploadProcessorBase):
             msg['Subject'], 'bar_1.0-2_source.changes rejected')
 
         # Grant the permissions in the proper series.
-        self.useMainUser()
+        self.switchToAdmin()
         breezy_ps = ps_set.new(
             u'foo-pkg-set-breezy', u'Packages that require special care.',
             uploader, distroseries=self.breezy)
         breezy_ps.add((bar_package, ))
         ap_set.newPackagesetUploader(
             self.ubuntu.main_archive, uploader, breezy_ps)
-        self.useUploader()
+        self.switchToUploader()
         # The uploader now does have a package set based upload permission
         # to 'bar' in 'breezy'.
         self.assertTrue(
@@ -1866,7 +1867,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
             status=PackageUploadStatus.NEW, name=u"bar",
             version=u"1.0-1", exact_match=True)
         self.assertEqual(queue_items.count(), 1)
-        self.useMainUser()
+        self.switchToAdmin()
         queue_item = queue_items[0]
         queue_item.setAccepted()
         pubrec = queue_item.sources[0].publish(self.log)
@@ -1874,7 +1875,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         pubrec.datepublished = UTC_NOW
         queue_item.setDone()
         self.PGPSignatureNotPreserved(archive=self.breezy.main_archive)
-        self.useUploader()
+        self.switchToUploader()
 
 
 class TestBuildUploadProcessor(TestUploadProcessorBase):
@@ -1924,7 +1925,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         [build] = source_pub.createMissingBuilds()
 
         # Move the source from the accepted queue.
-        self.useMainUser()
+        self.switchToAdmin()
         [queue_item] = self.breezy.getPackageUploads(
             status=PackageUploadStatus.ACCEPTED,
             version=u"1.0-1", name=u"bar")
@@ -1936,7 +1937,7 @@ class TestUploadHandler(TestUploadProcessorBase):
 
         build.status = BuildStatus.UPLOADING
         build.date_finished = UTC_NOW
-        self.useUploader()
+        self.switchToUploader()
 
         # Upload and accept a binary for the primary archive source.
         shutil.rmtree(upload_dir)
@@ -1970,7 +1971,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         [build] = source_pub.createMissingBuilds()
 
         # Move the source from the accepted queue.
-        self.useMainUser()
+        self.switchToAdmin()
         [queue_item] = self.breezy.getPackageUploads(
             status=PackageUploadStatus.ACCEPTED,
             version=u"1.0-1", name=u"bar")
@@ -1978,7 +1979,7 @@ class TestUploadHandler(TestUploadProcessorBase):
 
         build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
         build.status = BuildStatus.UPLOADING
-        self.useUploader()
+        self.switchToUploader()
 
         # Upload and accept a binary for the primary archive source.
         shutil.rmtree(upload_dir)
@@ -2002,7 +2003,7 @@ class TestUploadHandler(TestUploadProcessorBase):
 
     def doSuccessRecipeBuild(self):
         # Upload a source package
-        self.useMainUser()
+        self.switchToAdmin()
         archive = self.factory.makeArchive()
         archive.require_virtualized = False
         build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
@@ -2010,7 +2011,7 @@ class TestUploadHandler(TestUploadProcessorBase):
             requester=archive.owner)
         self.assertEquals(archive.owner, build.requester)
         self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
-        self.useUploader()
+        self.switchToUploader()
         # Commit so the build cookie has the right ids.
         self.layer.txn.commit()
         leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
@@ -2054,7 +2055,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         # A source package recipe build will fail if no files are present.
 
         # Upload a source package
-        self.useMainUser()
+        self.switchToAdmin()
         archive = self.factory.makeArchive()
         archive.require_virtualized = False
         build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
@@ -2067,7 +2068,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         self.options.context = 'buildd'
         self.options.builds = True
         build.jobStarted()
-        self.useUploader()
+        self.switchToUploader()
         # Commit so date_started is recorded and doesn't cause constraint
         # violations later.
         Store.of(build).flush()
@@ -2098,13 +2099,13 @@ class TestUploadHandler(TestUploadProcessorBase):
         # A source package recipe build will fail if the recipe is deleted.
 
         # Upload a source package
-        self.useMainUser()
+        self.switchToAdmin()
         archive = self.factory.makeArchive()
         archive.require_virtualized = False
         build = self.factory.makeSourcePackageRecipeBuild(sourcename=u"bar",
             distroseries=self.breezy, archive=archive)
         self.factory.makeSourcePackageRecipeBuildJob(recipe_build=build)
-        self.useUploader()
+        self.switchToUploader()
         # Commit so the build cookie has the right ids.
         Store.of(build).flush()
         leaf_name = build.getUploadDirLeaf(build.getBuildCookie())
@@ -2112,9 +2113,9 @@ class TestUploadHandler(TestUploadProcessorBase):
         self.options.context = 'buildd'
         self.options.builds = True
         build.jobStarted()
-        self.useMainUser()
+        self.switchToAdmin()
         build.recipe.destroySelf()
-        self.useUploader()
+        self.switchToUploader()
         # Commit so date_started is recorded and doesn't cause constraint
         # violations later.
         Store.of(build).flush()
@@ -2141,7 +2142,7 @@ class TestUploadHandler(TestUploadProcessorBase):
         [build] = source_pub.createMissingBuilds()
 
         # Move the source from the accepted queue.
-        self.useMainUser()
+        self.switchToAdmin()
         [queue_item] = self.breezy.getPackageUploads(
             status=PackageUploadStatus.ACCEPTED,
             version=u"1.0-1", name=u"bar")
@@ -2149,7 +2150,7 @@ class TestUploadHandler(TestUploadProcessorBase):
 
         build.buildqueue_record.markAsBuilding(self.factory.makeBuilder())
         build.status = BuildStatus.BUILDING
-        self.useUploader()
+        self.switchToUploader()
 
         shutil.rmtree(upload_dir)
 
