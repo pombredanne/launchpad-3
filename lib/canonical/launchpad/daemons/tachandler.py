@@ -24,7 +24,6 @@ from lp.services.osutils import (
     get_pid_from_file,
     kill_by_pidfile,
     remove_if_exists,
-    two_stage_kill,
     until_no_eintr,
     )
 
@@ -55,10 +54,7 @@ class TacTestSetup(Fixture):
             warnings.warn("Attempt to start Tachandler with an existing "
                 "instance (%d) running in %s." % (pid, self.pidfile),
                 DeprecationWarning, stacklevel=2)
-            two_stage_kill(pid)
-            if get_pid_from_file(self.pidfile):
-                raise TacException(
-                    "Could not kill stale process %s." % (self.pidfile,))
+            kill_by_pidfile(self.pidfile)
 
         # setUp() watches the logfile to determine when the daemon has fully
         # started. If it sees an old logfile, then it will find the
