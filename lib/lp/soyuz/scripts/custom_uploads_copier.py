@@ -62,17 +62,20 @@ class CustomUploadsCopier:
 
         Versions may contain dots, dashes etc. but no underscores.
 
-        :return: A tuple of (<package>, <architecture>), or None if the
+        :return: A tuple of (<architecture>, version); or None if the
             filename does not match the expected pattern.  If no
             architecture is found in the filename, it defaults to 'all'.
         """
+        # XXX JeroenVemreulen 2011-08-17, bug=827973: Push this down
+        # into the CustomUpload-derived classes, and share it with their
+        # constructors.
         regex_parts = {
             'package': "[^_]+",
             'version': "[^_]+",
             'arch': "[^._]+",
         }
         filename_regex = (
-            "(%(package)s)_%(version)s(?:_(%(arch)s))?.tar" % regex_parts)
+            "%(package)s_(%(version)s)(?:_(%(arch)s))?.tar" % regex_parts)
         match = re.match(filename_regex, filename)
         if match is None:
             return None
@@ -80,16 +83,21 @@ class CustomUploadsCopier:
         fields = match.groups(default_arch)
         if len(fields) != 2:
             return None
-        return fields
+        version, architecture = fields
+        return (architecture, version)
 
     def getKey(self, upload):
         """Get an indexing key for `upload`."""
-        custom_format = (upload.customformat, )
+        # XXX JeroenVermeulen 2011-08-17, bug=827941: For ddtp
+        # translations tarballs, we'll have to include the component
+        # name as well.
+        custom_format = upload.customformat
         name_fields = self.extractNameFields(upload.libraryfilealias.filename)
         if name_fields is None:
             return None
         else:
-            return custom_format + name_fields
+            arch, version = name_fields
+            return (custom_format, arch)
 
     def getLatestUploads(self, source_series):
         """Find the latest uploads.

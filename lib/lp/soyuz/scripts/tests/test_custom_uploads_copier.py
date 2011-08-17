@@ -78,25 +78,29 @@ class TestCustomUploadsCopierLite(TestCaseWithFactory, CommonTestHelpers):
             CustomUploadsCopier.copyable_types,
             [upload.customformat for upload in copied_uploads])
 
-    def test_extractNameFields_extracts_package_name_and_architecture(self):
-        # extractNameFields picks up the package name and architecture
-        # out of an upload's filename field.
+    def test_extractNameFields_extracts_architecture_and_version(self):
+        # extractNameFields picks up the architecture and version out
+        # of an upload's filename field.
+        # XXX JeroenVermeulen 2011-08-17, bug=827941: For ddtp
+        # translations tarballs, we'll have to include the component
+        # name as well.
         package_name = self.factory.getUniqueString('package')
         version = self.makeVersion()
         architecture = self.factory.getUniqueString('arch')
         filename = '%s_%s_%s.tar.gz' % (package_name, version, architecture)
         copier = CustomUploadsCopier(FakeDistroSeries())
         self.assertEqual(
-            (package_name, architecture), copier.extractNameFields(filename))
+            (architecture, version), copier.extractNameFields(filename))
 
     def test_extractNameFields_does_not_require_architecture(self):
         # When extractNameFields does not see an architecture, it
         # defaults to 'all'.
         package_name = self.factory.getUniqueString('package')
-        filename = '%s_%s.tar.gz' % (package_name, self.makeVersion())
+        version = self.makeVersion()
+        filename = '%s_%s.tar.gz' % (package_name, version)
         copier = CustomUploadsCopier(FakeDistroSeries())
         self.assertEqual(
-            (package_name, 'all'), copier.extractNameFields(filename))
+            ('all', version), copier.extractNameFields(filename))
 
     def test_extractNameFields_returns_None_on_mismatch(self):
         # If the filename does not match the expected pattern,
@@ -131,12 +135,11 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
 
     def makeUpload(self, distroseries=None,
                    custom_type=PackageUploadCustomFormat.DEBIAN_INSTALLER,
-                   package_name=None, version=None, arch=None):
+                   version=None, arch=None):
         """Create a `PackageUploadCustom`."""
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries()
-        if package_name is None:
-            package_name = self.factory.getUniqueString("package")
+        package_name = self.factory.getUniqueString("package")
         if version is None:
             version = self.makeVersion()
         filename = "%s.tar.gz" % '_'.join(
@@ -224,6 +227,8 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
     def test_getCandidateUploads_orders_newest_to_oldest(self):
         # getCandidateUploads returns its PackageUploadCustoms ordered
         # from newest to oldest.
+        # XXX JeroenVermeulen 2011-08-17, bug=827967: Should compare by
+        # Debian version string, not id.
         source_series = self.factory.makeDistroSeries()
         for counter in xrange(5):
             self.makeUpload(source_series)
@@ -232,17 +237,19 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
             upload.id for upload in copier.getCandidateUploads(source_series)]
         self.assertEqual(sorted(candidate_ids, reverse=True), candidate_ids)
 
-    def test_getKey_includes_format_package_and_architecture(self):
+    def test_getKey_includes_format_and_architecture(self):
         # The key returned by getKey consists of custom upload type,
-        # package name, and architecture.
+        # and architecture.
+        # XXX JeroenVermeulen 2011-08-17, bug=827941: To support
+        # ddtp-translations uploads, this will have to include the
+        # component name as well.
         source_series = self.factory.makeDistroSeries()
         upload = self.makeUpload(
             source_series, PackageUploadCustomFormat.DIST_UPGRADER,
-            package_name='upgrader', arch='mips')
+            arch='mips')
         copier = CustomUploadsCopier(FakeDistroSeries())
         expected_key = (
             PackageUploadCustomFormat.DIST_UPGRADER,
-            'upgrader',
             'mips',
             )
         self.assertEqual(expected_key, copier.getKey(upload))
@@ -265,8 +272,7 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         source_series = self.factory.makeDistroSeries()
         uploads = [
             self.makeUpload(
-                source_series, package_name='installer', version='1.0.0',
-                arch='ppc')
+                source_series, version='1.0.%d' % counter, arch='ppc')
             for counter in xrange(3)]
 
         copier = CustomUploadsCopier(FakeDistroSeries())
@@ -279,7 +285,7 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         # architecture even if they have different versions.
         source_series = self.factory.makeDistroSeries()
         uploads = [
-            self.makeUpload(source_series, package_name='foo', arch='i386')
+            self.makeUpload(source_series, arch='i386')
             for counter in xrange(2)]
         copier = CustomUploadsCopier(FakeDistroSeries())
         self.assertContentEqual(
@@ -355,10 +361,8 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         # source series has.
         source_series = self.factory.makeDistroSeries()
         target_series = self.factory.makeDistroSeries()
-        self.makeUpload(
-            target_series, package_name='installer', arch='ppc64')
-        source_upload = self.makeUpload(
-            source_series, package_name='installer', arch='ppc64')
+        self.makeUpload(target_series, arch='ppc64')
+        source_upload = self.makeUpload(source_series, arch='ppc64')
         copier = CustomUploadsCopier(target_series)
         self.assertFalse(
             copier.isObsolete(
@@ -369,11 +373,9 @@ class TestCustomUploadsCopier(TestCaseWithFactory, CommonTestHelpers):
         # newer equivalent of the upload in question (as would be the
         # case, for instance, if the upload had already been copied).
         source_series = self.factory.makeDistroSeries()
-        source_upload = self.makeUpload(
-            source_series, package_name='installer', arch='alpha')
+        source_upload = self.makeUpload(source_series, arch='alpha')
         target_series = self.factory.makeDistroSeries()
-        self.makeUpload(
-            target_series, package_name='installer', arch='alpha')
+        self.makeUpload(target_series, arch='alpha')
         copier = CustomUploadsCopier(target_series)
         self.assertTrue(
             copier.isObsolete(
