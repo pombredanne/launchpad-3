@@ -712,7 +712,7 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
         # contents of stderr are logged in an OOPS report.
         oops_logged = []
 
-        def new_oops_raising((type, value, tb), request, now):
+        def new_oops_raising((type, value, tb), request):
             oops_logged.append((type, value, tb))
 
         old_oops_raising = errorlog.globalErrorUtility.raising
