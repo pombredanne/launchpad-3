@@ -1300,13 +1300,13 @@ def copy_asynchronously_message(source_pubs_count):
     """
     package_or_packages = get_plural_text(
         source_pubs_count, "package", "packages")
-    this_or_these = get_plural_text(
-        source_pubs_count, "this", "these")
     if source_pubs_count == 0:
         return structured(
             "Requested sync of %s %s.",
             source_pubs_count, package_or_packages)
     else:
+        this_or_these = get_plural_text(
+            source_pubs_count, "this", "these")
         return structured(
             "Requested sync of %s %s.<br />"
             "Please allow some time for %s to be processed.",
