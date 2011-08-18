@@ -52,18 +52,7 @@ class TacTestSetupTestCase(testtools.TestCase):
 
     def test_missingTac(self):
         """TacTestSetup raises TacException if the tacfile doesn't exist"""
-
-        class MissingTac(TacTestSetup):
-
-            root = '/'
-            tacfile = '/file/does/not/exist'
-            pidfile = tacfile
-            logfile = tacfile
-
-            def setUpRoot(self):
-                pass
-
-        fixture = MissingTac()
+        fixture = SimpleTac("missing", "/file/does/not/exist")
         try:
             self.assertRaises(TacException, fixture.setUp)
         finally:
@@ -74,18 +63,7 @@ class TacTestSetupTestCase(testtools.TestCase):
         port, TacTestSetup will fail.
         """
         tempdir = self.useFixture(TempDir()).path
-
-        class CouldNotListenTac(TacTestSetup):
-
-            root = dirname(__file__)
-            tacfile = join(root, 'cannotlisten.tac')
-            pidfile = join(tempdir, 'cannotlisten.pid')
-            logfile = join(tempdir, 'cannotlisten.log')
-
-            def setUpRoot(self):
-                pass
-
-        fixture = CouldNotListenTac()
+        fixture = SimpleTac("cannotlisten", tempdir)
         try:
             self.assertRaises(TacException, fixture.setUp)
         finally:
