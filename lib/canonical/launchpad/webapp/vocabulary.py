@@ -83,9 +83,6 @@ class VocabularyFilter(namedtuple('VocabularyFilter',
         """Query terms used to perform the required filtering."""
         return []
 
-    def __contains__(self, item):
-        raise NotImplementedError
-
 
 class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
     """Interface for huge vocabularies.
