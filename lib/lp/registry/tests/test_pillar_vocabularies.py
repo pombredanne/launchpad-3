@@ -61,6 +61,7 @@ class TestPillarVocabularyBase(TestCaseWithFactory):
         self.assertEqual(
             [self.project_group, self.product, self.distribution], result)
 
+
 class VocabFilterMixin:
 
     def _test_distribution_filter(self):
