@@ -149,10 +149,10 @@ class TestDistroSeriesView(TestCaseWithFactory):
             difference_type=difference_type)
         return create_initialized_view(dsp.derived_series, '+index')
 
-    def test_num_version_differences(self):
+    def test_num_version_differences_needing_attention(self):
         diff_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
         view = self._createDifferenceAndGetView(diff_type)
-        self.assertEqual(1, view.num_version_differences)
+        self.assertEqual(1, view.num_version_differences_needing_attention)
 
     def test_num_differences_in_parent(self):
         diff_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
