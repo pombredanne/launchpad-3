@@ -27,7 +27,7 @@ from bzrlib.branch import (
 from bzrlib.bzrdir import (
     BzrDirMetaFormat1,
     )
-from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack1
+from bzrlib.repofmt.knitpack_repo import RepositoryFormatKnitPack1
 from bzrlib.tests import (
     TestCaseWithTransport,
     )

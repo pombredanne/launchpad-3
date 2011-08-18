@@ -40,8 +40,8 @@
         "launchpad@pqm.canonical.com-20110601140035-gl5merbechngjw5s"
     ], 
     "bzr-loom": [
-        49, 
-        "launchpad@pqm.canonical.com-20110601122412-54vo3k8yae9i2zve"
+        50, 
+        "launchpad@pqm.canonical.com-20110722102404-hl1z8uzhhwiol34l"
     ], 
     "old_xmlplus": [
         4, 
@@ -56,12 +56,12 @@
         "aaron@aaronbentley.com-20100715135013-uoi3q430urx9gwb8"
     ], 
     "bzr-svn": [
-        2715, 
-        "launchpad@pqm.canonical.com-20110810144016-m5f5pbnrpkbz04v3"
+        2716, 
+        "launchpad@pqm.canonical.com-20110813142415-1izlitsieztuzkly"
     ], 
     "bzr-hg": [
-        286, 
-        "launchpad@pqm.canonical.com-20110608121012-ukbfdj6izm8n72tp"
+        287, 
+        "launchpad@pqm.canonical.com-20110722151205-zvse1g7ghie2snt2"
     ], 
     "dulwich": [
         426, 

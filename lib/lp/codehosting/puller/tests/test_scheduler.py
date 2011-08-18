@@ -767,7 +767,7 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
         branch.lock_write()
         protocol.mirrorFailed('a', 'b')
         protocol.sendEvent(
-            'lock_id', branch.control_files._lock.peek()['user'])
+            'lock_id', branch.control_files._lock.peek().get('user'))
         sys.stdout.flush()
         branch.unlock()
         """
