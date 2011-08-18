@@ -443,7 +443,7 @@ class DistroSeriesView(LaunchpadView, MilestoneOverlayMixin,
     @property
     def num_unlinked_packages(self):
         """The number of unlinked packagings for this distroseries."""
-        return self.context.sourcecount - self.num_linked_packages
+        return self.context.getPrioritizedUnlinkedSourcePackages().count()
 
     @cachedproperty
     def recently_linked(self):
@@ -1116,27 +1116,6 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
                     changed_by=self.specified_changed_by_filter)
 
         return BatchNavigator(differences, self.request)
-
-    @cachedproperty
-    def has_differences(self):
-        """Whether or not differences between this derived series and
-        its parent exist.
-        """
-        # Performance optimisation: save a query if we have differences
-        # to show in the batch.
-        if self.cached_differences.batch.total() > 0:
-            return True
-        else:
-            # Here we check the whole dataset since the empty batch
-            # might be filtered.
-            differences = getUtility(
-                IDistroSeriesDifferenceSource).getForDistroSeries(
-                    self.context,
-                    difference_type=self.differences_type,
-                    status=(
-                        DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-                        DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
-            return not differences.is_empty()
 
     def parent_changelog_url(self, distroseriesdifference):
         """The URL to the /parent/series/+source/package/+changelog """
