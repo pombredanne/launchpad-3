@@ -256,9 +256,23 @@ class TestBranchPillarAffiliation(_TestBugTaskorBranchMixin,
 
     def _check_affiliated_with_product(self, person, target, role):
         branch = self.factory.makeBranch(product=target)
+        with person_logged_in(branch.owner):
+            branch.reviewer = person
         [badges] = IHasAffiliation(branch).getAffiliationBadges([person])
         self.assertEqual(
             ("/@@/product-badge", "Pting %s" % role), badges[0])
+
+    def test_getBranch(self):
+        # The branch is the context.
+        branch = self.factory.makeBranch()
+        adapter = IHasAffiliation(branch)     
+        self.assertEqual(branch, adapter.getBranch())   
+
+    def test_branch_trusted_reviewer_affiliation(self):
+        # A person who is the branch's trusted reviewer is affiliated.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct(name='pting')
+        self._check_affiliated_with_product(person, product, 'trusted reviewer')
 
 
 class TestDistroSeriesPillarAffiliation(TestCaseWithFactory):
