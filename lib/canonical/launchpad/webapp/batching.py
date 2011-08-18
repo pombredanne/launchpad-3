@@ -11,7 +11,7 @@ from iso8601 import (
     )
 import lazr.batchnavigator
 from lazr.batchnavigator.interfaces import IRangeFactory
-import pytz
+from operator import isSequenceType
 import simplejson
 from storm import Undef
 from storm.expr import (
@@ -166,6 +166,68 @@ class DateTimeJSONEncoder(simplejson.JSONEncoder):
         return simplejson.JSONEncoder.default(self, obj)
 
 
+class ShadowedList:
+    """A (partial) sequence impementation which maintains two
+    sequences: A publicly visible one and a "shadow" sequence.
+
+    Background: StormRangeFactory.getSlice() returns a sequence
+    of records which is used in lazr.batchnavigator.Batchnavigator
+    and in lazr.batchnavigator.z3batching.Batch.
+
+    This slice is passed back by Batch.nextBatch() and Batch.prevBatch()
+    to StormRangeFactory.getEndpointMemos().
+
+    StormRangeFactory can work with DecoratedResultSets, which means
+    that the data required to create the memo values may only be
+    available in the plain, undecorated, result set.
+
+    This class allows to maintain the values needed by BachNavigator
+    and Batch as well as the values needed by
+    StormRangeFactory.getEndpointMemos().
+
+    It implements only those parts of the sequence protocol needed by
+    BatchNavigator and Batch.
+    """
+    def __init__(self, values, shadow_values):
+        if not isSequenceType(values) or not isSequenceType(shadow_values):
+            raise TypeError("values and shadow_values must be sequences.")
+        if len(values) != len(shadow_values):
+            raise ValueError(
+                "values and shadow_values must have the same length.")
+        self.values = values
+        self.shadow_values = shadow_values
+
+    def __len__(self):
+        """See `list`."""
+        return len(self.values)
+
+    def __getslice__(self, start, end):
+        """See `list`."""
+        return ShadowedList(
+            self.values[start:end], self.shadow_values[start:end])
+
+    def __getitem__(self, index):
+        """See `list`."""
+        return self.values[index]
+
+    def __add__(self, other):
+        """See `list`."""
+        if not isinstance(other, ShadowedList):
+            raise TypeError(
+                'You can only add another ShadowedList to a ShadowedList')
+        return ShadowedList(
+            self.values + other.values,
+            self.shadow_values + other.shadow_values)
+
+    def __iter__(self):
+        """See `list`."""
+        return iter(self.values)
+
+    def reverse(self):
+        self.values.reverse()
+        self.shadow_values.reverse()
+
+
 class StormRangeFactory:
     """A range factory for Storm result sets.
 
@@ -247,9 +309,9 @@ class StormRangeFactory:
 
     def getEndpointMemos(self, batch):
         """See `IRangeFactory`."""
-        lower = self.getOrderValuesFor(self.plain_resultset[0])
-        upper = self.getOrderValuesFor(
-            self.plain_resultset[batch.trueSize - 1])
+        plain_slice = batch.sliced_list.shadow_values
+        lower = self.getOrderValuesFor(plain_slice[0])
+        upper = self.getOrderValuesFor(plain_slice[batch.trueSize - 1])
         return (
             simplejson.dumps(lower, cls=DateTimeJSONEncoder),
             simplejson.dumps(upper, cls=DateTimeJSONEncoder),
@@ -475,6 +537,17 @@ class StormRangeFactory:
         # Note that lazr.batchnavigator calls len(slice), so we can't
         # return the plain result set.
         if parsed_memo is None:
-            return list(self.resultset.config(limit=size))
+            result = self.resultset.config(limit=size)
         else:
-            return list(self.getSliceFromMemo(size, parsed_memo))
+            result = self.getSliceFromMemo(size, parsed_memo)
+        real_result = list(result)
+        if zope_isinstance(result, DecoratedResultSet):
+            shadow_result = list(result.get_plain_result_set())
+        else:
+            shadow_result = real_result
+        return ShadowedList(real_result, shadow_result)
+
+    def getSliceByIndex(self, start, end):
+        """See `IRangeFactory."""
+        sliced = self.resultset[start:end]
+        return ShadowedList(list(sliced), list(sliced.get_plain_result_set()))
