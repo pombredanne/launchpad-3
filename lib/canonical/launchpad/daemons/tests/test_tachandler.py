@@ -5,7 +5,10 @@
 
 __metaclass__ = type
 
-import os.path
+from os.path import (
+    dirname,
+    join,
+    )
 import subprocess
 import warnings
 
@@ -16,7 +19,32 @@ from canonical.launchpad.daemons.tachandler import (
     TacException,
     TacTestSetup,
     )
-from lp.services.osutils import get_pid_from_file
+
+
+class OkayTac(TacTestSetup):
+
+    def __init__(self, tempdir):
+        super(TacTestSetup, self).__init__()
+        self.tempdir = tempdir
+
+    @property
+    def root(self):
+        return dirname(__file__)
+
+    @property
+    def tacfile(self):
+        return join(self.root, 'okay.tac')
+
+    @property
+    def pidfile(self):
+        return join(self.tempdir, 'okay.pid')
+
+    @property
+    def logfile(self):
+        return join(self.tempdir, 'okay.log')
+
+    def setUpRoot(self):
+        pass
 
 
 class TacTestSetupTestCase(testtools.TestCase):
@@ -49,10 +77,10 @@ class TacTestSetupTestCase(testtools.TestCase):
 
         class CouldNotListenTac(TacTestSetup):
 
-            root = os.path.dirname(__file__)
-            tacfile = os.path.join(root, 'cannotlisten.tac')
-            pidfile = os.path.join(tempdir, 'cannotlisten.pid')
-            logfile = os.path.join(tempdir, 'cannotlisten.log')
+            root = dirname(__file__)
+            tacfile = join(root, 'cannotlisten.tac')
+            pidfile = join(tempdir, 'cannotlisten.pid')
+            logfile = join(tempdir, 'cannotlisten.log')
 
             def setUpRoot(self):
                 pass
@@ -66,16 +94,7 @@ class TacTestSetupTestCase(testtools.TestCase):
     def test_pidForNotRunningProcess(self):
         """TacTestSetup copes fine if the pidfile contains a stale pid."""
         tempdir = self.useFixture(TempDir()).path
-
-        class OkayTac(TacTestSetup):
-
-            root = os.path.dirname(__file__)
-            tacfile = os.path.join(root, 'okay.tac')
-            pidfile = os.path.join(tempdir, 'okay.pid')
-            logfile = os.path.join(tempdir, 'okay.log')
-
-            def setUpRoot(self):
-                pass
+        fixture = OkayTac(tempdir)
 
         # Run a short-lived process with the intention of using its pid in the
         # next step. Linux uses pids sequentially (from the information I've
@@ -86,12 +105,11 @@ class TacTestSetupTestCase(testtools.TestCase):
         process.wait()
 
         # Put the (now bogus) pid in the pid file.
-        with open(OkayTac.pidfile, "wb") as pidfile:
+        with open(fixture.pidfile, "wb") as pidfile:
             pidfile.write(str(process.pid))
 
         # Fire up the fixture, capturing warnings.
         with warnings.catch_warnings(record=True) as warnings_log:
-            fixture = OkayTac()
             try:
                 self.assertRaises(TacException, fixture.setUp)
             finally:
