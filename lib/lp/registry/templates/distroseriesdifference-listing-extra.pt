@@ -22,7 +22,7 @@
 
   <div style="float: left;">
   <dl>
-    <dt>Binary descriptions:</dt>
+    <dt tal:condition="view/binary_summaries">Binary descriptions:</dt>
       <dd><ul>
         <li tal:repeat="summary view/binary_summaries">
           <tal:description replace="summary" /></li>
@@ -126,7 +126,7 @@
     </dl>
   </div>
 
-  <div style="clear:both;">&nbsp;</div>
+  <div class="clear">&nbsp;</div>
 
   <strong>Comments:</strong>
   <tal:conversation replace="structure view/@@+render"/>
