@@ -21,11 +21,11 @@ from canonical.launchpad.daemons.tachandler import (
     )
 
 
-class OkayTac(TacTestSetup):
+class SimpleTac(TacTestSetup):
 
-    def __init__(self, tempdir):
-        super(TacTestSetup, self).__init__()
-        self.tempdir = tempdir
+    def __init__(self, name, tempdir):
+        super(SimpleTac, self).__init__()
+        self.name, self.tempdir = name, tempdir
 
     @property
     def root(self):
@@ -33,15 +33,15 @@ class OkayTac(TacTestSetup):
 
     @property
     def tacfile(self):
-        return join(self.root, 'okay.tac')
+        return join(self.root, '%s.tac' % self.name)
 
     @property
     def pidfile(self):
-        return join(self.tempdir, 'okay.pid')
+        return join(self.tempdir, '%s.pid' % self.name)
 
     @property
     def logfile(self):
-        return join(self.tempdir, 'okay.log')
+        return join(self.tempdir, '%s.log' % self.name)
 
     def setUpRoot(self):
         pass
@@ -94,7 +94,7 @@ class TacTestSetupTestCase(testtools.TestCase):
     def test_pidForNotRunningProcess(self):
         """TacTestSetup copes fine if the pidfile contains a stale pid."""
         tempdir = self.useFixture(TempDir()).path
-        fixture = OkayTac(tempdir)
+        fixture = SimpleTac("okay", tempdir)
 
         # Run a short-lived process with the intention of using its pid in the
         # next step. Linux uses pids sequentially (from the information I've
