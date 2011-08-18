@@ -106,6 +106,7 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
+    ILaunchBag,
     IStoreSelector,
     MAIN_STORE,
     )
@@ -123,6 +124,7 @@ from lp.bugs.adapters.bugchange import (
     BugConvertedToQuestion,
     BugWatchAdded,
     BugWatchRemoved,
+    BugDuplicateChange,
     SeriesNominated,
     UnsubscribedFromBug,
     )
@@ -929,11 +931,12 @@ BugMessage""" % sqlvalues(self.id))
         """
         if level is None:
             level = BugNotificationLevel.LIFECYCLE
-        subscriptions = self.getSubscriptionInfo(level).direct_subscriptions
+        direct_subscribers = (
+            self.getSubscriptionInfo(level).direct_subscribers)
         if recipients is not None:
-            for subscriber in subscriptions.subscribers:
+            for subscriber in direct_subscribers:
                 recipients.addDirectSubscriber(subscriber)
-        return subscriptions.subscribers.sorted
+        return direct_subscribers.sorted
 
     def getDirectSubscribersWithDetails(self):
         """See `IBug`."""
@@ -999,7 +1002,6 @@ BugMessage""" % sqlvalues(self.id))
             for subscription in info.duplicate_only_subscriptions:
                 recipients.addDupeSubscriber(
                     subscription.person, subscription.bug)
-
         return info.duplicate_only_subscriptions.subscribers.sorted
 
     def getSubscribersForPerson(self, person):
@@ -1099,7 +1101,7 @@ BugMessage""" % sqlvalues(self.id))
              bug=self, is_comment=True,
              message=message, recipients=recipients, activity=activity)
 
-    def addChange(self, change, recipients=None):
+    def addChange(self, change, recipients=None, deferred=False):
         """See `IBug`."""
         when = change.when
         if when is None:
@@ -1128,7 +1130,8 @@ BugMessage""" % sqlvalues(self.id))
                     level=BugNotificationLevel.METADATA)
             getUtility(IBugNotificationSet).addNotification(
                 bug=self, is_comment=False, message=message,
-                recipients=recipients, activity=activity)
+                recipients=recipients, activity=activity,
+                deferred=deferred)
 
         self.updateHeat()
 
@@ -1411,7 +1414,6 @@ BugMessage""" % sqlvalues(self.id))
         question = question_target.createQuestionFromBug(self)
         self.addChange(BugConvertedToQuestion(UTC_NOW, person, question))
         get_property_cache(self)._question_from_bug = question
-
         notify(BugBecameQuestionEvent(self, question, person))
         return question
 
@@ -1823,16 +1825,23 @@ BugMessage""" % sqlvalues(self.id))
             if duplicate_of is not None:
                 field._validate(duplicate_of)
             if self.duplicates:
+                user = getUtility(ILaunchBag).user
                 for duplicate in self.duplicates:
-                    # Fire a notify event in model code since moving
-                    # duplicates of a duplicate does not normally fire an
-                    # event.
-                    dupe_before = Snapshot(
-                        duplicate, providing=providedBy(duplicate))
+                    old_value = duplicate.duplicateof
                     affected_targets.update(
                         duplicate._markAsDuplicate(duplicate_of))
-                    notify(ObjectModifiedEvent(
-                            duplicate, dupe_before, 'duplicateof'))
+
+                    # Put an entry into the BugNotification table for
+                    # later processing.
+                    change = BugDuplicateChange(
+                        when=None, person=user,
+                        what_changed='duplicateof',
+                        old_value=old_value,
+                        new_value=duplicate_of)
+                    empty_recipients = BugNotificationRecipients()
+                    duplicate.addChange(
+                        change, empty_recipients, deferred=True)
+
             self.duplicateof = duplicate_of
         except LaunchpadValidationError, validation_error:
             raise InvalidDuplicateValue(validation_error)
@@ -2287,7 +2296,7 @@ class BugSubscriptionInfo:
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
-    def direct_subscriptions(self):
+    def old_direct_subscriptions(self):
         """The bug's direct subscriptions."""
         return IStore(BugSubscription).find(
             BugSubscription,
@@ -2297,19 +2306,57 @@ class BugSubscriptionInfo:
                    Select(BugMute.person_id, BugMute.bug_id == self.bug.id))))
 
     @cachedproperty
+    def direct_subscriptions_and_subscribers(self):
+        """The bug's direct subscriptions."""
+        res = IStore(BugSubscription).find(
+            (BugSubscription, Person),
+            BugSubscription.bug_notification_level >= self.level,
+            BugSubscription.bug == self.bug,
+            BugSubscription.person_id == Person.id,
+            Not(In(BugSubscription.person_id,
+                   Select(BugMute.person_id,
+                          BugMute.bug_id == self.bug.id))))
+        # Here we could test for res.count() but that will execute another
+        # query.  This structure avoids the extra query.
+        return zip(*res) or ((), ())
+
+    @cachedproperty
     @freeze(BugSubscriptionSet)
-    def duplicate_subscriptions(self):
+    def direct_subscriptions(self):
+        return self.direct_subscriptions_and_subscribers[0]
+
+    @cachedproperty
+    @freeze(BugSubscriberSet)
+    def direct_subscribers(self):
+        return self.direct_subscriptions_and_subscribers[1]
+
+    @cachedproperty
+    def duplicate_subscriptions_and_subscribers(self):
         """Subscriptions to duplicates of the bug."""
         if self.bug.private:
-            return ()
+            return ((), ())
         else:
-            return IStore(BugSubscription).find(
-                BugSubscription,
+            res = IStore(BugSubscription).find(
+                (BugSubscription, Person),
                 BugSubscription.bug_notification_level >= self.level,
                 BugSubscription.bug_id == Bug.id,
+                BugSubscription.person_id == Person.id,
                 Bug.duplicateof == self.bug,
                 Not(In(BugSubscription.person_id,
                        Select(BugMute.person_id, BugMute.bug_id == Bug.id))))
+        # Here we could test for res.count() but that will execute another
+        # query.  This structure avoids the extra query.
+        return zip(*res) or ((), ())
+
+    @cachedproperty
+    @freeze(BugSubscriptionSet)
+    def duplicate_subscriptions(self):
+        return self.duplicate_subscriptions_and_subscribers[0]
+
+    @cachedproperty
+    @freeze(BugSubscriberSet)
+    def duplicate_subscribers(self):
+        return self.duplicate_subscriptions_and_subscribers[1]
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
@@ -2319,9 +2366,9 @@ class BugSubscriptionInfo:
         Excludes subscriptions for people who have a direct subscription or
         are also notified for another reason.
         """
-        self.duplicate_subscriptions.subscribers  # Pre-load subscribers.
+        self.duplicate_subscribers  # Pre-load subscribers.
         higher_precedence = (
-            self.direct_subscriptions.subscribers.union(
+            self.direct_subscribers.union(
                 self.also_notified_subscribers))
         return (
             subscription for subscription in self.duplicate_subscriptions
@@ -2363,13 +2410,13 @@ class BugSubscriptionInfo:
                 self.structural_subscriptions.subscribers,
                 self.all_pillar_owners_without_bug_supervisors,
                 self.all_assignees).difference(
-                self.direct_subscriptions.subscribers).difference(muted)
+                self.direct_subscribers).difference(muted)
 
     @cachedproperty
     def indirect_subscribers(self):
         """All subscribers except direct subscribers."""
         return self.also_notified_subscribers.union(
-            self.duplicate_subscriptions.subscribers)
+            self.duplicate_subscribers)
 
 
 class BugSet:
