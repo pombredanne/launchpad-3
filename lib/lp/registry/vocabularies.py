@@ -1951,6 +1951,10 @@ class VocabularyFilterProject(VocabularyFilter):
             cls, 'PROJECT', 'Project',
             'Display search results associated with projects')
 
+    @property
+    def filter_terms(self):
+        return [PillarName.product != None]
+
 
 class VocabularyFilterProjectGroup(VocabularyFilter):
     # A filter returning just project groups.
@@ -1960,6 +1964,10 @@ class VocabularyFilterProjectGroup(VocabularyFilter):
             cls, 'PROJECTGROUP', 'Project Group',
             'Display search results associated with project groups')
 
+    @property
+    def filter_terms(self):
+        return [PillarName.project != None]
+
 
 class VocabularyFilterDistribution(VocabularyFilter):
     # A filter returning just distros.
@@ -1968,6 +1976,10 @@ class VocabularyFilterDistribution(VocabularyFilter):
         return super(VocabularyFilter, cls).__new__(
             cls, 'DISTRO', 'Distribution',
             'Display search results associated with distributions')
+
+    @property
+    def filter_terms(self):
+        return [PillarName.distribution != None]
 
 
 class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
@@ -2018,6 +2030,9 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
         if self._filter:
             equal_clauses.extend(self._filter)
             like_clauses.extend(self._filter)
+        if vocab_filter:
+            equal_clauses.extend(vocab_filter.filter_terms)
+            like_clauses.extend(vocab_filter.filter_terms)
         ranked_results = store.execute(
             Union(
                 Select(

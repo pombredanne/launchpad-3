@@ -61,8 +61,31 @@ class TestPillarVocabularyBase(TestCaseWithFactory):
         self.assertEqual(
             [self.project_group, self.product, self.distribution], result)
 
+class VocabFilterMixin:
 
-class TestDistributionOrProductVocabulary(TestCaseWithFactory):
+    def _test_distribution_filter(self):
+        # Only distributions should be included in the search results.
+        terms = self.vocabulary.searchForTerms('snark', vocab_filter='DISTRO')
+        result = [term.value for term in terms]
+        self.assertEqual([self.distribution], result)
+
+    def _test_project_filter(self):
+        # Only projects should be included in the search results.
+        terms = self.vocabulary.searchForTerms(
+            'snark', vocab_filter='PROJECT')
+        result = [term.value for term in terms]
+        self.assertEqual([self.product], result)
+
+    def _test_projectgroup_filter(self):
+        # Only project groups should be included in the search results.
+        terms = self.vocabulary.searchForTerms(
+            'snark', vocab_filter='PROJECTGROUP')
+        result = [term.value for term in terms]
+        self.assertEqual([self.project_group], result)
+
+
+class TestDistributionOrProductVocabulary(TestCaseWithFactory,
+                                          VocabFilterMixin):
     """Test that the ProductVocabulary behaves as expected."""
     layer = DatabaseFunctionalLayer
 
@@ -82,6 +105,12 @@ class TestDistributionOrProductVocabulary(TestCaseWithFactory):
             self.vocabulary.supportedFilters()
         )
 
+    def test_project_filter(self):
+        self._test_project_filter()
+
+    def test_distribution_filter(self):
+        self._test_distribution_filter()
+
     def test_inactive_products_are_excluded(self):
         # Inactive product are not in the vocabulary.
         with celebrity_logged_in('registry_experts'):
@@ -100,7 +129,8 @@ class TestDistributionOrProductVocabulary(TestCaseWithFactory):
         self.assertFalse(project_group in self.vocabulary)
 
 
-class TestDistributionOrProductOrProjectGroupVocabulary(TestCaseWithFactory):
+class TestDistributionOrProductOrProjectGroupVocabulary(TestCaseWithFactory,
+                                                        VocabFilterMixin):
     """Test for DistributionOrProductOrProjectGroupVocabulary."""
     layer = DatabaseFunctionalLayer
 
@@ -121,6 +151,15 @@ class TestDistributionOrProductOrProjectGroupVocabulary(TestCaseWithFactory):
             ],
             self.vocabulary.supportedFilters()
         )
+
+    def test_project_filter(self):
+        self._test_project_filter()
+
+    def test_projectgroup_filter(self):
+        self._test_projectgroup_filter()
+
+    def test_distribution_filter(self):
+        self._test_distribution_filter()
 
     def test_contains_all_pillars_active(self):
         # All active products, project groups and distributions are included.
