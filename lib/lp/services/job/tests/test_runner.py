@@ -647,3 +647,11 @@ class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
             cronscript.main()
         finally:
             errorlog.globalErrorUtility = old_errorlog
+
+    def test_log_twisted_option_for_twisted_runner(self):
+        jcs = JobCronScript(TwistedJobRunner, test_args=[])
+        self.assertIsNot(None, getattr(jcs.options, 'log_twisted', None))
+
+    def test_no_log_twisted_option_for_plain_runner(self):
+        jcs = JobCronScript(JobRunner, test_args=[])
+        self.assertIs(None, getattr(jcs.options, 'log_twisted', None))

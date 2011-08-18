@@ -35,7 +35,6 @@ class RunMergeProposalJobs(JobCronScript):
             name='merge-proposal-jobs')
 
 
-
 if __name__ == '__main__':
     script = RunMergeProposalJobs()
     script.lock_and_run()
