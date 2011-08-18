@@ -12,6 +12,8 @@ import simplejson
 from zope.component import getUtility
 
 from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.webapp import LaunchpadView
+
 from lp.app.errors import NotFoundError
 from lp.code.errors import (
     CannotHaveLinkedBranch,
@@ -25,7 +27,7 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import InvalidProductName
 
 
-class LinkCheckerAPI:
+class LinkCheckerAPI(LaunchpadView):
     """Validates Launchpad shortcut links.
 
     This class provides the endpoint of an Ajax call to .../+check-links.
@@ -85,7 +87,7 @@ class LinkCheckerAPI:
     def check_bug_links(self, links):
         """Checks if links of the form /bugs/100"""
         invalid_links = {}
-        user = IPerson(self.request.principal)
+        user = self.user
         bugs = [int(link[len('/bugs/'):]) for link in links]
         if bugs:
             params = BugTaskSearchParams(
