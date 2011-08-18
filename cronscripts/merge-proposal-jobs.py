@@ -32,8 +32,8 @@ class RunMergeProposalJobs(JobCronScript):
     def __init__(self):
         super(RunMergeProposalJobs, self).__init__(
             runner_class=TwistedJobRunner,
-            name='merge-proposal-jobs',
-            _log_twisted=True)
+            name='merge-proposal-jobs')
+
 
 
 if __name__ == '__main__':

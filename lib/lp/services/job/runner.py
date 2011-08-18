@@ -565,7 +565,7 @@ class JobCronScript(LaunchpadCronScript):
         "Takes pending jobs of the given type off the queue and runs them.")
 
     def __init__(self, runner_class=JobRunner, test_args=None, name=None,
-                 commandline_config=False, _log_twisted=False):
+                 commandline_config=False):
         """Initialize a `JobCronScript`.
 
         :param runner_class: The runner class to use.  Defaults to
@@ -580,15 +580,20 @@ class JobCronScript(LaunchpadCronScript):
             rely on the subclass providing `config_name` and
             `source_interface`.
         """
+        self._runner_class = runner_class
         super(JobCronScript, self).__init__(
             name=name, dbuser=None, test_args=test_args)
-        self._runner_class = runner_class
-        self.log_twisted = _log_twisted
         if not commandline_config:
             return
         self.config_name = self.args[0]
         self.source_interface = import_source(
             self.config_section.source_interface)
+
+    def add_my_options(self):
+        if self.runner_class is TwistedJobRunner:
+            self.parser.add_option(
+                '--log-twisted', action='store_true', default=False,
+                help='Enable extra Twisted logging.')
 
     @property
     def dbuser(self):
@@ -619,7 +624,7 @@ class JobCronScript(LaunchpadCronScript):
             errorlog.globalErrorUtility.configure(self.config_name)
         job_source = getUtility(self.source_interface)
         kwargs = {}
-        if self.log_twisted:
+        if getattr(self.options, 'log_twisted', False):
             kwargs['_log_twisted'] = True
         runner = self.runner_class.runFromSource(
             job_source, self.dbuser, self.logger, **kwargs)
