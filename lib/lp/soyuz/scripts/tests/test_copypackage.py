@@ -84,6 +84,7 @@ from lp.soyuz.scripts.packagecopier import (
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    ExpectedException,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
@@ -1483,15 +1484,11 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             sourcename=source.source_package_name,
             archive=nobby.main_archive, version="1.0-2",
             architecturehintlist='any')
-        try:
+        with ExpectedException(CannotCopy, '.'):
             do_copy(
                 [source], archive, nobby, source.pocket, False,
                 person=source.sourcepackagerelease.creator,
                 check_permissions=False, send_email=True)
-        except CannotCopy:
-            pass
-        else:
-            self.fail("Didn't get expected CannotCopy exception")
 
         notifications = pop_notifications()
         self.assertEqual(1, len(notifications))
