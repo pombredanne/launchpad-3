@@ -479,6 +479,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         """
         # Create the extra permissions. We're making an extra team and
         # adding it to cprov's upload permission, plus name12.
+        self.switchToAdmin()
         cprov = getUtility(IPersonSet).getByName("cprov")
         email = "contact@example.com"
         name = "Team"
@@ -487,6 +488,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         name12 = getUtility(IPersonSet).getByName("name12")
         cprov.archive.newComponentUploader(name12, "main")
         cprov.archive.newComponentUploader(team, "main")
+        self.switchToUploader()
 
         # Process the upload.
         upload_dir = self.queueUpload("bar_1.0-1", "~cprov/ppa/ubuntu")
@@ -932,12 +934,14 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
     def testNoPublishingOverrides(self):
         """Make sure publishing overrides are not applied for PPA uploads."""
         # Create a fake "bar" package and publish it in section "web".
+        self.switchToAdmin()
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
         publisher.getPubSource(
             sourcename="bar", version="1.0-1", section="web",
             archive=self.name16_ppa, distroseries=self.breezy,
             status=PackagePublishingStatus.PUBLISHED)
+        self.switchToUploader()
 
         # Now upload bar 1.0-3, which has section "devel".
         # (I am using this version because it's got a .orig required for
@@ -1118,9 +1122,11 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             PackageUploadStatus.DONE)
 
         # Delete the published file.
+        self.switchToAdmin()
         bar_src = self.name16.archive.getPublishedSources(name="bar").one()
         bar_src.requestDeletion(self.name16)
         bar_src.dateremoved = UTC_NOW
+        self.switchToUploader()
         self.layer.txn.commit()
 
         # bar_1.0-3 contains an orig file of the same version with
@@ -1142,9 +1148,11 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         """
         # We need to accept unsigned .changes and .dscs, and 3.0 (quilt)
         # sources.
+        self.switchToAdmin()
         self.options.context = 'absolutely-anything'
         getUtility(ISourcePackageFormatSelectionSet).add(
             self.breezy, SourcePackageFormat.FORMAT_3_0_QUILT)
+        self.switchToUploader()
 
         # First upload a complete 3.0 (quilt) source to the primary
         # archive.
@@ -1192,6 +1200,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         record, then switchDbUser as 'librariangc' and update the size of the
         source file to the given value.
         """
+        self.switchToAdmin()
         publisher = SoyuzTestPublisher()
         publisher.prepareBreezyAutotest()
         pub_src = publisher.getPubSource(
@@ -1207,7 +1216,7 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         # IArchive.estimated_size.
         content.filesize = size - 1024
         self.layer.commit()
-        self.layer.switchDbUser('uploader')
+        self.switchToUploader()
 
         # Re-initialize uploadprocessor since it depends on the new
         # transaction reset by switchDbUser.
@@ -1308,6 +1317,8 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         The binary size for an archive should only take into account one
         occurrence of arch-independent files published in multiple locations.
         """
+        self.switchToAdmin()
+
         # We need to publish an architecture-independent package
         # for a couple of distroseries in a PPA.
         publisher = SoyuzTestPublisher()
@@ -1328,6 +1339,8 @@ class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
         publisher.getPubBinaries(
             archive=self.name16.archive, distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
+
+        self.switchToUploader()
 
         # The result is 54 without the bug fix (see bug 180983).
         size = self.name16.archive.binaries_size
