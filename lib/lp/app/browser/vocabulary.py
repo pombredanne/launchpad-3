@@ -280,6 +280,7 @@ class HugeVocabularyJSONView:
         search_text = self.request.form.get('search_text')
         if search_text is None:
             raise MissingInputError('search_text', '')
+        search_filter = self.request.form.get('search_filter')
 
         try:
             factory = getUtility(IVocabularyFactory, name)
@@ -290,7 +291,7 @@ class HugeVocabularyJSONView:
         vocabulary = factory(self.context)
 
         if IHugeVocabulary.providedBy(vocabulary):
-            matches = vocabulary.searchForTerms(search_text)
+            matches = vocabulary.searchForTerms(search_text, search_filter)
             total_size = matches.count()
         else:
             matches = list(vocabulary)

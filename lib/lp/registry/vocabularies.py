@@ -1948,8 +1948,8 @@ class VocabularyFilterProject(VocabularyFilter):
 
     def __new__(cls):
         return super(VocabularyFilter, cls).__new__(
-            cls, 'PROJECT', 'Project',
-            'Display search results associated with projects')
+            cls, 'PROJECT', 'Product',
+            'Display search results associated with products')
 
     @property
     def filter_terms(self):
@@ -1961,8 +1961,8 @@ class VocabularyFilterProjectGroup(VocabularyFilter):
 
     def __new__(cls):
         return super(VocabularyFilter, cls).__new__(
-            cls, 'PROJECTGROUP', 'Project Group',
-            'Display search results associated with project groups')
+            cls, 'PROJECTGROUP', 'Project',
+            'Display search results associated with projects')
 
     @property
     def filter_terms(self):

@@ -257,17 +257,17 @@ class FilteredVocabularyBase:
         func = object.__getattribute__(self, name)
         if (safe_hasattr(func, '__call__')
                 and func.__name__ == 'searchForTerms'):
-            def searchForTerms(*args, **kwargs):
-                vocab_filter = kwargs.get('vocab_filter')
+            def searchForTerms(
+                    query=None, vocab_filter=None, *args, **kwargs):
                 if isinstance(vocab_filter, basestring):
                     for filter in self.supportedFilters():
                         if filter.name == vocab_filter:
-                            kwargs['vocab_filter'] = filter
+                            vocab_filter = filter
                             break
                     else:
                         raise ValueError(
                             "Invalid vocab filter value: %s" % vocab_filter)
-                return func(*args, **kwargs)
+                return func(query, vocab_filter, *args, **kwargs)
             return searchForTerms
         else:
             return func
