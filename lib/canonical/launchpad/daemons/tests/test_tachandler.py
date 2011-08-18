@@ -7,6 +7,7 @@ __metaclass__ = type
 
 from os.path import (
     dirname,
+    exists,
     join,
     )
 import subprocess
@@ -14,11 +15,17 @@ import warnings
 
 from fixtures import TempDir
 import testtools
+from testtools.matchers import (
+    Matcher,
+    Mismatch,
+    Not,
+    )
 
 from canonical.launchpad.daemons.tachandler import (
     TacException,
     TacTestSetup,
     )
+from lp.services.osutils import get_pid_from_file
 
 
 class SimpleTac(TacTestSetup):
@@ -47,14 +54,41 @@ class SimpleTac(TacTestSetup):
         pass
 
 
+class IsRunning(Matcher):
+    """Ensures the `TacTestSetup`'s process is running."""
+
+    def match(self, fixture):
+        pid = get_pid_from_file(fixture.pidfile)
+        if pid is None or not exists("/proc/%d" % pid):
+            return Mismatch("Fixture %r is not running." % fixture)
+
+    def __str__(self):
+        return self.__class__.__name__
+
+
 class TacTestSetupTestCase(testtools.TestCase):
     """Some tests for the error handling of TacTestSetup."""
+
+    def test_okay(self):
+        """TacTestSetup sets up and runs a simple service."""
+        tempdir = self.useFixture(TempDir()).path
+        fixture = SimpleTac("okay", tempdir)
+
+        # Fire up the fixture, capturing warnings.
+        with warnings.catch_warnings(record=True) as warnings_log:
+            with fixture:
+                self.assertThat(fixture, IsRunning())
+            self.assertThat(fixture, Not(IsRunning()))
+
+        # No warnings are emitted.
+        self.assertEqual([], warnings_log)
 
     def test_missingTac(self):
         """TacTestSetup raises TacException if the tacfile doesn't exist"""
         fixture = SimpleTac("missing", "/file/does/not/exist")
         try:
             self.assertRaises(TacException, fixture.setUp)
+            self.assertThat(fixture, Not(IsRunning()))
         finally:
             fixture.cleanUp()
 
@@ -66,6 +100,7 @@ class TacTestSetupTestCase(testtools.TestCase):
         fixture = SimpleTac("cannotlisten", tempdir)
         try:
             self.assertRaises(TacException, fixture.setUp)
+            self.assertThat(fixture, Not(IsRunning()))
         finally:
             fixture.cleanUp()
 
@@ -90,6 +125,7 @@ class TacTestSetupTestCase(testtools.TestCase):
         with warnings.catch_warnings(record=True) as warnings_log:
             try:
                 self.assertRaises(TacException, fixture.setUp)
+                self.assertThat(fixture, Not(IsRunning()))
             finally:
                 fixture.cleanUp()
 
