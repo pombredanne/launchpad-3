@@ -583,6 +583,7 @@ class JobCronScript(LaunchpadCronScript):
         self._runner_class = runner_class
         super(JobCronScript, self).__init__(
             name=name, dbuser=None, test_args=test_args)
+        self.log_twisted = getattr(self.options, 'log_twisted', False)
         if not commandline_config:
             return
         self.config_name = self.args[0]
@@ -624,7 +625,7 @@ class JobCronScript(LaunchpadCronScript):
             errorlog.globalErrorUtility.configure(self.config_name)
         job_source = getUtility(self.source_interface)
         kwargs = {}
-        if getattr(self.options, 'log_twisted', False):
+        if self.log_twisted:
             kwargs['_log_twisted'] = True
         runner = self.runner_class.runFromSource(
             job_source, self.dbuser, self.logger, **kwargs)
