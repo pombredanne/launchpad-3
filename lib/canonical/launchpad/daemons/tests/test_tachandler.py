@@ -91,10 +91,11 @@ class TacTestSetupTestCase(testtools.TestCase):
 
         # Fire up the fixture, capturing warnings.
         with warnings.catch_warnings(record=True) as warnings_log:
-            with OkayTac() as fixture:
-                self.assertNotEqual(
-                    get_pid_from_file(fixture.pidfile),
-                    process.pid)
+            fixture = OkayTac()
+            try:
+                self.assertRaises(TacException, fixture.setUp)
+            finally:
+                fixture.cleanUp()
 
         # One deprecation warning is emitted.
         self.assertEqual(1, len(warnings_log))
