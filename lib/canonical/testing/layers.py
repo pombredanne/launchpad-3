@@ -927,6 +927,7 @@ class LibrarianLayer(DatabaseLayer):
                     "the Librarian is restarted if it absolutely must be "
                     "shutdown: " + str(e))
         cls.librarian_fixture.clear()
+        cls.librarian_fixture.truncateLog()
 
     @classmethod
     @profiled
