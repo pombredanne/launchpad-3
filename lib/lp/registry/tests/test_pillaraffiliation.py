@@ -265,14 +265,68 @@ class TestBranchPillarAffiliation(_TestBugTaskorBranchMixin,
     def test_getBranch(self):
         # The branch is the context.
         branch = self.factory.makeBranch()
-        adapter = IHasAffiliation(branch)     
-        self.assertEqual(branch, adapter.getBranch())   
+        adapter = IHasAffiliation(branch)
+        self.assertEqual(branch, adapter.getBranch())
 
     def test_branch_trusted_reviewer_affiliation(self):
         # A person who is the branch's trusted reviewer is affiliated.
         person = self.factory.makePerson()
         product = self.factory.makeProduct(name='pting')
-        self._check_affiliated_with_product(person, product, 'trusted reviewer')
+        self._check_affiliated_with_product(
+            person, product, 'trusted reviewer')
+
+
+class TestCodeReviewVotePillarAffiliation(_TestBugTaskorBranchMixin,
+                                  TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeCodeReviewVote(self, branch):
+        merge_proposal = self.factory.makeBranchMergeProposal(
+            target_branch=branch)
+        reviewer = self.factory.makePerson()
+        with person_logged_in(merge_proposal.registrant):
+            vote = merge_proposal.nominateReviewer(
+                reviewer, merge_proposal.registrant)
+        return vote
+
+    def test_correct_pillar_is_used(self):
+        branch = self.factory.makeBranch()
+        vote = self.makeCodeReviewVote(branch)
+        adapter = IHasAffiliation(vote)
+        self.assertEqual(branch.product, adapter.getPillar())
+
+    def _check_affiliated_with_distro(self, person, target, role):
+        distroseries = self.factory.makeDistroSeries(distribution=target)
+        sp = self.factory.makeSourcePackage(distroseries=distroseries)
+        branch = self.factory.makeBranch(sourcepackage=sp)
+        vote = self.makeCodeReviewVote(branch)
+        [badges] = IHasAffiliation(vote).getAffiliationBadges([person])
+        self.assertEqual(
+            ("/@@/distribution-badge", "Pting %s" % role), badges[0])
+
+    def _check_affiliated_with_product(self, person, target, role):
+        branch = self.factory.makeBranch(product=target)
+        vote = self.makeCodeReviewVote(branch)
+        with person_logged_in(branch.owner):
+            branch.reviewer = person
+        [badges] = IHasAffiliation(vote).getAffiliationBadges([person])
+        self.assertEqual(
+            ("/@@/product-badge", "Pting %s" % role), badges[0])
+
+    def test_getBranch(self):
+        # The branch is the context.
+        branch = self.factory.makeBranch()
+        vote = self.makeCodeReviewVote(branch)
+        adapter = IHasAffiliation(vote)
+        self.assertEqual(branch, adapter.getBranch())
+
+    def test_branch_trusted_reviewer_affiliation(self):
+        # A person who is the branch's trusted reviewer is affiliated.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct(name='pting')
+        self._check_affiliated_with_product(
+            person, product, 'trusted reviewer')
 
 
 class TestDistroSeriesPillarAffiliation(TestCaseWithFactory):

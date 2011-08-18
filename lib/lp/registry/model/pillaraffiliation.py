@@ -154,6 +154,18 @@ class BranchPillarAffiliation(BugTaskPillarAffiliation):
         return result
 
 
+class CodeReviewVotePillarAffiliation(BranchPillarAffiliation):
+    """An affiliation adapter for CodeReviewVotes."""
+
+    def getPillar(self):
+        """Return the target branch'pillar."""
+        branch = self.getBranch()
+        return branch.product or branch.distribution
+
+    def getBranch(self):
+        return self.context.branch_merge_proposal.target_branch
+
+
 class DistroSeriesPillarAffiliation(PillarAffiliation):
     """An affiliation adapter for distroseries."""
     def getPillar(self):
