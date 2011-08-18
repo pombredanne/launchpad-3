@@ -103,7 +103,8 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         # the second is the announce list, which is the one that gets the
         # overridden From:
         self.assertEqual(
-            from_person.preferredemail.email, notifications[1]["From"])
+            format_address_for_person(from_person),
+            notifications[1]["From"])
 
 
 class TestNotification(TestCaseWithFactory):
