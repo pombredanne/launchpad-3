@@ -1043,7 +1043,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         script = self.makeScript(distro)
         script.createIndexes = FakeMethod()
         script.setUp()
-        have_fresh_series = script.prepareFreshSeries()
+        have_fresh_series = script.prepareFreshSeries(distro)
         self.assertTrue(have_fresh_series)
         [copied_upload] = new_series.getPackageUploads(
             name=u'debian-installer-images', exact_match=False)
