@@ -395,9 +395,6 @@ class LaunchpadCronScript(LaunchpadScript):
         # Scripts can override this if they want.
         globalErrorUtility.configure()
 
-        # Scripts do not have a zlog.
-        globalErrorUtility.copy_to_zlog = False
-
         # WARN and higher log messages should generate OOPS reports.
         # self.name is used instead of the name argument, since it may have
         # have been overridden by command-line parameters or by

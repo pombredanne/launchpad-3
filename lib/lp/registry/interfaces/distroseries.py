@@ -541,7 +541,8 @@ class IDistroSeriesPublic(
         :param created_since_date: If specified, only returns items uploaded
             since the timestamp supplied.
         :param archive: Filter results for this `IArchive`.
-        :param pocket: Filter results by this `PackagePublishingPocket`.
+        :param pocket: Filter results by this `PackagePublishingPocket` or a
+            list of `PackagePublishingPocket`.
         :param custom_type: Filter results by this
             `PackageUploadCustomFormat`.
         :param name: Filter results by this file name or package name.

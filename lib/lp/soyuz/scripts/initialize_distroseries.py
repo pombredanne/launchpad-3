@@ -42,12 +42,20 @@ from lp.soyuz.interfaces.packageset import (
     IPackagesetSet,
     NoSuchPackageSet,
     )
+from lp.soyuz.interfaces.queue import IPackageUploadSet
 from lp.soyuz.model.packageset import Packageset
 from lp.soyuz.scripts.packagecopier import do_copy
 
 
 class InitializationError(Exception):
     """Raised when there is an exception during the initialization process."""
+
+# Pockets to consider when initializing the derived series from its parent(s).
+INIT_POCKETS = [
+    PackagePublishingPocket.RELEASE,
+    PackagePublishingPocket.SECURITY,
+    PackagePublishingPocket.UPDATES,
+    ]
 
 
 class InitializeDistroSeries:
@@ -106,8 +114,10 @@ class InitializeDistroSeries:
             parents_bulk,
             key=lambda parent: self.parent_ids.index(parent.id))
         self.arches = arches
-        self.packagesets = [
+        self.packagesets_ids = [
             ensure_unicode(packageset) for packageset in packagesets]
+        self.packagesets = bulk.load(
+            Packageset, [int(packageset) for packageset in packagesets])
         self.rebuild = rebuild
         self.overlays = overlays
         self.overlay_pockets = overlay_pockets
@@ -129,6 +139,7 @@ class InitializeDistroSeries:
             if self.parent_ids == []:
                 self.parents = (
                     self.distroseries.previous_series.getParentSeries())
+        self._create_source_names_by_parent()
 
     def check(self):
         if self.distroseries.isDerivedSeries():
@@ -149,6 +160,7 @@ class InitializeDistroSeries:
                 self._checkBuilds(parent)
             self._checkQueue(parent)
         self._checkSeries()
+        return True
 
     def _checkParents(self):
         """If self.first_derivation, the parents list cannot be empty."""
@@ -165,35 +177,56 @@ class InitializeDistroSeries:
     def _checkBuilds(self, parent):
         """Assert there are no pending builds for the given parent series.
 
-        Only cares about the RELEASE pocket, which is the only one inherited
-        via initializeFromParent method.
+        Only cares about the RELEASE, SECURITY and UPDATES pockets, which are
+        the only ones inherited via initializeFromParent method.
+        Restrict the check to the select architectures (if applicable).
+        Restrict the check to the selected packages if a limited set of
+        packagesets is used by the initialization.
         """
-        # only the RELEASE pocket is inherited, so we only check
-        # pending build records for it.
-        pending_builds = parent.getBuildRecords(
-            BuildStatus.NEEDSBUILD, pocket=PackagePublishingPocket.RELEASE)
+        spns = self.source_names_by_parent.get(parent, None)
+        if spns is not None and len(spns) == 0:
+            # If no sources are selected in this parent, skip the check.
+            return
+        # spns=None means no packagesets selected so we need to consider
+        # all sources.
 
-        if pending_builds.any():
-            raise InitializationError("Parent series has pending builds.")
+        arch_tags = self.arches if self.arches is not () else None
+        pending_builds = parent.getBuildRecords(
+            BuildStatus.NEEDSBUILD, pocket=INIT_POCKETS,
+            arch_tag=arch_tags, name=spns)
+
+        if not pending_builds.is_empty():
+            raise InitializationError(
+                "Parent series has pending builds for selected sources, "
+                "see help text for more information.")
 
     def _checkQueue(self, parent):
         """Assert upload queue is empty on the given parent series.
 
-        Only cares about the RELEASE pocket, which is the only one inherited
-        via initializeFromParent method.
-        """
-        # only the RELEASE pocket is inherited, so we only check
-        # queue items for it.
+        Only cares about the RELEASE, SECURITY and UPDATES pockets, which are
+        the only ones inherited via initializeFromParent method.
+        Restrict the check to the selected packages if a limited set of
+        packagesets is used by the initialization.
+         """
         statuses = [
             PackageUploadStatus.NEW,
             PackageUploadStatus.ACCEPTED,
             PackageUploadStatus.UNAPPROVED,
             ]
-        items = parent.getPackageUploads(
-            status=statuses, pocket=PackagePublishingPocket.RELEASE)
+        spns = self.source_names_by_parent.get(parent, None)
+        if spns is not None and len(spns) == 0:
+            # If no sources are selected in this parent, skip the check.
+            return
+        # spns=None means no packagesets selected so we need to consider
+        # all sources.
+
+        items = getUtility(IPackageUploadSet).getBuildsForSources(
+            parent, statuses, INIT_POCKETS, spns)
         if not items.is_empty():
             raise InitializationError(
-                "Parent series queues are not empty.")
+                "Parent series has sources waiting in its upload queues "
+                "that match your selection, see help text for more "
+                "information.")
 
     def _checkSeries(self):
         error = (
@@ -258,7 +291,7 @@ class InitializeDistroSeries:
     def _create_dsds(self):
         if not self.first_derivation:
             if (self._has_same_parents_as_previous_series() and
-                not self.packagesets):
+                not self.packagesets_ids):
                 # If the parents are the same as previous_series's
                 # parents and all the packagesets are being copied,
                 # then we simply copy the DSDs from previous_series
@@ -374,6 +407,32 @@ class InitializeDistroSeries:
                         distroseries=self.distroseries).is_empty()))
         return case_1a or case_1b
 
+    def _create_source_names_by_parent(self):
+        """If only a subset of the packagesets was selected to be copied,
+        create a dict with the list of source names to be copied for each
+        parent.
+
+        source_names_by_parent.get(parent) can be 3 different things:
+        - None: this means that no specific packagesets where selected
+        for the initialization. In this case we need to consider *all*
+        the packages in this parent.
+        - []: this means that some specific packagesets where selected
+        for the initialization but none in this parent. We can skip
+        this parent for all the copy/check operations.
+        - [name1, ...]: this means that some specific packagesets
+        were selected for the initialization and some are in this
+        parent so the list of packages to consider in not empty.
+        """
+        source_names_by_parent = {}
+        if self.packagesets_ids:
+            for parent in self.derivation_parents:
+                spns = []
+                for pkgset in self.packagesets:
+                    if pkgset.distroseries == parent:
+                        spns += list(pkgset.getSourcesIncluded())
+                source_names_by_parent[parent] = spns
+        self.source_names_by_parent = source_names_by_parent
+
     def _copy_publishing_records(self, distroarchseries_lists):
         """Copy the publishing records from the parent arch series
         to the given arch series in ourselves.
@@ -386,21 +445,15 @@ class InitializeDistroSeries:
         archive_set = getUtility(IArchiveSet)
 
         for parent in self.derivation_parents:
-            spns = []
-            # The overhead from looking up each packageset is mitigated by
-            # this usually running from a job.
-            if self.packagesets:
-                for pkgsetid in self.packagesets:
-                    pkgset = self._store.get(Packageset, int(pkgsetid))
-                    if pkgset.distroseries == parent:
-                        spns += list(pkgset.getSourcesIncluded())
-
+            spns = self.source_names_by_parent.get(parent, None)
+            if spns is not None and len(spns) == 0:
                 # Some packagesets where selected but not a single
                 # source from this parent: we skip the copy since
                 # calling copy with spns=[] would copy all the packagesets
                 # from this parent.
-                if len(spns) == 0:
-                    continue
+                continue
+            # spns=None means no packagesets selected so we need to consider
+            # all sources.
 
             distroarchseries_list = distroarchseries_lists[parent]
             for archive in parent.distribution.all_distro_archives:
@@ -433,12 +486,8 @@ class InitializeDistroSeries:
                     # There is only one available pocket in an unreleased
                     # series.
                     target_pocket = PackagePublishingPocket.RELEASE
-                    pockets_to_copy = (
-                        PackagePublishingPocket.RELEASE,
-                        PackagePublishingPocket.UPDATES,
-                        PackagePublishingPocket.SECURITY)
                     sources = archive.getPublishedSources(
-                        distroseries=parent, pocket=pockets_to_copy,
+                        distroseries=parent, pocket=INIT_POCKETS,
                         status=(PackagePublishingStatus.PENDING,
                                 PackagePublishingStatus.PUBLISHED),
                         name=spns)
@@ -548,7 +597,8 @@ class InitializeDistroSeries:
         for parent_ps in packagesets:
             # Cross-distro initializations get packagesets owned by the
             # distro owner, otherwise the old owner is preserved.
-            if self.packagesets and str(parent_ps.id) not in self.packagesets:
+            if (self.packagesets_ids and
+                str(parent_ps.id) not in self.packagesets_ids):
                 continue
             packageset_set = getUtility(IPackagesetSet)
             # First, try to fetch an existing packageset with this name.

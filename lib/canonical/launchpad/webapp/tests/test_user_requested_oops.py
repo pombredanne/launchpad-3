@@ -75,11 +75,3 @@ class TestUserRequestedOops(TestCase):
         result = namespace.traverse("name", None)
         self.assertIs(context, result)
         self.assertTrue(request.annotations.get(LAZR_OOPS_USER_REQUESTED_KEY))
-
-    def test_user_requested_oops_marked_informational(self):
-        # User requested oopses are flagged as informational only.
-        error_reporting_utility = getUtility(IErrorReportingUtility)
-        last_oops = error_reporting_utility.getLastOopsReport()
-        self.assertEqual(last_oops.type, 'UserRequestOops')
-        self.assertEqual(last_oops.informational, 'True')
-
