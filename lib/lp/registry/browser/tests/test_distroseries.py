@@ -141,18 +141,55 @@ class TestDistroSeriesView(TestCaseWithFactory):
         view = create_initialized_view(distroseries, '+index')
         self.assertEqual(view.needs_linking, None)
 
-    def _createDifferenceAndGetView(self, difference_type):
+    def _createDifferenceAndGetView(self, difference_type, status=None):
+        if status is None:
+            status = DistroSeriesDifferenceStatus.NEEDS_ATTENTION
         # Helper function to create a valid DSD.
         dsp = self.factory.makeDistroSeriesParent()
         self.factory.makeDistroSeriesDifference(
             derived_series=dsp.derived_series,
-            difference_type=difference_type)
+            difference_type=difference_type, status=status)
         return create_initialized_view(dsp.derived_series, '+index')
 
     def test_num_version_differences_needing_attention(self):
+        # num_version_differences_needing_attention counts
+        # different-versions-type differences in needs-attention state.
         diff_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
         view = self._createDifferenceAndGetView(diff_type)
         self.assertEqual(1, view.num_version_differences_needing_attention)
+
+    def test_num_version_differences_needing_attention_limits_type(self):
+        # num_version_differences_needing_attention ignores other types
+        # of difference.
+        diff_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        view = self._createDifferenceAndGetView(diff_type)
+        self.assertEqual(0, view.num_version_differences_needing_attention)
+
+    def test_num_version_differences_needing_attention_limits_status(self):
+        # num_version_differences_needing_attention ignores differences
+        # that do not need attention.
+        diff_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+        view = self._createDifferenceAndGetView(
+            diff_type, status=DistroSeriesDifferenceStatus.RESOLVED)
+        self.assertEqual(0, view.num_version_differences_needing_attention)
+
+    def test_num_version_differences_counts_all_statuses(self):
+        # num_version_differences counts DIFFERENT_VERSIONS differences
+        # of all statuses.
+        diff_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+        series = self.factory.makeDistroSeriesParent().derived_series
+        dsds = [
+            self.factory.makeDistroSeriesDifference(
+                series, difference_type=diff_type, status=status)
+            for status in DistroSeriesDifferenceStatus.items]
+        view = create_initialized_view(series, '+index')
+        self.assertEqual(len(dsds), view.num_version_differences)
+
+    def test_num_version_differences_ignores_limits_type(self):
+        # num_version_differences ignores other types of difference.
+        diff_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        view = self._createDifferenceAndGetView(diff_type)
+        self.assertEqual(0, view.num_version_differences)
 
     def test_num_differences_in_parent(self):
         diff_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
@@ -163,6 +200,56 @@ class TestDistroSeriesView(TestCaseWithFactory):
         diff_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
         view = self._createDifferenceAndGetView(diff_type)
         self.assertEqual(1, view.num_differences_in_child)
+
+    def test_wordVersionDifferences(self):
+        diff_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+        view = self._createDifferenceAndGetView(diff_type)
+        self.assertEqual("1 package", view.wordVersionDifferences())
+
+    def test_wordDifferencesInParent(self):
+        diff_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        view = self._createDifferenceAndGetView(diff_type)
+        self.assertEqual("1 package", view.wordDifferencesInParent())
+
+    def test_wordDifferencesInChild(self):
+        diff_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+        view = self._createDifferenceAndGetView(diff_type)
+        self.assertEqual("1 package", view.wordDifferencesInChild())
+
+    def test_alludeToParent_names_single_parent(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        view = create_initialized_view(dsp.derived_series, '+index')
+        self.assertEqual(dsp.parent_series.displayname, view.alludeToParent())
+
+    def test_alludeToParent_refers_to_multiple_parents_collectively(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        self.factory.makeDistroSeriesParent(derived_series=dsp.derived_series)
+        view = create_initialized_view(dsp.derived_series, '+index')
+        self.assertEqual("a parent series", view.alludeToParent())
+
+    def test_link_to_version_diffs_needing_attention(self):
+        diff_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+        view = self._createDifferenceAndGetView(diff_type)
+        link = view.link_to_version_diffs_needing_attention
+        self.assertThat(link, EndsWith('/+localpackagediffs'))
+
+    def test_link_to_all_version_diffs(self):
+        diff_type = DistroSeriesDifferenceType.DIFFERENT_VERSIONS
+        view = self._createDifferenceAndGetView(diff_type)
+        link = view.link_to_all_version_diffs
+        self.assertIn('/+localpackagediffs?', link)
+
+    def test_link_to_differences_in_parent(self):
+        diff_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
+        view = self._createDifferenceAndGetView(diff_type)
+        link = view.link_to_differences_in_parent
+        self.assertThat(link, EndsWith('/+missingpackages'))
+
+    def test_link_to_differences_in_child(self):
+        diff_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
+        view = self._createDifferenceAndGetView(diff_type)
+        link = view.link_to_differences_in_child
+        self.assertThat(link, EndsWith('/+uniquepackages'))
 
 
 class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
@@ -236,19 +323,7 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
         portlet_display = soupmatchers.HTMLContains(
             soupmatchers.Tag(
                 'Derivation portlet header', 'h2',
-                text='Derived from Sid'),
-            soupmatchers.Tag(
-                'Differences link', 'a',
-                text=re.compile('\s*1 package with differences\s*'),
-                attrs={'href': re.compile('.*/\+localpackagediffs')}),
-            soupmatchers.Tag(
-                'Parent diffs link', 'a',
-                text=re.compile('\s*2 packages only in Sid\s*'),
-                attrs={'href': re.compile('.*/\+missingpackages')}),
-            soupmatchers.Tag(
-                'Child diffs link', 'a',
-                text=re.compile('\s*3 packages only in Deri\s*'),
-                attrs={'href': re.compile('.*/\+uniquepackages')}))
+                text='Derived from Sid'))
 
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
@@ -268,14 +343,9 @@ class DistroSeriesIndexFunctionalTestCase(TestCaseWithFactory):
         set_derived_series_ui_feature_flag(self)
         derived_series = self._setupDifferences(
             'deri', ['sid1', 'sid2'], 0, 1, 0)
-        portlet_display = soupmatchers.HTMLContains(
-            soupmatchers.Tag(
-                'Derivation portlet header', 'h2',
-                text='Derived from 2 parents'),
-            soupmatchers.Tag(
-                'Parent diffs link', 'a',
-                text=re.compile('\s*1 package only in a parent series\s*'),
-                attrs={'href': re.compile('.*/\+missingpackages')}))
+        portlet_display = soupmatchers.HTMLContains(soupmatchers.Tag(
+            'Derivation portlet header', 'h2',
+            text='Derived from 2 parents'))
 
         with person_logged_in(self.simple_user):
             view = create_initialized_view(
