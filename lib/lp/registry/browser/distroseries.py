@@ -472,7 +472,7 @@ class DistroSeriesView(LaunchpadView, MilestoneOverlayMixin,
         return differences.count()
 
     @cachedproperty
-    def num_differences(self):
+    def num_version_differences(self):
         return self._num_differences(
             DistroSeriesDifferenceType.DIFFERENT_VERSIONS)
 
