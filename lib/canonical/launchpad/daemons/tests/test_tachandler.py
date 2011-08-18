@@ -104,8 +104,8 @@ class TacTestSetupTestCase(testtools.TestCase):
         finally:
             fixture.cleanUp()
 
-    def test_pidForNotRunningProcess(self):
-        """TacTestSetup copes fine if the pidfile contains a stale pid."""
+    def test_stalePidFile(self):
+        """TacTestSetup complains about stale pid files."""
         tempdir = self.useFixture(TempDir()).path
         fixture = SimpleTac("okay", tempdir)
 
