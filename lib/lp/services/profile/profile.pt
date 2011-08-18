@@ -22,6 +22,8 @@
                  multiple_profiles options/multiple_profiles|nothing;
                  inline_ignored actions/inline_ignored|nothing;
                  inline actions/inline|nothing;
+                 sql actions/sql|nothing;
+                 sqltrace options/sqltrace|nothing;
                  ">
   <div class="hide_reveal_profiling" id="hide_profiling">
   Click to HIDE profiling information
@@ -38,12 +40,14 @@
     <code>++profile++show</code>.</tal:block> <tal:block condition="not:
     always_log">In order to get profiling results, you need to ask for an HTML
     view (<code>++profile++show</code>), a KCacheGrind-friendly log on the
-    filesystem (<code>++profile++callgrind</code>), or a PStats-friendly log
+    filesystem (<code>++profile++callgrind</code>), a PStats-friendly log
     (Python standard library) on the filesystem
-    (<code>++profile++pstats</code>). You can also ask for local HTML
-    profiling plus one of the two log files
+    (<code>++profile++pstats</code>), or an HTML view of the SQL and the
+    Python stacktrace when each SQL call was made
+    (<code>++profile++sql</code>). You can also combine these
     (<code>++profile++show,callgrind</code> or
-    <code>++profile++show,pstats</code>).</tal:block></p>
+    <code>++profile++show,pstats</code> or others,
+    with each action separated with commas).</tal:block></p>
     <p>The "++profile++" path segment can usually go anywhere in the URL
     (e.g., <code>http://launchpad.dev/++profile++show</code> or
     <code>http://launchpad.dev/++profile++show/Firefox</code> or
@@ -111,6 +115,16 @@ with profiling():
     href="http://docs.python.org/library/profile.html#instant-user-s-manual"
     >Python documentation</a>.</p>
   </tal:block>
+  <h2>SQL trace</h2>
+  <tal:block condition="not:sql">
+    <p>Use <code>++profile++sql</code> in your URL to see the SQL that the
+    page runs, along with start and stop times, the database used, and the
+    stacktrace for when each sql call is made.</p>
+    <p>Note that if you do not want the tracebacks,
+    <code>++profile++show</code> will include OOPS data at the end of the
+    profiling information, which has what what you want.</p>
+  </tal:block>
+  <pre tal:content="sqltrace" tal:condition="sql" />
   <h2>Profile quick view</h2>
   <tal:block condition="not:show">
     <p>Use <code>++profile++show</code> in your URL in order to see immediate

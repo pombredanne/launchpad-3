@@ -210,7 +210,9 @@ def _maybe_profile(event):
     if config.profiling.profile_all_requests:
         actions.add('callgrind')
     if actions:
-        if actions.difference(('help',)):
+        if 'sql' in actions:
+            da.start_sql_traceback_logging()
+        if actions.difference(('help', 'sql')):
             _profilers.profiler = Profiler()
             _profilers.profiler.start()
     if config.profiling.memory_profile_log:
@@ -340,6 +342,10 @@ def end_request(event):
         template_context['multiple_profiles'] = prof_stats.count > 1
         # Try to free some more memory.
         del prof_stats
+    if 'sql' in actions:
+        trace = da.stop_sql_traceback_logging()
+        if trace is not None:
+            template_context['sqltrace'] = trace.getvalue()
     template_context['dump_path'] = os.path.abspath(dump_path)
     if actions and is_html:
         # Hack the new HTML in at the end of the page.
@@ -397,7 +403,7 @@ def get_desired_profile_actions(request):
                 result.remove('log')
                 result.add('callgrind')
             # Only honor the available options.
-            available_options = set(('show',))
+            available_options = set(('show', 'sql'))
             available_options.update(available_profilers)
             result.intersection_update(available_options)
             # If we didn't end up with any known actions, we need to help the
