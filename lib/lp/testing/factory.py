@@ -3415,13 +3415,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pocket, archive, changes_filename, changes_file_content,
             signing_key=signing_key, package_copy_job=package_copy_job)
         if status is not None:
-            naked_package_upload = removeSecurityProxy(package_upload)
-            status_changers = {
-                PackageUploadStatus.DONE: naked_package_upload.setDone,
-                PackageUploadStatus.ACCEPTED:
-                    naked_package_upload.setAccepted,
-                }
-            status_changers[status]()
+            if status is not PackageUploadStatus.NEW:
+                naked_package_upload = removeSecurityProxy(package_upload)
+                status_changers = {
+                    PackageUploadStatus.UNAPPROVED:
+                        naked_package_upload.setUnapproved,
+                    PackageUploadStatus.REJECTED:
+                        naked_package_upload.setRejected,
+                    PackageUploadStatus.DONE: naked_package_upload.setDone,
+                    PackageUploadStatus.ACCEPTED:
+                        naked_package_upload.setAccepted,
+                    }
+                status_changers[status]()
         return package_upload
 
     def makeSourcePackageUpload(self, distroseries=None,

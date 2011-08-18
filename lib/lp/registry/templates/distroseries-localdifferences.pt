@@ -29,11 +29,8 @@
                   can_perform_sync view/canPerformSync;">
       <p><tal:replace replace="structure view/explanation/escapedtext" /></p>
 
-      <tal:distroseries_localdiff_search_form
-        tal:condition="view/has_differences">
-        <metal:package_filter_form
-          use-macro="context/@@+macros/distroseries-localdiff-search-form" />
-      </tal:distroseries_localdiff_search_form>
+      <metal:package_filter_form
+	use-macro="context/@@+macros/distroseries-localdiff-search-form" />
 
 
       <div metal:use-macro="context/@@launchpad_form/form">

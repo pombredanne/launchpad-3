@@ -5,8 +5,13 @@ __metaclass__ = type
 
 from datetime import datetime
 
+from iso8601 import (
+    parse_date,
+    ParseError,
+    )
 import lazr.batchnavigator
 from lazr.batchnavigator.interfaces import IRangeFactory
+import pytz
 import simplejson
 from storm import Undef
 from storm.expr import (
@@ -303,20 +308,14 @@ class StormRangeFactory:
                 if (str(error).startswith('Expected datetime') and
                     isinstance(value, str)):
                     try:
-                        value = datetime.strptime(
-                            value, '%Y-%m-%dT%H:%M:%S.%f')
-                    except ValueError:
-                        # One more attempt: If the fractions of a second
-                        # are zero, datetime.isoformat() omits the
-                        # entire part '.000000', so we need a different
-                        # format for strptime().
-                        try:
-                            value = datetime.strptime(
-                                value, '%Y-%m-%dT%H:%M:%S')
-                        except ValueError:
-                            self.reportError(
-                                'Invalid datetime value: %r' % value)
-                            return None
+                        value = parse_date(value)
+                    except (ParseError, ValueError):
+                        # We get a ParseError if value does not match
+                        # a certain regex, and we get a ValueError
+                        # for formally correct but invalid dates,
+                        # like May 35.
+                        self.reportError('Invalid datetime value: %r' % value)
+                        return None
                 else:
                     self.reportError(
                         'Invalid parameter: %r' % value)
@@ -473,7 +472,9 @@ class StormRangeFactory:
         if not forwards:
             self.resultset.order_by(*self.reverseSortOrder())
         parsed_memo = self.parseMemo(endpoint_memo)
+        # Note that lazr.batchnavigator calls len(slice), so we can't
+        # return the plain result set.
         if parsed_memo is None:
-            return self.resultset.config(limit=size)
+            return list(self.resultset.config(limit=size))
         else:
-            return self.getSliceFromMemo(size, parsed_memo)
+            return list(self.getSliceFromMemo(size, parsed_memo))
