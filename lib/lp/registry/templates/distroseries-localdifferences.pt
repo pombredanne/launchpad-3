@@ -15,6 +15,19 @@
         /* Don't show a border between the
            difference rows and their expanded sections */
         table.listing tr.diff-extra td { border-top: 0; }
+        table.listing .diff-extra-container {
+            padding-bottom: 15px;
+        }
+        /* Clear float without adding a vertical space */
+        table.listing .clear {
+            clear: both;
+            height: 1px;
+            width: 100%;
+            margin: 0 0 -1px;
+        }
+        table.listing .blacklist-options {
+            padding-left: 1em;
+        }
       </style>
     </metal:block>
 
