@@ -172,6 +172,9 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.distribution import Distribution
+from lp.registry.model.distributionsourcepackage import (
+    DistributionSourcePackageInDatabase,
+    )
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.distroseriesparent import DistroSeriesParent
@@ -2171,9 +2174,13 @@ class DistributionSourcePackageVocabulary:
                 SourcePackageRelease.sourcepackagenameID ==
                     SourcePackageName.id),
             LeftJoin(
-                DistroSeries,
-                SourcePackagePublishingHistory.distroseriesID ==
-                    DistroSeries.id),
+                DistributionSourcePackageInDatabase,
+                SourcePackageName.id ==
+                    DistributionSourcePackageInDatabase.sourcepackagename_id),
+            #LeftJoin(
+                #DistroSeries,
+                #SourcePackagePublishingHistory.distroseriesID ==
+                    #DistroSeries.id),
             LeftJoin(
                 BinaryPackageBuild,
                 BinaryPackageBuild.source_package_release_id ==
@@ -2187,7 +2194,9 @@ class DistributionSourcePackageVocabulary:
                     BinaryPackageName.id
             )).find(
                 SourcePackageName,
-                DistroSeries.distributionID == distribution.id,
+                DistributionSourcePackageInDatabase.distribution_id ==
+                    distribution.id,
+                #DistroSeries.distributionID == distribution.id,
                 SourcePackagePublishingHistory.status.is_in((
                     PackagePublishingStatus.PENDING,
                     PackagePublishingStatus.PUBLISHED)),
