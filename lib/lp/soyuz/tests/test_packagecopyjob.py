@@ -4,6 +4,8 @@
 """Tests for sync package jobs."""
 
 import operator
+
+from storm.store import Store
 from testtools.content import text_content
 from testtools.matchers import (
     Equals,
@@ -11,26 +13,22 @@ from testtools.matchers import (
     )
 import transaction
 from zope.component import getUtility
-from zope.security.interfaces import (
-    Unauthorized,
-    )
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
-
-from storm.store import Store
 
 from canonical.config import config
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import (\
+from canonical.testing import (
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distroseriesdifferencecomment import (
     DistroSeriesDifferenceComment,
     )
-from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import (
     JobStatus,
@@ -43,10 +41,6 @@ from lp.soyuz.enums import (
     PackageUploadStatus,
     SourcePackageFormat,
     )
-from lp.soyuz.model.distroseriesdifferencejob import (
-    FEATURE_FLAG_ENABLE_MODULE,
-    )
-from lp.soyuz.model.queue import PackageUpload
 from lp.soyuz.interfaces.archive import CannotCopy
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import (
@@ -61,16 +55,20 @@ from lp.soyuz.interfaces.section import ISectionSet
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
+from lp.soyuz.model.distroseriesdifferencejob import (
+    FEATURE_FLAG_ENABLE_MODULE,
+    )
 from lp.soyuz.model.packagecopyjob import PackageCopyJob
+from lp.soyuz.model.queue import PackageUpload
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    person_logged_in,
     run_script,
     TestCaseWithFactory,
     )
-from lp.testing import person_logged_in
+from lp.testing.fakemethod import FakeMethod
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import Provides
-from lp.testing.fakemethod import FakeMethod
 
 
 def get_dsd_comments(dsd):
@@ -813,7 +811,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             archive=source_archive)
 
         source = getUtility(IPlainPackageCopyJobSource)
-        requester = self.factory.makePerson(email="requester@example.com")
+        requester = self.factory.makePerson(
+            displayname="Nancy Requester", email="requester@example.com")
         with person_logged_in(target_archive.owner):
             target_archive.newComponentUploader(requester, "main")
         job = source.create(
@@ -859,7 +858,9 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEquals(2, len(emails))
         self.assertIn("requester@example.com", emails[0]['To'])
         self.assertIn("changes@example.com", emails[1]['To'])
-        self.assertEqual("requester@example.com", emails[1]['From'])
+        self.assertEqual(
+            "Nancy Requester <requester@example.com>",
+            emails[1]['From'])
 
     def test_findMatchingDSDs_matches_all_DSDs_for_job(self):
         # findMatchingDSDs finds matching DSDs for any of the packages
