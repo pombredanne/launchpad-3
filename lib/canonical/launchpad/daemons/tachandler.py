@@ -12,6 +12,7 @@ __all__ = [
 
 
 import os
+import os.path
 import subprocess
 import sys
 import time
@@ -143,6 +144,24 @@ class TacTestSetup(Fixture):
         if pid is None:
             return
         os.kill(pid, sig)
+
+    def truncateLog(self):
+        """Truncate the log file.
+
+        Leaves everything up to and including the `LOG_MAGIC` marker in
+        place. If the `LOG_MAGIC` marker is not found the log is truncated to
+        0 bytes.
+        """
+        if os.path.exists(self.logfile):
+            with open(self.logfile, "r+b") as logfile:
+                position = 0
+                for line in logfile:
+                    position += len(line)
+                    if readyservice.LOG_MAGIC in line:
+                        logfile.truncate(position)
+                        break
+                else:
+                    logfile.truncate(0)
 
     def setUpRoot(self):
         """Override this.
