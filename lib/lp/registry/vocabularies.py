@@ -171,6 +171,7 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackageInDatabase,
@@ -2125,6 +2126,10 @@ class DistributionSourcePackageVocabulary:
         if IDistributionSourcePackage.providedBy(spn_or_dsp):
             dsp = spn_or_dsp
             distribution = spn_or_dsp.distribution
+        elif (not ISourcePackageName.providedBy(spn_or_dsp) and
+            hasattr(spn_or_dsp, 'distribution')):
+            dsp = spn_or_dsp
+            distribution = spn_or_dsp.distribution
         else:
             distribution = distribution or self.distribution
             if distribution is not None and spn_or_dsp is not None:
@@ -2163,7 +2168,7 @@ class DistributionSourcePackageVocabulary:
             return EmptyResultSet()
         search_term = unicode(query)
         store = IStore(SourcePackagePublishingHistory)
-        spns = store.using(
+        dsps = store.using(
             SourcePackagePublishingHistory,
             LeftJoin(
                 SourcePackageRelease,
@@ -2177,10 +2182,6 @@ class DistributionSourcePackageVocabulary:
                 DistributionSourcePackageInDatabase,
                 SourcePackageName.id ==
                     DistributionSourcePackageInDatabase.sourcepackagename_id),
-            #LeftJoin(
-                #DistroSeries,
-                #SourcePackagePublishingHistory.distroseriesID ==
-                    #DistroSeries.id),
             LeftJoin(
                 BinaryPackageBuild,
                 BinaryPackageBuild.source_package_release_id ==
@@ -2193,10 +2194,9 @@ class DistributionSourcePackageVocabulary:
                 BinaryPackageRelease.binarypackagenameID ==
                     BinaryPackageName.id
             )).find(
-                SourcePackageName,
+                DistributionSourcePackageInDatabase,
                 DistributionSourcePackageInDatabase.distribution_id ==
                     distribution.id,
-                #DistroSeries.distributionID == distribution.id,
                 SourcePackagePublishingHistory.status.is_in((
                     PackagePublishingStatus.PENDING,
                     PackagePublishingStatus.PUBLISHED)),
@@ -2207,4 +2207,4 @@ class DistributionSourcePackageVocabulary:
                     BinaryPackageName.name.contains_string(
                         search_term))).config(distinct=True)
         # XXX sinzui 2011-07-26: This query ignored SPN branches.
-        return CountableIterator(spns.count(), spns, self.toTerm)
+        return CountableIterator(dsps.count(), dsps, self.toTerm)
