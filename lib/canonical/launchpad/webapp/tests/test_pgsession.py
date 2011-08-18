@@ -5,8 +5,9 @@
 
 __metaclass__ = type
 
+from unittest import TestCase
+
 from datetime import timedelta
-import unittest
 
 from zope.publisher.browser import TestRequest
 from zope.security.management import (
@@ -37,7 +38,7 @@ class PicklingTest:
         return self.value == obj.value
 
 
-class TestPgSession(unittest.TestCase):
+class TestPgSession(TestCase):
     dbuser = 'session'
     layer = LaunchpadFunctionalLayer
 
@@ -166,8 +167,3 @@ class TestPgSession(unittest.TestCase):
 
         # also see the page test xx-no-anonymous-session-cookies for tests of
         # the cookie behavior.
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(TestPgSession))
-    return suite

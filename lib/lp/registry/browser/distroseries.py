@@ -443,7 +443,7 @@ class DistroSeriesView(LaunchpadView, MilestoneOverlayMixin,
     @property
     def num_unlinked_packages(self):
         """The number of unlinked packagings for this distroseries."""
-        return self.context.sourcecount - self.num_linked_packages
+        return self.context.getPrioritizedUnlinkedSourcePackages().count()
 
     @cachedproperty
     def recently_linked(self):
@@ -901,16 +901,22 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             self.context, destination_pocket, include_binaries=False,
             dest_url=series_url, dest_display_name=series_title,
             person=self.user, force_async=True):
-            # The copy worked so we can redirect back to the page to
-            # show the results.
-            self.next_url = self.request.URL
+            # The copy worked so we redirect back to show the results. Include
+            # the query string so that the user ends up on the same batch page
+            # with the same filtering parameters as before.
+            self.next_url = self.request.getURL(include_query=True)
 
     @property
     def action_url(self):
-        """The forms should post to themselves, including GET params to
-        account for batch parameters.
+        """The request URL including query string.
+
+        Forms should post to the view with a query string containing the
+        active batch and filtering parameters. Actions should then redirect
+        using that information so that the user is left on the same batch
+        page, with the same filtering parameters, as the page from which they
+        submitted the form.
         """
-        return "%s?%s" % (self.request.getURL(), self.request['QUERY_STRING'])
+        return self.request.getURL(include_query=True)
 
     def validate_sync(self, action, data):
         """Validate selected differences."""
@@ -1111,26 +1117,12 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
 
         return BatchNavigator(differences, self.request)
 
-    @cachedproperty
-    def has_differences(self):
-        """Whether or not differences between this derived series and
-        its parent exist.
-        """
-        # Performance optimisation: save a query if we have differences
-        # to show in the batch.
-        if self.cached_differences.batch.total() > 0:
-            return True
-        else:
-            # Here we check the whole dataset since the empty batch
-            # might be filtered.
-            differences = getUtility(
-                IDistroSeriesDifferenceSource).getForDistroSeries(
-                    self.context,
-                    difference_type=self.differences_type,
-                    status=(
-                        DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-                        DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
-            return not differences.is_empty()
+    def parent_changelog_url(self, distroseriesdifference):
+        """The URL to the /parent/series/+source/package/+changelog """
+        distro = distroseriesdifference.parent_series.distribution
+        dsp = distro.getSourcePackage(
+            distroseriesdifference.source_package_name)
+        return urlappend(canonical_url(dsp), '+changelog')
 
 
 class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,

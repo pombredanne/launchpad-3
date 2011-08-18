@@ -2,7 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from itertools import count
-import unittest
 
 from windmill.authoring import WindmillTestClientException
 
@@ -120,6 +119,3 @@ class TestMeToo(WindmillTestCase):
             client.asserts.assertText(
                 xpath=VALUE_LOCATION_XPATH,
                 validator=u"This bug affects you")
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

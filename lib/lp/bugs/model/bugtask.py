@@ -1139,6 +1139,8 @@ class BugTask(SQLBase):
 
     def validateTransitionToTarget(self, target):
         """See `IBugTask`."""
+        from lp.registry.model.distroseries import DistroSeries
+
         # Check if any series are involved. You can't retarget series
         # tasks. Except for DistroSeries/SourcePackage tasks, which can
         # only be retargetted to another SourcePackage in the same
@@ -1160,8 +1162,41 @@ class BugTask(SQLBase):
                     break
             if len(series) != 1:
                 raise IllegalTarget(
-                    "Distribution series tasks may only be retargetted "
+                    "Distribution series tasks may only be retargeted "
                     "to a package within the same series.")
+        # Because of the mildly insane way that DistroSeries nominations
+        # work (they affect all Distributions and
+        # DistributionSourcePackages), we can't sensibly allow
+        # pillar changes to/from distributions with series tasks on this
+        # bug. That would require us to create or delete tasks.
+        # Changing just the sourcepackagename is OK, though, as a
+        # validator on sourcepackagename will change all related tasks.
+        elif interfaces.intersection(
+            (IDistribution, IDistributionSourcePackage)):
+            # Work out the involved distros (will include None if there
+            # are product tasks).
+            distros = set()
+            for potential_target in (target, self.target):
+                if IDistribution.providedBy(potential_target):
+                    distros.add(potential_target)
+                elif IDistributionSourcePackage.providedBy(potential_target):
+                    distros.add(potential_target.distribution)
+                else:
+                    distros.add(None)
+            if len(distros) > 1:
+                # Multiple distros involved. Check that none of their
+                # series have tasks on this bug.
+                if not Store.of(self).find(
+                    BugTask,
+                    BugTask.bugID == self.bugID,
+                    BugTask.distroseriesID == DistroSeries.id,
+                    DistroSeries.distributionID.is_in(
+                        distro.id for distro in distros if distro),
+                    ).is_empty():
+                    raise IllegalTarget(
+                        "Distribution tasks with corresponding series "
+                        "tasks may only be retargeted to a different "
+                        "package.")
 
         validate_target(self.bug, target)
 
@@ -2036,8 +2071,9 @@ class BugTaskSet:
                 archive.id
                 for archive in distroseries.distribution.all_distro_archives]
             with_clauses.append("""spns as (
-                SELECT sourcepackagename from SourcePackagePublishingHistory
-                JOIN SourcePackageRelease on SourcePackageRelease.id =
+                SELECT spr.sourcepackagename
+                FROM SourcePackagePublishingHistory
+                JOIN SourcePackageRelease AS spr ON spr.id =
                     SourcePackagePublishingHistory.sourcepackagerelease AND
                 SourcePackagePublishingHistory.distroseries = %s AND
                 SourcePackagePublishingHistory.archive IN %s AND

@@ -32,7 +32,7 @@ from canonical.launchpad.webapp.errorlog import (
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, LAUNCHPAD_ANONYMOUS)
 from lp.codehosting.vfs import get_lp_server
-from lp.codehosting.bzrutils import safe_open
+from lp.codehosting.safe_open import safe_open
 
 robots_txt = '''\
 User-agent: *

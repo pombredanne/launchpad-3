@@ -93,9 +93,11 @@ class IArchiveSubscriberView(Interface):
     def getNonActiveSubscribers():
         """Return the people included in this subscription.
 
-        :return: a storm `ResultSet` of all the people who are included in
-            this subscription who do not yet have an active token for the
-            corresponding archive.
+        :return: a storm `ResultSet` of all the people and their preferred
+            email address who are included in this subscription who do not
+            yet have an active token for the corresponding archive.
+
+            Persons with no preferred email addresses are not included.
         :rtype: `storm.store.ResultSet`
         """
 

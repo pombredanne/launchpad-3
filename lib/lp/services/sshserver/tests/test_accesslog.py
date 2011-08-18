@@ -11,7 +11,6 @@ import os
 from StringIO import StringIO
 import sys
 import tempfile
-import unittest
 
 from bzrlib.tests import TestCase as BzrTestCase
 import zope.component.event
@@ -145,7 +144,3 @@ class TestLoggingManager(TestCase, LoggingManagerMixin):
         [handler] = access_log.handlers
         self.assertIsInstance(handler, WatchedFileHandler)
         self.assertEqual(access_log_path, handler.baseFilename)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

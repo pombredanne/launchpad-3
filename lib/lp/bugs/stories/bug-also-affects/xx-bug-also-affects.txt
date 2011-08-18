@@ -56,7 +56,8 @@ another task on Ubuntu evolution.
 
     >>> browser.open(
     ...     "http://localhost/ubuntu/+bug/6/+editstatus")
-    >>> browser.getControl("Package").value = "mozilla-firefox"
+    >>> browser.getControl(name="ubuntu.target.package").value = (
+    ...     "mozilla-firefox")
     >>> browser.getControl("Save Changes").click()
 
     >>> browser.open(
@@ -72,7 +73,8 @@ Ubuntu evolution, because there already is an evolution task open.
     >>> browser.open(
     ...     "http://localhost/ubuntu/+source/mozilla-firefox/+bug/6/"
     ...     "+editstatus")
-    >>> browser.getControl("Package").value = "evolution"
+    >>> browser.getControl(name="ubuntu_mozilla-firefox.target.package"
+    ...     ).value = "evolution"
     >>> browser.getControl("Save Changes").click()
     >>> print get_feedback_messages(browser.contents)
     [...There is 1 error in the data you entered...
@@ -126,7 +128,8 @@ It's not possible to change a bugtask to a existing one.
     >>> browser.url
     'http://bugs.../ubuntu/+source/mozilla-firefox/+bug/1/+editstatus'
 
-    >>> browser.getControl('Package').value = 'alsa-utils'
+    >>> browser.getControl(name="ubuntu_mozilla-firefox.target.package"
+    ...     ).value = 'alsa-utils'
     >>> browser.getControl('Save Changes').click()
     >>> browser.url
     'http://bugs.../ubuntu/+source/mozilla-firefox/+bug/1/+editstatus'
@@ -135,7 +138,8 @@ It's not possible to change a bugtask to a existing one.
      u'A fix for this bug has already been requested for alsa-utils in
        Ubuntu']
 
-    >>> browser.getControl('Package').value = 'pmount'
+    >>> browser.getControl(name="ubuntu_mozilla-firefox.target.package"
+    ...     ).value = 'pmount'
     >>> browser.getControl('Save Changes').click()
     >>> browser.url
     'http://bugs.launchpad.dev/ubuntu/+source/pmount/+bug/1'
@@ -382,7 +386,8 @@ our validator springs into action.
     >>> user_browser.getLink(url='evolution/+bug/3/+editstatus').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/evolution/+bug/3/+editstatus'
-    >>> user_browser.getControl('Project').value = 'alsa-utils'
+    >>> user_browser.getControl(name='evolution.target.product').value = (
+    ...     'alsa-utils')
     >>> user_browser.getControl('Save Changes').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/evolution/+bug/3/+editstatus'

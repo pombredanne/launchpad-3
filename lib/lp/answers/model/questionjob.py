@@ -8,10 +8,9 @@ __all__ = [
     'QuestionJob',
     ]
 
+from lazr.delegates import delegates
 import simplejson
-from storm.expr import (
-    And,
-    )
+from storm.expr import And
 from storm.locals import (
     Int,
     Reference,
@@ -23,26 +22,18 @@ from zope.interface import (
     implements,
     )
 
-from lazr.delegates import delegates
-
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.interfaces.lpstorm import (
-    IMasterStore,
-    )
-from canonical.launchpad.mail import (
-    format_address,
-    simple_sendmail,
-    )
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.scripts import log
 from lp.answers.enums import (
     QuestionJobType,
     QuestionRecipientSet,
     )
 from lp.answers.interfaces.questionjob import (
-    IQuestionJob,
     IQuestionEmailJob,
     IQuestionEmailJobSource,
+    IQuestionJob,
     )
 from lp.answers.model.question import Question
 from lp.registry.interfaces.person import IPersonSet
@@ -51,7 +42,11 @@ from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.notificationrecipientset import NotificationRecipientSet
-from lp.services.mail.sendmail import format_address_for_person
+from lp.services.mail.sendmail import (
+    format_address,
+    format_address_for_person,
+    simple_sendmail,
+    )
 from lp.services.propertycache import cachedproperty
 
 

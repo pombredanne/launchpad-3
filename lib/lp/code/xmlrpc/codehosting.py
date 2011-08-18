@@ -64,6 +64,10 @@ from lp.code.interfaces.codehosting import (
     LAUNCHPAD_SERVICES,
     )
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.registry.errors import (
+    InvalidName,
+    NoSuchSourcePackageName,
+    )
 from lp.registry.interfaces.person import (
     IPersonSet,
     NoSuchPerson,
@@ -72,6 +76,7 @@ from lp.registry.interfaces.product import (
     InvalidProductName,
     NoSuchProduct,
     )
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.services.scripts.interfaces.scriptactivity import IScriptActivitySet
 from lp.services.utils import iter_split
 
@@ -220,6 +225,12 @@ class CodehostingAPI(LaunchpadXMLRPCView):
             except NoSuchProduct, e:
                 return faults.NotFound(
                     "Project '%s' does not exist." % e.name)
+            except NoSuchSourcePackageName as e:
+                try:
+                    getUtility(ISourcePackageNameSet).new(e.name)
+                except InvalidName:
+                    return faults.InvalidSourcePackageName(e.name)
+                return self.createBranch(login_id, branch_path)
             except NameLookupFailed, e:
                 return faults.NotFound(str(e))
             try:
