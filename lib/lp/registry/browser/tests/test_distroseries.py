@@ -2049,7 +2049,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
         self.assertIn(
-            "<p>Requested sync of 1 package.</p>",
+            "Requested sync of 1 package.",
             notifications[0].message)
         # 302 is a redirect back to the same page.
         self.assertEqual(302, view.request.response.getStatus())
@@ -2271,20 +2271,19 @@ class TestCopyAsynchronouslyMessage(TestCase):
 
     def test_zero_packages(self):
         self.assertEqual(
-            "<p>Requested sync of 0 packages.</p><p>Please allow "
-            "some time for these to be processed.</p>",
+            "Requested sync of 0 packages.",
             copy_asynchronously_message(0).escapedtext)
 
     def test_one_package(self):
         self.assertEqual(
-            "<p>Requested sync of 1 package.</p><p>Please allow "
-            "some time for these to be processed.</p>",
+            "Requested sync of 1 package.<br />Please "
+            "allow some time for this to be processed.",
             copy_asynchronously_message(1).escapedtext)
 
     def test_multiple_packages(self):
         self.assertEqual(
-            "<p>Requested sync of 5 packages.</p><p>Please allow "
-            "some time for these to be processed.</p>",
+            "Requested sync of 5 packages.<br />Please "
+            "allow some time for these to be processed.",
             copy_asynchronously_message(5).escapedtext)
 
 
