@@ -159,7 +159,7 @@ class SoyuzTestPublisher:
         signing_key = self.person.gpg_keys[0]
         package_upload = distroseries.createQueueEntry(
             pocket, archive, changes_file_name, changes_file_content,
-            signing_key)
+            signing_key=signing_key)
 
         status_to_method = {
             PackageUploadStatus.DONE: 'setDone',
@@ -694,10 +694,7 @@ class TestNativePublishing(TestNativePublishingBase):
         # And an oops should be filed for the error.
         error_utility = ErrorReportingUtility()
         error_report = error_utility.getLastOopsReport()
-        fp = StringIO()
-        error_report.write(fp)
-        error_text = fp.getvalue()
-        self.assertTrue("PoolFileOverwriteError" in error_text)
+        self.assertTrue("PoolFileOverwriteError" in str(error_report))
 
         self.layer.commit()
         self.assertEqual(

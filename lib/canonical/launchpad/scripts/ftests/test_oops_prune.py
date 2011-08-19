@@ -23,7 +23,7 @@ import sys
 import tempfile
 import unittest
 
-from oops import uniquefileallocator
+from oops_datedir_repo import uniquefileallocator
 from pytz import UTC
 import transaction
 
@@ -304,8 +304,3 @@ class TestOopsPrune(unittest.TestCase):
             self.failIf(
                 os.path.isdir(os.path.join(self.oops_dir, date))
                 )
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

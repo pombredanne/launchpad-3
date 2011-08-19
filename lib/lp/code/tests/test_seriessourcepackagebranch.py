@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from datetime import datetime
-import unittest
 
 import pytz
 import transaction
@@ -124,7 +123,3 @@ class TestSeriesSourcePackageBranch(TestCaseWithFactory):
         find_branch_links = getUtility(IFindOfficialBranchLinks)
         self.assertEqual(
             [], list(find_branch_links.findForSourcePackage(package)))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

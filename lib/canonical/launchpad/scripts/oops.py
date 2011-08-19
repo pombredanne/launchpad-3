@@ -3,6 +3,8 @@
 
 """Module docstring goes here."""
 
+from __future__ import absolute_import
+
 __metaclass__ = type
 
 __all__ = [
@@ -18,7 +20,7 @@ from datetime import (
 import os
 import re
 
-from ...oops import uniquefileallocator
+from oops_datedir_repo import uniquefileallocator
 from pytz import utc
 
 from canonical.database.sqlbase import cursor

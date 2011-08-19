@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
 
@@ -30,7 +28,3 @@ class TestProjectBranches(TestCaseWithFactory):
         # true for has_branches.
         self.factory.makeProductBranch(product=self.product)
         self.assertTrue(self.project.has_branches())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
