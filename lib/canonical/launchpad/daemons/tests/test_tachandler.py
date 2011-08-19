@@ -138,12 +138,9 @@ class TacTestSetupTestCase(testtools.TestCase):
     def test_truncateLog(self):
         """truncateLog truncates the log. What did you expect?"""
         tempdir = self.useFixture(TempDir()).path
-
-        class DoNothingTac(TacTestSetup):
-            logfile = os.path.join(tempdir, 'nothing.log')
+        fixture = SimpleTac("okay.tac", tempdir)
 
         # Put something in the log file.
-        fixture = DoNothingTac()
         with open(fixture.logfile, "wb") as logfile:
             logfile.write("Hello\n")
 
