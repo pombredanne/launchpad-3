@@ -57,6 +57,13 @@ class TacTestSetup(Fixture):
                 "instance (%d) running in %s." % (pid, self.pidfile),
                 DeprecationWarning, stacklevel=2)
             two_stage_kill(pid)
+            # If the pid file still exists, it may indicate that the process
+            # respawned itself, or that two processes were started (race?) and
+            # one is still running while the other has ended, or the process
+            # was killed but it didn't remove the pid file (bug), or the
+            # machine was hard-rebooted and the pid file was not cleaned up
+            # (bug again). In other words, it's not safe to assume that a
+            # stale pid file is safe to delete without human intervention.
             if get_pid_from_file(self.pidfile):
                 raise TacException(
                     "Could not kill stale process %s." % (self.pidfile,))
