@@ -95,7 +95,7 @@
         tal:define="bugwatch context/bugwatch;">
       <tal:has_watch condition="bugwatch">
         <div style="text-decoration: none; padding: 0.25em"
-             define="active_bugtracker bugwatch/bugtracker/active;">
+             tal:define="active_bugtracker bugwatch/bugtracker/active;">
           <tal:bugtracker-active condition="active_bugtracker">
             <tal:block define="last_error_type bugwatch/last_error_type;">
               <span tal:condition="not:last_error_type"

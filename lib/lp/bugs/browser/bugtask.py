@@ -3591,7 +3591,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
         cx = self.context
         return dumps(dict(
             row_id=self.data['row_id'],
-            bugtask_path='/'.join([''] + data['link'].split('/')[3:]),
+            bugtask_path='/'.join([''] + self.data['link'].split('/')[3:]),
             prefix=get_prefix(cx),
             assignee_value=cx.assignee and cx.assignee.name,
             assignee_is_team=cx.assignee and cx.assignee.is_team,
