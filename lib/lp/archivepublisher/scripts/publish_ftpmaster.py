@@ -296,11 +296,13 @@ class PublishFTPMaster(LaunchpadCronScript):
                 "Indexes for %s were created on %s.\n"
                 % (suite, datetime.now(utc)))
 
-    def createIndexes(self, distribution, suite):
-        """Create archive indexes for `distroseries`."""
-        self.logger.info("Creating archive indexes for %s.", suite)
-        self.runPublishDistro(distribution, args=['-A'], suites=[suite])
-        self.markIndexCreationComplete(distribution, suite)
+    def createIndexes(self, distribution, suites):
+        """Create archive indexes for `suites` of `distroseries`."""
+        self.logger.info(
+            "Creating archive indexes for %s.", ', '.join(suites))
+        self.runPublishDistro(distribution, args=['-A'], suites=suites)
+        for suite in suites:
+            self.markIndexCreationComplete(distribution, suite)
 
     def processAccepted(self, distribution):
         """Run the process-accepted script."""
@@ -597,8 +599,7 @@ class PublishFTPMaster(LaunchpadCronScript):
         for series in distribution.series:
             suites_needing_indexes = self.listSuitesNeedingIndexes(series)
             if len(suites_needing_indexes) > 0:
-                for suite in suites_needing_indexes:
-                    self.createIndexes(distribution, suite)
+                self.createIndexes(distribution, suites_needing_indexes)
                 # Don't try to do too much in one run.  Leave the rest
                 # of the work for next time.
                 return

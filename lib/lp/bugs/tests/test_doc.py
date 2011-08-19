@@ -440,11 +440,6 @@ special = {
         setUp=bugmessageSetUp, tearDown=tearDown,
         layer=ProcessMailLayer,
         stdout_logging=False),
-    'bugs-email-affects-path.txt-processmail': LayeredDocFileSuite(
-        '../doc/bugs-email-affects-path.txt',
-        setUp=setUp, tearDown=tearDown,
-        layer=ProcessMailLayer,
-        stdout_logging=False),
     'bugs-emailinterface.txt-processmail': LayeredDocFileSuite(
         '../tests/bugs-emailinterface.txt',
         setUp=setUp, tearDown=tearDown,
