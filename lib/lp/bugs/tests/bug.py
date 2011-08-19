@@ -200,7 +200,7 @@ def create_old_bug(
 
     :title: A string. The bug title for testing.
     :days_old: An int. The bug's age in days.
-    :target: A BugTarkget. The bug's target.
+    :target: A BugTarget. The bug's target.
     :status: A BugTaskStatus. The status of the bug's single bugtask.
     :with_message: A Bool. Whether to create a reply message.
     :external_bugtracker: An external bug tracker which is watched for this

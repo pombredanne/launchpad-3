@@ -70,15 +70,13 @@ def load_optional_plugin(plugin_name):
     __import__("bzrlib.plugins.%s" % plugin_name)
 
 
-def remove_hook(self, hook):
-    """Remove the hook from the HookPoint"""
-    self._callbacks.remove(hook)
-    for name, value in self._callback_names.iteritems():
-        if value is hook:
-            del self._callback_names[name]
+def load_bundled_plugin(plugin_name):
+    """Load a plugin bundled with Bazaar."""
+    from bzrlib.plugin import get_core_plugin_path
+    from bzrlib import plugins
+    if get_core_plugin_path() not in plugins.__path__:
+        plugins.__path__.append(get_core_plugin_path())
+    __import__("bzrlib.plugins.%s" % plugin_name)
 
 
-# XXX: JonathanLange 2011-03-30 bug=301472: Monkeypatch: Branch.hooks is a
-# list in bzr 1.13, so it supports remove.  It is a HookPoint in bzr 1.14, so
-# add HookPoint.remove.
-hooks.HookPoint.remove = remove_hook
+load_bundled_plugin("weave_fmt")

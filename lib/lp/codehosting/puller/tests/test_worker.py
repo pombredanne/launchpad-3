@@ -90,6 +90,10 @@ class PrearrangedStackedBranchPolicy(BranchMirrorerPolicy,
 class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
     """Test the mirroring functionality of PullerWorker."""
 
+    def setUp(self):
+        super(TestPullerWorker, self).setUp()
+        SafeBranchOpener.install_hook()
+
     def test_mirror_opener_with_stacked_on_url(self):
         # A PullerWorker for a mirrored branch gets a MirroredBranchPolicy as
         # the policy of its branch_mirrorer. The default stacked-on URL is
@@ -276,6 +280,10 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
 
 class TestReferenceOpener(TestCaseWithTransport):
     """Feature tests for safe opening of branch references."""
+
+    def setUp(self):
+        super(TestReferenceOpener, self).setUp()
+        SafeBranchOpener.install_hook()
 
     def createBranchReference(self, url):
         """Create a pure branch reference that points to the specified URL.
@@ -492,6 +500,7 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
+        SafeBranchOpener.install_hook()
         self.saved_factory = bzrlib.ui.ui_factory
         self.disable_directory_isolation()
 

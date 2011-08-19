@@ -31,14 +31,6 @@ and another one listing those of the distribution.
     >>> portlet = find_portlet(
     ...     anon_browser.contents,
     ...     'Answer contacts for evolution in Ubuntu')
-    >>> print portlet.first('div').renderContents()
-    <p>
-      <i>There are no answer contacts.</i>
-    </p>
-    >>> for answer_contact in find_portlet(
-    ...     anon_browser.contents, 'Answer contacts for Ubuntu').fetch('a'):
-    ...     print answer_contact.renderContents()
-    Sample Person
 
 To register himself as answer contact, the user clicks on the
 'Set answer contact' link. He needs to login to access that function.
@@ -82,15 +74,6 @@ a message is displayed to confirm the changes:
     Landscape Developers has been added as an answer contact for
     evolution in Ubuntu.
 
-The answer contacts portlet for the source package was updated:
-
-    >>> for answer_contact in find_portlet(
-    ...     browser.contents,
-    ...     'Answer contacts for evolution in Ubuntu').fetch('a'):
-    ...     print answer_contact.renderContents()
-    Landscape Developers
-    Sample Person
-
 To unregister as answer contact, the same page is used. Instead this
 time, we unselect the checkboxes:
 
@@ -102,16 +85,9 @@ time, we unselect the checkboxes:
     ...     "I want to be an answer contact for "
     ...     "evolution").selected = False
 
-Again a confirmation message is displayed and the answer contacts
-portlet for the source package is updated.
+Again a confirmation message is displayed.
 
     >>> browser.getControl('Continue').click()
     >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print message.renderContents()
     You have been removed as an answer contact for evolution in Ubuntu.
-
-    >>> for answer_contact in find_portlet(
-    ...     browser.contents,
-    ...     'Answer contacts for evolution in Ubuntu').fetch('a'):
-    ...     print answer_contact.renderContents()
-    Landscape Developers
