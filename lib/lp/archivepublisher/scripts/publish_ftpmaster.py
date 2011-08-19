@@ -580,8 +580,7 @@ class PublishFTPMaster(LaunchpadCronScript):
                 have_fresh_series = True
                 if series.previous_series is not None:
                     CustomUploadsCopier(series).copy(series.previous_series)
-                for suite in suites_needing_indexes:
-                    self.createIndexes(distribution, suite)
+                self.createIndexes(distribution, suites_needing_indexes)
 
         return have_fresh_series
 
