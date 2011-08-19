@@ -39,5 +39,5 @@
 /* Hide the overlay if you use PrettyOverlay directly; if you subclass,
    you have to do this yourself with your own class yui3-yourclass-hidden. */
 .yui3-pretty-overlay-hidden {
-    display: none;
+    visibility: hidden;
 }

@@ -1,5 +1,5 @@
 .yui3-lazr-formoverlay-hidden {
-    display: none; 
+    visibility: hidden;
 }
 
 .yui3-lazr-formoverlay-form th, .yui3-lazr-formoverlay-form td {
