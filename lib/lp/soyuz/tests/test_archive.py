@@ -2140,7 +2140,7 @@ class TestSyncSource(TestCaseWithFactory):
          to_series, version) = self._setup_copy_data(
             target_purpose=ArchivePurpose.PRIMARY)
         person = self.factory.makePerson()
-        with person_logged_in(target_archive.owner):
+        with person_logged_in(target_archive.distribution.owner):
             target_archive.newComponentUploader(person, "universe")
         target_archive.copyPackage(
             source_name, version, source_archive, to_pocket.name,
@@ -2247,7 +2247,7 @@ class TestSyncSource(TestCaseWithFactory):
          to_series, version) = self._setup_copy_data(
             target_purpose=ArchivePurpose.PRIMARY)
         person = self.factory.makePerson()
-        with person_logged_in(target_archive.owner):
+        with person_logged_in(target_archive.distribution.owner):
             target_archive.newComponentUploader(person, "universe")
         target_archive.copyPackages(
             [source_name], source_archive, to_pocket.name,
