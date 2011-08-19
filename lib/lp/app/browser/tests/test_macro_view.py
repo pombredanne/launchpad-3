@@ -45,7 +45,6 @@ class TestMacroNontraversability(TestCaseWithFactory):
         '+distributionmirror-macros',
         '+timeline-macros',
         '+macros',
-        '+rosetta-status-legend',
         '+translations-macros',
         '+object-reassignment',
     )

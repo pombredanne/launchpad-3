@@ -403,7 +403,7 @@ class Macro:
         raise NotFound(self.context, self.__name__)
 
 
-class MaintenanceMessage(Macro):
+class MaintenanceMessage:
     """Display a maintenance message if the control file is present and
     it contains a valid iso format time.
 

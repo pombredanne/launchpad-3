@@ -52,8 +52,7 @@
         name="+rosetta-status-legend"
         template="../templates/rosetta-status-legend.pt"
         facet="translations"
-        permission="zope.Public"
-        class="lp.app.browser.launchpad.Macro"/>
+        permission="zope.Public"/>
     <browser:page
         for="lp.translations.interfaces.rosettastats.IRosettaStats"
         class="lp.translations.browser.translations.RosettaStatsView"
