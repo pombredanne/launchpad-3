@@ -15,7 +15,10 @@ from bzrlib.branch import (
     Branch,
     BzrBranchFormat7,
     )
-from bzrlib.bzrdir import BzrDirMetaFormat1
+from bzrlib.bzrdir import (
+    BzrDir,
+    BzrDirMetaFormat1,
+    )
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack6
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transport import get_transport
@@ -33,7 +36,10 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file,
     )
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import (
+    canonical_url,
+    errorlog,
+    )
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -77,6 +83,7 @@ from lp.codehosting.vfs import branch_id_to_path
 from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
+from lp.services.job.runner import JobRunner
 from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
@@ -297,9 +304,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
     def test_upgrades_branch(self):
         """Ensure that a branch with an outdated format is upgraded."""
         self.useBzrBranches(direct_database=True)
-        db_branch, tree = self.create_branch_and_tree(format='knit')
-        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
-        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+        db_branch, tree = self.create_knit()
         self.assertEqual(
             tree.branch.repository._format.get_format_string(),
             'Bazaar-NG Knit Repository Format 1')
@@ -323,13 +328,17 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertRaises(AssertionError, BranchUpgradeJob.create, branch)
 
+    def create_knit(self):
+        db_branch, tree = self.create_branch_and_tree(format='knit')
+        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+        return db_branch, tree
+
     def test_existing_bzr_backup(self):
         # If the target branch already has a backup.bzr dir, the upgrade copy
         # should remove it.
         self.useBzrBranches(direct_database=True)
-        db_branch, tree = self.create_branch_and_tree(format='knit')
-        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
-        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+        db_branch, tree = self.create_knit()
 
         # Add a fake backup.bzr dir
         source_branch_transport = get_transport(db_branch.getInternalBzrUrl())
@@ -354,6 +363,27 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         # Scan jobs are created by the branchChanged method.
         branch.branchChanged('', 'new-id', None, None, None)
         Store.of(branch).flush()
+
+    def test_not_branch_error(self):
+        self.useBzrBranches(direct_database=True)
+        db_branch, tree = self.create_branch_and_tree()
+        branch2 = BzrDir.create_branch_convenience('.')
+        tree.branch.set_stacked_on_url(branch2.base)
+        branch2.bzrdir.destroy_branch()
+        # Create BranchUpgradeJob manually, because we're trying to upgrade a
+        # branch that doesn't need upgrading.
+        requester = self.factory.makePerson()
+        branch_job = BranchJob(
+            db_branch, BranchJobType.UPGRADE_BRANCH, {}, requester=requester)
+        job = BranchUpgradeJob(branch_job)
+        self.becomeDbUser(config.upgrade_branches.dbuser)
+        runner = JobRunner([job])
+        with self.noOops():
+            runner.runJobHandleError(job)
+        (mail,) = pop_notifications()
+        self.assertEqual(
+            'Launchpad error while upgrading a branch', mail['subject'])
+        self.assertIn('Not a branch', mail.get_payload(decode=True))
 
 
 class TestRevisionMailJob(TestCaseWithFactory):
