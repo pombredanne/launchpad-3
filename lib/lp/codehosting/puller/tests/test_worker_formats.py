@@ -19,6 +19,7 @@ from bzrlib.repofmt.weaverepo import (
 from bzrlib.tests.per_repository import TestCaseWithRepository
 
 from lp.codehosting.puller.tests import PullerWorkerMixin
+from lp.codehosting.safe_open import SafeBranchOpener
 from lp.codehosting.tests.helpers import LoomTestMixin
 
 
@@ -29,6 +30,7 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         TestCaseWithRepository.setUp(self)
         # make_bzrdir relies on this being a relative filesystem path.
         self._source_branch_path = 'source-branch'
+        SafeBranchOpener.install_hook()
         self.worker = self.makePullerWorker(
             self.get_url(self._source_branch_path),
             self.get_url('dest-path'))

@@ -93,17 +93,44 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         distroseries.changeslist = "blah@example.com"
         blamer = self.factory.makePerson()
-        from_person = self.factory.makePerson()
+        from_person = self.factory.makePerson(
+            email="lemmy@example.com", displayname="Lemmy Kilmister")
         notify(
             blamer, spr, [], [], archive, distroseries, pocket,
             action='accepted', announce_from_person=from_person)
         notifications = pop_notifications()
         self.assertEqual(2, len(notifications))
-        # The first notification is to the blamer,
-        # the second is the announce list, which is the one that gets the
-        # overridden From:
+        # The first notification is to the blamer, the second notification is
+        # to the announce list, which is the one that gets the overridden
+        # From:
         self.assertEqual(
-            from_person.preferredemail.email, notifications[1]["From"])
+            "Lemmy Kilmister <lemmy@example.com>",
+            notifications[1]["From"])
+
+    def test_notify_from_person_override_with_unicode_names(self):
+        # notify() takes an optional from_person to override the calculated
+        # From: address in announcement emails. Non-ASCII real names should be
+        # correctly encoded in the From heade.
+        spr = self.factory.makeSourcePackageRelease()
+        self.factory.makeSourcePackageReleaseFile(sourcepackagerelease=spr)
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        pocket = PackagePublishingPocket.RELEASE
+        distroseries = self.factory.makeDistroSeries()
+        distroseries.changeslist = "blah@example.com"
+        blamer = self.factory.makePerson()
+        from_person = self.factory.makePerson(
+            email="loic@example.com", displayname=u"Loïc Motörhead")
+        notify(
+            blamer, spr, [], [], archive, distroseries, pocket,
+            action='accepted', announce_from_person=from_person)
+        notifications = pop_notifications()
+        self.assertEqual(2, len(notifications))
+        # The first notification is to the blamer, the second notification is
+        # to the announce list, which is the one that gets the overridden
+        # From:
+        self.assertEqual(
+            "=?utf-8?q?Lo=C3=AFc_Mot=C3=B6rhead?= <loic@example.com>",
+            notifications[1]["From"])
 
 
 class TestNotification(TestCaseWithFactory):
