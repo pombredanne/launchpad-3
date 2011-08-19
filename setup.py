@@ -58,6 +58,7 @@ setup(
         'oauth',
         'oops',
         'oops_datedir_repo',
+        'oops_wsgi',
         'paramiko',
         'psycopg2',
         'python-memcached',
