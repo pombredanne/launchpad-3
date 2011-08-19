@@ -445,7 +445,6 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         finally:
             self.assertNoNewOops(oops)
 
-
     def assertNoNewOops(self, old_oops):
         """Assert that no oops has been recorded since old_oops."""
         oops = errorlog.globalErrorUtility.getLastOopsReport()

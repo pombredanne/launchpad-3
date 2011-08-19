@@ -36,10 +36,7 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.testing.librarianhelpers import (
     get_newest_librarian_file,
     )
-from canonical.launchpad.webapp import (
-    canonical_url,
-    errorlog,
-    )
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
@@ -930,7 +927,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.layer.switchDbUser('branchscanner')
         self.updateDBRevisions(db_branch, tree.branch)
         expected = (
-            u"-"*60 + '\n'
+            u"-" * 60 + '\n'
             "revno: 1" '\n'
             "committer: Joe Bloggs <joe@example.com>" '\n'
             "branch nick: %s" '\n'
@@ -944,7 +941,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             job.getRevisionMessage(first_revision, 1), expected)
 
         expected_message = (
-            u"-"*60 + '\n'
+            u"-" * 60 + '\n'
             "revno: 2" '\n'
             "committer: Joe Bloggs <joe@example.com>" '\n'
             "branch nick: %s" '\n'
@@ -1020,7 +1017,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         super(TestRosettaUploadJob, self).setUp()
         self.series = None
 
-    def _makeBranchWithTreeAndFile(self, file_name, file_content = None):
+    def _makeBranchWithTreeAndFile(self, file_name, file_content=None):
         return self._makeBranchWithTreeAndFiles(((file_name, file_content), ))
 
     def _makeBranchWithTreeAndFiles(self, files):
@@ -1067,7 +1064,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
             try:
                 file_content = file_pair[1]
                 if file_content is None:
-                    raise IndexError # Same as if missing.
+                    raise IndexError  # Same as if missing.
             except IndexError:
                 file_content = self.factory.getUniqueString()
             dname = os.path.dirname(file_name)
@@ -1092,7 +1089,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
             self.series.branch = self.branch
             self.series.translations_autoimport_mode = mode
 
-    def _runJobWithFile(self, import_mode, file_name, file_content = None):
+    def _runJobWithFile(self, import_mode, file_name, file_content=None):
         return self._runJobWithFiles(
             import_mode, ((file_name, file_content), ))
 
@@ -1325,7 +1322,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         # iterReady does not return jobs for branches where last_scanned_id
         # and last_mirror_id are different.
         self._makeBranchWithTreeAndFiles([])
-        self.branch.last_scanned_id = NULL_REVISION # Was not scanned yet.
+        self.branch.last_scanned_id = NULL_REVISION  # Was not scanned yet.
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
         # Put the job in ready state.
