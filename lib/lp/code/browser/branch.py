@@ -994,7 +994,7 @@ class BranchUpgradeView(LaunchpadFormView):
 
     @action('Upgrade', name='upgrade_branch')
     def upgrade_branch_action(self, action, data):
-        self.context.requestUpgrade()
+        self.context.requestUpgrade(self.user)
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):

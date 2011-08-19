@@ -298,7 +298,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_5,
             repository_format=RepositoryFormat.BZR_REPOSITORY_4)
-        job = BranchUpgradeJob.create(branch)
+        job = BranchUpgradeJob.create(branch, self.factory.makePerson())
         verifyObject(IBranchUpgradeJob, job)
 
     def test_upgrades_branch(self):
@@ -309,7 +309,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             tree.branch.repository._format.get_format_string(),
             'Bazaar-NG Knit Repository Format 1')
 
-        job = BranchUpgradeJob.create(db_branch)
+        job = BranchUpgradeJob.create(db_branch, self.factory.makePerson())
         self.becomeDbUser(config.upgrade_branches.dbuser)
         with TransactionFreeOperation.require():
             job.run()
@@ -326,7 +326,9 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_7,
             repository_format=RepositoryFormat.BZR_CHK_2A)
-        self.assertRaises(AssertionError, BranchUpgradeJob.create, branch)
+        self.assertRaises(
+            AssertionError, BranchUpgradeJob.create, branch,
+            self.factory.makePerson())
 
     def create_knit(self):
         db_branch, tree = self.create_branch_and_tree(format='knit')
@@ -346,7 +348,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         source_branch_transport.clone('.bzr').copy_tree_to_transport(
             source_branch_transport.clone('backup.bzr'))
 
-        job = BranchUpgradeJob.create(db_branch)
+        job = BranchUpgradeJob.create(db_branch, self.factory.makePerson())
         self.becomeDbUser(config.upgrade_branches.dbuser)
         job.run()
 

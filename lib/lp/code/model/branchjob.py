@@ -376,13 +376,14 @@ class BranchUpgradeJob(BranchJobDerived):
         return 'upgrading a branch'
 
     @classmethod
-    def create(cls, branch):
+    def create(cls, branch, requester):
         """See `IBranchUpgradeJobSource`."""
         if not branch.needs_upgrading:
             raise AssertionError('Branch does not need upgrading.')
         if branch.upgrade_pending:
             raise AssertionError('Branch already has upgrade pending.')
-        branch_job = BranchJob(branch, BranchJobType.UPGRADE_BRANCH, {})
+        branch_job = BranchJob(
+            branch, BranchJobType.UPGRADE_BRANCH, {}, requester=requester)
         return cls(branch_job)
 
     @staticmethod
