@@ -1101,8 +1101,11 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
             message="Message for other")
         self.makeForeignCommit(source_details, ref="refs/heads/master",
             message="Message for master")
-        source_details.url += urlutils.join_segment_parameters(
+        source_details.url = urlutils.join_segment_parameters(
                 source_details.url, { "branch": "other" })
+        self.assertEquals(
+            { "branch": "other" },
+            self.get_transport(source_details.url).get_segment_parameters())
         worker = self.makeImportWorker(source_details)
         self.assertTrue(self.foreign_commit_count > 1)
         self.assertEqual(
