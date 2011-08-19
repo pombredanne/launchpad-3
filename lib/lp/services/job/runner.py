@@ -592,9 +592,12 @@ class JobCronScript(LaunchpadCronScript):
 
     def add_my_options(self):
         if self.runner_class is TwistedJobRunner:
-            self.parser.add_option(
-                '--log-twisted', action='store_true', default=False,
-                help='Enable extra Twisted logging.')
+            self.add_log_twisted_option()
+
+    def add_log_twisted_option(self):
+        self.parser.add_option(
+            '--log-twisted', action='store_true', default=False,
+            help='Enable extra Twisted logging.')
 
     @property
     def dbuser(self):
