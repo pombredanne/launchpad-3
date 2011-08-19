@@ -915,7 +915,10 @@
             for="lp.registry.interfaces.productseries.IProductSeries"
             factory="lp.registry.model.pillaraffiliation.ProductSeriesPillarAffiliation"
             />
-
+        <adapter
+            for="lp.code.interfaces.codereviewvote.ICodeReviewVoteReference"
+            factory="lp.registry.model.pillaraffiliation.CodeReviewVotePillarAffiliation"
+            />
         <!-- Using
 
     permission="Public" here causes some tests to fail
