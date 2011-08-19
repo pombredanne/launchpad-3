@@ -70,6 +70,7 @@ from lp.services.features import (
     )
 from lp.services.features.testing import FeatureFixture
 from lp.services.utils import utc_now
+from lp.soyuz.browser.archive import copy_asynchronously_message
 from lp.soyuz.enums import (
     ArchivePermissionType,
     PackagePublishingStatus,
@@ -97,6 +98,7 @@ from lp.testing import (
     normalize_whitespace,
     person_logged_in,
     StormStatementRecorder,
+    TestCase,
     TestCaseWithFactory,
     with_celebrity_logged_in,
     )
@@ -1042,22 +1044,6 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             find_tag_by_id(view(), 'distroseries-localdiff-search-filter'),
             "Form filter should be shown when there are differences.")
 
-    def test_filter_noform_if_nodifferences(self):
-        # Test that the page doesn't includes the filter form if no
-        # differences are present
-        simple_user = self.factory.makePerson()
-        login_person(simple_user)
-        derived_series, parent_series = self._createChildAndParent()
-
-        set_derived_series_ui_feature_flag(self)
-        view = create_initialized_view(
-            derived_series, '+localpackagediffs', principal=simple_user)
-
-        self.assertIs(
-            None,
-            find_tag_by_id(view(), 'distroseries-localdiff-search-filter'),
-            "Form filter should not be shown when there are no differences.")
-
     def test_parent_packagesets_localpackagediffs(self):
         # +localpackagediffs displays the packagesets.
         ds_diff = self.factory.makeDistroSeriesDifference()
@@ -1938,7 +1924,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         pu = self.factory.makePackageUpload(distroseries=dsd.derived_series)
         # A copy job with an attached packageupload means the job is
         # waiting in the queues.
-        removeSecurityProxy(pu).package_copy_job=pcj.id
+        removeSecurityProxy(pu).package_copy_job = pcj.id
         view.pending_syncs = {dsd.source_package_name.name: pcj}
         expected = (
             'waiting in <a href="%s/+queue?queue_state=%s">%s</a>&hellip;'
@@ -2063,7 +2049,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         notifications = view.request.response.notifications
         self.assertEqual(1, len(notifications))
         self.assertIn(
-            "<p>Requested sync of 1 packages.</p>",
+            "Requested sync of 1 package.",
             notifications[0].message)
         # 302 is a redirect back to the same page.
         self.assertEqual(302, view.request.response.getStatus())
@@ -2278,6 +2264,27 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
                 dsd.derived_series, '+localpackagediffs', method='GET',
                 query_string=query_string)
             self.assertEqual(1, len(view.cached_differences.batch))
+
+
+class TestCopyAsynchronouslyMessage(TestCase):
+    """Test the helper function `copy_asynchronously_message`."""
+
+    def test_zero_packages(self):
+        self.assertEqual(
+            "Requested sync of 0 packages.",
+            copy_asynchronously_message(0).escapedtext)
+
+    def test_one_package(self):
+        self.assertEqual(
+            "Requested sync of 1 package.<br />Please "
+            "allow some time for this to be processed.",
+            copy_asynchronously_message(1).escapedtext)
+
+    def test_multiple_packages(self):
+        self.assertEqual(
+            "Requested sync of 5 packages.<br />Please "
+            "allow some time for these to be processed.",
+            copy_asynchronously_message(5).escapedtext)
 
 
 class TestDistroSeriesNeedsPackagesView(TestCaseWithFactory):

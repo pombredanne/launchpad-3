@@ -20,7 +20,7 @@ from datetime import (
 import os
 import re
 
-from oops import uniquefileallocator
+from oops_datedir_repo import uniquefileallocator
 from pytz import utc
 
 from canonical.database.sqlbase import cursor
