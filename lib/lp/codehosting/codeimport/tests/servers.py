@@ -206,14 +206,17 @@ class CVSServer(Server):
 
 class GitServer(Server):
 
-    def __init__(self, repo_url):
+    def __init__(self, repo_path):
         super(GitServer, self).__init__()
-        self.repo_url = repo_url
+        self.repo_path = repo_path
+
+    def get_url(self):
+        return local_path_to_url(self.repo_path)
 
     def makeRepo(self, tree_contents):
         wd = os.getcwd()
         try:
-            os.chdir(self.repo_url)
+            os.chdir(self.repo_path)
             repo = GitRepo.init(".")
             blobs = [
                 (Blob.from_string(contents), filename) for (filename, contents)

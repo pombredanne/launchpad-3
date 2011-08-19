@@ -27,7 +27,10 @@ from bzrlib.errors import (
     )
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib import trace
-from bzrlib.transport import get_transport
+from bzrlib.transport import (
+    get_transport,
+    get_transport_from_url,
+    )
 from bzrlib.urlutils import (
     join as urljoin,
     local_path_from_url,
@@ -1072,7 +1075,8 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
     def makeForeignCommit(self, source_details, message=None,
             ref="refs/heads/master"):
         """Change the foreign tree, generating exactly one commit."""
-        repo = GitRepo(source_details.url)
+        repo = GitRepo(
+            os.path.abspath(local_path_from_url(source_details.url)))
         if message is None:
             message = self.factory.getUniqueString()
         repo.do_commit(message=message,
@@ -1091,7 +1095,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='git', url=repository_path)
+            rcstype='git', url=git_server.get_url())
 
     def test_non_master(self):
         # non-master branches can be specified in the import URL.
@@ -1103,16 +1107,17 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
             message="Message for master")
         source_details.url = urlutils.join_segment_parameters(
                 source_details.url, { "branch": "other" })
+        source_transport = get_transport_from_url(source_details.url)
         self.assertEquals(
             { "branch": "other" },
-            self.get_transport(source_details.url).get_segment_parameters())
+            source_transport.get_segment_parameters())
         worker = self.makeImportWorker(source_details)
         self.assertTrue(self.foreign_commit_count > 1)
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS, worker.run())
-        branch = self.getBazaarBranch()
+        branch = worker.getBazaarBranch()
         lastrev = branch.repository.get_revision(branch.last_revision())
-        self.assertEquals(lastrev.message, "Message for master")
+        self.assertEquals(lastrev.message, "Message for other")
 
 
 class TestMercurialImport(WorkerTest, TestActualImportMixin,

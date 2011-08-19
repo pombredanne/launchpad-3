@@ -667,7 +667,8 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         self.git_server.makeRepo([('README', 'contents')])
         self.foreign_commit_count = 1
 
-        return self.factory.makeCodeImport(git_repo_url=self.repo_path)
+        return self.factory.makeCodeImport(
+            git_repo_url=self.git_server.get_url())
 
     def makeHgCodeImport(self):
         """Make a `CodeImport` that points to a real Mercurial repository."""
