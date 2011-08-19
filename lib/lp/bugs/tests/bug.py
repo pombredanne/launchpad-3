@@ -93,7 +93,8 @@ def print_bug_affects_table(content, highlighted_only=False):
         if tr.td.table:
             # Don't print the bugtask edit form.
             continue
-        print extract_text(tr)
+        # Strip zero-width white-spaces.
+        print extract_text(tr).replace('&#8203;', '')
 
 
 def print_remote_bugtasks(content):
@@ -120,7 +121,8 @@ def print_bugs_list(content, list_id):
     bugs_list = find_tag_by_id(content, list_id).findAll(
         None, {'class': 'similar-bug'})
     for node in bugs_list:
-        print extract_text(node)
+        # Also strip zero-width spaces out.
+        print extract_text(node).replace('&#8203;', '')
 
 
 def print_bugtasks(text, show_heat=None):
@@ -154,7 +156,7 @@ def create_task_from_strings(bug, owner, product, watchurl=None):
     bug = getUtility(IBugSet).get(bug)
     product = getUtility(IProductSet).getByName(product)
     owner = getUtility(IPersonSet).getByName(owner)
-    task = getUtility(IBugTaskSet).createTask(bug, owner, product=product)
+    task = getUtility(IBugTaskSet).createTask(bug, owner, product)
     if watchurl:
         [watch] = getUtility(IBugWatchSet).fromText(watchurl, bug, owner)
         task.bugwatch = watch
@@ -198,7 +200,7 @@ def create_old_bug(
 
     :title: A string. The bug title for testing.
     :days_old: An int. The bug's age in days.
-    :target: A BugTarkget. The bug's target.
+    :target: A BugTarget. The bug's target.
     :status: A BugTaskStatus. The status of the bug's single bugtask.
     :with_message: A Bool. Whether to create a reply message.
     :external_bugtracker: An external bug tracker which is watched for this
@@ -233,7 +235,8 @@ def summarize_bugtasks(bugtasks):
     """Summarize a sequence of bugtasks."""
     bugtaskset = getUtility(IBugTaskSet)
     expirable_bugtasks = list(bugtaskset.findExpirableBugTasks(
-        config.malone.days_before_expiration, getUtility(ILaunchpadCelebrities).janitor))
+        config.malone.days_before_expiration,
+        getUtility(ILaunchpadCelebrities).janitor))
     print 'ROLE  EXPIRE  AGE  STATUS  ASSIGNED  DUP  MILE  REPLIES'
     for bugtask in sorted(set(bugtasks), key=attrgetter('id')):
         if len(bugtask.bug.bugtasks) == 1:
@@ -263,7 +266,7 @@ def print_upstream_linking_form(browser):
 
     link_upstream_how_radio_control = browser.getControl(
         name='field.link_upstream_how')
-    link_upstream_how_buttons =  soup.findAll(
+    link_upstream_how_buttons = soup.findAll(
         'input', {'name': 'field.link_upstream_how'})
 
     wrapper = textwrap.TextWrapper(width=65, subsequent_indent='    ')
@@ -278,7 +281,7 @@ def print_upstream_linking_form(browser):
             print wrapper.fill('( ) %s' % extract_text(label))
         # Print related text field, if found. Assumes that the text
         # field is in the same table row as the radio button.
-        text_field = button.findParent('tr').find('input', {'type':'text'})
+        text_field = button.findParent('tr').find('input', {'type': 'text'})
         if text_field is not None:
             text_control = browser.getControl(name=text_field.get('name'))
             print '    [%s]' % text_control.value.ljust(10)

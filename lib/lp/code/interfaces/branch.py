@@ -621,7 +621,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @export_read_operation()
     @operation_for_version('beta')
     def getMergeProposals(status=None, visible_by_user=None,
-                          merged_revnos=None):
+                          merged_revnos=None, eager_load=False):
         """Return matching BranchMergeProposals."""
 
     def scheduleDiffUpdates():
@@ -911,7 +911,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         You can only call this if a server returned by `get_ro_server` or
         `get_rw_server` is running.
 
-        :raise lp.codehosting.bzrutils.UnsafeUrlSeen: If the branch is stacked
+        :raise lp.codehosting.safe_open.BadUrl: If the branch is stacked
             on or a reference to an unacceptable URL.
         """
 
@@ -1427,7 +1427,7 @@ def user_has_special_branch_access(user):
     if user is None:
         return False
     celebs = getUtility(ILaunchpadCelebrities)
-    return user.inTeam(celebs.admin) or user.inTeam(celebs.bazaar_experts)
+    return user.inTeam(celebs.admin)
 
 
 def get_db_branch_info(stacked_on_url, last_revision_id, control_string,

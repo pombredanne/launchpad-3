@@ -9,7 +9,6 @@ import datetime
 import os
 import shutil
 import tempfile
-from unittest import TestLoader
 
 from bzrlib import errors as bzr_errors
 from bzrlib.branch import (
@@ -17,7 +16,7 @@ from bzrlib.branch import (
     BzrBranchFormat7,
     )
 from bzrlib.bzrdir import BzrDirMetaFormat1
-from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack6
+from bzrlib.repofmt.knitpack_repo import RepositoryFormatKnitPack6
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transport import get_transport
 import pytz
@@ -1428,7 +1427,3 @@ class TestReclaimBranchSpaceJob(TestCaseWithFactory):
         os.makedirs(branch_path)
         self.runReadyJobs()
         self.assertFalse(os.path.exists(branch_path))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -20,8 +20,8 @@
         "launchpad@pqm.canonical.com-20100325120516-q8to5dx3gga4wlvi"
     ], 
     "subvertpy": [
-        2044, 
-        "launchpad@pqm.canonical.com-20110616232513-8jq27gm2npjgfr4t"
+        2046, 
+        "launchpad@pqm.canonical.com-20110810142738-q1w4ukw9r0z8q2nz"
     ], 
     "python-debian": [
         186, 
@@ -40,8 +40,8 @@
         "launchpad@pqm.canonical.com-20110601140035-gl5merbechngjw5s"
     ], 
     "bzr-loom": [
-        49, 
-        "launchpad@pqm.canonical.com-20110601122412-54vo3k8yae9i2zve"
+        50, 
+        "launchpad@pqm.canonical.com-20110722102404-hl1z8uzhhwiol34l"
     ], 
     "old_xmlplus": [
         4, 
@@ -56,12 +56,12 @@
         "aaron@aaronbentley.com-20100715135013-uoi3q430urx9gwb8"
     ], 
     "bzr-svn": [
-        2713, 
-        "launchpad@pqm.canonical.com-20110616225217-9knedknnije37ljf"
+        2716, 
+        "launchpad@pqm.canonical.com-20110813142415-1izlitsieztuzkly"
     ], 
     "bzr-hg": [
-        286, 
-        "launchpad@pqm.canonical.com-20110608121012-ukbfdj6izm8n72tp"
+        287, 
+        "launchpad@pqm.canonical.com-20110722151205-zvse1g7ghie2snt2"
     ], 
     "dulwich": [
         426, 

@@ -199,6 +199,7 @@ from lp.code.model.hasbranches import (
     HasRequestedReviewsMixin,
     )
 from lp.registry.errors import (
+    InvalidName,
     JoinNotAllowed,
     NameAlreadyTaken,
     PPACreationError,
@@ -225,7 +226,6 @@ from lp.registry.interfaces.mailinglistsubscription import (
     )
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
-    InvalidName,
     IPerson,
     IPersonSet,
     IPersonSettings,
@@ -2617,16 +2617,18 @@ class Person(
         query_clauses = " AND ".join(clauses)
         query = """
             SourcePackageRelease.id IN (
-                SELECT DISTINCT ON (upload_distroseries, sourcepackagename,
+                SELECT DISTINCT ON (upload_distroseries,
+                                    sourcepackagerelease.sourcepackagename,
                                     upload_archive)
                     sourcepackagerelease.id
                 FROM sourcepackagerelease, archive,
-                    sourcepackagepublishinghistory sspph
+                    sourcepackagepublishinghistory as spph
                 WHERE
-                    sspph.sourcepackagerelease = sourcepackagerelease.id AND
-                    sspph.archive = archive.id AND
+                    spph.sourcepackagerelease = sourcepackagerelease.id AND
+                    spph.archive = archive.id AND
                     %(more_query_clauses)s
-                ORDER BY upload_distroseries, sourcepackagename,
+                ORDER BY upload_distroseries,
+                    sourcepackagerelease.sourcepackagename,
                     upload_archive, dateuploaded DESC
               )
               """ % dict(more_query_clauses=query_clauses)
@@ -2739,17 +2741,17 @@ class Person(
         """See `IPerson`."""
         return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
 
-    def createPPA(self, name=None, displayname=None, description=None):
+    def createPPA(self, name=None, displayname=None, description=None,
+                  private=False):
         """See `IPerson`."""
-        errors = Archive.validatePPA(self, name)
+        errors = Archive.validatePPA(self, name, private)
         if errors:
             raise PPACreationError(errors)
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        ppa = getUtility(IArchiveSet).new(
+        return getUtility(IArchiveSet).new(
             owner=self, purpose=ArchivePurpose.PPA,
             distribution=ubuntu, name=name, displayname=displayname,
-            description=description)
-        return ppa
+            description=description, private=private)
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""
@@ -3914,13 +3916,25 @@ class PersonSet:
             naked_from_team.retractTeamMembership(team, reviewer)
         IStore(from_team).flush()
 
-    def mergeAsync(self, from_person, to_person, reviewer=None):
+    def mergeAsync(self, from_person, to_person, reviewer=None, delete=False):
         """See `IPersonSet`."""
         return getUtility(IPersonMergeJobSource).create(
-            from_person=from_person, to_person=to_person, reviewer=reviewer)
+            from_person=from_person, to_person=to_person, reviewer=reviewer,
+            delete=delete)
+
+    def delete(self, from_person, reviewer):
+        """See `IPersonSet`."""
+        # Deletes are implemented by merging into registry experts. Force
+        # the target to prevent any accidental misuse by calling code.
+        to_person = getUtility(ILaunchpadCelebrities).registry_experts
+        return self._merge(from_person, to_person, reviewer, True)
 
     def merge(self, from_person, to_person, reviewer=None):
         """See `IPersonSet`."""
+        return self._merge(from_person, to_person, reviewer)
+
+    def _merge(self, from_person, to_person, reviewer, delete=False):
+        """Helper for merge and delete methods."""
         # since we are doing direct SQL manipulation, make sure all
         # changes have been flushed to the database
         store = Store.of(from_person)
@@ -4153,6 +4167,10 @@ class PersonSet:
             store.execute("""
                 UPDATE OpenIdIdentifier SET account=%s WHERE account=%s
                 """ % sqlvalues(to_person.accountID, from_person.accountID))
+
+        if delete:
+            # We don't notify anyone about deletes.
+            return
 
         # Inform the user of the merge changes.
         if to_person.isTeam():
@@ -4403,7 +4421,7 @@ class SSHKeySet:
     def new(self, person, sshkey):
         try:
             kind, keytext, comment = sshkey.split(' ', 2)
-        except ValueError:
+        except (ValueError, AttributeError):
             raise SSHKeyAdditionError
 
         if not (kind and keytext and comment):

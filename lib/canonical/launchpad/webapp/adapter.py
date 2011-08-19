@@ -37,6 +37,7 @@ from storm.exceptions import TimeoutError
 from storm.store import Store
 from storm.tracer import install_tracer
 from storm.zope.interfaces import IZStorm
+from timeline.timeline import Timeline
 import transaction
 from zope.component import getUtility
 from zope.interface import (
@@ -52,6 +53,7 @@ from canonical.config import (
     DatabaseConfig,
     )
 from canonical.database.interfaces import IRequestExpired
+from canonical.database.postgresql import ConnectionString
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterObject,
     IMasterStore,
@@ -72,7 +74,6 @@ from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 from canonical.lazr.timeout import set_default_timeout_function
 from lp.services import features
 from lp.services.log.loglevels import DEBUG2
-from lp.services.timeline.timeline import Timeline
 from lp.services.timeline.requesttimeline import (
     get_request_timeline,
     set_request_timeline,
@@ -514,10 +515,18 @@ class LaunchpadSessionDatabase(Postgres):
     name = 'session'
 
     def raw_connect(self):
-        self._dsn = 'dbname=%s user=%s' % (config.launchpad_session.dbname,
-                                           config.launchpad_session.dbuser)
-        if config.launchpad_session.dbhost:
-            self._dsn += ' host=%s' % config.launchpad_session.dbhost
+        if config.launchpad_session.database is not None:
+            dsn = ConnectionString(config.launchpad_session.database)
+            dsn.user = config.launchpad_session.dbuser
+            self._dsn = str(dsn)
+        else:
+            # This is fallback code for old config files. It can be
+            # removed when all live configs have been updated to use the
+            # 'database' setting instead of 'dbname' + 'dbhost' settings.
+            self._dsn = 'dbname=%s user=%s' % (config.launchpad_session.dbname,
+                                            config.launchpad_session.dbuser)
+            if config.launchpad_session.dbhost:
+                self._dsn += ' host=%s' % config.launchpad_session.dbhost
 
         flags = _get_dirty_commit_flags()
         raw_connection = super(LaunchpadSessionDatabase, self).raw_connect()

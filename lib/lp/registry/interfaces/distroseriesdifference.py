@@ -244,21 +244,36 @@ class IDistroSeriesDifferenceEdit(Interface):
 class IDistroSeriesDifferenceAdmin(Interface):
     """Difference attributes requiring launchpad.Admin."""
 
+    @call_with(commenter=REQUEST_USER)
     @operation_parameters(
-        all=Bool(title=_("All"), required=False))
+        all=Bool(title=_("All"), required=False),
+        comment=TextLine(title=_('Comment text'), required=False),
+        )
     @export_write_operation()
-    def blacklist(all=False):
-        """Blacklist this version or all versions of this source package.
+    def blacklist(commenter, all=False, comment=None):
+        """Blacklist this version or all versions of this source package and
+        adds a comment on this difference.
 
-        :param all: indicates whether all versions of this package should
+        :param commenter: The requestor `IPerson`.
+        :param comment: The comment string.
+        :param all: Indicates whether all versions of this package should
             be blacklisted or just the current (default).
+        :return: The created `DistroSeriesDifferenceComment` object.
         """
 
+    @call_with(commenter=REQUEST_USER)
+    @operation_parameters(
+        comment=TextLine(title=_('Comment text'), required=False))
     @export_write_operation()
-    def unblacklist():
-        """Removes this difference from the blacklist.
+    def unblacklist(commenter, comment=None):
+        """Removes this difference from the blacklist and adds a comment on
+        this difference.
 
         The status will be updated based on the versions.
+
+        :param commenter: The requestor `IPerson`.
+        :param comment: The comment string.
+        :return: The created `DistroSeriesDifferenceComment` object.
         """
 
 
@@ -272,7 +287,7 @@ class IDistroSeriesDifference(IDistroSeriesDifferencePublic,
 class IDistroSeriesDifferenceSource(Interface):
     """A utility of this interface can be used to create differences."""
 
-    def new(derived_series, source_package_name, parent_series=None):
+    def new(derived_series, source_package_name, parent_series):
         """Create an `IDistroSeriesDifference`.
 
         :param derived_series: The distribution series which was derived
@@ -291,14 +306,10 @@ class IDistroSeriesDifferenceSource(Interface):
         :return: A new `DistroSeriesDifference` object.
         """
 
-    def getForDistroSeries(
-        distro_series,
-        difference_type=None,
-        source_package_name_filter=None,
-        status=None,
-        child_version_higher=False,
-        parent_series=None,
-        packagesets=None):
+    def getForDistroSeries(distro_series, difference_type=None,
+                           name_filter=None, status=None,
+                           child_version_higher=False, parent_series=None,
+                           packagesets=None, changed_by=None):
         """Return differences for the derived distro series sorted by
         package name.
 
@@ -308,9 +319,10 @@ class IDistroSeriesDifferenceSource(Interface):
         :param difference_type: The type of difference to include in the
             results.
         :type difference_type: `DistroSeriesDifferenceType`.
-        :param source_package_name_filter: Name of a source package.  If
-            given, restricts the search to this package.
-        :type source_package_name_filter: unicode.
+        :param name_filter: Name of either a source package or a package set
+            to look for.  If given, return only packages whose name matches
+            this string, or that are in a `Packageset` those name matches it.
+        :type name_filter: unicode.
         :param status: Only differences matching the status(es) will be
             included.
         :type status: `DistroSeriesDifferenceStatus`.
@@ -321,6 +333,9 @@ class IDistroSeriesDifferenceSource(Interface):
             parent series if this parameter is None.
         :type distro_series: `IDistroSeries`.
         :param packagesets: Optional iterable of `Packageset` to filter by.
+        :param changed_by: An optional `Person` (an individual or a team) or a
+            collection of `Person`s. The results are limited to only those
+            changes made by the given people.
         :return: A result set of `IDistroSeriesDifference`.
         """
 

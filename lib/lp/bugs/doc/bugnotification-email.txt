@@ -272,8 +272,8 @@ If we change one tag, it's basically removing one and adding another:
     ...     notification = change.getBugNotification()
     ...     print notification['text'] #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
-    ** Tags added: baz
     ** Tags removed: bar
+    ** Tags added: baz
     -----------------------------
 
 

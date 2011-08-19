@@ -122,10 +122,3 @@ class LibrarianStorageDBTests(unittest.TestCase):
 
         flush_database_updates()
         # And no errors should have been raised!
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(LibrarianStorageDBTests))
-    return suite
-

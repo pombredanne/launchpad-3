@@ -104,7 +104,7 @@ def start(log, nodes, lag=None):
         log.debug("Logging to %s" % logfile)
         log.debug("PID file %s" % pidfile)
         # Hard code suitable command line arguments for development.
-        slon_args = "-d 2 -s 2000 -t 10000"
+        slon_args = "-d 2 -s 500 -t 2500"
         if lag is not None:
             slon_args = "%s -l '%s'" % (slon_args, lag)
         cmd = [

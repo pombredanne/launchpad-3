@@ -8,13 +8,21 @@ __metaclass__ = type
 
 import transaction
 from zope.component import getUtility
+from zope.event import notify
+
+from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.lifecycle.snapshot import Snapshot
 
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.registry.interfaces.packaging import IPackagingUtil
-from lp.registry.model.packagingjob import PackagingJob, PackagingJobDerived
+from lp.translations.interfaces.potemplate import IPOTemplate
+from lp.translations.model.translationsharingjob import (
+    TranslationSharingJob,
+    TranslationSharingJobDerived,
+    )
 from lp.services.job.interfaces.job import (
     IRunnableJob,
     JobStatus,
@@ -33,6 +41,7 @@ from lp.translations.model.translationpackagingjob import (
     TranslationMergeJob,
     TranslationPackagingJob,
     TranslationSplitJob,
+    TranslationTemplateChangeJob,
     )
 from lp.translations.tests.test_translationsplitter import (
     make_shared_potmsgset,
@@ -56,7 +65,7 @@ def make_translation_merge_job(factory, not_ubuntu=False):
         potemplate=package_potemplate, language=upstream_pofile.language)
     package_potmsgset = factory.makePOTMsgSet(
         package_pofile.potemplate, singular)
-    package = factory.makeCurrentTranslationMessage(
+    factory.makeCurrentTranslationMessage(
         pofile=package_pofile, potmsgset=package_potmsgset,
         translations=upstream.translations)
     productseries = upstream_pofile.potemplate.productseries
@@ -98,19 +107,32 @@ def count_translations(job):
 
 class JobFinder:
 
-    def __init__(self, productseries, sourcepackage, job_class):
-        self.productseries = productseries
-        self.sourcepackagename = sourcepackage.sourcepackagename
-        self.distroseries = sourcepackage.distroseries
+    def __init__(self, productseries, sourcepackage, job_class,
+                 potemplate=None):
+        if potemplate is None:
+            self.productseries = productseries
+            self.sourcepackagename = sourcepackage.sourcepackagename
+            self.distroseries = sourcepackage.distroseries
+            self.potemplate = None
+        else:
+            self.potemplate = potemplate
         self.job_type = job_class.class_job_type
 
     def find(self):
-        return list(PackagingJobDerived.iterReady([
-            PackagingJob.productseries_id == self.productseries.id,
-            PackagingJob.sourcepackagename_id == self.sourcepackagename.id,
-            PackagingJob.distroseries_id == self.distroseries.id,
-            PackagingJob.job_type == self.job_type,
-            ]))
+        if self.potemplate is None:
+            return list(TranslationSharingJobDerived.iterReady([
+              TranslationSharingJob.productseries_id == self.productseries.id,
+              (TranslationSharingJob.sourcepackagename_id ==
+               self.sourcepackagename.id),
+              TranslationSharingJob.distroseries_id == self.distroseries.id,
+              TranslationSharingJob.job_type == self.job_type,
+              ]))
+        else:
+            return list(
+                TranslationSharingJobDerived.iterReady([
+                    TranslationSharingJob.potemplate_id == self.potemplate.id,
+                    TranslationSharingJob.job_type == self.job_type,
+                    ]))
 
 
 class TestTranslationPackagingJob(TestCaseWithFactory):
@@ -177,7 +199,7 @@ class TestTranslationMergeJob(TestCaseWithFactory):
     def test_getNextJobStatus(self):
         """Should find next packaging job."""
         #suppress job creation.
-        with EventRecorder() as recorder:
+        with EventRecorder():
             packaging = self.factory.makePackagingLink()
         self.assertIs(None, TranslationMergeJob.getNextJobStatus(packaging))
         TranslationMergeJob.forPackaging(packaging)
@@ -188,15 +210,13 @@ class TestTranslationMergeJob(TestCaseWithFactory):
     def test_getNextJobStatus_wrong_packaging(self):
         """Jobs on wrong packaging should be ignored."""
         #suppress job creation.
-        with EventRecorder() as recorder:
+        with EventRecorder():
             packaging = self.factory.makePackagingLink()
         self.factory.makePackagingLink(
             productseries=packaging.productseries)
         self.assertIs(None, TranslationMergeJob.getNextJobStatus(packaging))
         self.factory.makePackagingLink()
-        other_packaging = self.factory.makePackagingLink(
-            distroseries=packaging.distroseries)
-        other_packaging = self.factory.makePackagingLink(
+        self.factory.makePackagingLink(
             distroseries=packaging.distroseries)
         self.assertIs(None, TranslationMergeJob.getNextJobStatus(packaging))
         TranslationMergeJob.create(
@@ -208,16 +228,16 @@ class TestTranslationMergeJob(TestCaseWithFactory):
     def test_getNextJobStatus_wrong_type(self):
         """Only TranslationMergeJobs should result."""
         #suppress job creation.
-        with EventRecorder() as recorder:
+        with EventRecorder():
             packaging = self.factory.makePackagingLink()
-        job = TranslationSplitJob.forPackaging(packaging)
+        TranslationSplitJob.forPackaging(packaging)
         self.assertIs(
             None, TranslationMergeJob.getNextJobStatus(packaging))
 
     def test_getNextJobStatus_status(self):
         """Only RUNNING and WAITING jobs should influence status."""
         #suppress job creation.
-        with EventRecorder() as recorder:
+        with EventRecorder():
             packaging = self.factory.makePackagingLink()
         job = TranslationMergeJob.forPackaging(packaging)
         job.start()
@@ -234,11 +254,11 @@ class TestTranslationMergeJob(TestCaseWithFactory):
 
     def test_getNextJobStatus_order(self):
         """Status should order by id."""
-        with EventRecorder() as recorder:
+        with EventRecorder():
             packaging = self.factory.makePackagingLink()
         job = TranslationMergeJob.forPackaging(packaging)
         job.start()
-        job2 = TranslationMergeJob.forPackaging(packaging)
+        TranslationMergeJob.forPackaging(packaging)
         self.assertEqual(JobStatus.RUNNING,
             TranslationMergeJob.getNextJobStatus(packaging))
 
@@ -271,3 +291,62 @@ class TestTranslationSplitJob(TestCaseWithFactory):
                 packaging.distroseries)
         (job,) = finder.find()
         self.assertIsInstance(job, TranslationSplitJob)
+
+
+class TestTranslationTemplateChangeJob(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_modifyPOTemplate_makes_job(self):
+        """Creating a Packaging should make a TranslationMergeJob."""
+        potemplate = self.factory.makePOTemplate()
+        finder = JobFinder(
+            None, None, TranslationTemplateChangeJob, potemplate)
+        self.assertEqual([], finder.find())
+        with person_logged_in(potemplate.owner):
+            snapshot = Snapshot(potemplate, providing=IPOTemplate)
+            potemplate.name = self.factory.getUniqueString()
+            notify(ObjectModifiedEvent(potemplate, snapshot, ["name"]))
+
+        (job,) = finder.find()
+        self.assertIsInstance(job, TranslationTemplateChangeJob)
+
+    def test_splits_and_merges(self):
+        """Changing a template makes the translations split and then
+        re-merged in the new target sharing set."""
+        potemplate = self.factory.makePOTemplate(name='template')
+        other_ps = self.factory.makeProductSeries(
+            product=potemplate.productseries.product)
+        old_shared = self.factory.makePOTemplate(name='template',
+                                                 productseries=other_ps)
+        new_shared = self.factory.makePOTemplate(name='renamed',
+                                                 productseries=other_ps)
+
+        # Set up shared POTMsgSets and translations.
+        potmsgset = self.factory.makePOTMsgSet(potemplate, sequence=1)
+        potmsgset.setSequence(old_shared, 1)
+        self.factory.makeCurrentTranslationMessage(potmsgset=potmsgset)
+
+        # This is the identical English message in the new_shared template.
+        target_potmsgset = self.factory.makePOTMsgSet(
+            new_shared, sequence=1, singular=potmsgset.singular_text)
+
+        # Rename the template and confirm that messages are now shared
+        # with new_shared instead of old_shared.
+        potemplate.name = 'renamed'
+        job = TranslationTemplateChangeJob.create(potemplate=potemplate)
+
+        self.becomeDbUser('rosettaadmin')
+        job.run()
+
+        # New POTMsgSet is now different from the old one (it's been split),
+        # but matches the target potmsgset (it's been merged into it).
+        new_potmsgset = potemplate.getPOTMsgSets()[0]
+        self.assertNotEqual(potmsgset, new_potmsgset)
+        self.assertEqual(target_potmsgset, new_potmsgset)
+
+        # Translations have been merged as well.
+        self.assertContentEqual(
+            [tm.translations for tm in potmsgset.getAllTranslationMessages()],
+            [tm.translations
+             for tm in new_potmsgset.getAllTranslationMessages()])

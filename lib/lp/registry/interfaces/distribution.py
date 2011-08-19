@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -22,16 +22,19 @@ __all__ = [
 
 from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.declarations import (
+    call_with,
     collection_default_content,
     export_as_webservice_collection,
     export_as_webservice_entry,
     export_operation_as,
     export_read_operation,
     exported,
+    operation_for_version,
     operation_parameters,
     operation_returns_collection_of,
     operation_returns_entry,
     rename_parameters_as,
+    REQUEST_USER,
     )
 from lazr.restful.fields import (
     CollectionField,
@@ -279,6 +282,13 @@ class IDistributionPublic(
     uploaders = Attribute(_(
         "ArchivePermission records for uploaders with rights to upload to "
         "this distribution."))
+    package_derivatives_email = TextLine(
+        title=_("Package Derivatives Email Address"),
+        description=_(
+            "The email address to send information about updates to packages "
+            "that are derived from another distribution. The sequence "
+            "{package_name} is replaced with the actual package name."),
+        required=False)
 
     # properties
     currentseries = exported(
@@ -389,6 +399,38 @@ class IDistributionPublic(
 
         :param name_or_version: The `IDistroSeries.name` or
             `IDistroSeries.version`.
+        """
+
+    # This API is specifically for Ensemble's Principia.  It does not scale
+    # well to distributions of Ubuntu's scale, and is not intended for it.
+    # Therefore, this should probably never be exposed for a webservice
+    # version other than "devel".
+    @operation_parameters(
+        since=Datetime(
+            title=_("Time of last change"),
+            description=_(
+                "Return branches that have new tips since this timestamp."),
+            required=False))
+    @call_with(user=REQUEST_USER)
+    @export_operation_as(name="getBranchTips")
+    @export_read_operation()
+    @operation_for_version('devel')
+    def getBranchTips(user=None, since=None):
+        """Return a list of branches which have new tips since a date.
+
+        Each branch information is a tuple of (branch_unique_name,
+        tip_revision, (official_series*)).
+
+        So for each branch in the distribution, you'll get the branch unique
+        name, the revision id of tip, and if the branch is official for some
+        series, the list of series name.
+
+        :param: user: If specified, shows the branches visible to that user.
+            if not specified, only branches visible to the anonymous user are
+            shown.
+
+        :param since: If specified, limits results to branches modified since
+            that date and time.
         """
 
     @operation_parameters(
@@ -724,6 +766,13 @@ class IDistributionSet(Interface):
             its keys being `IDistribution` and its values a list of
             `ISourcePackageName`.
         :return: A dict as per `IDistribution.getCurrentSourceReleases`
+        """
+
+    def getDerivedDistributions():
+        """Find derived distributions.
+
+        :return: An iterable of all derived distributions (not including
+            Ubuntu, even if it is technically derived from Debian).
         """
 
 

@@ -61,7 +61,6 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.mail import signed_message_from_string
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
@@ -81,11 +80,12 @@ from lp.blueprints.model.specification import (
     Specification,
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.interfaces.bugtarget import IHasBugHeat
-from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import (
-    get_bug_tags,
+from lp.bugs.interfaces.bugtarget import (
+    IHasBugHeat,
+    ISeriesBugTarget,
     )
+from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
+from lp.bugs.model.bug import get_bug_tags
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,
@@ -127,6 +127,7 @@ from lp.registry.model.person import Person
 from lp.registry.model.series import SeriesMixin
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.mail.signedmessage import signed_message_from_string
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -212,7 +213,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     """A particular series of a distribution."""
     implements(
         ICanPublishPackages, IBugSummaryDimension, IDistroSeries, IHasBugHeat,
-        IHasBuildRecords, IHasQueueItems, IServiceUsage)
+        IHasBuildRecords, IHasQueueItems, IServiceUsage, ISeriesBugTarget)
 
     _table = 'DistroSeries'
     _defaultOrder = ['distribution', 'version']
@@ -803,6 +804,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def bugtargetdisplayname(self):
         """See IBugTarget."""
         return self.fullseriesname
+
+    @property
+    def bugtarget_parent(self):
+        """See `ISeriesBugTarget`."""
+        return self.parent
 
     @property
     def max_bug_heat(self):
@@ -1865,7 +1871,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             IDistroSeriesDifferenceSource).getForDistroSeries(
                 self,
                 difference_type=difference_type,
-                source_package_name_filter=source_package_name_filter,
+                name_filter=source_package_name_filter,
                 status=status,
                 child_version_higher=child_version_higher)
 
@@ -1875,14 +1881,17 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def isInitializing(self):
         """See `IDistroSeries`."""
-        job_source = getUtility(IInitializeDistroSeriesJobSource)
-        pending_jobs = job_source.getPendingJobsForDistroseries(self)
-        return not pending_jobs.is_empty()
+        job = self.getInitializationJob()
+        return job is not None and job.is_pending
 
     def isInitialized(self):
         """See `IDistroSeries`."""
         published = self.main_archive.getPublishedSources(distroseries=self)
         return not published.is_empty()
+
+    def getInitializationJob(self):
+        """See `IDistroSeries`."""
+        return getUtility(IInitializeDistroSeriesJobSource).get(self)
 
     def getDifferenceComments(self, since=None, source_package_name=None):
         """See `IDistroSeries`."""

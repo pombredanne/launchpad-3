@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from lazr.restfulclient.errors import (
     BadRequest,
     NotFound,
@@ -19,7 +17,12 @@ from canonical.launchpad.testing.pages import LaunchpadWebServiceCaller
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.enums import ArchivePurpose
+from lp.services.features.testing import FeatureFixture
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
+from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.testing import (
     celebrity_logged_in,
@@ -213,7 +216,7 @@ class TestProcessorFamilies(WebServiceTestCase):
         transaction.commit()
         ws_archive = self.wsObject(archive, user=commercial_admin)
         expected_re = (
-            "(.|\n)*'Entry' object has no attribute "
+            "(.|\n)*object has no attribute "
             "'enabled_restricted_families'(.|\n)*")
         with ExpectedException(AttributeError, expected_re):
             ws_archive.enabled_restricted_families
@@ -309,5 +312,64 @@ class TestProcessorFamilies(WebServiceTestCase):
             [ws_arm], self.service.processor_families)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestCopyPackage(WebServiceTestCase):
+    """Webservice test cases for the copyPackage/copyPackages methods"""
+
+    def setUp(self):
+        super(TestCopyPackage, self).setUp()
+        self.useFixture(FeatureFixture({u"soyuz.copypackage.enabled":  'on'}))
+
+    def setup_data(self):
+        self.ws_version = "devel"
+        uploader_dude = self.factory.makePerson()
+        source_archive = self.factory.makeArchive()
+        target_archive = self.factory.makeArchive(
+            purpose=ArchivePurpose.PRIMARY)
+        source = self.factory.makeSourcePackagePublishingHistory(
+            archive=source_archive, status=PackagePublishingStatus.PUBLISHED)
+        source_name = source.source_package_name
+        version = source.source_package_version
+        to_pocket = PackagePublishingPocket.RELEASE
+        to_series = self.factory.makeDistroSeries(
+            distribution=target_archive.distribution)
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(uploader_dude, "universe")
+        transaction.commit()
+        return (source_archive, source_name, target_archive, to_pocket,
+                to_series, uploader_dude, version)
+
+    def test_copyPackage(self):
+        """Basic smoke test"""
+        (source_archive, source_name, target_archive, to_pocket, to_series,
+         uploader_dude, version) = self.setup_data()
+
+        ws_target_archive = self.wsObject(target_archive, user=uploader_dude)
+        ws_source_archive = self.wsObject(source_archive)
+
+        ws_target_archive.copyPackage(
+            source_name=source_name, version=version,
+            from_archive=ws_source_archive, to_pocket=to_pocket.name,
+            to_series=to_series.name, include_binaries=False)
+        transaction.commit()
+
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_job = job_source.getActiveJobs(target_archive).one()
+        self.assertEqual(target_archive, copy_job.target_archive)
+
+    def test_copyPackages(self):
+        """Basic smoke test"""
+        (source_archive, source_name, target_archive, to_pocket, to_series,
+         uploader_dude, version) = self.setup_data()
+
+        ws_target_archive = self.wsObject(target_archive, user=uploader_dude)
+        ws_source_archive = self.wsObject(source_archive)
+
+        ws_target_archive.copyPackages(
+            source_names=[source_name], from_archive=ws_source_archive,
+            to_pocket=to_pocket.name, to_series=to_series.name,
+            include_binaries=False)
+        transaction.commit()
+
+        job_source = getUtility(IPlainPackageCopyJobSource)
+        copy_job = job_source.getActiveJobs(target_archive).one()
+        self.assertEqual(target_archive, copy_job.target_archive)

@@ -108,7 +108,7 @@ from lp.code.model.codeimport import (
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.revision import Revision
 from lp.code.tests.helpers import add_revision_to_branch
-from lp.codehosting.bzrutils import UnsafeUrlSeen
+from lp.codehosting.safe_open import BadUrl
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.osutils import override_environ
@@ -2494,20 +2494,6 @@ class TestBranchSetOwner(TestCaseWithFactory):
         branch.setOwner(person, admin)
         self.assertEqual(person, branch.owner)
 
-    def test_bazaar_experts_can_set_any_team_or_person(self):
-        # A bazaar expert can set the branch to be owned by any team or
-        # person.
-        branch = self.factory.makeAnyBranch()
-        team = self.factory.makeTeam()
-        # To get a random administrator, choose the admin team owner.
-        experts = getUtility(ILaunchpadCelebrities).bazaar_experts.teamowner
-        login_person(experts)
-        branch.setOwner(team, experts)
-        self.assertEqual(team, branch.owner)
-        person = self.factory.makePerson()
-        branch.setOwner(person, experts)
-        self.assertEqual(person, branch.owner)
-
 
 class TestBranchSetTarget(TestCaseWithFactory):
     """Tests for IBranch.setTarget."""
@@ -2700,7 +2686,7 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
 
 
 class TestGetBzrBranch(TestCaseWithFactory):
-    """Tests for `IBranch.safe_open`."""
+    """Tests for `IBranch.getBzrBranch`."""
 
     layer = DatabaseFunctionalLayer
 
@@ -2736,7 +2722,7 @@ class TestGetBzrBranch(TestCaseWithFactory):
         branch = BzrDir.create_branch_convenience('local')
         db_stacked, stacked_tree = self.create_branch_and_tree()
         stacked_tree.branch.set_stacked_on_url(branch.base)
-        self.assertRaises(UnsafeUrlSeen, db_stacked.getBzrBranch)
+        self.assertRaises(BadUrl, db_stacked.getBzrBranch)
 
 
 class TestMergeQueue(TestCaseWithFactory):

@@ -205,6 +205,8 @@
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
+            interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
+        <allow
             interface="lp.soyuz.interfaces.queue.IHasQueueItems"/>
         <allow
             interface="lp.soyuz.interfaces.publishing.ICanPublishPackages"/>
@@ -257,6 +259,11 @@
         <allow
             interface="lp.registry.interfaces.distroseries.IDistroSeriesSet"/>
     </securedutility>
+    <adapter
+        provides="lp.registry.interfaces.distribution.IDistribution"
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
+        factory="lp.registry.adapters.distroseries_to_distribution"
+        permission="zope.Public"/>
     <adapter
         provides="lp.app.interfaces.launchpad.ILaunchpadUsage"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -482,6 +489,7 @@
                 findRelatedArchivePublications
                 findRelatedArchives
                 getPersonsByEmail
+                getMergeProposals
                 getReleasesAndPublishingHistory
                 getUsedBugTags
                 getUsedBugTagsWithOpenCounts
@@ -533,11 +541,19 @@
                 "/>
     </class>
     <adapter
+        provides="lp.registry.interfaces.distribution.IDistribution"
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        factory="lp.registry.adapters.sourcepackage_to_distribution"
+        permission="zope.Public"/>
+    <adapter
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
         factory="canonical.launchpad.components.launchpadcontainer.LaunchpadDistributionSourcePackageContainer"/>
     <adapter
-        factory="lp.registry.browser.distributionsourcepackage.distribution_from_distributionsourcepackage"/>
+        provides="lp.app.interfaces.launchpad.IServiceUsage"
+        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
+        factory="lp.registry.adapters.sourcepackage_to_distribution"
+        permission="zope.Public"/>
     <adapter
         factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumb"/>
 
@@ -869,11 +885,36 @@
             permission="zope.Public"/>
 
         <adapter
+            for="lp.registry.interfaces.distribution.IDistribution"
+            factory="lp.registry.model.pillaraffiliation.PillarAffiliation"
+            />
+        <adapter
+            for="lp.registry.interfaces.product.IProduct"
+            factory="lp.registry.model.pillaraffiliation.PillarAffiliation"
+            />
+        <adapter
+            for="lp.bugs.interfaces.bugtask.IBugTask"
             factory="lp.registry.model.pillaraffiliation.BugTaskPillarAffiliation"
             />
-
         <adapter
-            factory="lp.registry.model.pillaraffiliation.PillarAffiliation"
+            for="lp.code.interfaces.branch.IBranch"
+            factory="lp.registry.model.pillaraffiliation.BranchPillarAffiliation"
+            />
+        <adapter
+            for="lp.answers.interfaces.question.IQuestion"
+            factory="lp.registry.model.pillaraffiliation.QuestionPillarAffiliation"
+            />
+        <adapter
+            for="lp.blueprints.interfaces.specification.ISpecification"
+            factory="lp.registry.model.pillaraffiliation.SpecificationPillarAffiliation"
+            />
+        <adapter
+            for="lp.registry.interfaces.distroseries.IDistroSeries"
+            factory="lp.registry.model.pillaraffiliation.DistroSeriesPillarAffiliation"
+            />
+        <adapter
+            for="lp.registry.interfaces.productseries.IProductSeries"
+            factory="lp.registry.model.pillaraffiliation.ProductSeriesPillarAffiliation"
             />
 
         <!-- Using
@@ -1400,6 +1441,8 @@
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
+        <allow
+            interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
         <require
             permission="launchpad.Edit"
             set_schema="lp.app.interfaces.launchpad.IServiceUsage"/>
@@ -1497,6 +1540,7 @@
                 official_blueprints
                 official_malone
                 owner
+                package_derivatives_email
                 security_contact
                 summary
                 title"/>
@@ -1603,6 +1647,8 @@
         <allow
             interface="lp.bugs.interfaces.bugtarget.IHasBugHeat"/>
         <allow
+            interface="lp.bugs.interfaces.bugtarget.ISeriesBugTarget"/>
+        <allow
             interface="lp.soyuz.interfaces.buildrecords.IHasBuildRecords"/>
         <require
             permission="launchpad.Edit"
@@ -1615,9 +1661,17 @@
             interface="lp.registry.interfaces.sourcepackage.ISourcePackageFactory"/>
     </securedutility>
     <adapter
+        provides="lp.registry.interfaces.distribution.IDistribution"
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        factory="lp.registry.adapters.sourcepackage_to_distribution"
+        permission="zope.Public"/>
+    <adapter
         factory="lp.registry.browser.sourcepackage.SourcePackageBreadcrumb"/>
     <adapter
-        factory="lp.registry.browser.sourcepackage.distribution_from_sourcepackage"/>
+        provides="lp.app.interfaces.launchpad.IServiceUsage"
+        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
+        factory="lp.registry.adapters.sourcepackage_to_distribution"
+        permission="zope.Public"/>
 
     <!-- This is class ProductReleaseSet -->
 

@@ -38,7 +38,10 @@ from lp.answers.model.question import (
     QuestionTargetSearch,
     )
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
-from lp.bugs.interfaces.bugtarget import IHasBugHeat
+from lp.bugs.interfaces.bugtarget import (
+    IHasBugHeat,
+    ISeriesBugTarget,
+    )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
 from lp.bugs.model.bug import get_bug_tags_open_count
 from lp.bugs.model.bugtarget import (
@@ -185,6 +188,10 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
             self.distribution.answer_contacts_with_languages)
         return sorted(answer_contacts, key=attrgetter('displayname'))
 
+    @property
+    def owner(self):
+        return self.distribution.owner
+
 
 class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,
@@ -197,7 +204,8 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
     """
 
     implements(
-        IBugSummaryDimension, ISourcePackage, IHasBugHeat, IHasBuildRecords)
+        IBugSummaryDimension, ISourcePackage, IHasBugHeat, IHasBuildRecords,
+        ISeriesBugTarget)
 
     classProvides(ISourcePackageFactory)
 
@@ -324,6 +332,11 @@ class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
     def bugtargetname(self):
         """See `IBugTarget`."""
         return "%s (%s)" % (self.name, self.distroseries.fullseriesname)
+
+    @property
+    def bugtarget_parent(self):
+        """See `ISeriesBugTarget`."""
+        return self.distribution_sourcepackage
 
     @property
     def title(self):

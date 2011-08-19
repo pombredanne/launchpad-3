@@ -11,7 +11,6 @@ import shutil
 import subprocess
 import tempfile
 import time
-import unittest
 
 from bzrlib.branch import (
     Branch,
@@ -24,12 +23,10 @@ from bzrlib.bzrdir import (
     )
 from bzrlib.errors import (
     NoSuchFile,
-    NotBranchError,
     )
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib import trace
 from bzrlib.transport import get_transport
-from bzrlib.upgrade import upgrade
 from bzrlib.urlutils import (
     join as urljoin,
     local_path_from_url,
@@ -210,16 +207,17 @@ class TestBazaarBranchStore(WorkerTest):
         store = self.makeBranchStore()
         target_url = store._getMirrorURL(self.arbitrary_branch_id)
         knit_format = format_registry.get('knit')()
-        create_branch_with_one_revision(target_url, format=knit_format)
-        default_format = BzrDirFormat.get_default_format()
+        tree = create_branch_with_one_revision(target_url, format=knit_format)
+        self.assertNotEquals(tree.bzrdir._format.repository_format.network_name(),
+            default_format.repository_format.network_name())
 
         # The fetched branch is in the default format.
         new_branch = store.pull(
             self.arbitrary_branch_id, self.temp_dir, default_format)
         # Make sure backup.bzr is removed, as it interferes with CSCVS.
         self.assertEquals(os.listdir(self.temp_dir), [".bzr"])
-        self.assertEqual(
-            default_format, new_branch.bzrdir._format)
+        self.assertEquals(new_branch.repository._format.network_name(),
+            default_format.repository_format.network_name())
 
     def test_pushUpgradesFormat(self):
         # A branch should always be in the most up-to-date format before a
@@ -228,7 +226,6 @@ class TestBazaarBranchStore(WorkerTest):
         target_url = store._getMirrorURL(self.arbitrary_branch_id)
         knit_format = format_registry.get('knit')()
         create_branch_with_one_revision(target_url, format=knit_format)
-        default_format = BzrDirFormat.get_default_format()
 
         # The fetched branch is in the default format.
         new_branch = store.pull(
@@ -1160,7 +1157,3 @@ class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
         return BzrSvnImportWorker(
             source_details, self.get_transport('import_data'),
             self.bazaar_store, logging.getLogger())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

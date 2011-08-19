@@ -47,6 +47,7 @@ from lp.bugs.interfaces.bugtask import IllegalRelatedBugTasksParams
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugtask import get_related_bugtasks_search_params
 from lp.registry.errors import (
+    InvalidName,
     NameAlreadyTaken,
     PrivatePersonLinkageError,
     )
@@ -55,11 +56,11 @@ from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.nameblacklist import INameBlacklistSet
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
-    InvalidName,
     IPersonSet,
     PersonCreationRationale,
     PersonVisibility,
     )
+from lp.registry.interfaces.personnotification import IPersonNotificationSet
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.model.karma import (
     KarmaCategory,
@@ -388,7 +389,8 @@ class TestPerson(TestCaseWithFactory):
         distribution = self.factory.makeDistribution()
         dsp2 = self.factory.makeDistributionSourcePackage(
             sourcepackagename='sp-a', distribution=distribution)
-        dsp3 = self.factory.makeDistributionSourcePackage(
+        # We don't reference dsp3 so it gets no name:
+        self.factory.makeDistributionSourcePackage(
             sourcepackagename='sp-c', distribution=distribution)
         with person_logged_in(user):
             dsp1.addSubscription(user, subscribed_by=user)
@@ -755,6 +757,18 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
         account.openid_identifier = openid_identifier
         return account
 
+    def test_delete_no_notifications(self):
+        team = self.factory.makeTeam()
+        owner = team.teamowner
+        transaction.commit()
+        reconnect_stores('IPersonMergeJobSource')
+        team = reload_object(team)
+        owner = reload_object(owner)
+        self.person_set.delete(team, owner)
+        notification_set = getUtility(IPersonNotificationSet)
+        notifications = notification_set.getNotificationsToSend()
+        self.assertEqual(0, notifications.count())
+
     def test_openid_identifiers(self):
         # Verify that OpenId Identifiers are merged.
         duplicate = self.factory.makePerson()
@@ -1025,12 +1039,12 @@ class TestPersonSetMerge(TestCaseWithFactory, KarmaTestMixin):
 
     def test_merge_with_distroseries_subscription(self):
         # See comments in assertSubscriptionMerges.
-        self.assertSubscriptionMerges(self.factory.makeDistroRelease())
+        self.assertSubscriptionMerges(self.factory.makeDistroSeries())
 
     def test_merge_with_conflicting_distroseries_subscription(self):
         # See comments in assertConflictingSubscriptionDeletes.
         self.assertConflictingSubscriptionDeletes(
-            self.factory.makeDistroRelease())
+            self.factory.makeDistroSeries())
 
     def test_merge_with_milestone_subscription(self):
         # See comments in assertSubscriptionMerges.

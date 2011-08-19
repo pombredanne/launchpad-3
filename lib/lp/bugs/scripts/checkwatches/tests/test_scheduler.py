@@ -9,7 +9,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import unittest
 
 from pytz import utc
 import transaction
@@ -106,7 +105,3 @@ class TestBugWatchScheduler(TestCaseWithFactory):
         self.scheduler(1)
 
         self.assertEqual(next_check_date, self.bug_watch.next_check)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

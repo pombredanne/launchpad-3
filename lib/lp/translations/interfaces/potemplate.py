@@ -331,6 +331,13 @@ class IPOTemplate(IRosettaStats):
         method to do that.
         """
 
+    def setActive(active):
+        """Toggle the iscurrent flag.
+
+        Takes care of updating the suggestive potempalte cache when the
+        template is disabled.
+        """
+
     def getHeader():
         """Return an `ITranslationHeaderData` representing its header."""
 
@@ -691,6 +698,12 @@ class IPOTemplateSet(Interface):
         :return: Number of rows deleted.
         """
 
+    def removeFromSuggestivePOTemplatesCache(potemplate):
+        """Remove the given potemplate from the suggestive-templates cache.
+
+        :return: True if the template was in the cache.
+        """
+
     def populateSuggestivePOTemplatesCache():
         """Populate suggestive-templates cache.
 
@@ -792,3 +805,9 @@ class ITranslationTemplatesCollection(Interface):
 
     def select(*args):
         """Return a ResultSet for this collection with values set to args."""
+
+    def joinInner(cls, *conditions):
+        """Inner-join `cls` into the query."""
+
+    def joinOuter(cls, *conditions):
+        """Outer-join `cls` into the query."""

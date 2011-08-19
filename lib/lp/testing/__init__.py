@@ -15,6 +15,7 @@ __all__ = [
     'build_yui_unittest_suite',
     'celebrity_logged_in',
     'ExpectedException',
+    'extract_lp_cache',
     'FakeTime',
     'get_lsb_information',
     'is_logged_in',
@@ -50,13 +51,14 @@ __all__ = [
     'ZopeTestInSubProcess',
     ]
 
-from cStringIO import StringIO
 from contextlib import contextmanager
+from cStringIO import StringIO
 from datetime import (
     datetime,
     timedelta,
     )
 from fnmatch import fnmatchcase
+from functools import partial
 from inspect import (
     getargspec,
     getmro,
@@ -74,8 +76,6 @@ import tempfile
 import time
 import unittest
 
-import simplejson
-
 from bzrlib import trace
 from bzrlib.bzrdir import (
     BzrDir,
@@ -83,7 +83,9 @@ from bzrlib.bzrdir import (
     )
 from bzrlib.transport import get_transport
 import fixtures
+import oops_datedir_repo.serializer_rfc822
 import pytz
+import simplejson
 from storm.expr import Variable
 from storm.store import Store
 from storm.tracer import (
@@ -546,14 +548,16 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         The config values will be restored during test tearDown.
         """
         name = self.factory.getUniqueString()
-        body = '\n'.join(["%s: %s" % (k, v) for k, v in kwargs.iteritems()])
+        body = '\n'.join("%s: %s" % (k, v) for k, v in kwargs.iteritems())
         config.push(name, "\n[%s]\n%s\n" % (section, body))
         self.addCleanup(config.pop, name)
 
     def attachOopses(self):
         if len(self.oopses) > 0:
-            for (i, oops) in enumerate(self.oopses):
-                content = Content(UTF8_TEXT, oops.get_chunks)
+            for (i, report) in enumerate(self.oopses):
+                content = Content(UTF8_TEXT,
+                    partial(oops_datedir_repo.serializer_rfc822.to_chunks,
+                    report))
                 self.addDetail("oops-%d" % i, content)
 
     def attachLibrarianLog(self, fixture):
@@ -618,6 +622,17 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
         return self.assertEqual(
             self._unfoldEmailHeader(expected),
             self._unfoldEmailHeader(observed))
+
+    def assertStartsWith(self, s, prefix):
+        if not s.startswith(prefix):
+            raise AssertionError(
+                'string %r does not start with %r' % (s, prefix))
+
+    def assertEndsWith(self, s, suffix):
+        """Asserts that s ends with suffix."""
+        if not s.endswith(suffix):
+            raise AssertionError(
+                'string %r does not end with %r' % (s, suffix))
 
 
 class TestCaseWithFactory(TestCase):
@@ -861,7 +876,7 @@ class YUIUnitTestCase(TestCase):
 
     def id(self):
         """Return an ID for this test based on the file path."""
-        return self.test_path
+        return os.path.relpath(self.test_path, config.root)
 
     def setUp(self):
         super(YUIUnitTestCase, self).setUp()
@@ -1296,3 +1311,8 @@ class ExpectedException(TTExpectedException):
         self.caught_exc = exc_value
         return super(ExpectedException, self).__exit__(
             exc_type, exc_value, traceback)
+
+
+def extract_lp_cache(text):
+    match = re.search(r'<script>LP.cache = (\{.*\});</script>', text)
+    return simplejson.loads(match.group(1))

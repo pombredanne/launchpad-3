@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -101,43 +101,43 @@ class TestCanSetStatusBase:
         # The owner (maintainer) of the product gets to set Blocked as well.
         owner = self.productseries.product.owner
         self._assertCanSetStatus(owner, self.entry,
-            #  A      B     D     F      I     NI     NR
-            [False, True, True, False, False, False, True])
+            #  A     B     D     F      I     NI    NR
+            [True, True, True, False, False, True, True])
 
     def test_canSetStatus_owner_and_uploader(self):
         # Corner case: Nothing changes if the maintainer is also the uploader.
         self.productseries.product.owner = self.uploaderperson
         self._assertCanSetStatus(self.uploaderperson, self.entry,
-            #  A      B     D     F      I     NI     NR
-            [False, True, True, False, False, False, True])
+            #  A     B     D     F      I     NI    NR
+            [True, True, True, False, False, True, True])
 
     def test_canSetStatus_driver(self):
         # The driver gets the same permissions as the maintainer.
         driver = self.productseries.driver
         self._assertCanSetStatus(driver, self.entry,
-            #  A      B     D     F      I     NI     NR
-            [False, True, True, False, False, False, True])
+            #  A     B     D     F      I     NI    NR
+            [True, True, True, False, False, True, True])
 
     def test_canSetStatus_driver_and_uploader(self):
         # Corner case: Nothing changes if the driver is also the uploader.
         self.productseries.driver = self.uploaderperson
         self._assertCanSetStatus(self.uploaderperson, self.entry,
-            #  A      B     D     F      I     NI     NR
-            [False, True, True, False, False, False, True])
+            #  A     B     D     F      I     NI    NR
+            [True, True, True, False, False, True, True])
 
     def test_canSetStatus_product_driver(self):
         # The driver of the product, too.
         driver = self.productseries.product.driver
         self._assertCanSetStatus(driver, self.entry,
-            #  A      B     D     F      I     NI     NR
-            [False, True, True, False, False, False, True])
+            #  A      B     D     F     I     NI    NR
+            [True, True, True, False, False, True, True])
 
     def test_canSetStatus_product_driver_and_uploader(self):
         # Corner case: Nothing changes if the driver is also the uploader.
         self.productseries.product.driver = self.uploaderperson
         self._assertCanSetStatus(self.uploaderperson, self.entry,
-            #  A      B     D     F      I     NI     NR
-            [False, True, True, False, False, False, True])
+            #  A      B     D     F     I     NI    NR
+            [True, True, True, False, False, True, True])
 
     def _setUpUbuntu(self):
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -151,7 +151,7 @@ class TestCanSetStatusBase:
         self._setUpUbuntu()
         ubuntu_entry = self.queue.addOrUpdateEntry(
             'demo.pot', '#demo', False, self.uploaderperson,
-            distroseries=self.factory.makeDistroRelease(self.ubuntu),
+            distroseries=self.factory.makeDistroSeries(self.ubuntu),
             sourcepackagename=self.factory.makeSourcePackageName(),
             potemplate=self.potemplate)
         self._assertCanSetStatus(self.ubuntu_group_owner, ubuntu_entry,
@@ -232,7 +232,7 @@ class TestGetGuessedPOFile(TestCaseWithFactory):
         self.queue = getUtility(ITranslationImportQueue)
         self.factory = LaunchpadObjectFactory()
         self.distribution = self.factory.makeDistribution('boohoo')
-        self.distroseries = self.factory.makeDistroRelease(self.distribution)
+        self.distroseries = self.factory.makeDistroSeries(self.distribution)
         self.uploaderperson = self.factory.makePerson()
 
     def createSourcePackageAndPOTemplate(self, sourcepackagename, template):
@@ -345,7 +345,7 @@ class TestProductOwnerEntryImporter(TestCaseWithFactory):
         # queue, the entry importer is not updated because that would
         # cause an non-unique key for the entry.
         with person_logged_in(self.new_owner):
-            new_entry = self.import_queue.addOrUpdateEntry(
+            self.import_queue.addOrUpdateEntry(
                 u'po/sr.po', 'foo', True, self.new_owner,
                 productseries=self.product.series[0])
         with person_logged_in(self.old_owner):

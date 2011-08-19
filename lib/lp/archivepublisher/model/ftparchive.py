@@ -157,7 +157,7 @@ class FTPArchiveHandler:
         self.log.debug("Filepath: %s" % apt_config_filename)
 
         stdout_handler = OutputLineHandler(self.log.debug, "a-f: ")
-        stderr_handler = OutputLineHandler(self.log.warning, "a-f: ")
+        stderr_handler = OutputLineHandler(self.log.info, "a-f: ")
         base_command = [
             "apt-ftparchive",
             "--no-contents",

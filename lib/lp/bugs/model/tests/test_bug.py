@@ -1,22 +1,51 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
+from storm.store import Store
+from testtools.testcase import ExpectedException
+from zope.component import getUtility
+
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.bugs.enum import BugNotificationLevel
-from lp.bugs.model.bug import BugSubscriptionInfo
+from lp.bugs.enum import (
+    BugNotificationLevel,
+    BugNotificationStatus,
+    )
+from lp.bugs.interfaces.bugnotification import IBugNotificationSet
+from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.bugs.model.bug import (
+    BugNotification,
+    BugSubscriptionInfo,
+    )
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
+    feature_flags,
     login_person,
     person_logged_in,
+    set_feature_flag,
+    StormStatementRecorder,
     TestCaseWithFactory,
+    )
+from lp.testing.matchers import (
+    Equals,
+    HasQueryCount,
+    LessThan,
     )
 
 
 class TestBug(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
+
+    def test_markAsDuplicate_None(self):
+        # Calling markAsDuplicate(None) on a bug that is not currently a
+        # duplicate works correctly, and does not raise an AttributeError.
+        bug = self.factory.makeBug()
+        with ExpectedException(AssertionError, 'AttributeError not raised'):
+            with ExpectedException(AttributeError, ''):
+                with person_logged_in(self.factory.makePerson()):
+                    bug.markAsDuplicate(None)
 
     def test_get_subscribers_for_person_unsubscribed(self):
         bug = self.factory.makeBug()
@@ -113,6 +142,101 @@ class TestBug(TestCaseWithFactory):
             bug.subscribe(team, member)
         self.assertTrue(team in bug.getDirectSubscribers())
 
+    def test_get_direct_subscribers_query_count(self):
+        bug = self.factory.makeBug()
+        # Make lots of subscribers.
+        for i in xrange(10):
+            subscriber = self.factory.makePerson()
+            with person_logged_in(subscriber):
+                bug.subscribe(subscriber, subscriber)
+        Store.of(bug).flush()
+        with StormStatementRecorder() as recorder:
+            subscribers = list(bug.getDirectSubscribers())
+            self.assertThat(len(subscribers), Equals(10 + 1))
+            self.assertThat(recorder, HasQueryCount(Equals(1)))
+
+    def test_mark_as_duplicate_query_count(self):
+        bug = self.factory.makeBug()
+        # Make lots of duplicate bugs.
+        previous_dup = None
+        for i in xrange(10):
+            dup = self.factory.makeBug()
+            # Make lots of subscribers.
+            for j in xrange(10):
+                subscriber = self.factory.makePerson()
+                with person_logged_in(subscriber):
+                    dup.subscribe(subscriber, subscriber)
+            if previous_dup is not None:
+                with person_logged_in(previous_dup.owner):
+                    previous_dup.markAsDuplicate(dup)
+            previous_dup = dup
+        with person_logged_in(bug.owner):
+            Store.of(bug).flush()
+            with StormStatementRecorder() as recorder:
+                previous_dup.markAsDuplicate(bug)
+                self.assertThat(recorder, HasQueryCount(LessThan(95)))
+
+    def _get_notifications(self, status):
+        return self.store.find(
+            BugNotification,
+            BugNotification.date_emailed == None,
+            BugNotification.status == status)
+
+    def _get_pending(self):
+        return self._get_notifications(BugNotificationStatus.PENDING)
+
+    def _get_deferred(self):
+        return self._get_notifications(BugNotificationStatus.DEFERRED)
+
+    def _add_subscribers(self, bug, number):
+        for i in xrange(number):
+            subscriber = self.factory.makePerson()
+            with person_logged_in(subscriber):
+                bug.subscribe(subscriber, subscriber)
+
+    def test_duplicate_subscriber_notifications(self):
+        # Notifications for duplicate bugs are deferred where notifications
+        # for direct subscribers of the original bug are pending.
+        bug = self.factory.makeBug(title="bug-0")
+        self._add_subscribers(bug, 3)
+        self.store = Store.of(bug)
+        duplicates = []
+        # Make a few duplicate bugs.
+        for i in xrange(3):
+            duplicates.append(self.factory.makeBug(title="bug-%d" % (i + 1)))
+
+        # Pending messages exist for the bug creation.
+        self.assertEqual(4, self._get_pending().count())
+        self.assertEqual(0, self._get_deferred().count())
+
+        previous_dup = None
+        for dup in duplicates:
+            # Make a few subscribers.
+            self._add_subscribers(dup, 3)
+            if previous_dup is not None:
+                with person_logged_in(previous_dup.owner):
+                    previous_dup.markAsDuplicate(dup)
+            previous_dup = dup
+
+        # Pending messages are still all from bug creation.
+        # Only one deferred notification has been created, since notices for
+        # the primary bug are not deferred and are created by the calling
+        # process (browser or API).
+        self.assertEqual(4, self._get_pending().count())
+        self.assertEqual(1, self._get_deferred().count())
+
+        with person_logged_in(bug.owner):
+            previous_dup.markAsDuplicate(bug)
+
+        # Now there are two new deferred messages, for the duplicates to the
+        # last bug.
+        self.assertEqual(4, self._get_pending().count())
+        self.assertEqual(3, self._get_deferred().count())
+
+        # The method for retrieving deferred notification reports them all.
+        deferred = getUtility(IBugNotificationSet).getDeferredNotifications()
+        self.assertEqual(3, deferred.count())
+
     def test_get_subscribers_from_duplicates_with_private_team(self):
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product)
@@ -202,9 +326,27 @@ class TestBug(TestCaseWithFactory):
             set(subscribers), set(direct_subscribers),
             "Subscribers did not match expected value.")
 
-    def test_get_direct_subscribers_with_details(self):
-        # getDirectSubscribersWithDetails() returns both
-        # Person and BugSubscription records in one go.
+    def test_get_direct_subscribers_with_details_other_subscriber(self):
+        # getDirectSubscribersWithDetails() returns
+        # Person and BugSubscription records in one go as well as the
+        # BugSubscription.subscribed_by person.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            # Unsubscribe bug owner so it doesn't taint the result.
+            bug.unsubscribe(bug.owner, bug.owner)
+        subscriber = self.factory.makePerson()
+        subscribee = self.factory.makePerson()
+        with person_logged_in(subscriber):
+            subscription = bug.subscribe(
+                subscribee, subscriber, level=BugNotificationLevel.LIFECYCLE)
+        self.assertContentEqual(
+            [(subscribee, subscriber, subscription)],
+            bug.getDirectSubscribersWithDetails())
+
+    def test_get_direct_subscribers_with_details_self_subscribed(self):
+        # getDirectSubscribersWithDetails() returns
+        # Person and BugSubscription records in one go as well as the
+        # BugSubscription.subscribed_by person.
         bug = self.factory.makeBug()
         with person_logged_in(bug.owner):
             # Unsubscribe bug owner so it doesn't taint the result.
@@ -213,9 +355,8 @@ class TestBug(TestCaseWithFactory):
         with person_logged_in(subscriber):
             subscription = bug.subscribe(
                 subscriber, subscriber, level=BugNotificationLevel.LIFECYCLE)
-
         self.assertContentEqual(
-            [(subscriber, subscription)],
+            [(subscriber, subscriber, subscription)],
             bug.getDirectSubscribersWithDetails())
 
     def test_get_direct_subscribers_with_details_mute_excludes(self):
@@ -313,3 +454,130 @@ class TestBug(TestCaseWithFactory):
             bug.subscribe(team, person)
             bug.setPrivate(True, person)
             self.assertFalse(bug.personIsDirectSubscriber(person))
+
+    def test_getVisibleLinkedBranches_doesnt_rtn_inaccessible_branches(self):
+        # If a Bug has branches linked to it that the current user
+        # cannot access, those branches will not be returned in its
+        # linked_branches property.
+        bug = self.factory.makeBug()
+        private_branch_owner = self.factory.makePerson()
+        private_branch = self.factory.makeBranch(
+            owner=private_branch_owner, private=True)
+        with person_logged_in(private_branch_owner):
+            bug.linkBranch(private_branch, private_branch.registrant)
+        public_branch_owner = self.factory.makePerson()
+        public_branches = [
+            self.factory.makeBranch() for i in range(4)]
+        with person_logged_in(public_branch_owner):
+            for public_branch in public_branches:
+                bug.linkBranch(public_branch, public_branch.registrant)
+        with StormStatementRecorder() as recorder:
+            linked_branches = [
+                bug_branch.branch for bug_branch in
+                bug.getVisibleLinkedBranches(user=public_branch_owner)]
+            # We check that the query count is low, since that's
+            # part of the point of the way that linked_branches is
+            # implemented. If we try eager-loading all the linked
+            # branches the query count jumps up by 6, which is not
+            # what we want.
+            self.assertThat(recorder, HasQueryCount(LessThan(7)))
+        self.assertContentEqual(public_branches, linked_branches)
+        self.assertNotIn(private_branch, linked_branches)
+
+
+class TestBugAutoConfirmation(TestCaseWithFactory):
+    """Tests for auto confirming bugs"""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_shouldConfirmBugtasks_initial_False(self):
+        # After a bug is created, only one person is affected, and we should
+        # not try to confirm bug tasks.
+        bug = self.factory.makeBug()
+        self.assertFalse(bug.shouldConfirmBugtasks())
+
+    def test_shouldConfirmBugtasks_after_another_positively_affected(self):
+        # We should confirm bug tasks if the number of affected users is
+        # more than one.
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            bug.markUserAffected(person)
+        self.assertTrue(bug.shouldConfirmBugtasks())
+
+    def test_shouldConfirmBugtasks_after_another_persons_dupe(self):
+        # We should confirm bug tasks if someone else files a dupe.
+        bug = self.factory.makeBug()
+        duplicate_bug = self.factory.makeBug()
+        with person_logged_in(duplicate_bug.owner):
+            duplicate_bug.markAsDuplicate(bug)
+        self.assertTrue(bug.shouldConfirmBugtasks())
+
+    def test_shouldConfirmBugtasks_after_same_persons_dupe_False(self):
+        # We should not confirm bug tasks if same person files a dupe.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            duplicate_bug = self.factory.makeBug(owner=bug.owner)
+            duplicate_bug.markAsDuplicate(bug)
+        self.assertFalse(bug.shouldConfirmBugtasks())
+
+    def test_shouldConfirmBugtasks_honors_negatively_affected(self):
+        # We should confirm bug tasks if the number of affected users is
+        # more than one.
+        bug = self.factory.makeBug()
+        with person_logged_in(bug.owner):
+            bug.markUserAffected(bug.owner, False)
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            bug.markUserAffected(person)
+        self.assertFalse(bug.shouldConfirmBugtasks())
+
+    def test_markUserAffected_autoconfirms(self):
+        # markUserAffected will auto confirm if appropriate.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            bug = self.factory.makeBug()
+            person = self.factory.makePerson()
+            with person_logged_in(person):
+                bug.markUserAffected(person)
+            self.assertEqual(BugTaskStatus.CONFIRMED, bug.bugtasks[0].status)
+
+    def test_markUserAffected_does_not_autoconfirm_wrongly(self):
+        # markUserAffected will not auto confirm if incorrect.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            bug = self.factory.makeBug()
+            person = self.factory.makePerson()
+            with person_logged_in(bug.owner):
+                bug.markUserAffected(bug.owner, False)
+            with person_logged_in(person):
+                bug.markUserAffected(person)
+            self.assertEqual(BugTaskStatus.NEW, bug.bugtasks[0].status)
+
+    def test_markAsDuplicate_autoconfirms(self):
+        # markAsDuplicate will auto confirm if appropriate.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            bug = self.factory.makeBug()
+            duplicate_bug = self.factory.makeBug()
+            with person_logged_in(duplicate_bug.owner):
+                duplicate_bug.markAsDuplicate(bug)
+            self.assertEqual(BugTaskStatus.CONFIRMED, bug.bugtasks[0].status)
+
+    def test_markAsDuplicate_does_not_autoconfirm_wrongly(self):
+        # markAsDuplicate will not auto confirm if incorrect.
+        # When feature flag code is removed, remove the next two lines and
+        # dedent the rest.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            bug = self.factory.makeBug()
+            with person_logged_in(bug.owner):
+                duplicate_bug = self.factory.makeBug(owner=bug.owner)
+                duplicate_bug.markAsDuplicate(bug)
+            self.assertEqual(BugTaskStatus.NEW, bug.bugtasks[0].status)

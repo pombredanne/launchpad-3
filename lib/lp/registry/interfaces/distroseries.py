@@ -556,7 +556,8 @@ class IDistroSeriesPublic(
         :param created_since_date: If specified, only returns items uploaded
             since the timestamp supplied.
         :param archive: Filter results for this `IArchive`.
-        :param pocket: Filter results by this `PackagePublishingPocket`.
+        :param pocket: Filter results by this `PackagePublishingPocket` or a
+            list of `PackagePublishingPocket`.
         :param custom_type: Filter results by this
             `PackageUploadCustomFormat`.
         :param name: Filter results by this file name or package name.
@@ -916,6 +917,12 @@ class IDistroSeriesPublic(
 
     def isInitialized():
         """Has this series been initialized?"""
+
+    def getInitializationJob():
+        """Get the last `IInitializeDistroSeriesJob` for this series.
+
+        :return: `None` if no job is found or an `IInitializeDistroSeriesJob`.
+        """
 
     @operation_parameters(
         since=Datetime(

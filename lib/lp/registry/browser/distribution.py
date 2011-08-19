@@ -827,6 +827,7 @@ class DistributionEditView(RegistryEditFormView):
         'description',
         'bug_reporting_guidelines',
         'bug_reported_acknowledgement',
+        'package_derivatives_email',
         'icon',
         'logo',
         'mugshot',

@@ -42,6 +42,18 @@
 
 
   <securedutility
+      name="DistroSeriesDifferences"
+      component=".vocabularies.DistroSeriesDifferencesVocabulary"
+      provides="zope.schema.interfaces.IVocabularyFactory">
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class=".vocabularies.DistroSeriesDifferencesVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
+
+  <securedutility
     name="FeaturedProject"
     component="lp.registry.vocabularies.FeaturedProjectVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
@@ -437,6 +449,18 @@
 
   <class class="lp.registry.vocabularies.SourcePackageNameIterator">
     <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator"/>
+  </class>
+
+  <securedutility
+    name="DistributionSourcePackage"
+    component="lp.registry.vocabularies.DistributionSourcePackageVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class="lp.registry.vocabularies.DistributionSourcePackageVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
 </configure>

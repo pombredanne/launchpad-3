@@ -106,6 +106,7 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
+    ILaunchBag,
     IStoreSelector,
     MAIN_STORE,
     )
@@ -123,6 +124,7 @@ from lp.bugs.adapters.bugchange import (
     BugConvertedToQuestion,
     BugWatchAdded,
     BugWatchRemoved,
+    BugDuplicateChange,
     SeriesNominated,
     UnsubscribedFromBug,
     )
@@ -173,11 +175,9 @@ from lp.bugs.model.structuralsubscription import (
     get_structural_subscriptions_for_bug,
     get_structural_subscribers,
     )
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.hardwaredb.interfaces.hwdb import IHWSubmissionBugSet
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distributionsourcepackage import (
-    IDistributionSourcePackage,
-    )
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import (
     IPersonSet,
@@ -931,18 +931,21 @@ BugMessage""" % sqlvalues(self.id))
         """
         if level is None:
             level = BugNotificationLevel.LIFECYCLE
-        subscriptions = self.getSubscriptionInfo(level).direct_subscriptions
+        direct_subscribers = (
+            self.getSubscriptionInfo(level).direct_subscribers)
         if recipients is not None:
-            for subscriber in subscriptions.subscribers:
+            for subscriber in direct_subscribers:
                 recipients.addDirectSubscriber(subscriber)
-        return subscriptions.subscribers.sorted
+        return direct_subscribers.sorted
 
     def getDirectSubscribersWithDetails(self):
         """See `IBug`."""
+        SubscribedBy = ClassAlias(Person, name="subscribed_by")
         results = Store.of(self).find(
-            (Person, BugSubscription),
+            (Person, SubscribedBy, BugSubscription),
             BugSubscription.person_id == Person.id,
             BugSubscription.bug_id == self.id,
+            BugSubscription.subscribed_by_id == SubscribedBy.id,
             Not(In(BugSubscription.person_id,
                    Select(BugMute.person_id, BugMute.bug_id == self.id)))
             ).order_by(Person.displayname)
@@ -999,7 +1002,6 @@ BugMessage""" % sqlvalues(self.id))
             for subscription in info.duplicate_only_subscriptions:
                 recipients.addDupeSubscriber(
                     subscription.person, subscription.bug)
-
         return info.duplicate_only_subscriptions.subscribers.sorted
 
     def getSubscribersForPerson(self, person):
@@ -1099,7 +1101,7 @@ BugMessage""" % sqlvalues(self.id))
              bug=self, is_comment=True,
              message=message, recipients=recipients, activity=activity)
 
-    def addChange(self, change, recipients=None):
+    def addChange(self, change, recipients=None, deferred=False):
         """See `IBug`."""
         when = change.when
         if when is None:
@@ -1128,7 +1130,8 @@ BugMessage""" % sqlvalues(self.id))
                     level=BugNotificationLevel.METADATA)
             getUtility(IBugNotificationSet).addNotification(
                 bug=self, is_comment=False, message=message,
-                recipients=recipients, activity=activity)
+                recipients=recipients, activity=activity,
+                deferred=deferred)
 
         self.updateHeat()
 
@@ -1179,33 +1182,7 @@ BugMessage""" % sqlvalues(self.id))
 
     def addTask(self, owner, target):
         """See `IBug`."""
-        product = None
-        product_series = None
-        distribution = None
-        distro_series = None
-        source_package_name = None
-
-        # Turn `target` into something more useful.
-        if IProduct.providedBy(target):
-            product = target
-        if IProductSeries.providedBy(target):
-            product_series = target
-        if IDistribution.providedBy(target):
-            distribution = target
-        if IDistroSeries.providedBy(target):
-            distro_series = target
-        if IDistributionSourcePackage.providedBy(target):
-            distribution = target.distribution
-            source_package_name = target.sourcepackagename
-        if ISourcePackage.providedBy(target):
-            distro_series = target.distroseries
-            source_package_name = target.sourcepackagename
-
-        new_task = getUtility(IBugTaskSet).createTask(
-            self, owner=owner, product=product,
-            productseries=product_series, distribution=distribution,
-            distroseries=distro_series,
-            sourcepackagename=source_package_name)
+        new_task = getUtility(IBugTaskSet).createTask(self, owner, target)
 
         # When a new task is added the bug's heat becomes relevant to the
         # target's max_bug_heat.
@@ -1318,6 +1295,21 @@ BugMessage""" % sqlvalues(self.id))
             notify(ObjectDeletedEvent(bug_branch, user=user))
             bug_branch.destroySelf()
 
+    def getVisibleLinkedBranches(self, user):
+        """Return all the branches linked to the bug that `user` can see."""
+        all_branches = getUtility(IAllBranches)
+        linked_branches = list(all_branches.visibleByUser(
+            user).linkedToBugs([self]).getBranches())
+        if len(linked_branches) == 0:
+            return EmptyResultSet()
+        else:
+            store = Store.of(self)
+            branch_ids = [branch.id for branch in linked_branches]
+            return store.find(
+                BugBranch,
+                BugBranch.bug == self,
+                In(BugBranch.branchID, branch_ids))
+
     @cachedproperty
     def has_cves(self):
         """See `IBug`."""
@@ -1422,7 +1414,6 @@ BugMessage""" % sqlvalues(self.id))
         question = question_target.createQuestionFromBug(self)
         self.addChange(BugConvertedToQuestion(UTC_NOW, person, question))
         get_property_cache(self)._question_from_bug = question
-
         notify(BugBecameQuestionEvent(self, question, person))
         return question
 
@@ -1780,6 +1771,20 @@ BugMessage""" % sqlvalues(self.id))
         store.flush()
         store.invalidate(self)
 
+    def shouldConfirmBugtasks(self):
+        """Should we try to confirm this bug's bugtasks?
+        The answer is yes if more than one user is affected."""
+        # == 2 would probably be sufficient once we have all legacy bug tasks
+        # confirmed.  For now, this is a compromise: we don't need a migration
+        # step, but we will make some unnecessary comparisons.
+        return self.users_affected_count_with_dupes > 1
+
+    def maybeConfirmBugtasks(self):
+        """Maybe try to confirm our new bugtasks."""
+        if self.shouldConfirmBugtasks():
+            for bugtask in self.bugtasks:
+                bugtask.maybeConfirm()
+
     def markUserAffected(self, user, affected=True):
         """See `IBug`."""
         bap = self._getAffectedUser(user)
@@ -1795,6 +1800,9 @@ BugMessage""" % sqlvalues(self.id))
         for dupe in self.duplicates:
             if dupe._getAffectedUser(user) is not None:
                 dupe.markUserAffected(user, affected)
+
+        if affected:
+            self.maybeConfirmBugtasks()
 
         self.updateHeat()
 
@@ -1817,16 +1825,23 @@ BugMessage""" % sqlvalues(self.id))
             if duplicate_of is not None:
                 field._validate(duplicate_of)
             if self.duplicates:
+                user = getUtility(ILaunchBag).user
                 for duplicate in self.duplicates:
-                    # Fire a notify event in model code since moving
-                    # duplicates of a duplicate does not normally fire an
-                    # event.
-                    dupe_before = Snapshot(
-                        duplicate, providing=providedBy(duplicate))
+                    old_value = duplicate.duplicateof
                     affected_targets.update(
                         duplicate._markAsDuplicate(duplicate_of))
-                    notify(ObjectModifiedEvent(
-                            duplicate, dupe_before, 'duplicateof'))
+
+                    # Put an entry into the BugNotification table for
+                    # later processing.
+                    change = BugDuplicateChange(
+                        when=None, person=user,
+                        what_changed='duplicateof',
+                        old_value=old_value,
+                        new_value=duplicate_of)
+                    empty_recipients = BugNotificationRecipients()
+                    duplicate.addChange(
+                        change, empty_recipients, deferred=True)
+
             self.duplicateof = duplicate_of
         except LaunchpadValidationError, validation_error:
             raise InvalidDuplicateValue(validation_error)
@@ -1836,12 +1851,16 @@ BugMessage""" % sqlvalues(self.id))
             # to 0 (since it's a duplicate, it shouldn't have any heat
             # at all).
             self.setHeat(0, affected_targets=affected_targets)
+            # Maybe confirm bug tasks, now that more people might be affected
+            # by this bug.
+            duplicate_of.maybeConfirmBugtasks()
         else:
             # Otherwise, recalculate this bug's heat, since it will be 0
             # from having been a duplicate. We also update the bug that
             # was previously duplicated.
             self.updateHeat(affected_targets)
-            current_duplicateof.updateHeat(affected_targets)
+            if current_duplicateof is not None:
+                current_duplicateof.updateHeat(affected_targets)
         return affected_targets
 
     def markAsDuplicate(self, duplicate_of):
@@ -2277,7 +2296,7 @@ class BugSubscriptionInfo:
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
-    def direct_subscriptions(self):
+    def old_direct_subscriptions(self):
         """The bug's direct subscriptions."""
         return IStore(BugSubscription).find(
             BugSubscription,
@@ -2287,19 +2306,57 @@ class BugSubscriptionInfo:
                    Select(BugMute.person_id, BugMute.bug_id == self.bug.id))))
 
     @cachedproperty
+    def direct_subscriptions_and_subscribers(self):
+        """The bug's direct subscriptions."""
+        res = IStore(BugSubscription).find(
+            (BugSubscription, Person),
+            BugSubscription.bug_notification_level >= self.level,
+            BugSubscription.bug == self.bug,
+            BugSubscription.person_id == Person.id,
+            Not(In(BugSubscription.person_id,
+                   Select(BugMute.person_id,
+                          BugMute.bug_id == self.bug.id))))
+        # Here we could test for res.count() but that will execute another
+        # query.  This structure avoids the extra query.
+        return zip(*res) or ((), ())
+
+    @cachedproperty
     @freeze(BugSubscriptionSet)
-    def duplicate_subscriptions(self):
+    def direct_subscriptions(self):
+        return self.direct_subscriptions_and_subscribers[0]
+
+    @cachedproperty
+    @freeze(BugSubscriberSet)
+    def direct_subscribers(self):
+        return self.direct_subscriptions_and_subscribers[1]
+
+    @cachedproperty
+    def duplicate_subscriptions_and_subscribers(self):
         """Subscriptions to duplicates of the bug."""
         if self.bug.private:
-            return ()
+            return ((), ())
         else:
-            return IStore(BugSubscription).find(
-                BugSubscription,
+            res = IStore(BugSubscription).find(
+                (BugSubscription, Person),
                 BugSubscription.bug_notification_level >= self.level,
                 BugSubscription.bug_id == Bug.id,
+                BugSubscription.person_id == Person.id,
                 Bug.duplicateof == self.bug,
                 Not(In(BugSubscription.person_id,
                        Select(BugMute.person_id, BugMute.bug_id == Bug.id))))
+        # Here we could test for res.count() but that will execute another
+        # query.  This structure avoids the extra query.
+        return zip(*res) or ((), ())
+
+    @cachedproperty
+    @freeze(BugSubscriptionSet)
+    def duplicate_subscriptions(self):
+        return self.duplicate_subscriptions_and_subscribers[0]
+
+    @cachedproperty
+    @freeze(BugSubscriberSet)
+    def duplicate_subscribers(self):
+        return self.duplicate_subscriptions_and_subscribers[1]
 
     @cachedproperty
     @freeze(BugSubscriptionSet)
@@ -2309,9 +2366,9 @@ class BugSubscriptionInfo:
         Excludes subscriptions for people who have a direct subscription or
         are also notified for another reason.
         """
-        self.duplicate_subscriptions.subscribers  # Pre-load subscribers.
+        self.duplicate_subscribers  # Pre-load subscribers.
         higher_precedence = (
-            self.direct_subscriptions.subscribers.union(
+            self.direct_subscribers.union(
                 self.also_notified_subscribers))
         return (
             subscription for subscription in self.duplicate_subscriptions
@@ -2353,13 +2410,13 @@ class BugSubscriptionInfo:
                 self.structural_subscriptions.subscribers,
                 self.all_pillar_owners_without_bug_supervisors,
                 self.all_assignees).difference(
-                self.direct_subscriptions.subscribers).difference(muted)
+                self.direct_subscribers).difference(muted)
 
     @cachedproperty
     def indirect_subscribers(self):
         """All subscribers except direct subscribers."""
         return self.also_notified_subscribers.union(
-            self.duplicate_subscriptions.subscribers)
+            self.duplicate_subscribers)
 
 
 class BugSet:
@@ -2491,15 +2548,15 @@ class BugSet:
         # Create the task on a product if one was passed.
         if params.product:
             getUtility(IBugTaskSet).createTask(
-                bug=bug, product=params.product, owner=params.owner,
-                status=params.status)
+                bug, params.owner, params.product, status=params.status)
 
         # Create the task on a source package name if one was passed.
         if params.distribution:
+            target = params.distribution
+            if params.sourcepackagename:
+                target = target.getSourcePackage(params.sourcepackagename)
             getUtility(IBugTaskSet).createTask(
-                bug=bug, distribution=params.distribution,
-                sourcepackagename=params.sourcepackagename,
-                owner=params.owner, status=params.status)
+                bug, params.owner, target, status=params.status)
 
         bug_task = bug.default_bugtask
         if params.assignee:
