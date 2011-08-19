@@ -8,11 +8,24 @@
           src="../../../../canonical/launchpad/icing/yui/yui/yui.js">
   </script>
   <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
+  <script type="text/javascript">
+    // The code expects this to be present.
+    var LP = {
+        cache: {},
+        links: {}
+    };
+  </script>
   <script type="text/javascript"
           src="../../../app/javascript/testing/testrunner.js"></script>
   <script type="text/javascript"
           src="../../../app/javascript/testing/iorecorder.js"></script>
 
+ <script type="text/javascript"
+          src="../../../app/javascript/client.js"></script>
+ <script type="text/javascript"
+          src="../../../app/javascript/extras/extras.js"></script>
+  <script type="text/javascript"
+          src="../../../app/javascript/anim/anim.js"></script>
   <!-- The module under test -->
   <script type="text/javascript" src="../requestbuild_overlay.js"></script>
 
@@ -23,5 +36,6 @@
 <a id="request-daily-build"
    class="sprite source-package-recipe js-action unseen"
    href="#">Build now</a>
+<div id="builds-target"></div>
 </body>
 </html>
