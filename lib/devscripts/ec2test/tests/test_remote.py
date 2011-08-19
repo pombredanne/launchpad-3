@@ -577,13 +577,18 @@ class TestRequest(TestCaseWithTransport, RequestHelpers):
                     expected_part.get_payload(), observed_part.get_payload())
 
     def test_format_result_success(self):
+
         class SomeTest(TestCase):
+
             def test_a(self):
                 pass
+
             def test_b(self):
                 pass
+
             def test_c(self):
                 pass
+
         test = unittest.TestSuite(map(SomeTest, ['test_' + x for x in 'abc']))
         result = TestResult()
         test.run(result)
@@ -614,19 +619,25 @@ Tests started at approximately %(start_time)s
 Source: %(source_branch)s r%(source_revno)s
 Target: %(target_branch)s r%(target_revno)s
 <BLANKLINE>
-%(num_tests)s tests run in %(duration)s, %(num_failures)s failures, %(num_errors)s errors
+%(num_tests)s tests run in %(duration)s, %(num_failures)s failures, \
+%(num_errors)s errors
 <BLANKLINE>
 (See the attached file for the complete log)
 """ % data, doctest.REPORT_NDIFF | doctest.ELLIPSIS))
 
     def test_format_result_with_errors(self):
+
         class SomeTest(TestCase):
+
             def test_ok(self):
                 pass
+
             def test_fail(self):
                 self.fail("oh no")
+
             def test_error(self):
                 1/0
+
         fail_test = SomeTest('test_fail')
         error_test = SomeTest('test_error')
         test = unittest.TestSuite(
@@ -662,7 +673,8 @@ Tests started at approximately %(start_time)s
 Source: %(source_branch)s r%(source_revno)s
 Target: %(target_branch)s r%(target_revno)s
 <BLANKLINE>
-%(num_tests)s tests run in %(duration)s, %(num_failures)s failures, %(num_errors)s errors
+%(num_tests)s tests run in %(duration)s, %(num_failures)s failures, \
+%(num_errors)s errors
 <BLANKLINE>
 Failing tests
 -------------
@@ -675,20 +687,14 @@ Tests with errors
 ======================================================================
 FAILURE: test_fail...
 ----------------------------------------------------------------------
-Text attachment: traceback
-------------
 Traceback (most recent call last):
 ...
-------------
 <BLANKLINE>
 ======================================================================
 ERROR: test_error...
 ----------------------------------------------------------------------
-Text attachment: traceback
-------------
 Traceback (most recent call last):
 ...
-------------
 <BLANKLINE>
 <BLANKLINE>
 (See the attached file for the complete log)
@@ -851,6 +857,7 @@ class TestEC2Runner(TestCaseWithTransport, RequestHelpers):
         # arguments and keyword arguments it has been given.
         calls = []
         runner = self.make_ec2runner()
+
         def function(*args, **kwargs):
             calls.append((args, kwargs))
         runner.run("boring test method", function, "foo", "bar", baz="qux")
