@@ -44,6 +44,9 @@ from lp.codehosting.bzrutils import (
     read_locked,
     write_locked,
     )
+from lp.codehosting.safe_open import (
+    SafeBranchOpener,
+    )
 from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.services.osutils import override_environ
 from lp.testing import (
@@ -84,6 +87,7 @@ class BzrSyncTestCase(TestCaseWithTransport, TestCaseWithFactory):
 
     def setUp(self):
         super(BzrSyncTestCase, self).setUp()
+        SafeBranchOpener.install_hook()
         self.disable_directory_isolation()
         self.useBzrBranches(direct_database=True)
         self.lp_db_user = config.launchpad.dbuser
