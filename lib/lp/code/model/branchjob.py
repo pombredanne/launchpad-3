@@ -280,6 +280,8 @@ class BranchJobDerived(BaseRunnableJob):
         return vars
 
     def getErrorRecipients(self):
+        if self.requester is None:
+            return []
         return [format_address_for_person(self.requester)]
 
 
