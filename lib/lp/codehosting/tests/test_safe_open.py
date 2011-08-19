@@ -37,6 +37,10 @@ from bzrlib.transport import chroot
 class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
     """Unit tests for `SafeBranchOpener.checkAndFollowBranchReference`."""
 
+    def setUp(self):
+        super(TestSafeBranchOpenerCheckAndFollowBranchReference, self).setUp()
+        SafeBranchOpener.install_hook()
+
     class StubbedSafeBranchOpener(SafeBranchOpener):
         """SafeBranchOpener that provides canned answers.
 
@@ -122,6 +126,10 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
 
 
 class TestSafeBranchOpenerStacking(TestCaseWithTransport):
+
+    def setUp(self):
+        super(TestSafeBranchOpenerStacking, self).setUp()
+        SafeBranchOpener.install_hook()
 
     def makeBranchOpener(self, allowed_urls):
         policy = WhitelistPolicy(True, allowed_urls, True)
@@ -227,6 +235,18 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
 
 class TestSafeOpen(TestCaseWithTransport):
     """Tests for `safe_open`."""
+
+    def setUp(self):
+        super(TestSafeOpen, self).setUp()
+        SafeBranchOpener.install_hook()
+
+    def test_hook_does_not_interfere(self):
+        # The transform_fallback_location hook does not interfere with regular
+        # stacked branch access outside of safe_open.
+        self.make_branch('stacked')
+        self.make_branch('stacked-on')
+        Branch.open('stacked').set_stacked_on_url('../stacked-on')
+        Branch.open('stacked')
 
     def get_chrooted_scheme(self, relpath):
         """Create a server that is chrooted to `relpath`.
