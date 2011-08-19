@@ -136,9 +136,16 @@ class TacTestSetupTestCase(testtools.TestCase):
         self.assertIs(DeprecationWarning, warnings_log[0].category)
 
     def test_truncateLog(self):
-        """truncateLog truncates the log. What did you expect?"""
+        """
+        truncateLog truncates the log, if it exists, leaving the record of the
+        service start in place.
+        """
         tempdir = self.useFixture(TempDir()).path
         fixture = SimpleTac("okay.tac", tempdir)
+
+        # Truncating the log is a no-op if the log does not exist.
+        fixture.truncateLog()
+        self.assertFalse(os.path.exists(fixture.logfile))
 
         # Put something in the log file.
         with open(fixture.logfile, "wb") as logfile:
