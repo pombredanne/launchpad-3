@@ -931,7 +931,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         script.markIndexCreationComplete = FakeMethod()
         script.runPublishDistro = FakeMethod()
         suite = get_a_suite(series)
-        script.createIndexes(distro, suite)
+        script.createIndexes(distro, [suite])
         self.assertEqual(
             [((distro, suite), {})], script.markIndexCreationComplete.calls)
 
@@ -946,7 +946,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         script.markIndexCreationComplete = FakeMethod()
         script.runPublishDistro = FakeMethod(failure=Boom("Sorry!"))
         try:
-            script.createIndexes(series.distribution, get_a_suite(series))
+            script.createIndexes(series.distribution, [get_a_suite(series)])
         except:
             pass
         self.assertEqual([], script.markIndexCreationComplete.calls)
@@ -999,16 +999,18 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
 
     def test_script_calls_createIndexes_for_new_series(self):
         # If the script's main() finds a distroseries that needs its
-        # indexes created, it calls createIndexes on that distroseries.
+        # indexes created, it calls createIndexes on that distroseries,
+        # passing it all of the series' suite names.
         distro = self.makeDistroWithPublishDirectory()
         series = self.makeDistroSeriesNeedingIndexes(distribution=distro)
         script = self.makeScript(distro)
         script.createIndexes = FakeMethod()
         script.main()
-        expected_calls = [
-            ((distro, series.getSuite(pocket)), {})
-            for pocket in pocketsuffix.iterkeys()]
-        self.assertContentEqual(expected_calls, script.createIndexes.calls)
+        [((given_distro, given_suites), kwargs)] = script.createIndexes.calls
+        self.assertEqual(distro, given_distro)
+        self.assertContentEqual(
+            [series.getSuite(pocket) for pocket in pocketsuffix.iterkeys()],
+            given_suites)
 
     def test_createIndexes_ignores_other_series(self):
         # createIndexes does not accidentally also touch other
@@ -1022,7 +1024,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         self.createIndexesMarkerDir(script, series)
         suite = get_a_suite(series)
 
-        script.createIndexes(distro, suite)
+        script.createIndexes(distro, [suite])
 
         args, kwargs = script.runPublishDistro.calls[0]
         self.assertEqual([suite], kwargs['suites'])
