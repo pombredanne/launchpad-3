@@ -2551,15 +2551,6 @@ class ViewWikiName(AnonymousAuthorization):
     usedfor = IWikiName
 
 
-class EditArchivePermissionSet(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IArchivePermissionSet
-
-    def checkAuthenticated(self, user):
-        """Users must be an admin or a member of the tech board."""
-        return user.in_admin or user.in_ubuntu_techboard
-
-
 class ViewPackageset(AnonymousAuthorization):
     """Anyone can view an IPackageset."""
     usedfor = IPackageset
