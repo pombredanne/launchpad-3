@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-import os.path
 from os.path import (
     dirname,
     exists,
@@ -145,7 +144,7 @@ class TacTestSetupTestCase(testtools.TestCase):
 
         # Truncating the log is a no-op if the log does not exist.
         fixture.truncateLog()
-        self.assertFalse(os.path.exists(fixture.logfile))
+        self.assertFalse(exists(fixture.logfile))
 
         # Put something in the log file.
         with open(fixture.logfile, "wb") as logfile:
@@ -153,7 +152,7 @@ class TacTestSetupTestCase(testtools.TestCase):
 
         # Truncating the log does not remove the log file.
         fixture.truncateLog()
-        self.assertTrue(os.path.exists(fixture.logfile))
+        self.assertTrue(exists(fixture.logfile))
         with open(fixture.logfile, "rb") as logfile:
             self.assertEqual("", logfile.read())
 
