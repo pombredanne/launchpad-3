@@ -2132,7 +2132,7 @@ class DistributionSourcePackageVocabulary:
             and safe_hasattr(spn_or_dsp, 'sourcepackagename')):
             # We use the hasattr checks rather than adaption because the
             # DistributionSourcePackageInDatabase object is a little bit
-            # broken, and does not provide any interface. 
+            # broken, and does not provide any interface.
             distribution = spn_or_dsp.distribution
             dsp = distribution.getSourcePackage(spn_or_dsp.sourcepackagename)
         else:
