@@ -27,6 +27,7 @@ from email.Utils import (
     parseaddr,
     parsedate_tz,
     )
+import logging
 from operator import attrgetter
 import os.path
 
@@ -207,6 +208,10 @@ def get_parent_msgids(parsed_message):
 class MessageSet:
     implements(IMessageSet)
 
+    extra_encoding_aliases = {
+        'macintosh': 'mac_roman',
+    }
+
     def get(self, rfc822msgid):
         messages = list(Message.selectBy(rfc822msgid=rfc822msgid))
         if len(messages) == 0:
@@ -230,6 +235,19 @@ class MessageSet:
         # are created.
         Store.of(message).flush()
         return message
+
+    @classmethod
+    def decode(self, encoded, encoding):
+        encoding = self.extra_encoding_aliases.get(encoding, encoding)
+        try:
+            return encoded.decode(encoding, 'replace')
+        except LookupError:
+            try:
+                return encoded.decode('us-ascii')
+            except UnicodeDecodeError:
+                logging.getLogger().warning(
+                    'Treating unknown encoding "%s" as latin-1.' % encoding)
+                return encoded.decode('latin-1')
 
     def _decode_header(self, header):
         r"""Decode an RFC 2047 encoded header.
@@ -264,7 +282,7 @@ class MessageSet:
             # cause problems in unusual encodings that we are hopefully
             # unlikely to encounter in this part of the code.
             re_encoded_bits.append(
-                (bytes.decode(charset, 'replace').encode('utf-8'), 'utf-8'))
+                (self.decode(bytes, charset).encode('utf-8'), 'utf-8'))
 
         return unicode(email.Header.make_header(re_encoded_bits))
 
@@ -441,8 +459,7 @@ class MessageSet:
                 charset = part.get_content_charset()
                 if charset is None or str(charset).lower() == 'x-unknown':
                     charset = 'latin-1'
-
-                content = content.decode(charset, 'replace')
+                content = self.decode(content, charset)
 
                 if content.strip():
                     MessageChunk(

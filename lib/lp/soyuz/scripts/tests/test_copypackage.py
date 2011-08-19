@@ -89,7 +89,6 @@ from lp.testing import (
     )
 from lp.testing.mail_helpers import pop_notifications
 from lp.testing.matchers import HasQueryCount
-from lp.testing.sampledata import ADMIN_EMAIL
 
 
 class ReUploadFileTestCase(TestCaseWithFactory):
@@ -1403,9 +1402,9 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             [source], target_archive, dsp.derived_series, source.pocket,
             check_permissions=False, overrides=[override])
 
-        matcher = MatchesStructure(
-            component=Equals(override.component),
-            section=Equals(override.section))
+        matcher = MatchesStructure.byEquality(
+            component=override.component,
+            section=override.section)
         self.assertThat(copied_source, matcher)
 
     def test_copy_ppa_generates_notification(self):
@@ -1443,7 +1442,6 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         nobby = self.createNobby(('i386', 'hppa'))
         getUtility(ISourcePackageFormatSelectionSet).add(
             nobby, SourcePackageFormat.FORMAT_1_0)
-        admin = getUtility(IPersonSet).getByEmail(ADMIN_EMAIL)
         nobby.changeslist = 'nobby-changes@example.com'
         [copied_source] = do_copy(
             [source], archive, nobby, source.pocket, False,
@@ -1666,7 +1664,7 @@ class TestDoDelayedCopy(TestCaseWithFactory, BaseDoCopyTests):
             'foocomm', '0.9', component='multiverse',
             archive=self.copy_archive,
             status=PackagePublishingStatus.PUBLISHED)
-        ancestor_bins = self.test_publisher.getPubBinaries(
+        self.test_publisher.getPubBinaries(
             binaryname='foo-bin', archive=self.copy_archive,
             status=PackagePublishingStatus.PUBLISHED, pub_source=ancestor)
         self.layer.txn.commit()
@@ -1991,7 +1989,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
             pocket=PackagePublishingPocket.RELEASE,
             status=PackagePublishingStatus.PUBLISHED)
 
-        noise_source = test_publisher.getPubSource(
+        test_publisher.getPubSource(
             sourcename='firefox-3.0', version='1.2',
             archive=ubuntu.main_archive, distroseries=hoary,
             pocket=PackagePublishingPocket.UPDATES,
@@ -2149,7 +2147,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         ppa_source = test_publisher.getPubSource(
             archive=cprov.archive, version='1.0', distroseries=hoary,
             status=PackagePublishingStatus.PUBLISHED)
-        ppa_binaries = test_publisher.getPubBinaries(
+        test_publisher.getPubBinaries(
             pub_source=ppa_source, distroseries=hoary,
             status=PackagePublishingStatus.PUBLISHED)
         # Commit to ensure librarian files are written.
@@ -2190,7 +2188,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
             sourcename='boing', version='1.0',
             archive=cprov.archive, distroseries=hoary,
             status=PackagePublishingStatus.PENDING)
-        ppa_binaries = test_publisher.getPubBinaries(
+        test_publisher.getPubBinaries(
             pub_source=ppa_source, distroseries=hoary,
             status=PackagePublishingStatus.PENDING)
         # Commit to ensure librarian files are written.
@@ -2244,7 +2242,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
             sourcename='boing', version='1.0', distroseries=warty,
             architecturehintlist=architecturehintlist,
             status=PackagePublishingStatus.PUBLISHED)
-        ppa_binaries = test_publisher.getPubBinaries(
+        test_publisher.getPubBinaries(
             pub_source=ppa_source, distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
         # Commit to ensure librarian files are written.
@@ -2268,7 +2266,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         # end up in the new architecture.
         amd64_family = ProcessorFamily.selectOneBy(name='amd64')
         hoary = ubuntu.getSeries('hoary')
-        hoary_amd64 = hoary.newArch('amd64', amd64_family, True, hoary.owner)
+        hoary.newArch('amd64', amd64_family, True, hoary.owner)
 
         # Copy the source and binaries from warty to hoary.
         copy_helper = self.getCopier(
@@ -2826,7 +2824,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         ancestry_source = test_publisher.getPubSource(
             version='1.0', distroseries=warty,
             status=PackagePublishingStatus.PUBLISHED)
-        ancestry_binaries = test_publisher.getPubBinaries(
+        test_publisher.getPubBinaries(
             pub_source=ancestry_source, distroseries=warty,
             status=PackagePublishingStatus.SUPERSEDED)
 
@@ -2939,7 +2937,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
                 status=PackagePublishingStatus.PUBLISHED)
             source.sourcepackagerelease.changelog_entry = (
                 "Required for close_bugs_for_sourcepublication")
-            binaries = test_publisher.getPubBinaries(
+            test_publisher.getPubBinaries(
                 pub_source=source, distroseries=warty, archive=archive,
                 pocket=pocket, status=PackagePublishingStatus.PUBLISHED)
             self.layer.txn.commit()
@@ -2963,14 +2961,14 @@ class CopyPackageTestCase(TestCaseWithFactory):
 
         # Create a dummy first package version so we can file bugs on it.
         dummy_changesfile = "Format: 1.7\n"
-        proposed_source = create_source(
+        create_source(
             '666', warty.main_archive, PackagePublishingPocket.PROPOSED,
             dummy_changesfile)
 
         # Copies to -updates close bugs when they exist.
         updates_bug_id = create_bug('bug in -proposed')
         closing_bug_changesfile = changes_template % updates_bug_id
-        proposed_source = create_source(
+        create_source(
             '667', warty.main_archive, PackagePublishingPocket.PROPOSED,
             closing_bug_changesfile)
 
@@ -2990,7 +2988,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         # Copies to the development distroseries close bugs.
         dev_bug_id = create_bug('bug in development')
         closing_bug_changesfile = changes_template % dev_bug_id
-        dev_source = create_source(
+        create_source(
             '668', warty.main_archive, PackagePublishingPocket.UPDATES,
             closing_bug_changesfile)
 
@@ -3010,7 +3008,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         # Copies to -proposed do not close bugs
         ppa_bug_id = create_bug('bug in PPA')
         closing_bug_changesfile = changes_template % ppa_bug_id
-        ppa_source = create_source(
+        create_source(
             '669', cprov.archive, PackagePublishingPocket.RELEASE,
             closing_bug_changesfile)
 
@@ -3030,7 +3028,7 @@ class CopyPackageTestCase(TestCaseWithFactory):
         # Copies to PPA do not close bugs.
         proposed_bug_id = create_bug('bug in PPA')
         closing_bug_changesfile = changes_template % proposed_bug_id
-        release_source = create_source(
+        create_source(
             '670', warty.main_archive, PackagePublishingPocket.RELEASE,
             closing_bug_changesfile)
 
@@ -3056,14 +3054,13 @@ class CopyPackageTestCase(TestCaseWithFactory):
         test_publisher = self.getTestPublisher(warty)
         test_publisher.addFakeChroots(warty)
 
-        orig_tarball = 'test-source_1.0.orig.tar.gz'
         proposed_source = test_publisher.getPubSource(
             sourcename='test-source', version='1.0-2',
             distroseries=warty, archive=warty.main_archive,
             pocket=PackagePublishingPocket.PROPOSED,
             status=PackagePublishingStatus.PUBLISHED,
             section='net')
-        updates_source = test_publisher.getPubSource(
+        test_publisher.getPubSource(
             sourcename='test-source', version='1.0-1',
             distroseries=warty, archive=warty.main_archive,
             pocket=PackagePublishingPocket.UPDATES,
