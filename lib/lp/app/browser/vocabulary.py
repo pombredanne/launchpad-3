@@ -146,11 +146,12 @@ class PersonPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
 
         personpicker_affiliation_enabled = kwarg.get(
                                     'personpicker_affiliation_enabled', False)
-        if personpicker_affiliation_enabled:
+        affiliated_context = IHasAffiliation(context_object, None)
+        if (affiliated_context is not None
+            and personpicker_affiliation_enabled):
             # If a person is affiliated with the associated_object then we
             # can display a badge.
-            badges = IHasAffiliation(
-                context_object).getAffiliationBadges(term_values)
+            badges = affiliated_context.getAffiliationBadges(term_values)
             for picker_entry, badges in izip(picker_entries, badges):
                 picker_entry.badges = []
                 for badge_info in badges:

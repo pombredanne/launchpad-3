@@ -6,10 +6,7 @@
 __metaclass__ = type
 
 from psycopg2 import ProgrammingError
-from testtools.matchers import (
-    Equals,
-    MatchesStructure,
-    )
+from testtools.matchers import MatchesStructure
 import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
@@ -178,11 +175,11 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         expected_metadata = {
             u'sourcepackagename': sourcepackagenameid,
             u'parent_series': dsp.parent_series.id}
-        self.assertThat(job, MatchesStructure(
-            distribution=Equals(dsp.derived_series.distribution),
-            distroseries=Equals(dsp.derived_series),
-            job_type=Equals(DistributionJobType.DISTROSERIESDIFFERENCE),
-            metadata=Equals(expected_metadata)))
+        self.assertThat(job, MatchesStructure.byEquality(
+            distribution=dsp.derived_series.distribution,
+            distroseries=dsp.derived_series,
+            job_type=DistributionJobType.DISTROSERIESDIFFERENCE,
+            metadata=expected_metadata))
 
     def test_create_multiple_jobs_ignore_other_series(self):
         dsp = self.factory.makeDistroSeriesParent()

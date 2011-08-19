@@ -137,6 +137,17 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         self.assertEqual('/@@/product-badge', entry.badges[2]['url'])
         self.assertEqual('Fnord bug supervisor', entry.badges[2]['alt'])
 
+    def test_PersonPickerEntryAdapter_badges_without_IHasAffiliation(self):
+        # The enhanced person picker handles objects that do not support
+        # IHasAffilliation.
+        person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
+        thing = object()
+        [entry] = IPickerEntrySource(person).getPickerEntries(
+            [person], thing, enhanced_picker_enabled=True,
+            picker_expander_enabled=True,
+            personpicker_affiliation_enabled=True)
+        self.assertEqual(None, None)
+
 
 class TestPersonVocabulary:
     implements(IHugeVocabulary)
