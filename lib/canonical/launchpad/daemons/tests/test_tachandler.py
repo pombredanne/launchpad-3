@@ -21,6 +21,7 @@ from testtools.matchers import (
     Not,
     )
 
+from canonical.launchpad.daemons.readyservice import LOG_MAGIC
 from canonical.launchpad.daemons.tachandler import (
     TacException,
     TacTestSetup,
@@ -132,3 +133,40 @@ class TacTestSetupTestCase(testtools.TestCase):
         # One deprecation warning is emitted.
         self.assertEqual(1, len(warnings_log))
         self.assertIs(DeprecationWarning, warnings_log[0].category)
+
+    def test_truncateLog(self):
+        """
+        truncateLog truncates the log, if it exists, leaving the record of the
+        service start in place.
+        """
+        tempdir = self.useFixture(TempDir()).path
+        fixture = SimpleTac("okay.tac", tempdir)
+
+        # Truncating the log is a no-op if the log does not exist.
+        fixture.truncateLog()
+        self.assertFalse(exists(fixture.logfile))
+
+        # Put something in the log file.
+        with open(fixture.logfile, "wb") as logfile:
+            logfile.write("Hello\n")
+
+        # Truncating the log does not remove the log file.
+        fixture.truncateLog()
+        self.assertTrue(exists(fixture.logfile))
+        with open(fixture.logfile, "rb") as logfile:
+            self.assertEqual("", logfile.read())
+
+        # Put something in the log again, along with LOG_MAGIC.
+        with open(fixture.logfile, "wb") as logfile:
+            logfile.write("One\n")
+            logfile.write("Two\n")
+            logfile.write("Three, %s\n" % LOG_MAGIC)
+            logfile.write("Four\n")
+
+        # Truncating the log leaves everything up to and including the line
+        # containing LOG_MAGIC.
+        fixture.truncateLog()
+        with open(fixture.logfile, "rb") as logfile:
+            self.assertEqual(
+                "One\nTwo\nThree, %s\n" % LOG_MAGIC,
+                logfile.read())
