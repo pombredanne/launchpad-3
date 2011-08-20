@@ -286,7 +286,7 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
         result = simplejson.loads(view())
         entries = result['entries']
         self.assertEqual(1, len(entries))
-        self.assertEqual('pting-person', entries[0]['value'])
+        self.assertEqual('xpting-person', entries[0]['value'])
 
     def test_max_description_size(self):
         # Descriptions over 120 characters are truncated and ellipsised.

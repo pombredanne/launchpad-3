@@ -23,6 +23,9 @@ class TestVocabulary(FilteredVocabularyBase):
         assert(vocab_filter.name == "ALL")
         assert(vocab_filter.title == "All")
 
+    def supportedFilters(self):
+        return [FilteredVocabularyBase.ALL_FILTER]
+
 
 class FilteredVocabularyBaseTestCase(TestCaseWithFactory):
 

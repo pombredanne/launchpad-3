@@ -273,8 +273,7 @@ class FilteredVocabularyBase:
             return func
 
     def supportedFilters(self):
-        # All vocabs support the ALL filter.
-        return [self.ALL_FILTER]
+        return []
 
 
 class SQLObjectVocabularyBase(FilteredVocabularyBase):

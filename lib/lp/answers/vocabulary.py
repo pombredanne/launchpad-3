@@ -13,13 +13,14 @@ from zope.schema.vocabulary import SimpleTerm
 
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator,
+    FilteredVocabularyBase,
     IHugeVocabulary,
     )
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 
 
-class FAQVocabulary:
+class FAQVocabulary(FilteredVocabularyBase):
     """Vocabulary containing all the FAQs in an `IFAQTarget`."""
     implements(IHugeVocabulary)
 

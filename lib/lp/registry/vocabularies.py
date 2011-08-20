@@ -124,6 +124,7 @@ from canonical.launchpad.webapp.publisher import nearest
 from canonical.launchpad.webapp.vocabulary import (
     BatchedCountableIterator,
     CountableIterator,
+    FilteredVocabularyBase,
     IHugeVocabulary,
     NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary,
@@ -1142,7 +1143,7 @@ class PersonActiveMembershipVocabulary:
         return obj in self._get_teams()
 
 
-class ActiveMailingListVocabulary:
+class ActiveMailingListVocabulary(FilteredVocabularyBase):
     """The set of all active mailing lists."""
 
     implements(IHugeVocabulary)
@@ -1750,7 +1751,7 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
         return objs
 
 
-class DistroSeriesDerivationVocabulary:
+class DistroSeriesDerivationVocabulary(FilteredVocabularyBase):
     """A vocabulary source for series to derive from.
 
     Once a distribution has a series that has derived from a series in another
@@ -1817,7 +1818,7 @@ class DistroSeriesDerivationVocabulary:
         title = "%s: %s" % (series.distribution.displayname, series.title)
         return SimpleTerm(series, series.id, title)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         results = self.searchParents(query)
         return CountableIterator(len(results), results, self.toTerm)
@@ -1872,7 +1873,7 @@ class DistroSeriesDerivationVocabulary:
             return self.find_terms(where)
 
 
-class DistroSeriesDifferencesVocabulary:
+class DistroSeriesDifferencesVocabulary(FilteredVocabularyBase):
     """A vocabulary source for differences relating to a series.
 
     Specifically, all `DistroSeriesDifference`s relating to a derived series.
@@ -1930,7 +1931,7 @@ class DistroSeriesDifferencesVocabulary:
         """Return the term for a `DistroSeriesDifference`."""
         return SimpleTerm(dsd, dsd.id)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         results = self.searchForDifferences()
         return CountableIterator(results.count(), results, self.toTerm)
@@ -2134,7 +2135,7 @@ class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
             token.lower())
 
 
-class DistributionSourcePackageVocabulary:
+class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
 
     implements(IHugeVocabulary)
     displayname = 'Select a package'
@@ -2212,7 +2213,7 @@ class DistributionSourcePackageVocabulary:
         distribution, package_name = self.getDistributionAndPackageName(token)
         return self.toTerm(package_name, distribution)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         if not query:
             return EmptyResultSet()
