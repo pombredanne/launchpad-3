@@ -64,7 +64,7 @@ class BranchVocabularyBase(SQLObjectVocabularyBase):
         """
         raise NotImplementedError(self._getCollection)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         logged_in_user = getUtility(ILaunchBag).user
         collection = self._getCollection().visibleByUser(logged_in_user)
