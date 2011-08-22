@@ -1148,12 +1148,16 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
             source_details, self.get_transport('import_data'),
             self.bazaar_store, logging.getLogger())
 
-    def makeForeignCommit(self, source_details):
+    def makeForeignCommit(self, source_details, branch=None):
         """Change the foreign tree, generating exactly one commit."""
         from mercurial.ui import ui
         from mercurial.localrepo import localrepository
         repo = localrepository(ui(), source_details.url)
-        repo.commit(text="hello world!", user="Jane Random Hacker", force=1)
+        extra = {}
+        if branch is not None:
+            extra = { "branch": branch }
+        repo.commit(text="hello world!", user="Jane Random Hacker", force=1,
+                extra=extra)
         self.foreign_commit_count += 1
 
     def makeSourceDetails(self, branch_name, files):
@@ -1169,6 +1173,28 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
 
         return self.factory.makeCodeImportSourceDetails(
             rcstype='hg', url=repository_path)
+
+    def test_non_default(self):
+        # non-default branches can be specified in the import URL.
+        source_details = self.makeSourceDetails(
+            'trunk', [('README', 'Original contents')])
+        self.makeForeignCommit(source_details, branch="other",
+            message="Message for other")
+        self.makeForeignCommit(source_details, branch="default",
+            message="Message for default")
+        source_details.url = urlutils.join_segment_parameters(
+                source_details.url, { "branch": "other" })
+        source_transport = get_transport_from_url(source_details.url)
+        self.assertEquals(
+            { "branch": "other" },
+            source_transport.get_segment_parameters())
+        worker = self.makeImportWorker(source_details)
+        self.assertTrue(self.foreign_commit_count > 1)
+        self.assertEqual(
+            CodeImportWorkerExitCode.SUCCESS, worker.run())
+        branch = worker.getBazaarBranch()
+        lastrev = branch.repository.get_revision(branch.last_revision())
+        self.assertEquals(lastrev.message, "Message for other")
 
 
 class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
