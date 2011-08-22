@@ -72,6 +72,7 @@ from lp.app.enums import (
     ServiceUsage,
     )
 from lp.app.errors import NotFoundError
+from lp.app.validators.name import valid_name
 from lp.registry.browser.productseries import ProductSeriesFacets
 from lp.registry.browser.sourcepackage import SourcePackageFacets
 from lp.registry.interfaces.productseries import IProductSeries
@@ -553,12 +554,22 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
     """View class that lets you edit a POTemplate object."""
 
     schema = IPOTemplate
-    field_names = ['translation_domain', 'description', 'priority',
-        'path', 'owner', 'iscurrent']
     label = 'Edit translation template details'
     page_title = 'Edit details'
     PRIORITY_MIN_VALUE = 0
     PRIORITY_MAX_VALUE = 100000
+
+    @property
+    def field_names(self):
+        field_names = [
+            'name', 'translation_domain', 'description', 'priority',
+            'path', 'iscurrent']
+        if self.context.distroseries:
+            field_names.extend([
+                'sourcepackagename',
+                'languagepack',
+                ])
+        return field_names
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
@@ -580,7 +591,43 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
             naked_context = removeSecurityProxy(context)
             naked_context.date_last_updated = datetime.datetime.now(pytz.UTC)
 
+    def _getTemplateSet(self, data):
+        """Return a POTemplateSubset corresponding to the chosen target."""
+        sourcepackagename = data.get('sourcepackagename',
+                                     self.context.sourcepackagename)
+        return getUtility(IPOTemplateSet).getSubset(
+            distroseries=self.context.distroseries,
+            sourcepackagename=sourcepackagename,
+            productseries=self.context.productseries)
+
     def validate(self, data):
+        name = data.get('name', None)
+        if name is None or not valid_name(name):
+            self.setFieldError(
+                'name',
+                'Template name can only start with lowercase letters a-z '
+                'or digits 0-9, and other than those characters, can only '
+                'contain "-", "+" and "." characters.')
+
+        distroseries = data.get('distroseries', None)
+        sourcepackagename = data.get(
+            'sourcepackagename', self.context.sourcepackagename)
+        productseries = data.get('productseries', None)
+        sourcepackage_changed = (
+            distroseries is not None and
+            (distroseries != self.context.distroseries or
+             sourcepackagename != self.context.sourcepackagename))
+        productseries_changed = (productseries is not None and
+                                 productseries != self.context.productseries)
+        spn_changed = (sourcepackagename != self.context.sourcepackagename)
+        similar_templates = self._getTemplateSet(data)
+        self.validateName(
+            name, similar_templates, sourcepackage_changed,
+            productseries_changed)
+        self.validateDomain(
+            data.get('translation_domain'), similar_templates,
+            sourcepackage_changed, productseries_changed)
+
         priority = data.get('priority')
         if priority is None:
             return
@@ -591,24 +638,6 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
                 'priority',
                 'The priority value must be between %s and %s.' % (
                 self.PRIORITY_MIN_VALUE, self.PRIORITY_MAX_VALUE))
-            return
-
-    @property
-    def _return_attribute_name(self):
-        """See 'ReturnToReferrerMixin'."""
-        return "name"
-
-
-class POTemplateAdminView(POTemplateEditView):
-    """View class that lets you admin a POTemplate object."""
-    field_names = [
-        'name', 'translation_domain', 'description', 'header', 'iscurrent',
-        'owner', 'productseries', 'distroseries', 'sourcepackagename',
-        'from_sourcepackagename', 'sourcepackageversion', 'binarypackagename',
-        'languagepack', 'path', 'source_file_format', 'priority',
-        'date_last_updated']
-    label = 'Administer translation template'
-    page_title = "Administer"
 
     def validateName(self, name, similar_templates,
                      sourcepackage_changed, productseries_changed):
@@ -644,8 +673,25 @@ class POTemplateAdminView(POTemplateEditView):
                 self.setFieldError(
                     'translation_domain', "Domain is already in use.")
 
-    def validate(self, data):
-        super(POTemplateAdminView, self).validate(data)
+    @property
+    def _return_attribute_name(self):
+        """See 'ReturnToReferrerMixin'."""
+        return "name"
+
+
+class POTemplateAdminView(POTemplateEditView):
+    """View class that lets you admin a POTemplate object."""
+    field_names = [
+        'name', 'translation_domain', 'description', 'header', 'iscurrent',
+        'owner', 'productseries', 'distroseries', 'sourcepackagename',
+        'from_sourcepackagename', 'sourcepackageversion', 'binarypackagename',
+        'languagepack', 'path', 'source_file_format', 'priority',
+        'date_last_updated']
+    label = 'Administer translation template'
+    page_title = "Administer"
+
+    def _getTemplateSet(self, data):
+        """Return a POTemplateSubset corresponding to the chosen target."""
         distroseries = data.get('distroseries')
         sourcepackagename = data.get('sourcepackagename')
         productseries = data.get('productseries')
@@ -661,27 +707,10 @@ class POTemplateAdminView(POTemplateEditView):
 
         if message is not None:
             self.addError(message)
-            return
-
-        # Validate name and domain; they should be unique within the
-        # template's translation target (productseries or source
-        # package).  Validate against the target selected by the form,
-        # not the template's existing target; the form may change the
-        # template's target as well.
-        similar_templates = getUtility(IPOTemplateSet).getSubset(
+            return None
+        return getUtility(IPOTemplateSet).getSubset(
             distroseries=distroseries, sourcepackagename=sourcepackagename,
             productseries=productseries)
-        sourcepackage_changed = (
-            distroseries != self.context.distroseries or
-            sourcepackagename != self.context.sourcepackagename)
-        productseries_changed = productseries != self.context.productseries
-
-        self.validateName(
-            data.get('name'), similar_templates,
-            sourcepackage_changed, productseries_changed)
-        self.validateDomain(
-            data.get('translation_domain'), similar_templates,
-            sourcepackage_changed, productseries_changed)
 
 
 class POTemplateExportView(BaseExportView):
@@ -871,10 +900,10 @@ class BaseSeriesTemplatesView(LaunchpadView):
             self.distroseries = series
         else:
             self.productseries = series
-        self.can_admin = check_permission(
-            'launchpad.TranslationsAdmin', series)
+        self.can_admin = check_permission('launchpad.Admin', series)
         self.can_edit = (
-            self.can_admin or check_permission('launchpad.Edit', series))
+            self.can_admin or
+            check_permission('launchpad.TranslationsAdmin', series))
 
         self.user_is_logged_in = (self.user is not None)
 

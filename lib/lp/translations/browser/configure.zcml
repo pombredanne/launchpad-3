@@ -413,14 +413,14 @@
             name="+edit"
             for="lp.translations.interfaces.potemplate.IPOTemplate"
             class="lp.translations.browser.potemplate.POTemplateEditView"
-            permission="launchpad.Edit"
+            permission="launchpad.TranslationsAdmin"
             template="../../app/templates/generic-edit.pt"
             layer="lp.translations.publisher.TranslationsLayer"/>
         <browser:page
             name="+admin"
             for="lp.translations.interfaces.potemplate.IPOTemplate"
             class="lp.translations.browser.potemplate.POTemplateAdminView"
-            permission="launchpad.TranslationsAdmin"
+            permission="launchpad.Admin"
             template="../../app/templates/generic-edit.pt"
             layer="lp.translations.publisher.TranslationsLayer"/>
         <browser:page

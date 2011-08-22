@@ -1262,6 +1262,11 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     Product owners does not have administrative privileges.
     """
 
+    permission = 'launchpad.Admin'
+    usedfor = IPOTemplate
+
+
+class EditPOTemplateDetails(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IPOTemplate
 
@@ -1275,24 +1280,6 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
             # Template is on a product.
             return AdminProductSeriesTranslations(
                 template.productseries).checkAuthenticated(user)
-
-
-class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = IPOTemplate
-
-    def checkAuthenticated(self, user):
-        """Allow anyone with admin rights; owners, product owners and
-        distribution owners; and for distros, translation group owners.
-        """
-        if (self.obj.productseries is not None and
-            user.inTeam(self.obj.productseries.product.owner)):
-            # The user is the owner of the product.
-            return True
-
-        return (
-            AdminPOTemplateDetails.checkAuthenticated(self, user) or
-            EditByOwnersOrAdmins.checkAuthenticated(self, user))
 
 
 class AddPOTemplate(OnlyRosettaExpertsAndAdmins):
