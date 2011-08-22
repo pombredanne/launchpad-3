@@ -436,6 +436,11 @@ class AlreadyLoggedInView(LaunchpadView):
 
 def logInPrincipal(request, principal, email):
     """Log the principal in. Password validation must be done in callsites."""
+    # Force a fresh session, per Bug #828638. Any changes to any
+    # existing session made this request will be lost, but that should
+    # not be a problem as authentication must be done before
+    # authorization and authorization before we do any actual work.
+    ## idmanager.setRequestId(request, idmanager.generateUniqueId())
     session = ISession(request)
     authdata = session['launchpad.authenticateduser']
     assert principal.id is not None, 'principal.id is None!'
