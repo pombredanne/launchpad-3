@@ -404,7 +404,7 @@ class TestBugSummary(TestCaseWithFactory):
             self.getPublicCount(BugSummary.product == product_b),
             0)
 
-        bug_task.product = product_b
+        removeSecurityProxy(bug_task).product = product_b
 
         self.assertEqual(
             self.getPublicCount(BugSummary.product == product_a),
@@ -473,7 +473,7 @@ class TestBugSummary(TestCaseWithFactory):
             self.getPublicCount(BugSummary.productseries == productseries_a),
             1)
 
-        series_task.productseries = productseries_b
+        removeSecurityProxy(series_task).productseries = productseries_b
 
         self.assertEqual(
             self.getPublicCount(BugSummary.product == product),
@@ -523,7 +523,7 @@ class TestBugSummary(TestCaseWithFactory):
             self.getPublicCount(BugSummary.distribution == distribution_a),
             1)
 
-        bug_task.distribution = distribution_b
+        removeSecurityProxy(bug_task).distribution = distribution_b
 
         self.assertEqual(
             self.getPublicCount(BugSummary.distribution == distribution_a),
@@ -587,7 +587,7 @@ class TestBugSummary(TestCaseWithFactory):
             self.getPublicCount(BugSummary.distroseries == series_b),
             0)
 
-        bug_task.distroseries = series_b
+        removeSecurityProxy(bug_task).distroseries = series_b
 
         self.assertEqual(
             self.getPublicCount(BugSummary.distribution == distribution),
@@ -667,7 +667,8 @@ class TestBugSummary(TestCaseWithFactory):
                     == sourcepackage_b.sourcepackagename),
             0)
 
-        bug_task.sourcepackagename = sourcepackage_b.sourcepackagename
+        removeSecurityProxy(bug_task).sourcepackagename = (
+            sourcepackage_b.sourcepackagename)
 
         self.assertEqual(
             self.getPublicCount(
@@ -706,7 +707,7 @@ class TestBugSummary(TestCaseWithFactory):
                     == sourcepackage.sourcepackagename),
             1)
 
-        bug_task.sourcepackagename = None
+        removeSecurityProxy(bug_task).sourcepackagename = None
 
         self.assertEqual(
             self.getPublicCount(
@@ -751,8 +752,10 @@ class TestBugSummary(TestCaseWithFactory):
     def test_changeDistroSeriesSourcePackage(self):
         distribution = self.factory.makeDistribution()
         series = self.factory.makeDistroSeries(distribution=distribution)
-        package_a = self.factory.makeSourcePackage(distroseries=series)
-        package_b = self.factory.makeSourcePackage(distroseries=series)
+        package_a = self.factory.makeSourcePackage(
+            distroseries=series, publish=True)
+        package_b = self.factory.makeSourcePackage(
+            distroseries=series, publish=True)
         sourcepackagename_a = package_a.sourcepackagename
         sourcepackagename_b = package_b.sourcepackagename
         bug_task = self.factory.makeBugTask(target=package_a)
@@ -788,7 +791,8 @@ class TestBugSummary(TestCaseWithFactory):
                 BugSummary.sourcepackagename == sourcepackagename_b),
             0)
 
-        bug_task.sourcepackagename = sourcepackagename_b
+        bug_task.transitionToTarget(
+            series.getSourcePackage(sourcepackagename_b))
 
         self.assertEqual(
             self.getPublicCount(
@@ -849,7 +853,7 @@ class TestBugSummary(TestCaseWithFactory):
                 BugSummary.sourcepackagename == sourcepackagename),
             1)
 
-        bug_task.sourcepackagename = None
+        bug_task.transitionToTarget(series)
 
         self.assertEqual(
             self.getPublicCount(

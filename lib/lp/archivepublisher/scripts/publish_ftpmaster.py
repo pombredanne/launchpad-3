@@ -27,6 +27,7 @@ from lp.services.scripts.base import (
     )
 from lp.services.utils import file_exists
 from lp.soyuz.enums import ArchivePurpose
+from lp.soyuz.scripts.custom_uploads_copier import CustomUploadsCopier
 from lp.soyuz.scripts.ftpmaster import LpQueryDistro
 from lp.soyuz.scripts.processaccepted import ProcessAccepted
 from lp.soyuz.scripts.publishdistro import PublishDistro
@@ -295,11 +296,13 @@ class PublishFTPMaster(LaunchpadCronScript):
                 "Indexes for %s were created on %s.\n"
                 % (suite, datetime.now(utc)))
 
-    def createIndexes(self, distribution, suite):
-        """Create archive indexes for `distroseries`."""
-        self.logger.info("Creating archive indexes for %s.", suite)
-        self.runPublishDistro(distribution, args=['-A'], suites=[suite])
-        self.markIndexCreationComplete(distribution, suite)
+    def createIndexes(self, distribution, suites):
+        """Create archive indexes for `suites` of `distroseries`."""
+        self.logger.info(
+            "Creating archive indexes for %s.", ', '.join(suites))
+        self.runPublishDistro(distribution, args=['-A'], suites=suites)
+        for suite in suites:
+            self.markIndexCreationComplete(distribution, suite)
 
     def processAccepted(self, distribution):
         """Run the process-accepted script."""
@@ -563,6 +566,24 @@ class PublishFTPMaster(LaunchpadCronScript):
             self.recoverWorkingDists()
             raise
 
+    def prepareFreshSeries(self, distribution):
+        """If there are any new distroseries, prepare them for publishing.
+
+        :return: True if a series did indeed still need some preparation,
+            of False for the normal case.
+        """
+        have_fresh_series = False
+        for series in distribution.series:
+            suites_needing_indexes = self.listSuitesNeedingIndexes(series)
+            if len(suites_needing_indexes) != 0:
+                # This is a fresh series.
+                have_fresh_series = True
+                if series.previous_series is not None:
+                    CustomUploadsCopier(series).copy(series.previous_series)
+                self.createIndexes(distribution, suites_needing_indexes)
+
+        return have_fresh_series
+
     def setUp(self):
         """Process options, and set up internal state."""
         self.processOptions()
@@ -570,14 +591,9 @@ class PublishFTPMaster(LaunchpadCronScript):
 
     def processDistro(self, distribution):
         """Process `distribution`."""
-        for series in distribution.series:
-            suites_needing_indexes = self.listSuitesNeedingIndexes(series)
-            if len(suites_needing_indexes) > 0:
-                for suite in suites_needing_indexes:
-                    self.createIndexes(distribution, suite)
-                # Don't try to do too much in one run.  Leave the rest
-                # of the work for next time.
-                return
+        if self.prepareFreshSeries(distribution):
+            # We've done enough here.  Leave some server time for others.
+            return
 
         self.processAccepted(distribution)
 

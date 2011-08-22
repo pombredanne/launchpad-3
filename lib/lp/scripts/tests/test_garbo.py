@@ -848,7 +848,8 @@ class TestGarbo(TestCaseWithFactory):
         db_branch.branch_format = BranchFormat.BZR_BRANCH_5
         db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
         Store.of(db_branch).flush()
-        branch_job = BranchUpgradeJob.create(db_branch)
+        branch_job = BranchUpgradeJob.create(
+            db_branch, self.factory.makePerson())
         branch_job.job.date_finished = THIRTY_DAYS_AGO
 
         self.assertEqual(
@@ -876,13 +877,14 @@ class TestGarbo(TestCaseWithFactory):
             branch_format=BranchFormat.BZR_BRANCH_5,
             repository_format=RepositoryFormat.BZR_KNIT_1)
 
-        branch_job = BranchUpgradeJob.create(db_branch)
+        branch_job = BranchUpgradeJob.create(
+            db_branch, self.factory.makePerson())
         branch_job.job.date_finished = THIRTY_DAYS_AGO
 
         db_branch2 = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_5,
             repository_format=RepositoryFormat.BZR_KNIT_1)
-        BranchUpgradeJob.create(db_branch2)
+        BranchUpgradeJob.create(db_branch2, self.factory.makePerson())
 
         self.runDaily()
 

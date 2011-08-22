@@ -20,6 +20,7 @@ import stat
 import subprocess
 import tempfile
 import time
+import threading
 
 from bzrlib.tests.treeshape import build_tree_contents
 from bzrlib.transport import Server
@@ -31,6 +32,18 @@ import CVS
 import dulwich.index
 from dulwich.objects import Blob
 from dulwich.repo import Repo as GitRepo
+from dulwich.server import (
+    DictBackend,
+    TCPGitServer,
+    )
+from mercurial.ui import (
+    ui as hg_ui,
+    )
+from mercurial.hgweb import (
+    hgweb,
+    server as hgweb_server,
+    )
+from mercurial.localrepo import localrepository
 import subvertpy.ra
 import svn_oo
 
@@ -204,45 +217,126 @@ class CVSServer(Server):
         self._repository = self.createRepository(self._repository_path)
 
 
+class TCPGitServerThread(threading.Thread):
+    """Thread that runs a TCP Git server."""
+
+    def __init__(self, backend, address, port=None):
+        super(TCPGitServerThread, self).__init__()
+        self.setName("TCP Git server on %s:%s" % (address, port))
+        self.server = TCPGitServer(backend, address, port)
+
+    def run(self):
+        self.server.serve_forever()
+
+    def get_address(self):
+        return self.server.server_address
+
+    def stop(self):
+        self.server.shutdown()
+
+
 class GitServer(Server):
 
-    def __init__(self, repo_path):
+    def __init__(self, repository_path, use_server=False):
         super(GitServer, self).__init__()
-        self.repo_path = repo_path
+        self.repository_path = repository_path
+        self._use_server = use_server
 
     def get_url(self):
-        return local_path_to_url(self.repo_path)
+        """Return a URL to the Git repository."""
+        if self._use_server:
+            return 'git://%s:%d/' % self._server.get_address()
+        else:
+            return local_path_to_url(self.repository_path)
+
+    def createRepository(self, path):
+        GitRepo.init(path)
+
+    def start_server(self):
+        super(GitServer, self).start_server()
+        self.createRepository(self.repository_path)
+        if self._use_server:
+            repo = GitRepo(self.repository_path)
+            self._server = TCPGitServerThread(
+                DictBackend({"/": repo}), "localhost", 0)
+            self._server.start()
+
+    def stop_server(self):
+        super(GitServer, self).stop_server()
+        if self._use_server:
+            self._server.stop()
 
     def makeRepo(self, tree_contents):
-        wd = os.getcwd()
-        try:
-            os.chdir(self.repo_path)
-            repo = GitRepo.init(".")
-            blobs = [
-                (Blob.from_string(contents), filename) for (filename, contents)
-                in tree_contents]
-            repo.object_store.add_objects(blobs)
-            root_id = dulwich.index.commit_tree(repo.object_store, [
-                (filename, b.id, stat.S_IFREG | 0644)
-                for (b, filename) in blobs])
-            repo.do_commit(committer='Joe Foo <joe@foo.com>',
-                message=u'<The commit message>', tree=root_id)
-        finally:
-            os.chdir(wd)
+        repo = GitRepo(self.repository_path)
+        blobs = [
+            (Blob.from_string(contents), filename) for (filename, contents)
+            in tree_contents]
+        repo.object_store.add_objects(blobs)
+        root_id = dulwich.index.commit_tree(repo.object_store, [
+            (filename, b.id, stat.S_IFREG | 0644)
+            for (b, filename) in blobs])
+        repo.do_commit(committer='Joe Foo <joe@foo.com>',
+            message=u'<The commit message>', tree=root_id)
+
+
+class MercurialServerThread(threading.Thread):
+    """A thread which runs a Mercurial http server."""
+
+    def __init__(self, path, address, port=0):
+        super(MercurialServerThread, self).__init__()
+        self.ui = hg_ui()
+        self.ui.setconfig("web", "address", address)
+        self.ui.setconfig("web", "port", port)
+        self.app = hgweb(path, baseui=self.ui)
+        self.httpd = hgweb_server.create_server(self.ui, self.app)
+        # By default the Mercurial server output goes to stdout,
+        # redirect it to prevent a lot of spurious output.
+        self.httpd.errorlog = StringIO()
+        self.httpd.accesslog = StringIO()
+
+    def get_address(self):
+        return (self.httpd.addr, self.httpd.port)
+
+    def run(self):
+        self.httpd.serve_forever()
+
+    def stop(self):
+        self.httpd.shutdown()
 
 
 class MercurialServer(Server):
 
-    def __init__(self, repo_url):
+    def __init__(self, repository_path, use_server=False):
         super(MercurialServer, self).__init__()
-        self.repo_url = repo_url
+        self.repository_path = repository_path
+        self._use_server = use_server
+
+    def get_url(self):
+        if self._use_server:
+            return "http://%s:%d/" % self._hgserver.get_address()
+        else:
+            return local_path_to_url(self.repository_path)
+
+    def start_server(self):
+        super(MercurialServer, self).start_server()
+        self.createRepository(self.repository_path)
+        if self._use_server:
+            self._hgserver = MercurialServerThread(self.repository_path,
+                "localhost")
+            self._hgserver.start()
+
+    def stop_server(self):
+        super(MercurialServer, self).stop_server()
+        if self._use_server:
+            self._hgserver.stop()
+
+    def createRepository(self, path):
+        localrepository(hg_ui(), self.repository_path, create=1)
 
     def makeRepo(self, tree_contents):
-        from mercurial.ui import ui
-        from mercurial.localrepo import localrepository
-        repo = localrepository(ui(), self.repo_url, create=1)
+        repo = localrepository(hg_ui(), self.repository_path)
         for filename, contents in tree_contents:
-            f = open(os.path.join(self.repo_url, filename), 'w')
+            f = open(os.path.join(self.repository_path, filename), 'w')
             try:
                 f.write(contents)
             finally:

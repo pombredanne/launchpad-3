@@ -1075,8 +1075,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
     def makeForeignCommit(self, source_details, message=None,
             ref="refs/heads/master"):
         """Change the foreign tree, generating exactly one commit."""
-        repo = GitRepo(
-            os.path.abspath(local_path_from_url(source_details.url)))
+        repo = GitRepo(local_path_from_url(source_details.url))
         if message is None:
             message = self.factory.getUniqueString()
         repo.do_commit(message=message,
@@ -1148,16 +1147,18 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
             source_details, self.get_transport('import_data'),
             self.bazaar_store, logging.getLogger())
 
-    def makeForeignCommit(self, source_details, branch=None):
+    def makeForeignCommit(self, source_details, message=None, branch=None):
         """Change the foreign tree, generating exactly one commit."""
         from mercurial.ui import ui
         from mercurial.localrepo import localrepository
-        repo = localrepository(ui(), source_details.url)
+        repo = localrepository(ui(), local_path_from_url(source_details.url))
         extra = {}
         if branch is not None:
             extra = { "branch": branch }
-        repo.commit(text="hello world!", user="Jane Random Hacker", force=1,
-                extra=extra)
+        if message is None:
+            message = self.factory.getUniqueString()
+        repo.commit(text=message, user="Jane Random Hacker", force=1,
+            extra=extra)
         self.foreign_commit_count += 1
 
     def makeSourceDetails(self, branch_name, files):
@@ -1172,7 +1173,7 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='hg', url=repository_path)
+            rcstype='hg', url=hg_server.get_url())
 
     def test_non_default(self):
         # non-default branches can be specified in the import URL.
