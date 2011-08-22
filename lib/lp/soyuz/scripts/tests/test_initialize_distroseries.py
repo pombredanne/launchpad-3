@@ -243,7 +243,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             child = self.factory.makeDistroSeries(
                 distribution=self.parent.parent, previous_series=self.parent)
             ids = InitializeDistroSeries(child, [self.parent.id])
-            self.assertTrue(ids.check())
+            # No exception should be raised.
+            ids.check()
 
     def test_failure_with_pending_builds_specific_arches(self):
         # We only check for pending builds of the same architectures we're
@@ -279,7 +280,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         child = self.factory.makeDistroSeries()
         ids = InitializeDistroSeries(child, [parent.id])
 
-        self.assertTrue(ids.check())
+        # No exception should be raised.
+        ids.check()
 
     def test_check_success_with_pending_builds_in_other_arches(self):
         # We only check for pending builds of the same architectures we're
@@ -297,7 +299,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
 
         # No error is raised because we're initializing only the architecture
         # which has no pending builds in it.
-        self.assertTrue(ids.check())
+        ids.check()
 
     def test_failure_if_build_present_in_selected_packagesets(self):
         # Pending builds in a parent for source packages included in the
@@ -333,7 +335,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         ids = InitializeDistroSeries(
             child, packagesets=(str(packageset2.id),))
 
-        self.assertTrue(ids.check())
+        # No exception should be raised.
+        ids.check()
 
     def test_success_with_updates_packages(self):
         # Initialization copies all the package from the UPDATES pocket.
@@ -411,7 +414,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             child = self.factory.makeDistroSeries()
             ids = InitializeDistroSeries(child, [parent.id])
 
-            self.assertTrue(ids.check())
+            # No exception should be raised.
+            ids.check()
 
     def test_failure_with_binary_queue_items_pockets(self):
         # If the parent series has binary items in pockets RELEASE,
@@ -481,7 +485,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             child = self.factory.makeDistroSeries()
             ids = InitializeDistroSeries(child, [parent.id])
 
-            self.assertTrue(ids.check())
+            # No exception should be raised.
+            ids.check()
 
     def test_check_success_with_source_queue_items(self):
         # If the parent series has *source* items in its queues, we
@@ -495,7 +500,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         child = self.factory.makeDistroSeries()
         ids = InitializeDistroSeries(child, [parent.id])
 
-        self.assertTrue(ids.check())
+        # No exception should be raised.
+        ids.check()
 
     def test_check_success_with_binary_queue_items_outside_packagesets(self):
         # If the parent series has binary items in its queues not in the
@@ -520,7 +526,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         ids = InitializeDistroSeries(child, [parent.id],
             child, packagesets=(str(packageset1.id),))
 
-        self.assertTrue(ids.check())
+        # No exception should be raised.
+        ids.check()
 
     def test_failure_with_binary_queue_items_in_packagesets(self):
         # If the parent series has binary items in its queues in the

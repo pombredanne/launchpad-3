@@ -160,7 +160,6 @@ class InitializeDistroSeries:
                 self._checkBuilds(parent)
             self._checkQueue(parent)
         self._checkSeries()
-        return True
 
     def _checkParents(self):
         """If self.first_derivation, the parents list cannot be empty."""
