@@ -675,8 +675,11 @@ class BugTask(SQLBase):
                     related_distribution = bugtask.distribution
                 if (related_distribution == distribution and
                     bugtask.sourcepackagenameID == self.sourcepackagenameID):
-                    bugtask.sourcepackagename = new_spn
-                    bugtask.updateTargetNameCache()
+                    key = bug_target_to_key(bugtask.target)
+                    key['sourcepackagename'] = new_spn
+                    bugtask.transitionToTarget(
+                        bug_target_from_key(**key),
+                        _sync_sourcepackages=False)
 
     def getContributorInfo(self, user, person):
         """See `IBugTask`."""
@@ -1141,13 +1144,13 @@ class BugTask(SQLBase):
 
         validate_target(self.bug, target)
 
-    def transitionToTarget(self, target):
+    def transitionToTarget(self, target, _sync_sourcepackages=True):
         """See `IBugTask`.
 
-        This method allows changing the target of some bug
-        tasks. The rules it follows are similar to the ones
-        enforced implicitly by the code in
-        lib/canonical/launchpad/browser/bugtask.py#BugTaskEditView.
+        If _sync_sourcepackages is True (the default) and the
+        sourcepackagename is being changed, any other tasks for the same
+        name in this distribution will have their names updated to
+        match. This should only be used by _syncSourcePackages.
         """
 
         if self.target == target:
@@ -1169,7 +1172,8 @@ class BugTask(SQLBase):
         # As a special case, if the sourcepackagename has changed then
         # we update any other tasks for the same distribution and
         # sourcepackagename. This keeps series tasks consistent.
-        if new_key['sourcepackagename'] != self.sourcepackagename:
+        if (_sync_sourcepackages and
+            new_key['sourcepackagename'] != self.sourcepackagename):
             self._syncSourcePackages(new_key['sourcepackagename'])
 
         for name, value in new_key.iteritems():
