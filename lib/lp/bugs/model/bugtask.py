@@ -468,8 +468,7 @@ class BugTask(SQLBase):
         notNull=False, default=None)
     sourcepackagename = ForeignKey(
         dbName='sourcepackagename', foreignKey='SourcePackageName',
-        notNull=False, default=None,
-        storm_validator=validate_conjoined_attribute)
+        notNull=False, default=None)
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution',
         notNull=False, default=None)
@@ -656,7 +655,7 @@ class BugTask(SQLBase):
         """See `IBugTask`."""
         return self.bug.isSubscribed(person)
 
-    def _syncSourcePackages(self, new_spnid):
+    def _syncSourcePackages(self, new_spn):
         """Synchronize changes to source packages with other distrotasks.
 
         If one distroseriestask's source package is changed, all the
@@ -679,7 +678,7 @@ class BugTask(SQLBase):
                     related_distribution = bugtask.distribution
                 if (related_distribution == distribution and
                     bugtask.sourcepackagenameID == self.sourcepackagenameID):
-                    bugtask.sourcepackagenameID = PassthroughValue(new_spnid)
+                    bugtask.sourcepackagename = new_spn
                     bugtask.updateTargetNameCache()
 
     def getContributorInfo(self, user, person):
@@ -1174,8 +1173,7 @@ class BugTask(SQLBase):
         # we update any other tasks for the same distribution and
         # sourcepackagename. This keeps series tasks consistent.
         if new_key['sourcepackagename'] != self.sourcepackagename:
-            spnid = getattr(new_key['sourcepackagename'], 'id', None)
-            self._syncSourcePackages(spnid)
+            self._syncSourcePackages(new_key['sourcepackagename'])
 
         for name, value in new_key.iteritems():
             setattr(self, name, value)
