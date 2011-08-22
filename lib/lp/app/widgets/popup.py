@@ -17,6 +17,7 @@ from zope.app.form.browser.itemswidgets import (
 from zope.schema.interfaces import IChoice
 
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from canonical.lazr.utils import safe_hasattr
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.vocabulary import get_person_picker_entry_metadata
@@ -166,6 +167,9 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
                 "The %r.%s interface attribute doesn't have its "
                 "vocabulary specified."
                 % (choice.context, choice.__name__))
+        # Only IHugeVocabulary's have filters.
+        if not IHugeVocabulary.providedBy(choice.vocabulary):
+            return []
         supported_filters = choice.vocabulary.supportedFilters()
         # If we have no filters or just the ALL filter, then no filtering
         # support is required.
