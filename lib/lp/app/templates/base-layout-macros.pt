@@ -177,19 +177,6 @@
         rel="stylesheet"
         media="screen, print"
         tal:attributes="href string:${icingroot}/combo.css" />
-  <!-- TODO: Move this somewhere more permanent -->
-  <style type="text/css">
-    div.beta {
-        background-color: #c24848;
-        margin-bottom: 7px;
-        margin-top: 7px;
-        height: 10px;
-        width: 175px;
-    }
-    div.beta img {
-        height: 10px;
-    }
-  </style>
 </metal:launchpad-stylesheet-3-0>
 
 
