@@ -24,7 +24,6 @@ import urllib
 import urllib2
 
 import gpgme
-from gpgme import editutil as gpgme_editutil
 from zope.interface import implements
 
 from canonical.config import config

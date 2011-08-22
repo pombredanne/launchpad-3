@@ -176,9 +176,7 @@ class TestImportKeyRing(TestCase):
     def test_retrieveKey_raises_GPGKeyDoesNotExistOnServer(self):
         # GPGHandler.retrieveKey() raises GPGKeyDoesNotExistOnServer
         # when called for a key that does not exist on the key server.
-        tac = KeyServerTac()
-        tac.setUp()
-        self.addCleanup(tac.tearDown)
+        self.useFixture(KeyServerTac())
         gpghandler = getUtility(IGPGHandler)
         self.assertRaises(
             GPGKeyDoesNotExistOnServer, gpghandler.retrieveKey,
@@ -188,7 +186,7 @@ class TestImportKeyRing(TestCase):
         self):
         # If the keyserver responds too slowly, GPGHandler.retrieveKey()
         # raises GPGKeyTemporarilyNotFoundError.
-        tac = self.useFixture(KeyServerTac())
+        self.useFixture(KeyServerTac())
         old_timeout_function = get_default_timeout_function()
         set_default_timeout_function(lambda: 0.01)
         try:
