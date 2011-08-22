@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The processing of nascent uploads.
@@ -772,7 +772,7 @@ class NascentUpload:
             if isinstance(uploaded_file, DSCFile):
                 self.logger.debug(
                     "Checking for %s/%s source ancestry"
-                    %(uploaded_file.package, uploaded_file.version))
+                    % (uploaded_file.package, uploaded_file.version))
                 ancestry = self.getSourceAncestry(uploaded_file)
                 if ancestry is not None:
                     self.checkSourceVersion(uploaded_file, ancestry)
@@ -792,8 +792,11 @@ class NascentUpload:
             elif isinstance(uploaded_file, BaseBinaryUploadFile):
                 self.logger.debug(
                     "Checking for %s/%s/%s binary ancestry"
-                    %(uploaded_file.package, uploaded_file.version,
-                      uploaded_file.architecture))
+                    % (
+                        uploaded_file.package,
+                        uploaded_file.version,
+                        uploaded_file.architecture,
+                        ))
                 try:
                     ancestry = self.getBinaryAncestry(uploaded_file)
                 except NotFoundError:
@@ -928,12 +931,12 @@ class NascentUpload:
             return distroseries.createQueueEntry(
                 PackagePublishingPocket.RELEASE,
                 distroseries.main_archive, self.changes.filename,
-                self.changes.raw_content, self.changes.signingkey)
+                self.changes.raw_content, signing_key=self.changes.signingkey)
         else:
             return distroseries.createQueueEntry(
                 self.policy.pocket, self.policy.archive,
                 self.changes.filename, self.changes.raw_content,
-                self.changes.signingkey)
+                signing_key=self.changes.signingkey)
 
     #
     # Inserting stuff in the database
