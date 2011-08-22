@@ -32,10 +32,7 @@
     </metal:block>
 
     <tal:heading metal:fill-slot="heading">
-      <h1>
-        <span tal:replace="view/label" />
-        <img src="/@@/beta" alt="[BETA]" />
-      </h1>
+      <h1 tal:content="view/label">Package differences between ...</h1>
     </tal:heading>
 
 
@@ -43,6 +40,11 @@
       tal:define="differences view/cached_differences;
                   series_name context/displayname;
                   can_perform_sync view/canPerformSync;">
+
+      <div class="beta">
+        <img src="/@@/beta-sash" alt="[BETA]" />
+      </div>
+
       <p><tal:replace replace="structure view/explanation/escapedtext" /></p>
 
       <metal:package_filter_form

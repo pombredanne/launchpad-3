@@ -7,17 +7,15 @@
   <tal:is_derived condition="context/isDerivedSeries">
     <tal:is_initialized condition="not: context/isInitializing">
     <tal:one_parent condition="view/has_unique_parent">
-      <h2>
-        Derived from <tal:name replace="view/unique_parent/displayname"/>
-        <img src="/@@/beta" alt="[BETA]" />
-      </h2>
+      <h2>Derived from <tal:name replace="view/unique_parent/displayname"/></h2>
     </tal:one_parent>
     <tal:multiple_parents condition="not: view/has_unique_parent">
-      <h2>
-        Derived from <tal:name replace="view/number_of_parents"/> parents
-        <img src="/@@/beta" alt="[BETA]" />
-      </h2>
+      <h2>Derived from <tal:name replace="view/number_of_parents"/> parents</h2>
     </tal:multiple_parents>
+
+    <div class="beta">
+      <img src="/@@/beta-sash" alt="[BETA]" />
+    </div>
 
       <tal:diffs define="nb_diffs view/num_version_differences;
                          nb_diffs_in_parent view/num_differences_in_parent;
@@ -70,19 +68,13 @@
   </tal:is_initialized>
   </tal:is_derived>
   <tal:is_initializing condition="context/isInitializing">
-    <h2>
-      Series initialization in progress
-      <img src="/@@/beta" alt="[BETA]" />
-    </h2>
+    <h2>Series initialization in progress</h2>
       This series is initializing.
   </tal:is_initializing>
   <tal:failed_initialization
       define="job context/getInitializationJob"
       condition="job/status/enumvalue:FAILED|nothing">
-    <h2>
-      Series initialization has failed
-      <img src="/@@/beta" alt="[BETA]" />
-    </h2>
+    <h2>Series initialization has failed</h2>
     <tal:retry
         define="can_retry context/@@+initseries/required:launchpad.Edit ">
       <tal:can_retry condition="can_retry">
