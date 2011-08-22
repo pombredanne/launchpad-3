@@ -139,8 +139,31 @@ class BugTaskPillarAffiliation(PillarAffiliation):
 
 class BranchPillarAffiliation(BugTaskPillarAffiliation):
     """An affiliation adapter for branches."""
+
     def getPillar(self):
         return self.context.product or self.context.distribution
+
+    def getBranch(self):
+        return self.context
+
+    def _getAffiliationDetails(self, person, pillar):
+        super_instance = super(BranchPillarAffiliation, self)
+        result = super_instance._getAffiliationDetails(person, pillar)
+        if self.getBranch().isPersonTrustedReviewer(person):
+            result.append((pillar.displayname, 'trusted reviewer'))
+        return result
+
+
+class CodeReviewVotePillarAffiliation(BranchPillarAffiliation):
+    """An affiliation adapter for CodeReviewVotes."""
+
+    def getPillar(self):
+        """Return the target branch'pillar."""
+        branch = self.getBranch()
+        return branch.product or branch.distribution
+
+    def getBranch(self):
+        return self.context.branch_merge_proposal.target_branch
 
 
 class DistroSeriesPillarAffiliation(PillarAffiliation):

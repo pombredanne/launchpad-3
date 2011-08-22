@@ -26,6 +26,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator,
     IHugeVocabulary,
+    VocabularyFilter,
     )
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.vocabulary import (
@@ -137,6 +138,17 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         self.assertEqual('/@@/product-badge', entry.badges[2]['url'])
         self.assertEqual('Fnord bug supervisor', entry.badges[2]['alt'])
 
+    def test_PersonPickerEntryAdapter_badges_without_IHasAffiliation(self):
+        # The enhanced person picker handles objects that do not support
+        # IHasAffilliation.
+        person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
+        thing = object()
+        [entry] = IPickerEntrySource(person).getPickerEntries(
+            [person], thing, enhanced_picker_enabled=True,
+            picker_expander_enabled=True,
+            personpicker_affiliation_enabled=True)
+        self.assertEqual(None, None)
+
 
 class TestPersonVocabulary:
     implements(IHugeVocabulary)
@@ -152,10 +164,27 @@ class TestPersonVocabulary:
     def toTerm(self, person):
         return SimpleTerm(person, person.name, person.displayname)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
+        if vocab_filter is None:
+            filter_term = ''
+        else:
+            filter_term = vocab_filter.filter_terms[0]
         found = [
-            person for person in self.test_persons if query in person.name]
+            person for person in self.test_persons
+                if query in person.name and filter_term in person.name]
         return CountableIterator(len(found), found, self.toTerm)
+
+
+class TestVocabularyFilter(VocabularyFilter):
+    # A filter returning all objects.
+
+    def __new__(cls):
+        return super(VocabularyFilter, cls).__new__(
+            cls, 'FILTER', 'Test Filter', 'Test')
+
+    @property
+    def filter_terms(self):
+        return ['xpting-person']
 
 
 class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
@@ -254,6 +283,21 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
             expected[0].items(), result['entries'][0].items())
         self.assertContentEqual(
             expected[1].items(), result['entries'][1].items())
+
+    def test_vocab_filter(self):
+        # The vocab filter is used to filter results.
+        team = self.factory.makeTeam(name='xpting-team')
+        person = self.factory.makePerson(name='xpting-person')
+        TestPersonVocabulary.test_persons.extend([team, person])
+        product = self.factory.makeProduct(owner=team)
+        vocab_filter = TestVocabularyFilter()
+        form = dict(name='TestPerson',
+                    search_text='xpting', search_filter=vocab_filter)
+        view = self.create_vocabulary_view(form, context=product)
+        result = simplejson.loads(view())
+        entries = result['entries']
+        self.assertEqual(1, len(entries))
+        self.assertEqual('xpting-person', entries[0]['value'])
 
     def test_max_description_size(self):
         # Descriptions over 120 characters are truncated and ellipsised.
