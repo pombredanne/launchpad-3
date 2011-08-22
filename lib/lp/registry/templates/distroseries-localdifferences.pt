@@ -15,11 +15,27 @@
         /* Don't show a border between the
            difference rows and their expanded sections */
         table.listing tr.diff-extra td { border-top: 0; }
+        table.listing .diff-extra-container {
+            padding-bottom: 15px;
+        }
+        /* Clear float without adding a vertical space */
+        table.listing .clear {
+            clear: both;
+            height: 1px;
+            width: 100%;
+            margin: 0 0 -1px;
+        }
+        table.listing .blacklist-options {
+            padding-left: 1em;
+        }
       </style>
     </metal:block>
 
     <tal:heading metal:fill-slot="heading">
-      <h1 tal:content="view/label">Package differences between ...</h1>
+      <h1>
+        <span tal:replace="view/label" />
+        <img src="/@@/beta" alt="[BETA]" />
+      </h1>
     </tal:heading>
 
 
@@ -27,19 +43,10 @@
       tal:define="differences view/cached_differences;
                   series_name context/displayname;
                   can_perform_sync view/canPerformSync;">
-
-      <p style="margin-top: 0.5em">
-        <img src="/@@/beta" alt="" style="vertical-align: text-bottom" />
-        Derived Distributions are in open beta.
-      </p>
-
       <p><tal:replace replace="structure view/explanation/escapedtext" /></p>
 
-      <tal:distroseries_localdiff_search_form
-        tal:condition="view/has_differences">
-        <metal:package_filter_form
-          use-macro="context/@@+macros/distroseries-localdiff-search-form" />
-      </tal:distroseries_localdiff_search_form>
+      <metal:package_filter_form
+	use-macro="context/@@+macros/distroseries-localdiff-search-form" />
 
 
       <div metal:use-macro="context/@@launchpad_form/form">

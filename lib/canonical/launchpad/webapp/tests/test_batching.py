@@ -21,6 +21,7 @@ from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.webapp.batching import (
     BatchNavigator,
     DateTimeJSONEncoder,
+    ShadowedList,
     StormRangeFactory,
     )
 from canonical.launchpad.webapp.interfaces import StormRangeFactoryError
@@ -188,15 +189,17 @@ class TestStormRangeFactory(TestCaseWithFactory):
         # sort fields of the first and last element of a batch.
         resultset = self.makeStormResultSet()
         resultset.order_by(Person.name)
-        request = LaunchpadTestRequest()
-        batchnav = BatchNavigator(
-            resultset, request, size=3, range_factory=StormRangeFactory)
         range_factory = StormRangeFactory(resultset)
+        memo_value = range_factory.getOrderValuesFor(resultset[0])
+        request = LaunchpadTestRequest(
+            QUERY_STRING='memo=%s' % simplejson.dumps(memo_value))
+        batchnav = BatchNavigator(
+            resultset, request, size=3, range_factory=range_factory)
         first, last = range_factory.getEndpointMemos(batchnav.batch)
         expected_first = simplejson.dumps(
-            [resultset[0].name], cls=DateTimeJSONEncoder)
+            [resultset[1].name], cls=DateTimeJSONEncoder)
         expected_last = simplejson.dumps(
-            [resultset[2].name], cls=DateTimeJSONEncoder)
+            [resultset[3].name], cls=DateTimeJSONEncoder)
         self.assertEqual(expected_first, first)
         self.assertEqual(expected_last, last)
 
@@ -205,10 +208,10 @@ class TestStormRangeFactory(TestCaseWithFactory):
         # instances too.
         resultset = self.makeDecoratedStormResultSet()
         resultset.order_by(LibraryFileAlias.id)
+        range_factory = StormRangeFactory(resultset)
         request = LaunchpadTestRequest()
         batchnav = BatchNavigator(
-            resultset, request, size=3, range_factory=StormRangeFactory)
-        range_factory = StormRangeFactory(resultset)
+            resultset, request, size=3, range_factory=range_factory)
         first, last = range_factory.getEndpointMemos(batchnav.batch)
         expected_first = simplejson.dumps(
             [resultset.get_plain_result_set()[0][1].id],
@@ -518,7 +521,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         all_results = list(resultset)
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3)
-        self.assertEqual(all_results[:3], sliced_result)
+        self.assertEqual(all_results[:3], list(sliced_result))
 
     def test_getSlice__forward_with_memo(self):
         resultset = self.makeStormResultSet()
@@ -527,7 +530,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         memo = simplejson.dumps([all_results[0].name, all_results[0].id])
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, memo)
-        self.assertEqual(all_results[1:4], sliced_result)
+        self.assertEqual(all_results[1:4], list(sliced_result))
 
     def test_getSlice__backward_without_memo(self):
         resultset = self.makeStormResultSet()
@@ -537,7 +540,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         expected.reverse()
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, forwards=False)
-        self.assertEqual(expected, sliced_result)
+        self.assertEqual(expected, list(sliced_result))
 
     def test_getSlice_backward_with_memo(self):
         resultset = self.makeStormResultSet()
@@ -548,7 +551,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
         memo = simplejson.dumps([all_results[4].name, all_results[4].id])
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, memo, forwards=False)
-        self.assertEqual(expected, sliced_result)
+        self.assertEqual(expected, list(sliced_result))
 
     def makeResultSetWithPartiallyIdenticalSortData(self):
         # Create a result set, where each value of
@@ -585,25 +588,102 @@ class TestStormRangeFactory(TestCaseWithFactory):
             [memo_lfa.mimetype, memo_lfa.filename, memo_lfa.id])
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, memo)
-        self.assertEqual(all_results[3:6], sliced_result)
+        self.assertEqual(all_results[3:6], list(sliced_result))
 
     def test_getSlice__decorated_resultset(self):
         resultset = self.makeDecoratedStormResultSet()
         resultset.order_by(LibraryFileAlias.id)
         all_results = list(resultset)
+        plain_results = list(resultset.get_plain_result_set())
         memo = simplejson.dumps([resultset.get_plain_result_set()[0][1].id])
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, memo)
-        self.assertEqual(all_results[1:4], sliced_result)
+        self.assertEqual(all_results[1:4], list(sliced_result))
+        self.assertEqual(plain_results[1:4], sliced_result.shadow_values)
 
-    def test_getSlice__returns_list(self):
+    def test_getSlice__returns_ShadowedList(self):
         # getSlice() returns lists.
         resultset = self.makeStormResultSet()
         resultset.order_by(Person.id)
-        all_results = list(resultset)
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3)
-        self.assertIsInstance(sliced_result, list)
-        memo = simplejson.dumps([all_results[0].name])
-        sliced_result = range_factory.getSlice(3, memo)
-        self.assertIsInstance(sliced_result, list)
+        self.assertIsInstance(sliced_result, ShadowedList)
+
+    def makeStringSequence(self, sequence):
+        return [str(elem) for elem in sequence]
+
+    def test_ShadowedList__init(self):
+        # ShadowedList instances need two lists as constructor parametrs.
+        list1 = range(3)
+        list2 = self.makeStringSequence(list1)
+        shadowed_list = ShadowedList(list1, list2)
+        self.assertEqual(shadowed_list.values, list1)
+        self.assertEqual(shadowed_list.shadow_values, list2)
+
+    def test_ShadowedList__init__non_sequence_parameter(self):
+        # values and shadow_values must be sequences.
+        self.assertRaises(TypeError, ShadowedList, 1, range(3))
+        self.assertRaises(TypeError, ShadowedList, range(3), 1)
+
+    def test_ShadowedList__init__different_list_lengths(self):
+        # values and shadow_values must have the same length.
+        self.assertRaises(ValueError, ShadowedList, range(2), range(3))
+
+    def test_ShadowedList__len(self):
+        # The length of a ShadowedList ist the same as the list of
+        # the sequences it stores.
+        list1 = range(3)
+        list2 = self.makeStringSequence(list1)
+        self.assertEqual(len(list1), len(ShadowedList(list1, list2)))
+
+    def test_ShadowedList__slice(self):
+        # A slice of a ShadowedList contains the slices of its
+        # values and shaow_values.
+        list1 = range(5)
+        list2 = self.makeStringSequence(list1)
+        shadowed_list = ShadowedList(list1, list2)
+        self.assertEqual(list1[2:4], shadowed_list[2:4].values)
+        self.assertEqual(list2[2:4], shadowed_list[2:4].shadow_values)
+
+    def test_ShadowedList__getitem(self):
+        # Accessing a single element of a ShadowedList is equivalent to
+        # accessig an element of its values attribute.
+        list1 = range(3)
+        list2 = self.makeStringSequence(list1)
+        shadowed_list = ShadowedList(list1, list2)
+        self.assertEqual(list1[1], shadowed_list[1])
+
+    def test_ShadowedList__add(self):
+        # Two shadowedLists can be added, yielding another ShadowedList.
+        list1 = range(3)
+        list2 = self.makeStringSequence(list1)
+        shadow_list1 = ShadowedList(list1, list2)
+        list3 = range(4)
+        list4 = self.makeStringSequence(list3)
+        shadow_list2 = ShadowedList(list3, list4)
+        list_sum = shadow_list1 + shadow_list2
+        self.assertIsInstance(list_sum, ShadowedList)
+        self.assertEqual(list1 + list3, list_sum.values)
+        self.assertEqual(list2 + list4, list_sum.shadow_values)
+
+    def test_ShadowedList__iterator(self):
+        # Iterating over a ShadowedList yields if values elements.
+        list1 = range(3)
+        list2 = self.makeStringSequence(list1)
+        shadow_list = ShadowedList(list1, list2)
+        self.assertEqual(list1, list(iter(shadow_list)))
+
+    def test_ShadowedList__reverse(self):
+        # ShadowList.reverse() reverses its elements.
+        list1 = range(3)
+        list2 = self.makeStringSequence(list1)
+        first1 = list1[0]
+        last1 = list1[-1]
+        first2 = list2[0]
+        last2 = list2[-1]
+        shadow_list = ShadowedList(list1, list2)
+        shadow_list.reverse()
+        self.assertEqual(first1, shadow_list[-1])
+        self.assertEqual(last1, shadow_list[0])
+        self.assertEqual(first2, shadow_list.shadow_values[-1])
+        self.assertEqual(last2, shadow_list.shadow_values[0])

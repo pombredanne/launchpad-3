@@ -47,6 +47,7 @@ from lp.services.utils import file_exists
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
+    PackageUploadCustomFormat,
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
@@ -931,7 +932,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         script.markIndexCreationComplete = FakeMethod()
         script.runPublishDistro = FakeMethod()
         suite = get_a_suite(series)
-        script.createIndexes(distro, suite)
+        script.createIndexes(distro, [suite])
         self.assertEqual(
             [((distro, suite), {})], script.markIndexCreationComplete.calls)
 
@@ -946,7 +947,7 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         script.markIndexCreationComplete = FakeMethod()
         script.runPublishDistro = FakeMethod(failure=Boom("Sorry!"))
         try:
-            script.createIndexes(series.distribution, get_a_suite(series))
+            script.createIndexes(series.distribution, [get_a_suite(series)])
         except:
             pass
         self.assertEqual([], script.markIndexCreationComplete.calls)
@@ -999,16 +1000,18 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
 
     def test_script_calls_createIndexes_for_new_series(self):
         # If the script's main() finds a distroseries that needs its
-        # indexes created, it calls createIndexes on that distroseries.
+        # indexes created, it calls createIndexes on that distroseries,
+        # passing it all of the series' suite names.
         distro = self.makeDistroWithPublishDirectory()
         series = self.makeDistroSeriesNeedingIndexes(distribution=distro)
         script = self.makeScript(distro)
         script.createIndexes = FakeMethod()
         script.main()
-        expected_calls = [
-            ((distro, series.getSuite(pocket)), {})
-            for pocket in pocketsuffix.iterkeys()]
-        self.assertContentEqual(expected_calls, script.createIndexes.calls)
+        [((given_distro, given_suites), kwargs)] = script.createIndexes.calls
+        self.assertEqual(distro, given_distro)
+        self.assertContentEqual(
+            [series.getSuite(pocket) for pocket in pocketsuffix.iterkeys()],
+            given_suites)
 
     def test_createIndexes_ignores_other_series(self):
         # createIndexes does not accidentally also touch other
@@ -1022,11 +1025,34 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         self.createIndexesMarkerDir(script, series)
         suite = get_a_suite(series)
 
-        script.createIndexes(distro, suite)
+        script.createIndexes(distro, [suite])
 
         args, kwargs = script.runPublishDistro.calls[0]
         self.assertEqual([suite], kwargs['suites'])
         self.assertThat(kwargs['suites'][0], StartsWith(series.name))
+
+    def test_prepareFreshSeries_copies_custom_uploads(self):
+        distro = self.makeDistroWithPublishDirectory()
+        old_series = self.factory.makeDistroSeries(
+            distribution=distro, status=SeriesStatus.CURRENT)
+        new_series = self.factory.makeDistroSeries(
+            distribution=distro, previous_series=old_series,
+            status=SeriesStatus.FROZEN)
+        custom_upload = self.factory.makeCustomPackageUpload(
+            distroseries=old_series,
+            custom_type=PackageUploadCustomFormat.DEBIAN_INSTALLER,
+            filename='debian-installer-images_1.0-20110805_i386.tar.gz')
+        script = self.makeScript(distro)
+        script.createIndexes = FakeMethod()
+        script.setUp()
+        have_fresh_series = script.prepareFreshSeries(distro)
+        self.assertTrue(have_fresh_series)
+        [copied_upload] = new_series.getPackageUploads(
+            name=u'debian-installer-images', exact_match=False)
+        [copied_custom] = copied_upload.customfiles
+        self.assertEqual(
+            custom_upload.customfiles[0].libraryfilealias.filename,
+            copied_custom.libraryfilealias.filename)
 
     def test_script_creates_indexes(self):
         # End-to-end test: the script creates indexes for distroseries

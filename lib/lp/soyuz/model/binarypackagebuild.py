@@ -862,10 +862,11 @@ class BinaryPackageBuildSet:
         :param tables: container to which to add joined tables.
         :param status: optional build state for which to add a query clause if
             present.
-        :param name: optional source package release name for which to add a
-            query clause if present.
-        :param pocket: optional pocket for which to add a query clause if
+        :param name: optional source package release name (or list of source
+            package release names) for which to add a query clause if
             present.
+        :param pocket: optional pocket (or list of pockets) for which to add a
+            query clause if present.
         :param arch_tag: optional architecture tag for which to add a
             query clause if present.
         """
@@ -883,7 +884,10 @@ class BinaryPackageBuildSet:
 
         # Add query clause that filters on pocket if the latter is provided.
         if pocket:
-            queries.append('PackageBuild.pocket=%s' % sqlvalues(pocket))
+            if not isinstance(pocket, (list, tuple)):
+                pocket = (pocket,)
+
+            queries.append('PackageBuild.pocket IN %s' % sqlvalues(pocket))
 
         # Add query clause that filters on architecture tag if provided.
         if arch_tag is not None:
@@ -896,12 +900,22 @@ class BinaryPackageBuildSet:
         # Add query clause that filters on source package release name if the
         # latter is provided.
         if name is not None:
-            queries.append('''
-                BinaryPackageBuild.source_package_release =
-                    SourcePackageRelease.id AND
-                SourcePackageRelease.sourcepackagename = SourcePackageName.id
-                AND SourcepackageName.name LIKE '%%' || %s || '%%'
-            ''' % quote_like(name))
+            if not isinstance(name, (list, tuple)):
+                queries.append('''
+                    BinaryPackageBuild.source_package_release =
+                        SourcePackageRelease.id AND
+                    SourcePackageRelease.sourcepackagename =
+                        SourcePackageName.id
+                    AND SourcepackageName.name LIKE '%%' || %s || '%%'
+                ''' % quote_like(name))
+            else:
+                queries.append('''
+                    BinaryPackageBuild.source_package_release =
+                        SourcePackageRelease.id AND
+                    SourcePackageRelease.sourcepackagename =
+                        SourcePackageName.id
+                    AND SourcepackageName.name IN %s
+                ''' % sqlvalues(name))
             tables.extend(['SourcePackageRelease', 'SourcePackageName'])
 
     def getBuildsForBuilder(self, builder_id, status=None, name=None,
