@@ -1924,7 +1924,7 @@ class TestTransitionToTarget(TestCaseWithFactory):
         self.factory.makeBugTask(bug=bug, target=other_distro)
 
         self.assertContentEqual(
-            (t.target for t in bug.bugtasks),
+            (task.target for task in bug.bugtasks),
             [ds, ds.distribution, other_distro])
         sp = self.factory.makeSourcePackage(distroseries=ds, publish=True)
         with person_logged_in(ds_task.owner):

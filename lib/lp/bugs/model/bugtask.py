@@ -665,11 +665,11 @@ class BugTask(SQLBase):
             return
         distribution = self.distribution or self.distroseries.distribution
         for bugtask in self.related_tasks:
-            if distribution not in (
-                bugtask.distribution,
-                getattr(bugtask.distroseries, 'distribution', None)):
-                continue
-            if bugtask.sourcepackagenameID == self.sourcepackagenameID:
+            related_distribution = (
+                bugtask.distribution or
+                getattr(bugtask.distroseries, 'distribution', None))
+            if (related_distribution == distribution and
+                bugtask.sourcepackagenameID == self.sourcepackagenameID):
                 key = bug_target_to_key(bugtask.target)
                 key['sourcepackagename'] = new_spn
                 bugtask.transitionToTarget(
