@@ -591,7 +591,7 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
             naked_context = removeSecurityProxy(context)
             naked_context.date_last_updated = datetime.datetime.now(pytz.UTC)
 
-    def _getTemplateSet(self, data):
+    def _validateTargetAndGetTemplates(self, data):
         """Return a POTemplateSubset corresponding to the chosen target."""
         sourcepackagename = data.get('sourcepackagename',
                                      self.context.sourcepackagename)
@@ -620,7 +620,7 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
         productseries_changed = (productseries is not None and
                                  productseries != self.context.productseries)
         spn_changed = (sourcepackagename != self.context.sourcepackagename)
-        similar_templates = self._getTemplateSet(data)
+        similar_templates = self._validateTargetAndGetTemplates(data)
         self.validateName(
             name, similar_templates, sourcepackage_changed,
             productseries_changed)
@@ -690,7 +690,7 @@ class POTemplateAdminView(POTemplateEditView):
     label = 'Administer translation template'
     page_title = "Administer"
 
-    def _getTemplateSet(self, data):
+    def _validateTargetAndGetTemplates(self, data):
         """Return a POTemplateSubset corresponding to the chosen target."""
         distroseries = data.get('distroseries')
         sourcepackagename = data.get('sourcepackagename')
