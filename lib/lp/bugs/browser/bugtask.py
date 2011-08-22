@@ -3593,16 +3593,15 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
         # If we have no filters or just the ALL filter, then no filtering
         # support is required.
         filter_details = []
-        if (len(assignee_vocabulary_filters) == 0 or
-           (len(assignee_vocabulary_filters) == 1
-            and assignee_vocabulary_filters[0].name == 'ALL')):
-            return filter_details
-        for filter in assignee_vocabulary_filters:
-            filter_details.append({
-                'name': filter.name,
-                'title': filter.title,
-                'description': filter.description,
-                })
+        if (len(assignee_vocabulary_filters) > 1 or
+               (len(assignee_vocabulary_filters) == 1
+                and assignee_vocabulary_filters[0].name != 'ALL')):
+            for filter in assignee_vocabulary_filters:
+                filter_details.append({
+                    'name': filter.name,
+                    'title': filter.title,
+                    'description': filter.description,
+                    })
 
         # Display the search field only if the user can set any person
         # or team
@@ -3620,7 +3619,6 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             'assignee_is_team': self.context.assignee
                 and self.context.assignee.is_team,
             'assignee_vocabulary': assignee_vocabulary,
-            'assignee_vocabulary_filters': filter_details,
             'hide_assignee_team_selection': hide_assignee_team_selection,
             'user_can_unassign': self.context.userCanUnassign(user),
             'target_is_product': IProduct.providedBy(self.context.target),

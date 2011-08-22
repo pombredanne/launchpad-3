@@ -499,12 +499,4 @@
             permission="zope.Public"
             attributes="name title description"/>
     </class>
-
-    <class
-        class="zope.schema.vocabulary.SimpleVocabulary">
-        <implements
-            interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
-        <allow
-            attributes="supportedFilters"/>
-    </class>
 </configure>
