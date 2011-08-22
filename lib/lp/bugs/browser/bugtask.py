@@ -3619,6 +3619,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             'assignee_is_team': self.context.assignee
                 and self.context.assignee.is_team,
             'assignee_vocabulary': assignee_vocabulary,
+            'assignee_vocabulary_filters': filter_details,
             'hide_assignee_team_selection': hide_assignee_team_selection,
             'user_can_unassign': self.context.userCanUnassign(user),
             'target_is_product': IProduct.providedBy(self.context.target),
