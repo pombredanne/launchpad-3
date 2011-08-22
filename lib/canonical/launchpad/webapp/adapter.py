@@ -9,7 +9,6 @@ __metaclass__ = type
 import logging
 import os
 import re
-from StringIO import StringIO
 import sys
 import thread
 import threading
@@ -362,7 +361,7 @@ def stop_sql_traceback_logging():
     result = getattr(_local, 'sql_trace', None)
     _local.sql_trace = None
     return result
-    
+
 
 # ---- Prevent database access in the main thread of the app server
 
@@ -542,8 +541,9 @@ class LaunchpadSessionDatabase(Postgres):
             # This is fallback code for old config files. It can be
             # removed when all live configs have been updated to use the
             # 'database' setting instead of 'dbname' + 'dbhost' settings.
-            self._dsn = 'dbname=%s user=%s' % (config.launchpad_session.dbname,
-                                            config.launchpad_session.dbuser)
+            self._dsn = 'dbname=%s user=%s' % (
+                config.launchpad_session.dbname,
+                config.launchpad_session.dbuser)
             if config.launchpad_session.dbhost:
                 self._dsn += ' host=%s' % config.launchpad_session.dbhost
 

@@ -82,7 +82,7 @@ def format_list(extracted_list):
                     for warning in supp['warnings']:
                         item.append(_fmt('Warning: %s' % warning))
                 if supp['extra']:
-                    item.append(supp['extra']) # We do not include a prefix.
+                    item.append(supp['extra'])  # We do not include a prefix.
             if info:
                 item.append(_fmt(info))
         except (SystemExit, KeyboardInterrupt):
@@ -93,7 +93,7 @@ def format_list(extracted_list):
             if DEBUG_EXCEPTION_FORMATTER:
                 traceback.print_exc()
             # else just swallow the exception.
-        item.append('') # This gives us a trailing newline.
+        item.append('')  # This gives us a trailing newline.
         list.append('\n'.join(item))
     return list
 
@@ -185,7 +185,7 @@ def extract_stack(f=None, limit=None):
     """Extract the raw traceback from the current stack frame.
 
     The return value has the same format as for extract_tb().  The optional
-    'f' and 'limit' arguments have the same meaning as for print_stack(). 
+    'f' and 'limit' arguments have the same meaning as for print_stack().
     Each item in the list is a septuple (filename, line number, function name,
     text, module name, optional supplement dict, optional info string), and
     the entries are in order from oldest to newest stack frame.
@@ -197,7 +197,7 @@ def extract_stack(f=None, limit=None):
     while f is not None and (limit is None or n < limit):
         list.append(_get_frame_data(f, f.f_lineno))
         f = f.f_back
-        n = n+1
+        n = n + 1
     list.reverse()
     return list
 
@@ -223,5 +223,5 @@ def extract_tb(tb, limit=None):
     while tb is not None and (limit is None or n < limit):
         list.append(_get_frame_data(tb.tb_frame, tb.tb_lineno))
         tb = tb.tb_next
-        n = n+1
+        n = n + 1
     return list

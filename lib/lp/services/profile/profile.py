@@ -19,7 +19,6 @@ import pstats
 import threading
 import StringIO
 
-from bzrlib import errors
 from bzrlib import lsprof
 import oops_datedir_repo.serializer_rfc822
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
@@ -157,7 +156,7 @@ class Profilers(threading.local):
         self.actions = None
         self.profiler = None
         self.memory_profile_start = None
-        
+
 _profilers = Profilers()
 
 
@@ -357,9 +356,9 @@ def end_request(event):
         top_sql = []
         top_python = []
         triggers = {}
-        ix = 1 # We display these, so start at 1, not 0.
+        ix = 1  # We display these, so start at 1, not 0.
         last_stop_time = 0
-        _heappushpop = heapq.heappushpop # optimization
+        _heappushpop = heapq.heappushpop  # This is an optimization.
         for step in trace:
             # Set up an identifier for each trace step.
             step['id'] = ix
@@ -438,7 +437,7 @@ def end_request(event):
         for (key, ixs) in triggers:
             if len(ixs) == 1:
                 break
-            info = trace[ixs[0]-1]['app_stack'][-1].copy()
+            info = trace[ixs[0] - 1]['app_stack'][-1].copy()
             info['indexes'] = ixs
             info['count'] = len(ixs)
             top_triggers.append(info)

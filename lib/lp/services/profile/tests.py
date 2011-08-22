@@ -12,7 +12,6 @@ __metaclass__ = type
 import glob
 import os
 import random
-import time
 
 from zope.app.publication.interfaces import (
     BeforeTraverseEvent,
@@ -21,10 +20,7 @@ from zope.app.publication.interfaces import (
 from zope.component import getSiteManager
 
 import canonical.launchpad.webapp.adapter as da
-from canonical.launchpad.webapp.errorlog import (
-    ErrorReport,
-    ErrorReportingUtility,
-    )
+from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.interfaces import StartRequestEvent
 from canonical.testing import layers

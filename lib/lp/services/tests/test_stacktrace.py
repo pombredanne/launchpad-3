@@ -16,6 +16,7 @@ from lp.testing import TestCase
 # the tests to pass.
 MY_LINE_NUMBER = 17
 
+
 class Supplement:
     def __init__(self, kwargs):
         for key, value in kwargs.items():
@@ -23,12 +24,16 @@ class Supplement:
                            'expression', 'warnings'), 'Bad attribute name.'
             setattr(self, key, value)
 
+
 def get_frame(supplement=None, info=None):
     if supplement is not None:
         __traceback_supplement__ = (Supplement, supplement)
+        __traceback_supplement__  # Quiet down the linter.
     if info is not None:
         __traceback_info__ = info
+        __traceback_info__  # Quiet down the linter.
     return sys._getframe()
+
 
 class TestStacktrace(TestCase):
 
@@ -38,6 +43,7 @@ class TestStacktrace(TestCase):
         # non-None argument passed is returned unchanged.
         self.assertEqual(self, stacktrace._get_frame(self))
         # Otherwise get the frame two-up.
+
         def run_get_frame():
             """run _get_frame from inside another function."""
             return stacktrace._get_frame(None)
@@ -109,7 +115,7 @@ class TestStacktrace(TestCase):
                         column=84,
                         expression='tal:define="foo view/foo"',
                         warnings=('watch out', 'pass auf'),
-                        getInfo=lambda : 'read all about it'
+                        getInfo=lambda: 'read all about it'
                     )),
                 MY_LINE_NUMBER))
         self.assertEqual(
@@ -202,7 +208,7 @@ class TestStacktrace(TestCase):
                     column=84,
                     expression='tal:define="foo view/foo"',
                     warnings=('watch out', 'pass auf'),
-                    getInfo=lambda : 'read all about it'),
+                    getInfo=lambda: 'read all about it'),
                 info='I am the Walrus'
                 )
             )
@@ -231,7 +237,8 @@ class TestStacktrace(TestCase):
         extracted = stacktrace.extract_stack(
             get_frame(
                 supplement=dict(
-                    warnings=object() # Not iterable
+                    # This will cause an error because it is not iterable.
+                    warnings=object()
                 ))
             )
         stderr = sys.stderr = StringIO.StringIO()
@@ -265,7 +272,7 @@ class TestStacktrace(TestCase):
         try:
             stacktrace.print_stack()
         finally:
-            sys.stderr = sys.__stderr__        
+            sys.stderr = sys.__stderr__
         self.assertEndsWith(stderr.getvalue(), 'stacktrace.print_stack()\n')
 
     def test_print_stack_options(self):
