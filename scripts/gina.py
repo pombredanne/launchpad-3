@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009,2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # This module uses relative imports.
@@ -21,9 +21,6 @@ __metaclass__ = type
 
 import _pythonpath
 
-# Set to non-zero if you'd like to be warned every so often
-COUNTDOWN = 0
-
 import os
 import psycopg2
 import sys
@@ -39,13 +36,29 @@ from lp.services.scripts.base import LaunchpadCronScript
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.scripts.gina import ExecutionError
 from lp.soyuz.scripts.gina.katie import Katie
-from lp.soyuz.scripts.gina.archive import (ArchiveComponentItems,
-    PackagesMap, MangledArchiveError)
-from lp.soyuz.scripts.gina.handlers import (ImporterHandler,
-    MultiplePackageReleaseError, NoSourcePackageError, DataSetupError)
-from lp.soyuz.scripts.gina.packages import (SourcePackageData,
-    BinaryPackageData, MissingRequiredArguments, DisplayNameDecodingError,
-    PoolFileNotFound, InvalidVersionError)
+from lp.soyuz.scripts.gina.archive import (
+    ArchiveComponentItems,
+    MangledArchiveError,
+    PackagesMap,
+    )
+from lp.soyuz.scripts.gina.handlers import (
+    DataSetupError,
+    ImporterHandler,
+    MultiplePackageReleaseError,
+    NoSourcePackageError,
+    )
+from lp.soyuz.scripts.gina.packages import (
+    BinaryPackageData,
+    DisplayNameDecodingError,
+    InvalidVersionError,
+    MissingRequiredArguments,
+    PoolFileNotFound,
+    SourcePackageData,
+    )
+
+
+# Set to non-zero if you'd like to be warned every so often
+COUNTDOWN = 0
 
 
 def _get_keyring(keyrings_root):
