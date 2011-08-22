@@ -5,6 +5,7 @@
 
 """Test the sendbranchmail script"""
 
+from testtools.matchers import MatchesRegex
 import transaction
 
 from canonical.launchpad.scripts.tests import run_script
@@ -25,14 +26,25 @@ class TestMergeProposalJobScript(TestCaseWithFactory):
         job = make_runnable_incremental_diff_job(self)
         transaction.commit()
         retcode, stdout, stderr = run_script(
-            'cronscripts/merge-proposal-jobs.py', [])
+            'cronscripts/merge-proposal-jobs.py', ['--log-twisted'])
         self.assertEqual(0, retcode)
         self.assertEqual('', stdout)
-        self.assertEqual(
+        matches_expected = MatchesRegex(
             'INFO    Creating lockfile:'
             ' /var/lock/launchpad-merge-proposal-jobs.lock\n'
             'INFO    Running through Twisted.\n'
-            'INFO    Running GenerateIncrementalDiffJob (ID %d).\n'
-            'INFO    Ran 1 GenerateIncrementalDiffJob jobs.\n' % job.job.id,
-            stderr)
+            'Log opened.\n'
+            'INFO    Log opened.\n'
+            'ProcessPool stats:\n'
+            'INFO    ProcessPool stats:\n'
+            '\tworkers: 0\n'
+            'INFO    \tworkers: 0\n'
+            '(.|\n)*'
+            'INFO    Running GenerateIncrementalDiffJob \(ID %d\).\n'
+            '(.|\n)*'
+            'INFO    STOPPING: \'\'\n'
+            'Main loop terminated.\n'
+            'INFO    Main loop terminated.\n'
+            'INFO    Ran 1 GenerateIncrementalDiffJob jobs.\n' % job.job.id)
+        self.assertThat(stderr, matches_expected)
         self.assertEqual(JobStatus.COMPLETED, job.status)
