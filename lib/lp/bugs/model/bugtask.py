@@ -391,7 +391,8 @@ def validate_target(bug, target):
             "A fix for this bug has already been requested for %s"
             % target.displayname)
 
-    if IDistributionSourcePackage.providedBy(target):
+    if (IDistributionSourcePackage.providedBy(target) or
+        ISourcePackage.providedBy(target)):
         # If the distribution has at least one series, check that the
         # source package has been published in the distribution.
         if (target.sourcepackagename is not None and
