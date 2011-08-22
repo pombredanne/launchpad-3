@@ -85,7 +85,7 @@ class LinkCheckerAPI(LaunchpadView):
         return invalid_links
 
     def check_bug_links(self, links):
-        """Checks if links of the form /bugs/100"""
+        """Checks links of the form /bugs/100"""
         invalid_links = {}
         user = self.user
         bugs = [int(link[len('/bugs/'):]) for link in links]
