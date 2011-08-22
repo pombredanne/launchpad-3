@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0631
@@ -61,9 +61,8 @@ prioritymap = {
     "source": PackagePublishingPriority.EXTRA,
 }
 
-GPGALGOS = {}
-for item in GPGKeyAlgorithm.items:
-    GPGALGOS[item.value] = item.name
+GPGALGOS = dict((item.value, item.name) for item in GPGKeyAlgorithm.items)
+
 
 #
 # Helper functions
@@ -147,11 +146,11 @@ def read_dsc(package, version, component, archive_root):
 
 
 def parse_person(val):
-    if "," in val:
-        # Some emails have ',' like "Adam C. Powell, IV
-        # <hazelsct@debian.org>". rfc822.parseaddr seems to do not
-        # handle this properly, so we munge them here
-        val = val.replace(',', '')
+    """Parse a full email address into human-readable name and address."""
+    # Some addresses have commas in them, as in: "Adam C. Powell, IV
+    # <hazelsct@debian.example.com>". rfc822.parseaddr seems not to
+    # handle this properly, so we munge them here.
+    val = val.replace(',', '')
     return rfc822.parseaddr(val)
 
 
@@ -198,6 +197,7 @@ def get_person_by_key(keyrings, key):
         return (user, email, id, armor, is_revoked, algorithm, keysize)
     else:
         return None
+
 
 #
 # Exception classes
