@@ -669,7 +669,7 @@ class BugTask(SQLBase):
                 bugtask.distribution or
                 getattr(bugtask.distroseries, 'distribution', None))
             if (related_distribution == distribution and
-                bugtask.sourcepackagenameID == self.sourcepackagenameID):
+                    bugtask.sourcepackagenameID == self.sourcepackagenameID):
                 key = bug_target_to_key(bugtask.target)
                 key['sourcepackagename'] = new_spn
                 bugtask.transitionToTarget(
