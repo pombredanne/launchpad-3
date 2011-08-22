@@ -183,6 +183,7 @@ from lp.app.interfaces.launchpad import (
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
+from lp.app.widgets.popup import PersonPickerWidget
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.bug import (
     BugContextMenu,
@@ -2219,6 +2220,11 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     custom_widget('tag', BugTagsWidget)
     custom_widget('tags_combinator', RadioWidget)
     custom_widget('component', LabeledMultiCheckBoxWidget)
+    custom_widget('assignee', PersonPickerWidget)
+    custom_widget('bug_reporter', PersonPickerWidget)
+    custom_widget('bug_commenter', PersonPickerWidget)
+    custom_widget('bug_supervisor', PersonPickerWidget)
+    custom_widget('subscriber', PersonPickerWidget)
 
     @cachedproperty
     def bug_tracking_usage(self):

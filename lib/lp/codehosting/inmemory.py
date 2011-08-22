@@ -25,7 +25,10 @@ from zope.interface import implementer
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.xmlrpc import faults
-from lp.app.validators import LaunchpadValidationError
+from lp.app.validators import (
+    LaunchpadValidationError,
+    )
+from lp.app.validators.name import valid_name
 from lp.code.bzr import (
     BranchFormat,
     ControlFormat,
@@ -51,6 +54,7 @@ from lp.code.model.branchtarget import (
     ProductBranchTarget,
     )
 from lp.code.xmlrpc.codehosting import datetime_from_tuple
+from lp.registry.errors import InvalidName
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.utils import iter_split
 from lp.services.xmlrpc import LaunchpadFault
@@ -192,6 +196,14 @@ class FakeSourcePackage:
 
     def setBranch(self, pocket, branch, registrant):
         self.distroseries._linked_branches[self, pocket] = branch
+
+
+class SourcePackageNameSet(ObjectSet):
+
+    def new(self, name_string):
+        if not valid_name(name_string):
+            raise InvalidName(name_string)
+        return self._add(FakeSourcePackageName(name_string))
 
 
 @adapter(FakeSourcePackage)
@@ -454,9 +466,7 @@ class FakeObjectFactory(ObjectFactory):
         return distroseries
 
     def makeSourcePackageName(self):
-        sourcepackagename = FakeSourcePackageName(self.getUniqueString())
-        self._sourcepackagename_set._add(sourcepackagename)
-        return sourcepackagename
+        return self._sourcepackagename_set.new(self.getUniqueString())
 
     def makeSourcePackage(self, distroseries=None, sourcepackagename=None):
         if distroseries is None:
@@ -659,9 +669,12 @@ class FakeCodehosting:
             sourcepackagename = self._sourcepackagename_set.getByName(
                 data['sourcepackagename'])
             if sourcepackagename is None:
-                raise faults.NotFound(
-                    "No such source package: '%s'."
-                    % (data['sourcepackagename'],))
+                try:
+                    sourcepackagename = self._sourcepackagename_set.new(
+                        data['sourcepackagename'])
+                except InvalidName:
+                    raise faults.InvalidSourcePackageName(
+                        data['sourcepackagename'])
             sourcepackage = self._factory.makeSourcePackage(
                 distroseries, sourcepackagename)
         else:
@@ -890,7 +903,7 @@ class InMemoryFrontend:
         self._product_set = ObjectSet()
         self._distribution_set = ObjectSet()
         self._distroseries_set = ObjectSet()
-        self._sourcepackagename_set = ObjectSet()
+        self._sourcepackagename_set = SourcePackageNameSet()
         self._factory = FakeObjectFactory(
             self._branch_set, self._person_set, self._product_set,
             self._distribution_set, self._distroseries_set,
