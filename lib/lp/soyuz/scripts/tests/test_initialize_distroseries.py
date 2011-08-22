@@ -265,6 +265,22 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
              "see help text for more information."),
             ids.check)
 
+    def test_check_success_with_build_in_other_series(self):
+        # Builds in the child's archive but in another series do not
+        # prevent the initialization of child.
+        parent, unused = self.setupParent()
+        other_series, unused = self.setupParent(
+            distribution=parent.distribution)
+        upload = other_series.createQueueEntry(
+            PackagePublishingPocket.RELEASE,
+            other_series.main_archive, 'foo.changes', 'bar')
+        # Create a binary package upload for this upload.
+        upload.addBuild(self.factory.makeBinaryPackageBuild())
+        child = self.factory.makeDistroSeries()
+        ids = InitializeDistroSeries(child, [parent.id])
+
+        self.assertTrue(ids.check())
+
     def test_check_success_with_pending_builds_in_other_arches(self):
         # We only check for pending builds of the same architectures we're
         # copying over from the parents. If *no* build is present in the
