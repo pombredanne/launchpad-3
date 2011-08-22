@@ -1152,10 +1152,10 @@ class Branch(SQLBase, BzrIdentityMixin):
             BranchJob.job_type == BranchJobType.UPGRADE_BRANCH)
         return jobs.count() > 0
 
-    def requestUpgrade(self):
+    def requestUpgrade(self, requester):
         """See `IBranch`."""
         from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
-        return getUtility(IBranchUpgradeJobSource).create(self)
+        return getUtility(IBranchUpgradeJobSource).create(self, requester)
 
     def _checkBranchVisibleByUser(self, user):
         """Is *this* branch visible by the user.
