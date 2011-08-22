@@ -45,7 +45,7 @@ from mercurial.hgweb import (
     )
 from mercurial.localrepo import localrepository
 import subvertpy.ra
-import svn_oo
+import subvertpy.repos
 
 from lp.services.log.logger import BufferLogger
 
@@ -96,7 +96,7 @@ class SubversionServer(Server):
 
     def createRepository(self, path):
         """Create a Subversion repository at `path`."""
-        svn_oo.Repository.Create(path, BufferLogger())
+        subvertpy.repos.create(path)
 
     def get_url(self):
         """Return a URL to the Subversion repository."""
