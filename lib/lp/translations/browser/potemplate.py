@@ -320,12 +320,11 @@ class POTemplateView(LaunchpadView,
         if (by_source_count > self.SHOW_RELATED_TEMPLATES):
             other = by_source_count - self.SHOW_RELATED_TEMPLATES
             if (self.context.distroseries):
-                # XXX adiroiban 2009-12-21 bug=499058: A canonical_url for
-                # SourcePackageName is needed to avoid hardcoding this URL.
-                url = (canonical_url(
-                    self.context.distroseries, rootsite="translations") +
-                    "/+source/" + self.context.sourcepackagename.name +
-                    "/+translations")
+                sourcepackage = self.context.distroseries.getSourcePackage(
+                    self.context.sourcepackagename)
+                url = canonical_url(
+                    sourcepackage, rootsite="translations",
+                    view_name='+translations')
             else:
                 url = canonical_url(
                     self.context.productseries,
