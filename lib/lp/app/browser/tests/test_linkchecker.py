@@ -53,8 +53,12 @@ class TestLinkCheckerAPI(TestCaseWithFactory):
         return ['/bugs/%d' % (bug.id)]
 
     def make_invalid_bug_links(self):
-        bug = self.factory.makeBug(private=True)
-        return ['/bugs/%d' % (bug.id)]
+        """
+        As far as searchBugs() is concerned, this is an invalid bug to the
+        currently authenticated user
+        """
+        bug_private = self.factory.makeBug(private=True)
+        return ['/bugs/%d' % (bug_private.id)]
 
     def invoke_link_checker(
         self, valid_branch_urls=None, invalid_branch_urls=None,
