@@ -3398,7 +3398,6 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
         bugtask_id = self.context.id
         launchbag = getUtility(ILaunchBag)
         is_primary = self.context.id == launchbag.bugtask.id
-        milestones = self._visible_milestones
         self.data = dict(
             # Looking at many_bugtasks is an important optimization.  With
             # 150+ bugtasks, it can save three or four seconds of rendering
