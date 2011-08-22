@@ -135,10 +135,7 @@ from lp.registry.interfaces.distribution import (
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
-from lp.registry.interfaces.distroseries import (
-    IDistroSeries,
-    IDistroSeriesSet,
-    )
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
     IMilestoneSet,
     IProjectGroupMilestone,
@@ -148,14 +145,8 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
-from lp.registry.interfaces.product import (
-    IProduct,
-    IProductSet,
-    )
-from lp.registry.interfaces.productseries import (
-    IProductSeries,
-    IProductSeriesSet,
-    )
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
@@ -339,40 +330,6 @@ def BugTaskToBugAdapter(bugtask):
     return bugtask.bug
 
 
-@block_implicit_flushes
-def validate_target_attribute(self, attr, value):
-    """Update the targetnamecache."""
-    # Don't update targetnamecache during _init().
-    if self._SO_creating or self._inhibit_target_check:
-        return value
-    # Determine the new target attributes.
-    target_params = dict(
-        product=self.product,
-        productseries=self.productseries,
-        sourcepackagename=self.sourcepackagename,
-        distribution=self.distribution,
-        distroseries=self.distroseries)
-    utility_iface_dict = {
-        'productID': IProductSet,
-        'productseriesID': IProductSeriesSet,
-        'sourcepackagenameID': ISourcePackageNameSet,
-        'distributionID': IDistributionSet,
-        'distroseriesID': IDistroSeriesSet,
-        }
-    utility_iface = utility_iface_dict[attr]
-    if value is None:
-        target_params[attr[:-2]] = None
-    else:
-        target_params[attr[:-2]] = getUtility(utility_iface).get(value)
-
-    # Update the target name cache with the potential new target. The
-    # attribute changes haven't been made yet, so we need to calculate the
-    # target manually.
-    self.updateTargetNameCache(bug_target_from_key(**target_params))
-
-    return value
-
-
 class PassthroughValue:
     """A wrapper to allow setting values on conjoined bug tasks."""
 
@@ -425,15 +382,6 @@ def validate_assignee(self, attr, value):
     value = validate_conjoined_attribute(self, attr, value)
     # Check if this person is valid and not None.
     return validate_person(self, attr, value)
-
-
-@block_implicit_flushes
-def validate_sourcepackagename(self, attr, value):
-    is_passthrough = isinstance(value, PassthroughValue)
-    value = validate_conjoined_attribute(self, attr, value)
-    if not is_passthrough:
-        self._syncSourcePackages(value)
-    return validate_target_attribute(self, attr, value)
 
 
 def validate_target(bug, target):
@@ -514,24 +462,20 @@ class BugTask(SQLBase):
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     product = ForeignKey(
         dbName='product', foreignKey='Product',
-        notNull=False, default=None,
-        storm_validator=validate_target_attribute)
+        notNull=False, default=None)
     productseries = ForeignKey(
         dbName='productseries', foreignKey='ProductSeries',
-        notNull=False, default=None,
-        storm_validator=validate_target_attribute)
+        notNull=False, default=None)
     sourcepackagename = ForeignKey(
         dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None,
-        storm_validator=validate_sourcepackagename)
+        storm_validator=validate_conjoined_attribute)
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution',
-        notNull=False, default=None,
-        storm_validator=validate_target_attribute)
+        notNull=False, default=None)
     distroseries = ForeignKey(
         dbName='distroseries', foreignKey='DistroSeries',
-        notNull=False, default=None,
-        storm_validator=validate_target_attribute)
+        notNull=False, default=None)
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone',
         notNull=False, default=None,
@@ -736,6 +680,7 @@ class BugTask(SQLBase):
                 if (related_distribution == distribution and
                     bugtask.sourcepackagenameID == self.sourcepackagenameID):
                     bugtask.sourcepackagenameID = PassthroughValue(new_spnid)
+                    bugtask.updateTargetNameCache()
 
     def getContributorInfo(self, user, person):
         """See `IBugTask`."""
@@ -1223,12 +1168,17 @@ class BugTask(SQLBase):
             # current target, or reset it to None
             self.milestone = None
 
-        # Inhibit validate_target_attribute, as we can't set them all
-        # atomically, but we know the final result is correct.
-        self._inhibit_target_check = True
-        for name, value in bug_target_to_key(target).iteritems():
+        new_key = bug_target_to_key(target)
+
+        # As a special case, if the sourcepackagename has changed then
+        # we update any other tasks for the same distribution and
+        # sourcepackagename. This keeps series tasks consistent.
+        if new_key['sourcepackagename'] != self.sourcepackagename:
+            spnid = getattr(new_key['sourcepackagename'], 'id', None)
+            self._syncSourcePackages(spnid)
+
+        for name, value in new_key.iteritems():
             setattr(self, name, value)
-        self._inhibit_target_check = False
         self.updateTargetNameCache()
 
         # After the target has changed, we need to recalculate the maximum bug
