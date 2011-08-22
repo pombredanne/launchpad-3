@@ -1831,7 +1831,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         getUtility(IInitializeDistroSeriesJobSource).create(
             self, parents, architectures, packagesets, rebuild, overlays,
             overlay_pockets, overlay_components)
-        return True
 
     def getParentSeries(self):
         """See `IDistroSeriesPublic`."""
