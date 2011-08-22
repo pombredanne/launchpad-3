@@ -738,21 +738,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             for activity in self.context.bug.activity
             if interesting_match(activity.whatchanged) is not None)
 
-    @cachedproperty
-    def activity_and_comments(self):
-        """Build list of comments interleaved with activities
-
-        When activities occur on the same day a comment was posted,
-        encapsulate them with that comment.  For the remainder, group
-        then as if owned by the person who posted the first action
-        that day.
-
-        If the number of comments exceeds the configured maximum limit, the
-        list will be truncated to just the first and last sets of comments.
-
-        The division between the most recent and oldest is marked by an entry
-        in the list with the key 'num_hidden' defined.
-        """
+    def _getEventGroups(self, batch_size=None, offset=None):
         # Ensure truncation results in < max_length comments as expected
         assert(config.malone.comments_list_truncate_oldest_to
                + config.malone.comments_list_truncate_newest_to
@@ -779,7 +765,31 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
         event_groups = group_comments_with_activity(
             comments=visible_comments,
-            activities=self.interesting_activity)
+            activities=self.interesting_activity,
+            batch_size=batch_size, offset=offset)
+        return event_groups
+
+    @cachedproperty
+    def _event_groups(self):
+        # XXX HACKY.
+        return self._getEventGroups()
+
+    @cachedproperty
+    def activity_and_comments(self):
+        """Build list of comments interleaved with activities
+
+        When activities occur on the same day a comment was posted,
+        encapsulate them with that comment.  For the remainder, group
+        then as if owned by the person who posted the first action
+        that day.
+
+        If the number of comments exceeds the configured maximum limit, the
+        list will be truncated to just the first and last sets of comments.
+
+        The division between the most recent and oldest is marked by an entry
+        in the list with the key 'num_hidden' defined.
+        """
+        event_groups = self._event_groups
 
         def group_activities_by_target(activities):
             activities = sorted(
@@ -1028,15 +1038,21 @@ class BugTaskBatchedCommentsAndActivityView(BugTaskView):
     def batch_start(self):
         try:
             return int(self.request.form_ng.getOne('batch_start'))
-        except ValueError:
+        except TypeError:
             return 0
 
     @property
     def batch_size(self):
         try:
             return int(self.request.form_ng.getOne('batch_size'))
-        except ValueError:
+        except TypeError:
             return 100
+
+    @cachedproperty
+    def _event_groups(self):
+        return self._getEventGroups(
+            batch_size=self.batch_size,
+            offset=self.batch_start)
 
     @cachedproperty
     def batched_activity_and_comments(self):
