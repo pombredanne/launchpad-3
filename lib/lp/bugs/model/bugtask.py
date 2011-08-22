@@ -660,26 +660,21 @@ class BugTask(SQLBase):
         package has to be changed, as well as the corresponding
         distrotask.
         """
-        if self.bug is None:
-            # The validator is being called on an incomplete bug task.
+        if self.bug is None or not (self.distribution or self.distroseries):
+            # The validator is being called on a new or non-distro task.
             return
-        if self.distroseries is not None:
-            distribution = self.distroseries.distribution
-        else:
-            distribution = self.distribution
-        if distribution is not None:
-            for bugtask in self.related_tasks:
-                if bugtask.distroseries:
-                    related_distribution = bugtask.distroseries.distribution
-                else:
-                    related_distribution = bugtask.distribution
-                if (related_distribution == distribution and
-                    bugtask.sourcepackagenameID == self.sourcepackagenameID):
-                    key = bug_target_to_key(bugtask.target)
-                    key['sourcepackagename'] = new_spn
-                    bugtask.transitionToTarget(
-                        bug_target_from_key(**key),
-                        _sync_sourcepackages=False)
+        distribution = self.distribution or self.distroseries.distribution
+        for bugtask in self.related_tasks:
+            if distribution not in (
+                bugtask.distribution,
+                getattr(bugtask.distroseries, 'distribution', None)):
+                continue
+            if bugtask.sourcepackagenameID == self.sourcepackagenameID:
+                key = bug_target_to_key(bugtask.target)
+                key['sourcepackagename'] = new_spn
+                bugtask.transitionToTarget(
+                    bug_target_from_key(**key),
+                    _sync_sourcepackages=False)
 
     def getContributorInfo(self, user, person):
         """See `IBugTask`."""
