@@ -33,6 +33,7 @@ from zope.schema import (
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.app.errors import NotFoundError
+from lp.app.validators.name import valid_name
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
@@ -93,7 +94,6 @@ class TranslationPriority(DBEnumeratedType):
         A low priority POTemplate should only show up if a comprehensive
         search or complete listing is requested by the user.  """)
 
-
 class IPOTemplate(IRosettaStats):
     """A translation template."""
 
@@ -112,7 +112,7 @@ class IPOTemplate(IRosettaStats):
             "unique name in its package. It's important to get this "
             "correct, because Launchpad will recommend alternative "
             "translations based on the name."),
-        required=True))
+        constraint=valid_name, required=True))
 
     translation_domain = exported(TextLine(
         title=_("Translation domain"),
