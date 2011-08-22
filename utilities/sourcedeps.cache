@@ -56,12 +56,12 @@
         "aaron@aaronbentley.com-20100715135013-uoi3q430urx9gwb8"
     ], 
     "bzr-svn": [
-        2715, 
-        "launchpad@pqm.canonical.com-20110810144016-m5f5pbnrpkbz04v3"
+        2717, 
+        "launchpad@pqm.canonical.com-20110819140025-1a6tgsdwtjx3plii"
     ], 
     "bzr-hg": [
-        286, 
-        "launchpad@pqm.canonical.com-20110608121012-ukbfdj6izm8n72tp"
+        290, 
+        "launchpad@pqm.canonical.com-20110808175904-4gj24x3y21kxepcj"
     ], 
     "dulwich": [
         426, 
