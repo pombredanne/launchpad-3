@@ -199,14 +199,6 @@ class IGPGHandler(Interface):
         :return: a `PymeKey` object for the just-generated secret key.
         """
 
-    def importKeyringFile(filepath):
-        """Import the keyring filepath into the local key database.
-
-        :param filepath: the path to a keyring to import.
-
-        :returns: a list of the imported keys.
-        """
-
     def encryptContent(content, fingerprint):
         """Encrypt the given content for the given fingerprint.
 
@@ -271,15 +263,6 @@ class IGPGHandler(Interface):
         :raise AssertionError: if the POST request doesn't succeed.
         """
 
-    def checkTrustDb():
-        """Check whether the OpenPGP trust database is up to date.
-
-        The method automatically rebuild the trust values if necessary.
-
-        The results will be visible in any new retrieved key objects.
-        Existing key objects will not reflect the new trust value.
-        """
-
     def localKeys(filter=None, secret=False):
         """Return an iterator of all keys locally known about.
 
@@ -339,9 +322,6 @@ class IPymeKey(Interface):
     can_certify = Attribute("Whether the key can be used for certification")
     can_authenticate = Attribute(
         "Whether the key can be used for authentication")
-
-    def setOwnerTrust(value):
-        """Set the owner_trust value for this key."""
 
     def export():
         """Export the context key in ASCII-armored mode.
