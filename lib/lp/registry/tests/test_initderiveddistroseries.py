@@ -177,9 +177,9 @@ class TestDeriveDistroSeriesMultipleParents(InitializationHelperTestCase):
         child = self.factory.makeDistroSeries(
             distribution=parent.distribution, previous_series=parent)
 
-        # Packageset p2 has no build.
-        self.assertTrue(child.initDerivedDistroSeries(
-            child.driver, [parent.id], (), (str(packageset2.id),)))
+        # Packageset p2 has no build so no exception should be raised.
+        child.initDerivedDistroSeries(
+            child.driver, [parent.id], (), (str(packageset2.id),))
 
     def test_arch_check_performed(self):
         # Architectures passed to initDerivedDistroSeries are passed down
@@ -191,6 +191,7 @@ class TestDeriveDistroSeriesMultipleParents(InitializationHelperTestCase):
         child = self.factory.makeDistroSeries(
             distribution=parent.distribution, previous_series=parent)
 
-        # Initialize only with parent_das's architecture.
-        self.assertTrue(child.initDerivedDistroSeries(
-            child.driver, [parent.id], (parent_das.architecturetag, ), ()))
+        # Initialize only with parent_das's architecture. The build is
+        # in the other architecture so no exception should be raised.
+        child.initDerivedDistroSeries(
+            child.driver, [parent.id], (parent_das.architecturetag, ), ())
