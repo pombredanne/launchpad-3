@@ -177,7 +177,7 @@ class BugTrackerVocabulary(SQLObjectVocabularyBase):
         results = results.order_by(self._order_by)
         return results
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         results = self.search(query)
         return CountableIterator(results.count(), results, self.toTerm)

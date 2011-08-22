@@ -471,31 +471,7 @@
         class="lp.soyuz.model.archivepermission.ArchivePermissionSet"
         provides="lp.soyuz.interfaces.archivepermission.IArchivePermissionSet">
         <allow
-            attributes="
-                checkAuthenticated
-                componentsForUploader
-                uploadersForComponent
-                packagesForUploader
-                uploadersForPackage
-                queueAdminsForComponent
-                componentsForQueueAdmin
-                permissionsForPerson
-                uploadersForPackageset
-                packagesetsForUploader
-                packagesetsForSource
-                packagesetsForSourceUploader
-                isSourceUploadAllowed
-                newPackageUploader
-                newComponentUploader
-                newQueueAdmin
-                deletePackageUploader
-                deleteComponentUploader
-                deleteQueueAdmin"/>
-        <require
-            permission="launchpad.Edit"
-            attributes="
-                newPackagesetUploader
-                deletePackagesetUploader"/>
+            interface="lp.soyuz.interfaces.archivepermission.IArchivePermissionSet"/>
     </securedutility>
 
     <!-- BinaryPackageBuild -->

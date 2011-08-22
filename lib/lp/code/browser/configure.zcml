@@ -356,7 +356,8 @@
         layer="lp.code.publisher.CodeLayer"
         name="+bmp-macros"
         permission="zope.Public"
-        template="../templates/branchmergeproposal-macros.pt"/>
+        template="../templates/branchmergeproposal-macros.pt"
+        class="lp.app.browser.launchpad.Macro"/>
     <browser:menus
         classes="
             BranchMergeProposalContextMenu
@@ -490,7 +491,8 @@
         layer="lp.code.publisher.CodeLayer"
         name="branch-form-macros"
         permission="zope.Public"
-        template="../templates/branch-form-macros.pt"/>
+        template="../templates/branch-form-macros.pt"
+        class="lp.app.browser.launchpad.Macro"/>
     <browser:page
         name="+whiteboard"
         for="lp.code.interfaces.branch.IBranch"
@@ -1343,7 +1345,8 @@
             layer="lp.code.publisher.CodeLayer"
             name="+bmq-macros"
             permission="zope.Public"
-            template="../templates/branchmergequeue-macros.pt"/>
+            template="../templates/branchmergequeue-macros.pt"
+            class="lp.app.browser.launchpad.Macro"/>
 
 
     </facet>

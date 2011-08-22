@@ -47,6 +47,9 @@ class ProcessJobSource(JobCronScript):
         # Override attributes that are normally set in __init__().
         return getattr(runner, runner_class_name)
 
+    def add_my_options(self):
+        self.add_log_twisted_option()
+
     def handle_options(self):
         if len(self.args) != 1:
             self.parser.print_help()
