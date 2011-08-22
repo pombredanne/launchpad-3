@@ -1018,6 +1018,33 @@ def bugtask_heat_html(bugtask, target=None):
     return html
 
 
+class BugTaskBatchedCommentsAndActivityView(BugTaskView):
+    """A view for displaying batches of bug comments and activity."""
+
+    # We never truncate comments in this view; there would be no point.
+    visible_comments_truncated_for_display = False
+
+    @property
+    def batch_start(self):
+        try:
+            return int(self.request.form_ng.getOne('batch_start'))
+        except ValueError:
+            return 0
+
+    @property
+    def batch_size(self):
+        try:
+            return int(self.request.form_ng.getOne('batch_size'))
+        except ValueError:
+            return 100
+
+    @cachedproperty
+    def batched_activity_and_comments(self):
+        """Return the current batch of activity and comments."""
+        return self.activity_and_comments[
+            self.batch_start:self.batch_start+self.batch_size]
+
+
 class BugTaskPortletView:
     """A portlet for displaying a bug's bugtasks."""
 
