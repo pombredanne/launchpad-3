@@ -913,9 +913,7 @@ class LibrarianLayer(DatabaseLayer):
     @classmethod
     @profiled
     def _check_and_reset(cls):
-        """Raise an exception if the Librarian has been killed.
-        Reset the storage unless this has been disabled.
-        """
+        """Raise an exception if the Librarian has been killed, else reset."""
         try:
             f = urlopen(config.librarian.download_url)
             f.read()
@@ -926,7 +924,8 @@ class LibrarianLayer(DatabaseLayer):
                     "LibrarianLayer.reveal() where possible, and ensure "
                     "the Librarian is restarted if it absolutely must be "
                     "shutdown: " + str(e))
-        cls.librarian_fixture.clear()
+        else:
+            cls.librarian_fixture.reset()
 
     @classmethod
     @profiled
