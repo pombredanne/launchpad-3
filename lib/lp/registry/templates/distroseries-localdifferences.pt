@@ -41,9 +41,7 @@
                   series_name context/displayname;
                   can_perform_sync view/canPerformSync;">
 
-      <div class="beta">
-        <img src="/@@/beta2" alt="[BETA]" />
-      </div>
+      <div class="beta"></div>
 
       <p><tal:replace replace="structure view/explanation/escapedtext" /></p>
 
