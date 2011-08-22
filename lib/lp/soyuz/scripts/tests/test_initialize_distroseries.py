@@ -134,6 +134,39 @@ class InitializationHelperTestCase(TestCaseWithFactory):
         ids.initialize()
         return child
 
+    def createPackageInPackageset(self, distroseries, package_name,
+                                  packageset_name, create_build=False):
+        # Helper method to create a package in a packageset in the given
+        # distroseries, optionaly creating the missing build for this source
+        # package.
+        spn = self.factory.getOrMakeSourcePackageName(package_name)
+        sourcepackagerelease = self.factory.makeSourcePackageRelease(
+            sourcepackagename=spn)
+        source = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=sourcepackagerelease,
+            distroseries=distroseries,
+            sourcepackagename=spn,
+            pocket=PackagePublishingPocket.RELEASE)
+        packageset = getUtility(IPackagesetSet).new(
+            packageset_name, packageset_name, distroseries.owner,
+            distroseries=distroseries)
+        packageset.addSources(package_name)
+        if create_build:
+            source.createMissingBuilds()
+        return source, packageset, sourcepackagerelease
+
+    def create2archParentAndSource(self, packages):
+        # Helper to create a parent series with 2 distroarchseries and
+        # a source.
+        parent, parent_das = self.setupParent(packages=packages)
+        unused, parent_das2 = self.setupParent(
+            parent=parent, proc='amd64', arch_tag='amd64',
+            packages=packages)
+        source = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=parent,
+            pocket=PackagePublishingPocket.RELEASE)
+        return parent, parent_das, parent_das2, source
+
 
 class TestInitializeDistroSeries(InitializationHelperTestCase):
 
@@ -212,18 +245,6 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             ids = InitializeDistroSeries(child, [self.parent.id])
             self.assertTrue(ids.check())
 
-    def create2archParentAndSource(self, packages):
-        # Helper to create a parent series with 2 distroarchseries and
-        # a source.
-        parent, parent_das = self.setupParent(packages=packages)
-        unused, parent_das2 = self.setupParent(
-            parent=parent, proc='amd64', arch_tag='amd64',
-            packages=packages)
-        source = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=parent,
-            pocket=PackagePublishingPocket.RELEASE)
-        return parent, parent_das, parent_das2, source
-
     def test_failure_with_pending_builds_specific_arches(self):
         # We only check for pending builds of the same architectures we're
         # copying over from the parents. If a build is present in the
@@ -261,27 +282,6 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         # No error is raised because we're initializing only the architecture
         # which has no pending builds in it.
         self.assertTrue(ids.check())
-
-    def createPackageInPackageset(self, distroseries, package_name,
-                                  packageset_name, create_build=False):
-        # Helper method to create a package in a packageset in the given
-        # distroseries, optionaly creating the missing build for this source
-        # package.
-        spn = self.factory.getOrMakeSourcePackageName(package_name)
-        sourcepackagerelease = self.factory.makeSourcePackageRelease(
-            sourcepackagename=spn)
-        source = self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagerelease=sourcepackagerelease,
-            distroseries=distroseries,
-            sourcepackagename=spn,
-            pocket=PackagePublishingPocket.RELEASE)
-        packageset = getUtility(IPackagesetSet).new(
-            packageset_name, packageset_name, distroseries.owner,
-            distroseries=distroseries)
-        packageset.addSources(package_name)
-        if create_build:
-            source.createMissingBuilds()
-        return source, packageset, sourcepackagerelease
 
     def test_failure_if_build_present_in_selected_packagesets(self):
         # Pending builds in a parent for source packages included in the
