@@ -357,13 +357,10 @@ def validate_conjoined_attribute(self, attr, value):
     # people try to update the conjoined slave via the API.
     conjoined_master = self.conjoined_master
     if conjoined_master is not None:
-        setattr(self.conjoined_master, attr, value)
+        setattr(conjoined_master, attr, value)
         return value
 
-    # The conjoined slave is updated before the master one because,
-    # for distro tasks, conjoined_slave does a comparison on
-    # sourcepackagename, and the sourcepackagenames will not match
-    # if the conjoined master is altered before the conjoined slave!
+    # If there is a conjoined slave, update that.
     conjoined_bugtask = self.conjoined_slave
     if conjoined_bugtask:
         setattr(conjoined_bugtask, attr, PassthroughValue(value))
