@@ -87,14 +87,18 @@ from lp.code.enums import (
     BranchType,
     )
 from lp.code.errors import (
+    AlreadyLatestFormat,
     BranchCannotBePrivate,
     BranchCannotBePublic,
     BranchMergeProposalExists,
     BranchTargetError,
     BranchTypeError,
     CannotDeleteBranch,
+    CannotUpgradeBranch,
+    CannotUpgradeNonHosted,
     InvalidBranchMergeProposal,
     InvalidMergeQueueConfig,
+    UpgradePending,
     )
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalNeedsReviewEvent,
@@ -1127,16 +1131,25 @@ class Branch(SQLBase, BzrIdentityMixin):
             DateTrunc(u'day', Revision.revision_date))
         return sorted(results)
 
+    def checkUpgrade(self):
+        if self.branch_type is not BranchType.HOSTED:
+            raise CannotUpgradeNonHosted(self)
+        if self.upgrade_pending:
+            raise UpgradePending(self)
+        if (
+            self.branch_format in CURRENT_BRANCH_FORMATS and
+            self.repository_format in CURRENT_REPOSITORY_FORMATS):
+            raise AlreadyLatestFormat(self)
+
     @property
     def needs_upgrading(self):
         """See `IBranch`."""
-        if self.branch_type is not BranchType.HOSTED:
+        try:
+            self.checkUpgrade()
+        except CannotUpgradeBranch:
             return False
-        if self.upgrade_pending:
-            return False
-        return not (
-            self.branch_format in CURRENT_BRANCH_FORMATS and
-            self.repository_format in CURRENT_REPOSITORY_FORMATS)
+        else:
+            return True
 
     @property
     def upgrade_pending(self):

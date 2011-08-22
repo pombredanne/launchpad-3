@@ -22,6 +22,7 @@ __all__ = [
     'BranchMergeProposalExists',
     'CannotDeleteBranch',
     'CannotUpgradeBranch',
+    'CannotUpgradeNonHosted',
     'CannotHaveLinkedBranch',
     'CodeImportAlreadyRequested',
     'CodeImportAlreadyRunning',
@@ -38,6 +39,7 @@ __all__ = [
     'TooManyBuilds',
     'TooNewRecipeFormat',
     'UnknownBranchTypeError',
+    'UpgradePending',
     'UserHasExistingReview',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
@@ -172,27 +174,31 @@ class CannotHaveLinkedBranch(InvalidBranchException):
 class CannotUpgradeBranch(Exception):
     """"Made for subclassing."""
 
-    def __init__(self, message, branch):
+    def __init__(self, branch):
         super(CannotUpgradeBranch, self).__init__(
-            message % branch.bzr_identity)
+            self._msg_template % branch.bzr_identity)
         self.branch = branch
 
 
 class AlreadyLatestFormat(CannotUpgradeBranch):
     """Raised on attempt to upgrade a branch already in the latest format."""
 
-    def __init__(self, branch):
-        super(AlreadyLatestFormat, self).__init__(
-            'Branch %s is in the latest format, so it cannot be upgraded.',
-            branch)
+    _msg_template = (
+        'Branch %s is in the latest format, so it cannot be upgraded.')
+
+
+class CannotUpgradeNonHosted(CannotUpgradeBranch):
+
+    """Raised on attempt to upgrade a non-Hosted branch."""
+
+    _msg_template = 'Cannot upgrade non-hosted branch %s'
 
 
 class UpgradePending(CannotUpgradeBranch):
+
     """Raised on attempt to upgrade a branch already in the latest format."""
 
-    def __init__(self, branch):
-        super(UpgradePending, self).__init__(
-            'An upgrade is already in progress for branch %s.', branch)
+    _msg_template = 'An upgrade is already in progress for branch %s.'
 
 
 class ClaimReviewFailed(Exception):
