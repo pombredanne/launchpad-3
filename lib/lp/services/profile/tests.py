@@ -14,7 +14,6 @@ import os
 import random
 import time
 
-from lp.testing import TestCase
 from zope.app.publication.interfaces import (
     BeforeTraverseEvent,
     EndRequestEvent,
@@ -31,6 +30,9 @@ from canonical.launchpad.webapp.interfaces import StartRequestEvent
 from canonical.testing import layers
 from lp.services.features.testing import FeatureFixture
 from lp.services.profile import profile
+from lp.testing import (
+    TestCase,
+    TestCaseWithFactory)
 
 EXAMPLE_HTML_START = '''\
 <html><head><title>Random!</title></head>
@@ -84,6 +86,7 @@ class TestCleanupProfiler(BaseTest):
         profile._profilers.actions = None
         profile._profilers.memory_profile_start = None
         profile._profilers.profiling = False
+        da.stop_sql_traceback_logging()
         super(TestCleanupProfiler, self).tearDown()
 
 
@@ -271,13 +274,18 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.assertEqual(len(profile._profilers.memory_profile_start), 2)
         self.assertEquals(profile._profilers.actions, set(('show', )))
 
+    def test_sqltrace_start(self):
+        self.pushProfilingConfig(profiling_allowed='True')
+        profile.start_request(self._get_start_event('/++profile++sqltrace/'))
+        self.assertIs(getattr(profile._profilers, 'profiler', None), None)
+        self.assertEquals(profile._profilers.actions, set(('sqltrace', )))
+        self.assertEqual([], da.stop_sql_traceback_logging())
+
 
 class BaseRequestEndHandlerTest(BaseTest):
 
     def setUp(self):
-        TestCase.setUp(self)
-        self.patch(da, 'get_request_start_time', time.time)
-        self.patch(da, 'get_request_duration', lambda: 0.5)
+        super(BaseRequestEndHandlerTest, self).setUp()
         self.profile_dir = self.makeTemporaryDirectory()
         self.memory_profile_log = os.path.join(self.profile_dir, 'memory_log')
         self.pushConfig('profiling', profile_dir=self.profile_dir)
@@ -288,6 +296,7 @@ class BaseRequestEndHandlerTest(BaseTest):
 
     def endRequest(self, path='/', exception=None, pageid=None, work=None):
         start_event = self._get_start_event(path)
+        da.set_request_started()
         profile.start_request(start_event)
         request = start_event.request
         if pageid is not None:
@@ -301,6 +310,7 @@ class BaseRequestEndHandlerTest(BaseTest):
             self.eru.raising(
                 (type(exception), exception, None), event.request)
         profile.end_request(event)
+        da.clear_request_started()
         return event.request
 
     def getAddedResponse(self, request,
@@ -519,6 +529,7 @@ class TestMemoryProfilerRequestEndHandler(BaseRequestEndHandlerTest):
 
     def test_memory_profile(self):
         # Does the memory profile work?
+        self.patch(da, 'get_request_duration', lambda: 0.5)
         self.pushProfilingConfig(
             profiling_allowed='True',
             memory_profile_log=self.memory_profile_log)
@@ -650,3 +661,23 @@ class TestInlineProfiling(BaseRequestEndHandlerTest):
         request = self.endRequest('/', work=work)
         self.assertPStatsProfile(
             self.assertBasicProfileExists(request, show=True))
+
+
+class TestSqlTrace(TestCaseWithFactory, BaseRequestEndHandlerTest):
+
+    layer = layers.DatabaseFunctionalLayer
+
+    def testLogging(self):
+        # This is basically a smoketest.  The underlying machinery has tests.
+        self.pushProfilingConfig(profiling_allowed='True')
+        request = self.endRequest(
+            '/++profile++sqltrace/', work=self.factory.makeBug)
+        response = self.getAddedResponse(request)
+        self.assertIn('Top 10 SQL times', response)
+        self.assertIn('Query number', response)
+        self.assertIn('Top 10 Python times', response)
+        self.assertIn('Before query', response)
+        self.assertIn('Repeated Python SQL Triggers', response)
+        self.assertIn('Show all tracebacks', response)
+        # This file should be part of several of the tracebacks.
+        self.assertIn(__file__.replace('.pyc', '.py'), response)

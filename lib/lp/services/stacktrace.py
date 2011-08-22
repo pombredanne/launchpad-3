@@ -9,6 +9,7 @@ These honor traceback supplements as defined in zope.exceptions.
 __metaclass__ = type
 __all__ = [
     'extract_stack',
+    'extract_tb',
     'format_list',
     'print_list',
     'print_stack',
@@ -53,38 +54,47 @@ def format_list(extracted_list):
     Each string in the resulting list corresponds to the item with the
     same index in the argument list.  Each string ends in a newline;
     the strings may contain internal newlines as well, for those items
-    whose source text line is not None.
+    whose source text line or supplement or info are not None.
     """
     list = []
-    for filename, lineno, name, line, supp, info in extracted_list:
+    for filename, lineno, name, line, modname, supp, info in extracted_list:
         item = []
         item.append(
                '  File "%s", line %d, in %s' % (filename, lineno, name))
         if line:
             item.append('    %s' % line.strip())
         # The "supp" and "info" bits are adapted from zope.exceptions.
-        if supp:
-            if supp['source_url']:
-                item.append(_fmt(supp['source_url']))
-            if supp['line']:
-                if supp['column']:
-                    item.append(
-                        _fmt('Line %(line)s, Column %(column)s' % supp))
-                else:
-                    item.append(_fmt('Line %(line)s' % supp))
-            elif supp['column']:
-                item.append(_fmt('Column %(column)s' % supp))
-            if supp['expression']:
-                item.append(_fmt('Expression: %(expression)s' % supp))
-            if supp['warnings']:
-                for warning in supp['warnings']
-                    item.append(_fmt('Warning: %s' % warning))
-            if supp['extra']:
-                item.append(extra) # We do not include a prefix.
-        if info:
-            item.append(_fmt(info))
+        try:
+            if supp:
+                if supp['source_url']:
+                    item.append(_fmt(supp['source_url']))
+                if supp['line']:
+                    if supp['column']:
+                        item.append(
+                            _fmt('Line %(line)s, Column %(column)s' % supp))
+                    else:
+                        item.append(_fmt('Line %(line)s' % supp))
+                elif supp['column']:
+                    item.append(_fmt('Column %(column)s' % supp))
+                if supp['expression']:
+                    item.append(_fmt('Expression: %(expression)s' % supp))
+                if supp['warnings']:
+                    for warning in supp['warnings']:
+                        item.append(_fmt('Warning: %s' % warning))
+                if supp['extra']:
+                    item.append(supp['extra']) # We do not include a prefix.
+            if info:
+                item.append(_fmt(info))
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except:
+            # The values above may not stringify properly, or who knows what
+            # else.  Be defensive.
+            if DEBUG_EXCEPTION_FORMATTER:
+                traceback.print_exc()
+            # else just swallow the exception.
         item.append('') # This gives us a trailing newline.
-        list.append(item.join('\n'))
+        list.append('\n'.join(item))
     return list
 
 
@@ -119,8 +129,9 @@ def _get_frame_data(f, lineno):
     else:
         line = None
     # Adapted from zope.exceptions.
+    modname = f.f_globals.get('__name__')
     # Output a traceback supplement, if any.
-    supp = info = None
+    supplement = info = None
     if '__traceback_supplement__' in f.f_locals:
         # Use the supplement defined in the function.
         tbs = f.f_locals['__traceback_supplement__']
@@ -133,12 +144,16 @@ def _get_frame_data(f, lineno):
         factory = tbs[0]
         args = tbs[1:]
         try:
-            supp = factory(*args)
+            supplement = factory(*args)
+        except (SystemExit, KeyboardInterrupt):
+            raise
         except:
             if DEBUG_EXCEPTION_FORMATTER:
                 traceback.print_exc()
             # else just swallow the exception.
         else:
+            # It might be nice if supplements could be dicts, for simplicity.
+            # Historically, though, they are objects.
             # We will turn the supplement into a dict, so that we have
             # "getInfo" pre-processed and so that we are not holding on to
             # anything from the frame.
@@ -147,30 +162,33 @@ def _get_frame_data(f, lineno):
             if getInfo is not None:
                 try:
                     extra = getInfo()
+                except (SystemExit, KeyboardInterrupt):
+                    raise
                 except:
                     if DEBUG_EXCEPTION_FORMATTER:
                         traceback.print_exc()
                     # else just swallow the exception.
-            supp = dict(
-                source_url=getattr(supp, 'source_url', None),
-                line=getattr(supp, 'line', None),
-                column=getattr(supp, 'column', None),
-                expression=getattr(supp, 'expression', None),
-                warnings=getattr(supp, 'warnings', ()),
+            supplement = dict(
+                # The "_url" suffix is historical.
+                source_url=getattr(supplement, 'source_url', None),
+                line=getattr(supplement, 'line', None),
+                column=getattr(supplement, 'column', None),
+                expression=getattr(supplement, 'expression', None),
+                warnings=getattr(supplement, 'warnings', ()),
                 extra=extra)
     info = f.f_locals.get('__traceback_info__', None)
     # End part adapted from zope.exceptions.
-    return (filename, lineno, name, line, supp, info)
+    return (filename, lineno, name, line, modname, supplement, info)
 
 
-def extract_stack(f=None, limit = None):
+def extract_stack(f=None, limit=None):
     """Extract the raw traceback from the current stack frame.
 
-    The return value has the same format as for extract_tb().  The
-    optional 'f' and 'limit' arguments have the same meaning as for
-    print_stack().  Each item in the list is a quadruple (filename,
-    line number, function name, text), and the entries are in order
-    from oldest to newest stack frame.
+    The return value has the same format as for extract_tb().  The optional
+    'f' and 'limit' arguments have the same meaning as for print_stack(). 
+    Each item in the list is a septuple (filename, line number, function name,
+    text, module name, optional supplement dict, optional info string), and
+    the entries are in order from oldest to newest stack frame.
     """
     f = _get_frame(f)
     limit = _get_limit(limit)
@@ -184,19 +202,21 @@ def extract_stack(f=None, limit = None):
     return list
 
 
-def extract_tb(tb, limit = None):
+def extract_tb(tb, limit=None):
     """Return list of up to limit pre-processed entries from traceback.
 
-    This is useful for alternate formatting of stack traces.  If
-    'limit' is omitted or None, all entries are extracted.  A
-    pre-processed stack trace entry is a quadruple (filename, line
-    number, function name, text) representing the information that is
-    usually printed for a stack trace.  The text is a string with
-    leading and trailing whitespace stripped; if the source is not
-    available it is None.
+    This is useful for alternate formatting of stack traces.  If 'limit' is
+    omitted or None, all entries are extracted.  A pre-processed stack trace
+    entry is a sextuple (filename, line number, function name, text, module
+    name, optional supplement dict, optional info string) representing the
+    information that is printed for a stack trace.  The text is a string with
+    leading and trailing whitespace stripped; if the source is not available
+    it is None. The supplement dict has keys 'source_url', 'line', 'column',
+    'expression', 'warnings' (an iterable), and 'extra', any of which may be
+    None.
     """
-    # zope.exceptions handles tracebacks.  This is in the module just to
-    # show how this module's patterns might be extended to tracebacks.
+    # zope.exceptions handles tracebacks.  This function is implemented just
+    # to show how this module's patterns might be extended to tracebacks.
     limit = _get_limit(limit)
     list = []
     n = 0
