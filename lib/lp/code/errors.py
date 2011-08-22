@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'AlreadyLatestFormat',
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
     'BranchCannotBePrivate',
@@ -20,6 +21,7 @@ __all__ = [
     'BuildNotAllowedForDistro',
     'BranchMergeProposalExists',
     'CannotDeleteBranch',
+    'CannotUpgradeBranch',
     'CannotHaveLinkedBranch',
     'CodeImportAlreadyRequested',
     'CodeImportAlreadyRunning',
@@ -165,6 +167,32 @@ class CannotHaveLinkedBranch(InvalidBranchException):
     """Raised when we try to get the linked branch for a thing that can't."""
 
     _msg_template = "%s cannot have linked branches."
+
+
+class CannotUpgradeBranch(Exception):
+    """"Made for subclassing."""
+
+    def __init__(self, message, branch):
+        super(CannotUpgradeBranch, self).__init__(
+            message % branch.bzr_identity)
+        self.branch = branch
+
+
+class AlreadyLatestFormat(CannotUpgradeBranch):
+    """Raised on attempt to upgrade a branch already in the latest format."""
+
+    def __init__(self, branch):
+        super(AlreadyLatestFormat, self).__init__(
+            'Branch %s is in the latest format, so it cannot be upgraded.',
+            branch)
+
+
+class UpgradePending(CannotUpgradeBranch):
+    """Raised on attempt to upgrade a branch already in the latest format."""
+
+    def __init__(self, branch):
+        super(UpgradePending, self).__init__(
+            'An upgrade is already in progress for branch %s.', branch)
 
 
 class ClaimReviewFailed(Exception):

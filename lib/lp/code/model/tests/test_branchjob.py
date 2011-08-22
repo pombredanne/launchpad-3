@@ -25,6 +25,7 @@ from bzrlib.transport import get_transport
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
+from testtools import ExpectedException
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -51,6 +52,10 @@ from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
+    )
+from lp.code.errors import (
+    AlreadyLatestFormat,
+    UpgradePending,
     )
 from lp.code.interfaces.branchjob import (
     IBranchDiffJob,
@@ -289,6 +294,27 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         format.set_branch_format(branch_format())
         format._set_repository_format(repo_format())
         return format
+
+    def test_create_raises_AlreadyLatestFormat(self):
+        """BranchUpgradeJob.create raises AlreadyLatestFormat as expected."""
+        self.useBzrBranches(direct_database=True)
+        db_branch, tree = self.create_branch_and_tree()
+        with ExpectedException(
+            AlreadyLatestFormat,
+            'Branch %s is in the latest format, so it cannot be upgraded.' %
+            db_branch.bzr_identity):
+            BranchUpgradeJob.create(db_branch, db_branch.owner)
+
+    def test_create_raises_UpgradePending(self):
+        """BranchUpgradeJob.create raises UpgradePending as expected."""
+        self.useBzrBranches(direct_database=True)
+        db_branch, tree = self.create_knit()
+        BranchUpgradeJob.create(db_branch, db_branch.owner)
+        with ExpectedException(
+            UpgradePending,
+            'An upgrade is already in progress for branch %s.' %
+            db_branch.bzr_identity):
+            BranchUpgradeJob.create(db_branch, db_branch.owner)
 
     def test_providesInterface(self):
         """Ensure that BranchUpgradeJob implements IBranchUpgradeJob."""

@@ -78,6 +78,10 @@ from lp.code.enums import (
     BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel,
     )
+from lp.code.errors import (
+    AlreadyLatestFormat,
+    UpgradePending,
+    )
 from lp.code.interfaces.branchjob import (
     IBranchDiffJob,
     IBranchDiffJobSource,
@@ -378,10 +382,10 @@ class BranchUpgradeJob(BranchJobDerived):
     @classmethod
     def create(cls, branch, requester):
         """See `IBranchUpgradeJobSource`."""
-        if not branch.needs_upgrading:
-            raise AssertionError('Branch does not need upgrading.')
         if branch.upgrade_pending:
-            raise AssertionError('Branch already has upgrade pending.')
+            raise UpgradePending(branch)
+        if not branch.needs_upgrading:
+            raise AlreadyLatestFormat(branch)
         branch_job = BranchJob(
             branch, BranchJobType.UPGRADE_BRANCH, {}, requester=requester)
         return cls(branch_job)
