@@ -24,7 +24,6 @@ import urllib
 import urllib2
 
 import gpgme
-from gpgme import editutil as gpgme_editutil
 from zope.interface import implements
 
 from canonical.config import config
@@ -344,18 +343,6 @@ class GPGHandler:
 
         return key
 
-    def importKeyringFile(self, filepath):
-        """See IGPGHandler.importKeyringFile."""
-        ctx = gpgme.Context()
-        data = open(filepath, 'r')
-        result = ctx.import_(data)
-        # if not considered -> format wasn't recognized
-        # no key was imported
-        if result.considered == 0:
-            raise ValueError('Empty or invalid keyring')
-        return [PymeKey(fingerprint)
-                for (fingerprint, result, status) in result.imports]
-
     def encryptContent(self, content, fingerprint):
         """See IGPGHandler."""
         if isinstance(content, unicode):
@@ -541,16 +528,6 @@ class GPGHandler:
         url = self.getURLForKeyInServer(fingerprint, action)
         return urlfetch(url)
 
-    def checkTrustDb(self):
-        """See IGPGHandler"""
-        p = subprocess.Popen(['gpg', '--check-trustdb', '--batch', '--yes'],
-                             close_fds=True,
-                             stdin=subprocess.PIPE,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT)
-        p.communicate()
-        return p.returncode
-
 
 class PymeSignature(object):
     """See IPymeSignature."""
@@ -616,19 +593,6 @@ class PymeKey:
         # Non-revoked valid email addresses associated with this key
         self.emails = [uid.email for uid in self.uids
                        if valid_email(uid.email) and not uid.revoked]
-
-    def setOwnerTrust(self, value):
-        """Set the ownertrust on the actual gpg key"""
-        if value not in (gpgme.VALIDITY_UNDEFINED, gpgme.VALIDITY_NEVER,
-                         gpgme.VALIDITY_MARGINAL, gpgme.VALIDITY_FULL,
-                         gpgme.VALIDITY_ULTIMATE):
-            raise ValueError("invalid owner trust level")
-        # edit the owner trust value on the key
-        ctx = gpgme.Context()
-        key = ctx.get_key(self.fingerprint.encode('ascii'), False)
-        gpgme_editutil.edit_trust(ctx, key, value)
-        # set the cached copy of owner_trust
-        self.owner_trust = value
 
     @property
     def displayname(self):
