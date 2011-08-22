@@ -738,18 +738,19 @@ class TestBranchUpgrade(TestCaseWithFactory):
 
     def test_requestUpgrade_no_upgrade_needed(self):
         # If a branch doesn't need to be upgraded, requestUpgrade raises an
-        # AssertionError.
+        # AlreadyLatestFormat.
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_8,
             repository_format=RepositoryFormat.BZR_CHK_2A)
         owner = removeSecurityProxy(branch).owner
         login_person(owner)
         self.addCleanup(logout)
-        self.assertRaises(AssertionError, branch.requestUpgrade, branch.owner)
+        self.assertRaises(
+            AlreadyLatestFormat, branch.requestUpgrade, branch.owner)
 
     def test_requestUpgrade_upgrade_pending(self):
         # If there is a pending upgrade already requested, requestUpgrade
-        # raises an AssertionError.
+        # raises an UpgradePending.
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_6)
         owner = removeSecurityProxy(branch).owner
@@ -757,7 +758,7 @@ class TestBranchUpgrade(TestCaseWithFactory):
         self.addCleanup(logout)
         branch.requestUpgrade(branch.owner)
 
-        self.assertRaises(AssertionError, branch.requestUpgrade, branch.owner)
+        self.assertRaises(UpgradePending, branch.requestUpgrade, branch.owner)
 
     def test_upgradePending(self):
         # If there is a BranchUpgradeJob pending for the branch, return True.
