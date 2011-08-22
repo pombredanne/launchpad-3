@@ -180,12 +180,14 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
         TestStagedBinaryUploadBase.setupBreezy(self)
         from lp.soyuz.model.processor import (
             Processor, ProcessorFamily)
+        self.switchToAdmin()
         ppc_family = ProcessorFamily.selectOneBy(name='powerpc')
         ppc_proc = Processor(
             name='powerpc', title='PowerPC', description='not yet',
             family=ppc_family)
         breezy_ppc = self.breezy.newArch(
             'powerpc', ppc_family, True, self.breezy.owner)
+        self.switchToUploader()
 
     def setUp(self):
         """Setup environment for binary uploads.
@@ -214,11 +216,13 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
 
     def _publishBuildQueueItem(self, queue_item):
         """Publish build part of the given queue item."""
+        self.switchToAdmin()
         queue_item.setAccepted()
         pubrec = queue_item.builds[0].publish(self.log)[0]
         pubrec.status = PackagePublishingStatus.PUBLISHED
         pubrec.datepublished = UTC_NOW
         queue_item.setDone()
+        self.switchToUploader()
 
     def _setupUploadProcessorForBuild(self):
         """Setup an UploadProcessor instance for a given buildd context."""

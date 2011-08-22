@@ -91,11 +91,8 @@ class OopsHandler(logging.Handler):
         """Emit a record as an OOPS."""
         try:
             msg = record.getMessage()
-            # Warnings and less are informational OOPS reports.
-            informational = (record.levelno <= logging.WARN)
             with globalErrorUtility.oopsMessage(msg):
-                globalErrorUtility._raising(
-                    sys.exc_info(), self.request, informational=informational)
+                globalErrorUtility.raising(sys.exc_info(), self.request)
         except Exception:
             self.handleError(record)
 

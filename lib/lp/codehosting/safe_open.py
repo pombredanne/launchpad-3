@@ -11,6 +11,8 @@ from bzrlib.bzrdir import BzrDir
 
 from lazr.uri import URI
 
+import threading
+
 __all__ = [
     'AcceptAnythingPolicy',
     'BadUrl',
@@ -150,8 +152,29 @@ class WhitelistPolicy(BranchOpenPolicy):
         return urlutils.join(branch.base, url), self.check
 
 
+class SingleSchemePolicy(BranchOpenPolicy):
+    """Branch open policy that rejects URLs not on the given scheme."""
+
+    def __init__(self, allowed_scheme):
+        self.allowed_scheme = allowed_scheme
+
+    def shouldFollowReferences(self):
+        return True
+
+    def transformFallbackLocation(self, branch, url):
+        return urlutils.join(branch.base, url), True
+
+    def checkOneURL(self, url):
+        """Check that `url` is safe to open."""
+        if URI(url).scheme != self.allowed_scheme:
+            raise BadUrl(url)
+
+
 class SafeBranchOpener(object):
     """Safe branch opener.
+
+    All locations that are opened (stacked-on branches, references) are checked
+    against a policy object.
 
     The policy object is expected to have the following methods:
     * checkOneURL
@@ -159,9 +182,28 @@ class SafeBranchOpener(object):
     * transformFallbackLocation
     """
 
+    _threading_data = threading.local()
+
     def __init__(self, policy):
         self.policy = policy
         self._seen_urls = set()
+
+    @classmethod
+    def install_hook(cls):
+        """Install the ``transformFallbackLocation`` hook.
+
+        This is done at module import time, but transformFallbackLocationHook
+        doesn't do anything unless the `_active_openers` threading.Local object
+        has a 'opener' attribute in this thread.
+
+        This is in a module-level function rather than performed at module level
+        so that it can be called in setUp for testing `SafeBranchOpener` as
+        bzrlib.tests.TestCase.setUp clears hooks.
+        """
+        Branch.hooks.install_named_hook(
+            'transform_fallback_location',
+            cls.transformFallbackLocationHook,
+            'SafeBranchOpener.transformFallbackLocationHook')
 
     def checkAndFollowBranchReference(self, url):
         """Check URL (and possibly the referenced URL) for safety.
@@ -187,32 +229,33 @@ class SafeBranchOpener(object):
             if not self.policy.shouldFollowReferences():
                 raise BranchReferenceForbidden(url)
 
-    def transformFallbackLocationHook(self, branch, url):
+    @classmethod
+    def transformFallbackLocationHook(cls, branch, url):
         """Installed as the 'transform_fallback_location' Branch hook.
 
         This method calls `transformFallbackLocation` on the policy object and
         either returns the url it provides or passes it back to
         checkAndFollowBranchReference.
         """
-        new_url, check = self.policy.transformFallbackLocation(branch, url)
+        try:
+            opener = getattr(cls._threading_data, "opener")
+        except AttributeError:
+            return url
+        new_url, check = opener.policy.transformFallbackLocation(branch, url)
         if check:
-            return self.checkAndFollowBranchReference(new_url)
+            return opener.checkAndFollowBranchReference(new_url)
         else:
             return new_url
 
     def runWithTransformFallbackLocationHookInstalled(
             self, callable, *args, **kw):
-        Branch.hooks.install_named_hook(
-            'transform_fallback_location', self.transformFallbackLocationHook,
-            'SafeBranchOpener.transformFallbackLocationHook')
+        assert (self.transformFallbackLocationHook in
+                Branch.hooks['transform_fallback_location'])
+        self._threading_data.opener = self
         try:
             return callable(*args, **kw)
         finally:
-            # XXX 2008-11-24 MichaelHudson, bug=301472: This is the hacky way
-            # to remove a hook.  The linked bug report asks for an API to do
-            # it.
-            Branch.hooks['transform_fallback_location'].remove(
-                self.transformFallbackLocationHook)
+            del self._threading_data.opener
             # We reset _seen_urls here to avoid multiple calls to open giving
             # spurious loop exceptions.
             self._seen_urls = set()
@@ -236,28 +279,13 @@ class SafeBranchOpener(object):
             Branch.open, url)
 
 
-class URLChecker(BranchOpenPolicy):
-    """Branch open policy that rejects URLs not on the given scheme."""
-
-    def __init__(self, allowed_scheme):
-        self.allowed_scheme = allowed_scheme
-
-    def shouldFollowReferences(self):
-        return True
-
-    def transformFallbackLocation(self, branch, url):
-        return urlutils.join(branch.base, url), True
-
-    def checkOneURL(self, url):
-        """Check that `url` is safe to open."""
-        if URI(url).scheme != self.allowed_scheme:
-            raise BadUrl(url)
-
-
 def safe_open(allowed_scheme, url):
     """Open the branch at `url`, only accessing URLs on `allowed_scheme`.
 
     :raises BadUrl: An attempt was made to open a URL that was not on
         `allowed_scheme`.
     """
-    return SafeBranchOpener(URLChecker(allowed_scheme)).open(url)
+    return SafeBranchOpener(SingleSchemePolicy(allowed_scheme)).open(url)
+
+
+SafeBranchOpener.install_hook()

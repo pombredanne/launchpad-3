@@ -22,7 +22,7 @@ for lb in branches:
     if lb == trunk:
         continue
     try:
-        _branch  = branch.Branch.open(lb)
+        _branch = branch.Branch.open(lb)
     except errors.NotBranchError:
         continue
     print ' * %s' % lb
@@ -32,10 +32,12 @@ for lb in branches:
     except errors.NotBranchError:
         print '   - Remote branch does not exist'
         continue
-    if _branch.revno() != rem_branch.revno():
-        print '   - Remote branch is missing revisions'
-    else:
+    if _branch.revno() == rem_branch.revno():
         print '   - Remote branch is up to date'
+    elif _branch.revno() > rem_branch.revno():
+        print '   - Remote branch is missing revisions'
+    elif _branch.revno() < rem_branch.revno():
+        print '   - Local branch is missing revisions'
     remote = lp_branches.getByUrl(url = rem_branch_url)
     mps = remote.landing_targets
     for mp in mps:

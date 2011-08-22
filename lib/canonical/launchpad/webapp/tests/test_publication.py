@@ -293,9 +293,6 @@ class TestWebServicePublication(TestCaseWithFactory):
         self.assertTrue(repr(next_oops).find("DisconnectionError") != -1,
             "next_oops was %r" % next_oops)
 
-        # Ensure the OOPS is correctly marked as informational only.
-        self.assertEqual(next_oops.informational, 'True')
-
         # Ensure that it is different to the last logged OOPS.
         self.assertNotEqual(repr(last_oops), repr(next_oops))
 
@@ -325,9 +322,6 @@ class TestWebServicePublication(TestCaseWithFactory):
 
         # Ensure the OOPS mentions the correct exception
         self.assertNotEqual(repr(next_oops).find("Bug #504291"), -1)
-
-        # Ensure the OOPS is correctly marked as informational only.
-        self.assertEqual(next_oops.informational, 'True')
 
         # Ensure the store has been rolled back and in a usable state.
         self.assertEqual(store._connection._state, STATE_RECONNECT)
