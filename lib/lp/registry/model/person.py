@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'AlreadyConvertedException',
     'get_recipients',
     'generate_nick',
     'IrcID',
@@ -14,6 +15,7 @@ __all__ = [
     'JabberID',
     'JabberIDSet',
     'JoinTeamEvent',
+    'NicknameGenerationError',
     'Owner',
     'Person',
     'person_sort_key',
@@ -300,6 +302,9 @@ from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
 
+
+class AlreadyConvertedException(Exception):
+    """Raised when an attempt to claim a team that has already been claimed."""
 
 class JoinTeamEvent:
     """See `IJoinTeamEvent`."""
@@ -674,7 +679,9 @@ class Person(
 
     def convertToTeam(self, team_owner):
         """See `IPerson`."""
-        assert not self.is_team, "Can't convert a team to a team."
+        if self.is_team:
+            raise AlreadyConvertedException(
+                "%s has already been converted to a team." % self.name)
         assert self.account_status == AccountStatus.NOACCOUNT, (
             "Only Person entries whose account_status is NOACCOUNT can be "
             "converted into teams.")

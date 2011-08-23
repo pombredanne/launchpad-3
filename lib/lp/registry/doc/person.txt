@@ -529,7 +529,7 @@ account_status is NOACCOUNT, though.
     >>> not_a_person.convertToTeam(team_owner=landscape_devs)
     Traceback (most recent call last):
     ...
-    AssertionError: Can't convert a team to a team.
+    AlreadyConvertedException: foo-v has already been converted to a team.
 
 
 Team members
