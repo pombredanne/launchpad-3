@@ -206,7 +206,7 @@ class Branch(SQLBase, BzrIdentityMixin):
                 raise BranchCannotBePrivate()
             if not private and not policy.canBranchesBePublic():
                 raise BranchCannotBePublic()
-        self._private = private
+        self.private = private
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
