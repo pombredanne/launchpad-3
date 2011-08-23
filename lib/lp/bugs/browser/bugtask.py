@@ -771,7 +771,13 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
     @cachedproperty
     def _event_groups(self):
-        # XXX HACKY.
+        """Return a sorted list of event groups for the current BugTask.
+
+        This is a @cachedproperty wrapper around _getEventGroups(). It's
+        here so that we can override it in descendant views, passing
+        batch size parameters and suchlike to _getEventGroups() as we
+        go.
+        """
         return self._getEventGroups()
 
     @cachedproperty
@@ -1035,9 +1041,9 @@ class BugTaskBatchedCommentsAndActivityView(BugTaskView):
     visible_comments_truncated_for_display = False
 
     @property
-    def batch_start(self):
+    def offset(self):
         try:
-            return int(self.request.form_ng.getOne('batch_start'))
+            return int(self.request.form_ng.getOne('offset'))
         except TypeError:
             return 0
 
@@ -1050,15 +1056,16 @@ class BugTaskBatchedCommentsAndActivityView(BugTaskView):
 
     @cachedproperty
     def _event_groups(self):
+        """See `BugTaskView`."""
         return self._getEventGroups(
             batch_size=self.batch_size,
-            offset=self.batch_start)
+            offset=self.offset)
 
     @cachedproperty
     def batched_activity_and_comments(self):
         """Return the current batch of activity and comments."""
         return self.activity_and_comments[
-            self.batch_start:self.batch_start+self.batch_size]
+            self.offset:self.offset+self.batch_size]
 
 
 class BugTaskPortletView:
