@@ -115,11 +115,11 @@ def run_gina(options, ztm, target_section):
     log.info("Dry run: %s", dry_run)
     log.info("")
 
-    if hasattr(PackagePublishingPocket, pocket.upper()):
-        pocket = getattr(PackagePublishingPocket, pocket.upper())
-    else:
+    if not hasattr(PackagePublishingPocket, pocket.upper()):
         log.error("Could not find a pocket schema for %s", pocket)
         sys.exit(1)
+
+    pocket = getattr(PackagePublishingPocket, pocket.upper())
 
     if component_override:
         valid_components = [
@@ -144,12 +144,12 @@ def run_gina(options, ztm, target_section):
         sys.exit(1)
 
     packages_map = PackagesMap(arch_component_items)
-    importer_handler = ImporterHandler(ztm, distro, distroseries,
-                                       dry_run, kdb, package_root, keyrings,
-                                       pocket, component_override)
+    importer_handler = ImporterHandler(
+        ztm, distro, distroseries, dry_run, kdb, package_root, keyrings,
+        pocket, component_override)
 
-    import_sourcepackages(packages_map, kdb, package_root, keyrings,
-                          importer_handler)
+    import_sourcepackages(
+        packages_map, kdb, package_root, keyrings, importer_handler)
     importer_handler.commit()
 
     if source_only:
@@ -163,8 +163,8 @@ def run_gina(options, ztm, target_section):
             log.exception("Database setup required for run on %s", archtag)
             sys.exit(1)
 
-    import_binarypackages(packages_map, kdb, package_root, keyrings,
-                          importer_handler)
+    import_binarypackages(
+        packages_map, kdb, package_root, keyrings, importer_handler)
     importer_handler.commit()
 
 
