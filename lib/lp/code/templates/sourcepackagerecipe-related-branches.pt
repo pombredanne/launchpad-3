@@ -46,7 +46,7 @@
         <thead>
           <tr>
             <th>Branch URL</th>
-            <th>Product series</th>
+            <th>Project series</th>
           </tr>
         </thead>
         <tbody>
@@ -57,14 +57,14 @@
               <a href="#"
                  tal:content="branch/displayname"
                  tal:attributes="href branch/fmt:url">
-                product series branch
+                project series branch
               </a>
             </td>
             <td>
               <a href="#"
                  tal:content="product_series/name"
                  tal:attributes="href product_series/fmt:url">
-                product series
+                project series
               </a>
             </td>
             </tal:defines>
