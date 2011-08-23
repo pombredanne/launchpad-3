@@ -250,13 +250,10 @@ SourcePackagePublishingHistory table for the given distroseries.
 Searching for binary packages
 .............................
 
-There are two useful functions for searching binary packages related
-to the distribution, searchBinaryPackages() and searchBinaryPackagesFTI().
-The former only does binary package name matches (optionally a substring
-match) and the latter uses the PostgreSQL Full Text Index searches.
-
-Both functions return DistributionSourcePackageCache objects, which
-makes it very easy to associate the binary name with its source.
+searchBinaryPackages() does a name substring match to find binary
+packages related to the distribution. It returns
+DistributionSourcePackageCache objects, which makes it very easy to
+associate the binary name with its source.
 
 Searching for an exact match on a valid binary name returns the
 expected results:
@@ -292,19 +289,6 @@ for the moment until we have a better FTI rank to order with.
     ...     print result.name
     mozilla-firefox
     pmount
-
-We can do an FTI search:
-
-    >>> fti_results = ubuntu.searchBinaryPackagesFTI("rubbish")
-    >>> fti_results.count()
-    0
-
-    >>> fti_results = ubuntu.searchBinaryPackagesFTI("browser")
-    >>> print results[0]
-    <...DistributionSourcePackageCache instance ...
-
-    >>> print [result.name for result in fti_results]
-    [u'mozilla-firefox']
 
 
 Finding distroseriess and pockets from distribution names

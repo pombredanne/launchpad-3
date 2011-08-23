@@ -53,16 +53,8 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.components.storm_operators import (
-    FTQ,
-    Match,
-    RANK,
-    )
 from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.helpers import (
-    ensure_unicode,
-    shortlist,
-    )
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
     IHasLogo,
@@ -199,7 +191,6 @@ from lp.soyuz.model.distroarchseries import (
     DistroArchSeries,
     DistroArchSeriesSet,
     )
-from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
@@ -1430,32 +1421,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             *(select_spec + find_spec + match_clause)).config(distinct=True)
 
         return result_set.order_by(DistributionSourcePackageCache.name)
-
-    def searchBinaryPackagesFTI(self, package_name):
-        """See `IDistribution`."""
-        search_vector_column = DistroSeriesPackageCache.fti
-        query_function = FTQ(ensure_unicode(package_name))
-        rank = RANK(search_vector_column, query_function)
-
-        extra_clauses = (
-            BinaryPackageRelease.binarypackagenameID ==
-                DistroSeriesPackageCache.binarypackagenameID,
-            Match(search_vector_column, query_function),
-            )
-        where_spec = (self._binaryPackageSearchClause + extra_clauses)
-
-        select_spec = (DistributionSourcePackageCache, rank)
-        store = Store.of(self)
-        results = store.find(select_spec, where_spec)
-        results.order_by(Desc(rank)).config(distinct=True)
-
-        def result_to_dspc(result):
-            cache, rank = result
-            return cache
-
-        # Return the decorated result set so the consumer of these
-        # results will only see DSPCs
-        return DecoratedResultSet(results, result_to_dspc)
 
     def guessPublishedSourcePackageName(self, pkgname):
         """See `IDistribution`"""
