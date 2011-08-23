@@ -12,6 +12,7 @@ from zope.schema.vocabulary import getVocabularyRegistry
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person
+from canonical.launchpad.webapp.vocabulary import FilteredVocabularyBase
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -22,6 +23,7 @@ from lp.registry.interfaces.person import (
     TeamSubscriptionPolicy,
     )
 from lp.registry.interfaces.karma import IKarmaCacheManager
+from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 from lp.services.features.testing import FeatureFixture
 from lp.testing import (
     StormStatementRecorder,
@@ -48,11 +50,12 @@ class VocabularyTestBase:
     def getVocabulary(self, context):
         return self.vocabulary_registry.get(context, self.vocabulary_name)
 
-    def searchVocabulary(self, context, text):
+    def searchVocabulary(self, context, text, vocab_filter=None):
         if Store.of(context) is not None:
             Store.of(context).flush()
         vocabulary = self.getVocabulary(context)
-        return removeSecurityProxy(vocabulary)._doSearch(text)
+        removeSecurityProxy(vocabulary).allow_null_search = True
+        return removeSecurityProxy(vocabulary).search(text, vocab_filter)
 
 
 class TestValidPersonOrTeamVocabulary(VocabularyTestBase,
@@ -64,6 +67,16 @@ class TestValidPersonOrTeamVocabulary(VocabularyTestBase,
 
     layer = LaunchpadZopelessLayer
     vocabulary_name = 'ValidPersonOrTeam'
+
+    def test_supported_filters(self):
+        # The vocab supports the correct filters.
+        self.assertEqual([
+            FilteredVocabularyBase.ALL_FILTER,
+            ValidPersonOrTeamVocabulary.PERSON_FILTER,
+            ValidPersonOrTeamVocabulary.TEAM_FILTER,
+            ],
+            self.getVocabulary(None).supportedFilters()
+        )
 
     def addKarma(self, person, value, product=None, distribution=None):
         if product:
@@ -137,6 +150,42 @@ class TestValidPersonOrTeamVocabulary(VocabularyTestBase,
         with FeatureFixture(PERSON_AFFILIATION_RANK_FLAG):
             self.assertContentEqual(
                 [person], self.searchVocabulary(person, irc.nickname.lower()))
+
+    def _person_filter_tests(self, person):
+        results = self.searchVocabulary(None, '', 'PERSON')
+        for personorteam in results:
+            self.assertFalse(personorteam.is_team)
+        results = self.searchVocabulary(None, u'fred', 'PERSON')
+        self.assertEqual([person], list(results))
+
+    def test_person_filter(self):
+        # Test that the person filter only returns people
+        # (with and without feature flag).
+        person = self.factory.makePerson(
+            name="fredperson", email="fredperson@foo.com")
+        self.factory.makeTeam(
+            name="fredteam", email="fredteam@foo.com")
+        with FeatureFixture(PERSON_AFFILIATION_RANK_FLAG):
+            self._person_filter_tests(person)
+        self._person_filter_tests(person)
+
+    def _team_filter_tests(self, team):
+        results = self.searchVocabulary(None, '', 'TEAM')
+        for personorteam in results:
+            self.assertTrue(personorteam.is_team)
+        results = self.searchVocabulary(None, u'fred', 'TEAM')
+        self.assertEqual([team], list(results))
+
+    def test_team_filter(self):
+        # Test that the team filter only returns teams.
+        # (with and without feature flag).
+        self.factory.makePerson(
+            name="fredperson", email="fredperson@foo.com")
+        team = self.factory.makeTeam(
+            name="fredteam", email="fredteam@foo.com")
+        with FeatureFixture(PERSON_AFFILIATION_RANK_FLAG):
+            self._team_filter_tests(team)
+        self._team_filter_tests(team)
 
 
 class TestValidPersonOrTeamPreloading(VocabularyTestBase,
@@ -271,3 +320,27 @@ class TestValidTeamOwnerVocabulary(TeamMemberVocabularyTestBase,
         owned_team = self.factory.makeTeam(owner=context_team)
         results = self.searchVocabulary(context_team, owned_team.name)
         self.assertNotIn(owned_team, results)
+
+
+class TestValidPersonVocabulary(VocabularyTestBase,
+                                      TestCaseWithFactory):
+    """Test that the ValidPersonVocabulary behaves as expected."""
+
+    layer = LaunchpadZopelessLayer
+    vocabulary_name = 'ValidPerson'
+
+    def test_supported_filters(self):
+        # The vocab shouldn't support person or team filters.
+        self.assertEqual([], self.getVocabulary(None).supportedFilters())
+
+
+class TestValidTeamVocabulary(VocabularyTestBase,
+                                      TestCaseWithFactory):
+    """Test that the ValidTeamVocabulary behaves as expected."""
+
+    layer = LaunchpadZopelessLayer
+    vocabulary_name = 'ValidTeam'
+
+    def test_supported_filters(self):
+        # The vocab shouldn't support person or team filters.
+        self.assertEqual([], self.getVocabulary(None).supportedFilters())
