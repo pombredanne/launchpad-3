@@ -27,7 +27,6 @@ from canonical.launchpad.webapp.vocabulary import (
     NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,
     )
-from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.model.specification import (
     recursive_blocked_query,
     Specification,
@@ -163,7 +162,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
             return self.toTerm(spec)
         raise LookupError(token)
 
-    def search(self, query):
+    def search(self, query, vocab_filter=None):
         """See `SQLObjectVocabularyBase.search`.
 
         We find specs where query is in the text of name or title, or matches
