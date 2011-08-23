@@ -402,7 +402,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
 
         return SourceOverride(source_package_name, component, section)
 
-    def _checkPolicies(self, source_name):
+    def _checkPolicies(self, source_name, source_component=None):
         # This helper will only return if it's safe to carry on with the
         # copy, otherwise it raises SuspendJobException to tell the job
         # runner to suspend the job.
@@ -418,7 +418,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
             # metadata.
             defaults = UnknownOverridePolicy().calculateSourceOverrides(
                 self.target_archive, self.target_distroseries,
-                self.target_pocket, [source_name])
+                self.target_pocket, [source_name], source_component)
             self.addSourceOverride(defaults[0])
 
             approve_new = copy_policy.autoApproveNew(
@@ -502,7 +502,8 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         pu = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
             [self.context.id]).any()
         if pu is None:
-            self._checkPolicies(source_name)
+            self._checkPolicies(
+                source_name, source_package.sourcepackagerelease.component)
 
         # The package is free to go right in, so just copy it now.
         override = self.getSourceOverride()
