@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive pool classes.
@@ -196,7 +196,7 @@ class PackagesMap:
 
             # Run over the source stanzas and store info in src_map. We
             # make just one source map (instead of one per architecture)
-            # because most of then are the same for all architectures,
+            # because most of them are the same for all architectures,
             # but we go over it to also cover source packages that only
             # compile for one architecture.
             sources = apt_pkg.ParseTagFile(info_set.srcfile)
@@ -206,8 +206,9 @@ class PackagesMap:
                     src_tmp['Component'] = info_set.component
                     src_name = src_tmp['Package']
                 except KeyError:
-                    log.exception("Invalid Sources stanza in %s" %
-                                  info_set.sources_tagfile)
+                    log.exception(
+                        "Invalid Sources stanza in %s",
+                        info_set.sources_tagfile)
                     continue
                 self.src_map[src_name].append(src_tmp)
 
@@ -217,7 +218,7 @@ class PackagesMap:
                 continue
 
             # Create a tmp map for binaries for one arch/component pair
-            if not self.bin_map.has_key(info_set.arch):
+            if info_set.arch not in self.bin_map:
                 self.bin_map[info_set.arch] = {}
 
             tmpbin_map = self.bin_map[info_set.arch]
@@ -230,8 +231,9 @@ class PackagesMap:
                     bin_tmp['Component'] = info_set.component
                     bin_name = bin_tmp['Package']
                 except KeyError:
-                    log.exception("Invalid Releases stanza in %s" %
-                                  info_set.binaries_tagfile)
+                    log.exception(
+                        "Invalid Releases stanza in %s",
+                        info_set.binaries_tagfile)
                     continue
                 tmpbin_map[bin_name] = bin_tmp
 
@@ -247,4 +249,3 @@ class PackagesMap:
                                   info_set.difile)
                     continue
                 tmpbin_map[dibin_name] = dibin_tmp
-
