@@ -645,7 +645,6 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
              sourcepackagename != self.context.sourcepackagename))
         productseries_changed = (productseries is not None and
                                  productseries != self.context.productseries)
-        spn_changed = (sourcepackagename != self.context.sourcepackagename)
         similar_templates = self._validateTargetAndGetTemplates(data)
         if similar_templates is not None:
             self.validateName(

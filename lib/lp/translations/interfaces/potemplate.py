@@ -94,6 +94,7 @@ class TranslationPriority(DBEnumeratedType):
         A low priority POTemplate should only show up if a comprehensive
         search or complete listing is requested by the user.  """)
 
+
 class IPOTemplate(IRosettaStats):
     """A translation template."""
 
