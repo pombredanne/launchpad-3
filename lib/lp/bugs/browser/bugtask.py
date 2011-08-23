@@ -3583,8 +3583,6 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
     def js_config(self):
         """Configuration for the JS widgets on the row, JSON-serialized."""
-<<<<<<< TREE
-=======
         assignee_vocabulary, assignee_vocabulary_filters = (
             get_assignee_vocabulary_info(self.context))
         # If we have no filters or just the ALL filter, then no filtering
@@ -3599,15 +3597,12 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
                     'title': filter.title,
                     'description': filter.description,
                     })
-
->>>>>>> MERGE-SOURCE
         # Display the search field only if the user can set any person
         # or team
         user = self.user
         hide_assignee_team_selection = (
             not self.context.userCanSetAnyAssignee(user) and
             (user is None or user.teams_participated_in.count() == 0))
-<<<<<<< TREE
         cx = self.context
         return dumps(dict(
             row_id=self.data['row_id'],
@@ -3615,7 +3610,8 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             prefix=get_prefix(cx),
             assignee_value=cx.assignee and cx.assignee.name,
             assignee_is_team=cx.assignee and cx.assignee.is_team,
-            assignee_vocabulary=get_assignee_vocabulary(cx),
+            assignee_vocabulary=assignee_vocabulary,
+            assignee_vocabulary_filters=filter_details,
             hide_assignee_team_selection=hide_assignee_team_selection,
             user_can_unassign=cx.userCanUnassign(user),
             target_is_product=IProduct.providedBy(cx.target),
@@ -3635,39 +3631,6 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             user_can_edit_importance=(
                 self.user_can_edit_importance and not cx.bugwatch)
             ))
-=======
-        return dumps({
-            'row_id': 'tasksummary%s' % self.context.id,
-            'bugtask_path': '/'.join(
-                [''] + canonical_url(self.context).split('/')[3:]),
-            'prefix': get_prefix(self.context),
-            'assignee_value': self.context.assignee
-                and self.context.assignee.name,
-            'assignee_is_team': self.context.assignee
-                and self.context.assignee.is_team,
-            'assignee_vocabulary': assignee_vocabulary,
-            'assignee_vocabulary_filters': filter_details,
-            'hide_assignee_team_selection': hide_assignee_team_selection,
-            'user_can_unassign': self.context.userCanUnassign(user),
-            'target_is_product': IProduct.providedBy(self.context.target),
-            'status_widget_items': self.status_widget_items,
-            'status_value': self.context.status.title,
-            'importance_widget_items': self.importance_widget_items,
-            'importance_value': self.context.importance.title,
-            'milestone_widget_items': self.milestone_widget_items,
-            'milestone_value': (self.context.milestone and
-                                canonical_url(
-                                    self.context.milestone,
-                                    request=IWebServiceClientRequest(
-                                        self.request)) or
-                                None),
-            'user_can_edit_assignee': self.user_can_edit_assignee,
-            'user_can_edit_milestone': self.user_can_edit_milestone,
-            'user_can_edit_status': not self.context.bugwatch,
-            'user_can_edit_importance': (
-                self.user_can_edit_importance and
-                not self.context.bugwatch)})
->>>>>>> MERGE-SOURCE
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):
