@@ -2028,16 +2028,11 @@ class TestWebservice(WebServiceTestCase):
     def test_getRelatedBugTasks(self):
         """Test the getRelatedBugTasks API."""
         db_bmp = self.factory.makeBranchMergeProposal()
-        launchpad = launchpadlib_for(
-            'test', db_bmp.registrant, version="devel",
-            service_root=self.layer.appserver_root_url('api'))
-
-        with person_logged_in(db_bmp.registrant):
-            db_bug = self.factory.makeBug()
-            db_bmp.source_branch.linkBug(db_bug, db_bmp.registrant)
-            transaction.commit()
-            bmp = ws_object(launchpad, db_bmp)
-            bugtask = ws_object(launchpad, db_bug.default_bugtask)
+        db_bug = self.factory.makeBug()
+        db_bmp.source_branch.linkBug(db_bug, db_bmp.registrant)
+        transaction.commit()
+        bmp = self.wsObject(db_bmp)
+        bugtask = self.wsObject(db_bug.default_bugtask)
         self.assertEqual(
             [bugtask], list(bmp.getRelatedBugTasks()))
 
