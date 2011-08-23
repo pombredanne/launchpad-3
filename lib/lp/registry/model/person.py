@@ -3338,7 +3338,9 @@ class PersonSet:
 
     def getByEmail(self, email):
         """See `IPersonSet`."""
-        return self.getByEmails([email]).one()[0]
+        address = self.getByEmails([email]).one()
+        if address:
+            return address[0]
 
     def getByEmails(self, emails, include_hidden=True):
         """See `IPersonSet`."""
