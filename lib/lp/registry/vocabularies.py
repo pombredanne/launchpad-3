@@ -124,10 +124,12 @@ from canonical.launchpad.webapp.publisher import nearest
 from canonical.launchpad.webapp.vocabulary import (
     BatchedCountableIterator,
     CountableIterator,
+    FilteredVocabularyBase,
     IHugeVocabulary,
     NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,
+    VocabularyFilter,
     )
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -902,7 +904,7 @@ class ValidPersonOrTeamVocabulary(
         text = ensure_unicode(text).lower()
         return self._doSearch(text=text)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         results = self.search(query)
         return CountableIterator(results.count(), results, self.toTerm)
@@ -1141,7 +1143,7 @@ class PersonActiveMembershipVocabulary:
         return obj in self._get_teams()
 
 
-class ActiveMailingListVocabulary:
+class ActiveMailingListVocabulary(FilteredVocabularyBase):
     """The set of all active mailing lists."""
 
     implements(IHugeVocabulary)
@@ -1221,7 +1223,7 @@ class ActiveMailingListVocabulary:
             """ % sqlvalues(text, MailingListStatus.ACTIVE),
             clauseTables=['Person'])
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         results = self.search(query)
         return CountableIterator(results.count(), results, self.toTerm)
@@ -1644,7 +1646,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
                 return self.toTerm(search_result)
         raise LookupError(token)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `SQLObjectVocabularyBase`."""
         results = self._doSearch(query)
         if type(results) is list:
@@ -1749,7 +1751,7 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
         return objs
 
 
-class DistroSeriesDerivationVocabulary:
+class DistroSeriesDerivationVocabulary(FilteredVocabularyBase):
     """A vocabulary source for series to derive from.
 
     Once a distribution has a series that has derived from a series in another
@@ -1816,7 +1818,7 @@ class DistroSeriesDerivationVocabulary:
         title = "%s: %s" % (series.distribution.displayname, series.title)
         return SimpleTerm(series, series.id, title)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         results = self.searchParents(query)
         return CountableIterator(len(results), results, self.toTerm)
@@ -1871,7 +1873,7 @@ class DistroSeriesDerivationVocabulary:
             return self.find_terms(where)
 
 
-class DistroSeriesDifferencesVocabulary:
+class DistroSeriesDifferencesVocabulary(FilteredVocabularyBase):
     """A vocabulary source for differences relating to a series.
 
     Specifically, all `DistroSeriesDifference`s relating to a derived series.
@@ -1929,7 +1931,7 @@ class DistroSeriesDifferencesVocabulary:
         """Return the term for a `DistroSeriesDifference`."""
         return SimpleTerm(dsd, dsd.id)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         results = self.searchForDifferences()
         return CountableIterator(results.count(), results, self.toTerm)
@@ -1942,11 +1944,57 @@ class DistroSeriesDifferencesVocabulary:
         return DistroSeriesDifference.getForDistroSeries(self.distroseries)
 
 
+class VocabularyFilterProject(VocabularyFilter):
+    # A filter returning just projects.
+
+    def __new__(cls):
+        return super(VocabularyFilter, cls).__new__(
+            cls, 'PROJECT', 'Product',
+            'Display search results associated with products')
+
+    @property
+    def filter_terms(self):
+        return [PillarName.product != None]
+
+
+class VocabularyFilterProjectGroup(VocabularyFilter):
+    # A filter returning just project groups.
+
+    def __new__(cls):
+        return super(VocabularyFilter, cls).__new__(
+            cls, 'PROJECTGROUP', 'Project',
+            'Display search results associated with projects')
+
+    @property
+    def filter_terms(self):
+        return [PillarName.project != None]
+
+
+class VocabularyFilterDistribution(VocabularyFilter):
+    # A filter returning just distros.
+
+    def __new__(cls):
+        return super(VocabularyFilter, cls).__new__(
+            cls, 'DISTRO', 'Distribution',
+            'Display search results associated with distributions')
+
+    @property
+    def filter_terms(self):
+        return [PillarName.distribution != None]
+
+
 class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
     """Active `IPillar` objects vocabulary."""
     displayname = 'Needs to be overridden'
     _table = PillarName
     _limit = 100
+
+    PROJECT_FILTER = VocabularyFilterProject()
+    PROJECTGROUP_FILTER = VocabularyFilterProjectGroup()
+    DISTRO_FILTER = VocabularyFilterDistribution()
+
+    def supportedFilters(self):
+        return [self.ALL_FILTER]
 
     def toTerm(self, obj):
         """See `IVocabulary`."""
@@ -1972,7 +2020,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
     def __contains__(self, obj):
         raise NotImplementedError
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         if not query:
             return self.emptySelectResults()
         query = ensure_unicode(query).lower()
@@ -1983,6 +2031,9 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
         if self._filter:
             equal_clauses.extend(self._filter)
             like_clauses.extend(self._filter)
+        if vocab_filter:
+            equal_clauses.extend(vocab_filter.filter_terms)
+            like_clauses.extend(vocab_filter.filter_terms)
         ranked_results = store.execute(
             Union(
                 Select(
@@ -2011,6 +2062,12 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
         else:
             return IDistribution.providedBy(obj)
 
+    def supportedFilters(self):
+        return [
+            self.ALL_FILTER,
+            self.PROJECT_FILTER,
+            self.DISTRO_FILTER]
+
 
 class DistributionOrProductOrProjectGroupVocabulary(PillarVocabularyBase):
     """Active `IProduct`, `IProjectGroup` or `IDistribution` vocabulary."""
@@ -2023,6 +2080,13 @@ class DistributionOrProductOrProjectGroupVocabulary(PillarVocabularyBase):
             return obj.active
         else:
             return IDistribution.providedBy(obj)
+
+    def supportedFilters(self):
+        return [
+            self.ALL_FILTER,
+            self.PROJECT_FILTER,
+            self.PROJECTGROUP_FILTER,
+            self.DISTRO_FILTER]
 
 
 class FeaturedProjectVocabulary(
@@ -2071,7 +2135,7 @@ class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
             token.lower())
 
 
-class DistributionSourcePackageVocabulary:
+class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
 
     implements(IHugeVocabulary)
     displayname = 'Select a package'
@@ -2149,7 +2213,7 @@ class DistributionSourcePackageVocabulary:
         distribution, package_name = self.getDistributionAndPackageName(token)
         return self.toTerm(package_name, distribution)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         if not query:
             return EmptyResultSet()

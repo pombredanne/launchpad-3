@@ -159,7 +159,7 @@ class SoyuzTestPublisher:
         signing_key = self.person.gpg_keys[0]
         package_upload = distroseries.createQueueEntry(
             pocket, archive, changes_file_name, changes_file_content,
-            signing_key)
+            signing_key=signing_key)
 
         status_to_method = {
             PackageUploadStatus.DONE: 'setDone',

@@ -9,9 +9,9 @@
     <tr>
       <th>Language</th>
       <th>Status</th>
-      <th class="amount">Untranslated</th>
-      <th class="amount">Need review</th>
-      <th class="amount">Changed</th>
+      <th>Untranslated</th>
+      <th>Need review</th>
+      <th>Changed</th>
       <th>Last Edited</th>
       <th>By</th>
     </tr>

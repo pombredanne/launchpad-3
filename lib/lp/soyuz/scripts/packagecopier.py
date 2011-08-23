@@ -557,6 +557,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
         override must be for the corresponding source in the sources list.
         Overrides will be ignored for delayed copies.
     :param send_email: Should we notify for the copy performed?
+        NOTE: If running in zopeless mode, the email is sent even if the
+        transaction is later aborted. (See bug 29744)
     :param announce_from_person: If send_email is True,
         then send announcement emails with this person as the From:
     :param strict_binaries: If 'include_binaries' is True then setting this
@@ -593,7 +595,23 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             continue
 
     if len(errors) != 0:
-        raise CannotCopy("\n".join(errors))
+        error_text = "\n".join(errors)
+        if send_email:
+            source = sources[0]
+            # Although the interface allows multiple sources to be copied
+            # at once, we can only send rejection email if a single source
+            # is specified for now.  This is only relied on by packagecopyjob
+            # which will only process one package at a time.  We need to
+            # make the notification code handle atomic rejections such that
+            # it notifies about multiple packages.
+            if series is None:
+                series = source.distroseries
+            # In zopeless mode this email will be sent immediately.
+            notify(
+                person, source.sourcepackagerelease, [], [], archive,
+                series, pocket, summary_text=error_text,
+                action='rejected')
+        raise CannotCopy(error_text)
 
     overrides_index = 0
     for source in copy_checker.getCheckedCopies():
