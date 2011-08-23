@@ -304,7 +304,8 @@ from lp.translations.model.hastranslationimports import (
 
 
 class AlreadyConvertedException(Exception):
-    """Raised when an attempt to claim a team that has already been claimed."""
+    """Raised when an attempt to claim a team that has been claimed."""
+
 
 class JoinTeamEvent:
     """See `IJoinTeamEvent`."""
