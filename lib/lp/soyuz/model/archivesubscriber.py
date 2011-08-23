@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database class for table ArchiveSubscriber."""
@@ -13,8 +13,8 @@ import pytz
 from storm.expr import (
     And,
     Desc,
-    LeftJoin,
     Join,
+    LeftJoin,
     )
 from storm.locals import (
     DateTime,
@@ -30,6 +30,8 @@ from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import DBEnum
+from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from lp.registry.interfaces.person import validate_person
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
@@ -96,26 +98,32 @@ class ArchiveSubscriber(Storm):
         store = Store.of(self)
         if self.subscriber.is_team:
 
+            # We get all the people who already have active tokens for
+            # this archive (for example, through separate subscriptions).
+            auth_token = LeftJoin(
+                ArchiveAuthToken,
+                And(ArchiveAuthToken.person_id == Person.id,
+                    ArchiveAuthToken.archive_id == self.archive_id,
+                    ArchiveAuthToken.date_deactivated == None))
+
+            team_participation = Join(
+                TeamParticipation,
+                TeamParticipation.personID == Person.id)
+
+            # Only return people with preferred email address set.
+            preferred_email = Join(
+                EmailAddress, EmailAddress.personID == Person.id)
+
             # We want to get all participants who are themselves
             # individuals, not teams:
-            all_subscribers = store.find(
-                Person,
+            non_active_subscribers = store.using(
+                Person, team_participation, preferred_email, auth_token).find(
+                (Person, EmailAddress),
+                EmailAddress.status == EmailAddressStatus.PREFERRED,
                 TeamParticipation.teamID == self.subscriber_id,
-                TeamParticipation.personID == Person.id,
-                Person.teamowner == None)
-
-            # Then we get all the people who already have active
-            # tokens for this archive (for example, through separate
-            # subscriptions).
-            active_subscribers = store.find(
-                Person,
-                Person.id == ArchiveAuthToken.person_id,
-                ArchiveAuthToken.archive_id == self.archive_id,
-                ArchiveAuthToken.date_deactivated == None)
-
-            # And return just the non active subscribers:
-            non_active_subscribers = all_subscribers.difference(
-                active_subscribers)
+                Person.teamowner == None,
+                # There is no existing archive auth token.
+                ArchiveAuthToken.person_id == None)
             non_active_subscribers.order_by(Person.name)
             return non_active_subscribers
         else:
@@ -128,8 +136,12 @@ class ArchiveSubscriber(Storm):
                 return EmptyResultSet()
 
             # Otherwise return a result set containing only the
-            # subscriber.
-            return store.find(Person, Person.id == self.subscriber_id)
+            # subscriber and their preferred email address.
+            return store.find(
+                (Person, EmailAddress),
+                Person.id == self.subscriber_id,
+                EmailAddress.personID == Person.id,
+                EmailAddress.status == EmailAddressStatus.PREFERRED)
 
 
 class ArchiveSubscriberSet:

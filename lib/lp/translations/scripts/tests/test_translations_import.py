@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import logging
@@ -122,7 +122,7 @@ class TestTranslationsImport(TestCaseWithFactory):
 
     def test_checkEntry_misapproved_package(self):
         package = self.factory.makeSourcePackage()
-        other_series = self.factory.makeDistroRelease(
+        other_series = self.factory.makeDistroSeries(
             distribution=package.distroseries.distribution)
         template = self.factory.makePOTemplate(
             distroseries=package.distroseries,

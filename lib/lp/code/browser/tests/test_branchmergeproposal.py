@@ -14,7 +14,6 @@ from datetime import (
     timedelta,
     )
 from difflib import unified_diff
-import unittest
 
 import pytz
 from soupmatchers import HTMLContains, Tag
@@ -595,12 +594,14 @@ class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
         self.assertIs(None, new_proposal.supersedes)
 
     @staticmethod
-    def resubmitDefault(view, break_link=False):
+    def resubmitDefault(view, break_link=False, prerequisite_branch=None):
         context = view.context
+        if prerequisite_branch is None:
+            prerequisite_branch = context.prerequisite_branch
         return view.resubmit_action.success(
             {'source_branch': context.source_branch,
              'target_branch': context.target_branch,
-             'prerequisite_branch': context.prerequisite_branch,
+             'prerequisite_branch': prerequisite_branch,
              'description': None,
              'break_link': break_link,
             })
@@ -617,6 +618,16 @@ class TestBranchMergeProposalResubmitView(TestCaseWithFactory):
             notification.message, MatchesRegex('Cannot resubmit because'
             ' <a href=.*>a similar merge proposal</a> is already active.'))
         self.assertEqual(BrowserNotificationLevel.ERROR, notification.level)
+
+    def test_resubmit_same_target_prerequisite(self):
+        """User error if same branch is target and prerequisite."""
+        view = self.createView()
+        first_bmp = view.context
+        self.resubmitDefault(
+            view, prerequisite_branch=first_bmp.target_branch)
+        self.assertEqual(
+            view.errors,
+            ['Target and prerequisite branches must be different.'])
 
 
 class TestResubmitBrowser(BrowserTestCase):
@@ -1079,7 +1090,3 @@ class TestLatestProposalsForEachBranch(TestCaseWithFactory):
                 datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
         self.assertEqual(
             [bmp2], latest_proposals_for_each_branch([bmp1, bmp2]))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

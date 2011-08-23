@@ -66,6 +66,7 @@ from canonical.launchpad.webapp.publisher import (
     stepthrough,
     stepto,
     )
+from canonical.launchpad.webapp.url import urlappend
 from lp.app.browser.launchpadform import (
     LaunchpadEditFormView,
     LaunchpadFormView,
@@ -100,6 +101,7 @@ from lp.registry.interfaces.distroseriesdifference import (
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.browser_helpers import get_plural_text
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
 from lp.services.worlddata.interfaces.country import ICountry
@@ -124,6 +126,11 @@ UPGRADABLE_SERIES_STATUSES = [
     SeriesStatus.EXPERIMENTAL,
     SeriesStatus.DEVELOPMENT,
     ]
+
+
+def get_dsd_source():
+    """For convenience: the `IDistroSeriesDifferenceSource` utility."""
+    return getUtility(IDistroSeriesDifferenceSource)
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
@@ -399,6 +406,14 @@ class DerivedDistroSeriesMixin:
                 return 'a parent series'
 
 
+def word_differences_count(count):
+    """Express "`count` differences" in words.
+
+    For example, "1 package", or "2 packages" and so on.
+    """
+    return get_plural_text(count, "%d package", "%d packages") % count
+
+
 class DistroSeriesView(LaunchpadView, MilestoneOverlayMixin,
                        DerivedDistroSeriesMixin):
 
@@ -442,7 +457,7 @@ class DistroSeriesView(LaunchpadView, MilestoneOverlayMixin,
     @property
     def num_unlinked_packages(self):
         """The number of unlinked packagings for this distroseries."""
-        return self.context.sourcecount - self.num_linked_packages
+        return self.context.getPrioritizedUnlinkedSourcePackages().count()
 
     @cachedproperty
     def recently_linked(self):
@@ -462,28 +477,85 @@ class DistroSeriesView(LaunchpadView, MilestoneOverlayMixin,
     def milestone_batch_navigator(self):
         return BatchNavigator(self.context.all_milestones, self.request)
 
-    def _num_differences(self, difference_type):
-        differences = getUtility(
-            IDistroSeriesDifferenceSource).getForDistroSeries(
-                self.context,
-                difference_type=difference_type,
-                status=(DistroSeriesDifferenceStatus.NEEDS_ATTENTION,))
+    def countDifferences(self, difference_type, needing_attention_only=True):
+        """Count the number of differences of a given kind.
+
+        :param difference_type: Type of `DistroSeriesDifference` to look for.
+        :param needing_attention_only: Restrict count to differences that need
+            attention?  If not, count all that can be viewed.
+        """
+        if needing_attention_only:
+            status = (DistroSeriesDifferenceStatus.NEEDS_ATTENTION, )
+        else:
+            status = None
+
+        differences = get_dsd_source().getForDistroSeries(
+            self.context, difference_type=difference_type, status=status)
         return differences.count()
 
     @cachedproperty
-    def num_differences(self):
-        return self._num_differences(
+    def num_version_differences_needing_attention(self):
+        return self.countDifferences(
             DistroSeriesDifferenceType.DIFFERENT_VERSIONS)
 
     @cachedproperty
+    def num_version_differences(self):
+        return self.countDifferences(
+            DistroSeriesDifferenceType.DIFFERENT_VERSIONS,
+            needing_attention_only=False)
+
+    def wordVersionDifferences(self):
+        return word_differences_count(self.num_version_differences)
+
+    @cachedproperty
     def num_differences_in_parent(self):
-        return self._num_differences(
+        return self.countDifferences(
             DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES)
+
+    def wordDifferencesInParent(self):
+        return word_differences_count(self.num_differences_in_parent)
 
     @cachedproperty
     def num_differences_in_child(self):
-        return self._num_differences(
+        return self.countDifferences(
             DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES)
+
+    def wordDifferencesInChild(self):
+        return word_differences_count(self.num_differences_in_child)
+
+    def alludeToParent(self):
+        """Wording to refer to the series' parent(s).
+
+        If there is a single parent, returns its display name.  Otherwise
+        says "a parent series" (more vague, but we could also name parents
+        if there are very few).
+        """
+        if self.has_unique_parent:
+            return self.unique_parent.displayname
+        else:
+            return "a parent series"
+
+    @cachedproperty
+    def link_to_version_diffs_needing_attention(self):
+        """Return URL for +localpackagediffs page."""
+        return canonical_url(self.context, view_name='+localpackagediffs')
+
+    @property
+    def link_to_all_version_diffs(self):
+        """Return URL for +localdiffs page for all statuses."""
+        return (
+            "%s?field.package_type=all"
+            % self.link_to_version_diffs_needing_attention)
+
+    @property
+    def link_to_differences_in_parent(self):
+        """Return URL for +missingpackages page."""
+        return canonical_url(self.context, view_name='+missingpackages')
+
+    @property
+    def link_to_differences_in_child(self):
+        """Return URL for +uniquepackages page."""
+        return canonical_url(self.context, view_name='+uniquepackages')
 
 
 class DistroSeriesEditView(LaunchpadEditFormView, SeriesStatusMixin):
@@ -900,16 +972,22 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
             self.context, destination_pocket, include_binaries=False,
             dest_url=series_url, dest_display_name=series_title,
             person=self.user, force_async=True):
-            # The copy worked so we can redirect back to the page to
-            # show the results.
-            self.next_url = self.request.URL
+            # The copy worked so we redirect back to show the results. Include
+            # the query string so that the user ends up on the same batch page
+            # with the same filtering parameters as before.
+            self.next_url = self.request.getURL(include_query=True)
 
     @property
     def action_url(self):
-        """The forms should post to themselves, including GET params to
-        account for batch parameters.
+        """The request URL including query string.
+
+        Forms should post to the view with a query string containing the
+        active batch and filtering parameters. Actions should then redirect
+        using that information so that the user is left on the same batch
+        page, with the same filtering parameters, as the page from which they
+        submitted the form.
         """
-        return "%s?%s" % (self.request.getURL(), self.request['QUERY_STRING'])
+        return self.request.getURL(include_query=True)
 
     def validate_sync(self, action, data):
         """Validate selected differences."""
@@ -959,10 +1037,9 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         """Have there been changes that `dsd` is still being updated for?"""
         return dsd in self.pending_dsd_updates
 
-    def hasPendingSync(self, dsd):
+    def pendingSync(self, dsd):
         """Is there a package-copying job pending to resolve `dsd`?"""
-        pending_sync = self.pending_syncs.get(dsd.source_package_name.name)
-        return pending_sync is not None
+        return self.pending_syncs.get(dsd.source_package_name.name)
 
     def isNewerThanParent(self, dsd):
         """Is the child's version of this package newer than the parent's?
@@ -993,28 +1070,42 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         # sync if the child's version of the package is newer than the
         # parent's version, or if there is already a sync pending.
         return (
-            not self.isNewerThanParent(dsd) and not self.hasPendingSync(dsd))
+            not self.isNewerThanParent(dsd) and not self.pendingSync(dsd))
 
     def describeJobs(self, dsd):
         """Describe any jobs that may be pending for `dsd`.
 
-        Shows "synchronizing..." if the entry is being synchronized, and
-        "updating..." if the DSD is being updated with package changes.
+        Shows "synchronizing..." if the entry is being synchronized,
+        "updating..." if the DSD is being updated with package changes and
+        "waiting in <queue>..." if the package is in the distroseries
+        queues (<queue> will be NEW or UNAPPROVED and links to the
+        relevant queue page).
 
         :param dsd: A `DistroSeriesDifference` on the page.
         :return: An HTML text describing work that is pending or in
             progress for `dsd`; or None.
         """
         has_pending_dsd_update = self.hasPendingDSDUpdate(dsd)
-        has_pending_sync = self.hasPendingSync(dsd)
-        if not has_pending_dsd_update and not has_pending_sync:
+        pending_sync = self.pendingSync(dsd)
+        if not has_pending_dsd_update and not pending_sync:
             return None
 
         description = []
         if has_pending_dsd_update:
             description.append("updating")
-        if has_pending_sync:
-            description.append("synchronizing")
+        if pending_sync is not None:
+            # If the pending sync is waiting in the distroseries queues,
+            # provide a handy link to there.
+            queue_item = getUtility(IPackageUploadSet).getByPackageCopyJobIDs(
+                (pending_sync.id,)).any()
+            if queue_item is None:
+                description.append("synchronizing")
+            else:
+                url = urlappend(
+                    canonical_url(self.context), "+queue?queue_state=%s" %
+                        queue_item.status.value)
+                description.append('waiting in <a href="%s">%s</a>' %
+                    (url, queue_item.status.name))
         return " and ".join(description) + "&hellip;"
 
     @property
@@ -1070,47 +1161,37 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
     def cached_differences(self):
         """Return a batch navigator of filtered results."""
         package_type_dsd_status = {
-            NON_IGNORED: (
-                DistroSeriesDifferenceStatus.NEEDS_ATTENTION,),
+            NON_IGNORED: DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
             HIGHER_VERSION_THAN_PARENT: (
                 DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT),
             RESOLVED: DistroSeriesDifferenceStatus.RESOLVED,
-            ALL: DistroSeriesDifferenceStatus.items,
+            ALL: None,
         }
 
-        status = package_type_dsd_status[self.specified_package_type]
-        child_version_higher = (
-            self.specified_package_type == HIGHER_VERSION_THAN_PARENT)
-
-        differences = getUtility(
-            IDistroSeriesDifferenceSource).getForDistroSeries(
+        # If the package_type option is not supported, add an error to
+        # the field and return an empty list.
+        if self.specified_package_type not in package_type_dsd_status:
+            self.setFieldError('package_type', 'Invalid option')
+            differences = []
+        else:
+            status = package_type_dsd_status[self.specified_package_type]
+            child_version_higher = (
+                self.specified_package_type == HIGHER_VERSION_THAN_PARENT)
+            differences = get_dsd_source().getForDistroSeries(
                 self.context, difference_type=self.differences_type,
-                name_filter=self.specified_name_filter,
-                status=status, child_version_higher=child_version_higher,
+                name_filter=self.specified_name_filter, status=status,
+                child_version_higher=child_version_higher,
                 packagesets=self.specified_packagesets_filter,
                 changed_by=self.specified_changed_by_filter)
+
         return BatchNavigator(differences, self.request)
 
-    @cachedproperty
-    def has_differences(self):
-        """Whether or not differences between this derived series and
-        its parent exist.
-        """
-        # Performance optimisation: save a query if we have differences
-        # to show in the batch.
-        if self.cached_differences.batch.total() > 0:
-            return True
-        else:
-            # Here we check the whole dataset since the empty batch
-            # might be filtered.
-            differences = getUtility(
-                IDistroSeriesDifferenceSource).getForDistroSeries(
-                    self.context,
-                    difference_type=self.differences_type,
-                    status=(
-                        DistroSeriesDifferenceStatus.NEEDS_ATTENTION,
-                        DistroSeriesDifferenceStatus.BLACKLISTED_CURRENT))
-            return not differences.is_empty()
+    def parent_changelog_url(self, distroseriesdifference):
+        """The URL to the /parent/series/+source/package/+changelog """
+        distro = distroseriesdifference.parent_series.distribution
+        dsp = distro.getSourcePackage(
+            distroseriesdifference.source_package_name)
+        return urlappend(canonical_url(dsp), '+changelog')
 
 
 class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
@@ -1173,8 +1254,7 @@ class DistroSeriesLocalDifferencesView(DistroSeriesDifferenceBaseView,
 
         :return: A result set of `DistroSeriesDifference`s.
         """
-        return getUtility(IDistroSeriesDifferenceSource).getSimpleUpgrades(
-            self.context)
+        return get_dsd_source().getSimpleUpgrades(self.context)
 
     @action(_("Upgrade Packages"), name="upgrade", condition='canUpgrade')
     def upgrade(self, action, data):

@@ -258,8 +258,11 @@ The method IBugWatch.hasComment() can be used to check whether a comment
 has been linked to a bug watch. If we create an example comment without
 linking it to the bug watch this method will, of course, return False.
 
+    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+    >>> janitor = getUtility(ILaunchpadCelebrities).janitor
     >>> message = getUtility(IMessageSet).fromText(
-    ...     "Example Message", "With example content for you to read.")
+    ...     "Example Message", "With example content for you to read.",
+    ...     owner=janitor)
 
     >>> comment_id = 'a-comment'
 
@@ -333,10 +336,11 @@ ID.
 
     >>> with lp_dbuser():
     ...     message_one = getUtility(IMessageSet).fromText(
-    ...         "Example Message", "With example content for you to read.")
+    ...         "Example Message", "With example content for you to read.",
+    ...         owner=janitor)
     ...     message_two = getUtility(IMessageSet).fromText(
     ...         "Example Message", "With example content for you to read.",
-    ...         rfc822msgid=message_one.rfc822msgid)
+    ...         rfc822msgid=message_one.rfc822msgid, owner=janitor)
 
     >>> message_one.rfc822msgid == message_two.rfc822msgid
     True

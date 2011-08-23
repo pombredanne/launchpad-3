@@ -544,9 +544,3 @@ class MockDbTestCase(unittest.TestCase):
             # Now the results are exhausted, fetchall() should return an
             # empty list.
             self.failUnlessEqual(cur.fetchall(), [])
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(MockDbTestCase))
-    return suite

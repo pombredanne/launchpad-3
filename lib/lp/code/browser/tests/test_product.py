@@ -9,7 +9,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import unittest
 from mechanize import LinkNotFoundError
 import pytz
 from zope.component import getUtility
@@ -357,7 +356,3 @@ class TestCanConfigureBranches(TestCaseWithFactory):
         login_person(product.owner)
         view = create_view(product, '+branches', layer=CodeLayer)
         self.assertEqual(True, view.can_configure_branches())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

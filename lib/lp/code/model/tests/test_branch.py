@@ -108,7 +108,7 @@ from lp.code.model.codeimport import (
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.revision import Revision
 from lp.code.tests.helpers import add_revision_to_branch
-from lp.codehosting.bzrutils import UnsafeUrlSeen
+from lp.codehosting.safe_open import BadUrl
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.osutils import override_environ
@@ -617,7 +617,7 @@ class TestBranchUpgrade(TestCaseWithFactory):
         owner = removeSecurityProxy(branch).owner
         login_person(owner)
         self.addCleanup(logout)
-        branch.requestUpgrade()
+        branch.requestUpgrade(branch.owner)
 
         self.assertFalse(branch.needs_upgrading)
 
@@ -682,7 +682,7 @@ class TestBranchUpgrade(TestCaseWithFactory):
         owner = removeSecurityProxy(branch).owner
         login_person(owner)
         self.addCleanup(logout)
-        job = removeSecurityProxy(branch.requestUpgrade())
+        job = removeSecurityProxy(branch.requestUpgrade(branch.owner))
 
         jobs = list(getUtility(IBranchUpgradeJobSource).iterReady())
         self.assertEqual(
@@ -698,7 +698,7 @@ class TestBranchUpgrade(TestCaseWithFactory):
         owner = removeSecurityProxy(branch).owner
         login_person(owner)
         self.addCleanup(logout)
-        self.assertRaises(AssertionError, branch.requestUpgrade)
+        self.assertRaises(AssertionError, branch.requestUpgrade, branch.owner)
 
     def test_requestUpgrade_upgrade_pending(self):
         # If there is a pending upgrade already requested, requestUpgrade
@@ -708,9 +708,9 @@ class TestBranchUpgrade(TestCaseWithFactory):
         owner = removeSecurityProxy(branch).owner
         login_person(owner)
         self.addCleanup(logout)
-        branch.requestUpgrade()
+        branch.requestUpgrade(branch.owner)
 
-        self.assertRaises(AssertionError, branch.requestUpgrade)
+        self.assertRaises(AssertionError, branch.requestUpgrade, branch.owner)
 
     def test_upgradePending(self):
         # If there is a BranchUpgradeJob pending for the branch, return True.
@@ -719,7 +719,7 @@ class TestBranchUpgrade(TestCaseWithFactory):
         owner = removeSecurityProxy(branch).owner
         login_person(owner)
         self.addCleanup(logout)
-        branch.requestUpgrade()
+        branch.requestUpgrade(branch.owner)
 
         self.assertTrue(branch.upgrade_pending)
 
@@ -737,7 +737,7 @@ class TestBranchUpgrade(TestCaseWithFactory):
         owner = removeSecurityProxy(branch).owner
         login_person(owner)
         self.addCleanup(logout)
-        branch_job = removeSecurityProxy(branch.requestUpgrade())
+        branch_job = removeSecurityProxy(branch.requestUpgrade(branch.owner))
         branch_job.job.start()
         branch_job.job.complete()
 
@@ -1430,7 +1430,6 @@ class TestBranchDeletionConsequences(TestCase):
             package.distribution.owner,
             package.development_version.setBranch,
             pocket, branch, package.distribution.owner)
-        series_set = getUtility(IFindOfficialBranchLinks)
         self.assertEqual(
             {package: ('alter',
                     _('Branch is officially linked to a source package.'))},
@@ -2686,7 +2685,7 @@ class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
 
 
 class TestGetBzrBranch(TestCaseWithFactory):
-    """Tests for `IBranch.safe_open`."""
+    """Tests for `IBranch.getBzrBranch`."""
 
     layer = DatabaseFunctionalLayer
 
@@ -2722,7 +2721,7 @@ class TestGetBzrBranch(TestCaseWithFactory):
         branch = BzrDir.create_branch_convenience('local')
         db_stacked, stacked_tree = self.create_branch_and_tree()
         stacked_tree.branch.set_stacked_on_url(branch.base)
-        self.assertRaises(UnsafeUrlSeen, db_stacked.getBzrBranch)
+        self.assertRaises(BadUrl, db_stacked.getBzrBranch)
 
 
 class TestMergeQueue(TestCaseWithFactory):

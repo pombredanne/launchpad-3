@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test native publication workflow for Soyuz. """
@@ -43,9 +43,7 @@ from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackageUploadStatus,
     )
-from lp.soyuz.interfaces.archive import (
-    IArchiveSet,
-    )
+from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.component import IComponentSet
@@ -65,8 +63,8 @@ from lp.testing import (
     StormStatementRecorder,
     TestCaseWithFactory,
     )
-from lp.testing.matchers import HasQueryCount
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.matchers import HasQueryCount
 
 
 class SoyuzTestPublisher:
@@ -91,7 +89,7 @@ class SoyuzTestPublisher:
         :return: The `IDistroSeries` that got set as default.
         """
         if distroseries is None:
-            distroseries = self.factory.makeDistroRelease()
+            distroseries = self.factory.makeDistroSeries()
         self.distroseries = distroseries
         # Set up a person that has a GPG key.
         self.person = getUtility(IPersonSet).getByName('name16')
@@ -161,7 +159,7 @@ class SoyuzTestPublisher:
         signing_key = self.person.gpg_keys[0]
         package_upload = distroseries.createQueueEntry(
             pocket, archive, changes_file_name, changes_file_content,
-            signing_key)
+            signing_key=signing_key)
 
         status_to_method = {
             PackageUploadStatus.DONE: 'setDone',
@@ -516,11 +514,11 @@ class SoyuzTestPublisher:
         if source_pub is None:
             distribution = self.factory.makeDistribution(
                 name='youbuntu', displayname='Youbuntu')
-            distroseries = self.factory.makeDistroRelease(name='busy',
-                distribution=distribution)
+            distroseries = self.factory.makeDistroSeries(
+                name='busy', distribution=distribution)
             source_package_name = self.factory.makeSourcePackageName(
                 name='bonkers')
-            source_package = self.factory.makeSourcePackage(
+            self.factory.makeSourcePackage(
                 sourcepackagename=source_package_name,
                 distroseries=distroseries)
             component = self.factory.makeComponent('multiverse')
@@ -542,7 +540,7 @@ class SoyuzTestPublisher:
                 binarypackagename=binary_package_name,
                 summary='summary for %s' % name,
                 build=build, component=source_pub.component)
-            bpph = self.factory.makeBinaryPackagePublishingHistory(
+            self.factory.makeBinaryPackagePublishingHistory(
                 binarypackagerelease=bpr, distroarchseries=das)
         return dict(
             distroseries=source_pub.distroseries,
@@ -696,10 +694,7 @@ class TestNativePublishing(TestNativePublishingBase):
         # And an oops should be filed for the error.
         error_utility = ErrorReportingUtility()
         error_report = error_utility.getLastOopsReport()
-        fp = StringIO()
-        error_report.write(fp)
-        error_text = fp.getvalue()
-        self.assertTrue("PoolFileOverwriteError" in error_text)
+        self.assertTrue("PoolFileOverwriteError" in str(error_report))
 
         self.layer.commit()
         self.assertEqual(
@@ -863,7 +858,7 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
         """
         test_archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
-            purpose = ArchivePurpose.PPA)
+            purpose=ArchivePurpose.PPA)
         source = self.test_publisher.getPubSource(archive=test_archive)
         self.test_publisher.getPubBinaries(pub_source=source)
         return source
@@ -975,7 +970,8 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
         # Test a PPA publication with ancestry
         ppa = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
         spr = self.factory.makeSourcePackageRelease()
-        spph = self.factory.makeSourcePackagePublishingHistory(
+        # We don't reference the first spph so it doesn't get a name.
+        self.factory.makeSourcePackagePublishingHistory(
             sourcepackagerelease=spr, archive=ppa)
         spph2 = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagerelease=spr, archive=ppa)
@@ -1380,12 +1376,13 @@ class TestBinaryGetOtherPublications(TestNativePublishingBase):
         """Publications in other series shouldn't be found."""
         bins = self.getPubBinaries(architecturespecific=False)
         series = self.factory.makeDistroSeries()
-        arch = self.factory.makeDistroArchSeries(
+        self.factory.makeDistroArchSeries(
             distroseries=series, architecturetag='i386')
         foreign_bins = bins[0].copyTo(
             series, bins[0].pocket, bins[0].archive)
         self.checkOtherPublications(bins[0], bins)
         self.checkOtherPublications(foreign_bins[0], foreign_bins)
+
 
 class TestSPPHModel(TestCaseWithFactory):
     """Test parts of the SourcePackagePublishingHistory model."""
@@ -1486,7 +1483,8 @@ class TestPublishBinaries(TestCaseWithFactory):
         target_das_a = self.factory.makeDistroArchSeries()
         target_das_b = self.factory.makeDistroArchSeries(
             distroseries=target_das_a.distroseries)
-        target_das_c = self.factory.makeDistroArchSeries(
+        # We don't reference target_das_c so it doesn't get a name.
+        self.factory.makeDistroArchSeries(
             distroseries=target_das_a.distroseries, enabled=False)
         args = self.makeArgs([bpr], target_das_a.distroseries)
         bpphs = getUtility(IPublishingSet).publishBinaries(
@@ -1502,7 +1500,8 @@ class TestPublishBinaries(TestCaseWithFactory):
         target_das = self.factory.makeDistroArchSeries()
         args = self.makeArgs([bpr], target_das.distroseries)
         [new_bpph] = getUtility(IPublishingSet).publishBinaries(**args)
-        [] = getUtility(IPublishingSet).publishBinaries(**args)
+        self.assertContentEqual(
+            [], getUtility(IPublishingSet).publishBinaries(**args))
 
         # But changing the target (eg. to RELEASE instead of BACKPORTS)
         # causes a new publication to be created.
@@ -1541,4 +1540,5 @@ class TestPublishBinaries(TestCaseWithFactory):
 
         # A second copy does nothing, because it checks in the debug
         # archive too.
-        [] = getUtility(IPublishingSet).publishBinaries(**args)
+        self.assertContentEqual(
+            [], getUtility(IPublishingSet).publishBinaries(**args))

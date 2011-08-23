@@ -39,6 +39,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database import postgresql
+from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     cursor,
     session_store,
@@ -48,6 +49,7 @@ from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.librarian import TimeLimitedToken
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.utilities.looptuner import TunableLoop
@@ -56,6 +58,7 @@ from canonical.launchpad.webapp.interfaces import (
     MAIN_STORE,
     MASTER_FLAVOR,
     )
+from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
@@ -697,6 +700,34 @@ class BugNotificationPruner(BulkPruner):
         """
 
 
+class AnswerContactPruner(BulkPruner):
+    """Remove old answer contacts which are no longer required.
+
+    Remove a person as an answer contact if:
+      their account has been deactivated for more than one day, or
+      suspended for more than one week.
+    """
+    target_table_class = AnswerContact
+    ids_to_prune_query = """
+        SELECT DISTINCT AnswerContact.id
+        FROM AnswerContact, Person, Account
+        WHERE
+            AnswerContact.person = Person.id
+            AND Person.account = Account.id
+            AND (
+                (Account.date_status_set <
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('1 day' AS interval)
+                AND Account.status = %s)
+                OR
+                (Account.date_status_set <
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                - CAST('7 days' AS interval)
+                AND Account.status = %s)
+            )
+        """ % (AccountStatus.DEACTIVATED.value, AccountStatus.SUSPENDED.value)
+
+
 class BranchJobPruner(BulkPruner):
     """Prune `BranchJob`s that are in a final state and more than a month old.
 
@@ -717,7 +748,7 @@ class BranchJobPruner(BulkPruner):
 class BugHeatUpdater(TunableLoop):
     """A `TunableLoop` for bug heat calculations."""
 
-    maximum_chunk_size = 1000
+    maximum_chunk_size = 5000
 
     def __init__(self, log, abort_time=None, max_heat_age=None):
         super(BugHeatUpdater, self).__init__(log, abort_time)
@@ -751,17 +782,16 @@ class BugHeatUpdater(TunableLoop):
 
         See `ITunableLoop`.
         """
-        # We multiply chunk_size by 1000 for the sake of doing updates
-        # quickly.
-        chunk_size = int(chunk_size * 1000)
-
-        transaction.begin()
+        chunk_size = int(chunk_size + 0.5)
         outdated_bugs = self._outdated_bugs[:chunk_size]
-        self.log.debug("Updating heat for %s bugs" % outdated_bugs.count())
-        outdated_bugs.set(
-            heat=SQL('calculate_bug_heat(Bug.id)'),
-            heat_last_updated=datetime.now(pytz.utc))
-
+        # We don't use outdated_bugs.set() here to work around
+        # Storm Bug #820290.
+        outdated_bug_ids = [bug.id for bug in outdated_bugs]
+        self.log.debug("Updating heat for %s bugs", len(outdated_bug_ids))
+        IMasterStore(Bug).find(
+            Bug, Bug.id.is_in(outdated_bug_ids)).set(
+                heat=SQL('calculate_bug_heat(Bug.id)'),
+                heat_last_updated=UTC_NOW)
         transaction.commit()
 
 
@@ -1189,6 +1219,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     """
     script_name = 'garbo-daily'
     tunable_loops = [
+        AnswerContactPruner,
         BranchJobPruner,
         BugNotificationPruner,
         BugWatchActivityPruner,

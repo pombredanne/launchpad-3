@@ -125,7 +125,3 @@ class TestZopeTestInSubProcess(ZopeTestInSubProcess, unittest.TestCase):
         self.failUnlessEqual(
             self.pid_in_setUp, self.pid_in_tearDown,
             "tearDown() not run in same process as setUp().")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

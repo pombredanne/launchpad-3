@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.config import config
 from canonical.testing.layers import FunctionalLayer
 from lp.testing import TestCase
@@ -59,7 +57,3 @@ class TestVostokBrowserResponse(TestCase):
         response._request = request
         self.assertRaises(
             ValueError, response.redirect, 'http://launchpad.dev')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

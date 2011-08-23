@@ -106,16 +106,21 @@
 
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
-  <tal:if condition="request/features/bugs.private_notification.enabled">
+    <tal:if condition="request/features/bugs.private_notification.enabled">
     <script type="text/javascript">
-      var privacy_notification_enabled = true;
+      LPS.use('base', 'node', 'oop', 'event', 'lp.bugs.bugtask_index',
+                'lp.bugs.subscribers',
+                'lp.code.branchmergeproposal.diff', 'lp.comments.hide',
+                function(Y) {
+          Y.on("domready", function () {
+              if (Y.one(document.body).hasClass('private')) {
+                  Y.lp.app.privacy.setup_privacy_notification();
+                  Y.lp.app.privacy.display_privacy_notification();
+              }
+          });
+      });
     </script>
-  </tal:if>
-  <tal:if condition="not:request/features/bugs.private_notification.enabled">
-    <script type="text/javascript">
-      var privacy_notification_enabled = false;
-    </script>
-  </tal:if>
+    </tal:if>
 
   <script id="base-layout-load-scripts" type="text/javascript">
     LPS.use('node', 'event-delegate', 'lp', 'lp.app.links', 'lp.app.longpoll', function(Y) {

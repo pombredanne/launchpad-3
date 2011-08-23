@@ -11,15 +11,18 @@ import contextlib
 import datetime
 from itertools import repeat
 import logging
+import operator
 import os
 import re
-import rfc822
 import stat
 import types
 import urllib
 import urlparse
 
 from lazr.restful.utils import get_current_browser_request
+import oops.createhooks
+from oops_datedir_repo import DateDirRepo
+import oops_datedir_repo.serializer_rfc822
 import pytz
 from zope.component.interfaces import ObjectEvent
 from zope.error.interfaces import IErrorReportingUtility
@@ -42,62 +45,16 @@ from canonical.launchpad.webapp.interfaces import (
     IUnloggedException,
     )
 from canonical.launchpad.webapp.opstats import OpStats
+from canonical.launchpad.webapp.pgsession import PGSessionBase
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr.utils import safe_hasattr
 from lp.app import versioninfo
-from lp.services.log.uniquefileallocator import UniqueFileAllocator
 from lp.services.timeline.requesttimeline import get_request_timeline
 
 
 UTC = pytz.utc
 
 LAZR_OOPS_USER_REQUESTED_KEY = 'lazr.oops.user_requested'
-
-# Restrict the rate at which errors are sent to the Zope event Log
-# (this does not affect generation of error reports).
-_rate_restrict_pool = {}
-
-# The number of seconds that must elapse on average between sending two
-# exceptions of the same name into the Event Log. one per minute.
-_rate_restrict_period = datetime.timedelta(seconds=60)
-
-# The number of exceptions to allow in a burst before the above limit
-# kicks in. We allow five exceptions, before limiting them to one per
-# minute.
-_rate_restrict_burst = 5
-
-
-def _normalise_whitespace(s):
-    """Normalise the whitespace in a string to spaces"""
-    if s is None:
-        return None
-    return ' '.join(s.split())
-
-
-def _safestr(obj):
-    if isinstance(obj, unicode):
-        return obj.replace('\\', '\\\\').encode('ASCII',
-                                                'backslashreplace')
-    # A call to str(obj) could raise anything at all.
-    # We'll ignore these errors, and print something
-    # useful instead, but also log the error.
-    # We disable the pylint warning for the blank except.
-    try:
-        value = str(obj)
-    except:
-        logging.getLogger('SiteError').exception(
-            'Error in ErrorReportingService while getting a str '
-            'representation of an object')
-        value = '<unprintable %s object>' % (
-            str(type(obj).__name__))
-    # Some str() calls return unicode objects.
-    if isinstance(value, unicode):
-        return _safestr(value)
-    # encode non-ASCII characters
-    value = value.replace('\\', '\\\\')
-    value = re.sub(r'[\x80-\xff]',
-                   lambda match: '\\x%02x' % ord(match.group(0)), value)
-    return value
 
 
 def _is_sensitive(request, name):
@@ -128,20 +85,6 @@ def _is_sensitive(request, name):
     return True
 
 
-def parse_iso8601_date(datestring):
-    """Parses a standard ISO 8601 format date, ignoring time zones.
-
-    Performs no validation whatsoever. It just plucks up to the first
-    7 numbers from the string and passes them to `datetime.datetime`,
-    so would in fact parse any string containing reasonable numbers.
-
-    This function can be replaced with `datetime.datetime.strptime()`
-    once we move to Python 2.5.
-    """
-    return datetime.datetime(
-        *(int(elem) for elem in re.findall('[0-9]+', datestring)[:7]))
-
-
 class ErrorReportEvent(ObjectEvent):
     """A new error report has been created."""
     implements(IErrorReportEvent)
@@ -150,108 +93,172 @@ class ErrorReportEvent(ObjectEvent):
 class ErrorReport:
     implements(IErrorReport)
 
-    def __init__(self, id, type, value, time, pageid, tb_text, username,
-                 url, duration, req_vars, db_statements, informational):
+    def __init__(self, id, type, value, time, tb_text, username,
+                 url, duration, req_vars, db_statements, informational=None,
+                 branch_nick=None, revno=None, topic=None, reporter=None):
         self.id = id
         self.type = type
         self.value = value
         self.time = time
-        self.pageid = pageid
+        self.topic = topic
+        if reporter is not None:
+            self.reporter = reporter
         self.tb_text = tb_text
         self.username = username
         self.url = url
         self.duration = duration
+        # informational is ignored - will be going from the oops module soon too.
         self.req_vars = req_vars
         self.db_statements = db_statements
-        self.branch_nick = versioninfo.branch_nick
-        self.revno = versioninfo.revno
-        self.informational = informational
+        self.branch_nick = branch_nick or versioninfo.branch_nick
+        self.revno = revno or versioninfo.revno
 
     def __repr__(self):
         return '<ErrorReport %s %s: %s>' % (self.id, self.type, self.value)
 
-    def get_chunks(self):
-        """Returns a list of bytestrings making up the oops disk content."""
-        chunks = []
-        chunks.append('Oops-Id: %s\n' % _normalise_whitespace(self.id))
-        chunks.append(
-            'Exception-Type: %s\n' % _normalise_whitespace(self.type))
-        chunks.append(
-            'Exception-Value: %s\n' % _normalise_whitespace(self.value))
-        chunks.append('Date: %s\n' % self.time.isoformat())
-        chunks.append('Page-Id: %s\n' % _normalise_whitespace(self.pageid))
-        chunks.append('Branch: %s\n' % _safestr(self.branch_nick))
-        chunks.append('Revision: %s\n' % self.revno)
-        chunks.append('User: %s\n' % _normalise_whitespace(self.username))
-        chunks.append('URL: %s\n' % _normalise_whitespace(self.url))
-        chunks.append('Duration: %s\n' % self.duration)
-        chunks.append('Informational: %s\n' % self.informational)
-        chunks.append('\n')
-        safe_chars = ';/\\?:@&+$, ()*!'
-        for key, value in self.req_vars:
-            chunks.append('%s=%s\n' % (urllib.quote(key, safe_chars),
-                                  urllib.quote(value, safe_chars)))
-        chunks.append('\n')
-        for (start, end, database_id, statement) in self.db_statements:
-            chunks.append('%05d-%05d@%s %s\n' % (
-                start, end, database_id, _normalise_whitespace(statement)))
-        chunks.append('\n')
-        chunks.append(self.tb_text)
-        return chunks
-
-    def write(self, fp):
-        fp.writelines(self.get_chunks())
-
     @classmethod
     def read(cls, fp):
-        msg = rfc822.Message(fp)
-        id = msg.getheader('oops-id')
-        exc_type = msg.getheader('exception-type')
-        exc_value = msg.getheader('exception-value')
-        date = parse_iso8601_date(msg.getheader('date'))
-        pageid = msg.getheader('page-id')
-        username = msg.getheader('user')
-        url = msg.getheader('url')
-        duration = int(float(msg.getheader('duration', '-1')))
-        informational = msg.getheader('informational')
+        # Deprecated: use the oops module directly now, when possible.
+        report = oops_datedir_repo.serializer_rfc822.read(fp)
+        return cls(**report)
 
-        # Explicitly use an iterator so we can process the file
-        # sequentially. In most instances the iterator will actually
-        # be the file object passed in because file objects should
-        # support iteration.
-        lines = iter(msg.fp)
 
-        # Request variables until the first blank line.
-        req_vars = []
-        for line in lines:
-            line = line.strip()
-            if line == '':
-                break
-            key, value = line.split('=', 1)
-            req_vars.append((urllib.unquote(key), urllib.unquote(value)))
+def notify_publisher(report):
+    if not report.get('id'):
+        report['id'] = str(id(report))
+    notify(ErrorReportEvent(report))
+    return report['id']
 
-        # Statements until the next blank line.
-        statements = []
-        for line in lines:
-            line = line.strip()
-            if line == '':
-                break
-            match = re.match(
-                r'^(\d+)-(\d+)(?:@([\w-]+))?\s+(.*)', line)
-            assert match is not None, (
-                "Unable to interpret oops line: %s" % line)
-            start, end, db_id, statement = match.groups()
-            if db_id is not None:
-                db_id = intern(db_id)  # This string is repeated lots.
-            statements.append(
-                (int(start), int(end), db_id, statement))
 
-        # The rest is traceback.
-        tb_text = ''.join(lines)
+def attach_adapter_duration(report, context):
+    # More generic than HTTP requests - e.g. how long a script was running
+    # for.
+    report['duration'] = get_request_duration()
 
-        return cls(id, exc_type, exc_value, date, pageid, tb_text,
-                   username, url, duration, req_vars, statements,
-                   informational)
+
+def attach_exc_info(report, context):
+    """Attach exception info to the report.
+
+    This reads the 'exc_info' key from the context and sets the:
+    * type
+    * value
+    * tb_text 
+    keys in the report.
+    """
+    info = context.get('exc_info')
+    if info is None:
+        return
+    report['type'] = getattr(info[0], '__name__', info[0])
+    report['value'] = oops.createhooks.safe_unicode(info[1])
+    if not isinstance(info[2], basestring):
+        tb_text = ''.join(format_exception(*info,
+                                           **{'as_html': False}))
+    else:
+        tb_text = info[2]
+    report['tb_text'] = tb_text
+
+
+_ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
+
+def attach_http_request(report, context):
+    """Add request metadata into the error report.
+    
+    This reads the exc_info and http_request keys from the context and will
+    write to:
+    * url
+    * ignore
+    * username
+    * topic
+    * req_vars
+    """
+    info = context.get('exc_info')
+    request = context.get('http_request')
+    if request is None:
+        return
+    # XXX jamesh 2005-11-22: Temporary fix, which Steve should
+    #      undo. URL is just too HTTPRequest-specific.
+    if safe_hasattr(request, 'URL'):
+        report['url'] = oops.createhooks.safe_unicode(request.URL)
+
+    if WebServiceLayer.providedBy(request) and info is not None:
+        webservice_error = getattr(
+            info[1], '__lazr_webservice_error__', 500)
+        if webservice_error / 100 != 5:
+            request.oopsid = None
+            # Tell the oops machinery to ignore this error
+            report['ignore'] = True
+
+    missing = object()
+    principal = getattr(request, 'principal', missing)
+    if safe_hasattr(principal, 'getLogin'):
+        login = principal.getLogin()
+    elif principal is missing or principal is None:
+        # Request has no principal (e.g. scriptrequest)
+        login = None
+    else:
+        # Request has an UnauthenticatedPrincipal.
+        login = 'unauthenticated'
+        if report['type'] in (
+            _ignored_exceptions_for_unauthenticated_users):
+            report['ignore'] = True
+
+    if principal is not None and principal is not missing:
+        username = ', '.join([
+                unicode(login),
+                unicode(request.principal.id),
+                unicode(request.principal.title),
+                unicode(request.principal.description)])
+        report['username'] = username
+
+    if getattr(request, '_orig_env', None):
+        report['topic'] = request._orig_env.get(
+                'launchpad.pageid', '')
+
+    for key, value in request.items():
+        if _is_sensitive(request, key):
+            report['req_vars'].append((key, '<hidden>'))
+        else:
+            report['req_vars'].append((key, value))
+    if IXMLRPCRequest.providedBy(request):
+        args = request.getPositionalArguments()
+        report['req_vars'].append(('xmlrpc args', args))
+
+
+def attach_ignore_from_exception(report, context):
+    """Set the ignore key to True if the excception is ignored."""
+    info = context.get('exc_info')
+    if info is None:
+        return
+    # Because of IUnloggedException being a sidewards lookup we must
+    # capture this here to filter on later.
+    report['ignore'] = IUnloggedException.providedBy(info[1])
+
+
+def _filter_session_statement(database_id, statement):
+    """Replace quoted strings with '%s' in statements on session DB."""
+    if database_id == 'SQL-' + PGSessionBase.store_name:
+        return re.sub("'[^']*'", "'%s'", statement)
+    else:
+        return statement
+
+
+def attach_timeline(report, context):
+    """Attach the timeline of actions to the report.
+
+    Looks for the timeline in content['timeline'] and sets it in
+    report['db_statements'].
+    """
+    timeline = context.get('timeline')
+    if timeline is None:
+        return
+    statements = []
+    for action in timeline.actions:
+        start, end, category, detail = action.logTuple()
+        detail = _filter_session_statement(category, detail)
+        statements.append(
+            (start, end, category, detail))
+    report['db_statements'] = statements
+    return report
 
 
 class ErrorReportingUtility:
@@ -260,7 +267,6 @@ class ErrorReportingUtility:
     _ignored_exceptions = set([
         'ReadOnlyModeDisallowedStore', 'ReadOnlyModeViolation',
         'TranslationUnavailable', 'NoReferrerError'])
-    _ignored_exceptions_for_unauthenticated_users = set(['Unauthorized'])
     _ignored_exceptions_for_offsite_referer = set([
         'GoneError', 'InvalidBatchSizeError', 'NotFound'])
     _default_config_section = 'error_reports'
@@ -278,16 +284,54 @@ class ErrorReportingUtility:
         """
         if section_name is None:
             section_name = self._default_config_section
-        self.copy_to_zlog = config[section_name].copy_to_zlog
-        # Start a new UniqueFileAllocator to activate the new configuration.
-        self.log_namer = UniqueFileAllocator(
-            output_root=config[section_name].error_dir,
-            log_type="OOPS",
-            log_subtype=config[section_name].oops_prefix,
-            )
+        self._oops_config = oops.Config()
+        #
+        # What do we want in our reports?
+        # Constants:
+        self._oops_config.template['branch_nick'] = versioninfo.branch_nick
+        self._oops_config.template['revno'] = versioninfo.revno
+        # Should go in an HTTP module.
+        self._oops_config.template['req_vars'] = []
+        # Exceptions, with the zope formatter.
+        self._oops_config.on_create.append(attach_exc_info)
+        # Ignore IUnloggedException exceptions
+        self._oops_config.on_create.append(attach_ignore_from_exception)
+        # Zope HTTP requests have lots of goodies.
+        self._oops_config.on_create.append(attach_http_request)
+        # Timelines are really useful. raising() gets one from
+        # get_request_timeline, other daemons can make one and use the oops
+        # config directly.
+        self._oops_config.on_create.append(attach_timeline)
+        # We permit adding messages during the execution of a script (not
+        # threadsafe - so only scripts) - a todo item is to only add this
+        # for scripts (or to make it threadsafe)
+        self._oops_config.on_create.append(self._attach_messages)
+        # In the zope environment we track how long a script / http request has
+        # been running for - this is useful data!
+        self._oops_config.on_create.append(attach_adapter_duration)
+        # We want to publish reports to disk for gathering to the central
+        # analysis server.
+        self._oops_datedir_repo = DateDirRepo(
+                config[section_name].error_dir,
+                config[section_name].oops_prefix)
+        self._oops_config.publishers.append(self._oops_datedir_repo.publish)
+        # And within the zope application server (mainly for testing).
+        self._oops_config.publishers.append(notify_publisher)
+        #
+        # Reports are filtered if:
+        #  - There is a key 'ignore':True in the report. This is set during
+        #    _makeReport.
+        self._oops_config.filters.append(
+                operator.methodcaller('get', 'ignore'))
+        #  - have a type listed in self._ignored_exceptions.
+        self._oops_config.filters.append(
+                lambda report:report['type'] in self._ignored_exceptions)
+        #  - have a missing or offset REFERER header with a type listed in
+        #    self._ignored_exceptions_for_offsite_referer
+        self._oops_config.filters.append(self._filter_bad_urls_by_referer)
 
     def setOopsToken(self, token):
-        return self.log_namer.setToken(token)
+        return self._oops_datedir_repo.log_namer.setToken(token)
 
     @property
     def oops_prefix(self):
@@ -295,17 +339,18 @@ class ErrorReportingUtility:
 
         This is the log subtype + anything set via setOopsToken.
         """
-        return self.log_namer.get_log_infix()
+        return self._oops_datedir_repo.log_namer.get_log_infix()
 
     def getOopsReport(self, time):
         """Return the contents of the OOPS report logged at 'time'."""
         # How this works - get a serial that was logging in the dir
         # that logs for time are logged in.
-        serial_from_time = self.log_namer._findHighestSerial(
-            self.log_namer.output_dir(time))
+        serial_from_time = self._oops_datedir_repo.log_namer._findHighestSerial(
+            self._oops_datedir_repo.log_namer.output_dir(time))
         # Calculate a filename which combines this most recent serial,
         # the current log_namer naming rules and the exact timestamp.
-        oops_filename = self.log_namer.getFilename(serial_from_time, time)
+        oops_filename = self._oops_datedir_repo.log_namer.getFilename(
+                serial_from_time, time)
         # Note that if there were no logs written, or if there were two
         # oops that matched the time window of directory on disk, this
         # call can raise an IOError.
@@ -325,7 +370,8 @@ class ErrorReportingUtility:
         If no report is found, return None.
         """
         suffix = re.search('[0-9]*$', oops_id).group(0)
-        for directory, name in self.log_namer.listRecentReportFiles():
+        for directory, name in \
+            self._oops_datedir_repo.log_namer.listRecentReportFiles():
             if not name.endswith(suffix):
                 continue
             with open(os.path.join(directory, name), 'r') as oops_report_file:
@@ -351,11 +397,12 @@ class ErrorReportingUtility:
         """
         now = datetime.datetime.now(UTC)
         # Check today
-        oopsid, filename = self.log_namer._findHighestSerialFilename(time=now)
+        log_namer = self._oops_datedir_repo.log_namer
+        oopsid, filename = log_namer._findHighestSerialFilename(time=now)
         if filename is None:
             # Check yesterday, we may have just passed midnight.
             yesterday = now - datetime.timedelta(days=1)
-            oopsid, filename = self.log_namer._findHighestSerialFilename(
+            oopsid, filename = log_namer._findHighestSerialFilename(
                 time=yesterday)
             if filename is None:
                 return None
@@ -365,57 +412,40 @@ class ErrorReportingUtility:
         finally:
             oops_report.close()
 
-    def raising(self, info, request=None, now=None):
-        """See IErrorReportingUtility.raising()
-
-        :param now: The datetime to use as the current time.  Will be
-            determined if not supplied.  Useful for testing.  Not part of
-            IErrorReportingUtility).
-        """
-        return self._raising(
-            info, request=request, now=now, informational=False)
-
-    def _raising(self, info, request=None, now=None, informational=False):
-        """Private method used by raising() and handling()."""
-        entry = self._makeErrorReport(info, request, now, informational)
-        if entry is None:
+    def raising(self, info, request=None):
+        """See IErrorReportingUtility.raising()"""
+        context = dict(exc_info=info)
+        if request is not None:
+            context['http_request'] = request
+        # In principle the timeline is per-request, but see bug=623199 -
+        # at this point the request is optional, but get_request_timeline
+        # does not care; when it starts caring, we will always have a
+        # request object (or some annotations containing object).
+        # RBC 20100901
+        timeline = get_request_timeline(request)
+        if timeline is not None:
+            context['timeline'] = timeline
+        report = self._oops_config.create(context)
+        # req_vars should be a dict itself. Needs an oops-datedir-repo tweak.
+        report['req_vars'].sort()
+        if self._oops_config.publish(report) is None:
             return
-        filename = entry._filename
-        entry.write(open(filename, 'wb'))
-        # Set file permission to: rw-r--r--
-        wanted_permission = (
-            stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)
-        os.chmod(filename, wanted_permission)
         if request:
-            request.oopsid = entry.id
-            request.oops = entry
+            request.oopsid = report.get('id')
+            request.oops = report
+        return report
 
-        if self.copy_to_zlog:
-            self._do_copy_to_zlog(
-                entry.time, entry.type, entry.url, info, entry.id)
-        notify(ErrorReportEvent(entry))
-        return entry
-
-    def _isIgnoredException(self, strtype, request=None, exception=None):
-        """Should the given exception generate an OOPS or be ignored?
-
-        Exceptions will be ignored if they
-            - are specially tagged as being ignorable by having the marker
-              interface IUnloggedException
-            - are of a type included in self._ignored_exceptions, or
-            - were requested with an off-site REFERRER header and are of a
-              type included in self._ignored_exceptions_for_offsite_referer
-        """
-        if IUnloggedException.providedBy(exception):
-            return True
-        if strtype in self._ignored_exceptions:
-            return True
-        if strtype in self._ignored_exceptions_for_offsite_referer:
-            if request is not None:
-                referer = request.get('HTTP_REFERER')
-                # If there is no referrer then we can't tell if this exception
-                # should be ignored or not, so we'll be conservative and
-                # ignore it.
+    def _filter_bad_urls_by_referer(self, report):
+        """Filter if the report was generated because of a bad offsite url."""
+        if report['type'] in self._ignored_exceptions_for_offsite_referer:
+            was_http = report.get('url', '').lower().startswith('http')
+            if was_http:
+                req_vars = dict(report.get('req_vars', ()))
+                referer = req_vars.get('HTTP_REFERER')
+                # If there is no referrer then either the user has refer
+                # disabled, or its someone coming from offsite or from some
+                # saved bookmark. Any which way, its not a sign of a current
+                # broken-url-generator in LP: ignore it.
                 if referer is None:
                     return True
                 referer_parts = urlparse.urlparse(referer)
@@ -425,154 +455,13 @@ class ErrorReportingUtility:
                     return True
         return False
 
-    def _makeErrorReport(self, info, request=None, now=None,
-                         informational=False):
-        """Return an ErrorReport for the supplied data.
-
-        :param info: Output of sys.exc_info()
-        :param request: The IErrorReportRequest which provides context to the
-            info.
-        :param now: The datetime to use as the current time.  Will be
-            determined if not supplied.  Useful for testing.
-        :param informational: If true, the report is flagged as informational
-            only.
-        """
-        if now is not None:
-            now = now.astimezone(UTC)
-        else:
-            now = datetime.datetime.now(UTC)
-        tb_text = None
-
-        strtype = str(getattr(info[0], '__name__', info[0]))
-        if self._isIgnoredException(strtype, request, info[1]):
-            return
-
-        if not isinstance(info[2], basestring):
-            tb_text = ''.join(format_exception(*info,
-                                               **{'as_html': False}))
-        else:
-            tb_text = info[2]
-        tb_text = _safestr(tb_text)
-
-        url = None
-        username = None
-        req_vars = []
-        pageid = ''
-
-        if request:
-            # XXX jamesh 2005-11-22: Temporary fix, which Steve should
-            #      undo. URL is just too HTTPRequest-specific.
-            if safe_hasattr(request, 'URL'):
-                url = request.URL
-
-            if WebServiceLayer.providedBy(request):
-                webservice_error = getattr(
-                    info[1], '__lazr_webservice_error__', 500)
-                if webservice_error / 100 != 5:
-                    request.oopsid = None
-                    # Return so the OOPS is not generated.
-                    return
-
-            missing = object()
-            principal = getattr(request, 'principal', missing)
-            if safe_hasattr(principal, 'getLogin'):
-                login = principal.getLogin()
-            elif principal is missing or principal is None:
-                # Request has no principal.
-                login = None
-            else:
-                # Request has an UnauthenticatedPrincipal.
-                login = 'unauthenticated'
-                if strtype in (
-                    self._ignored_exceptions_for_unauthenticated_users):
-                    return
-
-            if principal is not None and principal is not missing:
-                username = _safestr(
-                    ', '.join([
-                            unicode(login),
-                            unicode(request.principal.id),
-                            unicode(request.principal.title),
-                            unicode(request.principal.description)]))
-
-            if getattr(request, '_orig_env', None):
-                pageid = request._orig_env.get('launchpad.pageid', '')
-
-            for key, value in request.items():
-                if _is_sensitive(request, key):
-                    req_vars.append((_safestr(key), '<hidden>'))
-                else:
-                    req_vars.append((_safestr(key), _safestr(value)))
-            if IXMLRPCRequest.providedBy(request):
-                args = request.getPositionalArguments()
-                req_vars.append(('xmlrpc args', _safestr(args)))
+    def _attach_messages(self, report, context):
+        """merges self._oops_messages into the report req_vars variable."""
         # XXX AaronBentley 2009-11-26 bug=488950: There should be separate
         # storage for oops messages.
-        req_vars.extend(
+        report['req_vars'].extend(
             ('<oops-message-%d>' % key, str(message)) for key, message
              in self._oops_messages.iteritems())
-        req_vars.sort()
-        strv = _safestr(info[1])
-
-        strurl = _safestr(url)
-
-        duration = get_request_duration()
-        # In principle the timeline is per-request, but see bug=623199 -
-        # at this point the request is optional, but get_request_timeline
-        # does not care; when it starts caring, we will always have a
-        # request object (or some annotations containing object).
-        # RBC 20100901
-        timeline = get_request_timeline(request)
-        statements = []
-        for action in timeline.actions:
-            start, end, category, detail = action.logTuple()
-            statements.append(
-                (start, end, _safestr(category), _safestr(detail)))
-
-        oopsid, filename = self.log_namer.newId(now)
-
-        result = ErrorReport(oopsid, strtype, strv, now, pageid, tb_text,
-                           username, strurl, duration,
-                           req_vars, statements,
-                           informational)
-        result._filename = filename
-        return result
-
-    def handling(self, info, request=None, now=None):
-        """Flag ErrorReport as informational only.
-
-        :param info: Output of sys.exc_info()
-        :param request: The IErrorReportRequest which provides context to the
-            info.
-        :param now: The datetime to use as the current time.  Will be
-            determined if not supplied.  Useful for testing.
-        :return: The ErrorReport created.
-        """
-        return self._raising(
-            info, request=request, now=now, informational=True)
-
-    def _do_copy_to_zlog(self, now, strtype, url, info, oopsid):
-        distant_past = datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=UTC)
-        when = _rate_restrict_pool.get(strtype, distant_past)
-        if now > when:
-            next_when = max(
-                when, now - _rate_restrict_burst * _rate_restrict_period)
-            next_when += _rate_restrict_period
-            _rate_restrict_pool[strtype] = next_when
-            # Sometimes traceback information can be passed in as a string. In
-            # those cases, we don't (can't!) log the traceback. The traceback
-            # information is still preserved in the actual OOPS report.
-            traceback = info[2]
-            if not isinstance(traceback, types.TracebackType):
-                traceback = None
-            # The logging module doesn't provide a way to pass in exception
-            # info, so we temporarily raise the exception so it can be logged.
-            # We disable the pylint warning for the blank except.
-            try:
-                raise info[0], info[1], traceback
-            except info[0]:
-                logging.getLogger('SiteError').exception(
-                    '%s (%s)' % (url, oopsid))
 
     @contextlib.contextmanager
     def oopsMessage(self, message):
@@ -684,7 +573,7 @@ def maybe_record_user_requested_oops():
         request.oopsid is not None or
         not request.annotations.get(LAZR_OOPS_USER_REQUESTED_KEY, False)):
         return None
-    globalErrorUtility.handling(
+    globalErrorUtility.raising(
         (UserRequestOops, UserRequestOops(), None), request)
     return request.oopsid
 

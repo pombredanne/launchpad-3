@@ -7,8 +7,8 @@ __metaclass__ = type
 
 from StringIO import StringIO
 import sys
-import unittest
 
+import oops_datedir_repo.serializer_rfc822
 from storm.store import Store
 from zope.component import getUtility
 
@@ -86,22 +86,12 @@ class TestCaptureOops(TestCaseWithFactory):
         self.assertEqual(0, len(self.oopses))
         self.trigger_oops()
         self.attachOopses()
-        oops = errorlog.globalErrorUtility.getLastOopsReport()
-        # We have to serialise and read in again, as that is what
-        # getLastOopsReport does, and doing so changes whether the
-        # timezone is in the timestamp.
         content = StringIO()
         content.writelines(self.getDetails()['oops-0'].iter_bytes())
         content.seek(0)
         # Safety net: ensure that no autocasts have occured even on Python 2.6
         # which is slightly better.
         self.assertIsInstance(content.getvalue(), str)
-        from_details = errorlog.ErrorReport.read(content)
-        self.assertEqual(
-            oops.get_chunks(),
-            from_details.get_chunks())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-
+        from_details = oops_datedir_repo.serializer_rfc822.read(content)
+        oops_report = errorlog.globalErrorUtility.getLastOopsReport()
+        self.assertEqual(dict(oops_report.__dict__), from_details)

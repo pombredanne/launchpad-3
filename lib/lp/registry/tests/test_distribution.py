@@ -207,7 +207,7 @@ class TestDistributionCurrentSourceReleases(
         # When checking for the current release, we only care about the
         # version numbers. We don't care whether the version is
         # published in a earlier or later series.
-        self.current_series = self.factory.makeDistroRelease(
+        self.current_series = self.factory.makeDistroSeries(
             self.distribution, '1.0', status=SeriesStatus.CURRENT)
         self.publisher.getPubSource(
             version='0.9', distroseries=self.current_series)
@@ -296,9 +296,8 @@ class SeriesTests(TestCaseWithFactory):
     def test_derivatives(self):
         distro1 = self.factory.makeDistribution()
         distro2 = self.factory.makeDistribution()
-        previous_series = self.factory.makeDistroRelease(
-            distribution=distro1)
-        series = self.factory.makeDistroRelease(
+        previous_series = self.factory.makeDistroSeries(distribution=distro1)
+        series = self.factory.makeDistroSeries(
             distribution=distro2,
             previous_series=previous_series)
         self.assertContentEqual(
