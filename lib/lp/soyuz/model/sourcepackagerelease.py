@@ -603,3 +603,18 @@ class SourcePackageRelease(SQLBase):
         return PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,
             requester=requester, status=status)
+
+    def aggregate_changelog(self, since_version=None):
+        """See `ISourcePackageRelease`."""
+        if since_version is None:
+            return self.changelog_entry
+
+        store = Store.of(self)
+        sprs = store.find(
+            SourcePackageRelease,
+            SourcePackageRelease.sourcepackagename == self.sourcepackagename,
+            SourcePackageRelease.version > since_version,
+            SourcePackageRelease.version <= self.version)
+
+        return "\n\n".join(
+            [spr.changelog_entry for spr in sprs])
