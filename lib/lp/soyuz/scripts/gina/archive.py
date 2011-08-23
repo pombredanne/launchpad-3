@@ -212,14 +212,13 @@ class PackagesMap:
                     continue
                 self.src_map[src_name].append(src_tmp)
 
-            # Check if it's in source-only mode, if so, skip binary index
+            # Check if it's in source-only mode.  If so, skip binary index
             # mapping.
             if info_set.source_only:
                 continue
 
-            # Create a tmp map for binaries for one arch/component pair
-            if info_set.arch not in self.bin_map:
-                self.bin_map[info_set.arch] = {}
+            # Create a tmp map for binaries for one arch/component pair.
+            self.bin_map.setdefault(info_set.arch, {})
 
             tmpbin_map = self.bin_map[info_set.arch]
 
@@ -227,7 +226,7 @@ class PackagesMap:
             while binaries.Step():
                 try:
                     bin_tmp = dict(binaries.Section)
-                    # The component isn't listed in the tagfile
+                    # The component isn't listed in the tagfile.
                     bin_tmp['Component'] = info_set.component
                     bin_name = bin_tmp['Package']
                 except KeyError:
