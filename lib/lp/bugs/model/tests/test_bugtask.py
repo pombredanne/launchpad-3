@@ -2069,9 +2069,9 @@ class TestValidateTarget(TestCaseWithFactory):
 
     def test_new_sourcepackage_is_allowed(self):
         # A new sourcepackage not on the bug is OK.
-        sp1 = self.factory.makeSourcePackage()
+        sp1 = self.factory.makeSourcePackage(publish=True)
         task = self.factory.makeBugTask(target=sp1)
-        sp2 = self.factory.makeSourcePackage()
+        sp2 = self.factory.makeSourcePackage(publish=True)
         validate_target(task.bug, sp2)
 
     def test_multiple_packageless_distribution_tasks_are_forbidden(self):
