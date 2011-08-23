@@ -167,11 +167,36 @@ class Branch(SQLBase, BzrIdentityMixin):
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
 
-    private = BoolCol(default=False, notNull=True)
+    # We want to hide the real attribute name so we can override its read
+    # behaviour. A branch is private if any of it's stacked_on branches is
+    # private.
+    _private = BoolCol(default=False, notNull=True, dbName='private')
+
+    def __getattr__(self, key):
+        if key == 'private':
+            return self._isPrivate()
+        else:
+            raise AttributeError
+
+    def __setattr__(self, key, value):
+        if key == 'private':
+            self._private = value
+        else:
+            super(Branch, self).__setattr__(key, value)
+
+    def _isPrivate(self, checked_branches=None):
+        # A branch is private if any of it's stacked_on branches is private.
+        is_private = self._private
+        if not is_private and self.stacked_on is not None:
+            checked_branches = checked_branches or []
+            checked_branches.append(self)
+            if self.stacked_on not in checked_branches:
+                is_private = self.stacked_on._isPrivate(checked_branches)
+        return is_private
 
     def setPrivate(self, private, user):
         """See `IBranch`."""
-        if private == self.private:
+        if private == self._private:
             return
         # Only check the privacy policy if the user is not special.
         if (not user_has_special_branch_access(user)):
@@ -181,7 +206,7 @@ class Branch(SQLBase, BzrIdentityMixin):
                 raise BranchCannotBePrivate()
             if not private and not policy.canBranchesBePublic():
                 raise BranchCannotBePublic()
-        self.private = private
+        self._private = private
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
@@ -1163,7 +1188,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         This method doesn't check the stacked upon branch.  That is handled by
         the `visibleByUser` method.
         """
-        if not self.private:
+        if not self._private:
             return True
         if user is None:
             return False
