@@ -1,6 +1,6 @@
 #!/usr/bin/python -S
 #
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # This module uses relative imports.
@@ -19,23 +19,20 @@ The callstack is essentially:
 
 __metaclass__ = type
 
-import _pythonpath
-
 import os
-import psycopg2
 import sys
 import time
 
+import _pythonpath
+import psycopg2
 from zope.component import getUtility
 
 from canonical import lp
 from canonical.config import config
 from canonical.launchpad.scripts import log
-
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.scripts.gina import ExecutionError
-from lp.soyuz.scripts.gina.katie import Katie
 from lp.soyuz.scripts.gina.archive import (
     ArchiveComponentItems,
     MangledArchiveError,
@@ -47,6 +44,7 @@ from lp.soyuz.scripts.gina.handlers import (
     MultiplePackageReleaseError,
     NoSourcePackageError,
     )
+from lp.soyuz.scripts.gina.katie import Katie
 from lp.soyuz.scripts.gina.packages import (
     BinaryPackageData,
     DisplayNameDecodingError,
@@ -55,7 +53,6 @@ from lp.soyuz.scripts.gina.packages import (
     PoolFileNotFound,
     SourcePackageData,
     )
-
 
 # Set to non-zero if you'd like to be warned every so often
 COUNTDOWN = 0
@@ -101,34 +98,34 @@ def run_gina(options, ztm, target_section):
     LIBRPORT = config.librarian.upload_port
 
     log.info("")
-    log.info("=== Processing %s/%s/%s ===" % (distro, distroseries, pocket))
-    log.debug("Packages read from: %s" % package_root)
-    log.debug("Keyrings read from: %s" % keyrings_root)
-    log.info("Components to import: %s" % ", ".join(components))
+    log.info("=== Processing %s/%s/%s ===", distro, distroseries, pocket)
+    log.debug("Packages read from: %s", package_root)
+    log.debug("Keyrings read from: %s", keyrings_root)
+    log.info("Components to import: %s", ", ".join(components))
     if component_override is not None:
-        log.info("Override components to: %s" % component_override)
-    log.info("Architectures to import: %s" % ", ".join(archs))
-    log.debug("Launchpad database: %s" % LPDB)
-    log.debug("Launchpad database host: %s" % LPDB_HOST)
-    log.debug("Launchpad database user: %s" % LPDB_USER)
-    log.info("Katie database: %s" % KTDB)
-    log.info("SourcePackage Only: %s" % source_only)
-    log.info("SourcePackageName Only: %s" % spnames_only)
-    log.debug("Librarian: %s:%s" % (LIBRHOST, LIBRPORT))
-    log.info("Dry run: %s" % (dry_run))
+        log.info("Override components to: %s", component_override)
+    log.info("Architectures to import: %s", ", ".join(archs))
+    log.debug("Launchpad database: %s", LPDB)
+    log.debug("Launchpad database host: %s", LPDB_HOST)
+    log.debug("Launchpad database user: %s", LPDB_USER)
+    log.info("Katie database: %s", KTDB)
+    log.info("SourcePackage Only: %s", source_only)
+    log.info("SourcePackageName Only: %s", spnames_only)
+    log.debug("Librarian: %s:%s", LIBRHOST, LIBRPORT)
+    log.info("Dry run: %s", dry_run)
     log.info("")
 
     if hasattr(PackagePublishingPocket, pocket.upper()):
         pocket = getattr(PackagePublishingPocket, pocket.upper())
     else:
-        log.error("Could not find a pocket schema for %s" % pocket)
+        log.error("Could not find a pocket schema for %s", pocket)
         sys.exit(1)
 
     if component_override:
         valid_components = [
             component.name for component in getUtility(IComponentSet)]
         if component_override not in valid_components:
-            log.error("Could not find component %s" % component_override)
+            log.error("Could not find component %s", component_override)
             sys.exit(1)
 
     kdb = None
@@ -143,7 +140,7 @@ def run_gina(options, ztm, target_section):
             source_only)
     except MangledArchiveError:
         log.exception(
-            "Failed to analyze archive for %s" % pocket_distroseries)
+            "Failed to analyze archive for %s", pocket_distroseries)
         sys.exit(1)
 
     packages_map = PackagesMap(arch_component_items)
@@ -163,7 +160,7 @@ def run_gina(options, ztm, target_section):
         try:
             importer_handler.ensure_archinfo(archtag)
         except DataSetupError:
-            log.exception("Database setup required for run on %s" % archtag)
+            log.exception("Database setup required for run on %s", archtag)
             sys.exit(1)
 
     import_binarypackages(packages_map, kdb, package_root, keyrings,
@@ -176,7 +173,7 @@ def import_sourcepackages(packages_map, kdb, package_root,
     # Goes over src_map importing the sourcepackages packages.
     count = 0
     npacks = len(packages_map.src_map)
-    log.info('%i Source Packages to be imported' % npacks)
+    log.info('%i Source Packages to be imported', npacks)
 
     for list_source in sorted(
         packages_map.src_map.values(), key=lambda x: x[0].get("Package")):
@@ -190,7 +187,7 @@ def import_sourcepackages(packages_map, kdb, package_root,
                 except psycopg2.Error:
                     log.exception(
                         "Database error: unable to create SourcePackage "
-                        "for %s. Retrying once.." % package_name)
+                        "for %s. Retrying once..", package_name)
                     importer_handler.abort()
                     time.sleep(15)
                     do_one_sourcepackage(
@@ -199,27 +196,27 @@ def import_sourcepackages(packages_map, kdb, package_root,
                 InvalidVersionError, MissingRequiredArguments,
                 DisplayNameDecodingError):
                 log.exception(
-                    "Unable to create SourcePackageData for %s" %
+                    "Unable to create SourcePackageData for %s",
                     package_name)
                 continue
             except (PoolFileNotFound, ExecutionError):
                 # Problems with katie db stuff of opening files
                 log.exception(
-                    "Error processing package files for %s" % package_name)
+                    "Error processing package files for %s", package_name)
                 continue
             except psycopg2.Error:
                 log.exception(
                     "Database errors made me give up: unable to create "
-                    "SourcePackage for %s" % package_name)
+                    "SourcePackage for %s", package_name)
                 importer_handler.abort()
                 continue
             except MultiplePackageReleaseError:
                 log.exception(
-                    "Database duplication processing %s" % package_name)
+                    "Database duplication processing %s", package_name)
                 continue
 
             if COUNTDOWN and count % COUNTDOWN == 0:
-                log.warn('%i/%i sourcepackages processed' % (count, npacks))
+                log.warn('%i/%i sourcepackages processed', count, npacks)
 
 
 def do_one_sourcepackage(source, kdb, package_root, keyrings,
@@ -228,7 +225,7 @@ def do_one_sourcepackage(source, kdb, package_root, keyrings,
     if importer_handler.preimport_sourcecheck(source_data):
         # Don't bother reading package information if the source package
         # already exists in the database
-        log.info('%s already exists in the archive' % source_data.package)
+        log.info('%s already exists in the archive', source_data.package)
         return
     source_data.process_package(kdb, package_root, keyrings)
     source_data.ensure_complete(kdb)
@@ -244,8 +241,8 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
     for archtag in packages_map.bin_map.keys():
         count = 0
         npacks = len(packages_map.bin_map[archtag])
-        log.info('%i Binary Packages to be imported for %s' %
-                 (npacks, archtag))
+        log.info(
+            '%i Binary Packages to be imported for %s', npacks, archtag)
         # Go over binarypackages importing them for this architecture
         for binary in sorted(packages_map.bin_map[archtag].values(),
                              key=lambda x: x.get("Package")):
@@ -256,44 +253,45 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
                     do_one_binarypackage(binary, archtag, kdb, package_root,
                                          keyrings, importer_handler)
                 except psycopg2.Error:
-                    log.exception("Database errors when importing a "
-                                  "BinaryPackage for %s. Retrying once.."
-                                  % package_name)
+                    log.exception(
+                        "Database errors when importing a BinaryPackage "
+                        "for %s. Retrying once..", package_name)
                     importer_handler.abort()
                     time.sleep(15)
                     do_one_binarypackage(binary, archtag, kdb, package_root,
                                          keyrings, importer_handler)
             except (InvalidVersionError, MissingRequiredArguments):
-                log.exception("Unable to create BinaryPackageData for %s" %
-                              package_name)
+                log.exception(
+                    "Unable to create BinaryPackageData for %s", package_name)
                 continue
             except (PoolFileNotFound, ExecutionError):
                 # Problems with katie db stuff of opening files
-                log.exception("Error processing package files for %s" %
-                              package_name)
+                log.exception(
+                    "Error processing package files for %s", package_name)
                 continue
             except MultiplePackageReleaseError:
-                log.exception("Database duplication processing %s" %
-                              package_name)
+                log.exception(
+                    "Database duplication processing %s", package_name)
                 continue
             except psycopg2.Error:
-                log.exception("Database errors made me give up: unable to "
-                              "create BinaryPackage for %s" % package_name)
+                log.exception(
+                    "Database errors made me give up: unable to create "
+                    "BinaryPackage for %s", package_name)
                 importer_handler.abort()
                 continue
             except NoSourcePackageError:
-                log.exception("Failed to create Binary Package for %s" %
-                              package_name)
+                log.exception(
+                    "Failed to create Binary Package for %s", package_name)
                 nosource.append(binary)
                 continue
 
             if COUNTDOWN and count % COUNTDOWN == 0:
                 # XXX kiko 2005-10-23: untested
-                log.warn('%i/%i binary packages processed' % (count, npacks))
+                log.warn('%i/%i binary packages processed', count, npacks)
 
         if nosource:
             # XXX kiko 2005-10-23: untested
-            log.warn('%i source packages not found' % len(nosource))
+            log.warn('%i source packages not found', len(nosource))
             for pkg in nosource:
                 log.warn(pkg)
 
@@ -302,7 +300,7 @@ def do_one_binarypackage(binary, archtag, kdb, package_root, keyrings,
                          importer_handler):
     binary_data = BinaryPackageData(**binary)
     if importer_handler.preimport_binarycheck(archtag, binary_data):
-        log.info('%s already exists in the archive' % binary_data.package)
+        log.info('%s already exists in the archive', binary_data.package)
         return
     binary_data.process_package(kdb, package_root, keyrings)
     importer_handler.import_binarypackage(archtag, binary_data)
