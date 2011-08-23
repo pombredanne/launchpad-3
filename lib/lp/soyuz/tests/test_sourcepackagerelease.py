@@ -88,13 +88,13 @@ class TestSourcePackageRelease(TestCaseWithFactory):
         creator = self.factory.makePerson(displayname=u"foo")
         maintainer = self.factory.makePerson(displayname=u"bar")
         self.factory.makeSourcePackageRelease(
-            creator=creator, maintainer=maintainer,
+            creator=creator, maintainer=maintainer, sourcepackagename="foo",
             version="1.0", changelog_entry="this is version 1.0")
         spr11 = self.factory.makeSourcePackageRelease(
-            creator=creator, maintainer=maintainer,
+            creator=creator, maintainer=maintainer, sourcepackagename="foo",
             version="1.1", changelog_entry="this is version 1.1")
         spr12 = self.factory.makeSourcePackageRelease(
-            creator=creator, maintainer=maintainer,
+            creator=creator, maintainer=maintainer, sourcepackagename="foo",
             version="1.2", changelog_entry="this is version 1.2")
         observed = spr12.aggregate_changelog(since_version="1.0")
         expected = "\n\n".join(
