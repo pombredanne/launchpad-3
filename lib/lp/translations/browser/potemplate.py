@@ -573,14 +573,19 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
 
     @property
     def _return_url(self):
-        """See `LaunchpadFormView`."""
-        # The referer header we want is only available before the view's
-        # form submits to itself. This field is a hidden input in the form.
+        # We override the ReturnToReferrerMixin _return_url because it might
+        # change when any of the productseries, distroseries,
+        # sourcepackagename or name attributes change, and the basic version
+        # only supports watching changes to a single attribute.
+
+        # The referer header is a hidden input in the form.
         referrer = self.request.form.get('_return_url')
         returnChanged = False
         if referrer is None:
             # "referer" is misspelled in the HTTP specification.
             referrer = self.request.getHeader('referer')
+            # If we were looking at the actual template, we want a new
+            # URL constructed.
             if referrer is not None and '/+pots/' in referrer:
                 returnChanged = True
 
