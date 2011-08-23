@@ -148,8 +148,17 @@ from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 
 
+class BranchMetaclass(SQLBase.__metaclass__):
+    # We need to alias some class attributes.
+    def __new__(cls, name, bases, attr):
+        attr['private'] = attr['_private']
+        return SQLBase.__metaclass__.__new__(cls, name, bases, attr)
+
+
 class Branch(SQLBase, BzrIdentityMixin):
     """A sequence of ordered revisions in Bazaar."""
+
+    __metaclass__ = BranchMetaclass
 
     implements(IBranch, IBranchNavigationMenu, IPrivacy)
     _table = 'Branch'
