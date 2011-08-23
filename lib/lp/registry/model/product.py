@@ -386,6 +386,10 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     date_next_suggest_packaging = UtcDateTimeCol(default=None)
 
     @property
+    def pillar_category(self):
+        return "Project"
+
+    @property
     def official_codehosting(self):
         # XXX Need to remove official_codehosting column from Product
         # table.

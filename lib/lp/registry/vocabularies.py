@@ -1949,8 +1949,8 @@ class VocabularyFilterProject(VocabularyFilter):
 
     def __new__(cls):
         return super(VocabularyFilter, cls).__new__(
-            cls, 'PROJECT', 'Product',
-            'Display search results associated with products')
+            cls, 'PROJECT', 'Project',
+            'Display search results associated with projects')
 
     @property
     def filter_terms(self):
@@ -1962,8 +1962,8 @@ class VocabularyFilterProjectGroup(VocabularyFilter):
 
     def __new__(cls):
         return super(VocabularyFilter, cls).__new__(
-            cls, 'PROJECTGROUP', 'Project',
-            'Display search results associated with projects')
+            cls, 'PROJECTGROUP', 'Project Group',
+            'Display search results associated with project groups')
 
     @property
     def filter_terms(self):
@@ -2005,9 +2005,10 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
                     obj.__class__.__name__, obj.id)
             obj = obj.pillar
 
-        # It is a hack using the class name here, but it works
-        # fine and avoids an ugly if statement.
-        title = '%s (%s)' % (obj.title, obj.__class__.__name__)
+        # We use the "pillar_category" property if it exists, otherwise we
+        # just use the class name.
+        category = getattr(obj, "pillar_category", obj.__class__.__name__)
+        title = '%s (%s)' % (obj.title, category)
 
         return SimpleTerm(obj, obj.name, title)
 

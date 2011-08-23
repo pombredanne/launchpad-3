@@ -21,6 +21,17 @@ from lp.testing import (
     )
 
 
+class TestProjectGroup(TestCaseWithFactory):
+    """Tests project group object."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_pillar_category(self):
+        # The pillar category is correct.
+        pg = self.factory.makeProject()
+        self.assertEqual("Project Group", pg.pillar_category)
+
+
 class ProjectGroupSearchTestCase(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
