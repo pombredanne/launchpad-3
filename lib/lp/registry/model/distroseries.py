@@ -157,7 +157,6 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
 from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
     DistroArchSeries,

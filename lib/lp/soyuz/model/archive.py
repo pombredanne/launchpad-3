@@ -1542,7 +1542,7 @@ class Archive(SQLBase):
         """Prevent copyPackage(s) if these conditions are not met."""
         if not getFeatureFlag(u"soyuz.copypackage.enabled"):
             raise ForbiddenByFeatureFlag
-        if (self.is_ppa and 
+        if (self.is_ppa and
             not getFeatureFlag(u"soyuz.copypackageppa.enabled")):
             # We have no way of giving feedback about failed jobs yet,
             # so this is disabled for now.
@@ -1960,7 +1960,7 @@ class Archive(SQLBase):
             commercial = getUtility(ILaunchpadCelebrities).commercial_admin
             admin = getUtility(ILaunchpadCelebrities).admin
             if not person.inTeam(commercial) and not person.inTeam(admin):
-                return '%s is not allowed to make private PPAs' % (person.name,)
+                return '%s is not allowed to make private PPAs' % person.name
         if person.isTeam() and (
             person.subscriptionpolicy in OPEN_TEAM_POLICY):
             return "Open teams cannot have PPAs."
