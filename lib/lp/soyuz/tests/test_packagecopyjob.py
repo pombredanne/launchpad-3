@@ -695,7 +695,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # properties set to known values.
         publisher.getPubSource(
             distroseries=distroseries, sourcename="copyme",
-            component='contrib', section='web',
+            component='multiverse', section='web',
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
             archive=source_archive)
 
