@@ -3346,7 +3346,7 @@ class PersonSet:
             return EmptyResultSet()
         addresses = [
             ensure_unicode(address.lower().strip())
-            for address in addresses]
+            for address in emails]
         extra_query = True
         if not include_hidden:
             extra_query = Person.hide_email_addresses == True
