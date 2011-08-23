@@ -1708,8 +1708,9 @@ class TestValidateTransitionToTarget(TestCaseWithFactory):
             self.factory.makeDistributionSourcePackage(distribution=distro))
 
     def test_sourcepackage_to_sourcepackage_in_same_series_works(self):
-        sp1 = self.factory.makeSourcePackage()
-        sp2 = self.factory.makeSourcePackage(distroseries=sp1.distroseries)
+        sp1 = self.factory.makeSourcePackage(publish=True)
+        sp2 = self.factory.makeSourcePackage(distroseries=sp1.distroseries,
+                                             publish=True)
         self.assertTransitionWorks(sp1, sp2)
 
     def test_sourcepackage_to_same_series_works(self):
@@ -1910,6 +1911,29 @@ class TestTransitionToTarget(TestCaseWithFactory):
             new_product.bugtargetdisplayname,
             removeSecurityProxy(task).targetnamecache)
 
+    def test_matching_sourcepackage_tasks_updated_when_name_changed(self):
+        # If the sourcepackagename is changed, it's changed on all tasks
+        # with the same distribution and sourcepackagename.
+
+        # Create a distribution and distroseries with tasks.
+        ds = self.factory.makeDistroSeries()
+        bug = self.factory.makeBug(distribution=ds.distribution)
+        ds_task = self.factory.makeBugTask(bug=bug, target=ds)
+
+        # Also create a task for another distro. It will not be touched.
+        other_distro = self.factory.makeDistribution()
+        self.factory.makeBugTask(bug=bug, target=other_distro)
+
+        self.assertContentEqual(
+            (task.target for task in bug.bugtasks),
+            [ds, ds.distribution, other_distro])
+        sp = self.factory.makeSourcePackage(distroseries=ds, publish=True)
+        with person_logged_in(ds_task.owner):
+            ds_task.transitionToTarget(sp)
+        self.assertContentEqual(
+            (t.target for t in bug.bugtasks),
+            [sp, sp.distribution_sourcepackage, other_distro])
+
 
 class TestBugTargetKeys(TestCaseWithFactory):
     """Tests for bug_target_to_key and bug_target_from_key."""
@@ -2046,9 +2070,9 @@ class TestValidateTarget(TestCaseWithFactory):
 
     def test_new_sourcepackage_is_allowed(self):
         # A new sourcepackage not on the bug is OK.
-        sp1 = self.factory.makeSourcePackage()
+        sp1 = self.factory.makeSourcePackage(publish=True)
         task = self.factory.makeBugTask(target=sp1)
-        sp2 = self.factory.makeSourcePackage()
+        sp2 = self.factory.makeSourcePackage(publish=True)
         validate_target(task.bug, sp2)
 
     def test_multiple_packageless_distribution_tasks_are_forbidden(self):

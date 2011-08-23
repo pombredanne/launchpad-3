@@ -306,7 +306,8 @@ class InlineEditPickerWidget(WidgetBase):
             selected_value=self.selected_value,
             selected_value_metadata=self.selected_value_metadata,
             null_display_value=self.null_display_value,
-            show_search_box=self.show_search_box)
+            show_search_box=self.show_search_box,
+            vocabulary_filters=self.vocabulary_filters)
 
     @property
     def json_config(self):
@@ -317,6 +318,27 @@ class InlineEditPickerWidget(WidgetBase):
         registry = getVocabularyRegistry()
         return registry.get(
             IVocabulary, self.exported_field.vocabularyName)
+
+    @cachedproperty
+    def vocabulary_filters(self):
+        # Only IHugeVocabulary's have filters.
+        if not IHugeVocabulary.providedBy(self.vocabulary):
+            return []
+        supported_filters = self.vocabulary.supportedFilters()
+        # If we have no filters or just the ALL filter, then no filtering
+        # support is required.
+        filters = []
+        if (len(supported_filters) == 0 or
+           (len(supported_filters) == 1
+            and supported_filters[0].name == 'ALL')):
+            return filters
+        for filter in supported_filters:
+            filters.append({
+                'name': filter.name,
+                'title': filter.title,
+                'description': filter.description,
+                })
+        return filters
 
     @property
     def show_search_box(self):
