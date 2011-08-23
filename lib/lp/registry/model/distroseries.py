@@ -1341,53 +1341,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return section
         raise NotFoundError(name)
 
-    def getBinaryPackageCaches(self, archive=None):
-        """See `IDistroSeries`."""
-        if archive is not None:
-            archives = [archive.id]
-        else:
-            archives = self.distribution.all_distro_archive_ids
-
-        caches = DistroSeriesPackageCache.select("""
-            distroseries = %s AND
-            archive IN %s
-        """ % sqlvalues(self, archives),
-        orderBy="name")
-
-        return caches
-
-    def removeOldCacheItems(self, archive, log):
-        """See `IDistroSeries`."""
-
-        # get the set of package names that should be there
-        bpns = set(BinaryPackageName.select("""
-            BinaryPackagePublishingHistory.distroarchseries =
-                DistroArchSeries.id AND
-            DistroArchSeries.distroseries = %s AND
-            Archive.id = %s AND
-            BinaryPackagePublishingHistory.archive = Archive.id AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.binarypackagename =
-                BinaryPackageName.id AND
-            BinaryPackagePublishingHistory.dateremoved is NULL AND
-            Archive.enabled = TRUE
-            """ % sqlvalues(self, archive),
-            distinct=True,
-            clauseTables=[
-                'Archive',
-                'DistroArchSeries',
-                'BinaryPackagePublishingHistory',
-                'BinaryPackageRelease']))
-
-        # remove the cache entries for binary packages we no longer want
-        for cache in self.getBinaryPackageCaches(archive):
-            if cache.binarypackagename not in bpns:
-                log.debug(
-                    "Removing binary cache for '%s' (%s)"
-                    % (cache.name, cache.id))
-                cache.destroySelf()
-
     def updateCompletePackageCache(self, archive, log, ztm, commit_chunk=500):
         """See `IDistroSeries`."""
         # Do not create cache entries for disabled archives.

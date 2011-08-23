@@ -739,25 +739,6 @@ class IDistroSeriesPublic(
         distribution 'main_archive'.
         """
 
-    def getBinaryPackageCaches(archive=None):
-        """All of the cached binary package records for this distroseries.
-
-        If 'archive' is not given it will return all caches stored for the
-        distroseries main archives (PRIMARY and PARTNER).
-        """
-
-    def removeOldCacheItems(archive, log):
-        """Delete any records that are no longer applicable.
-
-        Consider all binarypackages marked as REMOVED.
-
-        Also purges all existing cache records for disabled archives.
-
-        :param archive: target `IArchive`.
-        :param log: the context logger object able to print DEBUG level
-            messages.
-        """
-
     def updateCompletePackageCache(archive, log, ztm, commit_chunk=500):
         """Update the binary package cache
 
