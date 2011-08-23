@@ -21,8 +21,8 @@ from lp.registry.interfaces.person import (
     )
 from lp.testing import (
     login_person,
-    TestCaseWithFactory,
     person_logged_in,
+    TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
 
