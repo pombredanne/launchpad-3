@@ -2010,8 +2010,6 @@ class TestGetUnlandedSourceBranchRevisions(TestCaseWithFactory):
 class TestWebservice(WebServiceTestCase):
     """Tests for the webservice."""
 
-    layer = AppServerLayer
-
     def test_getMergeProposals_with_merged_revnos(self):
         """Specifying merged revnos selects the correct merge proposal."""
         mp = self.factory.makeBranchMergeProposal()
