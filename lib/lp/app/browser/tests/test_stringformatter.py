@@ -147,7 +147,7 @@ class TestLinkifyingBugs(TestCase):
     def test_explicit_bug_linkification(self):
         text = 'LP: #10'
         self.assertEqual(
-            'LP: <a href="/bugs/10" class="bug-links">#10</a>', linkify_bug_numbers(text))
+            'LP: <a href="/bugs/10" class="bug-link">#10</a>', linkify_bug_numbers(text))
 
 
 class TestLinkifyingProtocols(TestCase):
