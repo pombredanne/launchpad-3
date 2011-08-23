@@ -7,12 +7,10 @@ __metaclass__ = type
 
 from datetime import (
     datetime,
-    timedelta,
     )
 from textwrap import dedent
 
 import pytz
-import simplejson
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -41,7 +39,11 @@ from lp.code.browser.branch import (
     BranchView,
     )
 from lp.code.browser.branchlisting import PersonOwnedBranchesView
-from lp.code.bzr import ControlFormat
+from lp.code.bzr import (
+    BranchFormat,
+    ControlFormat,
+    RepositoryFormat,
+    )
 from lp.code.enums import (
     BranchLifecycleStatus,
     BranchType,
@@ -400,7 +402,7 @@ class TestBranchView(BrowserTestCase):
 
     def _add_revisions(self, branch, nr_revisions=1):
         revisions = []
-        for seq in range(1, nr_revisions+1):
+        for seq in range(1, nr_revisions + 1):
             revision = self.factory.makeRevision(
                 author="Eric the Viking <eric@vikings-r-us.example.com>",
                 log_body=(
@@ -806,3 +808,23 @@ class TestBranchEditView(TestCaseWithFactory):
                 'Some Product.'))
         with person_logged_in(person):
             self.assertEquals(person, branch.owner)
+
+
+class TestBranchUpgradeView(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_upgrade_branch_action_cannot_upgrade(self):
+        # A nice error is displayed if a branch cannot be upgraded.
+        branch = self.factory.makePersonalBranch(
+        branch_format=BranchFormat.BZR_BRANCH_6,
+        repository_format=RepositoryFormat.BZR_CHK_2A)
+        login_person(branch.owner)
+        self.addCleanup(logout)
+        branch.requestUpgrade(branch.owner)
+        view = create_initialized_view(branch, '+upgrade')
+        view.upgrade_branch_action.success({})
+        self.assertEqual(1, len(view.request.notifications))
+        self.assertEqual(
+            'An upgrade is already in progress for branch %s.' %
+            branch.bzr_identity, view.request.notifications[0].message)

@@ -52,6 +52,7 @@ from lp.code.enums import (
     BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel,
     )
+from lp.code.errors import AlreadyLatestFormat
 from lp.code.interfaces.branchjob import (
     IBranchDiffJob,
     IBranchJob,
@@ -307,6 +308,8 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             'Bazaar-NG Knit Repository Format 1')
 
         job = BranchUpgradeJob.create(db_branch, self.factory.makePerson())
+
+        dbuser = config.launchpad.dbuser
         self.becomeDbUser(config.upgrade_branches.dbuser)
         with TransactionFreeOperation.require():
             job.run()
@@ -315,16 +318,17 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             new_branch.repository._format.get_format_string(),
             'Bazaar repository format 2a (needs bzr 1.16 or later)\n')
 
+        self.becomeDbUser(dbuser)
         self.assertFalse(db_branch.needs_upgrading)
 
     def test_needs_no_upgrading(self):
-        # Branch upgrade job creation should raise an AssertionError if the
-        # branch does not need to be upgraded.
+        # Branch upgrade job creation should raise an AlreadyLatestFormat if
+        # the branch does not need to be upgraded.
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_7,
             repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertRaises(
-            AssertionError, BranchUpgradeJob.create, branch,
+            AlreadyLatestFormat, BranchUpgradeJob.create, branch,
             self.factory.makePerson())
 
     def create_knit(self):

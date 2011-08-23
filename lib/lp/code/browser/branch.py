@@ -131,6 +131,7 @@ from lp.code.enums import (
 from lp.code.errors import (
     BranchCreationForbidden,
     BranchExists,
+    CannotUpgradeBranch,
     CodeImportAlreadyRequested,
     CodeImportAlreadyRunning,
     CodeImportNotInReviewedState,
@@ -993,7 +994,10 @@ class BranchUpgradeView(LaunchpadFormView):
 
     @action('Upgrade', name='upgrade_branch')
     def upgrade_branch_action(self, action, data):
-        self.context.requestUpgrade(self.user)
+        try:
+            self.context.requestUpgrade(self.user)
+        except CannotUpgradeBranch as e:
+            self.request.response.addErrorNotification(e)
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
