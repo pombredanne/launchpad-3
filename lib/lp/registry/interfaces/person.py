@@ -2117,6 +2117,10 @@ class IPersonSet(Interface):
         Return None if there is no person with the given email address.
         """
 
+    def getByEmails(addresses):
+        """Return a dict of `IPerson`, `IEmailAddress` for people with
+        the given email address."""
+
     def getByName(name, ignore_merged=True):
         """Return the person with the given name, ignoring merged persons if
         ignore_merged is True.

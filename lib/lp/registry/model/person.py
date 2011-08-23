@@ -3338,11 +3338,22 @@ class PersonSet:
 
     def getByEmail(self, email):
         """See `IPersonSet`."""
-        email = ensure_unicode(email).strip().lower()
-        return IStore(Person).find(
+        return self.getByEmails([email]).one()[0]
+
+    def getByEmails(self, addresses, show_hidden=True):
+        """See `IPersonSet`."""
+        addresses = [
+            ensure_unicode(address.lower().strip())
+            for address in addresses]
+        extra_query = True
+        if not show_hidden:
+            extra_query = Person.hide_email_addresses == True
+        return IStore(Person).using(
             Person,
-            Person.id == EmailAddress.personID,
-            EmailAddress.email.lower() == email).one()
+            Join(EmailAddress, EmailAddress.personID == Person.id)
+        ).find(
+            (Person, EmailAddress),
+            EmailAddress.email.lower().is_in(addresses), extra_query)
 
     def latest_teams(self, limit=5):
         """See `IPersonSet`."""

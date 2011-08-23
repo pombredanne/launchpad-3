@@ -304,13 +304,11 @@ class DistributionSourcePackageBaseView(LaunchpadView):
         # case the emails in the changelog will be obfuscated anyway and thus
         # cause no database lookups.
         if self.user:
-            unique_emails = extract_email_addresses(the_changelog)
-            # The method below returns a [(EmailAddress,Person]] result set.
-            result_set = self.context.getPersonsByEmail(unique_emails)
-            # Ignore the persons who want their email addresses hidden.
             self._person_data = dict(
-                [(email.email, person) for (email, person) in result_set
-                 if not person.hide_email_addresses])
+                [(email.email, person) for (email, person) in
+                    getUtility(IPersonSet).getByEmails(
+                        extract_email_addresses(the_changelog),
+                        show_hidden=False)])
         else:
             self._person_data = None
         # Collate diffs for relevant SourcePackageReleases

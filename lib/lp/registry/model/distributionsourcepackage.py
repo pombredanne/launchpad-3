@@ -517,23 +517,6 @@ class DistributionSourcePackage(BugTargetBase,
             sourcepackagename=self.sourcepackagename,
             language_code=language_code, language=language)
 
-    @staticmethod
-    def getPersonsByEmail(email_addresses):
-        """[(EmailAddress,Person), ..] iterable for given email addresses."""
-        if email_addresses is None or len(email_addresses) < 1:
-            return EmptyResultSet()
-        # Perform basic sanitization of email addresses.
-        email_addresses = [
-            address.lower().strip() for address in email_addresses]
-        store = IStore(Person)
-        origin = [
-            Person, Join(EmailAddress, EmailAddress.personID == Person.id)]
-        # Get all persons whose email addresses are in the list.
-        result_set = store.using(*origin).find(
-            (EmailAddress, Person),
-            EmailAddress.email.lower().is_in(email_addresses))
-        return result_set
-
     @classmethod
     def _get(cls, distribution, sourcepackagename):
         return Store.of(distribution).find(
