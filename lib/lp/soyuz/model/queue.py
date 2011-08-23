@@ -1446,13 +1446,12 @@ class PackageUploadSet:
                             names=None):
         """See `IPackageUploadSet`."""
         # Avoiding circular imports.
-        from lp.registry.model.distroseries import DistroSeries
         from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
         from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
         archives = distroseries.distribution.getArchiveIDList()
         clauses = [
-            DistroSeries.id == PackageUpload.distroseriesID,
+            PackageUpload.distroseries == distroseries,
             PackageUpload.archiveID.is_in(archives),
             PackageUploadBuild.packageuploadID == PackageUpload.id,
             ]
