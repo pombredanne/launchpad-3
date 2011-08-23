@@ -271,6 +271,7 @@ from lp.registry.vocabularies import MilestoneVocabulary
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
 
+vocabulary_registry = getVocabularyRegistry()
 
 DISPLAY_BUG_STATUS_FOR_PATCHES = {
     BugTaskStatus.NEW: True,
@@ -1053,12 +1054,14 @@ def get_prefix(bugtask):
     return '_'.join(parts)
 
 
-def get_assignee_vocabulary(context):
+def get_assignee_vocabulary_info(context):
     """The vocabulary of bug task assignees the current user can set."""
     if context.userCanSetAnyAssignee(getUtility(ILaunchBag).user):
-        return 'ValidAssignee'
+        vocab_name = 'ValidAssignee'
     else:
-        return 'AllUserTeamsParticipation'
+        vocab_name = 'AllUserTeamsParticipation'
+    vocab = vocabulary_registry.get(None, vocab_name)
+    return vocab_name, vocab.supportedFilters()
 
 
 class BugTaskBugWatchMixin:
@@ -1339,10 +1342,10 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             self.form_fields.get('assignee', False)):
             # Make the assignee field editable
             self.form_fields = self.form_fields.omit('assignee')
+            vocabulary, ignored = get_assignee_vocabulary_info(self.context)
             self.form_fields += formlib.form.Fields(PersonChoice(
                 __name__='assignee', title=_('Assigned to'), required=False,
-                vocabulary=get_assignee_vocabulary(self.context),
-                readonly=False))
+                vocabulary=vocabulary, readonly=False))
             self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
                 BugTaskAssigneeWidget)
 
@@ -2654,7 +2657,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
         if vocabulary is None:
             assert vocabulary_name is not None, 'No vocabulary specified.'
-            vocabulary_registry = getVocabularyRegistry()
             vocabulary = vocabulary_registry.get(
                 self.context, vocabulary_name)
         for term in vocabulary:
@@ -3581,12 +3583,31 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
     def js_config(self):
         """Configuration for the JS widgets on the row, JSON-serialized."""
+<<<<<<< TREE
+=======
+        assignee_vocabulary, assignee_vocabulary_filters = (
+            get_assignee_vocabulary_info(self.context))
+        # If we have no filters or just the ALL filter, then no filtering
+        # support is required.
+        filter_details = []
+        if (len(assignee_vocabulary_filters) > 1 or
+               (len(assignee_vocabulary_filters) == 1
+                and assignee_vocabulary_filters[0].name != 'ALL')):
+            for filter in assignee_vocabulary_filters:
+                filter_details.append({
+                    'name': filter.name,
+                    'title': filter.title,
+                    'description': filter.description,
+                    })
+
+>>>>>>> MERGE-SOURCE
         # Display the search field only if the user can set any person
         # or team
         user = self.user
         hide_assignee_team_selection = (
             not self.context.userCanSetAnyAssignee(user) and
             (user is None or user.teams_participated_in.count() == 0))
+<<<<<<< TREE
         cx = self.context
         return dumps(dict(
             row_id=self.data['row_id'],
@@ -3614,6 +3635,39 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
             user_can_edit_importance=(
                 self.user_can_edit_importance and not cx.bugwatch)
             ))
+=======
+        return dumps({
+            'row_id': 'tasksummary%s' % self.context.id,
+            'bugtask_path': '/'.join(
+                [''] + canonical_url(self.context).split('/')[3:]),
+            'prefix': get_prefix(self.context),
+            'assignee_value': self.context.assignee
+                and self.context.assignee.name,
+            'assignee_is_team': self.context.assignee
+                and self.context.assignee.is_team,
+            'assignee_vocabulary': assignee_vocabulary,
+            'assignee_vocabulary_filters': filter_details,
+            'hide_assignee_team_selection': hide_assignee_team_selection,
+            'user_can_unassign': self.context.userCanUnassign(user),
+            'target_is_product': IProduct.providedBy(self.context.target),
+            'status_widget_items': self.status_widget_items,
+            'status_value': self.context.status.title,
+            'importance_widget_items': self.importance_widget_items,
+            'importance_value': self.context.importance.title,
+            'milestone_widget_items': self.milestone_widget_items,
+            'milestone_value': (self.context.milestone and
+                                canonical_url(
+                                    self.context.milestone,
+                                    request=IWebServiceClientRequest(
+                                        self.request)) or
+                                None),
+            'user_can_edit_assignee': self.user_can_edit_assignee,
+            'user_can_edit_milestone': self.user_can_edit_milestone,
+            'user_can_edit_status': not self.context.bugwatch,
+            'user_can_edit_importance': (
+                self.user_can_edit_importance and
+                not self.context.bugwatch)})
+>>>>>>> MERGE-SOURCE
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):
