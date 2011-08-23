@@ -168,6 +168,40 @@ def run_gina(options, ztm, target_section):
     importer_handler.commit()
 
 
+def attempt_source_package_import(source, kdb, package_root, keyrings,
+                                  importer_handler):
+    """Attempt to import a source package, and handle typical errors."""
+    package_name = source.get("Package", "unknown")
+    try:
+        try:
+            do_one_sourcepackage(
+                source, kdb, package_root, keyrings, importer_handler)
+        except psycopg2.Error:
+            log.exception(
+                "Database error: unable to create SourcePackage for %s. "
+                "Retrying once..", package_name)
+            importer_handler.abort()
+            time.sleep(15)
+            do_one_sourcepackage(
+                source, kdb, package_root, keyrings, importer_handler)
+    except (
+        InvalidVersionError, MissingRequiredArguments,
+        DisplayNameDecodingError):
+        log.exception(
+            "Unable to create SourcePackageData for %s", package_name)
+    except (PoolFileNotFound, ExecutionError):
+        # Problems with katie db stuff of opening files
+        log.exception("Error processing package files for %s", package_name)
+    except psycopg2.Error:
+        log.exception(
+            "Database errors made me give up: unable to create "
+            "SourcePackage for %s", package_name)
+        importer_handler.abort()
+    except MultiplePackageReleaseError:
+        log.exception(
+            "Database duplication processing %s", package_name)
+
+
 def import_sourcepackages(packages_map, kdb, package_root,
                           keyrings, importer_handler):
     # Goes over src_map importing the sourcepackages packages.
@@ -179,43 +213,9 @@ def import_sourcepackages(packages_map, kdb, package_root,
         packages_map.src_map.values(), key=lambda x: x[0].get("Package")):
         for source in list_source:
             count += 1
-            package_name = source.get("Package", "unknown")
-            try:
-                try:
-                    do_one_sourcepackage(
-                        source, kdb, package_root, keyrings, importer_handler)
-                except psycopg2.Error:
-                    log.exception(
-                        "Database error: unable to create SourcePackage "
-                        "for %s. Retrying once..", package_name)
-                    importer_handler.abort()
-                    time.sleep(15)
-                    do_one_sourcepackage(
-                        source, kdb, package_root, keyrings, importer_handler)
-            except (
-                InvalidVersionError, MissingRequiredArguments,
-                DisplayNameDecodingError):
-                log.exception(
-                    "Unable to create SourcePackageData for %s",
-                    package_name)
-                continue
-            except (PoolFileNotFound, ExecutionError):
-                # Problems with katie db stuff of opening files
-                log.exception(
-                    "Error processing package files for %s", package_name)
-                continue
-            except psycopg2.Error:
-                log.exception(
-                    "Database errors made me give up: unable to create "
-                    "SourcePackage for %s", package_name)
-                importer_handler.abort()
-                continue
-            except MultiplePackageReleaseError:
-                log.exception(
-                    "Database duplication processing %s", package_name)
-                continue
-
-            if COUNTDOWN and count % COUNTDOWN == 0:
+            attempt_source_package_import(
+                source, kdb, package_root, keyrings, importer_handler)
+            if COUNTDOWN and (count % COUNTDOWN == 0):
                 log.warn('%i/%i sourcepackages processed', count, npacks)
 
 
