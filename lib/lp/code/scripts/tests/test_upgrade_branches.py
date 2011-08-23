@@ -34,7 +34,7 @@ class TestUpgradeBranches(TestCaseWithFactory):
             target_tree.branch.repository._format.get_format_string(),
             'Bazaar-NG Knit Repository Format 1')
 
-        BranchUpgradeJob.create(target)
+        BranchUpgradeJob.create(target, self.factory.makePerson())
         transaction.commit()
 
         retcode, stdout, stderr = run_script(
@@ -62,7 +62,7 @@ class TestUpgradeBranches(TestCaseWithFactory):
             target_tree.branch.repository._format.get_format_string(),
             'Bazaar-NG Knit Repository Format 1')
 
-        BranchUpgradeJob.create(target)
+        BranchUpgradeJob.create(target, self.factory.makePerson())
         transaction.commit()
 
         retcode, stdout, stderr = run_script(

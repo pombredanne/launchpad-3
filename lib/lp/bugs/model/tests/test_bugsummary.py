@@ -752,8 +752,10 @@ class TestBugSummary(TestCaseWithFactory):
     def test_changeDistroSeriesSourcePackage(self):
         distribution = self.factory.makeDistribution()
         series = self.factory.makeDistroSeries(distribution=distribution)
-        package_a = self.factory.makeSourcePackage(distroseries=series)
-        package_b = self.factory.makeSourcePackage(distroseries=series)
+        package_a = self.factory.makeSourcePackage(
+            distroseries=series, publish=True)
+        package_b = self.factory.makeSourcePackage(
+            distroseries=series, publish=True)
         sourcepackagename_a = package_a.sourcepackagename
         sourcepackagename_b = package_b.sourcepackagename
         bug_task = self.factory.makeBugTask(target=package_a)
@@ -789,7 +791,8 @@ class TestBugSummary(TestCaseWithFactory):
                 BugSummary.sourcepackagename == sourcepackagename_b),
             0)
 
-        removeSecurityProxy(bug_task).sourcepackagename = sourcepackagename_b
+        bug_task.transitionToTarget(
+            series.getSourcePackage(sourcepackagename_b))
 
         self.assertEqual(
             self.getPublicCount(
@@ -850,7 +853,7 @@ class TestBugSummary(TestCaseWithFactory):
                 BugSummary.sourcepackagename == sourcepackagename),
             1)
 
-        removeSecurityProxy(bug_task).sourcepackagename = None
+        bug_task.transitionToTarget(series)
 
         self.assertEqual(
             self.getPublicCount(
