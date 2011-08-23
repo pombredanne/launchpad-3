@@ -8,14 +8,21 @@ Test team views.
 __metaclass__ = type
 
 import transaction
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.testing.layers import DatabaseFunctionalLayer
-
-from lp.registry.interfaces.person import TeamSubscriptionPolicy
-
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
+from lp.registry.interfaces.mailinglist import MailingListStatus
+from lp.registry.interfaces.person import (
+    PersonVisibility,
+    TeamSubscriptionPolicy,
+    )
 from lp.testing import (
     login_person,
     TestCaseWithFactory,
+    person_logged_in,
     )
 from lp.testing.views import create_initialized_view
 
@@ -141,3 +148,53 @@ class TestProposedTeamMembersEditView(TestCaseWithFactory):
         failed = (self.a_team, self.b_team)
         successful = (self.c_team, self.d_team)
         self.acceptTeam(self.super_team, successful, failed)
+
+
+class TestTeamEditView(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_can_rename_private_team(self):
+        # A private team can be renamed.
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            owner=owner, visibility=PersonVisibility.PRIVATE)
+        with person_logged_in(owner):
+            view = create_initialized_view(team, name="+edit")
+            self.assertFalse(view.form_fields['name'].for_display)
+
+    def test_cannot_rename_team_with_ppa(self):
+        # A team with a ppa cannot be renamed.
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=owner)
+        removeSecurityProxy(team).archive = self.factory.makeArchive()
+        with person_logged_in(owner):
+            view = create_initialized_view(team, name="+edit")
+            self.assertTrue(view.form_fields['name'].for_display)
+            self.assertEqual(
+                'This team cannot be renamed because it has a PPA.',
+                view.widgets['name'].hint)
+
+    def test_cannot_rename_team_with_active_mailinglist(self):
+        # A team with a mailing list which isn't purged cannot be renamed.
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=owner)
+        self.factory.makeMailingList(team, owner)
+        with person_logged_in(owner):
+            view = create_initialized_view(team, name="+edit")
+            self.assertTrue(view.form_fields['name'].for_display)
+            self.assertEqual(
+                'This team cannot be renamed because it has a mailing list.',
+                view.widgets['name'].hint)
+
+    def test_can_rename_team_with_purged_mailinglist(self):
+        # A team with a mailing list which is purged can be renamed.
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=owner)
+        team_list = self.factory.makeMailingList(team, owner)
+        team_list.deactivate()
+        team_list.transitionToStatus(MailingListStatus.INACTIVE)
+        team_list.purge()
+        with person_logged_in(owner):
+            view = create_initialized_view(team, name="+edit")
+            self.assertFalse(view.form_fields['name'].for_display)
