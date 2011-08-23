@@ -64,7 +64,17 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
         widget_config = simplejson.loads(picker_widget.json_config)
         self.assertEqual(
             'ValidTeamOwner', picker_widget.vocabulary_name)
-        self.assertEqual([], picker_widget.vocabulary_filters)
+        self.assertEqual([
+            {'name': 'ALL',
+             'title': 'All',
+             'description': 'Display all search results'},
+            {'name': 'PERSON',
+             'title': 'Person',
+             'description': 'Display search results for people only'},
+            {'name': 'TEAM',
+             'title': 'Team',
+             'description': 'Display search results for teams only'}
+            ], picker_widget.vocabulary_filters)
         self.assertEqual(self.vocabulary.displayname, widget_config['header'])
         self.assertEqual(self.vocabulary.step_title,
             widget_config['step_title'])

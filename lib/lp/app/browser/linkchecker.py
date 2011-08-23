@@ -11,6 +11,9 @@ __all__ = [
 import simplejson
 from zope.component import getUtility
 
+from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.webapp import LaunchpadView
+
 from lp.app.errors import NotFoundError
 from lp.code.errors import (
     CannotHaveLinkedBranch,
@@ -19,10 +22,12 @@ from lp.code.errors import (
     NoSuchBranch,
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
+from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import InvalidProductName
 
 
-class LinkCheckerAPI:
+class LinkCheckerAPI(LaunchpadView):
     """Validates Launchpad shortcut links.
 
     This class provides the endpoint of an Ajax call to .../+check-links.
@@ -47,6 +52,7 @@ class LinkCheckerAPI:
         # Each link type has it's own validation method.
         self.link_checkers = dict(
             branch_links=self.check_branch_links,
+            bug_links=self.check_bug_links,
         )
 
     def __call__(self):
@@ -78,6 +84,21 @@ class LinkCheckerAPI:
                 invalid_links[link] = self._error_message(e)
         return invalid_links
 
+    def check_bug_links(self, links):
+        """Checks links of the form /bugs/100"""
+        invalid_links = {}
+        user = self.user
+        bugs = [int(link[len('/bugs/'):]) for link in links]
+        if bugs:
+            params = BugTaskSearchParams(
+                user=user, status=None,
+                bug=any(*bugs))
+            bug_ids = getUtility(IBugTaskSet).searchBugIds(params)
+            invalid = set(bugs) - set(bug_ids)
+            for bug in invalid:
+                invalid_links['/bugs/' + str(bug)] = "Bug %s cannot be found" % bug
+        return invalid_links
+         
     def _error_message(self, ex):
         if hasattr(ex, 'display_message'):
             return ex.display_message

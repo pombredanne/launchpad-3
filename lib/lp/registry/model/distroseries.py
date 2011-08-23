@@ -1821,7 +1821,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if self.isDerivedSeries():
             raise DerivationError(
                 "DistroSeries %s already has parent series." % self.name)
-        initialize_series = InitializeDistroSeries(self, parents)
+        initialize_series = InitializeDistroSeries(
+            self, parents, architectures, packagesets, rebuild, overlays,
+            overlay_pockets, overlay_components)
         try:
             initialize_series.check()
         except InitializationError, e:

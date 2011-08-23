@@ -256,8 +256,10 @@ class FilteredVocabularyBase:
     def __getattribute__(self, name):
         func = object.__getattribute__(self, name)
         if (safe_hasattr(func, '__call__')
-                and func.__name__ == 'searchForTerms'):
-            def searchForTerms(
+                and (
+                    func.__name__ == 'searchForTerms'
+                    or func.__name__ == 'search')):
+            def do_search(
                     query=None, vocab_filter=None, *args, **kwargs):
                 if isinstance(vocab_filter, basestring):
                     for filter in self.supportedFilters():
@@ -268,7 +270,7 @@ class FilteredVocabularyBase:
                         raise ValueError(
                             "Invalid vocab filter value: %s" % vocab_filter)
                 return func(query, vocab_filter, *args, **kwargs)
-            return searchForTerms
+            return do_search
         else:
             return func
 
@@ -309,7 +311,7 @@ class SQLObjectVocabularyBase(FilteredVocabularyBase):
         results = self.search(query)
         return CountableIterator(results.count(), results, self.toTerm)
 
-    def search(self):
+    def search(self, query, vocab_filter=None):
         # This default implementation of searchForTerms glues together
         # the legacy API of search() with the toTerm method. If you
         # don't reimplement searchForTerms you will need to at least
@@ -422,7 +424,7 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
             raise LookupError(token)
         return self.toTerm(objs[0])
 
-    def search(self, query):
+    def search(self, query, vocab_filter=None):
         """Return terms where query is a subtring of the name."""
         if query:
             clause = CONTAINSSTRING(self._table.q.name, ensure_unicode(query))
@@ -449,7 +451,7 @@ class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
         if self.displayname is None:
             self.displayname = 'Select %s' % self.__class__.__name__
 
-    def search(self, query):
+    def search(self, query, vocab_filter=None):
         # XXX kiko 2007-01-17: this is a transitional shim; we're going to
         # get rid of search() altogether, but for now we've only done it for
         # the NamedSQLObjectHugeVocabulary.
