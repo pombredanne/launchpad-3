@@ -61,11 +61,11 @@ class TestDistroSeriesBinaryPackage(TestCaseWithFactory):
         logger = BufferLogger()
         transaction.commit()
         LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
-        DistroSeriesPackageCache.update(
+        DistroSeriesPackageCache._update(
             self.distroseries, self.binary_package_name, distro_archive_1,
             logger)
 
-        DistroSeriesPackageCache.update(
+        DistroSeriesPackageCache._update(
             self.distroseries, self.binary_package_name, distro_archive_2,
             logger)
 

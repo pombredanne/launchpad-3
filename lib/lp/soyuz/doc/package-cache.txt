@@ -61,7 +61,7 @@ table, including:
   >>> from lp.soyuz.model.distroseriespackagecache import (
   ...     DistroSeriesPackageCache)
   >>> warty = ubuntu['warty']
-  >>> warty_caches = DistroSeriesPackageCache.find(warty)
+  >>> warty_caches = DistroSeriesPackageCache._find(warty)
   >>> warty_caches.count()
   5
   >>> for name in sorted([cache.name for cache in warty_caches]):

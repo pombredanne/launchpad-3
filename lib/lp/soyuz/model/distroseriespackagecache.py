@@ -51,7 +51,7 @@ class DistroSeriesPackageCache(SQLBase):
     descriptions = StringCol(notNull=False, default=None)
 
     @classmethod
-    def find(cls, distroseries, archive=None):
+    def _find(cls, distroseries, archive=None):
         """All of the cached binary package records for this distroseries.
 
         If 'archive' is not given it will return all caches stored for the
@@ -101,7 +101,7 @@ class DistroSeriesPackageCache(SQLBase):
                 'BinaryPackageRelease']))
 
         # remove the cache entries for binary packages we no longer want
-        for cache in cls.find(distroseries, archive):
+        for cache in cls._find(distroseries, archive):
             if cache.binarypackagename not in bpns:
                 log.debug(
                     "Removing binary cache for '%s' (%s)"
@@ -109,53 +109,7 @@ class DistroSeriesPackageCache(SQLBase):
                 cache.destroySelf()
 
     @classmethod
-    def updateAll(cls, distroseries, archive, log, ztm, commit_chunk=500):
-        """Update the binary package cache
-
-        Consider all binary package names published in this distro series
-        and entirely skips updates for disabled archives
-
-        :param archive: target `IArchive`;
-        :param log: logger object for printing debug level information;
-        :param ztm:  transaction used for partial commits, every chunk of
-            'commit_chunk' updates is committed;
-        :param commit_chunk: number of updates before commit, defaults to 500.
-
-        :return the number of packages updated.
-        """
-        # Do not create cache entries for disabled archives.
-        if not archive.enabled:
-            return
-
-        # Get the set of package names to deal with.
-        bpns = IStore(BinaryPackageName).find(
-            BinaryPackageName,
-            DistroArchSeries.distroseries == distroseries,
-            BinaryPackagePublishingHistory.distroarchseriesID ==
-                DistroArchSeries.id,
-            BinaryPackagePublishingHistory.archive == archive,
-            BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                BinaryPackageRelease.id,
-            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
-            BinaryPackagePublishingHistory.dateremoved == None).config(
-                distinct=True).order_by(BinaryPackageName.name)
-
-        number_of_updates = 0
-        chunk_size = 0
-        for bpn in bpns:
-            log.debug("Considering binary '%s'" % bpn.name)
-            cls.update(distroseries, bpn, archive, log)
-            number_of_updates += 1
-            chunk_size += 1
-            if chunk_size == commit_chunk:
-                chunk_size = 0
-                log.debug("Committing")
-                ztm.commit()
-
-        return number_of_updates
-
-    @classmethod
-    def update(cls, distroseries, binarypackagename, archive, log):
+    def _update(cls, distroseries, binarypackagename, archive, log):
         """Update the package cache for a given IBinaryPackageName
 
         'log' is required, it should be a logger object able to print
@@ -212,3 +166,49 @@ class DistroSeriesPackageCache(SQLBase):
         # and update the caches
         cache.summaries = ' '.join(sorted(summaries))
         cache.descriptions = ' '.join(sorted(descriptions))
+
+    @classmethod
+    def updateAll(cls, distroseries, archive, log, ztm, commit_chunk=500):
+        """Update the binary package cache
+
+        Consider all binary package names published in this distro series
+        and entirely skips updates for disabled archives
+
+        :param archive: target `IArchive`;
+        :param log: logger object for printing debug level information;
+        :param ztm:  transaction used for partial commits, every chunk of
+            'commit_chunk' updates is committed;
+        :param commit_chunk: number of updates before commit, defaults to 500.
+
+        :return the number of packages updated.
+        """
+        # Do not create cache entries for disabled archives.
+        if not archive.enabled:
+            return
+
+        # Get the set of package names to deal with.
+        bpns = IStore(BinaryPackageName).find(
+            BinaryPackageName,
+            DistroArchSeries.distroseries == distroseries,
+            BinaryPackagePublishingHistory.distroarchseriesID ==
+                DistroArchSeries.id,
+            BinaryPackagePublishingHistory.archive == archive,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
+            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
+            BinaryPackagePublishingHistory.dateremoved == None).config(
+                distinct=True).order_by(BinaryPackageName.name)
+
+        number_of_updates = 0
+        chunk_size = 0
+        for bpn in bpns:
+            log.debug("Considering binary '%s'" % bpn.name)
+            cls._update(distroseries, bpn, archive, log)
+            number_of_updates += 1
+            chunk_size += 1
+            if chunk_size == commit_chunk:
+                chunk_size = 0
+                log.debug("Committing")
+                ztm.commit()
+
+        return number_of_updates
