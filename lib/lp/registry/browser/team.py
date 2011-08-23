@@ -272,12 +272,12 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
         # read-only mode if necessary.
         if block_renaming:
             # Group the read-only mode reasons in textual form.
-            if not has_mailing_list:
-                reason = 'has a PPA'
-            elif not has_ppa:
-                reason = 'has a mailing list'
-            else:
-                reason = 'has a mailing list and a PPA'
+            reasons = []
+            if has_mailing_list:
+                reasons.append('has a mailing list')
+            if has_ppa:
+                reasons.append('has a PPA')
+            reason = ' and '.join(reasons)
             self.widgets['name'].hint = _(
                 'This team cannot be renamed because it %s.' % reason)
 

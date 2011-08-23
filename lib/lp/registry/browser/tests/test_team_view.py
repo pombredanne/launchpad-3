@@ -176,7 +176,8 @@ class TestTeamEditView(TestCaseWithFactory):
                 view.widgets['name'].hint)
 
     def test_cannot_rename_team_with_active_mailinglist(self):
-        # A team with a mailing list which isn't purged cannot be renamed.
+        # Because renaming mailing lists is non-trivial in Mailman 2.1,
+        # renaming teams with mailing lists is prohibited.
         owner = self.factory.makePerson()
         team = self.factory.makeTeam(owner=owner)
         self.factory.makeMailingList(team, owner)
@@ -198,3 +199,19 @@ class TestTeamEditView(TestCaseWithFactory):
         with person_logged_in(owner):
             view = create_initialized_view(team, name="+edit")
             self.assertFalse(view.form_fields['name'].for_display)
+
+    def test_cannot_rename_team_with_multiple_reasons(self):
+        # Since public teams can have mailing lists and PPAs simultaneously,
+        # there will be scenarios where more than one of these conditions are
+        # actually blocking the team to be renamed.
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=owner)
+        self.factory.makeMailingList(team, owner)
+        removeSecurityProxy(team).archive = self.factory.makeArchive()
+        with person_logged_in(owner):
+            view = create_initialized_view(team, name="+edit")
+            self.assertTrue(view.form_fields['name'].for_display)
+            self.assertEqual(
+                ('This team cannot be renamed because it has a mailing list '
+                 'and has a PPA.'),
+                view.widgets['name'].hint)
