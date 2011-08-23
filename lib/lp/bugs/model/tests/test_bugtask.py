@@ -1708,8 +1708,9 @@ class TestValidateTransitionToTarget(TestCaseWithFactory):
             self.factory.makeDistributionSourcePackage(distribution=distro))
 
     def test_sourcepackage_to_sourcepackage_in_same_series_works(self):
-        sp1 = self.factory.makeSourcePackage()
-        sp2 = self.factory.makeSourcePackage(distroseries=sp1.distroseries)
+        sp1 = self.factory.makeSourcePackage(publish=True)
+        sp2 = self.factory.makeSourcePackage(distroseries=sp1.distroseries,
+                                             publish=True)
         self.assertTransitionWorks(sp1, sp2)
 
     def test_sourcepackage_to_same_series_works(self):
