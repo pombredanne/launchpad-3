@@ -119,9 +119,9 @@ class TestLinkifyingBugs(TestCase):
             "bug number 34434",
             ]
         expected_html = [
-            '<p><a href="/bugs/34434">bug 34434</a></p>',
-            '<p><a href="/bugs/34434">bugnumber 34434</a></p>',
-            '<p><a href="/bugs/34434">bug number 34434</a></p>',
+            '<p><a href="/bugs/34434" class="bug-link">bug 34434</a></p>',
+            '<p><a href="/bugs/34434" class="bug-link">bugnumber 34434</a></p>',
+            '<p><a href="/bugs/34434" class="bug-link">bug number 34434</a></p>',
             ]
         self.assertEqual(
             expected_html,
@@ -147,7 +147,7 @@ class TestLinkifyingBugs(TestCase):
     def test_explicit_bug_linkification(self):
         text = 'LP: #10'
         self.assertEqual(
-            'LP: <a href="/bugs/10">#10</a>', linkify_bug_numbers(text))
+            'LP: <a href="/bugs/10" class="bug-link">#10</a>', linkify_bug_numbers(text))
 
 
 class TestLinkifyingProtocols(TestCase):
