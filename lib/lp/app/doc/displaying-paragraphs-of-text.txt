@@ -534,4 +534,4 @@ in the link's title.
     >>> sorted(matchobj.groupdict().items())
     [('bug', 'xxxx'), ('bugnum', '2000'), ('url', None)]
     >>> FormattersAPI._linkify_substitution(matchobj)
-    '<a href="/bugs/2000">xxxx</a>'
+    '<a href="/bugs/2000" class="bug-link">xxxx</a>'
