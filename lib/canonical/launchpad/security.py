@@ -1274,12 +1274,11 @@ class EditPOTemplateDetails(AuthorizationBase):
         template = self.obj
         if template.distroseries is not None:
             # Template is on a distribution.
-            return AdminDistroSeriesTranslations(
-                template.distroseries).checkAuthenticated(user)
+            return self.forwardCheckAuthenticated(user, template.distroseries)
         else:
             # Template is on a product.
-            return AdminProductSeriesTranslations(
-                template.productseries).checkAuthenticated(user)
+            return self.forwardCheckAuthenticated(
+                user, template.productseries)
 
 
 class AddPOTemplate(OnlyRosettaExpertsAndAdmins):
