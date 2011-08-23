@@ -9,7 +9,7 @@ browsing to it.
     >>> from lp.registry.model.sourcepackage import SourcePackage
     >>> def make_source_package(distro, series, name):
     ...     distro = factory.makeDistribution(name=distro, displayname=distro)
-    ...     distroseries = factory.makeDistroRelease(
+    ...     distroseries = factory.makeDistroSeries(
     ...         name=series, distribution=distro)
     ...     sourcepackagename = factory.makeSourcePackageName(name=name)
     ...     return SourcePackage(sourcepackagename, distroseries)

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for branch collections."""
@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from datetime import datetime
-import unittest
 
 import pytz
 from zope.component import getUtility
@@ -77,7 +76,7 @@ class TestBranchCollectionAdaptation(TestCaseWithFactory):
 
     def test_distro_series(self):
         # A distro series can be adapted to a branch collection.
-        distro_series = self.factory.makeDistroRelease()
+        distro_series = self.factory.makeDistroSeries()
         collection = IBranchCollection(distro_series, None)
         self.assertIsNot(None, collection)
 
@@ -272,9 +271,9 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         # 'inDistribution' returns a new collection that only has branches
         # that are source package branches associated with distribution series
         # for the distribution specified.
-        series_one = self.factory.makeDistroRelease()
+        series_one = self.factory.makeDistroSeries()
         distro = series_one.distribution
-        series_two = self.factory.makeDistroRelease(distribution=distro)
+        series_two = self.factory.makeDistroSeries(distribution=distro)
         # Make two branches in the same distribution, but different series and
         # source packages.
         branch = self.factory.makePackageBranch(distroseries=series_one)
@@ -291,8 +290,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         # 'inDistroSeries' returns a new collection that only has branches
         # that are source package branches associated with the distribution
         # series specified.
-        series_one = self.factory.makeDistroRelease()
-        series_two = self.factory.makeDistroRelease(
+        series_one = self.factory.makeDistroSeries()
+        series_two = self.factory.makeDistroSeries(
             distribution=series_one.distribution)
         # Make two branches in the same distroseries, but different source
         # packages.
@@ -343,8 +342,8 @@ class TestBranchCollectionFilters(TestCaseWithFactory):
         # 'inDistributionSourcePackage' returns a new collection that only has
         # branches for the source package across any distroseries of the
         # distribution.
-        series_one = self.factory.makeDistroRelease()
-        series_two = self.factory.makeDistroRelease(
+        series_one = self.factory.makeDistroSeries()
+        series_two = self.factory.makeDistroSeries(
             distribution=series_one.distribution)
         package = self.factory.makeSourcePackageName()
         sourcepackage_one = self.factory.makeSourcePackage(
@@ -1204,7 +1203,3 @@ class TestBranchCollectionOwnerCounts(TestCaseWithFactory):
             *DEFAULT_BRANCH_STATUS_IN_LISTING)
         person_count, team_count = collection.ownerCounts()
         self.assertEqual(1, person_count)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

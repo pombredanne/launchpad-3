@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from bzrlib.revision import Revision
 from zope.component import getUtility
 from zope.event import notify
@@ -118,7 +116,7 @@ class TestBugLinking(BzrSyncTestCase):
     def makeFixtures(self):
         super(TestBugLinking, self).makeFixtures()
         self.bug1 = self.factory.makeBug()
-        sp = self.factory.makeSourcePackage()
+        sp = self.factory.makeSourcePackage(publish=True)
         self.bug1.addTask(self.bug1.owner, sp)
         dsp = self.factory.makeDistributionSourcePackage()
         self.bug1.addTask(self.bug1.owner, dsp)
@@ -282,7 +280,3 @@ class TestSubscription(TestCaseWithFactory):
             db_branch, tree.branch, db_revision, bzr_revision, revno))
         bug_branch = getUtility(IBugBranchSet).getBugBranch(bug, db_branch)
         self.assertIsNot(None, bug_branch)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

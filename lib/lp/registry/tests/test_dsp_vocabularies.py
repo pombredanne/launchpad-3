@@ -151,7 +151,9 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         dsp = spph.sourcepackagerelease.distrosourcepackage
         vocabulary = DistributionSourcePackageVocabulary(dsp)
         term = vocabulary.toTerm(dsp)
-        self.assertEqual('Not yet built.', term.title)
+        expected_title = '%s/%s Not yet built.' % (
+            dsp.distribution.name, spph.source_package_name)
+        self.assertEqual(expected_title, term.title)
 
     def test_toTerm_built_single_binary_title(self):
         # The binary package name appears in the term's value.
@@ -162,7 +164,10 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
             distribution=bpph.distroseries.distribution)
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         term = vocabulary.toTerm(spr.sourcepackagename)
-        self.assertEqual(bpph.binary_package_name, term.title)
+        expected_title = '%s/%s %s' % (
+            dsp.distribution.name, spr.sourcepackagename.name,
+            bpph.binary_package_name)
+        self.assertEqual(expected_title, term.title)
 
     def test_toTerm_built_multiple_binary_title(self):
         # All of the binary package names appear in the term's value.
@@ -181,7 +186,10 @@ class TestDistributionSourcePackageVocabulary(TestCaseWithFactory):
         dsp = spr.distrosourcepackage
         vocabulary = DistributionSourcePackageVocabulary(dsp.distribution)
         term = vocabulary.toTerm(spr.sourcepackagename)
-        self.assertEqual(', '.join(expected_names), term.title)
+        expected_title = '%s/%s %s' % (
+            dsp.distribution.name, spph.source_package_name,
+            ', '.join(expected_names))
+        self.assertEqual(expected_title, term.title)
 
     def test_getTermByToken_error(self):
         # An error is raised if the token does not match a published DSP.

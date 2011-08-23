@@ -17,6 +17,7 @@ from zope.app.form.browser.itemswidgets import (
 from zope.schema.interfaces import IChoice
 
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from canonical.lazr.utils import safe_hasattr
 from lp.app.browser.stringformatter import FormattersAPI
 from lp.app.browser.vocabulary import get_person_picker_entry_metadata
@@ -138,6 +139,7 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
             show_remove_button=self.show_remove_button,
             show_assign_me_button=self.show_assign_me_button,
             vocabulary_name=self.vocabulary_name,
+            vocabulary_filters=self.vocabulary_filters,
             input_element=self.input_id)
 
     @property
@@ -154,6 +156,35 @@ class VocabularyPickerWidget(SingleDataHelper, ItemsWidgetBase):
                  so it needs to be contained in a single HTML element.
         """
         return None
+
+    @property
+    def vocabulary_filters(self):
+        """The name of the field's vocabulary."""
+        choice = IChoice(self.context)
+        if choice.vocabulary is None:
+            # We need the vocabulary to get the supported filters.
+            raise ValueError(
+                "The %r.%s interface attribute doesn't have its "
+                "vocabulary specified."
+                % (choice.context, choice.__name__))
+        # Only IHugeVocabulary's have filters.
+        if not IHugeVocabulary.providedBy(choice.vocabulary):
+            return []
+        supported_filters = choice.vocabulary.supportedFilters()
+        # If we have no filters or just the ALL filter, then no filtering
+        # support is required.
+        filters = []
+        if (len(supported_filters) == 0 or
+           (len(supported_filters) == 1
+            and supported_filters[0].name == 'ALL')):
+            return filters
+        for filter in supported_filters:
+            filters.append({
+                'name': filter.name,
+                'title': filter.title,
+                'description': filter.description,
+                })
+        return filters
 
     @property
     def vocabulary_name(self):

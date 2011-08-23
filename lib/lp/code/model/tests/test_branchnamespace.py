@@ -1,17 +1,14 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `IBranchNamespace` implementations."""
 
 __metaclass__ = type
 
-import unittest
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators import LaunchpadValidationError
 from lp.code.enums import (
     BranchLifecycleStatus,
@@ -158,7 +155,7 @@ class NamespaceMixin:
     def test_isNameUsed_yes(self):
         namespace = self.getNamespace()
         branch_name = self.factory.getUniqueString()
-        branch = namespace.createBranch(
+        namespace.createBranch(
             BranchType.HOSTED, branch_name,
             removeSecurityProxy(namespace).owner)
         self.assertEqual(True, namespace.isNameUsed(branch_name))
@@ -423,14 +420,14 @@ class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
             person = self.factory.makePerson()
         return get_branch_namespace(
             person=person,
-            distroseries=self.factory.makeDistroRelease(),
+            distroseries=self.factory.makeDistroSeries(),
             sourcepackagename=self.factory.makeSourcePackageName())
 
     def test_name(self):
         # A package namespace has branches that start with
         # ~foo/ubuntu/spicy/packagename.
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         namespace = PackageNamespace(
             person, SourcePackage(sourcepackagename, distroseries))
@@ -443,7 +440,7 @@ class TestPackageNamespace(TestCaseWithFactory, NamespaceMixin):
     def test_owner(self):
         # The person passed to a package namespace is the owner.
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         namespace = PackageNamespace(
             person, SourcePackage(sourcepackagename, distroseries))
@@ -466,7 +463,7 @@ class TestPackageNamespacePrivacy(TestCaseWithFactory):
     def test_subscriber(self):
         # There are no implicit subscribers for a personal namespace.
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         namespace = PackageNamespace(
             person, SourcePackage(sourcepackagename, distroseries))
@@ -495,7 +492,7 @@ class TestNamespaceSet(TestCaseWithFactory):
 
     def test_get_package(self):
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         namespace = get_branch_namespace(
             person=person, distroseries=distroseries,
@@ -557,7 +554,7 @@ class TestNamespaceSet(TestCaseWithFactory):
 
     def test_lookup_package_no_source_package(self):
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         self.assertRaises(
             NoSuchSourcePackageName, lookup_branch_namespace,
             '~%s/%s/%s/no-such-spn' % (
@@ -585,7 +582,7 @@ class TestNamespaceSet(TestCaseWithFactory):
         # ~user/no-such-product and ~user/no-such-distro, so we just raise
         # NoSuchProduct, which is perhaps the most common case.
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         self.assertRaises(
             NoSuchProduct, lookup_branch_namespace,
             '~%s/%s' % (person.name, distroseries.distribution.name))
@@ -594,7 +591,7 @@ class TestNamespaceSet(TestCaseWithFactory):
         # Given a too-short path to a package branch namespace, lookup will
         # raise an InvalidNamespace error.
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         self.assertInvalidName(
             '~%s/%s/%s' % (
                 person.name, distroseries.distribution.name,
@@ -616,7 +613,7 @@ class TestNamespaceSet(TestCaseWithFactory):
     def test_lookup_long_name_sourcepackage(self):
         # Given a too-long name, lookup will raise an InvalidNamespace error.
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
         self.assertInvalidName(
             '~%s/%s/%s/%s/foo' % (
@@ -798,7 +795,7 @@ class TestNamespaceSet(TestCaseWithFactory):
 
     def test_traverse_sourcepackagename_not_found(self):
         person = self.factory.makePerson()
-        distroseries = self.factory.makeDistroRelease()
+        distroseries = self.factory.makeDistroSeries()
         distro = distroseries.distribution
         segments = iter(
             [person.name, distro.name, distroseries.name, 'no-such-package',
@@ -862,7 +859,7 @@ class BaseCanCreateBranchesMixin:
         # A member of a team is able to create a branch on this namespace.
         # This is a team junk branch.
         person = self.factory.makePerson()
-        team = self.factory.makeTeam(owner=person)
+        self.factory.makeTeam(owner=person)
         namespace = self._getNamespace(person)
         self.assertTrue(namespace.canCreateBranches(person))
 
@@ -870,7 +867,7 @@ class BaseCanCreateBranchesMixin:
         # A person who is not part of the team cannot create branches for the
         # personal team target.
         person = self.factory.makePerson()
-        team = self.factory.makeTeam(owner=person)
+        self.factory.makeTeam(owner=person)
         namespace = self._getNamespace(person)
         self.assertFalse(
             namespace.canCreateBranches(self.factory.makePerson()))
@@ -1950,7 +1947,3 @@ class TestBranchNamespaceMoveBranch(TestCaseWithFactory):
         self.assertEqual(team, branch.owner)
         # And for paranoia.
         self.assertNamespacesEqual(namespace, branch.namespace)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -53,9 +53,7 @@ from lp.soyuz.interfaces.distroarchseries import (
     IDistroArchSeriesSet,
     IPocketChroot,
     )
-from lp.soyuz.interfaces.publishing import (
-    ICanPublishPackages,
-    )
+from lp.soyuz.interfaces.publishing import ICanPublishPackages
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.distroarchseriesbinarypackage import (
@@ -203,7 +201,7 @@ class DistroArchSeries(SQLBase):
             find_spec = (
                 BinaryPackageRelease,
                 BinaryPackageName,
-                BinaryPackageName, # dummy value
+                BinaryPackageName,  # dummy value
                 )
         archives = self.distroseries.distribution.getArchiveIDList()
 
@@ -308,7 +306,7 @@ class DistroArchSeries(SQLBase):
 
         published = BinaryPackagePublishingHistory.select(
             " AND ".join(queries),
-            clauseTables = ['BinaryPackageRelease'],
+            clauseTables=['BinaryPackageRelease'],
             orderBy=['-id'])
 
         return shortlist(published)
@@ -383,8 +381,8 @@ class DistroArchSeriesSet:
         used simply to keep trusted code DRY.
 
         :param architectures: an iterable of architectures to process.
-        :param arch_tag: an optional architecture tag with which to filter
-            the results.
+        :param arch_tag: an optional architecture tag or a tag list with
+            which to filter the results.
         :return: a list of the ids of the architectures matching arch_tag.
         """
         # If arch_tag was not provided, just return the ids without
@@ -392,8 +390,10 @@ class DistroArchSeriesSet:
         if arch_tag is None:
             return [arch.id for arch in architectures]
         else:
+            if not isinstance(arch_tag, (list, tuple)):
+                arch_tag = (arch_tag, )
             return [arch.id for arch in architectures
-                        if arch_tag == arch.architecturetag]
+                        if arch.architecturetag in arch_tag]
 
 
 class PocketChroot(SQLBase):
@@ -409,4 +409,3 @@ class PocketChroot(SQLBase):
                      notNull=True)
 
     chroot = ForeignKey(dbName='chroot', foreignKey='LibraryFileAlias')
-

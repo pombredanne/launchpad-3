@@ -337,10 +337,11 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
         super(DistributionSourcePackageView, self).initialize()
         expose_structural_subscription_data_to_js(
             self.context, self.request, self.user)
-        IJSONRequestCache(self.request).objects['archive_context_url'] = (
-            canonical_url(
-                self.context.latest_overall_publication.archive,
-                path_only_if_possible=True))
+
+        pub = self.context.latest_overall_publication
+        if pub:
+            IJSONRequestCache(self.request).objects['archive_context_url'] = (
+                canonical_url(pub.archive, path_only_if_possible=True))
 
     @property
     def label(self):

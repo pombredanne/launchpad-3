@@ -50,15 +50,15 @@
         tal:condition="not:request/features/soyuz.derived_series_ui.enabled">
 
     <dl>
-      <dt>Derives from:</dt>
+      <dt>Successor to:</dt>
       <dd>
         <a
           tal:condition="context/previous_series"
           tal:attributes="href context/previous_series/fmt:url"
           tal:content="context/previous_series/named_version" />
         <tal:none condition="not: context/previous_series">
-          <tal:name replace="context/named_version"/> is not derived from
-          another series.
+          <tal:name replace="context/named_version"/>
+          did not succeed any earlier series.
         </tal:none>
       </dd>
     </dl>

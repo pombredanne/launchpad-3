@@ -136,7 +136,7 @@ from lp.code.model.revision import (
     RevisionAuthor,
     )
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
-from lp.codehosting.bzrutils import safe_open
+from lp.codehosting.safe_open import safe_open
 from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
@@ -358,10 +358,10 @@ class Branch(SQLBase, BzrIdentityMixin):
     @property
     def landing_candidates(self):
         """See `IBranch`."""
-        return BranchMergeProposal.select("""
-            BranchMergeProposal.target_branch = %s AND
-            BranchMergeProposal.queue_status NOT IN %s
-            """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
+        non_final = tuple(
+            set(BranchMergeProposalStatus.items) -
+            set(BRANCH_MERGE_PROPOSAL_FINAL_STATES))
+        return self.getMergeProposals(status=non_final)
 
     @property
     def dependent_branches(self):
@@ -372,7 +372,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
     def getMergeProposals(self, status=None, visible_by_user=None,
-                          merged_revnos=None):
+                          merged_revnos=None, eager_load=False):
         """See `IBranch`."""
         if not status:
             status = (
@@ -382,7 +382,8 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
         return collection.getMergeProposals(
-            status, target_branch=self, merged_revnos=merged_revnos)
+            status, target_branch=self, merged_revnos=merged_revnos,
+            eager_load=eager_load)
 
     def isBranchMergeable(self, target_branch):
         """See `IBranch`."""
@@ -1151,10 +1152,10 @@ class Branch(SQLBase, BzrIdentityMixin):
             BranchJob.job_type == BranchJobType.UPGRADE_BRANCH)
         return jobs.count() > 0
 
-    def requestUpgrade(self):
+    def requestUpgrade(self, requester):
         """See `IBranch`."""
         from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
-        return getUtility(IBranchUpgradeJobSource).create(self)
+        return getUtility(IBranchUpgradeJobSource).create(self, requester)
 
     def _checkBranchVisibleByUser(self, user):
         """Is *this* branch visible by the user.
