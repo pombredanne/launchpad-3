@@ -209,8 +209,10 @@ First, update the cache tables for Celso's PPA:
   DEBUG Considering source 'pmount'
   ...
 
-  >>> warty.updateCompletePackageCache(
-  ...    archive=cprov.archive, ztm=LaunchpadZopelessLayer.txn,
+  >>> from lp.soyuz.model.distroseriespackagecache import (
+  ...     DistroSeriesPackageCache)
+  >>> DistroSeriesPackageCache.updateAll(
+  ...    warty, archive=cprov.archive, ztm=LaunchpadZopelessLayer.txn,
   ...    log=FakeLogger())
   DEBUG Considering binary 'mozilla-firefox'
   ...

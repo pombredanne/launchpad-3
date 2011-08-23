@@ -260,8 +260,9 @@ cache will be added to it.
 
 We can invoke the cache updater directly on IDistroSeries:
 
-  >>> updates = warty.updateCompletePackageCache(
-  ...    archive=ubuntu.main_archive, ztm=transaction, log=FakeLogger())
+  >>> updates = DistroSeriesPackageCache.updateAll(
+  ...    warty, archive=ubuntu.main_archive, ztm=transaction,
+  ...    log=FakeLogger())
   DEBUG Considering binary 'at'
   ...
   DEBUG Considering binary 'cdrkit'
@@ -362,8 +363,9 @@ same queries work, pointing to Celso's PPA.
   DEBUG Considering source 'pmount'
   ...
 
-  >>> binary_updates = warty.updateCompletePackageCache(
-  ...    archive=cprov.archive, ztm=transaction, log=FakeLogger())
+  >>> binary_updates = DistroSeriesPackageCache.updateAll(
+  ...    warty, archive=cprov.archive, ztm=transaction,
+  ...    log=FakeLogger())
   DEBUG Considering binary 'mozilla-firefox'
   ...
 
@@ -708,8 +710,8 @@ First, we rebuild and examinate the caches for Celso's PPA.
     ...     for series in ubuntu.series:
     ...         DistroSeriesPackageCache.removeOld(
     ...             series, archive=archive, log=logger)
-    ...         series.updateCompletePackageCache(
-    ...             archive=archive, ztm=transaction, log=logger)
+    ...         DistroSeriesPackageCache.updateAll(
+    ...             series, archive=archive, ztm=transaction, log=logger)
     ...     archive.updateArchiveCache()
     >>> def print_caches(archive):
     ...     source_caches = DistributionSourcePackageCache.selectBy(

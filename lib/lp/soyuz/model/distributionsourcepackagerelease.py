@@ -43,7 +43,6 @@ from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.distroseriesbinarypackage import DistroSeriesBinaryPackage
-from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,
@@ -165,6 +164,8 @@ class DistributionSourcePackageRelease:
         #avoid circular imports.
         from lp.registry.model.distroseries import DistroSeries
         from lp.soyuz.model.distroarchseries import DistroArchSeries
+        from lp.soyuz.model.distroseriespackagecache import (
+            DistroSeriesPackageCache)
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         archive_ids = list(self.distribution.all_distro_archive_ids)
         result_row = (

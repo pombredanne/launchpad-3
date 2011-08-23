@@ -739,30 +739,6 @@ class IDistroSeriesPublic(
         distribution 'main_archive'.
         """
 
-    def updateCompletePackageCache(archive, log, ztm, commit_chunk=500):
-        """Update the binary package cache
-
-        Consider all binary package names published in this distro series
-        and entirely skips updates for disabled archives
-
-        :param archive: target `IArchive`;
-        :param log: logger object for printing debug level information;
-        :param ztm:  transaction used for partial commits, every chunk of
-            'commit_chunk' updates is committed;
-        :param commit_chunk: number of updates before commit, defaults to 500.
-
-        :return the number of packages updated.
-        """
-
-    def updatePackageCache(binarypackagename, archive, log):
-        """Update the package cache for a given IBinaryPackageName
-
-        'log' is required, it should be a logger object able to print
-        DEBUG level messages.
-        'ztm' is the current trasaction manager used for partial commits
-        (in full batches of 100 elements)
-        """
-
     def searchPackages(text):
         """Search through the packge cache for this distroseries and return
         DistroSeriesBinaryPackage objects that match the given text.

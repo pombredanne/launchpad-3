@@ -67,8 +67,8 @@ class PackageCacheUpdater(LaunchpadCronScript):
         DistroSeriesPackageCache.removeOld(
             distroseries, archive=archive, log=self.logger)
 
-        updates = distroseries.updateCompletePackageCache(
-            archive=archive, ztm=self.txn, log=self.logger)
+        updates = DistroSeriesPackageCache.updateAll(
+            distroseries, archive=archive, ztm=self.txn, log=self.logger)
 
         if updates > 0:
             self.txn.commit()
