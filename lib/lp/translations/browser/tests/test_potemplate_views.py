@@ -32,6 +32,29 @@ class TestPOTemplateEditViewValidation(TestCaseWithFactory):
         data.update(**kwargs)
         return data
 
+    def test_field_names_productseries(self):
+        # A product series template has one set of field names that include
+        # the template name.
+        potemplate = self.factory.makePOTemplate()
+        view = POTemplateEditView(potemplate, LaunchpadTestRequest())
+        self.assertContentEqual(
+            ['name', 'translation_domain', 'description', 'priority',
+             'path', 'iscurrent'],
+            view.field_names)
+
+    def test_field_names_sourcepackage(self):
+        # A sourcepackage template has two more fields compared to the
+        # product series templates.
+        sourcepackage = self.factory.makeSourcePackage()
+        potemplate = self.factory.makePOTemplate(
+            distroseries=sourcepackage.distroseries,
+            sourcepackagename=sourcepackage.sourcepackagename)
+        view = POTemplateEditView(potemplate, LaunchpadTestRequest())
+        self.assertContentEqual(
+            ['name', 'translation_domain', 'description', 'priority',
+             'path', 'iscurrent', 'sourcepackagename', 'languagepack'],
+            view.field_names)
+
     def test_detects_invalid_names(self):
         # A template name must be satisfying the valid_name constraint.
         invalid_name = 'name!'
