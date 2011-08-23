@@ -621,12 +621,13 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
                                  productseries != self.context.productseries)
         spn_changed = (sourcepackagename != self.context.sourcepackagename)
         similar_templates = self._validateTargetAndGetTemplates(data)
-        self.validateName(
-            name, similar_templates, sourcepackage_changed,
-            productseries_changed)
-        self.validateDomain(
-            data.get('translation_domain'), similar_templates,
-            sourcepackage_changed, productseries_changed)
+        if similar_templates is not None:
+            self.validateName(
+                name, similar_templates, sourcepackage_changed,
+                productseries_changed)
+            self.validateDomain(
+                data.get('translation_domain'), similar_templates,
+                sourcepackage_changed, productseries_changed)
 
         priority = data.get('priority')
         if priority is None:
