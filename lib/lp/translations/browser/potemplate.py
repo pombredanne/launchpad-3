@@ -63,9 +63,9 @@ from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData,
     ILaunchBag,
     )
-from canonical.launchpad.webapp.launchpadform import ReturnToReferrerMixin
 from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
+from lp.app.browser.launchpadform import ReturnToReferrerMixin
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.enums import (
     service_uses_launchpad,
@@ -571,6 +571,27 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
                 ])
         return field_names
 
+    @property
+    def _return_url(self):
+        """See `LaunchpadFormView`."""
+        # The referer header we want is only available before the view's
+        # form submits to itself. This field is a hidden input in the form.
+        referrer = self.request.form.get('_return_url')
+        returnChanged = False
+        if referrer is None:
+            # "referer" is misspelled in the HTTP specification.
+            referrer = self.request.getHeader('referer')
+            if referrer is not None and '/+pots/' in referrer:
+                returnChanged = True
+
+        if (referrer is not None
+            and not returnChanged
+            and referrer.startswith(self.request.getApplicationURL())
+            and referrer != self.request.getHeader('location')):
+            return referrer
+        else:
+            return canonical_url(self.context)
+
     @action(_('Change'), name='change')
     def change_action(self, action, data):
         context = self.context
@@ -609,7 +630,7 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
                 'or digits 0-9, and other than those characters, can only '
                 'contain "-", "+" and "." characters.')
 
-        distroseries = data.get('distroseries', None)
+        distroseries = data.get('distroseries', self.context.distroseries)
         sourcepackagename = data.get(
             'sourcepackagename', self.context.sourcepackagename)
         productseries = data.get('productseries', None)
