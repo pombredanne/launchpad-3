@@ -70,7 +70,6 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     ITeam,
     )
-from lp.registry.model.person import AlreadyConvertedException
 
 
 class LoginTokenSetNavigation(GetitemNavigation):
@@ -242,6 +241,8 @@ class ClaimTeamView(
 
     @action(_('Continue'), name='confirm')
     def confirm_action(self, action, data):
+        # Avoid circular imports.
+        from lp.registry.model.person import AlreadyConvertedException
         try:
             self.claimed_profile.convertToTeam(
                 team_owner=self.context.requester)
