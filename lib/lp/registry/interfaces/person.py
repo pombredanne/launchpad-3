@@ -2117,10 +2117,15 @@ class IPersonSet(Interface):
         Return None if there is no person with the given email address.
         """
 
-    def getByEmails(addresses, show_hidden=True):
-        """Return a dict of `IPerson`, `IEmailAddress` for people with
-        the given email address. If show_hidden is False, only people who
-        have opted to show their address will be returned."""
+    def getByEmails(emails, include_hidden=True):
+        """Search for people with the given email addresses.
+        
+        :param emails: A list of email addresses.
+        :param include_hidden: Include people who have opted to hide their
+            email. Defaults to True.
+
+        :return: A dict of `IPerson`, `IEmailAddress`.
+        """
 
     def getByName(name, ignore_merged=True):
         """Return the person with the given name, ignoring merged persons if

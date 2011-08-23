@@ -308,7 +308,7 @@ class DistributionSourcePackageBaseView(LaunchpadView):
                 [(email.email, person) for (email, person) in
                     getUtility(IPersonSet).getByEmails(
                         extract_email_addresses(the_changelog),
-                        show_hidden=False)])
+                        include_hidden=False)])
         else:
             self._person_data = None
         # Collate diffs for relevant SourcePackageReleases

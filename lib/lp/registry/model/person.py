@@ -3340,13 +3340,15 @@ class PersonSet:
         """See `IPersonSet`."""
         return self.getByEmails([email]).one()[0]
 
-    def getByEmails(self, addresses, show_hidden=True):
+    def getByEmails(self, emails, include_hidden=True):
         """See `IPersonSet`."""
+        if not emails:
+            return EmptyResultSet()
         addresses = [
             ensure_unicode(address.lower().strip())
             for address in addresses]
         extra_query = True
-        if not show_hidden:
+        if not include_hidden:
             extra_query = Person.hide_email_addresses == True
         return IStore(Person).using(
             Person,
