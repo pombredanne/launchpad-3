@@ -150,7 +150,7 @@ class TestOverrides(TestCaseWithFactory):
         self.assertThat(recorder, HasQueryCount(Equals(4)))
 
     def test_getComponentOverride_default_name(self):
-        # getComponentOverride returns the default component namewhen an
+        # getComponentOverride returns the default component name when an
         # unknown component name is passed.
         component_name = UnknownOverridePolicy.getComponentOverride('no-name')
 

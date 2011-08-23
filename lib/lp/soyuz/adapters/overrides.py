@@ -140,14 +140,14 @@ class IOverridePolicy(Interface):
     """
 
     def calculateSourceOverrides(archive, distroseries, pocket, sources,
-                                 sources_component=None):
+                                 source_component=None):
         """Calculate source overrides.
 
         :param archive: The target `IArchive`.
         :param distroseries: The target `IDistroSeries`.
         :param pocket: The target `PackagePublishingPocket`.
         :param sources: A tuple of `ISourcePackageName`s.
-        :param sources_component: The sources' `IComponent` (optional).
+        :param source_component: The sources' `IComponent` (optional).
 
         :return: A list of `ISourceOverride`
         """
@@ -173,7 +173,7 @@ class BaseOverridePolicy:
     implements(IOverridePolicy)
 
     def calculateSourceOverrides(self, archive, distroseries, pocket,
-                                 sources, sources_component=None):
+                                 sources, source_component=None):
         raise NotImplementedError()
 
     def calculateBinaryOverrides(self, archive, distroseries, pocket,
@@ -191,7 +191,7 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
     """
 
     def calculateSourceOverrides(self, archive, distroseries, pocket, spns,
-                                 sources_component=None):
+                                 source_component=None):
         # Avoid circular imports.
         from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
@@ -274,13 +274,6 @@ class FromExistingOverridePolicy(BaseOverridePolicy):
             for name, das, component, section, priority in already_published]
 
 
-DEBIAN_COMPONENT_OVERRIDE_MAP = {
-    'contrib': 'multiverse',
-    'non-free': 'multiverse',
-    }
-DEFAULT_OVERRIDE_COMPONENT = 'universe'
-
-
 class UnknownOverridePolicy(BaseOverridePolicy):
     """Override policy that returns defaults.
 
@@ -298,24 +291,31 @@ class UnknownOverridePolicy(BaseOverridePolicy):
     is 'main' but should not be in main for Ubuntu.
     """
 
+    DEBIAN_COMPONENT_OVERRIDE_MAP = {
+        'contrib': 'multiverse',
+        'non-free': 'multiverse',
+        }
+
+    DEFAULT_OVERRIDE_COMPONENT = 'universe'
+
     @classmethod
     def getComponentOverride(cls, component=None, return_component=False):
         # component can be a Component object or a component name.
         if isinstance(component, Component):
             component = component.name
-        override_component_name = DEBIAN_COMPONENT_OVERRIDE_MAP.get(
-            component, DEFAULT_OVERRIDE_COMPONENT)
+        override_component_name = cls.DEBIAN_COMPONENT_OVERRIDE_MAP.get(
+            component, cls.DEFAULT_OVERRIDE_COMPONENT)
         if return_component:
             return getUtility(IComponentSet)[override_component_name]
         else:
             return override_component_name
 
     def calculateSourceOverrides(self, archive, distroseries, pocket,
-                                 sources, sources_component=None):
+                                 sources, source_component=None):
         default_component = (
             archive.default_component or
             UnknownOverridePolicy.getComponentOverride(
-                sources_component, return_component=True))
+                source_component, return_component=True))
         return [
             SourceOverride(source, default_component, None)
             for source in sources]
@@ -338,16 +338,16 @@ class UbuntuOverridePolicy(FromExistingOverridePolicy,
     """
 
     def calculateSourceOverrides(self, archive, distroseries, pocket,
-                                 sources, sources_component=None):
+                                 sources, source_component=None):
         total = set(sources)
         overrides = FromExistingOverridePolicy.calculateSourceOverrides(
-            self, archive, distroseries, pocket, sources, sources_component)
+            self, archive, distroseries, pocket, sources, source_component)
         existing = set(override.source_package_name for override in overrides)
         missing = total.difference(existing)
         if missing:
             unknown = UnknownOverridePolicy.calculateSourceOverrides(
                 self, archive, distroseries, pocket, missing,
-                sources_component)
+                source_component)
             overrides.extend(unknown)
         return overrides
 
