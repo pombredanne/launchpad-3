@@ -13,6 +13,7 @@ __all__ = [
 __metaclass__ = type
 
 from cStringIO import StringIO
+import errno
 import os
 import shutil
 import signal
@@ -45,7 +46,7 @@ from mercurial.hgweb import (
     )
 from mercurial.localrepo import localrepository
 import subvertpy.ra
-import svn_oo
+import subvertpy.repos
 
 from lp.services.log.logger import BufferLogger
 
@@ -96,7 +97,7 @@ class SubversionServer(Server):
 
     def createRepository(self, path):
         """Create a Subversion repository at `path`."""
-        svn_oo.Repository.Create(path, BufferLogger())
+        subvertpy.repos.create(path)
 
     def get_url(self):
         """Return a URL to the Subversion repository."""
@@ -114,28 +115,32 @@ class SubversionServer(Server):
             with open(conf_path , 'w') as conf_file:
                 conf_file.write('[general]\nanon-access = write\n')
             self._svnserve = subprocess.Popen(
-                ['svnserve', '--daemon', '--foreground', '--root',
-                 self.repository_path])
+                ['svnserve', '--daemon', '--foreground', '--threads',
+                 '--root', self.repository_path])
             delay = 0.1
             for i in range(10):
                 try:
-                    ra = self._get_ra(self.get_url())
-                except subvertpy.SubversionException, e:
-                    if 'Connection refused' in str(e):
+                    self._get_ra(self.get_url())
+                except OSError, e:
+                    if e.errno == errno.ECONNREFUSED:
                         time.sleep(delay)
                         delay *= 1.5
                         continue
                 else:
                     break
             else:
+                self._kill_svnserve()
                 raise AssertionError(
                     "svnserve didn't start accepting connections")
+
+    def _kill_svnserve(self):
+        os.kill(self._svnserve.pid, signal.SIGINT)
+        self._svnserve.communicate()
 
     def stop_server(self):
         super(SubversionServer, self).stop_server()
         if self._use_svn_serve:
-            os.kill(self._svnserve.pid, signal.SIGINT)
-            self._svnserve.communicate()
+            self._kill_svnserve()
 
     def makeBranch(self, branch_name, tree_contents):
         """Create a branch on the Subversion server called `branch_name`.
