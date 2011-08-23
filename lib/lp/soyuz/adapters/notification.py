@@ -596,7 +596,7 @@ def is_auto_sync_upload(spr, bprs, pocket, changed_by_email):
         pocket != PackagePublishingPocket.SECURITY)
 
 
-def fetch_information(spr, bprs, changes):
+def fetch_information(spr, bprs, changes, previous_version=None):
     changedby = None
     changedby_displayname = None
     maintainer = None
