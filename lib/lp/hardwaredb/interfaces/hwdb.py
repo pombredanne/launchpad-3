@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -964,7 +964,7 @@ class IHWDeviceSet(Interface):
         matches.
         """
 
-    def getByID(self, id):
+    def getByID(id):
         """Return an IHWDevice record with the given database ID.
 
         :param id: The database ID.
@@ -1283,38 +1283,38 @@ class IHWDBApplication(ILaunchpadApplication):
             required=False),
         architecture=TextLine(
             title=u'A processor architecture',
-            description=
+            description=(
                 u'If specified, the result set is limited to sumbissions '
-                'made for a specific architecture.',
+                'made for a specific architecture.'),
             required=False),
         owner=Reference(
             IPerson,
             title=u'Person',
-            description=
+            description=(
                 u'If specified, the result set is limited to sumbissions '
-                'from this person.',
+                'from this person.'),
             required=False),
         created_before=Datetime(
             title=u'Created Before',
-            description=
-                u'If specified, exclude results created after this date.',
+            description=(
+                u'If specified, exclude results created after this date.'),
             required=False),
         created_after=Datetime(
             title=u'Created After',
-            description=
+            description=(
                 u'If specified, exclude results created before or on '
-                'this date.',
+                'this date.'),
             required=False),
         submitted_before=Datetime(
             title=u'Created Before',
-            description=
-                u'If specified, exclude results submitted after this date.',
+            description=(
+                u'If specified, exclude results submitted after this date.'),
             required=False),
         submitted_after=Datetime(
             title=u'Created After',
-            description=
+            description=(
                 u'If specified, Exclude results submitted before or on '
-                'this date.',
+                'this date.'),
             required=False))
     @call_with(user=REQUEST_USER)
     @operation_returns_collection_of(IHWSubmission)
