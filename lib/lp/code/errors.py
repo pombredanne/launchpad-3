@@ -56,6 +56,7 @@ class BadBranchMergeProposalSearchContext(Exception):
     """The context is not valid for a branch merge proposal search."""
 
 
+@error_status(httplib.BAD_REQUEST)
 class BadStateTransition(Exception):
     """The user requested a state transition that is not possible."""
 

@@ -17,6 +17,7 @@ from unittest import (
     )
 
 from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.restfulclient.errors import BadRequest
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
@@ -86,6 +87,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     ws_object,
+    WebServiceTestCase,
     )
 from lp.testing.factory import (
     GPGSigningContext,
@@ -2005,7 +2007,7 @@ class TestGetUnlandedSourceBranchRevisions(TestCaseWithFactory):
         self.assertNotIn(r1, partial_revisions)
 
 
-class TestWebservice(TestCaseWithFactory):
+class TestWebservice(WebServiceTestCase):
     """Tests for the webservice."""
 
     layer = AppServerLayer
@@ -2040,3 +2042,15 @@ class TestWebservice(TestCaseWithFactory):
             bugtask = ws_object(launchpad, db_bug.default_bugtask)
         self.assertEqual(
             [bugtask], list(bmp.getRelatedBugTasks()))
+
+    def test_setStatus_invalid_transition(self):
+        """Emit BadRequest when an invalid transition is requested."""
+        bmp = self.factory.makeBranchMergeProposal()
+        with person_logged_in(bmp.registrant):
+            bmp.resubmit(bmp.registrant)
+        transaction.commit()
+        ws_bmp = self.wsObject(bmp, user=bmp.target_branch.owner)
+        with ExpectedException(
+            BadRequest,
+            '(.|\n)*Invalid state transition for merge proposal(.|\n)*'):
+            ws_bmp.setStatus(status='Approved')
