@@ -63,6 +63,9 @@ from lp.codehosting.codeimport.worker import (
     ImportDataStore,
     ImportWorker,
     )
+from lp.codehosting.safe_open import (
+    SafeBranchOpener,
+    )
 from lp.codehosting.tests.helpers import create_branch_with_one_revision
 from lp.services.log.logger import BufferLogger
 from lp.testing import TestCase
