@@ -157,8 +157,7 @@ class MaloneHandler:
                             add_comment_to_bug = False
                         else:
                             message = bug.initial_message
-                        self.processAttachments(
-                            bug, message, signed_msg)
+                        self.processAttachments(bug, message, signed_msg)
                     elif IBugTaskEmailCommand.providedBy(command):
                         self.notify_bugtask_event(bugtask_event, bug_event)
                         bugtask, bugtask_event = command.execute(
