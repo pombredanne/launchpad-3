@@ -1090,7 +1090,7 @@ class IDistroSeriesSet(Interface):
         released == None will do no filtering on status.
         """
 
-    def priorReleasedSeries(self, distribution, prior_to_date):
+    def priorReleasedSeries(distribution, prior_to_date):
         """Find distroseries for the supplied distro  released before a
         certain date.
 
