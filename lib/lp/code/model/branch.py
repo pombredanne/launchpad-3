@@ -150,9 +150,10 @@ from lp.services.propertycache import cachedproperty
 
 class BranchMetaclass(SQLBase.__metaclass__):
     # We need to alias some class attributes.
-    def __new__(cls, name, bases, attr):
-        attr['private'] = attr['_private']
-        return SQLBase.__metaclass__.__new__(cls, name, bases, attr)
+    # Existing code uses Branch.private to reference the Storm column.
+    @property
+    def private(self):
+        return self.explicitly_private
 
 
 class Branch(SQLBase, BzrIdentityMixin):
@@ -176,26 +177,25 @@ class Branch(SQLBase, BzrIdentityMixin):
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
 
-    # We want to hide the real attribute name so we can override its read
-    # behaviour. A branch is private if any of it's stacked_on branches is
-    # private.
-    _private = BoolCol(default=False, notNull=True, dbName='private')
-
-    def __getattr__(self, key):
-        if key == 'private':
-            return self._isPrivate()
-        else:
-            raise AttributeError
+    # This attribute signifies whether *this* branch is private, irrespective
+    # of the state of any stacked on branches.
+    explicitly_private = BoolCol(
+        default=False, notNull=True, dbName='private')
 
     def __setattr__(self, key, value):
+        # Some code still initialises branches with private=...
         if key == 'private':
-            self._private = value
+            self.explicitly_private = value
         else:
             super(Branch, self).__setattr__(key, value)
 
+    @cachedproperty
+    def private(self):
+        return self._isPrivate()
+
     def _isPrivate(self, checked_branches=None):
         # A branch is private if any of it's stacked_on branches is private.
-        is_private = self._private
+        is_private = self.explicitly_private
         if not is_private and self.stacked_on is not None:
             checked_branches = checked_branches or []
             checked_branches.append(self)
@@ -205,7 +205,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     def setPrivate(self, private, user):
         """See `IBranch`."""
-        if private == self._private:
+        if private == self.explicitly_private:
             return
         # Only check the privacy policy if the user is not special.
         if (not user_has_special_branch_access(user)):
@@ -215,7 +215,7 @@ class Branch(SQLBase, BzrIdentityMixin):
                 raise BranchCannotBePrivate()
             if not private and not policy.canBranchesBePublic():
                 raise BranchCannotBePublic()
-        self.private = private
+        self.explicitly_private = private
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
@@ -1197,7 +1197,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         This method doesn't check the stacked upon branch.  That is handled by
         the `visibleByUser` method.
         """
-        if not self._private:
+        if not self.explicitly_private:
             return True
         if user is None:
             return False

@@ -248,6 +248,11 @@ class IBranchPublic(Interface):
             required=True,
             readonly=False))
 
+    explicitly_private = Bool(
+        title=_("Explicitly Private"),
+        description=_("This branch is explicitly marked private as opposed "
+        "to being private because it is stacked on a private branch."))
+
 
 class IBranchAnyone(Interface):
     """Attributes of IBranch that can be changed by launchpad.AnyPerson."""

@@ -2182,12 +2182,14 @@ class TestBranchPrivacy(TestCaseWithFactory):
         stacked_on = self.factory.makeBranch(private=True)
         branch = self.factory.makeBranch(stacked_on=stacked_on, private=False)
         self.assertTrue(branch.private)
+        self.assertFalse(branch.explicitly_private)
 
     def test_private_stacked_on_public_is_private(self):
         # A public branch stacked on a private branch is private.
         stacked_on = self.factory.makeBranch(private=False)
         branch = self.factory.makeBranch(stacked_on=stacked_on, private=True)
         self.assertTrue(branch.private)
+        self.assertTrue(branch.explicitly_private)
 
 
 class TestBranchSetPrivate(TestCaseWithFactory):
