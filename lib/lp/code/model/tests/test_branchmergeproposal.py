@@ -17,6 +17,7 @@ from unittest import (
     )
 
 from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.restfulclient.errors import BadRequest
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
@@ -86,6 +87,7 @@ from lp.testing import (
     person_logged_in,
     TestCaseWithFactory,
     ws_object,
+    WebServiceTestCase,
     )
 from lp.testing.factory import (
     GPGSigningContext,
@@ -2005,10 +2007,8 @@ class TestGetUnlandedSourceBranchRevisions(TestCaseWithFactory):
         self.assertNotIn(r1, partial_revisions)
 
 
-class TestWebservice(TestCaseWithFactory):
+class TestWebservice(WebServiceTestCase):
     """Tests for the webservice."""
-
-    layer = AppServerLayer
 
     def test_getMergeProposals_with_merged_revnos(self):
         """Specifying merged revnos selects the correct merge proposal."""
@@ -2028,15 +2028,22 @@ class TestWebservice(TestCaseWithFactory):
     def test_getRelatedBugTasks(self):
         """Test the getRelatedBugTasks API."""
         db_bmp = self.factory.makeBranchMergeProposal()
-        launchpad = launchpadlib_for(
-            'test', db_bmp.registrant, version="devel",
-            service_root=self.layer.appserver_root_url('api'))
-
-        with person_logged_in(db_bmp.registrant):
-            db_bug = self.factory.makeBug()
-            db_bmp.source_branch.linkBug(db_bug, db_bmp.registrant)
-            transaction.commit()
-            bmp = ws_object(launchpad, db_bmp)
-            bugtask = ws_object(launchpad, db_bug.default_bugtask)
+        db_bug = self.factory.makeBug()
+        db_bmp.source_branch.linkBug(db_bug, db_bmp.registrant)
+        transaction.commit()
+        bmp = self.wsObject(db_bmp)
+        bugtask = self.wsObject(db_bug.default_bugtask)
         self.assertEqual(
             [bugtask], list(bmp.getRelatedBugTasks()))
+
+    def test_setStatus_invalid_transition(self):
+        """Emit BadRequest when an invalid transition is requested."""
+        bmp = self.factory.makeBranchMergeProposal()
+        with person_logged_in(bmp.registrant):
+            bmp.resubmit(bmp.registrant)
+        transaction.commit()
+        ws_bmp = self.wsObject(bmp, user=bmp.target_branch.owner)
+        with ExpectedException(
+            BadRequest,
+            '(.|\n)*Invalid state transition for merge proposal(.|\n)*'):
+            ws_bmp.setStatus(status='Approved')
