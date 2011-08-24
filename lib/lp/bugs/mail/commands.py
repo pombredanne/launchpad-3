@@ -770,7 +770,7 @@ class StatusEmailCommand(DBSchemaEditEmailCommand):
 class ImportanceEmailCommand(DBSchemaEditEmailCommand):
     """Changes a bug task's importance."""
     dbschema = BugTaskImportance
-    RANK =  5
+    RANK = 5
 
 
 class ReplacedByImportanceCommand(EmailCommand):
