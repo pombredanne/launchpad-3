@@ -1780,6 +1780,18 @@ class BranchAddLandingTarget(TestCaseWithFactory):
             set([(person1, 'review1'), (person2, 'review2')]), votes)
 
 
+class TestGetMergeProposals(TestCaseWithFactory):
+    
+    layer = DatabaseFunctionalLayer
+
+    def test_private_branch(self):
+        branch = self.factory.makeBranch(private=True)
+        with person_logged_in(removeSecurityProxy(branch).owner):
+            mp = self.factory.makeBranchMergeProposal(target_branch=branch)
+            self.assertContentEqual([mp], branch.getMergeProposals())
+
+
+
 class BranchDateLastModified(TestCaseWithFactory):
     """Exercies the situations where date_last_modifed is udpated."""
     layer = DatabaseFunctionalLayer
