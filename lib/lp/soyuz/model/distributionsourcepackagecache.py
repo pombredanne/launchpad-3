@@ -109,45 +109,6 @@ class DistributionSourcePackageCache(SQLBase):
                 cache.destroySelf()
 
     @classmethod
-    def updateAll(cls, distro, archive, log, ztm,
-                                         commit_chunk=500):
-        """See `IDistribution`."""
-        # Do not create cache entries for disabled archives.
-        if not archive.enabled:
-            return
-
-        # Get the set of source package names to deal with.
-        spns = list(SourcePackageName.select("""
-            SourcePackagePublishingHistory.distroseries =
-                DistroSeries.id AND
-            DistroSeries.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename =
-                SourcePackageName.id AND
-            SourcePackagePublishingHistory.dateremoved is NULL
-            """ % sqlvalues(distro, archive),
-            distinct=True,
-            orderBy="name",
-            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
-                'SourcePackageRelease']))
-
-        number_of_updates = 0
-        chunk_size = 0
-        for spn in spns:
-            log.debug("Considering source '%s'" % spn.name)
-            cls._update(distro, spn, archive, log)
-            chunk_size += 1
-            number_of_updates += 1
-            if chunk_size == commit_chunk:
-                chunk_size = 0
-                log.debug("Committing")
-                ztm.commit()
-
-        return number_of_updates
-
-    @classmethod
     def _update(cls, distro, sourcepackagename, archive, log):
         """See `IDistribution`."""
 
@@ -218,3 +179,42 @@ class DistributionSourcePackageCache(SQLBase):
         cache.binpkgsummaries = ' '.join(sorted(binpkgsummaries))
         cache.binpkgdescriptions = ' '.join(sorted(binpkgdescriptions))
         cache.changelog = ' '.join(sorted(sprchangelog))
+
+    @classmethod
+    def updateAll(cls, distro, archive, log, ztm,
+                                         commit_chunk=500):
+        """See `IDistribution`."""
+        # Do not create cache entries for disabled archives.
+        if not archive.enabled:
+            return
+
+        # Get the set of source package names to deal with.
+        spns = list(SourcePackageName.select("""
+            SourcePackagePublishingHistory.distroseries =
+                DistroSeries.id AND
+            DistroSeries.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.sourcepackagerelease =
+                SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename =
+                SourcePackageName.id AND
+            SourcePackagePublishingHistory.dateremoved is NULL
+            """ % sqlvalues(distro, archive),
+            distinct=True,
+            orderBy="name",
+            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
+                'SourcePackageRelease']))
+
+        number_of_updates = 0
+        chunk_size = 0
+        for spn in spns:
+            log.debug("Considering source '%s'" % spn.name)
+            cls._update(distro, spn, archive, log)
+            chunk_size += 1
+            number_of_updates += 1
+            if chunk_size == commit_chunk:
+                chunk_size = 0
+                log.debug("Committing")
+                ztm.commit()
+
+        return number_of_updates
