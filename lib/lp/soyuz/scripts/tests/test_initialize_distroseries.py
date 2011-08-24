@@ -218,7 +218,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
                 distroseries=self.parent,
                 pocket=pocket)
             source.createMissingBuilds()
-            child = self.factory.makeDistroSeries(previous_series=self.parent)
+            child = self.factory.makeDistroSeries()
             ids = InitializeDistroSeries(child, [self.parent.id])
             self.assertRaisesWithContent(
                 InitializationError,
