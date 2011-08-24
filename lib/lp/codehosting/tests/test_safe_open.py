@@ -57,7 +57,7 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
                 self._reference_values[references[i]] = references[i+1]
             self.follow_reference_calls = []
 
-        def followReference(self, url):
+        def followReference(self, url, open_dir=None):
             self.follow_reference_calls.append(url)
             return self._reference_values[url]
 
