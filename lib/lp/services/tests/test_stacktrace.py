@@ -18,6 +18,7 @@ MY_LINE_NUMBER = 17
 
 MY_FILE_NAME = __file__[:__file__.rindex('.py')] + '.py'
 
+
 class Supplement:
     def __init__(self, kwargs):
         for key, value in kwargs.items():
@@ -35,10 +36,12 @@ def get_frame(supplement=None, info=None):
         __traceback_info__  # Quiet down the linter.
     return sys._getframe()
 
+
 class BadString:
 
     def __str__(self):
         raise ValueError()
+
 
 class TestStacktrace(TestCase):
 
@@ -271,7 +274,7 @@ class TestStacktrace(TestCase):
 
     def test_format_list_extra_errors(self):
         extracted = stacktrace.extract_stack(get_frame(supplement=dict()))
-        extracted[-1][-2]['warnings'] = object() # This should never happen.
+        extracted[-1][-2]['warnings'] = object()  # This should never happen.
         stderr = sys.stderr = StringIO.StringIO()
         self.assertFalse(stacktrace.DEBUG_EXCEPTION_FORMATTER)
         stacktrace.DEBUG_EXCEPTION_FORMATTER = True
