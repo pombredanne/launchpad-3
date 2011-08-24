@@ -45,5 +45,19 @@
     <tr class="package-build" id="build-2"></tr>
     </table>
 </script>
+<script type="text/x-template" id="requestbuilds-form-template">
+  <div class="form" id"launchpad-form-widgets">
+    <select id="field.archive" name="field.archive" size="1" >
+      <option selected="selected" value="mark/ppa">
+        PPA for Mark Shuttleworth</option> 
+    </select>
+    <input name="field.archive-empty-marker" type="hidden" value="1" />
+    <input checked="checked" type="checkbox"
+           id="field.distroseries.0" name="field.distroseries" value="3" />
+    <input checked="checked" type="checkbox"
+           id="field.distroseries.1" name="field.distroseries" value="1" />
+    <input name="field.distroseries-empty-marker" type="hidden" value="1" />
+  </div>
+</script>
 </body>
 </html>
