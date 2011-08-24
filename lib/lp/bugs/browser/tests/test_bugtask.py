@@ -158,7 +158,7 @@ class TestBugTaskView(TestCaseWithFactory):
                 source_branch = f.makeBranchTargetBranch(
                     target_branch.target, owner=owner)
                 bug.linkBranch(source_branch, owner)
-                mp = f.makeBranchMergeProposal(
+                f.makeBranchMergeProposal(
                     target_branch=target_branch,
                     registrant=owner,
                     source_branch=source_branch)
@@ -168,7 +168,6 @@ class TestBugTaskView(TestCaseWithFactory):
         self.assertThat(recorder, HasQueryCount(
             LessThan(count_with_no_branches + 45),
             ))
-
 
     def test_interesting_activity(self):
         # The interesting_activity property returns a tuple of interesting

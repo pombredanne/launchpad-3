@@ -886,11 +886,12 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         linked_branches = list(
             self.context.bug.getVisibleLinkedBranches(
                 self.user, eager_load=True))
-        # This is an optimization for when we look at the merge proposals. 
+        # This is an optimization for when we look at the merge proposals.
         # Note that, like all of these sorts of Storm cache optimizations, it
         # only helps if [launchpad] storm_cache_size in launchpad-lazr.conf is
-        # pretty big--and as of this writing, it isn't for developer instances.
-        discarded = list(getUtility(IAllBranches).getMergeProposals(
+        # pretty big--and as of this writing, it isn't for developer
+        # instances.
+        list(getUtility(IAllBranches).getMergeProposals(
             for_branches=[link.branch for link in linked_branches],
             eager_load=True))
         return linked_branches
