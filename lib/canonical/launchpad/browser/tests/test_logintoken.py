@@ -11,6 +11,7 @@ from canonical.launchpad.browser.logintoken import (
     )
 from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from canonical.launchpad.interfaces.emailaddress import EmailAddressStatus
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
@@ -51,7 +52,7 @@ class TestCancelActionOnLoginTokenViews(TestCaseWithFactory):
 
     def _testCancelAction(self, view_class, token):
         """Test the 'Cancel' action of the given view, using the given token.
-        
+
         To test that the action works, we just submit the form with that
         action, check that there are no errors and make sure that the view's
         next_url is what we expect.
@@ -63,3 +64,35 @@ class TestCancelActionOnLoginTokenViews(TestCaseWithFactory):
         self.assertEquals(actions['field.actions.cancel'].submitted(), True)
         self.assertEquals(harness.view.errors, [])
         self.assertEquals(harness.view.next_url, self.expected_next_url)
+
+
+class TestClaimTeamView(TestCaseWithFactory):
+    """Test the claiming of a team via login token."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.claimer = self.factory.makePerson(name='claimer')
+        self.claimee_email = 'claimee@example.com'
+        self.claimee = self.factory.makePerson(
+            name='claimee', email=self.claimee_email,
+            email_address_status=EmailAddressStatus.NEW)
+
+    def _claimToken(self, token):
+        harness = LaunchpadFormHarness(token, ClaimTeamView)
+        harness.submit('confirm', {})
+        return [n.message for n in harness.request.notifications]
+
+    def test_CannotClaimTwice(self):
+        token1 = getUtility(ILoginTokenSet).new(
+            requester=self.claimer, requesteremail=None,
+            email=self.claimee_email, tokentype=LoginTokenType.TEAMCLAIM)
+        token2 = getUtility(ILoginTokenSet).new(
+            requester=self.claimer, requesteremail=None,
+            email=self.claimee_email, tokentype=LoginTokenType.TEAMCLAIM)
+        msgs = self._claimToken(token1)
+        self.assertEquals([u'Team claimed successfully'], msgs)
+        msgs = self._claimToken(token2)
+        self.assertEquals(
+            [u'claimee has already been converted to a team.'], msgs)

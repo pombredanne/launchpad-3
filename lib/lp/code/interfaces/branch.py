@@ -944,6 +944,12 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         :return: A list of tuples like (date, count).
         """
 
+    def checkUpgrade():
+        """Check whether an upgrade should be performed, and raise if not.
+
+        :raises: a `CannotUpgradeBranch`, or a subclass.
+        """
+
     needs_upgrading = Attribute("Whether the branch needs to be upgraded.")
     upgrade_pending = Attribute(
         "Whether a branch has had an upgrade requested.")
