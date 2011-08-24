@@ -665,6 +665,24 @@ class PullingImportWorker(ImportWorker):
         """
         return None
 
+    def _open_dir(self, url):
+        """Simple BzrDir.open clone that only uses self.probers.
+
+        :param url: URL to open
+        :return: ControlDir instance
+        """
+        transport = get_transport(url)
+        for prober_kls in self.probers:
+            prober = prober_kls()
+            try:
+                format = prober.probe_transport(transport)
+            except NotBranchError:
+                pass
+            else:
+                return format.open(transport)
+        else:
+            raise NotBranchError("Not a valid branch")
+
     def _doImport(self):
         self._logger.info("Starting job.")
         saved_factory = bzrlib.ui.ui_factory
@@ -675,25 +693,11 @@ class PullingImportWorker(ImportWorker):
                 "Getting exising bzr branch from central store.")
             bazaar_branch = self.getBazaarBranch()
             try:
-                self._opener_policy.checkOneURL(self.source_details.url)
-            except BadUrl, e:
-                self._logger.info("Invalid URL: %s" % e)
-                return CodeImportWorkerExitCode.FAILURE_FORBIDDEN
-            transport = get_transport(self.source_details.url)
-            for prober_kls in self.probers:
-                prober = prober_kls()
-                try:
-                    format = prober.probe_transport(transport)
-                    break
-                except NotBranchError:
-                    pass
-            else:
+                remote_branch = opener.open(
+                    self.source_details.url, self._open_dir)
+            except NotBranchError:
                 self._logger.info("No branch found at remote location.")
                 return CodeImportWorkerExitCode.FAILURE_INVALID
-            remote_dir = format.open(transport)
-            try:
-                remote_branch = opener.runWithTransformFallbackLocationHookInstalled(
-                    remote_dir.open_branch)
             except BadUrl, e:
                 self._logger.info("Invalid URL: %s" % e)
                 return CodeImportWorkerExitCode.FAILURE_FORBIDDEN

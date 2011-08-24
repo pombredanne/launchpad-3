@@ -40,7 +40,8 @@ class CodeImportWorker(LaunchpadScript):
 
     def add_my_options(self):
         """See `LaunchpadScript`."""
-        self.parser.add_option("--access-policy", type="choice", metavar="ACCESS_POLICY",
+        self.parser.add_option(
+            "--access-policy", type="choice", metavar="ACCESS_POLICY",
             choices=["anything", "default"], default=None)
 
     def _init_db(self, isolation):
