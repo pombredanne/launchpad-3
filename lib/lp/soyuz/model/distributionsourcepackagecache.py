@@ -6,6 +6,8 @@
 __metaclass__ = type
 __all__ = ['DistributionSourcePackageCache', ]
 
+from operator import itemgetter
+
 from sqlobject import (
     ForeignKey,
     StringCol,
@@ -16,6 +18,10 @@ from canonical.database.sqlbase import (
     SQLBase,
     sqlvalues,
     )
+from canonical.launchpad.components.decoratedresultset import (
+    DecoratedResultSet,
+    )
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.interfaces.distributionsourcepackagecache import (
     IDistributionSourcePackageCache,
@@ -60,14 +66,14 @@ class DistributionSourcePackageCache(SQLBase):
         else:
             archives = distro.all_distro_archive_ids
 
-        caches = cls.select("""
-            distribution = %s AND
-            archive IN %s
-        """ % sqlvalues(distro, archives),
-        orderBy="name",
-        prejoins=['sourcepackagename'])
-
-        return caches
+        result = IStore(DistributionSourcePackageCache).find(
+            (DistributionSourcePackageCache, SourcePackageName),
+            DistributionSourcePackageCache.distribution == distro,
+            DistributionSourcePackageCache.archiveID.is_in(archives),
+            SourcePackageName.id ==
+                DistributionSourcePackageCache.sourcepackagenameID,
+            ).order_by(DistributionSourcePackageCache.name)
+        return DecoratedResultSet(result, itemgetter(0))
 
     @classmethod
     def removeOld(cls, distro, archive, log):
