@@ -36,7 +36,9 @@ from CVS import (
     tree as CVSTree,
     )
 from dulwich.repo import Repo as GitRepo
-import pysvn
+import subvertpy
+import subvertpy.client
+import subvertpy.ra
 
 from canonical.config import config
 from canonical.testing.layers import BaseLayer
@@ -949,13 +951,16 @@ class SubversionImportHelpers:
 
     def makeForeignCommit(self, source_details):
         """Change the foreign tree."""
-        client = pysvn.Client()
-        client.checkout(source_details.url, 'working_tree')
+        auth = subvertpy.ra.Auth([subvertpy.ra.get_username_provider()])
+        auth.set_parameter(subvertpy.AUTH_PARAM_DEFAULT_USERNAME, "lptest2")
+        client = subvertpy.client.Client(auth=auth)
+        client.checkout(source_details.url, 'working_tree', "HEAD")
         file = open('working_tree/newfile', 'w')
         file.write('No real content\n')
         file.close()
         client.add('working_tree/newfile')
-        client.checkin('working_tree', 'Add a file', recurse=True)
+        client.log_msg_func = lambda c: 'Add a file'
+        client.commit(['working_tree'], recurse=True)
         self.foreign_commit_count += 1
         shutil.rmtree('working_tree')
 
