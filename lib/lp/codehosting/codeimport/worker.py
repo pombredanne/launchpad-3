@@ -8,6 +8,7 @@ __all__ = [
     'BazaarBranchStore',
     'BzrSvnImportWorker',
     'CSCVSImportWorker',
+    'CodeImportBranchOpenPolicy',
     'CodeImportSourceDetails',
     'CodeImportWorkerExitCode',
     'ForeignTreeStore',
@@ -49,10 +50,23 @@ import CVS
 import SCM
 
 from canonical.config import config
+
+from lazr.uri import (
+    InvalidURIError,
+    URI,
+    )
+
 from lp.code.enums import RevisionControlSystems
+from lp.code.interfaces.branch import get_blacklisted_hostnames
 from lp.codehosting.codeimport.foreigntree import (
     CVSWorkingTree,
     SubversionWorkingTree,
+    )
+from lp.codehosting.safe_open import (
+    AcceptAnythingPolicy,
+    BadUrl,
+    BranchOpenPolicy,
+    SafeBranchOpener,
     )
 from lp.codehosting.codeimport.tarball import (
     create_tarball,
@@ -60,6 +74,53 @@ from lp.codehosting.codeimport.tarball import (
     )
 from lp.codehosting.codeimport.uifactory import LoggingUIFactory
 from lp.services.propertycache import cachedproperty
+
+
+class CodeImportBranchOpenPolicy(BranchOpenPolicy):
+    """Branch open policy for code imports.
+
+    In summary:
+     - follow references,
+     - only open non-Launchpad URLs
+     - only open the allowed schemes
+    """
+
+    allowed_schemes = ['http', 'https', 'svn', 'git', 'ftp']
+
+    def shouldFollowReferences(self):
+        """See `BranchOpenPolicy.shouldFollowReferences`.
+
+        We traverse branch references for MIRRORED branches because they
+        provide a useful redirection mechanism and we want to be consistent
+        with the bzr command line.
+        """
+        return True
+
+    def transformFallbackLocation(self, branch, url):
+        """See `BranchOpenPolicy.transformFallbackLocation`.
+
+        For mirrored branches, we stack on whatever the remote branch claims
+        to stack on, but this URL still needs to be checked.
+        """
+        return urljoin(branch.base, url), True
+
+    def checkOneURL(self, url):
+        """See `BranchOpenPolicy.checkOneURL`.
+
+        We refuse to mirror from Launchpad or a ssh-like or file URL.
+        """
+        try:
+            uri = URI(url)
+        except InvalidURIError:
+            raise BadUrl(url)
+        launchpad_domain = config.vhost.mainsite.hostname
+        if uri.underDomain(launchpad_domain):
+            raise BadUrl(url)
+        for hostname in get_blacklisted_hostnames():
+            if uri.underDomain(hostname):
+                raise BadUrl(url)
+        if uri.scheme not in self.allowed_schemes:
+            raise BadUrl(url)
 
 
 class CodeImportWorkerExitCode:
@@ -578,6 +639,18 @@ class PullingImportWorker(ImportWorker):
 
     needs_bzr_tree = False
 
+    def __init__(self, source_details, import_data_transport,
+                 bazaar_branch_store, logger):
+        """See `ImportWorker.__init__`.
+
+        :param opener_policy: Opener policy to use
+        """
+        super(PullingImportWorker, self).__init__(
+            source_details, import_data_transport, bazaar_branch_store,
+            logger)
+        #self._opener_policy = CodeImportBranchOpenPolicy()
+        self._opener_policy = AcceptAnythingPolicy()
+
     @property
     def invalid_branch_exceptions(self):
         """Exceptions that indicate no (valid) remote branch is present."""
@@ -601,11 +674,17 @@ class PullingImportWorker(ImportWorker):
     def _doImport(self):
         self._logger.info("Starting job.")
         saved_factory = bzrlib.ui.ui_factory
+        opener = SafeBranchOpener(self._opener_policy)
         bzrlib.ui.ui_factory = LoggingUIFactory(logger=self._logger)
         try:
             self._logger.info(
                 "Getting exising bzr branch from central store.")
             bazaar_branch = self.getBazaarBranch()
+            try:
+                self._opener_policy.checkOneURL(self.source_details.url)
+            except BadUrl, e:
+                self._logger.info("Invalid URL: %s" % e)
+                return CodeImportWorkerExitCode.FAILURE_INVALID
             transport = get_transport(self.source_details.url)
             for prober_kls in self.probers:
                 prober = prober_kls()
@@ -617,7 +696,13 @@ class PullingImportWorker(ImportWorker):
             else:
                 self._logger.info("No branch found at remote location.")
                 return CodeImportWorkerExitCode.FAILURE_INVALID
-            remote_branch = format.open(transport).open_branch()
+            remote_dir = format.open(transport)
+            try:
+                remote_branch = opener.runWithTransformFallbackLocationHookInstalled(
+                    remote_dir.open_branch)
+            except BadUrl, e:
+                self._logger.info("Invalid URL: %s" % e)
+                return CodeImportWorkerExitCode.FAILURE_INVALID
             remote_branch_tip = remote_branch.last_revision()
             inter_branch = InterBranch.get(remote_branch, bazaar_branch)
             self._logger.info("Importing branch.")

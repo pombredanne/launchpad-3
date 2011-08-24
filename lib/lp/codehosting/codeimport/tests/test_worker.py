@@ -43,6 +43,10 @@ import subvertpy.ra
 from canonical.config import config
 from canonical.testing.layers import BaseLayer
 from lp.codehosting import load_optional_plugin
+from lp.codehosting.safe_open import (
+    BadUrl,
+    SafeBranchOpener,
+    )
 from lp.codehosting.codeimport.tarball import (
     create_tarball,
     extract_tarball,
@@ -56,6 +60,7 @@ from lp.codehosting.codeimport.tests.servers import (
 from lp.codehosting.codeimport.worker import (
     BazaarBranchStore,
     BzrSvnImportWorker,
+    CodeImportBranchOpenPolicy,
     CodeImportWorkerExitCode,
     CSCVSImportWorker,
     ForeignTreeStore,
@@ -1021,7 +1026,7 @@ class PullingImportWorkerTests:
     def test_invalid(self):
         # If there is no branch in the target URL, exit with FAILURE_INVALID
         worker = self.makeImportWorker(self.factory.makeCodeImportSourceDetails(
-            rcstype=self.rcstype, url="file:///path/non/existant"))
+            rcstype=self.rcstype, url="http://localhost/path/non/existant"))
         self.assertEqual(
             CodeImportWorkerExitCode.FAILURE_INVALID, worker.run())
 
@@ -1167,3 +1172,32 @@ class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
         return BzrSvnImportWorker(
             source_details, self.get_transport('import_data'),
             self.bazaar_store, logging.getLogger())
+
+
+class CodeImportBranchOpenPolicyTests(TestCase):
+
+    def setUp(self):
+        super(CodeImportBranchOpenPolicyTests, self).setUp()
+        self.policy = CodeImportBranchOpenPolicy()
+
+    def test_follows_references(self):
+        self.assertEquals(True, self.policy.shouldFollowReferences())
+
+    def assertBadUrl(self, url):
+        self.assertRaises(BadUrl, self.policy.checkOneURL, url)
+
+    def assertGoodUrl(self, url):
+        self.policy.checkOneURL(url)
+
+    def test_checkOneURL(self):
+        self.assertBadUrl("sftp://somehost/")
+        self.assertBadUrl("/etc/passwd")
+        self.assertBadUrl("file:///etc/passwd")
+        self.assertBadUrl("bzr+ssh://devpad/")
+        self.assertBadUrl("bzr+ssh://devpad/")
+        self.assertBadUrl("unknown-scheme://devpad/")
+        self.assertGoodUrl("http://svn.example/branches/trunk")
+        self.assertGoodUrl("http://user:password@svn.example/branches/trunk")
+        self.assertBadUrl("svn+ssh://svn.example.com/bla")
+        self.assertGoodUrl("git://git.example.com/repo")
+        self.assertGoodUrl("https://hg.example.com/hg/repo/branch")
