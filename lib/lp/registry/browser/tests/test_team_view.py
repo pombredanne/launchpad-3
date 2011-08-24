@@ -8,12 +8,18 @@ Test team views.
 __metaclass__ = type
 
 import transaction
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tags_by_class,
+    setupBrowser)
+from canonical.launchpad.webapp.publisher import canonical_url
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
     PersonVisibility,
@@ -154,15 +160,6 @@ class TestTeamEditView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def test_can_rename_private_team(self):
-        # A private team can be renamed.
-        owner = self.factory.makePerson()
-        team = self.factory.makeTeam(
-            owner=owner, visibility=PersonVisibility.PRIVATE)
-        with person_logged_in(owner):
-            view = create_initialized_view(team, name="+edit")
-            self.assertFalse(view.form_fields['name'].for_display)
-
     def test_cannot_rename_team_with_ppa(self):
         # A team with a ppa cannot be renamed.
         owner = self.factory.makePerson()
@@ -215,3 +212,100 @@ class TestTeamEditView(TestCaseWithFactory):
                 ('This team cannot be renamed because it has a mailing list '
                  'and has a PPA.'),
                 view.widgets['name'].hint)
+
+    def test_edit_team_view_permission(self):
+        # Only an administrator (as well as the team owner) of a team can
+        # change the details of that team.
+        person = self.factory.makePerson()
+        team = self.factory.makeTeam()
+        url = canonical_url(team, view_name='+edit')
+        self.assertRaises(
+            Unauthorized, self.getUserBrowser, url, person)
+        browser = setupBrowser(auth='Basic mark@example.com:test')
+        browser.open(url)
+
+    def test_edit_team_view_data(self):
+        # The edit view renders the team's details correctly.
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            name="team", displayname='A Team',
+            description="A great team", owner=owner,
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+        browser = self.getUserBrowser(
+            canonical_url(team), user=owner)
+        browser.getLink('Change details').click()
+        self.assertEqual('team', browser.getControl('Name', index=0).value)
+        self.assertEqual(
+            'A Team', browser.getControl('Display Name', index=0).value)
+        self.assertEqual(
+            'A great team',
+            browser.getControl('Team Description', index=0).value)
+        self.assertTrue(
+            browser.getControl('Moderated Team', index=0).selected)
+        self.assertTrue(
+            browser.getControl('invite them to apply for renewal').selected)
+        self.assertEqual(
+            '', browser.getControl('Renewal period', index=0).value)
+
+    def test_edit_team_view_save(self):
+        # A team can be edited and saved, including a name change, even if it
+        # is a private team and has a purged mailing list.
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(
+            name="team", displayname='A Team',
+            description="A great team", owner=owner,
+            visibility=PersonVisibility.PRIVATE,
+            subscription_policy=TeamSubscriptionPolicy.MODERATED)
+
+        with person_logged_in(owner):
+            team_list = self.factory.makeMailingList(team, owner)
+            team_list.deactivate()
+            team_list.transitionToStatus(MailingListStatus.INACTIVE)
+            team_list.purge()
+            url = canonical_url(team)
+        browser = self.getUserBrowser(url, user=owner)
+        browser.getLink('Change details').click()
+        browser.getControl('Name', index=0).value = 'ubuntuteam'
+        browser.getControl('Display Name').value = 'Ubuntu Team'
+        browser.getControl('Team Description').value = ''
+        browser.getControl('Restricted Team').selected = True
+        browser.getControl('Save').click()
+
+        # We're now redirected to the team's home page, which is now on a
+        # different URL since we changed its name.
+        self.assertEqual('http://launchpad.dev/~ubuntuteam', browser.url)
+
+        # Check the values again.
+        browser.getLink('Change details').click()
+        self.assertEqual(
+            'ubuntuteam', browser.getControl('Name', index=0).value)
+        self.assertEqual(
+            'Ubuntu Team', browser.getControl('Display Name', index=0).value)
+        self.assertEqual(
+            '', browser.getControl('Team Description', index=0).value)
+        self.assertTrue(
+            browser.getControl('Restricted Team', index=0).selected)
+
+    def test_team_name_already_used(self):
+        # If we try to use a name which is already in use, we'll get an error
+        # message explaining it.
+
+        self.factory.makeTeam(name="existing")
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(name="team", owner=owner)
+
+        #with person_logged_in(owner):
+        url = canonical_url(team)
+        browser = self.getUserBrowser(url, user=owner)
+        browser.getLink('Change details').click()
+        browser.getControl('Name', index=0).value = 'existing'
+        browser.getControl('Save').click()
+        self.assertEqual('http://launchpad.dev/%7Eteam/+edit', browser.url)
+
+        messages = []
+        for tag in find_tags_by_class(browser.contents, 'message'):
+            messages.append(extract_text(tag))
+        self.assertEqual(
+            ['There is 1 error.',
+            'existing is already in use by another person or team.'],
+            messages)
