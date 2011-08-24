@@ -15,6 +15,8 @@ from zope.component import getUtility
 
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.services.scripts.base import LaunchpadCronScript
+from lp.soyuz.model.distributionsourcepackagecache import (
+    DistributionSourcePackageCache)
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 
 
@@ -50,10 +52,11 @@ class PackageCacheUpdater(LaunchpadCronScript):
         for distroseries in distribution.series:
             self.updateDistroSeriesCache(distroseries, archive)
 
-        distribution.removeOldCacheItems(archive, log=self.logger)
+        DistributionSourcePackageCache.removeOld(
+            distribution, archive, log=self.logger)
 
-        updates = distribution.updateCompleteSourcePackageCache(
-            archive=archive, ztm=self.txn, log=self.logger)
+        updates = DistributionSourcePackageCache.updateAll(
+            distribution, archive=archive, ztm=self.txn, log=self.logger)
 
         if updates > 0:
             self.txn.commit()
