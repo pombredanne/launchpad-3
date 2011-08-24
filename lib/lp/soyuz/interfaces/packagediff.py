@@ -114,7 +114,7 @@ class IPackageDiffSet(Interface):
         EmptyResultSet is returned.
         """
 
-    def getDiffBetweenReleases(self, from_spr, to_spr):
+    def getDiffBetweenReleases(from_spr, to_spr):
         """Return the diff that is targetted to the two SPRs.
 
         :param from_spr: a `SourcePackageRelease` object.
