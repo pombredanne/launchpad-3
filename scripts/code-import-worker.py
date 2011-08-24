@@ -28,6 +28,7 @@ from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
     BzrSvnImportWorker, CSCVSImportWorker, CodeImportSourceDetails,
     GitImportWorker, HgImportWorker, get_default_bazaar_branch_store)
+from lp.codehosting.safe_open import AcceptAnythingPolicy
 from canonical.launchpad import scripts
 
 
@@ -73,7 +74,8 @@ class CodeImportWorker:
         import_worker = import_worker_cls(
             source_details,
             get_transport(config.codeimport.foreign_tree_store),
-            get_default_bazaar_branch_store(), self.logger)
+            get_default_bazaar_branch_store(), self.logger,
+            AcceptAnythingPolicy())
         return import_worker.run()
 
 

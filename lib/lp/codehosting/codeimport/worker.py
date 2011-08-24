@@ -477,7 +477,7 @@ class ImportWorker:
     required_format = BzrDirFormat.get_default_format()
 
     def __init__(self, source_details, import_data_transport,
-                 bazaar_branch_store, logger):
+                 bazaar_branch_store, logger, opener_policy):
         """Construct an `ImportWorker`.
 
         :param source_details: A `CodeImportSourceDetails` object.
@@ -485,12 +485,15 @@ class ImportWorker:
             uses this to fetch and store the Bazaar branches that are created
             and updated during the import process.
         :param logger: A `Logger` to pass to cscvs.
+        :param opener_policy: Policy object that decides what branches can
+             be imported
         """
         self.source_details = source_details
         self.bazaar_branch_store = bazaar_branch_store
         self.import_data_store = ImportDataStore(
             import_data_transport, self.source_details)
         self._logger = logger
+        self._opener_policy = opener_policy
 
     def getBazaarBranch(self):
         """Return the Bazaar `Branch` that we are importing into."""
@@ -639,21 +642,6 @@ class PullingImportWorker(ImportWorker):
     """
 
     needs_bzr_tree = False
-
-    def __init__(self, source_details, import_data_transport,
-                 bazaar_branch_store, logger, opener_policy=None):
-        """See `ImportWorker.__init__`.
-
-        :param opener_policy: Opener policy to use
-        """
-        super(PullingImportWorker, self).__init__(
-            source_details, import_data_transport, bazaar_branch_store,
-            logger)
-        if opener_policy is None:
-            #self._opener_policy = CodeImportBranchOpenPolicy()
-            self._opener_policy = AcceptAnythingPolicy()
-        else:
-            self._opener_policy = opener_policy
 
     @property
     def invalid_branch_exceptions(self):
