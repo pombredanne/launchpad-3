@@ -854,7 +854,8 @@ class TestActualImportMixin:
             config.root, 'scripts', 'code-import-worker.py')
         output = tempfile.TemporaryFile()
         retcode = subprocess.call(
-            [script_path] + source_details.asArguments(),
+            [script_path, '--access-policy=anything'] +
+            source_details.asArguments(),
             stderr=output, stdout=output)
         self.assertEqual(retcode, 0)
 
@@ -892,11 +893,13 @@ class TestActualImportMixin:
             config.root, 'scripts', 'code-import-worker.py')
         output = tempfile.TemporaryFile()
         retcode = subprocess.call(
-            [script_path] + source_details.asArguments(),
+            [script_path, '--access-policy=anything'] +
+            source_details.asArguments(),
             stderr=output, stdout=output)
         self.assertEqual(retcode, CodeImportWorkerExitCode.SUCCESS)
         retcode = subprocess.call(
-            [script_path] + source_details.asArguments(),
+            [script_path, '--access-policy=anything'] +
+            source_details.asArguments(),
             stderr=output, stdout=output)
         self.assertEqual(retcode, CodeImportWorkerExitCode.SUCCESS_NOCHANGE)
 
