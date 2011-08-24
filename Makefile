@@ -27,7 +27,7 @@ endif
 
 define JS_LP_PATHS
 lib -path 'lib/lp/*/javascript/*' \
-! -path '*/tests/*' ! -path '*/testing/*' \
+! -path '*/tests/*' \
 ! -path 'lib/lp/services/*'
 endef
 
