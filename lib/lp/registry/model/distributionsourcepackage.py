@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'DistributionSourcePackage',
+    'DistributionSourcePackageInDatabase',
     ]
 
 import itertools
