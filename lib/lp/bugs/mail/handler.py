@@ -164,8 +164,7 @@ class MaloneHandler:
                         bugtask, bugtask_event = command.execute(
                             bug)
                     elif IBugEditEmailCommand.providedBy(command):
-                        bug, bug_event = command.execute(
-                            bug, bug_event)
+                        bug, bug_event = command.execute(bug, bug_event)
                     elif IBugTaskEditEmailCommand.providedBy(command):
                         if bugtask is None:
                             if len(bug.bugtasks) == 0:
@@ -173,8 +172,7 @@ class MaloneHandler:
                             bugtask = guess_bugtask(
                                 bug, getUtility(ILaunchBag).user)
                             if bugtask is None:
-                                self.handleNoDefaultAffectsTarget(
-                                    bug)
+                                self.handleNoDefaultAffectsTarget(bug)
                         bugtask, bugtask_event = command.execute(
                             bugtask, bugtask_event)
 
