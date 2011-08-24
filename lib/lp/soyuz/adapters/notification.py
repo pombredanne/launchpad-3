@@ -230,7 +230,8 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
             attach_changes=attach_changes, from_addr=from_addr, bcc=bcc,
             logger=logger)
 
-    build_and_send_mail(action, recipients, previous_version)
+    build_and_send_mail(
+        action, recipients, previous_version=previous_version)
 
     info = fetch_information(spr, bprs, changes)
     from_addr = info['changedby']
@@ -258,7 +259,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
 
         build_and_send_mail(
             'announcement', [str(distroseries.changeslist)], from_addr,
-            bcc_addr)
+            bcc_addr, previous_version=previous_version)
 
 
 def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
