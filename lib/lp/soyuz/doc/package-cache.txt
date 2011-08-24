@@ -124,7 +124,7 @@ instance offers a method for removing obsolete records in cache:
 Let's use a fake logger object:
 
   >>> from lp.services.log.logger import FakeLogger
-  >>> DistributionSourcePackageCache.removeAll(
+  >>> DistributionSourcePackageCache.removeOld(
   ...     ubuntu, archive=ubuntu.main_archive, log=FakeLogger())
   DEBUG Removing source cache for 'foobar' (10)
 
