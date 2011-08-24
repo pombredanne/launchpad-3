@@ -827,15 +827,6 @@ BRANCH_TYPE_VOCABULARY = SimpleVocabulary((
     ))
 
 
-class RevisionControlSystemsExtended(RevisionControlSystems):
-    """External RCS plus Bazaar."""
-    BZR = DBItem(99, """
-        Bazaar
-
-        External Bazaar branch.
-        """)
-
-
 class SetBranchForm(Interface):
     """The fields presented on the form for setting a branch."""
 
@@ -844,7 +835,7 @@ class SetBranchForm(Interface):
         ['cvs_module'])
 
     rcs_type = Choice(title=_("Type of RCS"),
-        required=False, vocabulary=RevisionControlSystemsExtended,
+        required=False, vocabulary=RevisionControlSystems,
         description=_(
             "The version control system to import from. "))
 
@@ -908,7 +899,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
     @property
     def initial_values(self):
         return dict(
-            rcs_type=RevisionControlSystemsExtended.BZR,
+            rcs_type=RevisionControlSystems.BZR,
             branch_type=LINK_LP_BZR,
             branch_location=self.context.branch)
 
@@ -989,7 +980,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             self.setFieldError(
                 'rcs_type',
                 'You must specify the type of RCS for the remote host.')
-        elif rcs_type == RevisionControlSystemsExtended.CVS:
+        elif rcs_type == RevisionControlSystems.CVS:
             if 'cvs_module' not in data:
                 self.setFieldError(
                     'cvs_module',
@@ -1022,8 +1013,9 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         # Extend the allowed schemes for the repository URL based on
         # rcs_type.
         extra_schemes = {
-            RevisionControlSystemsExtended.BZR_SVN: ['svn'],
-            RevisionControlSystemsExtended.GIT: ['git'],
+            RevisionControlSystems.BZR_SVN: ['svn'],
+            RevisionControlSystems.GIT: ['git'],
+            RevisionControlSystems.BZR: ['bzr'],
             }
         schemes.update(extra_schemes.get(rcs_type, []))
         return schemes
@@ -1050,7 +1042,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
             # The branch location is not required for validation.
             self._setRequired(['branch_location'], False)
             # The cvs_module is required if it is a CVS import.
-            if rcs_type == RevisionControlSystemsExtended.CVS:
+            if rcs_type == RevisionControlSystems.CVS:
                 self._setRequired(['cvs_module'], True)
         else:
             raise AssertionError("Unknown branch type %s" % branch_type)
@@ -1110,7 +1102,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                 # Either create an externally hosted bzr branch
                 # (a.k.a. 'mirrored') or create a new code import.
                 rcs_type = data.get('rcs_type')
-                if rcs_type == RevisionControlSystemsExtended.BZR:
+                if rcs_type == RevisionControlSystems.BZR:
                     branch = self._createBzrBranch(
                         BranchType.MIRRORED, branch_name, branch_owner,
                         data['repo_url'])
@@ -1123,7 +1115,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                         'the series.')
                 else:
                     # We need to create an import request.
-                    if rcs_type == RevisionControlSystemsExtended.CVS:
+                    if rcs_type == RevisionControlSystems.CVS:
                         cvs_root = data.get('repo_url')
                         cvs_module = data.get('cvs_module')
                         url = None

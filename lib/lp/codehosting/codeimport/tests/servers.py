@@ -4,6 +4,7 @@
 """Server classes that know how to create various kinds of foreign archive."""
 
 __all__ = [
+    'BzrServer',
     'CVSServer',
     'GitServer',
     'MercurialServer',
@@ -23,7 +24,14 @@ import tempfile
 import time
 import threading
 
+from bzrlib.branch import Branch
+from bzrlib.branchbuilder import BranchBuilder
+from bzrlib.bzrdir import BzrDir
 from bzrlib.tests.treeshape import build_tree_contents
+from bzrlib.tests.test_server import (
+    ReadonlySmartTCPServer_for_testing,
+    TestServer,
+    )
 from bzrlib.transport import Server
 from bzrlib.urlutils import (
     escape,
@@ -348,3 +356,50 @@ class MercurialServer(Server):
                 f.close()
             repo[None].add([filename])
         repo.commit(text='<The commit message>', user='jane Foo <joe@foo.com>')
+
+
+class BzrServer(Server):
+
+    def __init__(self, repository_path, use_server=False):
+        super(BzrServer, self).__init__()
+        self.repository_path = repository_path
+        self._use_server = use_server
+
+    def createRepository(self, path):
+        BzrDir.create_branch_convenience(path)
+
+    def makeRepo(self, tree_contents):
+        branch = Branch.open(self.repository_path)
+        branch.get_config().set_user_option("create_signatures", "never")
+        builder = BranchBuilder(branch=branch)
+        actions = [('add', ('', 'tree-root', 'directory', None))]
+        actions += [('add', (path, path+'-id', 'file', content)) for (path,
+            content) in tree_contents]
+        builder.build_snapshot(None, None,
+                actions, committer='Joe Foo <joe@foo.com>',
+                message=u'<The commit message>')
+
+    def get_url(self):
+        if self._use_server:
+            return self._bzrserver.get_url()
+        else:
+            return local_path_to_url(self.repository_path)
+
+    def start_server(self):
+        super(BzrServer, self).start_server()
+        self.createRepository(self.repository_path)
+        class LocalURLServer(TestServer):
+            def __init__(self, repository_path):
+                self.repository_path = repository_path
+            def start_server(self): pass
+            def get_url(self):
+                return local_path_to_url(self.repository_path)
+        if self._use_server:
+            self._bzrserver = ReadonlySmartTCPServer_for_testing()
+            self._bzrserver.start_server(
+                LocalURLServer(self.repository_path))
+
+    def stop_server(self):
+        super(BzrServer, self).stop_server()
+        if self._use_server:
+            self._bzrserver.stop_server()

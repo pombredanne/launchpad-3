@@ -16,6 +16,9 @@ from bzrlib.branch import (
     Branch,
     BranchReferenceFormat,
     )
+from bzrlib.branchbuilder import (
+    BranchBuilder,
+    )
 from bzrlib.bzrdir import (
     BzrDir,
     BzrDirFormat,
@@ -53,6 +56,7 @@ from lp.codehosting.codeimport.tarball import (
     extract_tarball,
     )
 from lp.codehosting.codeimport.tests.servers import (
+    BzrServer,
     CVSServer,
     GitServer,
     MercurialServer,
@@ -60,6 +64,7 @@ from lp.codehosting.codeimport.tests.servers import (
     )
 from lp.codehosting.codeimport.worker import (
     BazaarBranchStore,
+    BzrImportWorker,
     BzrSvnImportWorker,
     CodeImportBranchOpenPolicy,
     CodeImportWorkerExitCode,
@@ -1004,31 +1009,6 @@ class TestSubversionImport(WorkerTest, SubversionImportHelpers,
 class PullingImportWorkerTests:
     """Tests for the PullingImportWorker subclasses."""
 
-    def createBranchReference(self):
-        """Create a pure branch reference that points to a branch.
-        """
-        branch = self.make_branch('branch')
-        t = get_transport(self.get_url('.'))
-        t.mkdir('reference')
-        a_bzrdir = BzrDir.create(self.get_url('reference'))
-        BranchReferenceFormat().initialize(a_bzrdir, target_branch=branch)
-        return a_bzrdir.root_transport.base
-
-    def test_reject_branch_reference(self):
-        # URLs that point to other branch types than that expected by the
-        # import should be rejected.
-        args = {'rcstype': self.rcstype}
-        reference_url = self.createBranchReference()
-        if self.rcstype in ('git', 'bzr-svn', 'hg'):
-            args['url'] = reference_url
-        else:
-            raise AssertionError("unexpected rcs_type %r" % self.rcstype)
-        source_details = self.factory.makeCodeImportSourceDetails(**args)
-        worker = self.makeImportWorker(source_details,
-            opener_policy=AcceptAnythingPolicy())
-        self.assertEqual(
-            CodeImportWorkerExitCode.FAILURE_INVALID, worker.run())
-
     def test_invalid(self):
         # If there is no branch in the target URL, exit with FAILURE_INVALID
         worker = self.makeImportWorker(self.factory.makeCodeImportSourceDetails(
@@ -1193,6 +1173,52 @@ class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
             source_details, self.get_transport('import_data'),
             self.bazaar_store, logging.getLogger(),
             opener_policy=opener_policy)
+
+
+class TestBzrImport(WorkerTest, TestActualImportMixin,
+                    PullingImportWorkerTests):
+
+    rcstype = 'bzr'
+
+    def setUp(self):
+        super(TestBzrImport, self).setUp()
+        self.setUpImport()
+
+    def makeImportWorker(self, source_details, opener_policy):
+        """Make a new `ImportWorker`."""
+        return BzrImportWorker(
+            source_details, self.get_transport('import_data'),
+            self.bazaar_store, logging.getLogger(), opener_policy)
+
+    def makeForeignCommit(self, source_details):
+        """Change the foreign tree, generating exactly one commit."""
+        branch = Branch.open(source_details.url)
+        builder = BranchBuilder(branch=branch)
+        builder.build_commit(message=self.factory.getUniqueString(),
+            committer="Joe Random Hacker <joe@example.com>")
+        self.foreign_commit_count += 1
+
+    def makeSourceDetails(self, branch_name, files):
+        """Make Bzr `CodeImportSourceDetails` pointing at a real Bzr repo.
+        """
+        repository_path = self.makeTemporaryDirectory()
+        bzr_server = BzrServer(repository_path)
+        bzr_server.start_server()
+        self.addCleanup(bzr_server.stop_server)
+
+        bzr_server.makeRepo(files)
+        self.foreign_commit_count = 1
+
+        return self.factory.makeCodeImportSourceDetails(
+            rcstype='bzr', url=bzr_server.get_url())
+
+    def test_partial(self):
+        self.skip(
+            "Partial fetching is not supported for native bzr branches "
+            "at the moment.")
+
+    def test_unsupported_feature(self):
+        self.skip("All Bazaar features are supported by Bazaar.")
 
 
 class CodeImportBranchOpenPolicyTests(TestCase):
