@@ -20,6 +20,7 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
@@ -33,6 +34,7 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.bugs.adapters.bugchange import BugTaskStatusChange
 from lp.bugs.browser.bugtask import (
     BugActivityItem,
     BugTaskEditView,
@@ -992,3 +994,44 @@ class TestBugActivityItem(TestCaseWithFactory):
         self.assertEquals(
             "- foo<br />+ bar &amp;&lt;&gt;",
             BugActivityItem(bug.activity[-1]).change_details)
+
+
+class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
+    """Tests for the BugTaskBatchedCommentsAndActivityView class."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def _makeNoisyBug(self):
+        """Create and return a bug with a lot of comments and activity."""
+        bug = self.factory.makeBug()
+        for i in range(100):
+            task = self.factory.makeBugTask(bug=bug)
+            change = BugTaskStatusChange(
+                task, UTC_NOW, task.product.owner, 'status',
+                BugTaskStatus.NEW, BugTaskStatus.TRIAGED)
+            bug.addChange(change)
+        for i in range (500):
+            self.factory.makeBugComment(bug=bug)
+        return bug
+
+    def test_offset(self):
+        # BugTaskBatchedCommentsAndActivityView.offset returns the
+        # current offset being used to select a batch of bug comments
+        # and activity or 0 if one has not been specified.
+        bug_task = self.factory.makeBugTask()
+        view = create_initialized_view(bug_task, '+batched-comments')
+        self.assertEqual(0, view.offset)
+        view = create_initialized_view(
+            bug_task, '+batched-comments', form={'offset': 100})
+        self.assertEqual(100, view.offset)
+
+    def test_batch_size(self):
+        # BugTaskBatchedCommentsAndActivityView.batch_size returns the
+        # current batch_size being used to select a batch of bug comments
+        # and activity or 100 if one has not been specified.
+        bug_task = self.factory.makeBugTask()
+        view = create_initialized_view(bug_task, '+batched-comments')
+        self.assertEqual(100, view.batch_size)
+        view = create_initialized_view(
+            bug_task, '+batched-comments', form={'batch_size': 50})
+        self.assertEqual(50, view.batch_size)
