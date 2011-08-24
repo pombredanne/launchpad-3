@@ -48,6 +48,7 @@ from canonical.testing.layers import BaseLayer
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.safe_open import (
     AcceptAnythingPolicy,
+    BlacklistPolicy,
     BadUrl,
     SafeBranchOpener,
     )
@@ -1009,6 +1010,31 @@ class TestSubversionImport(WorkerTest, SubversionImportHelpers,
 class PullingImportWorkerTests:
     """Tests for the PullingImportWorker subclasses."""
 
+    def createBranchReference(self):
+        """Create a pure branch reference that points to a branch.
+        """
+        branch = self.make_branch('branch')
+        t = get_transport(self.get_url('.'))
+        t.mkdir('reference')
+        a_bzrdir = BzrDir.create(self.get_url('reference'))
+        BranchReferenceFormat().initialize(a_bzrdir, target_branch=branch)
+        return a_bzrdir.root_transport.base, branch.base
+
+    def test_reject_branch_reference(self):
+        # URLs that point to other branch types than that expected by the
+        # import should be rejected.
+        args = {'rcstype': self.rcstype}
+        reference_url, target_url = self.createBranchReference()
+        if self.rcstype in ('git', 'bzr-svn', 'hg'):
+            args['url'] = reference_url
+        else:
+            raise AssertionError("unexpected rcs_type %r" % self.rcstype)
+        source_details = self.factory.makeCodeImportSourceDetails(**args)
+        worker = self.makeImportWorker(source_details,
+            opener_policy=AcceptAnythingPolicy())
+        self.assertEqual(
+            CodeImportWorkerExitCode.FAILURE_INVALID, worker.run())
+
     def test_invalid(self):
         # If there is no branch in the target URL, exit with FAILURE_INVALID
         worker = self.makeImportWorker(self.factory.makeCodeImportSourceDetails(
@@ -1219,6 +1245,17 @@ class TestBzrImport(WorkerTest, TestActualImportMixin,
 
     def test_unsupported_feature(self):
         self.skip("All Bazaar features are supported by Bazaar.")
+
+    def test_reject_branch_reference(self):
+        # Branch references are allowed in the BzrImporter, but their URL
+        # should be checked.
+        reference_url, target_url = self.createBranchReference()
+        source_details = self.factory.makeCodeImportSourceDetails(
+            url=reference_url, rcstype='bzr')
+        policy = BlacklistPolicy(True, [target_url])
+        worker = self.makeImportWorker(source_details, opener_policy=policy)
+        self.assertEqual(
+            CodeImportWorkerExitCode.FAILURE_FORBIDDEN, worker.run())
 
 
 class CodeImportBranchOpenPolicyTests(TestCase):
