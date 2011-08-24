@@ -181,9 +181,6 @@ from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.distributionsourcepackagecache import (
-    DistributionSourcePackageCache,
-    )
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
     )
@@ -1132,6 +1129,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
     def searchSourcePackageCaches(
         self, text, has_packaging=None, publishing_distroseries=None):
         """See `IDistribution`."""
+        from lp.soyuz.model.distributionsourcepackagecache import (
+            DistributionSourcePackageCache,
+            )
         # The query below tries exact matching on the source package
         # name as well; this is because source package names are
         # notoriously bad for fti matching -- they can contain dots, or
@@ -1222,6 +1222,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # This matches all DistributionSourcePackageCache rows that have
         # a source package that generated the BinaryPackageName that
         # we're searching for.
+        from lp.soyuz.model.distributionsourcepackagecache import (
+            DistributionSourcePackageCache,
+            )
         return (
             DistroSeries.distribution == self,
             DistroSeries.status != SeriesStatus.OBSOLETE,
@@ -1238,6 +1241,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def searchBinaryPackages(self, package_name, exact_match=False):
         """See `IDistribution`."""
+        from lp.soyuz.model.distributionsourcepackagecache import (
+            DistributionSourcePackageCache,
+            )
         store = Store.of(self)
 
         select_spec = (DistributionSourcePackageCache,)
