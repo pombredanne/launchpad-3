@@ -143,34 +143,27 @@ class MaloneHandler:
                 command = commands.pop(0)
                 try:
                     if IBugEmailCommand.providedBy(command):
+                        # Finish outstanding work from the previous bug.
                         self.notify_bug_event(bug_event)
                         self.notify_bugtask_event(bugtask_event, bug_event)
                         bugtask = None
                         bugtask_event = None
-
                         # Get or start building a new bug.
                         bug, bug_event = command.execute(
                             signed_msg, filealias)
                         if add_comment_to_bug:
-                                fallback_parent=bug.initial_message)
-                                    bug, message.parent))
                             message = self.appendBugComment(
                                 bug, signed_msg, filealias)
                             add_comment_to_bug = False
                         else:
-                            # XXX sinzui 2011-08-19: This cannot be done with
-                            # just params
                             message = bug.initial_message
                         self.processAttachments(
                             bug, message, signed_msg)
                     elif IBugTaskEmailCommand.providedBy(command):
-                        bugtask, bugtask_event = command.execute(bug)
-                        # XXX sinzui 2011-08-22: bug_params must support
-                        # multiple targets!
                         self.notify_bugtask_event(bugtask_event, bug_event)
+                        bugtask, bugtask_event = command.execute(
                             bug)
                     elif IBugEditEmailCommand.providedBy(command):
-                        bug, bug_event = command.execute(bug, bug_event)
                         bug, bug_event = command.execute(
                             bug, bug_event)
                     elif IBugTaskEditEmailCommand.providedBy(command):
@@ -180,8 +173,6 @@ class MaloneHandler:
                             bugtask = guess_bugtask(
                                 bug, getUtility(ILaunchBag).user)
                             if bugtask is None:
-                                    bug_id=bug.id,
-                                    nr_of_bugtasks=len(bug.bugtasks)))
                                 self.handleNoDefaultAffectsTarget(
                                     bug)
                         bugtask, bugtask_event = command.execute(
@@ -194,9 +185,6 @@ class MaloneHandler:
                         rollback()
                     else:
                         continue
-
-            # XXX sinzui 2011-08-22: call _createBug() if there are still
-            # bug_params.
 
             if len(processing_errors) > 0:
                 raise IncomingEmailError(
