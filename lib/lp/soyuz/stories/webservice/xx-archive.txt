@@ -290,12 +290,25 @@ Let's also make a new Person to own the Ubuntu distro.
     ...     cjwatson, permission=OAuthPermission.WRITE_PUBLIC)
     >>> ubuntu_owner_webservice = webservice_for_person(
     ...     ubuntu_owner, permission=OAuthPermission.WRITE_PUBLIC)
+    >>> name12 = webservice.get("/~name12").jsonBody()
+
+And here's a packageset to play with later:
+
+    >>> print webservice.named_post(
+    ...     '/package-sets', 'new', {},
+    ...     name=u'umbrella', description=u'Contains all source packages',
+    ...     owner=name12['self_link'])
+    HTTP/1.1 201 Created
+    ...
+
+    >>> packageset = webservice.get("/package-sets/hoary/umbrella").jsonBody()
+
 
 To be able to amend any permissions on a distribution archive,
 you need to be one of the distribution owners - not one of the archive
-owners.  Here, cjwatson cannot make a new package uploader:
+owners.  Here, cjwatson cannot make a new package uploader, packageset
+uploader or component uploader.
 
-    >>> name12 = webservice.get("/~name12").jsonBody()
     >>> response = cjwatson_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'newPackageUploader', {},
     ...     person=name12['self_link'],
@@ -304,6 +317,24 @@ owners.  Here, cjwatson cannot make a new package uploader:
     HTTP/1.1 401 Unauthorized
     ...
     (<Archive at ...>, 'newPackageUploader', 'launchpad.Edit')
+
+    >>> response = cjwatson_webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'newPackagesetUploader', {},
+    ...     person=name12['self_link'],
+    ...     packageset=packageset['self_link'])
+    >>> print response
+    HTTP/1.1 401 Unauthorized
+    ...
+    (<Archive at ...>, 'newPackagesetUploader', 'launchpad.Edit')
+
+    >>> response = cjwatson_webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'newComponentUploader', {},
+    ...     person=name12['self_link'],
+    ...     component_name='restricted')
+    >>> print response
+    HTTP/1.1 401 Unauthorized
+    ...
+    (<Archive at ...>, 'newComponentUploader', 'launchpad.Edit')
 
 From here on we'll use ubuntu_owner, who does have permission as Ubuntu's
 owner.
