@@ -749,7 +749,8 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         logger = BufferLogger()
         monitor = CIWorkerMonitorForTesting(
             job_id, logger,
-            xmlrpc.Proxy(config.codeimportdispatcher.codeimportscheduler_url))
+            xmlrpc.Proxy(config.codeimportdispatcher.codeimportscheduler_url),
+            "anything")
         deferred = monitor.run()
         def save_protocol_object(result):
             """Save the process protocol object.
