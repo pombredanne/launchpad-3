@@ -104,8 +104,8 @@ although the version link will point to the same page we're already on.
   <pre ... id="alsa-utils_1.0.9a-4ubuntu1">alsa-utils (1.0.9a-4ubuntu1) ...
   <BLANKLINE>
   ...
-   LP: <a href="/bugs/10">#10</a>
-   LP: <a href="/bugs/999">#999</a>
+   LP: <a href="/bugs/10" class="bug-link">#10</a>
+   LP: <a href="/bugs/999" class="bug-link">#999</a>
    LP: #badid
   ...
 

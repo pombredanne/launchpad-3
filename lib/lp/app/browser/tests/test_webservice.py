@@ -46,7 +46,7 @@ class TestXHTMLRepresentations(TestCaseWithFactory):
         # The representation is linkified html.
         self.assertEqual(
             u'<p>\N{SNOWMAN} snowman@example.com '
-            '<a href="/bugs/1">bug 1</a></p>',
+            '<a href="/bugs/1" class="bug-link">bug 1</a></p>',
             renderer(text))
 
 
