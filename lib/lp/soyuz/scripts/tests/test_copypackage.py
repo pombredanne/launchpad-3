@@ -84,6 +84,7 @@ from lp.soyuz.scripts.packagecopier import (
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
+    ExpectedException,
     StormStatementRecorder,
     TestCaseWithFactory,
     )
@@ -1463,6 +1464,43 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             """ % source.sourcepackagerelease.dateuploaded)
         self.assertIn(expected_text, notification.as_string())
         self.assertIn(expected_text, announcement.as_string())
+
+    def test_copy_generates_rejection_email(self):
+        # When a copy into a primary archive fails, we expect a rejection
+        # email if the send_email parameter is True.
+        archive = self.test_publisher.ubuntutest.main_archive
+        source = self.test_publisher.getPubSource(
+            archive=archive, version='1.0-2', architecturehintlist='any')
+        source.sourcepackagerelease.changelog_entry = '* Foo!'
+        transaction.commit()  # Librarian.
+        nobby = self.createNobby(('i386', 'hppa'))
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            nobby, SourcePackageFormat.FORMAT_1_0)
+        # Ensure the same source is already in the destination so that we
+        # get a rejection.
+        self.test_publisher.getPubSource(
+            sourcename=source.source_package_name,
+            archive=nobby.main_archive, version="1.0-2",
+            architecturehintlist='any')
+        with ExpectedException(CannotCopy, '.'):
+            do_copy(
+                [source], archive, nobby, source.pocket, False,
+                person=source.sourcepackagerelease.creator,
+                check_permissions=False, send_email=True)
+
+        notifications = pop_notifications()
+        self.assertEqual(1, len(notifications))
+        [notification] = notifications
+        self.assertEquals(
+            'Foo Bar <foo.bar@canonical.com>', notification['To'])
+        self.assertEquals(
+            '[ubuntutest/nobby] foo 1.0-2 (Rejected)',
+            notification['Subject'])
+        expected_text = (
+            "Rejected:\n"
+            "foo 1.0-2 in breezy-autotest (a different source with the same "
+                "version is p=\nublished in the destination archive)\n")
+        self.assertIn(expected_text, notification.as_string())
 
     def test_copy_does_not_generate_notification(self):
         # When notify = False is passed to do_copy, no notification is

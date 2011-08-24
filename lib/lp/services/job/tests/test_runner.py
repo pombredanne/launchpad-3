@@ -647,3 +647,23 @@ class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
             cronscript.main()
         finally:
             errorlog.globalErrorUtility = old_errorlog
+
+    def test_log_twisted_option_for_twisted_runner(self):
+        """TwistedJobRunner creates --log-twisted flag."""
+        jcs = JobCronScript(TwistedJobRunner, test_args=[])
+        self.assertIsNot(None, getattr(jcs.options, 'log_twisted', None))
+
+    def test_no_log_twisted_option_for_plain_runner(self):
+        """JobRunner has no --log-twisted flag."""
+        jcs = JobCronScript(JobRunner, test_args=[])
+        self.assertIs(None, getattr(jcs.options, 'log_twisted', None))
+
+    def test_log_twisted_flag(self):
+        """--log-twisted sets JobCronScript.log_twisted True."""
+        jcs = JobCronScript(TwistedJobRunner, test_args=['--log-twisted'])
+        self.assertTrue(jcs.log_twisted)
+
+    def test_no_log_twisted_flag(self):
+        """No --log-twisted sets JobCronScript.log_twisted False."""
+        jcs = JobCronScript(TwistedJobRunner, test_args=[])
+        self.assertFalse(jcs.log_twisted)

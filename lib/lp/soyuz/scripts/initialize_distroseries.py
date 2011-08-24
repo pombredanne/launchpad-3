@@ -160,7 +160,6 @@ class InitializeDistroSeries:
                 self._checkBuilds(parent)
             self._checkQueue(parent)
         self._checkSeries()
-        return True
 
     def _checkParents(self):
         """If self.first_derivation, the parents list cannot be empty."""
@@ -183,7 +182,7 @@ class InitializeDistroSeries:
         Restrict the check to the selected packages if a limited set of
         packagesets is used by the initialization.
         """
-        spns = self.source_names_by_parent.get(parent, None)
+        spns = self.source_names_by_parent.get(parent.id, None)
         if spns is not None and len(spns) == 0:
             # If no sources are selected in this parent, skip the check.
             return
@@ -213,7 +212,7 @@ class InitializeDistroSeries:
             PackageUploadStatus.ACCEPTED,
             PackageUploadStatus.UNAPPROVED,
             ]
-        spns = self.source_names_by_parent.get(parent, None)
+        spns = self.source_names_by_parent.get(parent.id, None)
         if spns is not None and len(spns) == 0:
             # If no sources are selected in this parent, skip the check.
             return
@@ -430,7 +429,7 @@ class InitializeDistroSeries:
                 for pkgset in self.packagesets:
                     if pkgset.distroseries == parent:
                         spns += list(pkgset.getSourcesIncluded())
-                source_names_by_parent[parent] = spns
+                source_names_by_parent[parent.id] = spns
         self.source_names_by_parent = source_names_by_parent
 
     def _copy_publishing_records(self, distroarchseries_lists):
@@ -445,7 +444,7 @@ class InitializeDistroSeries:
         archive_set = getUtility(IArchiveSet)
 
         for parent in self.derivation_parents:
-            spns = self.source_names_by_parent.get(parent, None)
+            spns = self.source_names_by_parent.get(parent.id, None)
             if spns is not None and len(spns) == 0:
                 # Some packagesets where selected but not a single
                 # source from this parent: we skip the copy since

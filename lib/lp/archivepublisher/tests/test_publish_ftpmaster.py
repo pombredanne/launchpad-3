@@ -47,6 +47,7 @@ from lp.services.utils import file_exists
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackagePublishingStatus,
+    PackageUploadCustomFormat,
     )
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
@@ -1029,6 +1030,29 @@ class TestCreateDistroSeriesIndexes(TestCaseWithFactory, HelpersMixin):
         args, kwargs = script.runPublishDistro.calls[0]
         self.assertEqual([suite], kwargs['suites'])
         self.assertThat(kwargs['suites'][0], StartsWith(series.name))
+
+    def test_prepareFreshSeries_copies_custom_uploads(self):
+        distro = self.makeDistroWithPublishDirectory()
+        old_series = self.factory.makeDistroSeries(
+            distribution=distro, status=SeriesStatus.CURRENT)
+        new_series = self.factory.makeDistroSeries(
+            distribution=distro, previous_series=old_series,
+            status=SeriesStatus.FROZEN)
+        custom_upload = self.factory.makeCustomPackageUpload(
+            distroseries=old_series,
+            custom_type=PackageUploadCustomFormat.DEBIAN_INSTALLER,
+            filename='debian-installer-images_1.0-20110805_i386.tar.gz')
+        script = self.makeScript(distro)
+        script.createIndexes = FakeMethod()
+        script.setUp()
+        have_fresh_series = script.prepareFreshSeries(distro)
+        self.assertTrue(have_fresh_series)
+        [copied_upload] = new_series.getPackageUploads(
+            name=u'debian-installer-images', exact_match=False)
+        [copied_custom] = copied_upload.customfiles
+        self.assertEqual(
+            custom_upload.customfiles[0].libraryfilealias.filename,
+            copied_custom.libraryfilealias.filename)
 
     def test_script_creates_indexes(self):
         # End-to-end test: the script creates indexes for distroseries

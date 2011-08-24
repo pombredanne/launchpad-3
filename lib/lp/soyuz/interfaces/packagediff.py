@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -102,7 +102,7 @@ class IPackageDiffSet(Interface):
         :return a `SelectResult` ordered by id respecting the given limit.
         """
 
-    def getDiffsToReleases(self, sprs, preload_for_display=False):
+    def getDiffsToReleases(sprs, preload_for_display=False):
         """Return all diffs that targetting a set of source package releases.
 
         :param sprs: a sequence of `SourcePackageRelease` objects.

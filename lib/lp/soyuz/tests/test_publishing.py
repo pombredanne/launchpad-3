@@ -159,7 +159,7 @@ class SoyuzTestPublisher:
         signing_key = self.person.gpg_keys[0]
         package_upload = distroseries.createQueueEntry(
             pocket, archive, changes_file_name, changes_file_content,
-            signing_key)
+            signing_key=signing_key)
 
         status_to_method = {
             PackageUploadStatus.DONE: 'setDone',
@@ -886,7 +886,7 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
             self.assertEquals(copy.component.name, 'universe')
 
     def test_overrideFromAncestry_fallback_to_source_component(self):
-        # overrideFromancestry on the lack of ancestry, falls back to the
+        # overrideFromAncestry on the lack of ancestry, falls back to the
         # component the source was originally uploaded to.
         source = self.makeSource()
 
