@@ -58,8 +58,10 @@ class CodeImportWorker:
     def __init__(self):
         parser = OptionParser()
         scripts.logger_options(parser)
-        parser.add_option("--access-policy", type="choice", metavar="ACCESS_POLICY",
-            choices=["anything", "default"], default="default")
+        parser.add_option(
+            "--access-policy", type="choice", metavar="ACCESS_POLICY",
+            choices=["anything", "default"], default="default",
+            help="Access policy to use when accessing branches to import.")
         self.options, self.args = parser.parse_args()
         self.logger = scripts.logger(self.options, 'code-import-worker')
 
