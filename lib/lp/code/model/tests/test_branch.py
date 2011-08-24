@@ -1788,7 +1788,7 @@ class TestGetMergeProposals(TestCaseWithFactory):
         branch = self.factory.makeBranch(private=True)
         with person_logged_in(removeSecurityProxy(branch).owner):
             mp = self.factory.makeBranchMergeProposal(target_branch=branch)
-            self.assertContentEqual([mp], branch.getMergeProposals())
+            self.assertContentEqual([mp], branch.landing_candidates)
 
 
 
