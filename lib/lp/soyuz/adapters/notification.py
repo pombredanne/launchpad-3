@@ -613,7 +613,7 @@ def fetch_information(spr, bprs, changes, previous_version=None):
     elif spr or bprs:
         if not spr and bprs:
             spr = bprs[0].build.source_package_release
-        changesfile = spr.changelog_entry
+        changesfile = spr.aggregate_changelog(previous_version)
         date = spr.dateuploaded
         changedby = person_to_email(spr.creator)
         maintainer = person_to_email(spr.maintainer)
