@@ -990,9 +990,9 @@ class IDistroSeriesEditRestricted(Interface):
         )
     @call_with(user=REQUEST_USER)
     @export_write_operation()
-    def initDerivedDistroSeries(user, parents, architectures,
-                                packagesets, rebuild, overlays,
-                                overlay_pockets, overlay_components):
+    def initDerivedDistroSeries(user, parents, architectures=[],
+                                packagesets=[], rebuild=False, overlays=[],
+                                overlay_pockets=[], overlay_components=[]):
         """Initialize this series from parents.
 
         This method performs checks and then creates a job to populate
@@ -1090,7 +1090,7 @@ class IDistroSeriesSet(Interface):
         released == None will do no filtering on status.
         """
 
-    def priorReleasedSeries(self, distribution, prior_to_date):
+    def priorReleasedSeries(distribution, prior_to_date):
         """Find distroseries for the supplied distro  released before a
         certain date.
 

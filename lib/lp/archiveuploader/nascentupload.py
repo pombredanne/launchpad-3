@@ -41,6 +41,7 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.soyuz.adapters.overrides import UnknownOverridePolicy
 from lp.soyuz.interfaces.archive import MAIN_ARCHIVE_PURPOSES
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 
@@ -720,15 +721,7 @@ class NascentUpload:
     def processUnknownFile(self, uploaded_file):
         """Apply a set of actions for newly-uploaded (unknown) files.
 
-        Newly-uploaded files have a default set of overrides to be applied.
-        This reduces the amount of work that archive admins have to do
-        since they override the majority of new uploads with the same
-        values.  The rules for overriding are: (See bug #120052)
-            'contrib' -> 'multiverse'
-            'non-free' -> 'multiverse'
-            everything else -> 'universe'
-        This mainly relates to Debian syncs, where the default component
-        is 'main' but should not be in main for Ubuntu.
+        Here we use the override policy defined in UnknownOverridePolicy.
 
         In the case of a PPA, files are not touched.  They are always
         overridden to 'main' at publishing time, though.
@@ -751,14 +744,10 @@ class NascentUpload:
             # Don't override partner uploads.
             return
 
-        component_override_map = {
-            'contrib': 'multiverse',
-            'non-free': 'multiverse',
-            }
-
         # Apply the component override and default to universe.
-        uploaded_file.component_name = component_override_map.get(
-            uploaded_file.component_name, 'universe')
+        component_name_override = UnknownOverridePolicy.getComponentOverride(
+            uploaded_file.component_name)
+        uploaded_file.component_name = component_name_override
 
     def find_and_apply_overrides(self):
         """Look for ancestry and overrides information.
