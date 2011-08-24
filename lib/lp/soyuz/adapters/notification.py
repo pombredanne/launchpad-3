@@ -127,7 +127,7 @@ def calculate_subject(spr, bprs, customfiles, archive, distroseries,
 def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
            summary_text=None, changes=None, changesfile_content=None,
            changesfile_object=None, action=None, dry_run=False,
-           logger=None, announce_from_person=None):
+           logger=None, announce_from_person=None, previous_version=None):
     """Notify about
 
     :param blamer: The `IPerson` who is to blame for this notification.
@@ -149,6 +149,9 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     :param announce_from_person: If passed, use this `IPerson` as the From: in
         announcement emails.  If the person has no preferred email address,
         the person is ignored and the default From: is used instead.
+    :param previous_version: If specified, the change log on the email will
+        include all of the source package's change logs after that version
+        up to and including the passed spr's version.
     """
     # If this is a binary or mixed upload, we don't send *any* emails
     # provided it's not a rejection or a security upload:
@@ -213,12 +216,13 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
 
     attach_changes = not archive.is_ppa
 
-    def build_and_send_mail(action, recipients, from_addr=None, bcc=None):
+    def build_and_send_mail(action, recipients, from_addr=None, bcc=None,
+                            previous_version=None):
         subject = calculate_subject(
             spr, bprs, customfiles, archive, distroseries, pocket, action)
         body = assemble_body(
             blamer, spr, bprs, archive, distroseries, summarystring, changes,
-            action)
+            action, previous_version=previous_version)
         body = body.encode("utf8")
         send_mail(
             spr, archive, recipients, subject, body, dry_run,
@@ -226,7 +230,7 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
             attach_changes=attach_changes, from_addr=from_addr, bcc=bcc,
             logger=logger)
 
-    build_and_send_mail(action, recipients)
+    build_and_send_mail(action, recipients, previous_version)
 
     info = fetch_information(spr, bprs, changes)
     from_addr = info['changedby']
@@ -258,11 +262,12 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
 
 
 def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
-                  action):
+                  action, previous_version=None):
     """Assemble the e-mail notification body."""
     if changes is None:
         changes = {}
-    info = fetch_information(spr, bprs, changes)
+    info = fetch_information(
+        spr, bprs, changes, previous_version=previous_version)
     information = {
         'STATUS': ACTION_DESCRIPTIONS[action],
         'SUMMARY': summary,
