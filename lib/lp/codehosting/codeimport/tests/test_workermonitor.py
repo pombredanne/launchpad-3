@@ -68,6 +68,7 @@ from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitorProtocol,
     ExitQuietly,
     )
+from lp.codehosting.safe_open import AcceptAnythingPolicy
 from lp.services.log.logger import BufferLogger
 from lp.services.twistedsupport import suppress_stderr
 from lp.services.twistedsupport.tests.test_processmonitor import (
@@ -511,7 +512,8 @@ class TestWorkerMonitorRunNoProcess(BzrTestCase):
                 job_data = {}
             CodeImportWorkerMonitor.__init__(
                 self, 1, BufferLogger(),
-                FakeCodeImportScheduleEndpointProxy(job_data))
+                FakeCodeImportScheduleEndpointProxy(job_data),
+                AcceptAnythingPolicy())
             self.result_status = None
             self.process_deferred = process_deferred
 
