@@ -54,8 +54,7 @@ class SubversionWorkingTree:
         self.local_path = path
 
     def _get_client(self):
-        username_provider = subvertpy.ra.get_username_prompt_provider(
-            lambda realm, may_save: ("lptest1", False), 0)
+        username_provider = subvertpy.ra.get_username_provider()
         auth = subvertpy.ra.Auth([username_provider])
         auth.set_parameter(subvertpy.AUTH_PARAM_DEFAULT_USERNAME, "lptest2")
         return subvertpy.client.Client(auth=auth)
