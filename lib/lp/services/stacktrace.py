@@ -22,6 +22,17 @@ import traceback
 DEBUG_EXCEPTION_FORMATTER = False
 
 
+def _try_except(callable, *args, **kwargs):
+    try:
+        return callable(*args, **kwargs)
+    except (SystemExit, KeyboardInterrupt):
+        raise
+    except:
+        if DEBUG_EXCEPTION_FORMATTER:
+            traceback.print_exc()
+    # return None
+
+
 def _get_frame(f):
     "if the frame is None, make one."
     if f is None:
@@ -119,19 +130,11 @@ def _get_limit(limit):
 
 def _get_frame_data(f, lineno):
     "Given a frame and a lineno, return data for each item of extract_*."
-    co = f.f_code
-    filename = co.co_filename
-    name = co.co_name
-    linecache.checkcache(filename)
-    line = linecache.getline(filename, lineno, f.f_globals)
-    if line:
-        line = line.strip()
-    else:
-        line = None
     # Adapted from zope.exceptions.
+    try_except = _try_except  # This is a micro-optimization.
     modname = f.f_globals.get('__name__')
     # Output a traceback supplement, if any.
-    supplement = info = None
+    supplement_dict = info = None
     if '__traceback_supplement__' in f.f_locals:
         # Use the supplement defined in the function.
         tbs = f.f_locals['__traceback_supplement__']
@@ -143,42 +146,50 @@ def _get_frame_data(f, lineno):
     if tbs is not None:
         factory = tbs[0]
         args = tbs[1:]
-        try:
-            supplement = factory(*args)
-        except (SystemExit, KeyboardInterrupt):
-            raise
-        except:
-            if DEBUG_EXCEPTION_FORMATTER:
-                traceback.print_exc()
-            # else just swallow the exception.
-        else:
+        supplement = try_except(factory, *args)
+        if supplement is not None:
             # It might be nice if supplements could be dicts, for simplicity.
             # Historically, though, they are objects.
-            # We will turn the supplement into a dict, so that we have
-            # "getInfo" pre-processed and so that we are not holding on to
-            # anything from the frame.
+            # We will turn the supplement into a dict of strings, so that we
+            # have "getInfo" pre-processed and so that we are not holding on
+            # to anything from the frame.
             extra = None
             getInfo = getattr(supplement, 'getInfo', None)
             if getInfo is not None:
-                try:
-                    extra = getInfo()
-                except (SystemExit, KeyboardInterrupt):
-                    raise
-                except:
-                    if DEBUG_EXCEPTION_FORMATTER:
-                        traceback.print_exc()
-                    # else just swallow the exception.
-            supplement = dict(
-                # The "_url" suffix is historical.
-                source_url=getattr(supplement, 'source_url', None),
-                line=getattr(supplement, 'line', None),
-                column=getattr(supplement, 'column', None),
-                expression=getattr(supplement, 'expression', None),
-                warnings=getattr(supplement, 'warnings', ()),
-                extra=extra)
+                extra = try_except(getInfo)
+                extra = try_except(str, extra) if extra is not None else None
+            warnings = []
+            # The outer try-except is for the iteration.
+            try:
+                for warning in getattr(supplement, 'warnings', ()):
+                    if warning is not None:
+                        warning = try_except(str, warning)
+                    if warning is not None:
+                        warnings.append(warning)
+            except (SystemExit, KeyboardInterrupt):
+                raise
+            except:
+                if DEBUG_EXCEPTION_FORMATTER:
+                    traceback.print_exc()
+            supplement_dict = dict(warnings=warnings, extra=extra)
+            for key in ('source_url', 'line', 'column', 'expression'):
+                value = getattr(supplement, key, None)
+                if value is not None:
+                    value = try_except(str, value)
+                supplement_dict[key] = value
     info = f.f_locals.get('__traceback_info__', None)
+    info = try_except(str, info) if info is not None else None
     # End part adapted from zope.exceptions.
-    return (filename, lineno, name, line, modname, supplement, info)
+    co = f.f_code
+    filename = co.co_filename
+    name = co.co_name
+    linecache.checkcache(filename)
+    line = linecache.getline(filename, lineno, f.f_globals)
+    if line:
+        line = line.strip()
+    else:
+        line = None
+    return (filename, lineno, name, line, modname, supplement_dict, info)
 
 
 def extract_stack(f=None, limit=None):
@@ -194,8 +205,9 @@ def extract_stack(f=None, limit=None):
     limit = _get_limit(limit)
     list = []
     n = 0
+    get_frame_data = _get_frame_data  # This is a micro-optimization.
     while f is not None and (limit is None or n < limit):
-        list.append(_get_frame_data(f, f.f_lineno))
+        list.append(get_frame_data(f, f.f_lineno))
         f = f.f_back
         n = n + 1
     list.reverse()
@@ -220,8 +232,9 @@ def extract_tb(tb, limit=None):
     limit = _get_limit(limit)
     list = []
     n = 0
+    get_frame_data = _get_frame_data  # This is a micro-optimization.
     while tb is not None and (limit is None or n < limit):
-        list.append(_get_frame_data(tb.tb_frame, tb.tb_lineno))
+        list.append(get_frame_data(tb.tb_frame, tb.tb_lineno))
         tb = tb.tb_next
         n = n + 1
     return list
