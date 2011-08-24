@@ -367,9 +367,6 @@
     <class
         class="lp.registry.model.projectgroup.ProjectGroup">
         <allow
-            attributes="
-                pillar_category"/>
-        <allow
             interface="lp.registry.interfaces.projectgroup.IProjectGroupPublic"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>
         <allow
@@ -1191,9 +1188,6 @@
 
     <class
         class="lp.registry.model.product.Product">
-        <allow
-            attributes="
-                pillar_category"/>
         <allow
             interface="lp.registry.interfaces.product.IProductPublic"/>
         <allow interface="lp.bugs.interfaces.bugsummary.IBugSummaryDimension"/>

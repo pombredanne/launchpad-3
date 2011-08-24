@@ -171,6 +171,7 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def pillar_category(self):
+        """See `IPillar`."""
         return "Project Group"
 
     @property

@@ -387,6 +387,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     @property
     def pillar_category(self):
+        """See `IPillar`."""
         return "Project"
 
     @property

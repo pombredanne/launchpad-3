@@ -2005,11 +2005,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
                     obj.__class__.__name__, obj.id)
             obj = obj.pillar
 
-        # We use the "pillar_category" property if it exists, otherwise we
-        # just use the class name.
-        category = getattr(obj, "pillar_category", obj.__class__.__name__)
-        title = '%s (%s)' % (obj.title, category)
-
+        title = '%s (%s)' % (obj.title, obj.pillar_category)
         return SimpleTerm(obj, obj.name, title)
 
     def getTermByToken(self, token):
