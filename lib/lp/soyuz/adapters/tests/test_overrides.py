@@ -149,6 +149,31 @@ class TestOverrides(TestCaseWithFactory):
                 distroseries.main_archive, distroseries, pocket, bpns)
         self.assertThat(recorder, HasQueryCount(Equals(4)))
 
+    def test_getComponentOverride_default_name(self):
+        # getComponentOverride returns the default component name when an
+        # unknown component name is passed.
+        component_name = UnknownOverridePolicy.getComponentOverride('no-name')
+
+        self.assertEqual('universe', component_name)
+
+    def test_getComponentOverride_default_component(self):
+        # getComponentOverride also accepts a component object (as
+        # opposed to a component's name).
+        component = getUtility(IComponentSet)['universe']
+        component_name = UnknownOverridePolicy.getComponentOverride(component)
+
+        self.assertEqual('universe', component_name)
+
+    def test_getComponentOverride_return_component(self):
+        # Passing return_component=True to getComponentOverride makes it
+        # return the Component object (as opposed to the component's
+        # name).
+        universe_component = getUtility(IComponentSet)['universe']
+        component = UnknownOverridePolicy.getComponentOverride(
+            universe_component, return_component=True)
+
+        self.assertEqual(universe_component, component)
+
     def test_unknown_sources(self):
         # If the unknown policy is used, it does no checks, just returns the
         # defaults.
