@@ -187,9 +187,9 @@ class CodeImportSourceDetails:
 
     :ivar branch_id: The id of the branch associated to this code import, used
         for locating the existing import and the foreign tree.
-    :ivar rcstype: 'svn' or 'cvs' as appropriate.
+    :ivar rcstype: 'svn', 'cvs', 'hg', 'git', 'bzr-svn', as appropriate.
     :ivar url: The branch URL if rcstype in ['svn', 'bzr-svn',
-        'git'], None otherwise.
+        'git', 'hg'], None otherwise.
     :ivar cvs_root: The $CVSROOT if rcstype == 'cvs', None otherwise.
     :ivar cvs_module: The CVS module if rcstype == 'cvs', None otherwise.
     """

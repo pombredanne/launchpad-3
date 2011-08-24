@@ -107,6 +107,7 @@ class WorkerTest(TestCaseWithTransport, TestCase):
     def setUp(self):
         TestCaseWithTransport.setUp(self)
         self.disable_directory_isolation()
+        SafeBranchOpener.install_hook()
 
     def assertDirectoryTreesEqual(self, directory1, directory2):
         """Assert that `directory1` has the same structure as `directory2`.
@@ -1001,7 +1002,7 @@ class PullingImportWorkerTests:
         if self.rcstype in ('git', 'bzr-svn', 'hg'):
             args['url'] = reference_url
         else:
-            raise AssertionError("unexpected rcs_type %r" % self.rcs_type)
+            raise AssertionError("unexpected rcs_type %r" % self.rcstype)
         source_details = self.factory.makeCodeImportSourceDetails(**args)
         worker = self.makeImportWorker(source_details)
         self.assertEqual(
