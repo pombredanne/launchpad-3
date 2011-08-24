@@ -1063,7 +1063,7 @@ class IBranchEdit(Interface):
           adapted to an IBranchTarget.
         """
 
-    def requestUpgrade():
+    def requestUpgrade(requester):
         """Create an IBranchUpgradeJob to upgrade this branch."""
 
     def branchChanged(stacked_on_url, last_revision_id, control_format,

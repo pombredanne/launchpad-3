@@ -15,8 +15,11 @@ from bzrlib.branch import (
     Branch,
     BzrBranchFormat7,
     )
-from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.repofmt.knitpack_repo import RepositoryFormatKnitPack6
+from bzrlib.bzrdir import (
+    BzrDir,
+    BzrDirMetaFormat1,
+    )
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transport import get_transport
 import pytz
@@ -77,6 +80,7 @@ from lp.codehosting.vfs import branch_id_to_path
 from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
+from lp.services.job.runner import JobRunner
 from lp.services.osutils import override_environ
 from lp.testing import TestCaseWithFactory
 from lp.testing.mail_helpers import pop_notifications
@@ -291,20 +295,18 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_5,
             repository_format=RepositoryFormat.BZR_REPOSITORY_4)
-        job = BranchUpgradeJob.create(branch)
+        job = BranchUpgradeJob.create(branch, self.factory.makePerson())
         verifyObject(IBranchUpgradeJob, job)
 
     def test_upgrades_branch(self):
         """Ensure that a branch with an outdated format is upgraded."""
         self.useBzrBranches(direct_database=True)
-        db_branch, tree = self.create_branch_and_tree(format='knit')
-        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
-        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+        db_branch, tree = self.create_knit()
         self.assertEqual(
             tree.branch.repository._format.get_format_string(),
             'Bazaar-NG Knit Repository Format 1')
 
-        job = BranchUpgradeJob.create(db_branch)
+        job = BranchUpgradeJob.create(db_branch, self.factory.makePerson())
         self.becomeDbUser(config.upgrade_branches.dbuser)
         with TransactionFreeOperation.require():
             job.run()
@@ -321,15 +323,21 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_7,
             repository_format=RepositoryFormat.BZR_CHK_2A)
-        self.assertRaises(AssertionError, BranchUpgradeJob.create, branch)
+        self.assertRaises(
+            AssertionError, BranchUpgradeJob.create, branch,
+            self.factory.makePerson())
+
+    def create_knit(self):
+        db_branch, tree = self.create_branch_and_tree(format='knit')
+        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+        return db_branch, tree
 
     def test_existing_bzr_backup(self):
         # If the target branch already has a backup.bzr dir, the upgrade copy
         # should remove it.
         self.useBzrBranches(direct_database=True)
-        db_branch, tree = self.create_branch_and_tree(format='knit')
-        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
-        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+        db_branch, tree = self.create_knit()
 
         # Add a fake backup.bzr dir
         source_branch_transport = get_transport(db_branch.getInternalBzrUrl())
@@ -337,7 +345,7 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         source_branch_transport.clone('.bzr').copy_tree_to_transport(
             source_branch_transport.clone('backup.bzr'))
 
-        job = BranchUpgradeJob.create(db_branch)
+        job = BranchUpgradeJob.create(db_branch, self.factory.makePerson())
         self.becomeDbUser(config.upgrade_branches.dbuser)
         job.run()
 
@@ -354,6 +362,27 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         # Scan jobs are created by the branchChanged method.
         branch.branchChanged('', 'new-id', None, None, None)
         Store.of(branch).flush()
+
+    def test_not_branch_error(self):
+        self.useBzrBranches(direct_database=True)
+        db_branch, tree = self.create_branch_and_tree()
+        branch2 = BzrDir.create_branch_convenience('.')
+        tree.branch.set_stacked_on_url(branch2.base)
+        branch2.bzrdir.destroy_branch()
+        # Create BranchUpgradeJob manually, because we're trying to upgrade a
+        # branch that doesn't need upgrading.
+        requester = self.factory.makePerson()
+        branch_job = BranchJob(
+            db_branch, BranchJobType.UPGRADE_BRANCH, {}, requester=requester)
+        job = BranchUpgradeJob(branch_job)
+        self.becomeDbUser(config.upgrade_branches.dbuser)
+        runner = JobRunner([job])
+        with self.noOops():
+            runner.runJobHandleError(job)
+        (mail,) = pop_notifications()
+        self.assertEqual(
+            'Launchpad error while upgrading a branch', mail['subject'])
+        self.assertIn('Not a branch', mail.get_payload(decode=True))
 
 
 class TestRevisionMailJob(TestCaseWithFactory):
@@ -898,7 +927,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         self.layer.switchDbUser('branchscanner')
         self.updateDBRevisions(db_branch, tree.branch)
         expected = (
-            u"-"*60 + '\n'
+            u"-" * 60 + '\n'
             "revno: 1" '\n'
             "committer: Joe Bloggs <joe@example.com>" '\n'
             "branch nick: %s" '\n'
@@ -912,7 +941,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
             job.getRevisionMessage(first_revision, 1), expected)
 
         expected_message = (
-            u"-"*60 + '\n'
+            u"-" * 60 + '\n'
             "revno: 2" '\n'
             "committer: Joe Bloggs <joe@example.com>" '\n'
             "branch nick: %s" '\n'
@@ -988,7 +1017,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         super(TestRosettaUploadJob, self).setUp()
         self.series = None
 
-    def _makeBranchWithTreeAndFile(self, file_name, file_content = None):
+    def _makeBranchWithTreeAndFile(self, file_name, file_content=None):
         return self._makeBranchWithTreeAndFiles(((file_name, file_content), ))
 
     def _makeBranchWithTreeAndFiles(self, files):
@@ -1035,7 +1064,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
             try:
                 file_content = file_pair[1]
                 if file_content is None:
-                    raise IndexError # Same as if missing.
+                    raise IndexError  # Same as if missing.
             except IndexError:
                 file_content = self.factory.getUniqueString()
             dname = os.path.dirname(file_name)
@@ -1060,7 +1089,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
             self.series.branch = self.branch
             self.series.translations_autoimport_mode = mode
 
-    def _runJobWithFile(self, import_mode, file_name, file_content = None):
+    def _runJobWithFile(self, import_mode, file_name, file_content=None):
         return self._runJobWithFiles(
             import_mode, ((file_name, file_content), ))
 
@@ -1293,7 +1322,7 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         # iterReady does not return jobs for branches where last_scanned_id
         # and last_mirror_id are different.
         self._makeBranchWithTreeAndFiles([])
-        self.branch.last_scanned_id = NULL_REVISION # Was not scanned yet.
+        self.branch.last_scanned_id = NULL_REVISION  # Was not scanned yet.
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
         # Put the job in ready state.

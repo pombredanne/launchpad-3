@@ -47,7 +47,6 @@ from lazr.restful.interface import (
     )
 from lazr.uri import URI
 import pytz
-import simplejson
 from zope.app.form.browser import TextAreaWidget
 from zope.component import (
     getUtility,
@@ -838,7 +837,7 @@ class BranchMirrorStatusView(LaunchpadFormView):
     def mirror_of_ssh(self):
         """True if this a mirror branch with an sftp or bzr+ssh URL."""
         if not self.context.url:
-            return False # not a mirror branch
+            return False  # not a mirror branch
         uri = URI(self.context.url)
         return uri.scheme in ('sftp', 'bzr+ssh')
 
@@ -994,7 +993,7 @@ class BranchUpgradeView(LaunchpadFormView):
 
     @action('Upgrade', name='upgrade_branch')
     def upgrade_branch_action(self, action, data):
-        self.context.requestUpgrade()
+        self.context.requestUpgrade(self.user)
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
