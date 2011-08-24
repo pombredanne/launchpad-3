@@ -38,6 +38,11 @@ class CodeImportWorker(LaunchpadScript):
         LaunchpadScript.__init__(self, name, dbuser, test_args)
         set_up_oops_reporting('codeimportworker', name, mangle_stdout=True)
 
+    def add_my_options(self):
+        """See `LaunchpadScript`."""
+        self.parser.add_option("--access-policy", type="choice", metavar="ACCESS_POLICY",
+            choices=["anything", "default"], default=None)
+
     def _init_db(self, isolation):
         # This script doesn't access the database.
         pass

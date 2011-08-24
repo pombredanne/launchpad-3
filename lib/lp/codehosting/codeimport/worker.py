@@ -63,7 +63,6 @@ from lp.codehosting.codeimport.foreigntree import (
     SubversionWorkingTree,
     )
 from lp.codehosting.safe_open import (
-    AcceptAnythingPolicy,
     BadUrl,
     BranchOpenPolicy,
     SafeBranchOpener,

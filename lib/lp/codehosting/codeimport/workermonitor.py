@@ -125,7 +125,7 @@ class CodeImportWorkerMonitor:
     path_to_script = os.path.join(
         config.root, 'scripts', 'code-import-worker.py')
 
-    def __init__(self, job_id, logger, codeimport_endpoint):
+    def __init__(self, job_id, logger, codeimport_endpoint, access_policy):
         """Construct an instance.
 
         :param job_id: The ID of the CodeImportJob we are to work on.
@@ -138,6 +138,7 @@ class CodeImportWorkerMonitor:
         self._log_file = tempfile.TemporaryFile()
         self._branch_url = None
         self._log_file_name = 'no-name-set.txt'
+        self._access_policy = access_policy
 
     def _logOopsFromFailure(self, failure):
         request = log_oops_from_failure(
@@ -223,7 +224,10 @@ class CodeImportWorkerMonitor:
         deferred = defer.Deferred()
         protocol = self._makeProcessProtocol(deferred)
         interpreter = '%s/bin/py' % config.root
-        command = [interpreter, self.path_to_script] + worker_arguments
+        args = [interpreter, self.path_to_script]
+        if self._access_policy is not None:
+            args.append("--access-policy=%s" % self._access_policy)
+        command = args + worker_arguments
         self._logger.info(
             "Launching worker child process %s.", command)
         reactor.spawnProcess(
