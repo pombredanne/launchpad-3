@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Functions used with the Rosetta PO import script."""
@@ -21,10 +21,10 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad import helpers
-from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import errorlog
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.services.mail.sendmail import simple_sendmail
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationimportqueue import (

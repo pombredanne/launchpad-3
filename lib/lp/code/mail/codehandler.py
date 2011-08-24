@@ -1,10 +1,11 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 
 import operator
+import os
 import re
 
 from bzrlib.branch import Branch
@@ -23,23 +24,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.interfaces.mail import (
-    EmailProcessingError,
-    IMailHandler,
-    )
-from lp.services.messages.interfaces.message import IMessageSet
-from canonical.launchpad.mail.commands import (
-    EmailCommand,
-    EmailCommandCollection,
-    )
-from canonical.launchpad.mail.helpers import (
-    ensure_not_weakly_authenticated,
-    get_error_message,
-    get_main_body,
-    get_person_or_team,
-    IncomingEmailError,
-    parse_commands,
-    )
 from canonical.launchpad.mailnotification import (
     send_process_error_notification,
     )
@@ -68,7 +52,27 @@ from lp.code.interfaces.branchnamespace import (
 from lp.code.interfaces.branchtarget import check_default_stacked_on
 from lp.codehosting.bzrutils import is_branch_stackable
 from lp.codehosting.vfs import get_lp_server
+from lp.services.mail.commands import (
+    EmailCommand,
+    EmailCommandCollection,
+    )
+from lp.services.mail.helpers import (
+    ensure_not_weakly_authenticated,
+    get_error_message,
+    get_main_body,
+    get_person_or_team,
+    IncomingEmailError,
+    parse_commands,
+    )
+from lp.services.mail.interfaces import (
+    EmailProcessingError,
+    IMailHandler,
+    )
 from lp.services.mail.sendmail import simple_sendmail
+from lp.services.messages.interfaces.message import IMessageSet
+
+
+error_templates = os.path.join(os.path.dirname(__file__), 'errortemplates')
 
 
 class BadBranchMergeProposalAddress(Exception):
@@ -211,6 +215,7 @@ class UpdateStatusEmailCommand(CodeReviewEmailCommand):
             raise EmailProcessingError(
                 get_error_message(
                     'user-not-reviewer.txt',
+                    error_templates=error_templates,
                     command_name=self.name,
                     target=context.merge_proposal.target_branch.bzr_identity))
 
@@ -256,7 +261,7 @@ class CodeEmailCommands(EmailCommandCollection):
                     command_name=op_name,
                     num_arguments_expected='one or more',
                     num_arguments_got='0'))
-    
+
         # Pop the first arg as the reviewer.
         reviewer = get_person_or_team(string_args.pop(0))
         if len(string_args) > 0:
@@ -296,7 +301,7 @@ class CodeHandler:
         try:
             ensure_not_weakly_authenticated(
                 mail, email_addr, 'not-signed-md.txt',
-                'key-not-registered-md.txt')
+                'key-not-registered-md.txt', error_templates)
         except IncomingEmailError, error:
             user = getUtility(ILaunchBag).user
             send_process_error_notification(
@@ -361,7 +366,7 @@ class CodeHandler:
                 owner=getUtility(ILaunchBag).user,
                 filealias=file_alias,
                 parsed_message=mail)
-            comment = merge_proposal.createCommentFromMessage(
+            merge_proposal.createCommentFromMessage(
                 message, context.vote, context.vote_tags, mail)
 
         except IncomingEmailError, error:
@@ -615,7 +620,9 @@ class CodeHandler:
         try:
             email_body_text, md = self.findMergeDirectiveAndComment(message)
         except MissingMergeDirective:
-            body = get_error_message('missingmergedirective.txt')
+            body = get_error_message(
+                'missingmergedirective.txt',
+                error_templates=error_templates)
             simple_sendmail('merge@code.launchpad.net',
                 [message.get('from')],
                 'Error Creating Merge Proposal', body)
@@ -629,6 +636,7 @@ class CodeHandler:
                     md, submitter)
             except NonLaunchpadTarget:
                 body = get_error_message('nonlaunchpadtarget.txt',
+                    error_templates=error_templates,
                     target_branch=md.target_branch)
                 simple_sendmail('merge@code.launchpad.net',
                     [message.get('from')],
@@ -636,7 +644,9 @@ class CodeHandler:
                 return
             except BranchCreationException, e:
                 body = get_error_message(
-                        'branch-creation-exception.txt', reason=e)
+                        'branch-creation-exception.txt',
+                        error_templates=error_templates,
+                        reason=e)
                 simple_sendmail('merge@code.launchpad.net',
                     [message.get('from')],
                     'Error Creating Merge Proposal', body)
@@ -648,7 +658,7 @@ class CodeHandler:
                 # necessary arguments to addLandingTarget(). So from the email
                 # body we need to extract: reviewer, review type, description.
                 description = None
-                review_requests=[]
+                review_requests = []
                 email_body_text = email_body_text.strip()
                 if email_body_text != '':
                     description = email_body_text
@@ -669,6 +679,7 @@ class CodeHandler:
             except BranchMergeProposalExists:
                 body = get_error_message(
                     'branchmergeproposal-exists.txt',
+                    error_templates=error_templates,
                     source_branch=source.bzr_identity,
                     target_branch=target.bzr_identity)
                 simple_sendmail('merge@code.launchpad.net',

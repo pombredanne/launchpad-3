@@ -17,7 +17,7 @@ testmails_path = os.path.join(os.path.dirname(__file__), 'emails')
 def read_test_message(filename):
     """Reads a test message and returns it as ISignedMessage.
 
-    The test messages are located in canonical/launchpad/mail/ftests/emails
+    The test messages are located in lp/services/mail/tests/emails
     """
     message_string = open(os.path.join(testmails_path, filename)).read()
     return signed_message_from_string(message_string)

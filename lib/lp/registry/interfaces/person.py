@@ -27,7 +27,6 @@ __all__ = [
     'ITeamCreation',
     'ITeamReassignment',
     'ImmutableVisibilityError',
-    'InvalidName',
     'NoSuchPerson',
     'OPEN_TEAM_POLICY',
     'PersonCreationRationale',
@@ -1405,7 +1404,8 @@ class IPersonPublic(IHasBranches, IHasSpecifications,
         )
     @export_factory_operation(Interface, [])  # Really IArchive.
     @operation_for_version("beta")
-    def createPPA(name=None, displayname=None, description=None, private=False):
+    def createPPA(name=None, displayname=None, description=None,
+                  private=False):
         """Create a PPA.
 
         :param name: A string with the name of the new PPA to create. If
@@ -2255,8 +2255,8 @@ class IPersonSet(Interface):
         addresses associated with.
 
         When merging teams, from_person must have no IMailingLists
-        associated with it. If it has active members they will be deactivated -
-        and reviewer must be supplied.
+        associated with it. If it has active members they will be deactivated
+        - and reviewer must be supplied.
 
         :param from_person: An IPerson or ITeam that is a duplicate.
         :param to_person: An IPerson or ITeam that is a master.
@@ -2445,10 +2445,6 @@ class ISoftwareCenterAgentApplication(ILaunchpadApplication):
 
 class ImmutableVisibilityError(Exception):
     """A change in team membership visibility is not allowed."""
-
-
-class InvalidName(Exception):
-    """The name given for a person is not valid."""
 
 
 class NoSuchPerson(NameLookupFailed):

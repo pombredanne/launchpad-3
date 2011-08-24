@@ -724,36 +724,6 @@ class BranchJobPruner(BulkPruner):
         """
 
 
-class MirrorBugMessageOwner(TunableLoop):
-    """Mirror BugMessage.owner from Message.
-
-    Only needed until they are all set, after that triggers will maintain it.
-    """
-
-    # Test migration did 3M in 2 hours, so 5000 is ~ 10 seconds - and that's
-    # the max we want to hold a DB lock open for.
-    minimum_chunk_size = 1000
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(MirrorBugMessageOwner, self).__init__(log, abort_time)
-        self.store = IMasterStore(BugMessage)
-        self.isDone = IMasterStore(BugMessage).find(
-            BugMessage, BugMessage.ownerID == None).is_empty
-
-    def __call__(self, chunk_size):
-        """See `ITunableLoop`."""
-        transaction.begin()
-        updated = self.store.execute("""update bugmessage set
-            owner=message.owner from message where
-            bugmessage.message=message.id and bugmessage.id in
-                (select id from bugmessage where owner is NULL limit %s);"""
-            % int(chunk_size)
-            ).rowcount
-        self.log.debug("Updated %s bugmessages." % updated)
-        transaction.commit()
-
-
 class BugHeatUpdater(TunableLoop):
     """A `TunableLoop` for bug heat calculations."""
 
@@ -1178,7 +1148,6 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
 class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
     script_name = 'garbo-hourly'
     tunable_loops = [
-        MirrorBugMessageOwner,
         OAuthNoncePruner,
         OpenIDConsumerNoncePruner,
         OpenIDConsumerAssociationPruner,

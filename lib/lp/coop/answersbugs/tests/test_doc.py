@@ -13,10 +13,6 @@ from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
     )
-from canonical.launchpad.ftests.test_system_documentation import (
-    uploaderSetUp,
-    uploadQueueSetUp,
-    )
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite,
     setUp,
@@ -32,6 +28,10 @@ from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.testing import build_test_suite
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.tests.test_doc import (
+    uploaderSetUp,
+    uploadQueueSetUp,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 

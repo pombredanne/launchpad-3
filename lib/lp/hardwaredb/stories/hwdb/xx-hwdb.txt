@@ -217,51 +217,6 @@ simply omits some fields. In such a case, we return an extra header
     POST data: submission_data
     ...
 
-Also, an OOPS is reported.
-
-    >>> from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
-    >>> error_utility = ErrorReportingUtility()
-    >>> error_report = error_utility.getLastOopsReport()
-    >>> fp = StringIO()
-    >>> error_report.write(fp)
-    >>> print fp.getvalue()
-    Oops-Id:...
-    Exception-Type: HWSubmissionMissingFields
-    Exception-Value: Missing form fields: submission_data
-    Date:...
-    Page-Id: HWDBApplication:+submit
-    ...
-    Traceback (most recent call last):
-    HWSubmissionMissingFields: Missing form fields: submission_data
-    <BLANKLINE>
-
-    >>> del form_data['field.distribution']
-    >>> browser.open('http://launchpad.dev/+hwdb/+submit',
-    ...     data=urlencode(form_data))
-    >>> print browser.headers
-    Status: 200 Ok
-    ...
-    X-Launchpad-Hwdb-Submission: Error: Required fields not contained in
-    POST data: distribution, submission_data
-    ...
-
-    >>> error_report = error_utility.getLastOopsReport()
-    >>> fp = StringIO()
-    >>> error_report.write(fp)
-    >>> print fp.getvalue()
-    Oops-Id:...
-    Exception-Type: HWSubmissionMissingFields
-    Exception-Value: Missing form fields: distribution, submission_data
-    Date:...
-    Page-Id: HWDBApplication:+submit
-    ...
-    Informational: True
-    ...
-    Traceback (most recent call last):
-    HWSubmissionMissingFields: Missing form fields: distribution,
-    submission_data
-    <BLANKLINE>
-
 = Views for raw submission data. =
 
 The raw submission data is listed by submitter and by system fingerprint.

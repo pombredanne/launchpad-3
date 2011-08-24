@@ -622,7 +622,6 @@ class BugAttachmentChange(AttributeChange):
                 download_url_of_bugattachment(self.new_value))
         else:
             what_changed = ATTACHMENT_REMOVED
-            attachment = self.new_value
             old_value = "%s %s" % (
                 self.old_value.title,
                 download_url_of_bugattachment(self.old_value))

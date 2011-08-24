@@ -19,10 +19,6 @@ import datetime
 from canonical.config import config
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.helpers import get_contact_email_addresses
-from canonical.launchpad.mail import (
-    format_address,
-    sendmail,
-    )
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.bugs.adapters.bugchange import (
     BugDuplicateChange,
@@ -36,6 +32,10 @@ from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
 from lp.bugs.mail.newbug import generate_bug_add_email
 from lp.bugs.model.bug import get_also_notified_subscribers
 from lp.registry.interfaces.person import IPerson
+from lp.services.mail.sendmail import (
+    format_address,
+    sendmail,
+    )
 
 
 @block_implicit_flushes

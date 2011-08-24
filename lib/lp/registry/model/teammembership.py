@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'sendStatusChangeNotification',
     'TeamMembership',
     'TeamMembershipSet',
     'TeamParticipation',
@@ -40,10 +39,6 @@ from canonical.launchpad.helpers import (
     get_email_template,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.mail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.webapp import canonical_url
 from lp.app.browser.tales import DurationFormatterAPI
@@ -68,6 +63,10 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     ITeamParticipation,
     TeamMembershipStatus,
+    )
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
     )
 
 
@@ -497,7 +496,6 @@ class TeamMembershipSet:
     def deactivateActiveMemberships(self, team, comment, reviewer):
         """See `ITeamMembershipSet`."""
         now = datetime.now(pytz.timezone('UTC'))
-        store = Store.of(team)
         cur = cursor()
         all_members = list(team.activemembers)
         cur.execute("""

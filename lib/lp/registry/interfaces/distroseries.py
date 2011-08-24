@@ -541,7 +541,8 @@ class IDistroSeriesPublic(
         :param created_since_date: If specified, only returns items uploaded
             since the timestamp supplied.
         :param archive: Filter results for this `IArchive`.
-        :param pocket: Filter results by this `PackagePublishingPocket`.
+        :param pocket: Filter results by this `PackagePublishingPocket` or a
+            list of `PackagePublishingPocket`.
         :param custom_type: Filter results by this
             `PackageUploadCustomFormat`.
         :param name: Filter results by this file name or package name.
@@ -786,20 +787,34 @@ class IDistroSeriesPublic(
         DistroSeriesBinaryPackage objects that match the given text.
         """
 
-    def createQueueEntry(pocket, archive, changesfilename, changesfilecontent,
+    def createQueueEntry(pocket, archive, changesfilename=None,
+                         changesfilecontent=None, changes_file_alias=None,
                          signingkey=None, package_copy_job=None):
         """Create a queue item attached to this distroseries.
 
-        Create a new records respecting the given pocket and archive.
+        Create a new `PackageUpload` to the given pocket and archive.
 
-        The default state is NEW, sorted sqlobject declaration, any
-        modification should be performed via Queue state-machine.
+        The default state is NEW.  Any further state changes go through
+        the Queue state-machine.
 
-        The changesfile argument should be the text of the .changes for this
-        upload. The contents of this may be used later.
-
-        'signingkey' is the IGPGKey used to sign the changesfile or None if
-        the changesfile is unsigned.
+        :param pocket: The `PackagePublishingPocket` to upload to.
+        :param archive: The `Archive` to upload to.  Must be for the same
+            `Distribution` as this series.
+        :param changesfilename: Name for the upload's .changes file.  You may
+            specify a changes file by passing both `changesfilename` and
+            `changesfilecontent`, or by passing `changes_file_alias`.
+        :param changesfilecontent: Text for the changes file.  It will be
+            signed and stored in the Librarian.  Must be passed together with
+            `changesfilename`; alternatively, you may provide a
+            `changes_file_alias` to replace both of these.
+        :param changes_file_alias: A `LibraryFileAlias` containing the
+            .changes file.  Security warning: unless the file has already
+            been checked, this may open us up to replay attacks as per bugs
+            159304 and 451396.  Use `changes_file_alias` only if you know
+            this can't happen.
+        :param signingkey: `IGPGKey` used to sign the changes file, or None if
+            it is unsigned.
+        :return: A new `PackageUpload`.
         """
 
     def newArch(architecturetag, processorfamily, official, owner,
@@ -975,9 +990,9 @@ class IDistroSeriesEditRestricted(Interface):
         )
     @call_with(user=REQUEST_USER)
     @export_write_operation()
-    def initDerivedDistroSeries(user, parents, architectures,
-                                packagesets, rebuild, overlays,
-                                overlay_pockets, overlay_components):
+    def initDerivedDistroSeries(user, parents, architectures=[],
+                                packagesets=[], rebuild=False, overlays=[],
+                                overlay_pockets=[], overlay_components=[]):
         """Initialize this series from parents.
 
         This method performs checks and then creates a job to populate
@@ -1075,7 +1090,7 @@ class IDistroSeriesSet(Interface):
         released == None will do no filtering on status.
         """
 
-    def priorReleasedSeries(self, distribution, prior_to_date):
+    def priorReleasedSeries(distribution, prior_to_date):
         """Find distroseries for the supplied distro  released before a
         certain date.
 

@@ -56,7 +56,3 @@ class RequestCountryTestCase(unittest.TestCase):
 
         country = request_country({'REMOTE_ADDR': '127.0.0.1'})
         self.failUnless(country is None)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

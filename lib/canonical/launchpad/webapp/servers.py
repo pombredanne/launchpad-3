@@ -703,12 +703,15 @@ class BrowserFormNG:
 def web_service_request_to_browser_request(webservice_request):
     """Convert a given webservice request into a webapp one.
 
-    Simply overrides 'SERVER_URL' to the 'mainsite', preserving headers and
-    body.
+    Overrides 'SERVER_URL' to the 'mainsite', preserving headers and
+    body.  Encodes PATH_INFO because it is unconditionally decoded by
+    zope.publisher.http.sane_environment.
     """
     body = webservice_request.bodyStream.getCacheStream().read()
     environ = dict(webservice_request.environment)
     environ['SERVER_URL'] = allvhosts.configs['mainsite'].rooturl
+    if 'PATH_INFO' in environ:
+        environ['PATH_INFO'] = environ['PATH_INFO'].encode('utf-8')
     return LaunchpadBrowserRequest(body, environ)
 
 

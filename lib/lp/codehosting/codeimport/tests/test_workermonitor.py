@@ -12,7 +12,6 @@ import os
 import shutil
 import StringIO
 import tempfile
-import unittest
 import urllib
 
 from bzrlib.branch import Branch
@@ -661,26 +660,28 @@ class TestWorkerMonitorIntegration(BzrTestCase):
     def makeGitCodeImport(self):
         """Make a `CodeImport` that points to a real Git repository."""
         load_optional_plugin('git')
-        self.git_server = GitServer(self.repo_path)
+        self.git_server = GitServer(self.repo_path, use_server=False)
         self.git_server.start_server()
         self.addCleanup(self.git_server.stop_server)
 
         self.git_server.makeRepo([('README', 'contents')])
         self.foreign_commit_count = 1
 
-        return self.factory.makeCodeImport(git_repo_url=self.repo_path)
+        return self.factory.makeCodeImport(
+            git_repo_url=self.git_server.get_url())
 
     def makeHgCodeImport(self):
         """Make a `CodeImport` that points to a real Mercurial repository."""
         load_optional_plugin('hg')
-        self.hg_server = MercurialServer(self.repo_path)
+        self.hg_server = MercurialServer(self.repo_path, use_server=False)
         self.hg_server.start_server()
         self.addCleanup(self.hg_server.stop_server)
 
         self.hg_server.makeRepo([('README', 'contents')])
         self.foreign_commit_count = 1
 
-        return self.factory.makeCodeImport(hg_repo_url=self.repo_path)
+        return self.factory.makeCodeImport(
+            hg_repo_url=self.hg_server.get_url())
 
     def getStartedJobForImport(self, code_import):
         """Get a started `CodeImportJob` for `code_import`.
@@ -746,7 +747,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
             return result
         return deferred.addBoth(save_protocol_object)
 
-    def DISABLEDtest_import_cvs(self):
+    def test_import_cvs(self):
         # Create a CVS CodeImport and import it.
         job = self.getStartedJobForImport(self.makeCVSCodeImport())
         code_import_id = job.code_import.id
@@ -755,7 +756,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    def DISABLEDtest_import_subversion(self):
+    def test_import_subversion(self):
         # Create a Subversion CodeImport and import it.
         job = self.getStartedJobForImport(self.makeSVNCodeImport())
         code_import_id = job.code_import.id
@@ -782,9 +783,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    # XXX 2010-03-24 MichaelHudson, bug=541526: This test fails intermittently
-    # in EC2.
-    def DISABLED_test_import_bzrsvn(self):
+    def test_import_bzrsvn(self):
         # Create a Subversion-via-bzr-svn CodeImport and import it.
         job = self.getStartedJobForImport(self.makeBzrSvnCodeImport())
         code_import_id = job.code_import.id
@@ -832,7 +831,3 @@ class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
             [interpreter, script_path, str(job_id), '-q'],
             childFDs={0:0, 1:1, 2:2}, env=os.environ)
         return process_end_deferred
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

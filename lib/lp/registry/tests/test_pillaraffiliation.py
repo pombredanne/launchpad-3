@@ -246,6 +246,19 @@ class TestBranchPillarAffiliation(_TestBugTaskorBranchMixin,
         adapter = IHasAffiliation(branch)
         self.assertEqual(branch.product, adapter.getPillar())
 
+    def test_getBranch(self):
+        # The branch is the context.
+        branch = self.factory.makeBranch()
+        adapter = IHasAffiliation(branch)
+        self.assertEqual(branch, adapter.getBranch())
+
+    def test_branch_trusted_reviewer_affiliation(self):
+        # A person who is the branch's trusted reviewer is affiliated.
+        person = self.factory.makePerson()
+        product = self.factory.makeProduct(name='pting')
+        self._check_affiliated_with_product(
+            person, product, 'trusted reviewer')
+
     def _check_affiliated_with_distro(self, person, target, role):
         distroseries = self.factory.makeDistroSeries(distribution=target)
         sp = self.factory.makeSourcePackage(distroseries=distroseries)
@@ -256,7 +269,54 @@ class TestBranchPillarAffiliation(_TestBugTaskorBranchMixin,
 
     def _check_affiliated_with_product(self, person, target, role):
         branch = self.factory.makeBranch(product=target)
+        with person_logged_in(branch.owner):
+            branch.reviewer = person
         [badges] = IHasAffiliation(branch).getAffiliationBadges([person])
+        self.assertEqual(
+            ("/@@/product-badge", "Pting %s" % role), badges[0])
+
+
+class CodeReviewVotePillarAffiliationTestCase(TestBranchPillarAffiliation):
+
+    layer = DatabaseFunctionalLayer
+
+    def makeCodeReviewVote(self, branch):
+        merge_proposal = self.factory.makeBranchMergeProposal(
+            target_branch=branch)
+        reviewer = self.factory.makePerson()
+        with person_logged_in(merge_proposal.registrant):
+            vote = merge_proposal.nominateReviewer(
+                reviewer, merge_proposal.registrant)
+        return vote
+
+    def test_correct_pillar_is_used(self):
+        branch = self.factory.makeBranch()
+        vote = self.makeCodeReviewVote(branch)
+        adapter = IHasAffiliation(vote)
+        self.assertEqual(branch.product, adapter.getPillar())
+
+    def test_getBranch(self):
+        # The code review vote's target branch is the branch.
+        branch = self.factory.makeBranch()
+        vote = self.makeCodeReviewVote(branch)
+        adapter = IHasAffiliation(vote)
+        self.assertEqual(branch, adapter.getBranch())
+
+    def _check_affiliated_with_distro(self, person, target, role):
+        distroseries = self.factory.makeDistroSeries(distribution=target)
+        sp = self.factory.makeSourcePackage(distroseries=distroseries)
+        branch = self.factory.makeBranch(sourcepackage=sp)
+        vote = self.makeCodeReviewVote(branch)
+        [badges] = IHasAffiliation(vote).getAffiliationBadges([person])
+        self.assertEqual(
+            ("/@@/distribution-badge", "Pting %s" % role), badges[0])
+
+    def _check_affiliated_with_product(self, person, target, role):
+        branch = self.factory.makeBranch(product=target)
+        with person_logged_in(branch.owner):
+            branch.reviewer = person
+        vote = self.makeCodeReviewVote(branch)
+        [badges] = IHasAffiliation(vote).getAffiliationBadges([person])
         self.assertEqual(
             ("/@@/product-badge", "Pting %s" % role), badges[0])
 
@@ -279,7 +339,8 @@ class TestDistroSeriesPillarAffiliation(TestCaseWithFactory):
             owner=owner, driver=driver, name='pting')
         distroseries = self.factory.makeDistroSeries(
             registrant=driver, distribution=distribution)
-        [badges] = IHasAffiliation(distroseries).getAffiliationBadges([driver])
+        [badges] = IHasAffiliation(
+            distroseries).getAffiliationBadges([driver])
         self.assertEqual(
             ("/@@/distribution-badge", "Pting driver"), badges[0])
 
@@ -292,7 +353,8 @@ class TestDistroSeriesPillarAffiliation(TestCaseWithFactory):
             owner=owner, driver=driver, name='pting')
         distroseries = self.factory.makeDistroSeries(
             registrant=owner, distribution=distribution)
-        [badges] = IHasAffiliation(distroseries).getAffiliationBadges([driver])
+        [badges] = IHasAffiliation(
+            distroseries).getAffiliationBadges([driver])
         self.assertEqual(
             ("/@@/distribution-badge", "Pting driver"), badges[0])
 

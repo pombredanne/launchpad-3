@@ -9,7 +9,6 @@ from datetime import datetime
 import logging
 import os
 import textwrap
-import unittest
 
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import (
@@ -439,14 +438,14 @@ class TestPullerMaster(TestCase):
         """
         now = datetime.now(pytz.timezone('UTC'))
         fail = makeFailure(RuntimeError, 'error message')
-        self.eventHandler.unexpectedError(fail, now)
-        oops = errorlog.globalErrorUtility.getOopsReport(now)
-        self.assertEqual(fail.getTraceback(), oops.tb_text)
-        self.assertEqual('error message', oops.value)
-        self.assertEqual('RuntimeError', oops.type)
+        self.eventHandler.unexpectedError(fail)
+        oops = self.oopses[-1]
+        self.assertEqual(fail.getTraceback(), oops['tb_text'])
+        self.assertEqual('error message', oops['value'])
+        self.assertEqual('RuntimeError', oops['type'])
         self.assertEqual(
             get_canonical_url_for_branch_name(
-                self.eventHandler.unique_name), oops.url)
+                self.eventHandler.unique_name), oops['url'])
 
     def test_startMirroring(self):
         # startMirroring does not send a message to the endpoint.
@@ -592,7 +591,7 @@ class TestPullerMasterSpawning(TestCase):
         self.available_oops_prefixes.clear()
 
         unexpected_errors = []
-        def unexpectedError(failure, now=None):
+        def unexpectedError(failure):
             unexpected_errors.append(failure)
         self.eventHandler.unexpectedError = unexpectedError
         self.assertRaises(KeyError, self.eventHandler.run)
@@ -713,7 +712,7 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
         # contents of stderr are logged in an OOPS report.
         oops_logged = []
 
-        def new_oops_raising((type, value, tb), request, now):
+        def new_oops_raising((type, value, tb), request):
             oops_logged.append((type, value, tb))
 
         old_oops_raising = errorlog.globalErrorUtility.raising
@@ -959,7 +958,3 @@ class TestPullerMasterIntegration(PullerBranchTestCase):
             mirror_fails_to_unlock, 1)
 
         return deferred.addErrback(self._dumpError)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -7,10 +7,7 @@ from datetime import datetime
 import logging
 import os
 import re
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+from unittest import TestCase
 from zope.testing.loghandler import Handler
 
 from canonical.config import config
@@ -2818,7 +2815,3 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             submission_id, result,
             'Extra element context in interleave',
             'detection of an invalid sub.node of <info> failed')
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

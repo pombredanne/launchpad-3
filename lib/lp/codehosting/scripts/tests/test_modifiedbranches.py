@@ -7,7 +7,6 @@ __metaclass__ = type
 
 from datetime import datetime
 import os
-import unittest
 
 import pytz
 
@@ -188,8 +187,3 @@ class TestModifiedBranchesUpdateLocations(TestCase):
         self.script.update_locations('foo/bar/who')
         expected = set(['foo', 'foo/bar', 'foo/bar/baz', 'foo/bar/who'])
         self.assertEqual(expected, self.script.locations)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

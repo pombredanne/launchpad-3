@@ -11,18 +11,19 @@ import xmlrpclib
 
 from bzrlib import errors, lru_cache, urlutils
 from bzrlib.transport import get_transport
-
 from loggerhead.apps import favicon_app, static_app
 from loggerhead.apps.branch import BranchWSGIApp
-
-from openid.extensions.sreg import SRegRequest, SRegResponse
+import oops_wsgi
 from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
-
+from openid.extensions.sreg import SRegRequest, SRegResponse
 from paste import httpserver
 from paste.fileapp import DataApp
-from paste.request import construct_url, parse_querystring, path_info_pop
 from paste.httpexceptions import (
-    HTTPMovedPermanently, HTTPNotFound, HTTPUnauthorized)
+    HTTPMovedPermanently,
+    HTTPNotFound,
+    HTTPUnauthorized,
+    )
+from paste.request import construct_url, parse_querystring, path_info_pop
 
 from canonical.config import config
 from canonical.launchpad.xmlrpc import faults
@@ -234,13 +235,6 @@ class RootApp:
             lp_server.stop_server()
 
 
-def make_oops_logging_exception_hook(error_utility, request):
-    """Make a hook for logging OOPSes."""
-    def log_oops():
-        error_utility.raising(sys.exc_info(), request)
-    return log_oops
-
-
 def make_error_utility():
     """Make an error utility for logging errors from codebrowse."""
     error_utility = ErrorReportingUtility()
@@ -254,81 +248,15 @@ def make_error_utility():
 #  - Andrew Bennetts, 2010-07-27.
 _oops_html_template = '''\
 <html>
-<head><title>Oops! %(oopsid)s</title></head>
+<head><title>Oops! %(id)s</title></head>
 <body>
 <h1>Oops!</h1>
 <p>Something broke while generating the page.
 Please try again in a few minutes, and if the problem persists file a bug at
 <a href="https://bugs.launchpad.net/launchpad"
 >https://bugs.launchpad.net/launchpad</a>
-and quote OOPS-ID <strong>%(oopsid)s</strong>
+and quote OOPS-ID <strong>%(id)s</strong>
 </p></body></html>'''
-
-
-_error_status = '500 Internal Server Error'
-_error_headers = [('Content-Type', 'text/html')]
-
-
-class WrappedStartResponse(object):
-    """Wraps start_response (from a WSGI request) to keep track of whether
-    start_response was called (and whether the callable it returns has been
-    called).
-
-    Used by oops_middleware.
-    """
-
-    def __init__(self, start_response):
-        self._real_start_response = start_response
-        self.response_start = None
-        self._write_callable = None
-
-    @property
-    def body_started(self):
-        return self._write_callable is not None
-
-    def start_response(self, status, headers, exc_info=None):
-        # Just keep a note of the values we were called with for now.  We don't
-        # need to invoke the real start_response until the response body
-        # starts.
-        self.response_start = (status, headers)
-        if exc_info is not None:
-            self.response_start += (exc_info,)
-        return self.write_wrapper
-
-    def ensure_started(self):
-        if not self.body_started and self.response_start is not None:
-            self._really_start()
-
-    def _really_start(self):
-        self._write_callable = self._real_start_response(*self.response_start)
-
-    def write_wrapper(self, data):
-        self.ensure_started()
-        self._write_callable(data)
-
-    def generate_oops(self, environ, error_utility):
-        """Generate an OOPS.
-
-        :returns: True if the error page was sent to the user, and False if it
-            couldn't (i.e. if the response body was already started).
-        """
-        oopsid = report_oops(environ, error_utility)
-        if self.body_started:
-            return False
-        write = self.start_response(_error_status, _error_headers)
-        write(_oops_html_template % {'oopsid': oopsid})
-        return True
-
-
-def report_oops(environ, error_utility):
-    # XXX: We should capture more per-request information to include in
-    # the OOPS here, e.g. duration, user, etc.  But even an OOPS with
-    # just a traceback and URL is better than nothing.
-    #   - Andrew Bennetts, 2010-07-27.
-    request = ScriptRequest(
-        [], URL=construct_url(environ))
-    error_utility.raising(sys.exc_info(), request)
-    return request.oopsid
 
 
 def oops_middleware(app):
@@ -338,43 +266,5 @@ def oops_middleware(app):
     a basic HTML error page with the OOPS ID to the user (and status code 500).
     """
     error_utility = make_error_utility()
-    def wrapped_app(environ, start_response):
-        wrapped = WrappedStartResponse(start_response)
-        try:
-            # Start processing this request, build the app
-            app_iter = iter(app(environ, wrapped.start_response))
-            # Start yielding the response
-            stopping = False
-            while not stopping:
-                try:
-                    data = app_iter.next()
-                except StopIteration:
-                    stopping = True
-                wrapped.ensure_started()
-                if not stopping:
-                    yield data
-        except httpserver.SocketErrors, e:
-            # The Paste WSGIHandler suppresses these exceptions.
-            # Generally it means something like 'EPIPE' because the
-            # connection was closed. We don't want to generate an OOPS
-            # just because the connection was closed prematurely.
-            logger = logging.getLogger('lp-loggerhead')
-            logger.info('Caught socket exception from %s: %s %s'
-                        % (environ.get('REMOTE_ADDR', '<unknown>'),
-                           e.__class__, e,))
-            return
-        except GeneratorExit, e:
-            # This generally means a client closed early during a streaming
-            # body. Nothing to worry about. GeneratorExit doesn't usually have
-            # any context associated with it, so not worth printing to the log.
-            logger = logging.getLogger('lp-loggerhead')
-            logger.info('Caught GeneratorExit from %s'
-                        % (environ.get('REMOTE_ADDR', '<unknown>')))
-            return
-        except:
-            error_page_sent = wrapped.generate_oops(environ, error_utility)
-            if error_page_sent:
-                return
-            # Could not send error page to user, so... just give up.
-            raise
-    return wrapped_app
+    return oops_wsgi.make_app(app, error_utility._oops_config,
+            template=_oops_html_template)

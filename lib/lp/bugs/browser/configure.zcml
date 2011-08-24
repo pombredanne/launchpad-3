@@ -80,7 +80,8 @@
             for="*"
             name="+filebug-macros"
             permission="zope.Public"
-            template="../templates/bugtarget-macros-filebug.pt"/>
+            template="../templates/bugtarget-macros-filebug.pt"
+            class="lp.app.browser.launchpad.Macro"/>
         <browser:page
             name="+filebug"
             for="lp.bugs.interfaces.bugtarget.IBugTarget"
@@ -139,7 +140,8 @@
         name="+bugtarget-macros-search"
         for="*"
         permission="zope.Public"
-        template="../templates/bugtarget-macros-search.pt"/>
+        template="../templates/bugtarget-macros-search.pt"
+        class="lp.app.browser.launchpad.Macro"/>
     <browser:page
         name="+unlinkbug"
         for="lp.bugs.interfaces.buglink.IBugLinkTarget"
@@ -163,12 +165,14 @@
             for="*"
             name="bugcomment-macros"
             permission="zope.Public"
-            template="../templates/bugcomment-macros.pt"/>
+            template="../templates/bugcomment-macros.pt"
+            class="lp.app.browser.launchpad.Macro"/>
         <browser:page
             for="*"
             name="bug-attachment-macros"
             permission="zope.Public"
-            template="../templates/bug-attachment-macros.pt"/>
+            template="../templates/bug-attachment-macros.pt"
+            class="lp.app.browser.launchpad.Macro"/>
         <browser:defaultView
             for="lp.bugs.interfaces.bugmessage.IBugComment"
             name="+index"/>
@@ -255,7 +259,7 @@
         facet="bugs"
         template="../templates/buglisting-embedded-advanced-search.pt"/>
     <browser:page
-        for="*"
+        for="lp.bugs.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
         name="+portlet-malone-bugmail-filtering-faq"
         template="../templates/malone-portlet-bugmail-filtering-faq.pt"
         permission="zope.Public"/>
@@ -498,12 +502,14 @@
             for="*"
             name="+bugtask-macros-tableview"
             permission="zope.Public"
-            template="../templates/bugtask-macros-tableview.pt"/>
+            template="../templates/bugtask-macros-tableview.pt"
+            class="lp.app.browser.launchpad.Macro"/>
         <browser:page
             for="*"
             name="bugtask-macros-cve"
             permission="zope.Public"
-            template="../templates/bugtask-macros-cve.pt"/>
+            template="../templates/bugtask-macros-cve.pt"
+            class="lp.app.browser.launchpad.Macro"/>
         <browser:defaultView
             for="lp.bugs.interfaces.bugtask.IBugTask"
             name="+index"/>
@@ -558,8 +564,7 @@
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bugtask.BugTaskTableRowView"
             permission="launchpad.View"
-            name="+bugtasks-and-nominations-table-row"
-            template="../templates/bugtask-tasks-and-nominations-table-row.pt"/>
+            name="+bugtasks-and-nominations-table-row"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IBugTarget"
             permission="zope.Public"

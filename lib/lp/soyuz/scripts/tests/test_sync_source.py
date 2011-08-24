@@ -15,9 +15,6 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from unittest import (
-    TestLoader,
-    )
 
 from zope.component import getUtility
 
@@ -540,6 +537,3 @@ class TestGenerateChanges(TestCase):
             'Urgency',
             'Version',
             ], read_changes.keys())
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

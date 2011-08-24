@@ -8,10 +8,7 @@
 import logging
 import os.path
 from textwrap import dedent
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+from unittest import TestCase
 
 from canonical.launchpad.ftests.script import run_script
 import lp.translations
@@ -129,7 +126,3 @@ class TestValidateTranslationsFile(TestCase):
         script = 'scripts/rosetta/validate-translations-file.py'
         result, out, err = run_script(script, [test_input])
         self.assertEqual(0, result)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

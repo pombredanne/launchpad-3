@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import os
-import unittest
 
 from zope.publisher.defaultview import getDefaultViewName
 
@@ -92,7 +91,3 @@ class TestVostokLayerToMainTemplateAdapter(TestCase):
         main_template_path = IMainTemplateFile(VostokTestRequest()).path
         self.assertIn('lp/vostok', main_template_path)
         self.assertTrue(os.path.isfile(main_template_path))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

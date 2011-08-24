@@ -296,12 +296,3 @@ class TestSpecificationFieldXHTMLRepresentations(TestCaseWithFactory):
             blueprint, ISpecification['completer'], None)
         expected = format_link(user) + ' on 2011-01-01'
         self.assertThat(repr_method(), Equals(expected))
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-    return suite
-
-if __name__ == '__main__':
-    unittest.TextTestRunner().run(test_suite())

@@ -58,6 +58,7 @@ from datetime import (
     timedelta,
     )
 from fnmatch import fnmatchcase
+from functools import partial
 from inspect import (
     getargspec,
     getmro,
@@ -82,6 +83,7 @@ from bzrlib.bzrdir import (
     )
 from bzrlib.transport import get_transport
 import fixtures
+import oops_datedir_repo.serializer_rfc822
 import pytz
 import simplejson
 from storm.expr import Variable
@@ -435,13 +437,22 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
                 'Events were generated: %s.' % event_list)
         return result
 
+    @contextmanager
+    def noOops(self):
+        oops = errorlog.globalErrorUtility.getLastOopsReport()
+        try:
+            yield
+        finally:
+            self.assertNoNewOops(oops)
+
     def assertNoNewOops(self, old_oops):
         """Assert that no oops has been recorded since old_oops."""
         oops = errorlog.globalErrorUtility.getLastOopsReport()
         if old_oops is None:
             self.assertIs(None, oops)
         else:
-            self.assertEqual(oops.id, old_oops.id)
+            self.assertTrue(
+                oops.id == old_oops.id, 'Oops recorded: %s' % oops.id)
 
     def assertSqlAttributeEqualsDate(self, sql_object, attribute_name, date):
         """Fail unless the value of the attribute is equal to the date.
@@ -552,8 +563,10 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
 
     def attachOopses(self):
         if len(self.oopses) > 0:
-            for (i, oops) in enumerate(self.oopses):
-                content = Content(UTF8_TEXT, oops.get_chunks)
+            for (i, report) in enumerate(self.oopses):
+                content = Content(UTF8_TEXT,
+                    partial(oops_datedir_repo.serializer_rfc822.to_chunks,
+                    report))
                 self.addDetail("oops-%d" % i, content)
 
     def attachLibrarianLog(self, fixture):

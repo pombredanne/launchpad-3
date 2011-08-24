@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 from storm.store import Store
 from zope.component import getUtility
 from zope.event import notify
@@ -299,7 +297,3 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
         specific_job = self.jobsource.create(branch, testing=True)
         naked_job = removeSecurityProxy(specific_job)
         self.assertEquals(naked_job._constructed_build, specific_job.build)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

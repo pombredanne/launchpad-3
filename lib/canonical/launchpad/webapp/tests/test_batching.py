@@ -6,7 +6,6 @@ __metaclass__ = type
 from datetime import datetime
 import pytz
 import simplejson
-from unittest import TestLoader
 
 from lazr.batchnavigator.interfaces import IRangeFactory
 from storm.expr import (
@@ -22,6 +21,7 @@ from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.webapp.batching import (
     BatchNavigator,
     DateTimeJSONEncoder,
+    ShadowedList,
     StormRangeFactory,
     )
 from canonical.launchpad.webapp.interfaces import StormRangeFactoryError
@@ -189,15 +189,17 @@ class TestStormRangeFactory(TestCaseWithFactory):
         # sort fields of the first and last element of a batch.
         resultset = self.makeStormResultSet()
         resultset.order_by(Person.name)
-        request = LaunchpadTestRequest()
-        batchnav = BatchNavigator(
-            resultset, request, size=3, range_factory=StormRangeFactory)
         range_factory = StormRangeFactory(resultset)
+        memo_value = range_factory.getOrderValuesFor(resultset[0])
+        request = LaunchpadTestRequest(
+            QUERY_STRING='memo=%s' % simplejson.dumps(memo_value))
+        batchnav = BatchNavigator(
+            resultset, request, size=3, range_factory=range_factory)
         first, last = range_factory.getEndpointMemos(batchnav.batch)
         expected_first = simplejson.dumps(
-            [resultset[0].name], cls=DateTimeJSONEncoder)
+            [resultset[1].name], cls=DateTimeJSONEncoder)
         expected_last = simplejson.dumps(
-            [resultset[2].name], cls=DateTimeJSONEncoder)
+            [resultset[3].name], cls=DateTimeJSONEncoder)
         self.assertEqual(expected_first, first)
         self.assertEqual(expected_last, last)
 
@@ -206,10 +208,10 @@ class TestStormRangeFactory(TestCaseWithFactory):
         # instances too.
         resultset = self.makeDecoratedStormResultSet()
         resultset.order_by(LibraryFileAlias.id)
+        range_factory = StormRangeFactory(resultset)
         request = LaunchpadTestRequest()
         batchnav = BatchNavigator(
-            resultset, request, size=3, range_factory=StormRangeFactory)
-        range_factory = StormRangeFactory(resultset)
+            resultset, request, size=3, range_factory=range_factory)
         first, last = range_factory.getEndpointMemos(batchnav.batch)
         expected_first = simplejson.dumps(
             [resultset.get_plain_result_set()[0][1].id],
@@ -277,34 +279,61 @@ class TestStormRangeFactory(TestCaseWithFactory):
         resultset = self.makeStormResultSet()
         resultset.order_by(Person.datecreated, Person.name, Person.id)
         range_factory = StormRangeFactory(resultset, self.logError)
-        valid_memo = [datetime(2011, 7, 25, 11, 30, 30, 45), 'foo', 1]
+        valid_memo = [
+            datetime(2011, 7, 25, 11, 30, 30, 45, tzinfo=pytz.UTC), 'foo', 1]
         json_data = simplejson.dumps(valid_memo, cls=DateTimeJSONEncoder)
         self.assertEqual(valid_memo, range_factory.parseMemo(json_data))
         self.assertEqual(0, len(self.error_messages))
 
     def test_parseMemo__short_iso_timestamp(self):
         # An ISO timestamp without fractions of a second
-        # (YYYY-MM-DDThh:mm:ss) is a valid value for colums which
+        # (YYYY-MM-DDThh:mm:ss) is a valid value for columns which
         # store datetime values.
         resultset = self.makeStormResultSet()
         resultset.order_by(Person.datecreated)
         range_factory = StormRangeFactory(resultset, self.logError)
         valid_short_timestamp_json = '["2011-07-25T11:30:30"]'
         self.assertEqual(
-            [datetime(2011, 7, 25, 11, 30, 30)],
+            [datetime(2011, 7, 25, 11, 30, 30, tzinfo=pytz.UTC)],
             range_factory.parseMemo(valid_short_timestamp_json))
         self.assertEqual(0, len(self.error_messages))
 
     def test_parseMemo__long_iso_timestamp(self):
         # An ISO timestamp with fractions of a second
-        # (YYYY-MM-DDThh:mm:ss.ffffff) is a valid value for colums
+        # (YYYY-MM-DDThh:mm:ss.ffffff) is a valid value for columns
         # which store datetime values.
         resultset = self.makeStormResultSet()
         resultset.order_by(Person.datecreated)
         range_factory = StormRangeFactory(resultset, self.logError)
         valid_long_timestamp_json = '["2011-07-25T11:30:30.123456"]'
         self.assertEqual(
-            [datetime(2011, 7, 25, 11, 30, 30, 123456)],
+            [datetime(2011, 7, 25, 11, 30, 30, 123456, tzinfo=pytz.UTC)],
+            range_factory.parseMemo(valid_long_timestamp_json))
+        self.assertEqual(0, len(self.error_messages))
+
+    def test_parseMemo__short_iso_timestamp_with_tzoffset(self):
+        # An ISO timestamp with fractions of a second and a time zone
+        # offset (YYYY-MM-DDThh:mm:ss.ffffff+hh:mm) is a valid value
+        # for columns which store datetime values.
+        resultset = self.makeStormResultSet()
+        resultset.order_by(Person.datecreated)
+        range_factory = StormRangeFactory(resultset, self.logError)
+        valid_long_timestamp_json = '["2011-07-25T11:30:30-01:00"]'
+        self.assertEqual(
+            [datetime(2011, 7, 25, 12, 30, 30, tzinfo=pytz.UTC)],
+            range_factory.parseMemo(valid_long_timestamp_json))
+        self.assertEqual(0, len(self.error_messages))
+
+    def test_parseMemo__long_iso_timestamp_with_tzoffset(self):
+        # An ISO timestamp with fractions of a second and a time zone
+        # offset (YYYY-MM-DDThh:mm:ss.ffffff+hh:mm) is a valid value
+        # for columns which store datetime values.
+        resultset = self.makeStormResultSet()
+        resultset.order_by(Person.datecreated)
+        range_factory = StormRangeFactory(resultset, self.logError)
+        valid_long_timestamp_json = '["2011-07-25T11:30:30.123456+01:00"]'
+        self.assertEqual(
+            [datetime(2011, 7, 25, 10, 30, 30, 123456, tzinfo=pytz.UTC)],
             range_factory.parseMemo(valid_long_timestamp_json))
         self.assertEqual(0, len(self.error_messages))
 
@@ -321,7 +350,7 @@ class TestStormRangeFactory(TestCaseWithFactory):
             ["Invalid datetime value: '2011-05-35T11:30:30'"],
             self.error_messages)
 
-    def test_parseMemo__nonsencial_iso_timestamp_value(self):
+    def test_parseMemo__nonsensical_iso_timestamp_value(self):
         # A memo string is rejected when an ISO timespamp is expected
         # but a nonsensical string is provided.
         resultset = self.makeStormResultSet()
@@ -565,11 +594,96 @@ class TestStormRangeFactory(TestCaseWithFactory):
         resultset = self.makeDecoratedStormResultSet()
         resultset.order_by(LibraryFileAlias.id)
         all_results = list(resultset)
+        plain_results = list(resultset.get_plain_result_set())
         memo = simplejson.dumps([resultset.get_plain_result_set()[0][1].id])
         range_factory = StormRangeFactory(resultset)
         sliced_result = range_factory.getSlice(3, memo)
         self.assertEqual(all_results[1:4], list(sliced_result))
+        self.assertEqual(plain_results[1:4], sliced_result.shadow_values)
 
+    def test_getSlice__returns_ShadowedList(self):
+        # getSlice() returns lists.
+        resultset = self.makeStormResultSet()
+        resultset.order_by(Person.id)
+        range_factory = StormRangeFactory(resultset)
+        sliced_result = range_factory.getSlice(3)
+        self.assertIsInstance(sliced_result, ShadowedList)
 
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+    def makeStringSequence(self, sequence):
+        return [str(elem) for elem in sequence]
+
+    def test_ShadowedList__init(self):
+        # ShadowedList instances need two lists as constructor parametrs.
+        list1 = range(3)
+        list2 = self.makeStringSequence(list1)
+        shadowed_list = ShadowedList(list1, list2)
+        self.assertEqual(shadowed_list.values, list1)
+        self.assertEqual(shadowed_list.shadow_values, list2)
+
+    def test_ShadowedList__init__non_sequence_parameter(self):
+        # values and shadow_values must be sequences.
+        self.assertRaises(TypeError, ShadowedList, 1, range(3))
+        self.assertRaises(TypeError, ShadowedList, range(3), 1)
+
+    def test_ShadowedList__init__different_list_lengths(self):
+        # values and shadow_values must have the same length.
+        self.assertRaises(ValueError, ShadowedList, range(2), range(3))
+
+    def test_ShadowedList__len(self):
+        # The length of a ShadowedList ist the same as the list of
+        # the sequences it stores.
+        list1 = range(3)
+        list2 = self.makeStringSequence(list1)
+        self.assertEqual(len(list1), len(ShadowedList(list1, list2)))
+
+    def test_ShadowedList__slice(self):
+        # A slice of a ShadowedList contains the slices of its
+        # values and shaow_values.
+        list1 = range(5)
+        list2 = self.makeStringSequence(list1)
+        shadowed_list = ShadowedList(list1, list2)
+        self.assertEqual(list1[2:4], shadowed_list[2:4].values)
+        self.assertEqual(list2[2:4], shadowed_list[2:4].shadow_values)
+
+    def test_ShadowedList__getitem(self):
+        # Accessing a single element of a ShadowedList is equivalent to
+        # accessig an element of its values attribute.
+        list1 = range(3)
+        list2 = self.makeStringSequence(list1)
+        shadowed_list = ShadowedList(list1, list2)
+        self.assertEqual(list1[1], shadowed_list[1])
+
+    def test_ShadowedList__add(self):
+        # Two shadowedLists can be added, yielding another ShadowedList.
+        list1 = range(3)
+        list2 = self.makeStringSequence(list1)
+        shadow_list1 = ShadowedList(list1, list2)
+        list3 = range(4)
+        list4 = self.makeStringSequence(list3)
+        shadow_list2 = ShadowedList(list3, list4)
+        list_sum = shadow_list1 + shadow_list2
+        self.assertIsInstance(list_sum, ShadowedList)
+        self.assertEqual(list1 + list3, list_sum.values)
+        self.assertEqual(list2 + list4, list_sum.shadow_values)
+
+    def test_ShadowedList__iterator(self):
+        # Iterating over a ShadowedList yields if values elements.
+        list1 = range(3)
+        list2 = self.makeStringSequence(list1)
+        shadow_list = ShadowedList(list1, list2)
+        self.assertEqual(list1, list(iter(shadow_list)))
+
+    def test_ShadowedList__reverse(self):
+        # ShadowList.reverse() reverses its elements.
+        list1 = range(3)
+        list2 = self.makeStringSequence(list1)
+        first1 = list1[0]
+        last1 = list1[-1]
+        first2 = list2[0]
+        last2 = list2[-1]
+        shadow_list = ShadowedList(list1, list2)
+        shadow_list.reverse()
+        self.assertEqual(first1, shadow_list[-1])
+        self.assertEqual(last1, shadow_list[0])
+        self.assertEqual(first2, shadow_list.shadow_values[-1])
+        self.assertEqual(last2, shadow_list.shadow_values[0])

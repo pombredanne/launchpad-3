@@ -1034,7 +1034,3 @@ class CheckwatchesErrorRecoveryTestCase(unittest.TestCase):
             self.assertNotEqual(bugtask.status, BugTaskStatus.FIXRELEASED)
         for bugtask in test_bug_two.bugtasks:
             self.assertEqual(bugtask.status, BugTaskStatus.FIXRELEASED)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

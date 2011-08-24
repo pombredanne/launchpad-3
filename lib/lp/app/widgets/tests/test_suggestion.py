@@ -20,12 +20,14 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
-from zope.security.proxy import removeSecurityProxy
 
 from testtools.matchers import DocTestMatches
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+from canonical.launchpad.webapp.vocabulary import (
+    FilteredVocabularyBase,
+    IHugeVocabulary,
+    )
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.widgets.suggestion import (
     SuggestionWidget,
@@ -33,7 +35,6 @@ from lp.app.widgets.suggestion import (
     )
 from lp.testing import (
     login_person,
-    person_logged_in,
     TestCaseWithFactory,
     )
 
@@ -46,7 +47,7 @@ class Simple:
         self.displayname = displayname
 
 
-class SimpleHugeVocabulary(SimpleVocabulary):
+class SimpleHugeVocabulary(SimpleVocabulary, FilteredVocabularyBase):
     implements(IHugeVocabulary)
     displayname = "Simple objects"
     step_title = "Select something"
@@ -133,7 +134,7 @@ class TestSuggestionWidget(TestCaseWithFactory):
              <input type="text" value="" ...
              onKeyPress="selectWidget('field.test_field.1', event);"
              .../>...""")
-        
+
         # XXX wallyworld 2011-04-18 bug=764170: We cannot pass an unencoded
         # unicode string to the DocTestMatcher
         markup = markups[1].encode('utf-8')

@@ -29,7 +29,7 @@ date:
 Now Sample Person and Foo Bar have one OpenPGP key each. Next, let's get
 a test email that's signed and try to authenticate the user who sent it:
 
-    >>> from canonical.launchpad.mail.ftests import read_test_message
+    >>> from lp.services.mail.tests.helpers import read_test_message
     >>> msg = read_test_message('signed_detached.txt')
     >>> principal = authenticateEmail(msg, accept_any_timestamp)
 
@@ -112,7 +112,7 @@ be canonicalised to \r\n. In order to ensure that the line endings in
 signed_canonicalised.txt are not already '\r\n', we recreate the test
 message.
 
-    >>> from canonical.launchpad.mail import SignedMessage
+    >>> from lp.services.mail.signedmessage import SignedMessage
     >>> msg = read_test_message('signed_canonicalised.txt')
     >>> msg_lines = msg.as_string().splitlines()
     >>> msg = email.message_from_string(
@@ -181,7 +181,7 @@ with the user in the From address.
 
 An unsigned email:
 
-    >>> from canonical.launchpad.interfaces.mail import (
+    >>> from lp.services.mail.interfaces import (
     ...     IWeaklyAuthenticatedPrincipal)
     >>> msg = read_test_message('unsigned_multipart.txt')
     >>> principal = authenticateEmail(msg, accept_any_timestamp)

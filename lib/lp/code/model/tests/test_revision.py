@@ -10,10 +10,7 @@ from datetime import (
     timedelta,
     )
 import time
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+from unittest import TestCase
 
 import psycopg2
 import pytz
@@ -929,7 +926,3 @@ class TestPruneRevisionCache(RevisionCacheTestCase):
             self.store.add(cache)
         RevisionSet.pruneRevisionCache(1)
         self.assertEqual(3, len(self._getRevisionCache()))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -113,7 +113,7 @@ development.
 API
 ---
 
-Launchpad code should use the methods defined in canonical.launchpad.mail
+Launchpad code should use the methods defined in lp.services.mail.sendmail
 to send emails (`simple_sendmail`, `sendmail` or possibly `raw_sendmail`)
 
 
@@ -158,7 +158,7 @@ for use with Launchpad development (production instances will just use
        To and From headers before handing on to a different `IMailer`.
 
     4. TestMailer -- stores the email in memory in a Python list object called
-       `canonical.launchpad.mail.stub.test_email` for easy access by unit
+       `lp.services.mail.stub.test_email` for easy access by unit
        tests.
 
     5. MboxMailer -- stores the email in a Unix mbox file before optionally

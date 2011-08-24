@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from lazr.restfulclient.errors import ClientError
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -157,7 +155,3 @@ class TestLaunchpadlibAPI(TestCaseWithFactory):
         self.assertIn(
             'This project cannot be deactivated since it is linked to source '
             'packages.', e.content)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -11,7 +11,6 @@ import shutil
 import subprocess
 import tempfile
 import time
-import unittest
 
 from bzrlib.branch import (
     Branch,
@@ -1071,7 +1070,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
 
     def makeForeignCommit(self, source_details):
         """Change the foreign tree, generating exactly one commit."""
-        repo = GitRepo(source_details.url)
+        repo = GitRepo(local_path_from_url(source_details.url))
         repo.do_commit(message=self.factory.getUniqueString(),
             committer="Joe Random Hacker <joe@example.com>")
         self.foreign_commit_count += 1
@@ -1088,8 +1087,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='git', url=repository_path)
-
+            rcstype='git', url=git_server.get_url())
 
 
 class TestMercurialImport(WorkerTest, TestActualImportMixin,
@@ -1124,7 +1122,7 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
         """Change the foreign tree, generating exactly one commit."""
         from mercurial.ui import ui
         from mercurial.localrepo import localrepository
-        repo = localrepository(ui(), source_details.url)
+        repo = localrepository(ui(), local_path_from_url(source_details.url))
         repo.commit(text="hello world!", user="Jane Random Hacker", force=1)
         self.foreign_commit_count += 1
 
@@ -1140,7 +1138,7 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='hg', url=repository_path)
+            rcstype='hg', url=hg_server.get_url())
 
 
 class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
@@ -1158,7 +1156,3 @@ class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
         return BzrSvnImportWorker(
             source_details, self.get_transport('import_data'),
             self.bazaar_store, logging.getLogger())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -15,9 +15,9 @@ from zope.schema import (
 from zope.sendmail.interfaces import IMailer
 from zope.sendmail.zcml import IMailerDirective
 
-from canonical.launchpad.interfaces.mailbox import IMailBox
 from lp.services.mail.mailbox import (
     DirectoryMailBox,
+    IMailBox,
     POP3MailBox,
     TestMailBox,
     )
@@ -30,6 +30,7 @@ from lp.services.mail.stub import (
 
 class ITestMailBoxDirective(Interface):
     """Configure a mail box which operates on test_emails."""
+
 
 def testMailBoxHandler(_context):
     utility(_context, IMailBox, component=TestMailBox())
@@ -61,9 +62,10 @@ class IPOP3MailBoxDirective(Interface):
             required=False,
             default=False)
 
+
 def pop3MailBoxHandler(_context, host, user, password, ssl=False):
     utility(
-        _context, IMailBox, component=POP3MailBox( host, user, password, ssl))
+        _context, IMailBox, component=POP3MailBox(host, user, password, ssl))
 
 
 class IDirectoryMailBoxDirective(Interface):
@@ -88,9 +90,9 @@ class IStubMailerDirective(IMailerDirective):
             )
     to_addr = ASCII(
             title=u"To Address",
-            description=
-                (u"All outgoing emails will be redirected to this email "
-                 u"address"),
+            description=(
+                u"All outgoing emails will be redirected to this email "
+                u"address"),
             required=True,
             )
     mailer = ASCII(
@@ -115,9 +117,9 @@ class IStubMailerDirective(IMailerDirective):
 def stubMailerHandler(_context, name, from_addr, to_addr,
                       mailer='smtp', rewrite=False):
     _context.action(
-        discriminator = ('utility', IMailer, name),
-        callable = handler,
-        args = ('registerUtility',
+        discriminator=('utility', IMailer, name),
+        callable=handler,
+        args=('registerUtility',
                 StubMailer(from_addr, [to_addr], mailer, rewrite),
                 IMailer, name)
         )
@@ -129,9 +131,9 @@ class ITestMailerDirective(IMailerDirective):
 
 def testMailerHandler(_context, name):
     _context.action(
-        discriminator = ('utility', IMailer, name),
-        callable = handler,
-        args = ('registerUtility', TestMailer(), IMailer, name)
+        discriminator=('utility', IMailer, name),
+        callable=handler,
+        args=('registerUtility', TestMailer(), IMailer, name)
         )
 
 
@@ -161,9 +163,9 @@ class IMboxMailerDirective(IMailerDirective):
 
 def mboxMailerHandler(_context, name, filename, overwrite, mailer=None):
     _context.action(
-        discriminator = ('utility', IMailer, name),
-        callable = handler,
-        args = ('registerUtility',
+        discriminator=('utility', IMailer, name),
+        callable=handler,
+        args=('registerUtility',
                 MboxMailer(filename, overwrite, mailer),
                 IMailer, name)
         )

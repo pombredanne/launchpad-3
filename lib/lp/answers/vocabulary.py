@@ -13,13 +13,14 @@ from zope.schema.vocabulary import SimpleTerm
 
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator,
+    FilteredVocabularyBase,
     IHugeVocabulary,
     )
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
 
 
-class FAQVocabulary:
+class FAQVocabulary(FilteredVocabularyBase):
     """Vocabulary containing all the FAQs in an `IFAQTarget`."""
     implements(IHugeVocabulary)
 
@@ -69,7 +70,7 @@ class FAQVocabulary:
         """Return the term for a FAQ."""
         return SimpleTerm(faq, faq.id, faq.title)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         results = self.context.findSimilarFAQs(query)
         return CountableIterator(results.count(), results, self.toTerm)

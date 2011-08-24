@@ -149,7 +149,3 @@ class TestLibrarianStuff(unittest.TestCase):
             (1, u'netapplet-1.0.0.tar.gz', u'application/x-gtar'),
             ]
         self.assertEqual(expected_aliases, aliases)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

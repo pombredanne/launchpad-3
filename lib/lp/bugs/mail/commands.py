@@ -1,12 +1,12 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
-    'EmailCommand',
-    'EmailCommandCollection',
     'BugEmailCommands',
-    'get_error_message']
+    ]
+
+import os
 
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
@@ -28,19 +28,6 @@ from zope.schema.interfaces import (
     ValidationError,
     )
 
-from canonical.launchpad.interfaces.mail import (
-    BugTargetNotFound,
-    EmailProcessingError,
-    IBugEditEmailCommand,
-    IBugEmailCommand,
-    IBugTaskEditEmailCommand,
-    IBugTaskEmailCommand,
-    )
-from lp.services.messages.interfaces.message import IMessageSet
-from canonical.launchpad.mail.helpers import (
-    get_error_message,
-    get_person_or_team,
-    )
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.app.errors import (
@@ -70,80 +57,27 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.mail.commands import (
+    EditEmailCommand,
+    EmailCommand,
+    EmailCommandCollection,
+    )
+from lp.services.mail.helpers import (
+    get_error_message,
+    get_person_or_team,
+    )
+from lp.services.mail.interfaces import (
+    BugTargetNotFound,
+    EmailProcessingError,
+    IBugEditEmailCommand,
+    IBugEmailCommand,
+    IBugTaskEditEmailCommand,
+    IBugTaskEmailCommand,
+    )
+from lp.services.messages.interfaces.message import IMessageSet
 
 
-def normalize_arguments(string_args):
-    """Normalizes the string arguments.
-
-    The string_args argument is simply the argument string whitespace
-    splitted. Sometimes arguments may be quoted, though, so that they can
-    contain space characters. For example "This is a long string".
-
-    This function loops through all the argument and joins the quoted strings
-    into a single arguments.
-
-        >>> normalize_arguments(['"This', 'is', 'a', 'long', 'string."'])
-        ['This is a long string.']
-
-        >>> normalize_arguments(
-        ...     ['"First', 'string"', '"Second', 'string"', 'foo'])
-        ['First string', 'Second string', 'foo']
-    """
-    result = []
-    quoted_string = False
-    for item in string_args:
-        if item.startswith('"'):
-            quoted_string = True
-            result.append(item[1:])
-        elif quoted_string and item.endswith('"'):
-            result[-1] += ' ' + item[:-1]
-            quoted_string = False
-        elif quoted_string:
-            result[-1] += ' ' + item
-        else:
-            result.append(item)
-
-    return result
-
-
-class EmailCommand:
-    """Represents a command.
-
-    Both name the values in the args list are strings.
-    """
-    _numberOfArguments = None
-
-    def __init__(self, name, string_args):
-        self.name = name
-        self.string_args = normalize_arguments(string_args)
-
-    def _ensureNumberOfArguments(self):
-        """Check that the number of arguments is correct.
-
-        Raise an EmailProcessingError
-        """
-        if self._numberOfArguments is not None:
-            num_arguments_got = len(self.string_args)
-            if self._numberOfArguments != num_arguments_got:
-                raise EmailProcessingError(
-                    get_error_message(
-                        'num-arguments-mismatch.txt',
-                        command_name=self.name,
-                        num_arguments_expected=self._numberOfArguments,
-                        num_arguments_got=num_arguments_got))
-
-    def convertArguments(self, context):
-        """Converts the string argument to Python objects.
-
-        Returns a dict with names as keys, and the Python objects as
-        values.
-        """
-        raise NotImplementedError
-
-
-    def __str__(self):
-        """See IEmailCommand."""
-        return ' '.join([self.name] + self.string_args)
+error_templates = os.path.join(os.path.dirname(__file__), 'errortemplates')
 
 
 class BugEmailCommand(EmailCommand):
@@ -168,7 +102,9 @@ class BugEmailCommand(EmailCommand):
                 # The report for a new bug must contain an affects command,
                 # since the bug must have at least one task
                 raise EmailProcessingError(
-                    get_error_message('no-affects-target-on-submit.txt'),
+                    get_error_message(
+                        'no-affects-target-on-submit.txt',
+                        error_templates=error_templates),
                     stop_processing=True)
 
             # Check the message validator.
@@ -196,7 +132,9 @@ class BugEmailCommand(EmailCommand):
                 bugid = int(bugid)
             except ValueError:
                 raise EmailProcessingError(
-                    get_error_message('bug-argument-mismatch.txt'))
+                    get_error_message(
+                        'bug-argument-mismatch.txt',
+                        error_templates=error_templates))
 
             try:
                 bug = getUtility(IBugSet).get(bugid)
@@ -204,44 +142,11 @@ class BugEmailCommand(EmailCommand):
                 bug = None
             if bug is None or not check_permission('launchpad.View', bug):
                 raise EmailProcessingError(
-                    get_error_message('no-such-bug.txt', bug_id=bugid))
+                    get_error_message(
+                        'no-such-bug.txt',
+                        error_templates=error_templates,
+                        bug_id=bugid))
             return bug, None
-
-
-class EditEmailCommand(EmailCommand):
-    """Helper class for commands that edits the context.
-
-    It makes sure that the correct events are notified.
-    """
-
-    def execute(self, context, current_event):
-        """See IEmailCommand."""
-        self._ensureNumberOfArguments()
-        args = self.convertArguments(context)
-
-        edited_fields = set()
-        if IObjectModifiedEvent.providedBy(current_event):
-            context_snapshot = current_event.object_before_modification
-            edited_fields.update(current_event.edited_fields)
-        else:
-            context_snapshot = Snapshot(
-                context, providing=providedBy(context))
-
-        edited = False
-        for attr_name, attr_value in args.items():
-            if getattr(context, attr_name) != attr_value:
-                self.setAttributeValue(context, attr_name, attr_value)
-                edited = True
-        if edited and not IObjectCreatedEvent.providedBy(current_event):
-            edited_fields.update(args.keys())
-            current_event = ObjectModifiedEvent(
-                context, context_snapshot, list(edited_fields))
-
-        return context, current_event
-
-    def setAttributeValue(self, context, attr_name, attr_value):
-        """See IEmailCommand."""
-        setattr(context, attr_name, attr_value)
 
 
 class PrivateEmailCommand(EmailCommand):
@@ -269,7 +174,9 @@ class PrivateEmailCommand(EmailCommand):
             private = False
         else:
             raise EmailProcessingError(
-                get_error_message('private-parameter-mismatch.txt'),
+                get_error_message(
+                    'private-parameter-mismatch.txt',
+                    error_templates=error_templates),
                 stop_processing=True)
 
         # Snapshot.
@@ -315,7 +222,9 @@ class SecurityEmailCommand(EmailCommand):
             security_related = False
         else:
             raise EmailProcessingError(
-                get_error_message('security-parameter-mismatch.txt'),
+                get_error_message(
+                    'security-parameter-mismatch.txt',
+                    error_templates=error_templates),
                 stop_processing=True)
 
         # Take a snapshot.
@@ -358,7 +267,8 @@ class SubscribeEmailCommand(EmailCommand):
         # preserve compatibility with the original command that let you
         # specify a subscription type
         if len(string_args) == 2:
-            subscription_name = string_args.pop()
+            # Remove the subscription_name
+            string_args.pop()
 
         user = getUtility(ILaunchBag).user
 
@@ -369,7 +279,9 @@ class SubscribeEmailCommand(EmailCommand):
             person = user
         else:
             raise EmailProcessingError(
-                get_error_message('subscribe-too-many-arguments.txt'))
+                get_error_message(
+                    'subscribe-too-many-arguments.txt',
+                    error_templates=error_templates))
 
         if bug.isSubscribed(person):
             # but we still need to find the subscription
@@ -399,7 +311,9 @@ class UnsubscribeEmailCommand(EmailCommand):
             person = getUtility(ILaunchBag).user
         else:
             raise EmailProcessingError(
-                get_error_message('unsubscribe-too-many-arguments.txt'))
+                get_error_message(
+                    'unsubscribe-too-many-arguments.txt',
+                    error_templates=error_templates))
 
         if bug.isSubscribed(person):
             try:
@@ -408,6 +322,7 @@ class UnsubscribeEmailCommand(EmailCommand):
                 raise EmailProcessingError(
                     get_error_message(
                         'user-cannot-unsubscribe.txt',
+                        error_templates=error_templates,
                         person=person.displayname))
         if bug.isSubscribedToDupes(person):
             bug.unsubscribeFromDupes(person, person)
@@ -425,14 +340,18 @@ class SummaryEmailCommand(EditEmailCommand):
         """See IEmailCommand."""
         if bug is None:
             raise EmailProcessingError(
-                get_error_message('command-with-no-bug.txt'),
+                get_error_message(
+                    'command-with-no-bug.txt',
+                    error_templates=error_templates),
                 stop_processing=True)
 
         # Do a manual control of the number of arguments, in order to
         # provide a better error message than the default one.
         if len(self.string_args) > 1:
             raise EmailProcessingError(
-                get_error_message('summary-too-many-arguments.txt'))
+                get_error_message(
+                    'summary-too-many-arguments.txt',
+                    error_templates=error_templates))
 
         return EditEmailCommand.execute(self, bug, current_event)
 
@@ -457,7 +376,10 @@ class DuplicateEmailCommand(EmailCommand):
                 bug = getUtility(IBugSet).getByNameOrID(bug_id)
             except NotFoundError:
                 raise EmailProcessingError(
-                    get_error_message('no-such-bug.txt', bug_id=bug_id))
+                    get_error_message(
+                        'no-such-bug.txt',
+                        error_templates=error_templates,
+                        bug_id=bug_id))
         else:
             # 'no' is a special value for unmarking a bug as a duplicate.
             bug = None
@@ -506,15 +428,7 @@ class AffectsEmailCommand(EmailCommand):
         """Split the path part into two.
 
         The first part is the part before any slash, and the other is
-        the part behind the slash:
-
-            >>> AffectsEmailCommand._splitPath('foo/bar/baz')
-            ('foo', 'bar/baz')
-
-        If No slash is in the path, the other part will be empty.
-
-            >>> AffectsEmailCommand._splitPath('foo')
-            ('foo', '')
+        the part behind the slash.
         """
         if '/' not in path:
             return path, ''
@@ -528,16 +442,6 @@ class AffectsEmailCommand(EmailCommand):
         Previously the path had to start with either /distros/ or
         /products/. Simply remove any such prefixes to stay backward
         compatible.
-
-            >>> AffectsEmailCommand._normalizePath('/distros/foo/bar')
-            'foo/bar'
-            >>> AffectsEmailCommand._normalizePath('/distros/foo/bar')
-            'foo/bar'
-
-        Also remove a starting slash, since that's a common mistake.
-
-            >>> AffectsEmailCommand._normalizePath('/foo/bar')
-            'foo/bar'
         """
         for prefix in ['/distros/', '/products/', '/']:
             if path.startswith(prefix):
@@ -619,7 +523,9 @@ class AffectsEmailCommand(EmailCommand):
         """See IEmailCommand."""
         if bug is None:
             raise EmailProcessingError(
-                get_error_message('command-with-no-bug.txt'),
+                get_error_message(
+                    'command-with-no-bug.txt',
+                    error_templates=error_templates),
                 stop_processing=True)
 
         string_args = list(self.string_args)
@@ -627,7 +533,9 @@ class AffectsEmailCommand(EmailCommand):
             path = string_args.pop(0)
         except IndexError:
             raise EmailProcessingError(
-                get_error_message('affects-no-arguments.txt'),
+                get_error_message(
+                    'affects-no-arguments.txt',
+                    error_templates=error_templates),
                 stop_processing=True)
         try:
             bug_target = self.getBugTarget(path)
@@ -858,7 +766,10 @@ class ReplacedByImportanceCommand(EmailCommand):
 
     def execute(self, context, current_event):
         raise EmailProcessingError(
-                get_error_message('bug-importance.txt', argument=self.name))
+                get_error_message(
+                    'bug-importance.txt',
+                    error_templates=error_templates,
+                    argument=self.name))
 
 
 class TagEmailCommand(EmailCommand):
@@ -891,13 +802,19 @@ class TagEmailCommand(EmailCommand):
             # Tag must be a valid name.
             if not valid_name(tag):
                 raise EmailProcessingError(
-                    get_error_message('invalid-tag.txt', tag=tag))
+                    get_error_message(
+                        'invalid-tag.txt',
+                        error_templates=error_templates,
+                        tag=tag))
             if remove:
                 try:
                     tags.remove(tag)
                 except ValueError:
                     raise EmailProcessingError(
-                        get_error_message('unassigned-tag.txt', tag=tag))
+                        get_error_message(
+                            'unassigned-tag.txt',
+                            error_templates=error_templates,
+                            tag=tag))
             else:
                 tags.append(arg)
 
@@ -910,31 +827,6 @@ class TagEmailCommand(EmailCommand):
         bug.tags = tags
 
         return bug, current_event
-
-
-class NoSuchCommand(KeyError):
-    """A command with the given name couldn't be found."""
-
-
-class EmailCommandCollection:
-    """A collection of email commands."""
-
-    @classmethod
-    def names(klass):
-        """Returns all the command names."""
-        return klass._commands.keys()
-
-    @classmethod
-    def get(klass, name, string_args):
-        """Returns a command object with the given name and arguments.
-
-        If a command with the given name can't be found, a NoSuchCommand
-        error is raised.
-        """
-        command_class = klass._commands.get(name)
-        if command_class is None:
-            raise NoSuchCommand(name)
-        return command_class(name, string_args)
 
 
 class BugEmailCommands(EmailCommandCollection):

@@ -231,9 +231,8 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
     info = fetch_information(spr, bprs, changes)
     from_addr = info['changedby']
     if announce_from_person is not None:
-        email = announce_from_person.preferredemail
-        if email:
-            from_addr = email.email
+        if announce_from_person.preferredemail is not None:
+            from_addr = format_address_for_person(announce_from_person)
 
     # If we're sending an acceptance notification for a non-PPA upload,
     # announce if possible. Avoid announcing backports, binary-only

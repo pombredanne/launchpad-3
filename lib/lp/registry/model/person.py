@@ -7,6 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'AlreadyConvertedException',
     'get_recipients',
     'generate_nick',
     'IrcID',
@@ -14,6 +15,7 @@ __all__ = [
     'JabberID',
     'JabberIDSet',
     'JoinTeamEvent',
+    'NicknameGenerationError',
     'Owner',
     'Person',
     'person_sort_key',
@@ -199,6 +201,7 @@ from lp.code.model.hasbranches import (
     HasRequestedReviewsMixin,
     )
 from lp.registry.errors import (
+    InvalidName,
     JoinNotAllowed,
     NameAlreadyTaken,
     PPACreationError,
@@ -225,7 +228,6 @@ from lp.registry.interfaces.mailinglistsubscription import (
     )
 from lp.registry.interfaces.person import (
     ImmutableVisibilityError,
-    InvalidName,
     IPerson,
     IPersonSet,
     IPersonSettings,
@@ -299,6 +301,10 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
+
+
+class AlreadyConvertedException(Exception):
+    """Raised when an attempt to claim a team that has been claimed."""
 
 
 class JoinTeamEvent:
@@ -674,7 +680,9 @@ class Person(
 
     def convertToTeam(self, team_owner):
         """See `IPerson`."""
-        assert not self.is_team, "Can't convert a team to a team."
+        if self.is_team:
+            raise AlreadyConvertedException(
+                "%s has already been converted to a team." % self.name)
         assert self.account_status == AccountStatus.NOACCOUNT, (
             "Only Person entries whose account_status is NOACCOUNT can be "
             "converted into teams.")
@@ -2617,16 +2625,18 @@ class Person(
         query_clauses = " AND ".join(clauses)
         query = """
             SourcePackageRelease.id IN (
-                SELECT DISTINCT ON (upload_distroseries, sourcepackagename,
+                SELECT DISTINCT ON (upload_distroseries,
+                                    sourcepackagerelease.sourcepackagename,
                                     upload_archive)
                     sourcepackagerelease.id
                 FROM sourcepackagerelease, archive,
-                    sourcepackagepublishinghistory sspph
+                    sourcepackagepublishinghistory as spph
                 WHERE
-                    sspph.sourcepackagerelease = sourcepackagerelease.id AND
-                    sspph.archive = archive.id AND
+                    spph.sourcepackagerelease = sourcepackagerelease.id AND
+                    spph.archive = archive.id AND
                     %(more_query_clauses)s
-                ORDER BY upload_distroseries, sourcepackagename,
+                ORDER BY upload_distroseries,
+                    sourcepackagerelease.sourcepackagename,
                     upload_archive, dateuploaded DESC
               )
               """ % dict(more_query_clauses=query_clauses)
@@ -4419,7 +4429,7 @@ class SSHKeySet:
     def new(self, person, sshkey):
         try:
             kind, keytext, comment = sshkey.split(' ', 2)
-        except ValueError:
+        except (ValueError, AttributeError):
             raise SSHKeyAdditionError
 
         if not (kind and keytext and comment):

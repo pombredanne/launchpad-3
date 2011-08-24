@@ -1,10 +1,7 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+from unittest import TestCase
 
 from lp.testing.fakemethod import FakeMethod
 
@@ -82,7 +79,3 @@ class TestFakeMethod(TestCase):
         func(1)
         func(2, kwarg=3)
         self.assertEqual(3, func.call_count)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

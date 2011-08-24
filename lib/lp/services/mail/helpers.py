@@ -11,15 +11,15 @@ from uuid import uuid1
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.mail import (
-    EmailProcessingError,
-    IWeaklyAuthenticatedPrincipal,
-    )
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interaction import get_current_principal
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
+from lp.services.mail.interfaces import (
+    EmailProcessingError,
+    IWeaklyAuthenticatedPrincipal,
+    )
 
 
 class IncomingEmailError(Exception):
@@ -127,7 +127,7 @@ def parse_commands(content, command_names):
     return commands
 
 
-def get_error_message(filename, **interpolation_items):
+def get_error_message(filename, error_templates=None, **interpolation_items):
     """Returns the error message that's in the given filename.
 
     If the error message requires some parameters, those are given in
@@ -135,8 +135,10 @@ def get_error_message(filename, **interpolation_items):
 
     The files are searched for in lib/canonical/launchpad/mail/errortemplates.
     """
-    base = os.path.dirname(__file__)
-    fullpath = os.path.join(base, 'errortemplates', filename)
+    if error_templates is None:
+        error_templates = os.path.join(
+            os.path.dirname(__file__), 'errortemplates')
+    fullpath = os.path.join(error_templates, filename)
     error_template = open(fullpath).read()
     return error_template % interpolation_items
 
@@ -160,7 +162,8 @@ def get_person_or_team(person_name_or_email):
 
 def ensure_not_weakly_authenticated(signed_msg, context,
                                     error_template='not-signed.txt',
-                                    no_key_template='key-not-registered.txt'):
+                                    no_key_template='key-not-registered.txt',
+                                    error_templates=None):
     """Make sure that the current principal is not weakly authenticated.
 
     NB: While handling an email, the authentication state is stored partly in
@@ -177,13 +180,14 @@ def ensure_not_weakly_authenticated(signed_msg, context,
     if IWeaklyAuthenticatedPrincipal.providedBy(cur_principal):
         if signed_msg.signature is None:
             error_message = get_error_message(
-                error_template, context=context)
+                error_template, error_templates=error_templates,
+                context=context)
         else:
             import_url = canonical_url(
                 getUtility(ILaunchBag).user) + '/+editpgpkeys'
             error_message = get_error_message(
-                no_key_template, import_url=import_url,
-                context=context)
+                no_key_template, error_templates,
+                import_url=import_url, context=context)
         raise IncomingEmailError(error_message)
 
 

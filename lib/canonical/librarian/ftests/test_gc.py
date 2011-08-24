@@ -12,7 +12,6 @@ import shutil
 from subprocess import Popen, PIPE, STDOUT
 import sys
 import tempfile
-from unittest import TestLoader
 
 from sqlobject import SQLObjectNotFound
 import transaction
@@ -870,7 +869,3 @@ class TestBlobCollection(TestCase):
                 ))
         count = cur.fetchone()[0]
         self.failIfEqual(count, 2)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

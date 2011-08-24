@@ -6,8 +6,8 @@ basically the same as using email.message_from_string and passing
 SignedMessage as the _class parameter, but it also ensures that all
 the attributes are correctly set.
 
-    >>> from canonical.launchpad.interfaces.mail import ISignedMessage
-    >>> from canonical.launchpad.mail import signed_message_from_string
+    >>> from lp.services.mail.interfaces import ISignedMessage
+    >>> from lp.services.mail.signedmessage import signed_message_from_string
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> msg = signed_message_from_string('To: someone\n\nHello.')
     >>> verifyObject(ISignedMessage, msg)
@@ -22,7 +22,7 @@ We have some test messages that can be easily accessed by
 read_test_message. Let's start with a simple message, where the
 signature is inline with the signed content:
 
-    >>> from canonical.launchpad.mail.ftests import read_test_message
+    >>> from lp.services.mail.tests.helpers import read_test_message
     >>> msg = read_test_message('signed_inline.txt')
 
 You can access the headers of the message:

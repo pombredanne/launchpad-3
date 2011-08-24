@@ -7,7 +7,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import unittest
 
 import pytz
 from sqlobject import SQLObjectNotFound
@@ -666,7 +665,3 @@ class TestRequestImport(TestCaseWithFactory):
         self.assertRaises(
             CodeImportAlreadyRunning, code_import.requestImport,
             requester)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

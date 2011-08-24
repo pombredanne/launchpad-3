@@ -848,7 +848,8 @@ class TestGarbo(TestCaseWithFactory):
         db_branch.branch_format = BranchFormat.BZR_BRANCH_5
         db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
         Store.of(db_branch).flush()
-        branch_job = BranchUpgradeJob.create(db_branch)
+        branch_job = BranchUpgradeJob.create(
+            db_branch, self.factory.makePerson())
         branch_job.job.date_finished = THIRTY_DAYS_AGO
 
         self.assertEqual(
@@ -876,13 +877,14 @@ class TestGarbo(TestCaseWithFactory):
             branch_format=BranchFormat.BZR_BRANCH_5,
             repository_format=RepositoryFormat.BZR_KNIT_1)
 
-        branch_job = BranchUpgradeJob.create(db_branch)
+        branch_job = BranchUpgradeJob.create(
+            db_branch, self.factory.makePerson())
         branch_job.job.date_finished = THIRTY_DAYS_AGO
 
         db_branch2 = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_5,
             repository_format=RepositoryFormat.BZR_KNIT_1)
-        BranchUpgradeJob.create(db_branch2)
+        BranchUpgradeJob.create(db_branch2, self.factory.makePerson())
 
         self.runDaily()
 
@@ -945,25 +947,6 @@ class TestGarbo(TestCaseWithFactory):
             """ % sqlbase.quote(template.id)).get_one()
 
         self.assertEqual(1, count)
-
-    def test_mirror_bugmessages(self):
-        # Nuke the owner in sampledata.
-        con = DatabaseLayer._db_fixture.superuser_connection()
-        try:
-            cur = con.cursor()
-            cur.execute("ALTER TABLE bugmessage "
-                "DISABLE TRIGGER bugmessage__owner__mirror")
-            cur.execute("UPDATE bugmessage set owner=NULL")
-            cur.execute("ALTER TABLE bugmessage "
-                "ENABLE TRIGGER bugmessage__owner__mirror")
-            con.commit()
-        finally:
-            con.close()
-        store = IMasterStore(BugMessage)
-        unmigrated = store.find(BugMessage, BugMessage.ownerID == None).count
-        self.assertNotEqual(0, unmigrated())
-        self.runHourly()
-        self.assertEqual(0, unmigrated())
 
     def test_UnusedPOTMsgSetPruner_removes_obsolete_message_sets(self):
         # UnusedPOTMsgSetPruner removes any POTMsgSet that are

@@ -453,19 +453,19 @@ class BugViewMixin:
     def subscription_info(self):
         return IBug(self.context).getSubscriptionInfo()
 
-    @property
+    @cachedproperty
     def direct_subscribers(self):
         """Return the list of direct subscribers."""
-        return self.subscription_info.direct_subscriptions.subscribers
+        return self.subscription_info.direct_subscribers
 
-    @property
+    @cachedproperty
     def duplicate_subscribers(self):
         """Return the list of subscribers from duplicates.
 
         This includes all subscribers who are also direct or indirect
         subscribers.
         """
-        return self.subscription_info.duplicate_subscriptions.subscribers
+        return self.subscription_info.duplicate_subscribers
 
     def getSubscriptionClassForUser(self, subscribed_person):
         """Return a set of CSS class names based on subscription status.
