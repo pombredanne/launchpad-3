@@ -142,7 +142,7 @@ class BugCommandGroups(BugCommandGroup):
 
     def add(self, command_or_group):
         """Add a `BugCommandGroup` to the groups of commands.
-        
+
         Empty BugCommandGroups are ignored.
         """
         if isinstance(command_or_group, BugCommandGroup):
