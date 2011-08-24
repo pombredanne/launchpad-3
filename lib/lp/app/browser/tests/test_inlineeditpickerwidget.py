@@ -39,6 +39,25 @@ class TestInlineEditPickerWidget(TestCaseWithFactory):
         widget = self.getWidget(vocabulary='ValidPersonOrTeam')
         self.assertTrue(widget.config['show_search_box'])
 
+    def test_vocabulary_filters(self):
+        # Make sure that when given a vocabulary which supports vocab filters,
+        # the vocab filters are include in the widget config.
+        widget = self.getWidget(vocabulary='ValidPersonOrTeam')
+        self.assertEquals([
+            {'name': 'ALL',
+             'title': 'All',
+             'description': 'Display all search results'},
+            {'name': 'PERSON',
+             'title': 'Person',
+             'description':
+                 'Display search results for people only'},
+            {'name': 'TEAM',
+             'title': 'Team',
+             'description':
+                 'Display search results for teams only'}
+            ],
+            widget.config['vocabulary_filters'])
+
     def test_normal_vocabulary_is_not_searchable(self):
         # Make sure that when given a field for a normal vocabulary, the
         # picker is set to show the search box.

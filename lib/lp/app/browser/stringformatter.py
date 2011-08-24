@@ -283,7 +283,7 @@ class FormattersAPI:
         # linkify to the general bug url.
         url = '/bugs/%s' % bugnum
         # The text will have already been cgi escaped.
-        return '<a href="%s">%s</a>%s' % (url, text, trailers)
+        return '<a href="%s" class="bug-link">%s</a>%s' % (url, text, trailers)
 
     @staticmethod
     def _handle_parens_in_trailers(url, trailers):

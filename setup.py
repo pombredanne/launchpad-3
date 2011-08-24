@@ -29,8 +29,7 @@ setup(
         'ampoule',
         'BeautifulSoup',
         'bzr',
-        'chameleon.core',
-        'chameleon.zpt',
+        'Chameleon',
         'cssutils',
         # Required for pydkim
         'dnspython',
@@ -38,6 +37,7 @@ setup(
         'FeedParser',
         'feedvalidator',
         'funkload',
+        'pygpgme',
         'launchpadlib',
         'lazr.batchnavigator',
         'lazr.config',

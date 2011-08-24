@@ -705,7 +705,6 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual(None, existing_sources.any())
 
         # Now, run the copy job.
-
         source = getUtility(IPlainPackageCopyJobSource)
         requester = self.factory.makePerson()
         job = source.create(
@@ -730,6 +729,67 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         # The job metadata should contain default overrides from the
         # UnknownOverridePolicy policy.
         self.assertEqual('universe', pcj.metadata['component_override'])
+
+    def createCopyJob(self, sourcename, component, section, version):
+        # Helper method to create a package copy job for a package with
+        # the given sourcename, component, section and version.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        distroseries = publisher.breezy_autotest
+
+        target_archive = self.factory.makeArchive(
+            distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
+        source_archive = self.factory.makeArchive()
+
+        # Publish a package in the source archive with some overridable
+        # properties set to known values.
+        publisher.getPubSource(
+            distroseries=distroseries, sourcename=sourcename,
+            component=component, section=section,
+            version=version, status=PackagePublishingStatus.PUBLISHED,
+            archive=source_archive)
+
+        # Now, run the copy job.
+        source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
+        job = source.create(
+            package_name=sourcename,
+            package_version=version,
+            source_archive=source_archive,
+            target_archive=target_archive,
+            target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False,
+            requester=requester)
+
+        # Run the job so it gains a PackageUpload.
+        self.assertRaises(SuspendJobException, self.runJob, job)
+        pcj = removeSecurityProxy(job).context
+        return pcj
+
+    def test_copying_to_main_archive_debian_override_contrib(self):
+        # The job uses the overrides to map debian components to
+        # the right components.
+        # 'contrib' gets mapped to 'multiverse'.
+
+        # Create debian component.
+        self.factory.makeComponent('contrib')
+        # Create a copy job for a package in 'contrib'.
+        pcj = self.createCopyJob('package', 'contrib', 'web', '2.8.1')
+
+        self.assertEqual('multiverse', pcj.metadata['component_override'])
+
+    def test_copying_to_main_archive_debian_override_nonfree(self):
+        # The job uses the overrides to map debian components to
+        # the right components.
+        # 'nonfree' gets mapped to 'multiverse'.
+
+        # Create debian component.
+        self.factory.makeComponent('non-free')
+        # Create a copy job for a package in 'non-free'.
+        pcj = self.createCopyJob('package', 'non-free', 'web', '2.8.1')
+
+        self.assertEqual('multiverse', pcj.metadata['component_override'])
 
     def test_copying_to_main_archive_unapproved(self):
         # Uploading to a series that is in a state that precludes auto
