@@ -960,7 +960,9 @@ class SubversionImportHelpers:
         file.close()
         client.add('working_tree/newfile')
         client.log_msg_func = lambda c: 'Add a file'
-        client.commit(['working_tree'], recurse=True)
+        (revnum, date, author) = client.commit(['working_tree'], recurse=True)
+        # CSCVS breaks on commits without an author, so make sure there is one.
+        self.assertIsNot(None, author)
         self.foreign_commit_count += 1
         shutil.rmtree('working_tree')
 
