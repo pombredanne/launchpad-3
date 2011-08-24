@@ -1780,16 +1780,16 @@ class BranchAddLandingTarget(TestCaseWithFactory):
             set([(person1, 'review1'), (person2, 'review2')]), votes)
 
 
-class TestGetMergeProposals(TestCaseWithFactory):
-    
+class TestLandingCandidates(TestCaseWithFactory):
+
     layer = DatabaseFunctionalLayer
 
     def test_private_branch(self):
+        """landing_candidates works for private branches."""
         branch = self.factory.makeBranch(private=True)
         with person_logged_in(removeSecurityProxy(branch).owner):
             mp = self.factory.makeBranchMergeProposal(target_branch=branch)
             self.assertContentEqual([mp], branch.landing_candidates)
-
 
 
 class BranchDateLastModified(TestCaseWithFactory):
