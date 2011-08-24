@@ -2124,7 +2124,7 @@ class IPersonSet(Interface):
         :param include_hidden: Include people who have opted to hide their
             email. Defaults to True.
 
-        :return: A dict of `IPerson`, `IEmailAddress`.
+        :return: A `ResultSet` of `IEmailAddress`, `IPerson`.
         """
 
     def getByName(name, ignore_merged=True):

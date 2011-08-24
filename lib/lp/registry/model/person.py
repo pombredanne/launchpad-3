@@ -3340,7 +3340,7 @@ class PersonSet:
         """See `IPersonSet`."""
         address = self.getByEmails([email]).one()
         if address:
-            return address[0]
+            return address[1]
 
     def getByEmails(self, emails, include_hidden=True):
         """See `IPersonSet`."""
@@ -3351,12 +3351,12 @@ class PersonSet:
             for address in emails]
         extra_query = True
         if not include_hidden:
-            extra_query = Person.hide_email_addresses == True
+            extra_query = Person.hide_email_addresses == False
         return IStore(Person).using(
             Person,
             Join(EmailAddress, EmailAddress.personID == Person.id)
         ).find(
-            (Person, EmailAddress),
+            (EmailAddress, Person),
             EmailAddress.email.lower().is_in(addresses), extra_query)
 
     def latest_teams(self, limit=5):
