@@ -23,8 +23,10 @@ from lp.testing import TestCase
 from bzrlib.branch import (
     Branch,
     BzrBranchFormat7,
+    BranchReferenceFormat,
     )
 from bzrlib.bzrdir import (
+    BzrDir,
     BzrDirMetaFormat1,
     )
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack1
@@ -231,6 +233,32 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
         opener = self.makeBranchOpener([a.base, b.base])
         self.assertRaises(BranchLoopError, opener.open, a.base)
         self.assertRaises(BranchLoopError, opener.open, b.base)
+
+    def testCustomOpener(self):
+        # A custom function for opening a control dir can be specified.
+        a = self.make_branch('a', format='2a')
+        b = self.make_branch('b', format='2a')
+        b.set_stacked_on_url(a.base)
+        seen_urls = set()
+        def open_dir(url):
+            seen_urls.add(url)
+            return BzrDir.open(url)
+        opener = self.makeBranchOpener([a.base, b.base])
+        opener.open(b.base, open_dir=open_dir)
+        self.assertEquals(seen_urls, set([b.base, a.base]))
+
+    def testCustomOpenerWithBranchReference(self):
+        # A custom function for opening a control dir can be specified.
+        a = self.make_branch('a', format='2a')
+        b_dir = self.make_bzrdir('b')
+        b = BranchReferenceFormat().initialize(b_dir, target_branch=a)
+        seen_urls = set()
+        def open_dir(url):
+            seen_urls.add(url)
+            return BzrDir.open(url)
+        opener = self.makeBranchOpener([a.base, b.base])
+        opener.open(b.base, open_dir=open_dir)
+        self.assertEquals(seen_urls, set([b.base, a.base]))
 
 
 class TestSafeOpen(TestCaseWithTransport):
