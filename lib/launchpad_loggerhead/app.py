@@ -248,14 +248,14 @@ def make_error_utility():
 #  - Andrew Bennetts, 2010-07-27.
 _oops_html_template = '''\
 <html>
-<head><title>Oops! %(oopsid)s</title></head>
+<head><title>Oops! %(id)s</title></head>
 <body>
 <h1>Oops!</h1>
 <p>Something broke while generating the page.
 Please try again in a few minutes, and if the problem persists file a bug at
 <a href="https://bugs.launchpad.net/launchpad"
 >https://bugs.launchpad.net/launchpad</a>
-and quote OOPS-ID <strong>%(oopsid)s</strong>
+and quote OOPS-ID <strong>%(id)s</strong>
 </p></body></html>'''
 
 

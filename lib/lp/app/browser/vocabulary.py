@@ -40,6 +40,9 @@ from lp.app.browser.tales import (
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from lp.app.errors import UnexpectedFormData
 from lp.code.interfaces.branch import IBranch
+from lp.registry.interfaces.distributionsourcepackage import (
+    IDistributionSourcePackage,
+    )
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.pillaraffiliation import IHasAffiliation
@@ -240,11 +243,32 @@ class SourcePackageNamePickerEntrySourceAdapter(
         return entries
 
 
+@adapter(IDistributionSourcePackage)
+class DistributionSourcePackagePickerEntrySourceAdapter(
+    DefaultPickerEntrySourceAdapter):
+    """Adapts ISourcePackageName to IPickerEntrySource."""
+
+    def getPickerEntries(self, term_values, context_object, **kwarg):
+        """See `IPickerEntrySource`"""
+        entries = (
+            super(DistributionSourcePackagePickerEntrySourceAdapter, self)
+                .getPickerEntries(term_values, context_object, **kwarg))
+        for dsp, picker_entry in izip(term_values, entries):
+            binaries = dsp.publishing_history[0].getBuiltBinaries()
+            binary_names = [binary.binary_package_name for binary in binaries]
+            if binary_names != []:
+                description = ', '.join(binary_names)
+            else:
+                description = 'Not yet built.'
+            picker_entry.description = description
+        return entries
+
+
 @adapter(IArchive)
 class ArchivePickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
     """Adapts IArchive to IPickerEntrySource."""
 
-    def getPickerEntry(self, term_values, context_object, **kwarg):
+    def getPickerEntries(self, term_values, context_object, **kwarg):
         """See `IPickerEntrySource`"""
         entries = (
             super(ArchivePickerEntrySourceAdapter, self)
@@ -281,6 +305,7 @@ class HugeVocabularyJSONView:
         search_text = self.request.form.get('search_text')
         if search_text is None:
             raise MissingInputError('search_text', '')
+        search_filter = self.request.form.get('search_filter')
 
         try:
             factory = getUtility(IVocabularyFactory, name)
@@ -291,7 +316,7 @@ class HugeVocabularyJSONView:
         vocabulary = factory(self.context)
 
         if IHugeVocabulary.providedBy(vocabulary):
-            matches = vocabulary.searchForTerms(search_text)
+            matches = vocabulary.searchForTerms(search_text, search_filter)
             total_size = matches.count()
         else:
             matches = list(vocabulary)

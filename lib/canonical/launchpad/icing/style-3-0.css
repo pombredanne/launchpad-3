@@ -1990,6 +1990,9 @@ body.tab-bugs #duplicate-actions .sprite {
 .yui3-picker-results .affiliation-text {
     padding-left: 20px;
     }
+.yui3-picker-filter div {
+    padding-bottom: 1em;
+    }
 
 /* ====================
    Global notifications

@@ -491,7 +491,7 @@ class TestGetStructuralSubscriptionTargets(TestCaseWithFactory):
         login_person(actor)
         distroseries = self.factory.makeDistroSeries()
         sourcepackage = self.factory.makeSourcePackage(
-            distroseries=distroseries)
+            distroseries=distroseries, publish=True)
         product = self.factory.makeProduct()
         bug = self.factory.makeBug(product=product)
         bug.addTask(actor, sourcepackage)
