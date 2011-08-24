@@ -143,78 +143,47 @@ class MaloneHandler:
                 command = commands.pop(0)
                 try:
                     if IBugEmailCommand.providedBy(command):
-                        if bug_event is not None:
-                            try:
-                                notify(bug_event)
-                            except CreatedBugWithNoBugTasksError:
-                                rollback()
-                                raise IncomingEmailError(
-                                    get_error_message(
-                                        'no-affects-target-on-submit.txt',
-                                        error_templates=error_templates))
-                        if (bugtask_event is not None and
-                            not IObjectCreatedEvent.providedBy(bug_event)):
-                            notify(bugtask_event)
+                        self.notify_bug_event(bug_event)
+                        self.notify_bugtask_event(bugtask_event, bug_event)
                         bugtask = None
                         bugtask_event = None
 
+                        # Get or start building a new bug.
                         bug, bug_event = command.execute(
                             signed_msg, filealias)
                         if add_comment_to_bug:
-                            messageset = getUtility(IMessageSet)
-                            message = messageset.fromEmail(
-                                signed_msg.as_string(),
-                                owner=getUtility(ILaunchBag).user,
-                                filealias=filealias,
-                                parsed_message=signed_msg,
                                 fallback_parent=bug.initial_message)
-
-                            # If the new message's parent is linked to
-                            # a bug watch we also link this message to
-                            # that bug watch.
-                            bug_message_set = getUtility(IBugMessageSet)
-                            parent_bug_message = (
-                                bug_message_set.getByBugAndMessage(
                                     bug, message.parent))
-
-                            if (parent_bug_message is not None and
-                                parent_bug_message.bugwatch):
-                                bug_watch = parent_bug_message.bugwatch
-                            else:
-                                bug_watch = None
-
-                            bugmessage = bug.linkMessage(
-                                message, bug_watch)
-
-                            notify(ObjectCreatedEvent(bugmessage))
+                            message = self.appendBugComment(
+                                bug, signed_msg, filealias)
                             add_comment_to_bug = False
                         else:
+                            # XXX sinzui 2011-08-19: This cannot be done with
+                            # just params
                             message = bug.initial_message
-                        self.processAttachments(bug, message, signed_msg)
+                        self.processAttachments(
+                            bug, message, signed_msg)
                     elif IBugTaskEmailCommand.providedBy(command):
-                        if bugtask_event is not None:
-                            if not IObjectCreatedEvent.providedBy(bug_event):
-                                notify(bugtask_event)
-                            bugtask_event = None
                         bugtask, bugtask_event = command.execute(bug)
+                        # XXX sinzui 2011-08-22: bug_params must support
+                        # multiple targets!
+                        self.notify_bugtask_event(bugtask_event, bug_event)
+                            bug)
                     elif IBugEditEmailCommand.providedBy(command):
                         bug, bug_event = command.execute(bug, bug_event)
+                        bug, bug_event = command.execute(
+                            bug, bug_event)
                     elif IBugTaskEditEmailCommand.providedBy(command):
                         if bugtask is None:
                             if len(bug.bugtasks) == 0:
-                                rollback()
-                                raise IncomingEmailError(
-                                    get_error_message(
-                                        'no-affects-target-on-submit.txt',
-                                        error_templates=error_templates))
+                                self.handleNoAffectsTarget()
                             bugtask = guess_bugtask(
                                 bug, getUtility(ILaunchBag).user)
                             if bugtask is None:
-                                raise IncomingEmailError(get_error_message(
-                                    'no-default-affects.txt',
-                                    error_templates=error_templates,
                                     bug_id=bug.id,
                                     nr_of_bugtasks=len(bug.bugtasks)))
+                                self.handleNoDefaultAffectsTarget(
+                                    bug)
                         bugtask, bugtask_event = command.execute(
                             bugtask, bugtask_event)
 
@@ -226,24 +195,16 @@ class MaloneHandler:
                     else:
                         continue
 
+            # XXX sinzui 2011-08-22: call _createBug() if there are still
+            # bug_params.
+
             if len(processing_errors) > 0:
                 raise IncomingEmailError(
                     '\n'.join(str(error) for error, command
                               in processing_errors),
                     [command for error, command in processing_errors])
-
-            if bug_event is not None:
-                try:
-                    notify(bug_event)
-                except CreatedBugWithNoBugTasksError:
-                    rollback()
-                    raise IncomingEmailError(
-                        get_error_message(
-                            'no-affects-target-on-submit.txt',
-                            error_templates=error_templates))
-            if bugtask_event is not None:
-                if not IObjectCreatedEvent.providedBy(bug_event):
-                    notify(bugtask_event)
+            self.notify_bug_event(bug_event)
+            self.notify_bugtask_event(bugtask_event, bug_event)
 
         except IncomingEmailError, error:
             send_process_error_notification(
@@ -320,3 +281,56 @@ class MaloneHandler:
             getUtility(IBugAttachmentSet).create(
                 bug=bug, filealias=blob, attach_type=attach_type,
                 title=blob.filename, message=message, send_notifications=True)
+
+    def appendBugComment(self, bug, signed_msg, filealias=None):
+        """Append the message text to the bug comments."""
+        messageset = getUtility(IMessageSet)
+        message = messageset.fromEmail(
+            signed_msg.as_string(),
+            owner=getUtility(ILaunchBag).user,
+            filealias=filealias,
+            parsed_message=signed_msg,
+            fallback_parent=bug.initial_message)
+        # If the new message's parent is linked to
+        # a bug watch we also link this message to
+        # that bug watch.
+        bug_message_set = getUtility(IBugMessageSet)
+        parent_bug_message = (
+            bug_message_set.getByBugAndMessage(bug, message.parent))
+        if (parent_bug_message is not None and
+            parent_bug_message.bugwatch):
+            bug_watch = parent_bug_message.bugwatch
+        else:
+            bug_watch = None
+        bugmessage = bug.linkMessage(
+            message, bug_watch)
+        notify(ObjectCreatedEvent(bugmessage))
+        return message
+
+    def notify_bug_event(self, bug_event):
+        if bug_event is  None:
+            return
+        try:
+            notify(bug_event)
+        except CreatedBugWithNoBugTasksError:
+            self.handleNoAffectsTarget()
+
+    def notify_bugtask_event(self, bugtask_event, bug_event):
+            if bugtask_event is None:
+                return
+            if not IObjectCreatedEvent.providedBy(bug_event):
+                notify(bugtask_event)
+
+    def handleNoAffectsTarget(self):
+        rollback()
+        raise IncomingEmailError(
+            get_error_message(
+                'no-affects-target-on-submit.txt',
+                error_templates=error_templates))
+
+    def handleNoDefaultAffectsTarget(self, bug):
+        raise IncomingEmailError(get_error_message(
+            'no-default-affects.txt',
+            error_templates=error_templates,
+            bug_id=bug.id,
+            nr_of_bugtasks=len(bug.bugtasks)))
