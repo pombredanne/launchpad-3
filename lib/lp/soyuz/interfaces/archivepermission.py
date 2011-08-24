@@ -129,15 +129,6 @@ class IArchiveQueueAdmin(IArchivePermission):
 class IArchivePermissionSet(Interface):
     """The interface for `ArchivePermissionSet`."""
 
-    # Do not export this utility directly on the webservice.  There is
-    # no reasonable security model we can implement for it because it
-    # requires the archive context to be able to make an informed
-    # security decision.
-    #
-    # For this reason, the security declaration in the zcml is
-    # deliberately permissive.  We don't expect anything to access this
-    # utility except the IArchive code, which is appropriately protected.
-
     def checkAuthenticated(person, archive, permission, item):
         """The `ArchivePermission` records that authenticate the person.
 
