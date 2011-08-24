@@ -132,6 +132,7 @@ class CodeImportWorkerExitCode:
     SUCCESS_PARTIAL = 3
     FAILURE_INVALID = 4
     FAILURE_UNSUPPORTED_FEATURE = 5
+    FAILURE_FORBIDDEN = 6
 
 
 class BazaarBranchStore:
@@ -640,7 +641,7 @@ class PullingImportWorker(ImportWorker):
     needs_bzr_tree = False
 
     def __init__(self, source_details, import_data_transport,
-                 bazaar_branch_store, logger):
+                 bazaar_branch_store, logger, opener_policy=None):
         """See `ImportWorker.__init__`.
 
         :param opener_policy: Opener policy to use
@@ -648,8 +649,11 @@ class PullingImportWorker(ImportWorker):
         super(PullingImportWorker, self).__init__(
             source_details, import_data_transport, bazaar_branch_store,
             logger)
-        #self._opener_policy = CodeImportBranchOpenPolicy()
-        self._opener_policy = AcceptAnythingPolicy()
+        if opener_policy is None:
+            #self._opener_policy = CodeImportBranchOpenPolicy()
+            self._opener_policy = AcceptAnythingPolicy()
+        else:
+            self._opener_policy = opener_policy
 
     @property
     def invalid_branch_exceptions(self):
@@ -684,7 +688,7 @@ class PullingImportWorker(ImportWorker):
                 self._opener_policy.checkOneURL(self.source_details.url)
             except BadUrl, e:
                 self._logger.info("Invalid URL: %s" % e)
-                return CodeImportWorkerExitCode.FAILURE_INVALID
+                return CodeImportWorkerExitCode.FAILURE_FORBIDDEN
             transport = get_transport(self.source_details.url)
             for prober_kls in self.probers:
                 prober = prober_kls()
@@ -702,7 +706,7 @@ class PullingImportWorker(ImportWorker):
                     remote_dir.open_branch)
             except BadUrl, e:
                 self._logger.info("Invalid URL: %s" % e)
-                return CodeImportWorkerExitCode.FAILURE_INVALID
+                return CodeImportWorkerExitCode.FAILURE_FORBIDDEN
             remote_branch_tip = remote_branch.last_revision()
             inter_branch = InterBranch.get(remote_branch, bazaar_branch)
             self._logger.info("Importing branch.")

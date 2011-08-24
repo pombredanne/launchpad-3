@@ -257,6 +257,8 @@ class CodeImportWorkerMonitor:
                 CodeImportResultStatus.FAILURE_UNSUPPORTED_FEATURE,
             CodeImportWorkerExitCode.FAILURE_INVALID:
                 CodeImportResultStatus.FAILURE_INVALID,
+            CodeImportWorkerExitCode.FAILURE_FORBIDDEN:
+                CodeImportResultStatus.FAILURE_FORBIDDEN,
                 }
         if isinstance(reason, failure.Failure):
             if reason.check(error.ProcessTerminated):

@@ -1030,6 +1030,15 @@ class PullingImportWorkerTests:
         self.assertEqual(
             CodeImportWorkerExitCode.FAILURE_INVALID, worker.run())
 
+    def test_forbidden(self):
+        # If the branch specified is using an invalid scheme, exit with
+        # FAILURE_FORBIDDEN
+        worker = self.makeImportWorker(self.factory.makeCodeImportSourceDetails(
+            rcstype=self.rcstype, url="file:///local/path"),
+            opener_policy=CodeImportBranchOpenPolicy())
+        self.assertEqual(
+            CodeImportWorkerExitCode.FAILURE_FORBIDDEN, worker.run())
+
     def test_unsupported_feature(self):
         # If there is no branch in the target URL, exit with FAILURE_INVALID
         worker = self.makeImportWorker(self.makeSourceDetails(
@@ -1078,11 +1087,12 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         mapdbs().clear()
         WorkerTest.tearDown(self)
 
-    def makeImportWorker(self, source_details):
+    def makeImportWorker(self, source_details, opener_policy=None):
         """Make a new `ImportWorker`."""
         return GitImportWorker(
             source_details, self.get_transport('import_data'),
-            self.bazaar_store, logging.getLogger())
+            self.bazaar_store, logging.getLogger(),
+            opener_policy=opener_policy)
 
     def makeForeignCommit(self, source_details):
         """Change the foreign tree, generating exactly one commit."""
@@ -1128,11 +1138,12 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
         mapdbs().clear()
         WorkerTest.tearDown(self)
 
-    def makeImportWorker(self, source_details):
+    def makeImportWorker(self, source_details, opener_policy=None):
         """Make a new `ImportWorker`."""
         return HgImportWorker(
             source_details, self.get_transport('import_data'),
-            self.bazaar_store, logging.getLogger())
+            self.bazaar_store, logging.getLogger(),
+            opener_policy=opener_policy)
 
     def makeForeignCommit(self, source_details):
         """Change the foreign tree, generating exactly one commit."""
@@ -1167,11 +1178,12 @@ class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
         load_optional_plugin('svn')
         self.setUpImport()
 
-    def makeImportWorker(self, source_details):
+    def makeImportWorker(self, source_details, opener_policy=None):
         """Make a new `ImportWorker`."""
         return BzrSvnImportWorker(
             source_details, self.get_transport('import_data'),
-            self.bazaar_store, logging.getLogger())
+            self.bazaar_store, logging.getLogger(),
+            opener_policy=opener_policy)
 
 
 class CodeImportBranchOpenPolicyTests(TestCase):
