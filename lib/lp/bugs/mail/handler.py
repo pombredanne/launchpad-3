@@ -8,6 +8,7 @@ __all__ = [
     "MaloneHandler",
     ]
 
+from operator import attrgetter
 import os
 
 from lazr.lifecycle.event import ObjectCreatedEvent
@@ -52,6 +53,101 @@ from lp.services.messages.interfaces.message import IMessageSet
 
 
 error_templates = os.path.join(os.path.dirname(__file__), 'errortemplates')
+
+
+class BugTaskCommandGroup:
+
+    def __init__(self, command=None):
+        self._commands = []
+        if command is not None:
+            self._commands.append(command)
+
+    def __nonzero__(self):
+        return len(self._commands) > 0
+
+    def __str__(self):
+        text_commands = [str(cmd) for cmd in self.commands]
+        return '\n'.join(text_commands).strip()
+
+    @property
+    def commands(self):
+        "Return the `EmailCommand`s ordered by their rank."
+        return sorted(self._commands, key=attrgetter('RANK'))
+
+    def add(self, command):
+        "Add an `EmailCommand` to the commands."
+        self._commands.append(command)
+
+
+class BugCommandGroup(BugTaskCommandGroup):
+
+    def __init__(self, command=None):
+        super(BugCommandGroup, self).__init__(command=command)
+        self._groups = []
+
+    def __nonzero__(self):
+        if len(self._groups) > 0:
+            return True
+        else:
+            return super(BugCommandGroup, self).__nonzero__()
+
+    def __str__(self):
+        text_commands = [super(BugCommandGroup, self).__str__()]
+        for group in self.groups:
+            text_commands += [str(group)]
+        return '\n'.join(text_commands).strip()
+
+    @property
+    def groups(self):
+        "Return the `BugTaskCommandGroup` in the order they were added."
+        return list(self._groups)
+
+    def add(self, command_or_group):
+        """Add an `EmailCommand` or `BugTaskCommandGroup` to the commands.
+
+        Empty BugTaskCommandGroup are ignored.
+        """
+        if isinstance(command_or_group, BugTaskCommandGroup):
+            if command_or_group:
+                self._groups.append(command_or_group)
+        else:
+            super(BugCommandGroup, self).add(command_or_group)
+
+
+class BugCommandGroups(BugCommandGroup):
+
+    def __init__(self, commands):
+        super(BugCommandGroups, self).__init__(command=None)
+        self._groups = []
+        this_bug = BugCommandGroup()
+        this_bugtask = BugTaskCommandGroup()
+        for command in commands:
+            if IBugEmailCommand.providedBy(command) and command.RANK == 0:
+                # Multiple bugs are being edited.
+                this_bug.add(this_bugtask)
+                self.add(this_bug)
+                this_bug = BugCommandGroup(command)
+                this_bugtask = BugTaskCommandGroup()
+            elif IBugEditEmailCommand.providedBy(command):
+                this_bug.add(command)
+            elif (IBugTaskEmailCommand.providedBy(command)
+                  and command.RANK == 0):
+                # Multiple or explicit bugtasks are being edited.
+                this_bug.add(this_bugtask)
+                this_bugtask = BugTaskCommandGroup(command)
+            elif IBugTaskEditEmailCommand.providedBy(command):
+                this_bugtask.add(command)
+        this_bug.add(this_bugtask)
+        self.add(this_bug)
+
+    def add(self, command_or_group):
+        """Add a `BugCommandGroup` to the groups of commands.
+        
+        Empty BugCommandGroups are ignored.
+        """
+        if isinstance(command_or_group, BugCommandGroup):
+            if command_or_group:
+                self._groups.append(command_or_group)
 
 
 class MaloneHandler:
