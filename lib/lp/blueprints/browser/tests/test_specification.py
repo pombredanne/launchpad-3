@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 from datetime import datetime
+import doctest
 import unittest
 
 from lazr.restful.testing.webservice import FakeRequest
@@ -33,7 +34,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
-
+from testtools.matchers import DocTestMatches
 
 class TestSpecificationSearch(TestCaseWithFactory):
 
@@ -164,8 +165,9 @@ class TestSpecificationView(TestCaseWithFactory):
             owner=self.factory.makePerson(displayname="Some Person"))
         html = create_initialized_view(
                 spec, '+index')()
-        self.assertIn('Registered by\nSome Person\na moment ago',
-               extract_text(html))
+        self.assertThat(extract_text(html), DocTestMatches(extract_text(
+            "... Registered by Some Person a moment ago ..."), doctest.ELLIPSIS
+            | doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF))
 
 class TestSpecificationEditStatusView(TestCaseWithFactory):
     """Test the SpecificationEditStatusView."""
