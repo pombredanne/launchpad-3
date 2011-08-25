@@ -155,6 +155,12 @@ class TestSpecificationView(TestCaseWithFactory):
         self.assertEqual('nofollow', li.a['rel'])
         self.assertEqual(spec.specurl, li.a['href'])
 
+    def test_time_frame(self):
+        """The time frame does not prepend on incorrectly."""
+        spec = self.factory.makeSpecification()
+        html = create_initialized_view(
+                spec, '+index')()
+        self.assertNotIn(html, 'on a moment ago')
 
 class TestSpecificationEditStatusView(TestCaseWithFactory):
     """Test the SpecificationEditStatusView."""
