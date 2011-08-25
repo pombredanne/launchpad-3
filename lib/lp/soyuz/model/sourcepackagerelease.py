@@ -616,5 +616,9 @@ class SourcePackageRelease(SQLBase):
             SourcePackageRelease.version > since_version,
             SourcePackageRelease.version <= self.version)
 
+        # We should never have a null changelog_entry but there's millions
+        # of lazy tests out there and there might even be some broken
+        # production data.  Better safe than OOPSy.
         return "\n\n".join(
-            [spr.changelog_entry for spr in sprs])
+            [spr.changelog_entry for spr in sprs
+             if spr.changelog_entry])
