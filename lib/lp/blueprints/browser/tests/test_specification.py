@@ -9,7 +9,10 @@ import unittest
 
 from lazr.restful.testing.webservice import FakeRequest
 import pytz
-from testtools.matchers import Equals
+from testtools.matchers import (
+    DocTestMatches,
+    Equals,
+    )
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
@@ -34,7 +37,6 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
-from testtools.matchers import DocTestMatches
 
 class TestSpecificationSearch(TestCaseWithFactory):
 
