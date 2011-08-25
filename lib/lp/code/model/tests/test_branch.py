@@ -98,7 +98,6 @@ from lp.code.model.branch import (
     update_trigger_modified_fields,
     )
 from lp.code.model.branchjob import (
-    BranchDiffJob,
     BranchJob,
     BranchJobType,
     ReclaimBranchSpaceJob,
@@ -1229,7 +1228,7 @@ class TestBranchDeletion(TestCaseWithFactory):
     def test_relatedBranchJobsDeleted(self):
         # A branch with an associated branch job will delete those jobs.
         branch = self.factory.makeAnyBranch()
-        BranchDiffJob.create(branch, 'from-spec', 'to-spec')
+        BranchUpgradeJob.create(branch, 'from-spec', 'to-spec')
         branch.destroySelf()
         # Need to commit the transaction to fire off the constraint checks.
         transaction.commit()
