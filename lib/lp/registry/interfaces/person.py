@@ -2117,6 +2117,16 @@ class IPersonSet(Interface):
         Return None if there is no person with the given email address.
         """
 
+    def getByEmails(emails, include_hidden=True):
+        """Search for people with the given email addresses.
+        
+        :param emails: A list of email addresses.
+        :param include_hidden: Include people who have opted to hide their
+            email. Defaults to True.
+
+        :return: A `ResultSet` of `IEmailAddress`, `IPerson`.
+        """
+
     def getByName(name, ignore_merged=True):
         """Return the person with the given name, ignoring merged persons if
         ignore_merged is True.

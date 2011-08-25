@@ -487,7 +487,6 @@
                 enable_bugfiling_duplicate_search
                 findRelatedArchivePublications
                 findRelatedArchives
-                getPersonsByEmail
                 getMergeProposals
                 getReleasesAndPublishingHistory
                 getUsedBugTags
