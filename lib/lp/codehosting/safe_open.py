@@ -248,7 +248,7 @@ class SafeBranchOpener(object):
         else:
             return new_url
 
-    def _runWithTransformFallbackLocationHookInstalled(
+    def runWithTransformFallbackLocationHookInstalled(
             self, open_dir, callable, *args, **kw):
         assert (self.transformFallbackLocationHook in
                 Branch.hooks['transform_fallback_location'])
@@ -285,7 +285,7 @@ class SafeBranchOpener(object):
         def open_branch(url):
             dir = open_dir(url)
             return dir.open_branch()
-        return self._runWithTransformFallbackLocationHookInstalled(
+        return self.runWithTransformFallbackLocationHookInstalled(
             open_dir, open_branch, url)
 
 
