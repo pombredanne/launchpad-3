@@ -30,12 +30,14 @@ Verify if the object follows its interface contracts:
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from lp.registry.interfaces.distroseries import IDistroSeries
     >>> from lp.registry.interfaces.sourcepackage import ISourcePackage
-    >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import IDistributionSourcePackageRelease
+    >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import (
+    ...     IDistributionSourcePackageRelease)
     >>> from lp.soyuz.interfaces.publishing import (
     ...     IBinaryPackagePublishingHistory,
     ...     ISourcePackagePublishingHistory,
     ...     )
-    >>> from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+    >>> from lp.soyuz.interfaces.sourcepackagerelease import (
+    ...     ISourcePackageRelease)
 
     >>> verifyObject(ISourcePackagePublishingHistory, spph)
     True
@@ -901,7 +903,8 @@ Binary and Binary File Publishing
 Symmetric behaviour is offered for BinaryPackagePublishing,
 BinaryPackageFile and IBinaryPackagePublishingHistory
 
-    >>> from lp.soyuz.interfaces.publishing import IBinaryPackageFilePublishing
+    >>> from lp.soyuz.interfaces.publishing import (
+    ...     IBinaryPackageFilePublishing)
 
     >>> bpph = BinaryPackagePublishingHistory.get(15)
     >>> print bpph.displayname
