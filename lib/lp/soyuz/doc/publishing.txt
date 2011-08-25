@@ -769,7 +769,7 @@ Perform the source-only copy.
     ...     ppa_copied_source.id)
 
 createMissingBuilds will not create any builds because this is an
-intra-archive copy: 
+intra-archive copy:
 
     >>> ppa_source.createMissingBuilds()
     []
@@ -1470,15 +1470,6 @@ by one.
     >>> cprov_binaries.count()
     8
 
-Please note also that the source publishing records to be deleted must
-be passed as a list. Otherwise an exception will be raised.
-
-    >>> deleted = publishing_set.requestDeletion(
-    ...     tuple(cprov_sources[:2]), cprov, 'OOPS-934EC47')
-    Traceback (most recent call last):
-    ...
-    AssertionError: The 'sources' parameter must be a list.
-
 
 ArchiveSourcePublications
 =========================
@@ -1491,8 +1482,8 @@ All references related with the given set of source publications are
 fetch in a fixed number of queries (3) instead of varying according
 the size of the set (3 * N).
 
-     >>> from lp.soyuz.adapters.archivesourcepublication import (
-     ...     ArchiveSourcePublications)
+    >>> from lp.soyuz.adapters.archivesourcepublication import (
+    ...     ArchiveSourcePublications)
 
 We will use all published sources in Celso's PPA as our initial set.
 
