@@ -242,6 +242,8 @@ class MaloneHandler:
                     bug_commands = bug_group.commands
                     command = bug_commands.pop()
                     bug, bug_event = command.execute(signed_msg, filealias)
+                    for command in bug_commands:
+                        bug, bug_event = command.execute(bug, bug_event)
                     for bugtask_group in bug_group.groups:
                         # The first command of a BugTaskCommandGroup may not
                         # be an affects command.
@@ -263,8 +265,6 @@ class MaloneHandler:
                         self.notify_bugtask_event(bugtask_event, bug_event)
                         bugtask = None
                         bugtask_event = None
-                    for command in bug_commands:
-                        bug, bug_event = command.execute(bug, bug_event)
                     # Finish this bug.
                     if add_comment_to_bug:
                         message = self.appendBugComment(
