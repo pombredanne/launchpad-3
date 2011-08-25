@@ -213,6 +213,9 @@ class SafeBranchOpener(object):
         references are allowed and whether the reference's URL passes muster
         also -- recursively, until a real branch is found.
 
+        :param url: URL to check
+        :param open_dir: Optional function to use for opening control
+            directories (defaults to BzrDir.open)
         :raise BranchLoopError: If the branch references form a loop.
         :raise BranchReferenceForbidden: If this opener forbids branch
             references.
@@ -278,6 +281,9 @@ class SafeBranchOpener(object):
 
         What safety means is defined by a subclasses `followReference` and
         `checkOneURL` methods.
+
+        :param open_dir: Optional function to use for opening control
+            directories (defaults to BzrDir.open)
         """
         url = self.checkAndFollowBranchReference(url, open_dir=open_dir)
         if open_dir is None:
