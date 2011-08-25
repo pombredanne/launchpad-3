@@ -70,7 +70,7 @@ class IBranchCollection(Interface):
         """
 
     def getMergeProposals(statuses=None, for_branches=None,
-                          target_branch=None, eager_load=False):
+                          target_branch=None):
         """Return a result set of merge proposals for the branches in this
         collection.
 
@@ -81,8 +81,6 @@ class IBranchCollection(Interface):
             branch is one of the branches specified.
         :param target_branch: If specified, only return merge proposals
             that target the specified branch.
-        :param eager_load: If True, preloads all the related information for
-            merge proposals like PreviewDiffs and Branches.
         """
 
     def getMergeProposalsForPerson(person, status=None):
