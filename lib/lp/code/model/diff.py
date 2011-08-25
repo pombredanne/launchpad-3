@@ -4,7 +4,11 @@
 """Implementation classes for IDiff, etc."""
 
 __metaclass__ = type
-__all__ = ['Diff', 'IncrementalDiff', 'PreviewDiff', 'StaticDiff']
+__all__ = [
+    'Diff',
+    'IncrementalDiff',
+    'PreviewDiff',
+    ]
 
 from contextlib import nested
 from cStringIO import StringIO
@@ -34,10 +38,7 @@ from storm.locals import (
     )
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
-from zope.interface import (
-    classProvides,
-    implements,
-    )
+from zope.interface import implements
 
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase
@@ -47,8 +48,6 @@ from lp.code.interfaces.diff import (
     IDiff,
     IIncrementalDiff,
     IPreviewDiff,
-    IStaticDiff,
-    IStaticDiffSource,
     )
 from lp.codehosting.bzrutils import read_locked
 
@@ -290,53 +289,6 @@ class Diff(SQLBase):
         return cls.fromFileAtEnd(diff_content)
 
 
-class StaticDiff(SQLBase):
-    """A diff from one revision to another."""
-
-    implements(IStaticDiff)
-
-    classProvides(IStaticDiffSource)
-
-    from_revision_id = StringCol()
-
-    to_revision_id = StringCol()
-
-    diff = ForeignKey(foreignKey='Diff', notNull=True)
-
-    @classmethod
-    def acquire(klass, from_revision_id, to_revision_id, repository,
-                filename=None):
-        """See `IStaticDiffSource`."""
-        existing_diff = klass.selectOneBy(
-            from_revision_id=from_revision_id, to_revision_id=to_revision_id)
-        if existing_diff is not None:
-            return existing_diff
-        from_tree = repository.revision_tree(from_revision_id)
-        to_tree = repository.revision_tree(to_revision_id)
-        diff = Diff.fromTrees(from_tree, to_tree, filename)
-        return klass(
-            from_revision_id=from_revision_id, to_revision_id=to_revision_id,
-            diff=diff)
-
-    @classmethod
-    def acquireFromText(klass, from_revision_id, to_revision_id, text,
-                        filename=None):
-        """See `IStaticDiffSource`."""
-        existing_diff = klass.selectOneBy(
-            from_revision_id=from_revision_id, to_revision_id=to_revision_id)
-        if existing_diff is not None:
-            return existing_diff
-        diff = Diff.fromFile(StringIO(text), len(text), filename)
-        return klass(
-            from_revision_id=from_revision_id, to_revision_id=to_revision_id,
-            diff=diff)
-
-    def destroySelf(self):
-        diff = self.diff
-        SQLBase.destroySelf(self)
-        diff.destroySelf()
-
-
 class IncrementalDiff(Storm):
     """See `IIncrementalDiff."""
 
@@ -451,7 +403,6 @@ class PreviewDiff(Storm):
         # A preview diff is stale if the revision ids used to make the diff
         # are different from the tips of the source or target branches.
         bmp = self.branch_merge_proposal
-        is_stale = False
         if (self.source_revision_id != bmp.source_branch.last_scanned_id or
             self.target_revision_id != bmp.target_branch.last_scanned_id):
             # This is the simple frequent case.

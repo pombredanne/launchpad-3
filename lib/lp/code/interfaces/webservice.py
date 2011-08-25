@@ -28,7 +28,6 @@ __all__ = [
     'IPreviewDiff',
     'ISourcePackageRecipe',
     'ISourcePackageRecipeBuild',
-    'IStaticDiff',
     'TooManyBuilds',
     ]
 
@@ -57,7 +56,6 @@ from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.code.interfaces.diff import (
     IDiff,
     IPreviewDiff,
-    IStaticDiff,
     )
 from lp.code.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 from lp.code.interfaces.sourcepackagerecipebuild import (

@@ -193,9 +193,6 @@ class BranchMergeProposal(SQLBase):
         storm_validator=validate_public_person, notNull=False,
         default=None)
 
-    review_diff = ForeignKey(
-        foreignKey='StaticDiff', notNull=False, default=None)
-
     @property
     def next_preview_diff_job(self):
         # circular dependencies

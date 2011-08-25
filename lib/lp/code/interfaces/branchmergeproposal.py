@@ -76,10 +76,7 @@ from lp.code.enums import (
     CodeReviewVote,
     )
 from lp.code.interfaces.branch import IBranch
-from lp.code.interfaces.diff import (
-    IPreviewDiff,
-    IStaticDiff,
-    )
+from lp.code.interfaces.diff import IPreviewDiff
 from lp.registry.interfaces.person import IPerson
 from lp.services.fields import (
     PublicPersonChoice,
@@ -173,10 +170,6 @@ class IBranchMergeProposal(IPrivacy):
             readonly=True, vocabulary='ValidPersonOrTeam',
             description=_("The person that accepted (or rejected) the code "
                           "for merging.")))
-
-    review_diff = Reference(
-        IStaticDiff, title=_('The diff to be used for reviews.'),
-        readonly=True)
 
     next_preview_diff_job = Attribute(
         'The next BranchMergeProposalJob that will update a preview diff.')

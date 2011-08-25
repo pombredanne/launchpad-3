@@ -11,8 +11,6 @@ __metaclass__ = type
 
 __all__ = [
     'IBranchJob',
-    'IBranchDiffJob',
-    'IBranchDiffJobSource',
     'IBranchScanJob',
     'IBranchScanJobSource',
     'IBranchUpgradeJob',
@@ -65,31 +63,6 @@ class IBranchJob(Interface):
 
     def destroySelf():
         """Destroy this object."""
-
-
-class IBranchDiffJob(Interface):
-    """A job to create a static diff from a branch."""
-
-    from_revision_spec = TextLine(title=_('The revision spec to diff from.'))
-
-    to_revision_spec = TextLine(title=_('The revision spec to diff to.'))
-
-    def run():
-        """Acquire the static diff this job requires.
-
-        :return: the generated StaticDiff.
-        """
-
-
-class IBranchDiffJobSource(Interface):
-
-    def create(branch, from_revision_spec, to_revision_spec):
-        """Construct a new object that implements IBranchDiffJob.
-
-        :param branch: The database branch to diff.
-        :param from_revision_spec: The revision spec to diff from.
-        :param to_revision_spec: The revision spec to diff to.
-        """
 
 
 class IBranchScanJob(IRunnableJob):

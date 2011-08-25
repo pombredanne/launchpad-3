@@ -48,7 +48,7 @@ class TestSendbranchmail(TestCaseWithFactory):
         self.useBzrBranches()
         branch, tree = self.createBranch()
         mail_job = RevisionMailJob.create(
-            branch, 1, 'from@example.org', 'body', True, 'foo')
+            branch, 1, 'from@example.org', 'body', 'foo')
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/sendbranchmail.py', [])
@@ -64,7 +64,7 @@ class TestSendbranchmail(TestCaseWithFactory):
         self.useTempBzrHome()
         branch = self.factory.makeBranch()
         RevisionMailJob.create(
-            branch, 1, 'from@example.org', 'body', True, 'foo')
+            branch, 1, 'from@example.org', 'body', 'foo')
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/sendbranchmail.py', [])

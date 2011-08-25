@@ -889,20 +889,11 @@
     <allow interface="lp.code.interfaces.diff.IDiff" />
     <allow interface="lp.code.interfaces.diff.IIncrementalDiff" />
   </class>
-  <class class="lp.code.model.diff.StaticDiff">
-    <allow interface="lp.code.interfaces.diff.IStaticDiff" />
-  </class>
   <class class="lp.code.model.diff.PreviewDiff">
     <require
         permission="launchpad.View"
         interface="lp.code.interfaces.diff.IPreviewDiff"/>
   </class>
-  <securedutility
-      component="lp.code.model.diff.StaticDiff"
-      provides="lp.code.interfaces.diff.IStaticDiffSource" >
-    <allow
-      interface="lp.code.interfaces.diff.IStaticDiffSource" />
-  </securedutility>
 
   <!-- SourcePackageRecipe -->
 

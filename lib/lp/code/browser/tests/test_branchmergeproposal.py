@@ -54,10 +54,7 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
     )
-from lp.code.model.diff import (
-    PreviewDiff,
-    StaticDiff,
-    )
+from lp.code.model.diff import PreviewDiff
 from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
@@ -725,14 +722,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.assertEqual(diff_bytes.decode('windows-1252', 'replace'),
                          view.preview_diff_text)
 
-    def addReviewDiff(self):
-        review_diff_bytes = ''.join(unified_diff('', 'review'))
-        review_diff = StaticDiff.acquireFromText('x', 'y', review_diff_bytes)
-        self.bmp.review_diff = review_diff
-        return review_diff
-
     def addBothDiffs(self):
-        self.addReviewDiff()
         preview_diff_bytes = ''.join(unified_diff('', 'preview'))
         return self.setPreviewDiff(preview_diff_bytes)
 
@@ -747,13 +737,6 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         preview_diff = self.addBothDiffs()
         view = create_initialized_view(self.bmp, '+index')
         self.assertEqual(preview_diff, view.preview_diff)
-
-    def test_preview_diff_uses_review_diff(self):
-        """The review diff will be used if there is no preview."""
-        review_diff = self.addReviewDiff()
-        view = create_initialized_view(self.bmp, '+index')
-        self.assertEqual(review_diff.diff,
-                         view.preview_diff)
 
     def test_review_diff_text_prefers_preview_diff(self):
         """The preview will be used for BMP with both a review and preview."""
