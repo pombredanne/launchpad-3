@@ -17,8 +17,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
 from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.launchpad.testing.pages import (
-    find_tag_by_id,
     extract_text,
+    find_tag_by_id,
     )
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.tales import format_link
@@ -159,7 +159,7 @@ class TestSpecificationView(TestCaseWithFactory):
         self.assertEqual('nofollow', li.a['rel'])
         self.assertEqual(spec.specurl, li.a['href'])
 
-    def test_time_frame(self):
+    def test_registration_date_displayed(self):
         """The time frame does not prepend on incorrectly."""
         spec = self.factory.makeSpecification(
             owner=self.factory.makePerson(displayname="Some Person"))
