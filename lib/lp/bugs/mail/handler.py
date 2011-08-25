@@ -240,16 +240,27 @@ class MaloneHandler:
                 try:
                     # The first command of a BugCommandGroup must be a bug.
                     bug_commands = bug_group.commands
-                    command = bug_commands.pop()
+                    command = bug_commands.pop(0)
+                    if command.RANK != 0:
+                        self.handleNoBug()
                     bug, bug_event = command.execute(signed_msg, filealias)
-                    for command in bug_commands:
-                        bug, bug_event = command.execute(bug, bug_event)
+
+                    if add_comment_to_bug:
+                        message = self.appendBugComment(
+                            bug, signed_msg, filealias)
+                        add_comment_to_bug = False
+                    else:
+                        message = bug.initial_message
+                    # XXX sinzui 2011-08-25: This must only be run once for
+                    # the first message.
+                    self.processAttachments(bug, message, signed_msg)
+
                     for bugtask_group in bug_group.groups:
                         # The first command of a BugTaskCommandGroup may not
                         # be an affects command.
                         bugtask_commands = bugtask_group.commands
                         if bugtask_commands[0].RANK == 0:
-                            command = bugtask_commands.pop()
+                            command = bugtask_commands.pop(0)
                             bugtask, bugtask_event = command.execute(bug)
                         if bugtask is None:
                             if len(bug.bugtasks) == 0:
@@ -265,16 +276,9 @@ class MaloneHandler:
                         self.notify_bugtask_event(bugtask_event, bug_event)
                         bugtask = None
                         bugtask_event = None
+                    for command in bug_commands:
+                        bug, bug_event = command.execute(bug, bug_event)
                     # Finish this bug.
-                    if add_comment_to_bug:
-                        message = self.appendBugComment(
-                            bug, signed_msg, filealias)
-                        add_comment_to_bug = False
-                    else:
-                        message = bug.initial_message
-                    # XXX sinzui 2011-08-25: This must only be run once for
-                    # the first message.
-                    self.processAttachments(bug, message, signed_msg)
                     self.notify_bug_event(bug_event)
                 except EmailProcessingError, error:
                     processing_errors.append((error, command))
@@ -285,8 +289,9 @@ class MaloneHandler:
                         continue
             if len(processing_errors) > 0:
                 raise IncomingEmailError(
-                    '\n'.join(str(error) for error, command
-                              in processing_errors),
+                    '\n'.join(
+                        str(error) for error, command in processing_errors),
+                        [command for error, command in processing_errors])
 
         except IncomingEmailError, error:
             send_process_error_notification(
@@ -402,6 +407,12 @@ class MaloneHandler:
                 return
             if not IObjectCreatedEvent.providedBy(bug_event):
                 notify(bugtask_event)
+
+    def handleNoBug(self):
+        rollback()
+        raise IncomingEmailError(
+            get_error_message(
+                'command-with-no-bug.txt', error_templates=error_templates))
 
     def handleNoAffectsTarget(self):
         rollback()
