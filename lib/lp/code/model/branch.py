@@ -362,10 +362,10 @@ class Branch(SQLBase, BzrIdentityMixin):
     @property
     def landing_candidates(self):
         """See `IBranch`."""
-        return BranchMergeProposal.select("""
-            BranchMergeProposal.target_branch = %s AND
-            BranchMergeProposal.queue_status NOT IN %s
-            """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
+        non_final = tuple(
+            set(BranchMergeProposalStatus.items) -
+            set(BRANCH_MERGE_PROPOSAL_FINAL_STATES))
+        return self.getMergeProposals(status=non_final)
 
     @property
     def dependent_branches(self):
