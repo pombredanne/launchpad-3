@@ -99,8 +99,8 @@ class BranchType(DBEnumeratedType):
     IMPORTED = DBItem(3, """
         Imported
 
-        Branches that have been converted from some other revision
-        control system into bzr and are made available through Launchpad.
+        Branches that have been imported from an externally hosted
+        branch in bzr or another VCS and are made available through Launchpad.
         """)
 
     REMOTE = DBItem(4, """

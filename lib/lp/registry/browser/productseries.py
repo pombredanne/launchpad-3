@@ -1090,8 +1090,7 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
 
             # Create a new branch.
             if branch_type == CREATE_NEW:
-                branch = self._createBzrBranch(
-                    BranchType.HOSTED, branch_name, branch_owner)
+                branch = self._createBzrBranch(branch_name, branch_owner)
                 if branch is not None:
                     self.context.branch = branch
                     self.request.response.addInfoNotification(
@@ -1102,55 +1101,42 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
                 # Either create an externally hosted bzr branch
                 # (a.k.a. 'mirrored') or create a new code import.
                 rcs_type = data.get('rcs_type')
-                if rcs_type == RevisionControlSystems.BZR:
-                    branch = self._createBzrBranch(
-                        BranchType.MIRRORED, branch_name, branch_owner,
-                        data['repo_url'])
-                    if branch is None:
-                        return
-
-                    self.context.branch = branch
-                    self.request.response.addInfoNotification(
-                        'Mirrored branch created and linked to '
-                        'the series.')
+                # We need to create an import request.
+                if rcs_type == RevisionControlSystems.CVS:
+                    cvs_root = data.get('repo_url')
+                    cvs_module = data.get('cvs_module')
+                    url = None
                 else:
-                    # We need to create an import request.
-                    if rcs_type == RevisionControlSystems.CVS:
-                        cvs_root = data.get('repo_url')
-                        cvs_module = data.get('cvs_module')
-                        url = None
-                    else:
-                        cvs_root = None
-                        cvs_module = None
-                        url = data.get('repo_url')
-                    rcs_item = RevisionControlSystems.items[rcs_type.name]
-                    try:
-                        code_import = getUtility(ICodeImportSet).new(
-                            registrant=branch_owner,
-                            target=IBranchTarget(self.context.product),
-                            branch_name=branch_name,
-                            rcs_type=rcs_item,
-                            url=url,
-                            cvs_root=cvs_root,
-                            cvs_module=cvs_module)
-                    except BranchExists, e:
-                        self._setBranchExists(e.existing_branch,
-                                              'branch_name')
-                        self.errors_in_action = True
-                        # Abort transaction. This is normally handled
-                        # by LaunchpadFormView, but we are already in
-                        # the success handler.
-                        self._abort()
-                        return
-                    self.context.branch = code_import.branch
-                    self.request.response.addInfoNotification(
-                        'Code import created and branch linked to the '
-                        'series.')
+                    cvs_root = None
+                    cvs_module = None
+                    url = data.get('repo_url')
+                rcs_item = RevisionControlSystems.items[rcs_type.name]
+                try:
+                    code_import = getUtility(ICodeImportSet).new(
+                        registrant=branch_owner,
+                        target=IBranchTarget(self.context.product),
+                        branch_name=branch_name,
+                        rcs_type=rcs_item,
+                        url=url,
+                        cvs_root=cvs_root,
+                        cvs_module=cvs_module)
+                except BranchExists, e:
+                    self._setBranchExists(e.existing_branch,
+                                          'branch_name')
+                    self.errors_in_action = True
+                    # Abort transaction. This is normally handled
+                    # by LaunchpadFormView, but we are already in
+                    # the success handler.
+                    self._abort()
+                    return
+                self.context.branch = code_import.branch
+                self.request.response.addInfoNotification(
+                    'Code import created and branch linked to the '
+                    'series.')
             else:
                 raise UnexpectedFormData(branch_type)
 
-    def _createBzrBranch(self, branch_type, branch_name,
-                         branch_owner, repo_url=None):
+    def _createBzrBranch(self, branch_name, branch_owner, repo_url=None):
         """Create a new Bazaar branch.  It may be hosted or mirrored.
 
         Return the branch on success or None.
@@ -1158,12 +1144,10 @@ class ProductSeriesSetBranchView(ReturnToReferrerMixin, LaunchpadFormView,
         branch = None
         try:
             namespace = self.target.getNamespace(branch_owner)
-            branch = namespace.createBranch(branch_type=branch_type,
+            branch = namespace.createBranch(branch_type=BranchType.HOSTED,
                                             name=branch_name,
                                             registrant=self.user,
                                             url=repo_url)
-            if branch_type == BranchType.MIRRORED:
-                branch.requestMirror()
         except BranchCreationForbidden:
             self.addError(
                 "You are not allowed to create branches in %s." %

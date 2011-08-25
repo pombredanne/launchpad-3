@@ -32,93 +32,7 @@ Hosted branches use Launchpad as their primary location.
     >>> browser.open('http://code.launchpad.dev/redfish')
     >>> browser.getLink("Register a branch").click()
 
-    >>> browser.getControl('Hosted').click()
     >>> browser.getControl('Name').value = 'hosted-branch'
-
-Branch URLs are not valid for hosted branches.
-
-    >>> browser.getControl('Branch URL').value = (
-    ...     'http://example.com/hosted-branch')
-    >>> browser.getControl('Register Branch').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print message
-    There is 1 error.
-    Branch URLs cannot be set for Hosted branches.
-
-    >>> browser.getControl('Branch URL').value = ''
-    >>> browser.getControl('Register Branch').click()
-
-    >>> def print_branch_info(browser):
-    ...     branch_info = find_tag_by_id(browser.contents, 'branch-info')
-    ...     print extract_text(branch_info)
-    >>> print_branch_info(browser)
-    Branch information
-    Owner: Sample Person
-    Project: Redfish
-    Status: Development
-
-
-Creating a mirrored branch
---------------------------
-
-Mirrored branches are primarily hosted outside of Launchpad, and
-Launchpad mirrors the branch.
-
-    >>> browser.open('http://code.launchpad.dev/redfish')
-    >>> browser.getLink("Register a branch").click()
-
-    >>> print_radio_button_field(browser.contents, 'branch_type')
-    ( ) Hosted
-    (*) Mirrored
-    ( ) Remote
-
-    >>> browser.getControl('Name').value = 'mirrored-branch'
-
-Branch URLs are required for mirrored branches.
-
-    >>> browser.getControl('Register Branch').click()
-    >>> for message in get_feedback_messages(browser.contents):
-    ...     print message
-    There is 1 error.
-    Branch URLs are required for Mirrored branches.
-
-    >>> browser.getControl('Branch URL').value = (
-    ...     'http://example.com/mirrored-branch')
-    >>> browser.getControl('Register Branch').click()
-
-    >>> print_branch_info(browser)
-    Branch information
-    Owner: Sample Person
-    Project: Redfish
-    Status: Development
-    Location: http://example.com/mirrored-branch
-    Last mirrored: Not mirrored yet
-    Next mirror: As soon as possible
-
-
-Creating a remote branch
-------------------------
-
-The contents of Remote branches are not accessible through Launchpad.
-
-    >>> browser.open('http://code.launchpad.dev/redfish')
-    >>> browser.getLink("Register a branch").click()
-
-    >>> browser.getControl('Remote').click()
-    >>> browser.getControl('Name').value = 'remote-branch'
-
-A remote branch may have a URL, but doesn't have to.
-
-    >>> browser.getControl('Branch URL').value = (
-    ...     'http://example.com/remote-branch')
-    >>> browser.getControl('Register Branch').click()
-    >>> print_branch_info(browser)
-    Branch information
-    Owner: Sample Person
-    Project: Redfish
-    Status: Development
-    Location: http://example.com/remote-branch
-
 
 Finding product/+addbranch
 --------------------------
@@ -209,34 +123,6 @@ product, and a link to other branches maintained by that person.
     Other branches owned by No Privileges Person
 
 
-Adding a branch via a product series
-------------------------------------
-
-A user can register a branch from the project series page using the
-'Submit code' link, or in the case of a series driver, by using the
-'registering a mirrored branch' link.
-
-    >>> browser.open('http://launchpad.dev/gnome-terminal/trunk')
-    >>> browser.getLink('registering a mirrored branch').click()
-    >>> print browser.title
-    Register a branch : Code : GNOME Terminal
-
-The user sees that he is registering a branch for the series' project.
-
-    >>> print extract_text(find_main_content(browser.contents).h1)
-    Register a branch on GNOME Terminal
-
-After posting the form, he sees the registered branch page.
-
-    >>> browser.getControl('Branch URL').value = (
-    ...     'http://example.com/applets/master')
-    >>> browser.getControl('Name').value = 'master'
-    >>> browser.getControl('Experimental').click()
-    >>> browser.getControl('Register Branch').click()
-    >>> print browser.title
-    master : Code : GNOME Terminal
-
-
 Finding person/+addbranch
 -------------------------
 
@@ -271,7 +157,6 @@ user is a member of, or to themselves.
     Ubuntu Gnome Team (name18)
     Warty Security Team (name20)
 
-
 Conflict on unique name
 -----------------------
 
@@ -288,8 +173,6 @@ already exists.
 Try a adding a conflicting branch from the product/+addbranch form.
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal/+addbranch')
-    >>> browser.getControl('Branch URL').value = (
-    ...     'http://example.com/gnome-terminal/main-dup')
 
 Trying to post the form without filling a name at all should not cause
 an oops!
@@ -321,7 +204,6 @@ the team name is given in the error message.
     >>> browser.getControl('Owner').displayValue = [
     ...     'Landscape Developers']
     >>> browser.getControl('Name').value = 'main'
-    >>> browser.getControl('Hosted').click()
     >>> browser.getControl('Register Branch').click()
     >>> print browser.url
     http://code.launchpad.dev/~landscape-developers/gnome-terminal/main
@@ -335,71 +217,11 @@ Now registering again with the same name.
     >>> browser.getControl('Owner').displayValue = [
     ...     'Landscape Developers']
     >>> browser.getControl('Name').value = 'main'
-    >>> browser.getControl('Hosted').click()
     >>> browser.getControl('Register Branch').click()
     >>> for message in get_feedback_messages(browser.contents):
     ...     print extract_text(message)
     There is 1 error.
     Landscape Developers already has a branch for GNOME Terminal called main.
-
-
-Checking URLs
--------------
-
-URL validation should check that the entered URL is not the root of a
-site.
-
-    >>> user_browser.open('http://code.launchpad.dev/applets')
-    >>> user_browser.getLink("Register a branch").click()
-    >>> user_browser.getControl('Branch URL').value = 'http://example.com'
-    >>> user_browser.getControl('Name').value = 'unique-name'
-    >>> user_browser.getControl('Register Branch').click()
-    >>> messages = find_tags_by_class(user_browser.contents, 'message')
-    >>> for element in messages:
-    ...     print element.renderContents()
-    There is 1 error.
-    URLs for branches cannot point to the root of a site.
-
-URL validation should check that the entered URL is not from Launchpad.
-
-    >>> user_browser.open('http://code.launchpad.dev/applets')
-    >>> user_browser.getLink("Register a branch").click()
-    >>> user_browser.getControl('Branch URL').value = (
-    ...     'http://code.launchpad.dev/~testuser/')
-    >>> user_browser.getControl('Name').value = 'unique-name'
-    >>> user_browser.getControl('Register Branch').click()
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
-    There is 1 error.
-    For Launchpad to mirror a branch, the original branch cannot be on
-    launchpad.dev.
-
-As well as checking against the root site set in the config, a check is
-also done against the value stored as a database constraint.
-
-    >>> user_browser.open('http://code.launchpad.dev/applets')
-    >>> user_browser.getLink("Register a branch").click()
-    >>> user_browser.getControl('Branch URL').value = (
-    ...     'http://bazaar.launchpad.net/foo/bar/')
-    >>> user_browser.getControl('Name').value = 'unique-name'
-    >>> user_browser.getControl('Register Branch').click()
-    >>> for message in get_feedback_messages(user_browser.contents):
-    ...     print message
-    There is 1 error.
-    For Launchpad to mirror a branch, the original branch cannot be on
-    http://bazaar.launchpad.net.
-
-Trailing slashes on URLs are removed.
-
-    >>> user_browser.getControl('Branch URL').value = (
-    ...     'sftp://example.com/~lifeless/pyresources/')
-    >>> user_browser.getControl('Register Branch').click()
-    >>> print_tag_with_id(user_browser.contents, 'branch-info')
-    Branch information
-    Owner: ...
-    ...
-    Location: sftp://example.com/~lifeless/pyresources
-    ...
 
 
 Attempting to create a branch in a forbidden project
@@ -423,7 +245,6 @@ widget, so errors are set at the page level.
 
     >>> user_browser.open('http://code.launchpad.dev/landscape')
     >>> user_browser.getLink("Register a branch").click()
-    >>> user_browser.getControl('Branch URL').value = 'http://foo.com/bar'
     >>> user_browser.getControl('Name').value = 'landscape1'
     >>> user_browser.getControl('Register Branch').click()
     >>> messages = find_tags_by_class(user_browser.contents, 'message')

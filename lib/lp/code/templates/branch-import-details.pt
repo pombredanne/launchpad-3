@@ -51,6 +51,12 @@
           </p>
         </tal:hg-import>
 
+        <tal:bzr-import condition="code_import/rcs_type/enumvalue:BZR">
+          <p>This branch is an import of the Bazaar branch at
+            <span tal:replace="code_import/url" />.
+          </p>
+        </tal:bzr-import>
+
         <tal:svn-import condition="view/is_svn_import">
           <p id="svn-import-details">
             This branch is an import of the

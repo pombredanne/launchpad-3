@@ -56,6 +56,7 @@ Requesting a Subversion import
 The default foreign VCS type is Subversion.
 
     >>> print_radio_button_field(browser.contents, "rcs_type")
+    ( ) Bazaar
     ( ) Git
     ( ) Mercurial
     (*) Subversion
