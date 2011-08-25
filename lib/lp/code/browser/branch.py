@@ -2,8 +2,6 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.boolwidgets import CheckBoxWidget
 
 __metaclass__ = type
 
@@ -49,7 +47,9 @@ from lazr.restful.interface import (
     )
 from lazr.uri import URI
 import pytz
+from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import TextAreaWidget
+from zope.app.form.browser.boolwidgets import CheckBoxWidget
 from zope.component import (
     getUtility,
     queryAdapter,
