@@ -45,10 +45,10 @@
             </a>
           </li>
           <li class="sprite info" tal:condition="nb_diffs_in_child">
+            <tal:differences_count replace="view/wordDifferencesInChild">
+              345 packages
+            </tal:differences_count>
             <a tal:attributes="href view/link_to_differences_in_child">
-              <tal:differences_count replace="view/wordDifferencesInChild">
-                345 packages
-              </tal:differences_count>
               only in
               <tal:child replace="context/displayname">
                 Natty

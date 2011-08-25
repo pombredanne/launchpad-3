@@ -595,14 +595,6 @@ class PublishFTPMaster(LaunchpadCronScript):
             # We've done enough here.  Leave some server time for others.
             return
 
-        for series in distribution.series:
-            suites_needing_indexes = self.listSuitesNeedingIndexes(series)
-            if len(suites_needing_indexes) > 0:
-                self.createIndexes(distribution, suites_needing_indexes)
-                # Don't try to do too much in one run.  Leave the rest
-                # of the work for next time.
-                return
-
         self.processAccepted(distribution)
 
         self.rsyncBackupDists(distribution)
