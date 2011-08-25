@@ -8,29 +8,28 @@ Test team views.
 __metaclass__ = type
 
 import transaction
-from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
-from canonical.launchpad.testing.pages import (
-    extract_text,
-    find_tags_by_class,
-    setupBrowser)
-from canonical.launchpad.webapp.publisher import canonical_url
 from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import (
     PersonVisibility,
     TeamSubscriptionPolicy,
-    )
+    TeamMembershipRenewalPolicy)
 from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
     )
-from lp.testing.views import create_initialized_view
+from lp.testing.views import (
+    create_view,
+    create_initialized_view,
+    )
 
 
 class TestProposedTeamMembersEditView(TestCaseWithFactory):
@@ -214,15 +213,16 @@ class TestTeamEditView(TestCaseWithFactory):
                 view.widgets['name'].hint)
 
     def test_edit_team_view_permission(self):
-        # Only an administrator (as well as the team owner) of a team can
+        # Only an administrator or the team owner of a team can
         # change the details of that team.
         person = self.factory.makePerson()
-        team = self.factory.makeTeam()
-        url = canonical_url(team, view_name='+edit')
-        self.assertRaises(
-            Unauthorized, self.getUserBrowser, url, person)
-        browser = setupBrowser(auth='Basic mark@example.com:test')
-        browser.open(url)
+        owner = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=owner)
+        view = create_view(team, '+edit')
+        login_person(person)
+        self.assertFalse(check_permission('launchpad.Edit', view))
+        login_person(owner)
+        self.assertTrue(check_permission('launchpad.Edit', view))
 
     def test_edit_team_view_data(self):
         # The edit view renders the team's details correctly.
@@ -231,21 +231,20 @@ class TestTeamEditView(TestCaseWithFactory):
             name="team", displayname='A Team',
             description="A great team", owner=owner,
             subscription_policy=TeamSubscriptionPolicy.MODERATED)
-        browser = self.getUserBrowser(
-            canonical_url(team), user=owner)
-        browser.getLink('Change details').click()
-        self.assertEqual('team', browser.getControl('Name', index=0).value)
-        self.assertEqual(
-            'A Team', browser.getControl('Display Name', index=0).value)
-        self.assertEqual(
-            'A great team',
-            browser.getControl('Team Description', index=0).value)
-        self.assertTrue(
-            browser.getControl('Moderated Team', index=0).selected)
-        self.assertTrue(
-            browser.getControl('invite them to apply for renewal').selected)
-        self.assertEqual(
-            '', browser.getControl('Renewal period', index=0).value)
+        with person_logged_in(owner):
+            view = create_initialized_view(team, name="+edit")
+            self.assertEqual('team', view.widgets['name']._data)
+            self.assertEqual(
+                'A Team', view.widgets['displayname']._data)
+            self.assertEqual(
+                'A great team', view.widgets['teamdescription']._data)
+            self.assertEqual(
+                TeamSubscriptionPolicy.MODERATED,
+                view.widgets['subscriptionpolicy']._data)
+            self.assertEqual(
+                TeamMembershipRenewalPolicy.NONE,
+                view.widgets['renewal_policy']._data)
+            self.assertIsNone(view.widgets['defaultrenewalperiod']._data)
 
     def test_edit_team_view_save(self):
         # A team can be edited and saved, including a name change, even if it
@@ -294,18 +293,13 @@ class TestTeamEditView(TestCaseWithFactory):
         owner = self.factory.makePerson()
         team = self.factory.makeTeam(name="team", owner=owner)
 
-        #with person_logged_in(owner):
-        url = canonical_url(team)
-        browser = self.getUserBrowser(url, user=owner)
-        browser.getLink('Change details').click()
-        browser.getControl('Name', index=0).value = 'existing'
-        browser.getControl('Save').click()
-        self.assertEqual('http://launchpad.dev/%7Eteam/+edit', browser.url)
-
-        messages = []
-        for tag in find_tags_by_class(browser.contents, 'message'):
-            messages.append(extract_text(tag))
+        form = {
+            'field.name': 'existing',
+            'field.actions.save': 'Save',
+            }
+        login_person(owner)
+        view = create_initialized_view(team, '+edit', form=form)
+        self.assertEqual(1, len(view.errors))
         self.assertEqual(
-            ['There is 1 error.',
-            'existing is already in use by another person or team.'],
-            messages)
+            'existing is already in use by another person or team.',
+            view.errors[0].doc())
