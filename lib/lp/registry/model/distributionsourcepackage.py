@@ -258,14 +258,6 @@ class DistributionSourcePackage(BugTargetBase,
                      "-pocket"])
         return spph
 
-    @property
-    def latest_overall_component(self):
-        """See `IDistributionSourcePackage`."""
-        spph = self.latest_overall_publication
-        if spph:
-            return spph.component
-        return None
-
     def getVersion(self, version):
         """See `IDistributionSourcePackage`."""
         spph = SourcePackagePublishingHistory.select("""
