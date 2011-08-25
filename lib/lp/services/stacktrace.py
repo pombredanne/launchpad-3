@@ -20,12 +20,13 @@ import sys
 import traceback
 
 DEBUG_EXCEPTION_FORMATTER = False
+EXPLOSIVE_ERRORS = (SystemExit, MemoryError, KeyboardInterrupt)
 
 
 def _try_except(callable, *args, **kwargs):
     try:
         return callable(*args, **kwargs)
-    except (SystemExit, KeyboardInterrupt):
+    except EXPLOSIVE_ERRORS:
         raise
     except:
         if DEBUG_EXCEPTION_FORMATTER:
@@ -96,7 +97,7 @@ def format_list(extracted_list):
                     item.append(supp['extra'])  # We do not include a prefix.
             if info:
                 item.append(_fmt(info))
-        except (SystemExit, KeyboardInterrupt):
+        except EXPLOSIVE_ERRORS:
             raise
         except:
             # The values above may not stringify properly, or who knows what
@@ -166,7 +167,7 @@ def _get_frame_data(f, lineno):
                         warning = try_except(str, warning)
                     if warning is not None:
                         warnings.append(warning)
-            except (SystemExit, KeyboardInterrupt):
+            except EXPLOSIVE_ERRORS:
                 raise
             except:
                 if DEBUG_EXCEPTION_FORMATTER:
