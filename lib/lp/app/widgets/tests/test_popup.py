@@ -103,9 +103,9 @@ class TestVocabularyPickerWidget(TestCaseWithFactory):
              'title': 'All',
              'description': 'Display all search results'},
             {'name': 'PROJECT',
-             'title': 'Product',
+             'title': 'Project',
              'description':
-                 'Display search results associated with products'},
+                 'Display search results associated with projects'},
             {'name': 'DISTRO',
              'title': 'Distribution',
              'description':
