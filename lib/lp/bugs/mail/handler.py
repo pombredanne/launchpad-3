@@ -235,32 +235,21 @@ class MaloneHandler:
             bugtask_event = None
 
             processing_errors = []
-            while len(commands) > 0:
-                command = commands.pop(0)
+            bug_commands = BugCommandGroups(commands)
+            for bug_group in bug_commands.groups:
                 try:
-                    if IBugEmailCommand.providedBy(command):
-                        # Finish outstanding work from the previous bug.
-                        self.notify_bug_event(bug_event)
-                        self.notify_bugtask_event(bugtask_event, bug_event)
-                        bugtask = None
-                        bugtask_event = None
-                        # Get or start building a new bug.
-                        bug, bug_event = command.execute(
-                            signed_msg, filealias)
-                        if add_comment_to_bug:
-                            message = self.appendBugComment(
-                                bug, signed_msg, filealias)
-                            add_comment_to_bug = False
-                        else:
-                            message = bug.initial_message
-                        self.processAttachments(bug, message, signed_msg)
-                    elif IBugTaskEmailCommand.providedBy(command):
-                        self.notify_bugtask_event(bugtask_event, bug_event)
-                        bugtask, bugtask_event = command.execute(
-                            bug)
-                    elif IBugEditEmailCommand.providedBy(command):
-                        bug, bug_event = command.execute(bug, bug_event)
-                    elif IBugTaskEditEmailCommand.providedBy(command):
+                    # XXX sinzui 2011-08-25: get the first command to
+                    # tell us which bug this is.
+                    bug_commands = bug_group.commands
+                    # The first command of a group must be a bug.
+                    command = bug_commands.pop()
+                    bug, bug_event = command.execute(signed_msg, filealias)
+                    for bugtask_group in bug_group.groups:
+                        bugtask_commands = bugtask_group.commands
+                        # The first command of a group must be a bugtask.
+                        if bugtask_commands[0].RANK == 0:
+                            command = bugtask_commands.pop()
+                            bugtask, bugtask_event = command.execute(bug)
                         if bugtask is None:
                             if len(bug.bugtasks) == 0:
                                 self.handleNoAffectsTarget()
@@ -268,9 +257,28 @@ class MaloneHandler:
                                 bug, getUtility(ILaunchBag).user)
                             if bugtask is None:
                                 self.handleNoDefaultAffectsTarget(bug)
-                        bugtask, bugtask_event = command.execute(
-                            bugtask, bugtask_event)
-
+                        for command in bugtask_commands:
+                            bugtask, bugtask_event = command.execute(
+                                bugtask, bugtask_event)
+                        # Finish this bugtask.
+                        self.notify_bugtask_event(bugtask_event, bug_event)
+                        bugtask = None
+                        bugtask_event = None
+                    for command in bug_commands:
+                        bug, bug_event = command.execute(bug, bug_event)
+                    # Finish this bug.
+                    # XXX sinzui 2011-08-25: regardless of commands, process
+                    # comments and attachements exactly once.
+                    if add_comment_to_bug:
+                        message = self.appendBugComment(
+                            bug, signed_msg, filealias)
+                        add_comment_to_bug = False
+                    else:
+                        message = bug.initial_message
+                    # XXX sinzui 2011-08-25: This must only be run once for
+                    # the first message.
+                    self.processAttachments(bug, message, signed_msg)
+                    self.notify_bug_event(bug_event)
                 except EmailProcessingError, error:
                     processing_errors.append((error, command))
                     if error.stop_processing:
@@ -279,13 +287,57 @@ class MaloneHandler:
                     else:
                         continue
 
+#            while len(commands) > 0:
+#                command = commands.pop(0)
+#                try:
+#                    if IBugEmailCommand.providedBy(command):
+#                        # Finish outstanding work from the previous bug.
+#                        self.notify_bug_event(bug_event)
+#                        self.notify_bugtask_event(bugtask_event, bug_event)
+#                        bugtask = None
+#                        bugtask_event = None
+#                        # Get or start building a new bug.
+#                        bug, bug_event = command.execute(
+#                            signed_msg, filealias)
+#                        if add_comment_to_bug:
+#                            message = self.appendBugComment(
+#                                bug, signed_msg, filealias)
+#                            add_comment_to_bug = False
+#                        else:
+#                            message = bug.initial_message
+#                        self.processAttachments(bug, message, signed_msg)
+#                    elif IBugTaskEmailCommand.providedBy(command):
+#                        self.notify_bugtask_event(bugtask_event, bug_event)
+#                        bugtask, bugtask_event = command.execute(
+#                            bug)
+#                    elif IBugEditEmailCommand.providedBy(command):
+#                        bug, bug_event = command.execute(bug, bug_event)
+#                    elif IBugTaskEditEmailCommand.providedBy(command):
+#                        if bugtask is None:
+#                            if len(bug.bugtasks) == 0:
+#                                self.handleNoAffectsTarget()
+#                            bugtask = guess_bugtask(
+#                                bug, getUtility(ILaunchBag).user)
+#                            if bugtask is None:
+#                                self.handleNoDefaultAffectsTarget(bug)
+#                        bugtask, bugtask_event = command.execute(
+#                            bugtask, bugtask_event)
+
+#                except EmailProcessingError, error:
+#                    processing_errors.append((error, command))
+#                    if error.stop_processing:
+#                        commands = []
+#                        rollback()
+#                    else:
+#                        continue
+
             if len(processing_errors) > 0:
                 raise IncomingEmailError(
                     '\n'.join(str(error) for error, command
                               in processing_errors),
                     [command for error, command in processing_errors])
-            self.notify_bug_event(bug_event)
-            self.notify_bugtask_event(bugtask_event, bug_event)
+#            self.notify_bug_event(bug_event)
+#            self.notify_bugtask_event(bugtask_event, bug_event)
 
         except IncomingEmailError, error:
             send_process_error_notification(
