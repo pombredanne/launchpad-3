@@ -131,6 +131,7 @@ from canonical.launchpad.webapp.vocabulary import (
     SQLObjectVocabularyBase,
     VocabularyFilter,
     )
+from canonical.lazr.utils import safe_hasattr
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.blueprints.interfaces.specification import ISpecification
@@ -173,7 +174,11 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.distribution import Distribution
+from lp.registry.model.distributionsourcepackage import (
+    DistributionSourcePackageInDatabase,
+    )
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.distroseriesparent import DistroSeriesParent
@@ -1994,8 +1999,8 @@ class VocabularyFilterProject(VocabularyFilter):
 
     def __new__(cls):
         return super(VocabularyFilter, cls).__new__(
-            cls, 'PROJECT', 'Product',
-            'Display search results associated with products')
+            cls, 'PROJECT', 'Project',
+            'Display search results associated with projects')
 
     @property
     def filter_terms(self):
@@ -2007,8 +2012,8 @@ class VocabularyFilterProjectGroup(VocabularyFilter):
 
     def __new__(cls):
         return super(VocabularyFilter, cls).__new__(
-            cls, 'PROJECTGROUP', 'Project',
-            'Display search results associated with projects')
+            cls, 'PROJECTGROUP', 'Project Group',
+            'Display search results associated with project groups')
 
     @property
     def filter_terms(self):
@@ -2050,10 +2055,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
                     obj.__class__.__name__, obj.id)
             obj = obj.pillar
 
-        # It is a hack using the class name here, but it works
-        # fine and avoids an ugly if statement.
-        title = '%s (%s)' % (obj.title, obj.__class__.__name__)
-
+        title = '%s (%s)' % (obj.title, obj.pillar_category)
         return SimpleTerm(obj, obj.name, title)
 
     def getTermByToken(self, token):
@@ -2231,20 +2233,27 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
         if IDistributionSourcePackage.providedBy(spn_or_dsp):
             dsp = spn_or_dsp
             distribution = spn_or_dsp.distribution
+        elif (not ISourcePackageName.providedBy(spn_or_dsp) and
+            safe_hasattr(spn_or_dsp, 'distribution')
+            and safe_hasattr(spn_or_dsp, 'sourcepackagename')):
+            # We use the hasattr checks rather than adaption because the
+            # DistributionSourcePackageInDatabase object is a little bit
+            # broken, and does not provide any interface.
+            distribution = spn_or_dsp.distribution
+            dsp = distribution.getSourcePackage(spn_or_dsp.sourcepackagename)
         else:
             distribution = distribution or self.distribution
             if distribution is not None and spn_or_dsp is not None:
                 dsp = distribution.getSourcePackage(spn_or_dsp)
         try:
             token = '%s/%s' % (dsp.distribution.name, dsp.name)
-            binaries = dsp.publishing_history[0].getBuiltBinaries()
-            binary_names = [binary.binary_package_name for binary in binaries]
-            if binary_names != []:
-                summary = ', '.join(binary_names)
-            else:
-                summary = 'Not yet built.'
-            summary = token + ' ' + summary
-            return SimpleTerm(dsp.sourcepackagename, token, summary)
+            summary = '%s (%s)' % (token, dsp.name)
+
+            # We try to get the binaries for the dsp; if this fails, we return
+            # lookup error instead.
+            dsp.publishing_history[0].getBuiltBinaries()
+            return SimpleTerm(dsp, token, summary)
+            #return SimpleTerm(dsp, token, summary)
         except (IndexError, AttributeError):
             # Either the DSP was None or there is no publishing history.
             raise LookupError(distribution, spn_or_dsp)
@@ -2270,7 +2279,7 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
             return EmptyResultSet()
         search_term = unicode(query)
         store = IStore(SourcePackagePublishingHistory)
-        spns = store.using(
+        dsps = store.using(
             SourcePackagePublishingHistory,
             LeftJoin(
                 SourcePackageRelease,
@@ -2281,9 +2290,9 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
                 SourcePackageRelease.sourcepackagenameID ==
                     SourcePackageName.id),
             LeftJoin(
-                DistroSeries,
-                SourcePackagePublishingHistory.distroseriesID ==
-                    DistroSeries.id),
+                DistributionSourcePackageInDatabase,
+                SourcePackageName.id ==
+                    DistributionSourcePackageInDatabase.sourcepackagename_id),
             LeftJoin(
                 BinaryPackageBuild,
                 BinaryPackageBuild.source_package_release_id ==
@@ -2296,8 +2305,9 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
                 BinaryPackageRelease.binarypackagenameID ==
                     BinaryPackageName.id
             )).find(
-                SourcePackageName,
-                DistroSeries.distributionID == distribution.id,
+                DistributionSourcePackageInDatabase,
+                DistributionSourcePackageInDatabase.distribution_id ==
+                    distribution.id,
                 SourcePackagePublishingHistory.status.is_in((
                     PackagePublishingStatus.PENDING,
                     PackagePublishingStatus.PUBLISHED)),
@@ -2308,4 +2318,4 @@ class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
                     BinaryPackageName.name.contains_string(
                         search_term))).config(distinct=True)
         # XXX sinzui 2011-07-26: This query ignored SPN branches.
-        return CountableIterator(spns.count(), spns, self.toTerm)
+        return CountableIterator(dsps.count(), dsps, self.toTerm)

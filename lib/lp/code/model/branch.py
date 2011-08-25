@@ -87,14 +87,18 @@ from lp.code.enums import (
     BranchType,
     )
 from lp.code.errors import (
+    AlreadyLatestFormat,
     BranchCannotBePrivate,
     BranchCannotBePublic,
     BranchMergeProposalExists,
     BranchTargetError,
     BranchTypeError,
     CannotDeleteBranch,
+    CannotUpgradeBranch,
+    CannotUpgradeNonHosted,
     InvalidBranchMergeProposal,
     InvalidMergeQueueConfig,
+    UpgradePending,
     )
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalNeedsReviewEvent,
@@ -392,10 +396,10 @@ class Branch(SQLBase, BzrIdentityMixin):
     @property
     def landing_candidates(self):
         """See `IBranch`."""
-        non_final = tuple(
-            set(BranchMergeProposalStatus.items) -
-            set(BRANCH_MERGE_PROPOSAL_FINAL_STATES))
-        return self.getMergeProposals(status=non_final)
+        return BranchMergeProposal.select("""
+            BranchMergeProposal.target_branch = %s AND
+            BranchMergeProposal.queue_status NOT IN %s
+            """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
     @property
     def dependent_branches(self):
@@ -406,7 +410,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
     def getMergeProposals(self, status=None, visible_by_user=None,
-                          merged_revnos=None, eager_load=False):
+                          merged_revnos=None):
         """See `IBranch`."""
         if not status:
             status = (
@@ -416,8 +420,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
         return collection.getMergeProposals(
-            status, target_branch=self, merged_revnos=merged_revnos,
-            eager_load=eager_load)
+            status, target_branch=self, merged_revnos=merged_revnos)
 
     def isBranchMergeable(self, target_branch):
         """See `IBranch`."""
@@ -1161,16 +1164,25 @@ class Branch(SQLBase, BzrIdentityMixin):
             DateTrunc(u'day', Revision.revision_date))
         return sorted(results)
 
+    def checkUpgrade(self):
+        if self.branch_type is not BranchType.HOSTED:
+            raise CannotUpgradeNonHosted(self)
+        if self.upgrade_pending:
+            raise UpgradePending(self)
+        if (
+            self.branch_format in CURRENT_BRANCH_FORMATS and
+            self.repository_format in CURRENT_REPOSITORY_FORMATS):
+            raise AlreadyLatestFormat(self)
+
     @property
     def needs_upgrading(self):
         """See `IBranch`."""
-        if self.branch_type is not BranchType.HOSTED:
+        try:
+            self.checkUpgrade()
+        except CannotUpgradeBranch:
             return False
-        if self.upgrade_pending:
-            return False
-        return not (
-            self.branch_format in CURRENT_BRANCH_FORMATS and
-            self.repository_format in CURRENT_REPOSITORY_FORMATS)
+        else:
+            return True
 
     @property
     def upgrade_pending(self):

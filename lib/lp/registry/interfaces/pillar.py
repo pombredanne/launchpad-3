@@ -48,7 +48,7 @@ class IPillar(Interface):
     active = exported(
         Bool(title=_('Active'),
              description=_("Whether or not this item is active.")))
-
+    pillar_category = Attribute('The category title applicable to the pillar')
 
 class IHasAliases(Interface):
 

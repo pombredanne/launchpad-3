@@ -1,7 +1,7 @@
 Archives
 ========
 
-Representations for IArchive can be fetched via the API for PPAs and
+Representations for IArchive can be fetch via the API for PPAs and
 distribution archives.
 
     >>> cprov_archive = webservice.get("/~cprov/+archive/ppa").jsonBody()
@@ -270,49 +270,24 @@ Colin is a valid member of the team who owns the ubuntu primary archive.
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.testing.factory import LaunchpadObjectFactory
-    >>> factory = LaunchpadObjectFactory()
 
-    >>> login('foo.bar@canonical.com')
+    >>> login(ANONYMOUS)
     >>> cjwatson = getUtility(IPersonSet).getByName('kamion')
     >>> ubuntu_db = getUtility(IDistributionSet).getByName('ubuntu')
     >>> cjwatson.inTeam(ubuntu_db.main_archive.owner)
     True
 
-Let's also make a new Person to own the Ubuntu distro.
-
-    >>> ubuntu_owner = factory.makePerson()
-    >>> ubuntu_db.owner = ubuntu_owner
-
     >>> logout()
 
     >>> cjwatson_webservice = webservice_for_person(
     ...     cjwatson, permission=OAuthPermission.WRITE_PUBLIC)
-    >>> ubuntu_owner_webservice = webservice_for_person(
-    ...     ubuntu_owner, permission=OAuthPermission.WRITE_PUBLIC)
 
-To be able to amend any permissions on a distribution archive,
-you need to be one of the distribution owners - not one of the archive
-owners.  Here, cjwatson cannot make a new package uploader:
-
-    >>> name12 = webservice.get("/~name12").jsonBody()
-    >>> response = cjwatson_webservice.named_post(
-    ...     ubuntu['main_archive_link'], 'newPackageUploader', {},
-    ...     person=name12['self_link'],
-    ...     source_package_name='mozilla-firefox')
-    >>> print response
-    HTTP/1.1 401 Unauthorized
-    ...
-    (<Archive at ...>, 'newPackageUploader', 'launchpad.Edit')
-
-From here on we'll use ubuntu_owner, who does have permission as Ubuntu's
-owner.
 
 `newPackageUploader` is a factory function that adds a new permission
 for a person to upload a package.
 
     >>> name12 = webservice.get("/~name12").jsonBody()
-    >>> response = ubuntu_owner_webservice.named_post(
+    >>> response = cjwatson_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'newPackageUploader', {},
     ...     person=name12['self_link'],
     ...     source_package_name='mozilla-firefox')
@@ -331,7 +306,7 @@ for a person to upload a package.
 
 deletePackageUploader() removes that permission:
 
-    >>> print ubuntu_owner_webservice.named_post(
+    >>> print cjwatson_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'deletePackageUploader', {},
     ...     person=name12['self_link'],
     ...     source_package_name='mozilla-firefox')
@@ -373,7 +348,7 @@ all components.
 newComponentUploader adds a new permission for a person to upload to a
 component.
 
-    >>> response = ubuntu_owner_webservice.named_post(
+    >>> response = cjwatson_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'newComponentUploader', {},
     ...     person=name12['self_link'],
     ...     component_name='restricted')
@@ -407,7 +382,7 @@ sourcepackage.
 
 deleteComponentUploader() removes that permission:
 
-    >>> print ubuntu_owner_webservice.named_post(
+    >>> print cjwatson_webservice.named_post(
     ...     ubuntu['main_archive_link'], 'deleteComponentUploader', {},
     ...     person=name12['self_link'],
     ...     component_name='restricted')
@@ -436,7 +411,7 @@ And ``checkUpload`` now also no longer passes:
     this distribution's primary archive.  Did you mean to upload to a PPA?
 
 
-For PPAs, only the archive owners can add or remove component-uploaders.
+Only the archive owners can add or remove component-uploaders.
 
     >>> no_priv = webservice.get("/~no-priv").jsonBody()
 
@@ -504,7 +479,7 @@ where the user is able to administer distroseries queues.
 newQueueAdmin adds a new permission for a person to administer distroseries
 queues in a particular component.
 
-    >>> response = ubuntu_owner_webservice.named_post(
+    >>> response = webservice.named_post(
     ...     ubuntu['main_archive_link'], 'newQueueAdmin', {},
     ...     person=name12['self_link'],
     ...     component_name='partner')
@@ -512,7 +487,7 @@ queues in a particular component.
     HTTP/1.1 201 Created
     ...
 
-    >>> new_permission = ubuntu_owner_webservice.get(
+    >>> new_permission = webservice.get(
     ...     response.getHeader('Location')).jsonBody()
     >>> print new_permission['self_link']
     http://.../ubuntu/+archive/primary/+queue-admin/name12?type=component&item=partner
@@ -526,7 +501,7 @@ queues in a particular component.
 
 deleteQueueAdmin removes that permission.
 
-    >>> print ubuntu_owner_webservice.named_post(
+    >>> print webservice.named_post(
     ...     ubuntu['main_archive_link'], 'deleteQueueAdmin', {},
     ...     person=name12['self_link'],
     ...     component_name='partner')

@@ -626,7 +626,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @export_read_operation()
     @operation_for_version('beta')
     def getMergeProposals(status=None, visible_by_user=None,
-                          merged_revnos=None, eager_load=False):
+                          merged_revnos=None):
         """Return matching BranchMergeProposals."""
 
     def scheduleDiffUpdates():
@@ -947,6 +947,12 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
         revisions brought in through merges.
 
         :return: A list of tuples like (date, count).
+        """
+
+    def checkUpgrade():
+        """Check whether an upgrade should be performed, and raise if not.
+
+        :raises: a `CannotUpgradeBranch`, or a subclass.
         """
 
     needs_upgrading = Attribute("Whether the branch needs to be upgraded.")

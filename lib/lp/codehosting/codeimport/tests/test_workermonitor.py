@@ -451,7 +451,25 @@ class TestWorkerMonitorUnit(TestCase):
             makeFailure(
                 error.ProcessTerminated,
                 exitCode=CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE))
-        self.assertEqual(calls, [CodeImportResultStatus.FAILURE_UNSUPPORTED_FEATURE])
+        self.assertEqual(
+            calls, [CodeImportResultStatus.FAILURE_UNSUPPORTED_FEATURE])
+        self.assertOopsesLogged([])
+        # We return the deferred that callFinishJob returns -- if
+        # callFinishJob did not swallow the error, this will fail the test.
+        return ret
+
+    def test_callFinishJobCallsFinishJobRemoteBroken(self):
+        # If the argument to callFinishJob indicates that the subprocess
+        # exited with a code of FAILURE_REMOTE_BROKEN, it
+        # calls finishJob with a status of FAILURE_REMOTE_BROKEN.
+        worker_monitor = self.makeWorkerMonitorWithJob()
+        calls = self.patchOutFinishJob(worker_monitor)
+        ret = worker_monitor.callFinishJob(
+            makeFailure(
+                error.ProcessTerminated,
+                exitCode=CodeImportWorkerExitCode.FAILURE_REMOTE_BROKEN))
+        self.assertEqual(
+            calls, [CodeImportResultStatus.FAILURE_REMOTE_BROKEN])
         self.assertOopsesLogged([])
         # We return the deferred that callFinishJob returns -- if
         # callFinishJob did not swallow the error, this will fail the test.
@@ -747,7 +765,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
             return result
         return deferred.addBoth(save_protocol_object)
 
-    def DISABLEDtest_import_cvs(self):
+    def test_import_cvs(self):
         # Create a CVS CodeImport and import it.
         job = self.getStartedJobForImport(self.makeCVSCodeImport())
         code_import_id = job.code_import.id
@@ -756,7 +774,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    def DISABLEDtest_import_subversion(self):
+    def test_import_subversion(self):
         # Create a Subversion CodeImport and import it.
         job = self.getStartedJobForImport(self.makeSVNCodeImport())
         code_import_id = job.code_import.id
@@ -783,9 +801,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    # XXX 2010-03-24 MichaelHudson, bug=541526: This test fails intermittently
-    # in EC2.
-    def DISABLED_test_import_bzrsvn(self):
+    def test_import_bzrsvn(self):
         # Create a Subversion-via-bzr-svn CodeImport and import it.
         job = self.getStartedJobForImport(self.makeBzrSvnCodeImport())
         code_import_id = job.code_import.id
