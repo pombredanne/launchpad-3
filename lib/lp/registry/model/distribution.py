@@ -53,7 +53,6 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
@@ -188,7 +187,6 @@ from lp.soyuz.model.distroarchseries import (
     DistroArchSeries,
     DistroArchSeriesSet,
     )
-from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
     SourcePackagePublishingHistory,

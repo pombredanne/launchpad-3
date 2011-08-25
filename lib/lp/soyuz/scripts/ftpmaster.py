@@ -198,7 +198,6 @@ class ArchiveCruftChecker:
                 while parsed_sources.Step():
                     source = parsed_sources.Section.Find("Package")
                     source_version = parsed_sources.Section.Find("Version")
-                    architecture = parsed_sources.Section.Find("Architecture")
                     binaries = parsed_sources.Section.Find("Binary")
                     for binary in [
                         item.strip() for item in binaries.split(',')]:
@@ -896,10 +895,13 @@ class SyncSource:
             file_type = determine_source_file_type(filename)
             # set the return code if an orig was, in fact,
             # fetched from Librarian
-            if not file_type in (SourcePackageFileType.ORIG_TARBALL,
-                                 SourcePackageFileType.COMPONENT_ORIG_TARBALL):
+            orig_types = (
+                SourcePackageFileType.ORIG_TARBALL,
+                SourcePackageFileType.COMPONENT_ORIG_TARBALL)
+            if file_type not in orig_types:
                 raise SyncSourceError(
-                    'Oops, only orig tarball can be retrieved from librarian.')
+                    'Oops, only orig tarball can be retrieved from '
+                    'librarian.')
             retrieved.append(filename)
 
         return retrieved
@@ -1385,7 +1387,6 @@ class ManageChrootScript(SoyuzScript):
 
         [action] = self.args
 
-        distribution = self.location.distribution
         series = self.location.distroseries
 
         try:

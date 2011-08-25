@@ -70,8 +70,10 @@ have a SourcePackageName object for it.
 
     >>> from lp.registry.model.sourcepackagename import (
     ...                                          SourcePackageName)
-    >>> from lp.registry.interfaces.distributionsourcepackage import IDistributionSourcePackage
-    >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import IDistributionSourcePackageRelease
+    >>> from lp.registry.interfaces.distributionsourcepackage import (
+    ...     IDistributionSourcePackage)
+    >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import (
+    ...     IDistributionSourcePackageRelease)
 
     >>> evo = SourcePackageName.byName("evolution")
     >>> evo_ubuntu = ubuntu.getSourcePackage(evo)
@@ -558,9 +560,11 @@ We can get only valid specs (those that are not obsolete or superseded):
     ...     # raised.
     ...     owner = spec.owner
     ...     if spec.name in ['cluster-installation', 'revu']:
-    ...         spec.definition_status = SpecificationDefinitionStatus.OBSOLETE
+    ...         spec.definition_status = (
+    ...             SpecificationDefinitionStatus.OBSOLETE)
     ...     if spec.name in ['krunch-desktop-plan']:
-    ...         spec.definition_status = SpecificationDefinitionStatus.SUPERSEDED
+    ...         spec.definition_status = (
+    ...             SpecificationDefinitionStatus.SUPERSEDED)
     ...     shim = spec.updateLifecycleStatus(owner)
     >>> for spec in kubuntu.valid_specifications:
     ...     print spec.name

@@ -1121,7 +1121,6 @@ class PackageUploadSource(SQLBase):
 
     def verifyBeforePublish(self):
         """See `IPackageUploadSource`."""
-        distribution = self.packageupload.distroseries.distribution
         # Check for duplicate filenames currently present in the archive.
         for source_file in self.sourcepackagerelease.files:
             try:
