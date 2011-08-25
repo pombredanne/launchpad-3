@@ -20,7 +20,6 @@ from storm.expr import (
     And,
     Count,
     Desc,
-    Join,
     Max,
     Sum,
     )
@@ -32,11 +31,9 @@ from storm.locals import (
     Storm,
     Unicode,
     )
-from storm.store import EmptyResultSet
 from zope.interface import implements
 
 from canonical.database.sqlbase import sqlvalues
-from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.lazr.utils import smartquote
 from lp.bugs.interfaces.bugsummary import IBugSummaryDimension
@@ -65,7 +62,6 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.karma import KarmaTotalCache
 from lp.registry.model.packaging import Packaging
-from lp.registry.model.person import Person
 from lp.registry.model.sourcepackage import (
     SourcePackage,
     SourcePackageQuestionTargetMixin,
@@ -517,23 +513,6 @@ class DistributionSourcePackage(BugTargetBase,
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
             language_code=language_code, language=language)
-
-    @staticmethod
-    def getPersonsByEmail(email_addresses):
-        """[(EmailAddress,Person), ..] iterable for given email addresses."""
-        if email_addresses is None or len(email_addresses) < 1:
-            return EmptyResultSet()
-        # Perform basic sanitization of email addresses.
-        email_addresses = [
-            address.lower().strip() for address in email_addresses]
-        store = IStore(Person)
-        origin = [
-            Person, Join(EmailAddress, EmailAddress.personID == Person.id)]
-        # Get all persons whose email addresses are in the list.
-        result_set = store.using(*origin).find(
-            (EmailAddress, Person),
-            EmailAddress.email.lower().is_in(email_addresses))
-        return result_set
 
     @classmethod
     def _get(cls, distribution, sourcepackagename):
