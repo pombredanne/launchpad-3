@@ -22,10 +22,12 @@ DistributionSourcePackageCache table, including:
    for name, binpkgnames, binpkgsummaries and binpkgdescriptions.
 
   >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> from lp.soyuz.model.distributionsourcepackagecache import (
+  ...     DistributionSourcePackageCache)
 
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
 
-  >>> ubuntu_caches = ubuntu.getSourcePackageCaches()
+  >>> ubuntu_caches = DistributionSourcePackageCache._find(ubuntu)
 
   >>> ubuntu_caches.count()
   10
@@ -58,8 +60,10 @@ table, including:
  * fti, a tsvector generated on insert or update with the text indexes
    for name, summary, description, summaries and descriptions.
 
+  >>> from lp.soyuz.model.distroseriespackagecache import (
+  ...     DistroSeriesPackageCache)
   >>> warty = ubuntu['warty']
-  >>> warty_caches = warty.getBinaryPackageCaches()
+  >>> warty_caches = DistroSeriesPackageCache._find(warty)
   >>> warty_caches.count()
   5
   >>> for name in sorted([cache.name for cache in warty_caches]):
@@ -108,9 +112,6 @@ cache when it's updated.
   >>> ubuntu.searchSourcePackages('foobar').count()
   1
 
-  >>> from lp.soyuz.model.distributionsourcepackagecache import (
-  ...    DistributionSourcePackageCache)
-
   >>> foobar_cache = DistributionSourcePackageCache.selectOneBy(
   ...     archive=ubuntu.main_archive, distribution=ubuntu, name='foobar')
 
@@ -123,7 +124,8 @@ instance offers a method for removing obsolete records in cache:
 Let's use a fake logger object:
 
   >>> from lp.services.log.logger import FakeLogger
-  >>> ubuntu.removeOldCacheItems(archive=ubuntu.main_archive, log=FakeLogger())
+  >>> DistributionSourcePackageCache.removeOld(
+  ...     ubuntu, archive=ubuntu.main_archive, log=FakeLogger())
   DEBUG Removing source cache for 'foobar' (10)
 
   >>> import transaction
@@ -158,8 +160,9 @@ cache when it's updated the next time.
 
 We can invoke the cache updater directly on IDistroSeries:
 
-  >>> updates = ubuntu.updateCompleteSourcePackageCache(
-  ...    archive=ubuntu.main_archive, ztm=transaction, log=FakeLogger())
+  >>> updates = DistributionSourcePackageCache.updateAll(
+  ...    ubuntu, archive=ubuntu.main_archive, ztm=transaction,
+  ...    log=FakeLogger())
   DEBUG ...
   DEBUG Considering source 'cdrkit'
   DEBUG Creating new source cache entry.
@@ -212,9 +215,6 @@ cache when it's updated.
   >>> warty.searchPackages('foobar').count()
   1
 
-  >>> from lp.soyuz.model.distroseriespackagecache import (
-  ...      DistroSeriesPackageCache)
-
   >>> foobar_bin_cache = DistroSeriesPackageCache.selectOneBy(
   ...     archive=ubuntu.main_archive, distroseries=warty, name='foobar')
 
@@ -224,7 +224,8 @@ cache when it's updated.
 Binary cache updates are driven by distroseries, IDistroSeries
 instance offers a method for removing obsolete records in cache:
 
-  >>> warty.removeOldCacheItems(archive=ubuntu.main_archive, log=FakeLogger())
+  >>> DistroSeriesPackageCache.removeOld(
+  ...     warty, archive=ubuntu.main_archive, log=FakeLogger())
   DEBUG Removing binary cache for 'foobar' (8)
 
   >>> transaction.commit()
@@ -257,8 +258,9 @@ cache will be added to it.
 
 We can invoke the cache updater directly on IDistroSeries:
 
-  >>> updates = warty.updateCompletePackageCache(
-  ...    archive=ubuntu.main_archive, ztm=transaction, log=FakeLogger())
+  >>> updates = DistroSeriesPackageCache.updateAll(
+  ...    warty, archive=ubuntu.main_archive, ztm=transaction,
+  ...    log=FakeLogger())
   DEBUG Considering binary 'at'
   ...
   DEBUG Considering binary 'cdrkit'
@@ -353,14 +355,15 @@ term used in the pmount binary summary) fail.
 If we populate the package caches and update the archive caches, the
 same queries work, pointing to Celso's PPA.
 
-  >>> source_updates = ubuntu.updateCompleteSourcePackageCache(
-  ...    archive=cprov.archive, ztm=transaction, log=FakeLogger())
+  >>> source_updates = DistributionSourcePackageCache.updateAll(
+  ...    ubuntu, archive=cprov.archive, ztm=transaction, log=FakeLogger())
   DEBUG ...
   DEBUG Considering source 'pmount'
   ...
 
-  >>> binary_updates = warty.updateCompletePackageCache(
-  ...    archive=cprov.archive, ztm=transaction, log=FakeLogger())
+  >>> binary_updates = DistroSeriesPackageCache.updateAll(
+  ...    warty, archive=cprov.archive, ztm=transaction,
+  ...    log=FakeLogger())
   DEBUG Considering binary 'mozilla-firefox'
   ...
 
@@ -699,13 +702,15 @@ First, we rebuild and examinate the caches for Celso's PPA.
     >>> from lp.services.log.logger import BufferLogger
     >>> logger = BufferLogger()
     >>> def rebuild_caches(archive):
-    ...     ubuntu.removeOldCacheItems(archive=archive, log=logger)
-    ...     ubuntu.updateCompleteSourcePackageCache(
-    ...         archive=archive, ztm=transaction, log=logger)
+    ...     DistributionSourcePackageCache.removeOld(
+    ...         ubuntu, archive=archive, log=logger)
+    ...     DistributionSourcePackageCache.updateAll(
+    ...         ubuntu, archive=archive, ztm=transaction, log=logger)
     ...     for series in ubuntu.series:
-    ...         series.removeOldCacheItems(archive=archive, log=logger)
-    ...         series.updateCompletePackageCache(
-    ...             archive=archive, ztm=transaction, log=logger)
+    ...         DistroSeriesPackageCache.removeOld(
+    ...             series, archive=archive, log=logger)
+    ...         DistroSeriesPackageCache.updateAll(
+    ...             series, archive=archive, ztm=transaction, log=logger)
     ...     archive.updateArchiveCache()
     >>> def print_caches(archive):
     ...     source_caches = DistributionSourcePackageCache.selectBy(
