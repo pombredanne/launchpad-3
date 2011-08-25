@@ -37,6 +37,9 @@ from lp.services.scripts.base import (
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadStatus,
+    re_bug_numbers,
+    re_closes,
+    re_lp_closes,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.queue import IPackageUploadSet
@@ -61,6 +64,35 @@ def get_bugs_from_changes_file(changes_file):
             continue
         else:
             bugs.append(bug)
+    return bugs
+
+
+def get_bugs_from_changelog_entry(sourcepackagerelease):
+    """Parse the changelog_entry in the sourcepackagerelease and return a
+    list of `IBug`s referenced by it.
+    """
+    changelog = sourcepackagerelease.changelog_entry
+    closes = []
+    # There are 2 main regexes to match.  Each match from those can then
+    # have further multiple matches from the 3rd regex:
+    # closes: NNN, NNN
+    # lp: #NNN, #NNN
+    regexes = (
+        re_closes.finditer(changelog), re_lp_closes.finditer(changelog))
+    for regex in regexes:
+        for match in regex:
+            bug_match = re_bug_numbers.findall(match.group(0))
+            closes += map(int, bug_match)
+
+    bugs = []
+    for bug_id in closes:
+        try:
+            bug = getUtility(IBugSet).get(bug_id)
+        except NotFoundError:
+            continue
+        else:
+            bugs.append(bug)
+
     return bugs
 
 
@@ -145,7 +177,10 @@ def close_bugs_for_sourcepackagerelease(source_release, changesfile_object):
     Given a `ISourcePackageRelease` and a corresponding changesfile object,
     close bugs mentioned in the changesfile in the context of the source.
     """
-    bugs_to_close = get_bugs_from_changes_file(changesfile_object)
+    if changesfile_object:
+        bugs_to_close = get_bugs_from_changes_file(changesfile_object)
+    else:
+        bugs_to_close = get_bugs_from_changelog_entry(source_release)
 
     # No bugs to be closed by this upload, move on.
     if not bugs_to_close:
