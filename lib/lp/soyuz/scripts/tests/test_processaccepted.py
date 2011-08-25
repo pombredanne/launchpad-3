@@ -43,8 +43,8 @@ class TestClosingBugs(TestCaseWithFactory):
         # Make a changelog_entry for a package which contains the IDs of
         # the 4 bugs.
         changelog_entry="""
-            closes: %s %s
-            lp: %s %s
+            closes: %s, %s
+            lp: #%s, #%s
             """ % (
             bugs[0][0].id,
             bugs[1][0].id,
@@ -57,4 +57,5 @@ class TestClosingBugs(TestCaseWithFactory):
         # Call the method and test it's closed the bugs.
         close_bugs_for_sourcepackagerelease(spr, changesfile_object=None)
         for bug, bugtask in bugs:
-            self.assertEqual(bugtask.status, BugTaskStatus.FIXRELEASED)
+            self.assertEqual(BugTaskStatus.FIXRELEASED, bugtask.status)
+

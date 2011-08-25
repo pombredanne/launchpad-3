@@ -53,6 +53,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.enums import (
     PackagePublishingStatus,
+    re_bug_numbers,
     re_closes,
     re_lp_closes,
     )
@@ -67,7 +68,6 @@ reject_message = ""
 re_strip_revision = re.compile(r"-([^-]+)$")
 re_changelog_header = re.compile(
     r"^\S+ \((?P<version>.*)\) .*;.*urgency=(?P<urgency>\w+).*")
-re_bug_numbers = re.compile(r"\#?\s?(\d+)")
 
 
 Blacklisted = None
