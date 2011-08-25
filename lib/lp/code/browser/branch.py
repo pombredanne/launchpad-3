@@ -2,6 +2,8 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Branch views."""
+from zope.app.form import CustomWidgetFactory
+from zope.app.form.browser.boolwidgets import CheckBoxWidget
 
 __metaclass__ = type
 
@@ -756,7 +758,8 @@ class BranchEditFormView(LaunchpadEditFormView):
                     % (new_owner.displayname, new_owner.name))
         if 'private' in data:
             private = data.pop('private')
-            if private != self.context.private:
+            if (private != self.context.private
+                and self.context.private == self.context.explicitly_private):
                 # We only want to show notifications if it actually changed.
                 self.context.setPrivate(private, self.user)
                 changed = True
@@ -1016,6 +1019,25 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
         if branch.private:
             # If the branch is private, and can be public, show the field.
             show_private_field = policy.canBranchesBePublic()
+
+            # If this branch is public but is deemed private because it is
+            # stacked on a private branch, disable the field.
+            if not branch.explicitly_private:
+                show_private_field = True
+                private_info = Bool(
+                    __name__="private",
+                    title=_("Branch is confidential"),
+                    description=_(
+                        "This branch is confidential because it is stacked "
+                        "on a private branch."))
+                private_info_field = form.Fields(
+                    private_info, render_context=self.render_context)
+                self.form_fields = self.form_fields.omit('private')
+                self.form_fields = private_info_field + self.form_fields
+                self.form_fields['private'].custom_widget = (
+                    CustomWidgetFactory(
+                        CheckBoxWidget, extra='disabled="disabled"'))
+
         else:
             # If the branch is public, and can be made private, show the
             # field.  Users with special access rights to branches can set
