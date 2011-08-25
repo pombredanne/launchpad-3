@@ -54,6 +54,7 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
@@ -556,7 +557,8 @@ class SoyuzTestPublisher:
         reconnect_stores(config.statistician.dbuser)
         distroseries = getUtility(IDistroSeriesSet).get(distroseries.id)
 
-        distroseries.updateCompletePackageCache(
+        DistroSeriesPackageCache.updateAll(
+            distroseries,
             archive=distroseries.distribution.main_archive,
             ztm=transaction,
             log=DevNullLogger())
@@ -886,7 +888,7 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
             self.assertEquals(copy.component.name, 'universe')
 
     def test_overrideFromAncestry_fallback_to_source_component(self):
-        # overrideFromancestry on the lack of ancestry, falls back to the
+        # overrideFromAncestry on the lack of ancestry, falls back to the
         # component the source was originally uploaded to.
         source = self.makeSource()
 
