@@ -47,7 +47,6 @@ from lp.code.interfaces.branchcollection import (
     IBranchCollection,
     )
 from lp.code.interfaces.branchmergeproposal import (
-    BRANCH_MERGE_PROPOSAL_FINAL_STATES,
     IBranchMergeProposal,
     IBranchMergeProposalGetter,
     IBranchMergeProposalListingBatchNavigator,
@@ -420,11 +419,7 @@ class BranchActiveReviewsView(ActiveReviewsView):
 
     def getProposals(self):
         """See `ActiveReviewsView`."""
-        non_final = tuple(
-            set(BranchMergeProposalStatus.items) -
-            set(BRANCH_MERGE_PROPOSAL_FINAL_STATES))
-        candidates = self.context.getMergeProposals(
-            status=non_final, eager_load=True)
+        candidates = self.context.landing_candidates
         return [proposal for proposal in candidates
                 if check_permission('launchpad.View', proposal)]
 

@@ -491,46 +491,6 @@ class IDistributionPublic(
         :return: list of `IDistroSeries`
         """
 
-    def getSourcePackageCaches(archive=None):
-        """The set of all source package info caches for this distribution.
-
-        If 'archive' is not given it will return all caches stored for the
-        distribution main archives (PRIMARY and PARTNER).
-        """
-
-    def removeOldCacheItems(archive, log):
-        """Delete any cache records for removed packages.
-
-        Also purges all existing cache records for disabled archives.
-
-        :param archive: target `IArchive`.
-        :param log: the context logger object able to print DEBUG level
-            messages.
-        """
-
-    def updateCompleteSourcePackageCache(archive, log, ztm, commit_chunk=500):
-        """Update the source package cache.
-
-        Consider every non-REMOVED sourcepackage and entirely skips updates
-        for disabled archives.
-
-        :param archive: target `IArchive`;
-        :param log: logger object for printing debug level information;
-        :param ztm:  transaction used for partial commits, every chunk of
-            'commit_chunk' updates is committed;
-        :param commit_chunk: number of updates before commit, defaults to 500.
-
-        :return the number packages updated done
-        """
-
-    def updateSourcePackageCache(sourcepackagename, archive, log):
-        """Update cached source package details.
-
-        Update cache details for a given ISourcePackageName, including
-        generated binarypackage names, summary and description fti.
-        'log' is required and only prints debug level information.
-        """
-
     @rename_parameters_as(text="source_match")
     @operation_parameters(
         text=TextLine(title=_("Source package name substring match"),

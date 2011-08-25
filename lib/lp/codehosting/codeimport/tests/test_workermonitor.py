@@ -456,7 +456,25 @@ class TestWorkerMonitorUnit(TestCase):
             makeFailure(
                 error.ProcessTerminated,
                 exitCode=CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE))
-        self.assertEqual(calls, [CodeImportResultStatus.FAILURE_UNSUPPORTED_FEATURE])
+        self.assertEqual(
+            calls, [CodeImportResultStatus.FAILURE_UNSUPPORTED_FEATURE])
+        self.assertOopsesLogged([])
+        # We return the deferred that callFinishJob returns -- if
+        # callFinishJob did not swallow the error, this will fail the test.
+        return ret
+
+    def test_callFinishJobCallsFinishJobRemoteBroken(self):
+        # If the argument to callFinishJob indicates that the subprocess
+        # exited with a code of FAILURE_REMOTE_BROKEN, it
+        # calls finishJob with a status of FAILURE_REMOTE_BROKEN.
+        worker_monitor = self.makeWorkerMonitorWithJob()
+        calls = self.patchOutFinishJob(worker_monitor)
+        ret = worker_monitor.callFinishJob(
+            makeFailure(
+                error.ProcessTerminated,
+                exitCode=CodeImportWorkerExitCode.FAILURE_REMOTE_BROKEN))
+        self.assertEqual(
+            calls, [CodeImportResultStatus.FAILURE_REMOTE_BROKEN])
         self.assertOopsesLogged([])
         # We return the deferred that callFinishJob returns -- if
         # callFinishJob did not swallow the error, this will fail the test.

@@ -263,6 +263,8 @@ class CodeImportWorkerMonitor:
                 CodeImportResultStatus.FAILURE_INVALID,
             CodeImportWorkerExitCode.FAILURE_FORBIDDEN:
                 CodeImportResultStatus.FAILURE_FORBIDDEN,
+            CodeImportWorkerExitCode.FAILURE_REMOTE_BROKEN:
+                CodeImportResultStatus.FAILURE_REMOTE_BROKEN,
                 }
         if isinstance(reason, failure.Failure):
             if reason.check(error.ProcessTerminated):

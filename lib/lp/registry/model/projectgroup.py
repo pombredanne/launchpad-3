@@ -76,7 +76,6 @@ from lp.bugs.model.bugtarget import (
     HasBugHeatMixin,
     OfficialBugTag,
     )
-from lp.bugs.model.bugtask import BugTask
 from lp.bugs.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin,
     )
@@ -169,6 +168,11 @@ class ProjectGroup(SQLBase, BugTargetBase, HasSpecificationsMixin,
     bug_reporting_guidelines = StringCol(default=None)
     bug_reported_acknowledgement = StringCol(default=None)
     max_bug_heat = Int()
+
+    @property
+    def pillar_category(self):
+        """See `IPillar`."""
+        return "Project Group"
 
     @property
     def products(self):
