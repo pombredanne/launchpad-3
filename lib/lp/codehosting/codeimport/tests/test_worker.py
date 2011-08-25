@@ -1257,6 +1257,26 @@ class TestBzrImport(WorkerTest, TestActualImportMixin,
         self.assertEqual(
             CodeImportWorkerExitCode.FAILURE_FORBIDDEN, worker.run())
 
+    def test_support_branch_reference(self):
+        # Branch references are allowed in the BzrImporter.
+        reference_url, target_url = self.createBranchReference()
+        target_branch = Branch.open(target_url)
+        builder = BranchBuilder(branch=target_branch)
+        builder.build_commit(message=self.factory.getUniqueString(),
+            committer="Some Random Hacker <jane@example.com>")
+        source_details = self.factory.makeCodeImportSourceDetails(
+            url=reference_url, rcstype='bzr')
+        worker = self.makeImportWorker(source_details,
+            opener_policy=AcceptAnythingPolicy())
+        self.assertEqual(
+            CodeImportWorkerExitCode.SUCCESS, worker.run())
+        branch = self.getStoredBazaarBranch(worker)
+        self.assertEqual(
+            1, len(branch.revision_history()))
+        self.assertEqual(
+            "Some Random Hacker <jane@example.com>",
+            branch.repository.get_revision(branch.last_revision()).committer)
+
 
 class CodeImportBranchOpenPolicyTests(TestCase):
 
