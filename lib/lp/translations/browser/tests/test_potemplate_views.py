@@ -39,7 +39,7 @@ class TestPOTemplateEditViewValidation(TestCaseWithFactory):
         view = POTemplateEditView(potemplate, LaunchpadTestRequest())
         self.assertContentEqual(
             ['name', 'translation_domain', 'description', 'priority',
-             'path', 'iscurrent'],
+             'path', 'iscurrent', 'owner'],
             view.field_names)
 
     def test_field_names_sourcepackage(self):

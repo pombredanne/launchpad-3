@@ -569,6 +569,8 @@ class POTemplateEditView(ReturnToReferrerMixin, LaunchpadEditFormView):
                 'sourcepackagename',
                 'languagepack',
                 ])
+        else:
+            field_names.append('owner')
         return field_names
 
     @property
@@ -892,7 +894,7 @@ class POTemplateSubsetNavigation(Navigation):
            potemplate.iscurrent):
             # This template is available for translation.
             return potemplate
-        elif check_permission('launchpad.Edit', potemplate):
+        elif check_permission('launchpad.TranslationsAdmin', potemplate):
             # User has Edit privileges for this template and can access it.
             return potemplate
         else:

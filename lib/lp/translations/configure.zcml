@@ -433,12 +433,12 @@
             <require
                 permission="launchpad.TranslationsAdmin"
                 set_attributes="
-                    name priority description translation_domain path
+                    name owner priority description translation_domain path
                     iscurrent languagepack sourcepackagename"/>
             <require
                 permission="launchpad.Admin"
                 set_attributes="
-                    owner productseries distroseries
+                    productseries distroseries
                     sourcepackageversion binarypackagename
                     source_file_format source_file date_last_updated
                     from_sourcepackagename header"/>

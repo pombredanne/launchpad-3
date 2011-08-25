@@ -105,7 +105,7 @@
         <h3>Administration</h3>
         <p>If you want to synchronize these translations manually, you
           can
-          <tal:both condition="context/required:launchpad.Edit">
+          <tal:both condition="context/required:launchpad.TranslationsAdmin">
             <a tal:attributes="href context/menu:navigation/upload/url"
                class="add sprite">upload</a>
             or

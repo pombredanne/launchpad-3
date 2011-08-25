@@ -1265,6 +1265,18 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = IPOTemplate
 
+    def checkAuthenticated(self, user):
+        template = self.obj
+        if user.in_rosetta_experts or user.in_admin:
+            return True
+        if template.distroseries is not None:
+            # Template is on a distribution.
+            return (
+                self.forwardCheckAuthenticated(user, template.distroseries,
+                                               'launchpad.TranslationsAdmin'))
+        else:
+            # Template is on a product.
+            return False
 
 class EditPOTemplateDetails(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
@@ -1274,11 +1286,14 @@ class EditPOTemplateDetails(AuthorizationBase):
         template = self.obj
         if template.distroseries is not None:
             # Template is on a distribution.
-            return self.forwardCheckAuthenticated(user, template.distroseries)
+            return (
+                user.isOwner(template) or
+                self.forwardCheckAuthenticated(user, template.distroseries))
         else:
             # Template is on a product.
-            return self.forwardCheckAuthenticated(
-                user, template.productseries)
+            return (
+                user.isOwner(template) or
+                self.forwardCheckAuthenticated(user, template.productseries))
 
 
 class AddPOTemplate(OnlyRosettaExpertsAndAdmins):

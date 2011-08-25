@@ -400,7 +400,7 @@
         <browser:page
             name="+upload"
             for="lp.translations.interfaces.potemplate.IPOTemplate"
-            permission="launchpad.Edit"
+            permission="launchpad.TranslationsAdmin"
             template="../templates/potemplate-upload.pt"
             class="lp.translations.browser.potemplate.POTemplateUploadView"
             layer="lp.translations.publisher.TranslationsLayer"/>
