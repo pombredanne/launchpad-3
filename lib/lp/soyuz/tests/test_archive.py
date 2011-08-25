@@ -682,8 +682,7 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         packageset = self.factory.makePackageset(
             distroseries=distroseries, packages=packages)
         person = self.factory.makePerson()
-        techboard = getUtility(ILaunchpadCelebrities).ubuntu_techboard
-        with person_logged_in(techboard):
+        with person_logged_in(archive.distribution.owner):
             archive.newPackagesetUploader(person, packageset)
         return person, packageset
 
