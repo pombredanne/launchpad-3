@@ -186,9 +186,6 @@ from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount,
     )
 from lp.soyuz.model.component import Component
-from lp.soyuz.model.distributionsourcepackagecache import (
-    DistributionSourcePackageCache,
-    )
 from lp.soyuz.model.files import (
     BinaryPackageFile,
     SourcePackageReleaseFile,
@@ -909,6 +906,9 @@ class Archive(SQLBase):
 
     def updateArchiveCache(self):
         """See `IArchive`."""
+        from lp.soyuz.model.distributionsourcepackagecache import (
+            DistributionSourcePackageCache,
+            )
         from lp.soyuz.model.distroseriespackagecache import (
             DistroSeriesPackageCache)
         # Compiled regexp to remove puntication.
