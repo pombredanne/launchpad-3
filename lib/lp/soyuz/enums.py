@@ -20,13 +20,22 @@ __all__ = [
     'PackagePublishingStatus',
     'PackageUploadCustomFormat',
     'PackageUploadStatus',
+    're_closes',
+    're_lp_closes',
     'SourcePackageFormat',
     ]
+
+import re
 
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
     )
+
+
+re_closes = re.compile(
+    r"closes:\s*(?:bug)?\#?\s?\d+(?:,\s*(?:bug)?\#?\s?\d+)*", re.I)
+re_lp_closes = re.compile(r"lp:\s+\#\d+(?:,\s*\#\d+)*", re.I)
 
 
 class ArchiveJobType(DBEnumeratedType):
