@@ -15,7 +15,10 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
 from canonical.launchpad.webapp.servers import StepsToGo
-from canonical.launchpad.testing.pages import find_tag_by_id
+from canonical.launchpad.testing.pages import (
+    find_tag_by_id,
+    extract_text,
+    )
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.tales import format_link
 from lp.blueprints.browser import specification
@@ -157,10 +160,12 @@ class TestSpecificationView(TestCaseWithFactory):
 
     def test_time_frame(self):
         """The time frame does not prepend on incorrectly."""
-        spec = self.factory.makeSpecification()
+        spec = self.factory.makeSpecification(
+            owner=self.factory.makePerson(displayname="Some Person"))
         html = create_initialized_view(
                 spec, '+index')()
-        self.assertNotIn(html, 'on a moment ago')
+        self.assertIn('Registered by\nSome Person\na moment ago',
+               extract_text(html))
 
 class TestSpecificationEditStatusView(TestCaseWithFactory):
     """Test the SpecificationEditStatusView."""
