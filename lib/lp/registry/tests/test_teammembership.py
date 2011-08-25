@@ -315,7 +315,7 @@ class TestTeamParticipationHierarchy(TeamParticipationTestCase):
             ['name16', 'no-priv', 'team5'], self.team4)
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
         self.assertEqual(
-            previous_count-8,
+            previous_count - 8,
             self.getTeamParticipationCount())
 
     def testRemovingLeafTeam(self):
@@ -333,7 +333,7 @@ class TestTeamParticipationHierarchy(TeamParticipationTestCase):
         self.assertParticipantsEquals(['name16'], self.team4)
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
         self.assertEqual(
-            previous_count-8,
+            previous_count - 8,
             self.getTeamParticipationCount())
 
 
@@ -393,7 +393,7 @@ class TestTeamParticipationTree(TeamParticipationTestCase):
             ['name16', 'no-priv', 'team5'], self.team4)
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
         self.assertEqual(
-            previous_count-4,
+            previous_count - 4,
             self.getTeamParticipationCount())
 
     def testRemoveTeam5FromTeam4(self):
@@ -410,7 +410,7 @@ class TestTeamParticipationTree(TeamParticipationTestCase):
         self.assertParticipantsEquals(['name16'], self.team4)
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
         self.assertEqual(
-            previous_count-4,
+            previous_count - 4,
             self.getTeamParticipationCount())
 
 
@@ -512,7 +512,7 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
         self.assertParticipantsEquals(
             ['name16', 'no-priv', 'team2', 'team4', 'team5'], self.team6)
         self.assertEqual(
-            previous_count-3,
+            previous_count - 3,
             self.getTeamParticipationCount())
 
     def testRemoveTeam5FromTeam4(self):
@@ -529,7 +529,7 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
         self.assertParticipantsEquals(
             ['name16', 'team2', 'team3', 'team4'], self.team6)
         self.assertEqual(
-            previous_count-10,
+            previous_count - 10,
             self.getTeamParticipationCount())
 
     def testTeam3_deactivateActiveMemberships(self):
@@ -576,7 +576,7 @@ class TestTeamMembership(TestCaseWithFactory):
         """
         login('test@canonical.com')
         person = self.factory.makePerson()
-        login_person(person) # Now login with the future owner of the teams.
+        login_person(person)  # Now login with the future owner of the teams.
         teamA = self.factory.makeTeam(
             person, subscription_policy=TeamSubscriptionPolicy.MODERATED)
         teamB = self.factory.makeTeam(
@@ -836,6 +836,19 @@ class TestTeamMembershipSetStatus(TestCaseWithFactory):
         tm.setStatus(
             TeamMembershipStatus.INVITATION_DECLINED, self.team2.teamowner)
         self.assertEqual(TeamMembershipStatus.INVITATION_DECLINED, tm.status)
+
+    def test_declined_member_can_be_invited(self):
+        # A team can re-invite a declined member.
+        self.team2.addMember(
+            self.team1, self.no_priv, status=TeamMembershipStatus.PROPOSED,
+            force_team_add=True)
+        tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.team1, self.team2)
+        tm.setStatus(
+            TeamMembershipStatus.DECLINED, self.team1.teamowner)
+        tm.setStatus(
+            TeamMembershipStatus.INVITED, self.team1.teamowner)
+        self.assertEqual(TeamMembershipStatus.INVITED, tm.status)
 
     def test_retractTeamMembership_invited(self):
         # A team can retract a membership invitation.
