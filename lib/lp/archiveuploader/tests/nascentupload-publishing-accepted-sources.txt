@@ -1,4 +1,5 @@
-= Publishing ACCEPTED Sources =
+Publishing ACCEPTED Sources
+===========================
 
 As recently requested in bug #77853, successfully source-only uploads,
 i.e, those uploads that only include a source package and were
