@@ -374,28 +374,5 @@ class ActiveReviewsWithPrivateBranches(TestCaseWithFactory):
         with person_logged_in(removeSecurityProxy(branch).owner):
             mp = self.factory.makeBranchMergeProposal(target_branch=branch)
             view = create_initialized_view(
-                product, name='+activereviews', rootsite='code')
+                branch, name='+activereviews', rootsite='code')
             self.assertEqual([mp], list(view.getProposals()))
-
-    def test_private_branch_anonymous(self):
-        # Anonymous users can't see merge proposals against private branches.
-        product = self.factory.makeProduct()
-        branch = self.factory.makeBranch(private=True, product=product)
-        with person_logged_in(removeSecurityProxy(branch).owner):
-            mp = self.factory.makeBranchMergeProposal(target_branch=branch)
-        with person_logged_in(ANONYMOUS):
-            view = create_initialized_view(
-                product, name='+activereviews', rootsite='code')
-            self.assertEqual([], list(view.getProposals()))
-
-    def test_private_branch_other_users(self):
-        # Arbitrary users can not see merge proposals against private
-        # branches.
-        product = self.factory.makeProduct()
-        branch = self.factory.makeBranch(private=True, product=product)
-        with person_logged_in(removeSecurityProxy(branch).owner):
-            mp = self.factory.makeBranchMergeProposal(target_branch=branch)
-        with person_logged_in(self.factory.makePerson()):
-            view = create_initialized_view(
-                product, name='+activereviews', rootsite='code')
-            self.assertEqual([], list(view.getProposals()))

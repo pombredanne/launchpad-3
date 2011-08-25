@@ -424,7 +424,7 @@ class BranchActiveReviewsView(ActiveReviewsView):
             set(BranchMergeProposalStatus.items) -
             set(BRANCH_MERGE_PROPOSAL_FINAL_STATES))
         candidates = self.context.getMergeProposals(
-            status=non_final, eager_load=True)
+            status=non_final, eager_load=True, visible_by_user=self.user)
         return [proposal for proposal in candidates
                 if check_permission('launchpad.View', proposal)]
 
