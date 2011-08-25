@@ -284,6 +284,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             alsoProvides(self, IDerivativeDistribution)
 
     @property
+    def pillar_category(self):
+        """See `IPillar`."""
+        return "Distribution"
+
+    @property
     def uploaders(self):
         """See `IDistribution`."""
         # Get all the distribution archives and find out the uploaders
