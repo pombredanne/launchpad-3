@@ -868,8 +868,8 @@ class SyncSource:
         if it wasn't.
         """
         try:
-            libraryfilealias = self.todistro.getFileByName(
-                filename, source=True, binary=False)
+            libraryfilealias = self.todistro.main_archive.getFileByName(
+                filename)
         except NotFoundError:
             return None
 

@@ -359,23 +359,6 @@ what component is uploadable to by what person or group of people.
     partner
     Canonical Partner Developers
 
-When processing an upload we may want to find a file (E.g. if an
-incomplete source is uploaded).
-
-    >>> ubuntu.getFileByName('mozilla-firefox_0.9_i386.deb').getURL()
-    'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb'
-    >>> ubuntu.getFileByName(
-    ...     'mozilla-firefox_0.9_i386.deb', source=False).getURL()
-    'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb'
-    >>> ubuntu.getFileByName('mozilla-firefox_0.9_i386.deb', binary=False)
-    Traceback (most recent call last):
-    ...
-    NotFoundError: 'mozilla-firefox_0.9_i386.deb'
-    >>> ubuntu.getFileByName('', source=False, binary=False)
-    Traceback (most recent call last):
-    ...
-    AssertionError: searching in an explicitly empty space is pointless
-
 
 Launchpad Usage
 ...............

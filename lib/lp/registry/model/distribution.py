@@ -191,7 +191,6 @@ from lp.soyuz.model.distroarchseries import (
 from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
-    SourcePackageFilePublishing,
     SourcePackagePublishingHistory,
     )
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -1069,49 +1068,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return Store.of(self).find(DistroSeries,
             DistroSeries.distribution == self,
             DistroSeries.status == status)
-
-    def _findPublishedBinaryFile(self, filename, archive):
-        """Find binary package file of the given name and archive.
-
-        :return: A `LibraryFileAlias`, or None.
-        """
-        search = Store.of(self).find(
-            LibraryFileAlias,
-            BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
-            BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                BinaryPackageFile.binarypackagereleaseID,
-            DistroArchSeries.id ==
-                BinaryPackagePublishingHistory.distroarchseriesID,
-            DistroSeries.id == DistroArchSeries.distroseriesID,
-            BinaryPackagePublishingHistory.dateremoved == None,
-            DistroSeries.distribution == self,
-            BinaryPackagePublishingHistory.archiveID == archive.id,
-            LibraryFileAlias.filename == filename)
-        return search.order_by(Desc(LibraryFileAlias.id)).first()
-
-    def getFileByName(self, filename, archive=None, source=True, binary=True):
-        """See `IDistribution`."""
-        assert (source or binary), "searching in an explicitly empty " \
-               "space is pointless"
-        if archive is None:
-            archive = self.main_archive
-
-        if binary:
-            candidate = self._findPublishedBinaryFile(filename, archive)
-        else:
-            candidate = None
-
-        if source and candidate is None:
-            spfp = SourcePackageFilePublishing.selectFirstBy(
-                distribution=self, libraryfilealiasfilename=filename,
-                archive=archive, orderBy=['id'])
-            if spfp is not None:
-                candidate = spfp.libraryfilealias
-
-        if candidate is None:
-            raise NotFoundError(filename)
-        else:
-            return candidate
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
                         arch_tag=None, user=None, binary_only=True):
