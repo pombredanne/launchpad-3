@@ -85,20 +85,16 @@ class TestSourcePackageRelease(TestCaseWithFactory):
         # If since_version is passed the "changelog" entry returned
         # should contain the changelogs for all SPRs *since*
         # that version and up to and including the context SPR.
-        creator = self.factory.makePerson(displayname=u"foo")
-        maintainer = self.factory.makePerson(displayname=u"bar")
-        self.factory.makeSourcePackageRelease(
-            creator=creator, maintainer=maintainer, sourcepackagename="foo",
-            version="1.0", changelog_entry="this is version 1.0")
-        spr11 = self.factory.makeSourcePackageRelease(
-            creator=creator, maintainer=maintainer, sourcepackagename="foo",
-            version="1.1", changelog_entry="this is version 1.1")
-        spr12 = self.factory.makeSourcePackageRelease(
-            creator=creator, maintainer=maintainer, sourcepackagename="foo",
-            version="1.2", changelog_entry="this is version 1.2")
-        observed = spr12.aggregate_changelog(since_version="1.0")
+        sprs = {}
+        for version in ["1.0", "1.1", "1.2", "1.3"]:
+            spr = self.factory.makeSourcePackageRelease(
+                sourcepackagename="foo", version=version,
+                changelog_entry="this is version %s" % version)
+            sprs[version] = spr
+
+        observed = sprs["1.2"].aggregate_changelog(since_version="1.0")
         expected = "\n\n".join(
-            [spr11.changelog_entry, spr12.changelog_entry])
+            [sprs["1.1"].changelog_entry, sprs["1.2"].changelog_entry])
         self.assertEqual(expected, observed)
 
 

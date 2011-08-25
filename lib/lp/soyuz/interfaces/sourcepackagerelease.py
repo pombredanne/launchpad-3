@@ -241,7 +241,7 @@ class ISourcePackageRelease(Interface):
         """
 
     def aggregate_changelog(since_version=None):
-        """Get all the changelogs since the version passed.
+        """Get all the changelogs since the version specified.
 
         :param since_version: Return changelogs of all versions
             after since_version up to and including the version of this

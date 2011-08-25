@@ -1501,6 +1501,7 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             [source3], nobby.main_archive, nobby, source3.pocket, False,
             person=source3.sourcepackagerelease.creator,
             check_permissions=False, send_email=True)
+
         [notification, announcement] = pop_notifications()
         for mail in (notification, announcement):
             mailtext = mail.as_string()

@@ -629,7 +629,6 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
             if overrides:
                 override = overrides[overrides_index]
             if send_email:
-                old_version = None
                 # Make a note of the destination source's version for use
                 # in sending the email notification.
                 existing = archive.getPublishedSources(
@@ -638,6 +637,8 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
                     distroseries=series, pocket=pocket).first()
                 if existing:
                     old_version = existing.sourcepackagerelease.version
+                else:
+                    old_version = None
             sub_copies = _do_direct_copy(
                 source, archive, destination_series, pocket,
                 include_binaries, override, close_bugs=close_bugs,
