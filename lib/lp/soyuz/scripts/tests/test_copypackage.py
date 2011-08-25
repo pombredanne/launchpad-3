@@ -1465,6 +1465,49 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         self.assertIn(expected_text, notification.as_string())
         self.assertIn(expected_text, announcement.as_string())
 
+    def test_copy_notification_contains_aggregate_change_log(self):
+        # When copying a package that generates a notification,
+        # the changelog should contain all of the changelog_entry texts for
+        # all the sourcepackagereleases between the last published version
+        # and the new version.
+        archive = self.test_publisher.ubuntutest.main_archive
+        source3 = self.test_publisher.getPubSource(
+            sourcename="foo", archive=archive, version='1.0-3',
+            architecturehintlist='any')
+        source3.sourcepackagerelease.changelog_entry = '* Foo3'
+        # Copying to a primary archive reads the changes to close bugs.
+        transaction.commit()
+
+        # Now make a new series, nobby, and publish foo 1.0-1 in it.
+        nobby = self.createNobby(('i386', 'hppa'))
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            nobby, SourcePackageFormat.FORMAT_1_0)
+        nobby.changeslist = 'nobby-changes@example.com'
+        source1 = self.factory.makeSourcePackageRelease(
+            sourcepackagename="foo", version="1.0-1",
+            changelog_entry="* Foo1")
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=source1, distroseries=nobby,
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=source3.pocket)
+
+        # Make foo 1.0-2, it doesn't need to be published.
+        self.factory.makeSourcePackageRelease(
+            sourcepackagename="foo", version="1.0-2",
+            changelog_entry="* Foo2")
+
+        # Now copy foo 1.0-3 from ubuntutest.
+        [copied_source] = do_copy(
+            [source3], nobby.main_archive, nobby, source3.pocket, False,
+            person=source3.sourcepackagerelease.creator,
+            check_permissions=False, send_email=True)
+
+        [notification, announcement] = pop_notifications()
+        for mail in (notification, announcement):
+            mailtext = mail.as_string()
+            self.assertIn("* Foo2", mailtext)
+            self.assertIn("* Foo3", mailtext)
+
     def test_copy_generates_rejection_email(self):
         # When a copy into a primary archive fails, we expect a rejection
         # email if the send_email parameter is True.
