@@ -161,4 +161,4 @@ the transitive privacy status hasn't changed.
     >>> admin_browser.getControl('Description').value = "New changes"
     >>> admin_browser.getControl('Change Branch').click()
     >>> print_feedback_messages(browser.contents)
-
+    ...
