@@ -251,10 +251,17 @@ class MaloneHandler:
                         add_comment_to_bug = False
                     else:
                         message = bug.initial_message
-                    # XXX sinzui 2011-08-25: This must only be run once for
-                    # the first message.
                     self.processAttachments(bug, message, signed_msg)
 
+                    for command in bug_commands:
+                        try:
+                            bug, bug_event = command.execute(bug, bug_event)
+                        except EmailProcessingError, error:
+                            if error.stop_processing:
+                                raise error
+                            else:
+                                processing_errors.append((error, command))
+                                continue
                     for bugtask_group in bug_group.groups:
                         # The first command of a BugTaskCommandGroup may not
                         # be an affects command.
@@ -270,14 +277,19 @@ class MaloneHandler:
                             if bugtask is None:
                                 self.handleNoDefaultAffectsTarget(bug)
                         for command in bugtask_commands:
-                            bugtask, bugtask_event = command.execute(
-                                bugtask, bugtask_event)
+                            try:
+                                bugtask, bugtask_event = command.execute(
+                                    bugtask, bugtask_event)
+                            except EmailProcessingError, error:
+                                if error.stop_processing:
+                                    raise error
+                                else:
+                                    processing_errors.append((error, command))
+                                    continue
                         # Finish this bugtask.
                         self.notify_bugtask_event(bugtask_event, bug_event)
                         bugtask = None
                         bugtask_event = None
-                    for command in bug_commands:
-                        bug, bug_event = command.execute(bug, bug_event)
                     # Finish this bug.
                     self.notify_bug_event(bug_event)
                 except EmailProcessingError, error:
