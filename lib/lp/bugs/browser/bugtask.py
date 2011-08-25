@@ -1061,12 +1061,6 @@ class BugTaskBatchedCommentsAndActivityView(BugTaskView):
             batch_size=self.batch_size,
             offset=self.offset)
 
-    @cachedproperty
-    def batched_activity_and_comments(self):
-        """Return the current batch of activity and comments."""
-        return self.activity_and_comments[
-            self.offset:self.offset+self.batch_size]
-
 
 class BugTaskPortletView:
     """A portlet for displaying a bug's bugtasks."""

@@ -5,7 +5,7 @@
 
   <tal:comments>
     <tal:comment
-        repeat="comment_or_activity view/batched_activity_and_comments">
+        repeat="comment_or_activity view/activity_and_comments">
       <tal:is-comment
           define="comment comment_or_activity/comment|nothing"
           condition="comment">

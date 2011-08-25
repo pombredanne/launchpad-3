@@ -5,7 +5,10 @@ __metaclass__ = type
 
 import transaction
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
@@ -20,7 +23,6 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
@@ -1001,17 +1003,23 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def _makeNoisyBug(self):
+    def _makeNoisyBug(self, comments_only=False):
         """Create and return a bug with a lot of comments and activity."""
-        bug = self.factory.makeBug()
-        for i in range(100):
-            task = self.factory.makeBugTask(bug=bug)
-            change = BugTaskStatusChange(
-                task, UTC_NOW, task.product.owner, 'status',
-                BugTaskStatus.NEW, BugTaskStatus.TRIAGED)
-            bug.addChange(change)
-        for i in range (500):
-            self.factory.makeBugComment(bug=bug)
+        bug = self.factory.makeBug(
+            date_created=datetime.now(UTC) - timedelta(days=30))
+        with person_logged_in(bug.owner):
+            if not comments_only:
+                for i in range(10):
+                    task = self.factory.makeBugTask(bug=bug)
+                    change = BugTaskStatusChange(
+                        task, datetime.now(UTC), task.product.owner, 'status',
+                        BugTaskStatus.NEW, BugTaskStatus.TRIAGED)
+                    bug.addChange(change)
+            for i in range (10):
+                msg = self.factory.makeMessage(
+                    owner=bug.owner, content="Message %i." % i,
+                    datecreated=datetime.now(UTC) - timedelta(days=20-i))
+                bug.linkMessage(msg, user=bug.owner)
         return bug
 
     def test_offset(self):
@@ -1033,5 +1041,37 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
         view = create_initialized_view(bug_task, '+batched-comments')
         self.assertEqual(100, view.batch_size)
         view = create_initialized_view(
-            bug_task, '+batched-comments', form={'batch_size': 50})
-        self.assertEqual(50, view.batch_size)
+            bug_task, '+batched-comments', form={'batch_size': 20})
+        self.assertEqual(20, view.batch_size)
+
+    def test_event_groups_only_returns_batch_size_results(self):
+        # BugTaskBatchedCommentsAndActivityView._event_groups will
+        # return only batch_size results.
+        bug = self._makeNoisyBug()
+        view = create_initialized_view(
+            bug.default_bugtask, '+batched-comments',
+            form={'batch_size': 10})
+        self.assertEqual(10, len([group for group in view._event_groups]))
+
+    def test_activity_and_comments_matches_unbatched_version(self):
+        # BugTaskBatchedCommentsAndActivityView extends BugTaskView in
+        # order to add the batching logic and reduce rendering
+        # overheads. The results of activity_and_comments is the same
+        # for both.
+        # We create a bug with comments only so that we can test the
+        # contents of activity_and_comments properly. Trying to test it
+        # with multiply different datatypes is fragile at best.
+        bug = self._makeNoisyBug(comments_only=True)
+        batched_view = create_initialized_view(
+            bug.default_bugtask, '+batched-comments')
+        unbatched_view = create_initialized_view(
+            bug.default_bugtask, '+index')
+        self.assertEqual(
+            len(unbatched_view.activity_and_comments),
+            len(batched_view.activity_and_comments))
+        for i in range(len(unbatched_view.activity_and_comments)):
+            unbatched_item = unbatched_view.activity_and_comments[i]
+            batched_item = batched_view.activity_and_comments[i]
+            self.assertEqual(
+                unbatched_item['comment'].text_for_display,
+                batched_item['comment'].text_for_display)
