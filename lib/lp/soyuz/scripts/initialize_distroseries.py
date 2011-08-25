@@ -156,8 +156,7 @@ class InitializeDistroSeries:
                     child=self.distroseries))
         self._checkParents()
         for parent in self.derivation_parents:
-            if self.distroseries.distribution.id == parent.distribution.id:
-                self._checkBuilds(parent)
+            self._checkBuilds(parent)
             self._checkQueue(parent)
         self._checkSeries()
 
@@ -189,7 +188,7 @@ class InitializeDistroSeries:
         # spns=None means no packagesets selected so we need to consider
         # all sources.
 
-        arch_tags = self.arches if self.arches is not () else None
+        arch_tags = self.arches if len(self.arches) != 0 else None
         pending_builds = parent.getBuildRecords(
             BuildStatus.NEEDSBUILD, pocket=INIT_POCKETS,
             arch_tag=arch_tags, name=spns)

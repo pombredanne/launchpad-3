@@ -1180,7 +1180,7 @@ Inactive projects and project groups are not available.
     >>> for term in vocab:
     ...     if 'Tomcat' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Tomcat (Product) - class Product
+    Tomcat (Project) - class Product
 
     >>> tomcat = product_set.getByName('tomcat')
     >>> tomcat in vocab
@@ -1266,12 +1266,12 @@ Inactive projects and project groups are not available.
     >>> for term in vocab:
     ...     if 'Apache' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Apache (ProjectGroup) - class ProjectGroup
+    Apache (Project Group) - class ProjectGroup
 
     >>> for term in vocab:
     ...     if 'Tomcat' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
-    Tomcat (Product) - class Product
+    Tomcat (Project) - class Product
 
 
 FeaturedProjectVocabulary
@@ -1289,14 +1289,14 @@ _clauseTables).
 
     >>> for term in featured_project_vocabulary:
     ...     print term.token, term.value.displayname, term.title
-    applets         Gnome Applets        The Gnome Panel Applets (Product)
-    bazaar          Bazaar               Bazaar (Product)
-    firefox         Mozilla Firefox      Mozilla Firefox (Product)
+    applets         Gnome Applets        The Gnome Panel Applets (Project)
+    bazaar          Bazaar               Bazaar (Project)
+    firefox         Mozilla Firefox      Mozilla Firefox (Project)
     gentoo          Gentoo               The Gentoo Linux (Distribution)
-    gnome           GNOME                The GNOME Project (ProjectGroup)
-    gnome-terminal  GNOME Terminal       The GNOME Terminal Emulator (Product)
-    mozilla The     Mozilla Project      The Mozilla Project (ProjectGroup)
-    thunderbird     Mozilla Thunderbird  Mozilla Thunderbird (Product)
+    gnome           GNOME                The GNOME Project (Project Group)
+    gnome-terminal  GNOME Terminal       The GNOME Terminal Emulator (Project)
+    mozilla The     Mozilla Project      The Mozilla Project (Project Group)
+    thunderbird     Mozilla Thunderbird  Mozilla Thunderbird (Project)
     ubuntu          Ubuntu               Ubuntu Linux (Distribution)
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
