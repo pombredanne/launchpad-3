@@ -10,7 +10,13 @@ __all__ = [
     ]
 
 
+import apt_pkg
 import datetime
+from debian.changelog import (
+    Changelog,
+    ChangelogCreateError,
+    ChangelogParseError,
+    )
 import operator
 import re
 from StringIO import StringIO
@@ -604,21 +610,24 @@ class SourcePackageRelease(SQLBase):
             from_source=self, to_source=to_sourcepackagerelease,
             requester=requester, status=status)
 
-    def aggregate_changelog(self, since_version=None):
-        """See `ISourcePackageRelease`."""
-        if since_version is None:
-            return self.changelog_entry
+    def aggregate_changelog(self, since_version):
+        """See `ISourcePackagePublishingHistory`."""
+        if self.changelog is None:
+            return None
 
-        store = Store.of(self)
-        sprs = store.find(
-            SourcePackageRelease,
-            SourcePackageRelease.sourcepackagename == self.sourcepackagename,
-            SourcePackageRelease.version > since_version,
-            SourcePackageRelease.version <= self.version)
+        apt_pkg.InitSystem()
+        output = ""
+        changelog = self.changelog
+        try:
+            for block in Changelog(changelog.read()):
+                version = block._raw_version
+                if apt_pkg.VersionCompare(version, since_version) <= 0:
+                    break
+                try:
+                    output += str(block)
+                except ChangelogCreateError:
+                    continue
+        except ChangelogParseError:
+            return None
 
-        # We should never have a null changelog_entry but there's millions
-        # of lazy tests out there and there might even be some broken
-        # production data.  Better safe than OOPSy.
-        return "\n\n".join(
-            [spr.changelog_entry for spr in sprs
-             if spr.changelog_entry])
+        return output

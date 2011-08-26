@@ -16,14 +16,8 @@ __all__ = [
     ]
 
 
-import apt_pkg
 from collections import defaultdict
 from datetime import datetime
-from debian.changelog import (
-    Changelog,
-    ChangelogCreateError,
-    ChangelogParseError,
-    )
 import operator
 import os
 import re
@@ -909,28 +903,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # get deleted too.
         getUtility(IPublishingSet).requestDeletion(
             [self], removed_by, removal_comment)
-
-    def aggregate_changelog(self, since_version):
-        """See `ISourcePackagePublishingHistory`."""
-        if self.sourcepackagerelease.changelog is None:
-            return None
-
-        apt_pkg.InitSystem()
-        output = ""
-        changelog = self.sourcepackagerelease.changelog
-        try:
-            for block in Changelog(changelog.read()):
-                version = block._raw_version
-                if apt_pkg.VersionCompare(version, since_version) <= 0:
-                    break
-                try:
-                    output += str(block)
-                except ChangelogCreateError:
-                    continue
-        except ChangelogParseError:
-            return None
-
-        return output
 
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):

@@ -644,16 +644,6 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         :return: A URL to the librarian file containing the diff.
         """
 
-    def aggregate_changelog(since_version):
-        """Get all the changelogs since the version specified.
-
-        :param since_version: Return changelogs of all versions
-            after since_version up to and including the version of the
-            sourcepackagerelease for this publication.
-        :return: A concatenated set of changelogs of all the required
-            versions, with a blank line between each.
-        """
-
 
 class ISourcePackagePublishingHistory(ISourcePackagePublishingHistoryPublic,
                                       IPublishingEdit):

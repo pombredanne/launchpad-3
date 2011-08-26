@@ -14,29 +14,6 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus,
     )
 from lp.soyuz.tests.test_binarypackagebuild import BaseTestCaseWithThreeBuilds
-from lp.testing import TestCaseWithFactory
-
-
-class TestPublishingModel(TestCaseWithFactory):
-    """Testing the publishing model objects."""
-
-    layer = LaunchpadZopelessLayer
-
-    def test_spph_aggregate_changelog(self):
-        # If since_version is passed the "changelog" entry returned
-        # should contain the changelogs for all published SPRs *since*
-        # that version and up to and including the context published SPR.
-        changelog = self.factory.makeChangelog(
-            spn="foo", versions=["1.3",  "1.2",  "1.1",  "1.0"])
-        expected_changelog = self.factory.makeChangelog(
-            spn="foo", versions=["1.3", "1.2", "1.1"])
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagename="foo", version="1.3", changelog=changelog)
-        self.layer.txn.commit()  # Yay, librarian.
-
-        observed = spph.aggregate_changelog(since_version="1.0")
-        expected = expected_changelog.read()
-        self.assertEqual(expected.strip(), observed.strip())
 
 
 class TestPublishingSet(BaseTestCaseWithThreeBuilds):
