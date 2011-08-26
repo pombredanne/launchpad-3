@@ -1167,29 +1167,6 @@ class TestPublishingSetLite(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def makeMatchingSourceAndBinaryPPH(self):
-        """Produce a matching pair of SPPH and BPPH.
-
-        Returns a tuple of one SourcePackagePublishingHistory "spph" and
-        one BinaryPackagePublishingHistory "bpph" stemming from the same
-        source package, published into the same distroseries, pocket, and
-        archive.
-        """
-        bpph = self.factory.makeBinaryPackagePublishingHistory()
-        bpr = bpph.binarypackagerelease
-        self.assertNotEqual(None, bpr)
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=bpph.distroarchseries.distroseries,
-            sourcepackagerelease=bpr.build.source_package_release,
-            pocket=bpph.pocket, archive=bpph.archive)
-        return spph, bpph
-
-    def test_makeMatchingSourceAndBinaryPPH(self):
-        # makeMatchingSourceAndBinaryPPH really produces a matching pair
-        # of spph and bpph.
-        spph, bpph = self.makeMatchingSourceAndBinaryPPH()
-        self.assertContentEqual([bpph], spph.getPublishedBinaries())
-
     def test_requestDeletion_marks_SPPHs_deleted(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
         getUtility(IPublishingSet).requestDeletion(
@@ -1206,7 +1183,8 @@ class TestPublishingSetLite(TestCaseWithFactory):
         self.assertEqual(PackagePublishingStatus.PENDING, spph.status)
 
     def test_requestDeletion_marks_attached_BPPHs_deleted(self):
-        spph, bpph = self.makeMatchingSourceAndBinaryPPH()
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        spph = self.factory.makeSPPHForBPPH(bpph)
         getUtility(IPublishingSet).requestDeletion(
             [spph], self.factory.makePerson())
         transaction.commit()

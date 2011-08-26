@@ -519,6 +519,20 @@ class TestFactory(TestCaseWithFactory):
             dsc_maintainer_rfc822=maintainer)
         self.assertEqual(maintainer, spr.dsc_maintainer_rfc822)
 
+    # makeSPPHForBPPH
+    def test_makeSPPHForBPPH_returns_ISPPH(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        spph = self.factory.makeSPPHForBPPH(bpph)
+        self.assertThat(spph, IsProxied())
+        self.assertThat(
+            removeSecurityProxy(spph),
+            Provides(ISourcePackagePublishingHistory))
+
+    def test_makeSPPHForBPPH_returns_SPPH_for_BPPH(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        spph = self.factory.makeSPPHForBPPH(bpph)
+        self.assertContentEqual([bpph], spph.getPublishedBinaries())
+
     # makeSuiteSourcePackage
     def test_makeSuiteSourcePackage_returns_ISuiteSourcePackage(self):
         ssp = self.factory.makeSuiteSourcePackage()
