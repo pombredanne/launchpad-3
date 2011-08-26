@@ -656,6 +656,9 @@ class LaunchpadStatementTracer:
             param_strings = [repr(p) if isinstance(p, basestring) else p
                                  for p in query_params]
             statement_to_log = quoted_statement % tuple(param_strings)
+        if self._debug_sql or self._debug_sql_extra:
+            sys.stderr.write(statement_to_log + "\n")
+            sys.stderr.write("-" * 70 + "\n")
         # store the last executed statement as an attribute on the current
         # thread
         threading.currentThread().lp_last_sql_statement = statement
