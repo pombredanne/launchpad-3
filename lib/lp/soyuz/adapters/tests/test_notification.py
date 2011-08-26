@@ -138,8 +138,6 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         # that version and up to and including the passed SPR.
         changelog = self.factory.makeChangelog(
             spn="foo", versions=["1.2",  "1.1",  "1.0"])
-        expected_changelog = self.factory.makeChangelog(
-            spn="foo", versions=["1.2", "1.1"])
         spph = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename="foo", version="1.3", changelog=changelog)
         self.layer.txn.commit()  # Yay, librarian.
