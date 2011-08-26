@@ -63,28 +63,15 @@
 	    Y.on('domready', function() {
               var dsd_details = Y.lp.registry.distroseriesdifferences_details;
 	      Y.all('input[name=field.actions.sync]').each(function(button) {
-	        var form = button.ancestor('form');
-                // Enable the button.
-	        button.set('disabled', false);
-		// Bind the creation of the ConfirmationOverlay to the 'click'
-		// event.
-	        button.on('click', function(e) {
-                  if (dsd_details.get_number_of_packages() !== 0) {
-		    e.preventDefault();
-                    var nb_packages = dsd_details.get_label_number_of_packages();
-                    var confirm = new Y.lazr.ConfirmationOverlay({
-                      headerContent: [
-		        "<h2>You're about to sync ",
-			nb_packages,
-			". Continue?<" + "/h2>"
-                        ].join(''),
-                      form_content: dsd_details.get_packages_summary(),
-		      button: button,
-                      form: form
-		    });
-		    confirm.render();
-                  }
-	        });
+                var has_synced_packages = function() {
+                  return (dsd_details.get_number_of_packages() !== 0);
+                }
+		new Y.lazr.ConfirmationOverlay({
+                  button: button,
+                  display_confirmation_fn: has_synced_packages,
+		  form_content_fn: dsd_details.get_packages_summary,
+                  header_content_fn: dsd_details.get_confirmation_header_number_of_packages
+                  });
               });
 	    });
           });
@@ -291,7 +278,6 @@
     </div>
 <script type="text/javascript">
 LPS.use('lp.registry.distroseriesdifferences_details', function(Y) {
-
   Y.on('domready', function() {
     Y.lp.registry.distroseriesdifferences_details.setup();
   });
