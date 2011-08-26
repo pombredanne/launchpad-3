@@ -99,8 +99,6 @@ class IRevisionMailJob(IRunnableJob):
 
     from_address = Bytes(title=u'The address to send mail from.')
 
-    perform_diff = Text(title=u'Determine whether diff should be performed.')
-
     body = Text(title=u'The main text of the email to send.')
 
     subject = Text(title=u'The subject of the email to send.')
@@ -109,7 +107,7 @@ class IRevisionMailJob(IRunnableJob):
 class IRevisionMailJobSource(Interface):
     """A utility to create and retrieve RevisionMailJobs."""
 
-    def create(db_branch, revno, email_from, message, perform_diff, subject):
+    def create(db_branch, revno, email_from, message, subject):
         """Create and return a new object that implements IRevisionMailJob."""
 
     def iterReady():

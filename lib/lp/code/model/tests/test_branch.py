@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401,E1002
@@ -1227,8 +1227,9 @@ class TestBranchDeletion(TestCaseWithFactory):
 
     def test_relatedBranchJobsDeleted(self):
         # A branch with an associated branch job will delete those jobs.
-        branch = self.factory.makeAnyBranch()
-        BranchUpgradeJob.create(branch, 'from-spec', 'to-spec')
+        branch = self.factory.makeBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        removeSecurityProxy(branch).requestUpgrade(branch.owner)
         branch.destroySelf()
         # Need to commit the transaction to fire off the constraint checks.
         transaction.commit()

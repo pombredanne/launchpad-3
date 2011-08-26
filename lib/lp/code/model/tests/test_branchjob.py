@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for BranchJobs."""
@@ -8,7 +8,6 @@ __metaclass__ = type
 import datetime
 import os
 import shutil
-import tempfile
 
 from bzrlib import errors as bzr_errors
 from bzrlib.branch import (
@@ -337,13 +336,6 @@ class TestRevisionMailJob(TestCaseWithFactory):
         job = RevisionMailJob.create(
             branch, 'removed', 'from@example.com', 'hello', 'subject')
         self.assertEqual('removed', job.revno)
-
-    def test_revno_long(self):
-        "Ensure that the revno is a long, not an int."
-        branch = self.factory.makeAnyBranch()
-        job = RevisionMailJob.create(
-            branch, 1, 'from@example.com', 'hello', 'subject')
-        self.assertIsInstance(job.revno, long)
 
     def test_iterReady_includes_ready_jobs(self):
         """Ready jobs should be listed."""
@@ -1165,7 +1157,9 @@ class TestRosettaUploadJob(TestCaseWithFactory):
         self._makeProductSeries(
             TranslationsBranchImportMode.IMPORT_TEMPLATES)
         # Add a job that is not a RosettaUploadJob.
-        BranchUpgradeJob.create(self.branch, 0, 1)
+        branch = self.factory.makeBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        BranchUpgradeJob.create(branch, branch.owner)
         ready_jobs = list(RosettaUploadJob.iterReady())
         self.assertEqual([], ready_jobs)
 
