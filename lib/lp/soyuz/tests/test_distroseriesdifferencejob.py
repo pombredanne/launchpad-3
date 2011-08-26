@@ -409,6 +409,9 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
             job_counts)
 
     def test_createForSPPHs_behaves_sensibly_if_job_already_exists(self):
+        # If a job already existed, createForSPPHs may create a
+        # redundant one but it certainly won't do anything weird like
+        # delete what was there or create too many.
         dsp = self.factory.makeDistroSeriesParent()
         spph = self.factory.makeSourcePackagePublishingHistory(
             dsp.parent_series, pocket=PackagePublishingPocket.RELEASE)
