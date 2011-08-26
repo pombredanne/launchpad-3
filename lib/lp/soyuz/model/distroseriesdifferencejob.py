@@ -226,6 +226,9 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
     @classmethod
     def createForSPPHs(cls, spphs):
         """See `IDistroSeriesDifferenceJobSource`."""
+        # XXX JeroenVermeulen 2011-08-25, bug=834499: This won't do for
+        # some of the mass deletions we're planning to support.
+        # Optimize.
         for spph in spphs:
             if spph.archive.is_main:
                 cls.createForPackagePublication(
