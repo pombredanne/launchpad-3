@@ -811,6 +811,12 @@ class CodeImportResultStatus(DBEnumeratedType):
         Bazaar or the Bazaar foreign branch support.
         """)
 
+    FAILURE_REMOTE_BROKEN = DBItem(250, """
+        Broken remote branch
+
+        The remote branch exists but is corrupted in some way
+        """)
+
     RECLAIMED = DBItem(310, """
         Job reclaimed
 

@@ -981,9 +981,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         archive = getUtility(IArchiveSet).getByDistroPurpose(
             distribution=self.ubuntu, purpose=ArchivePurpose.PARTNER)
         try:
-            self.ubuntu.getFileByName(
-                'foocomm_1.0.orig.tar.gz', archive=archive, source=True,
-                binary=False)
+            archive.getFileByName('foocomm_1.0.orig.tar.gz')
         except NotFoundError:
             self.fail('foocomm_1.0.orig.tar.gz is not yet published.')
 
