@@ -48,6 +48,64 @@
 
       <div metal:use-macro="context/@@launchpad_form/form">
 
+      <span tal:replace="nothing">
+      We override the 'buttons' slot because we want the syc button to be
+      disabled by default. The Javascript code running on top of this will
+      enable the button and open a confirmation popup when the button is
+      clicked. This is done because syncing packages is too dangerous without
+      a confirmation.
+      </span>
+      <div metal:fill-slot="buttons">
+        <script type="text/javascript">
+	  LPS.use(
+            'node', 'event', 'lp.registry.distroseriesdifferences_details',
+	    'lazr.confirmationoverlay',function(Y) {
+	    Y.on('domready', function() {
+              var dsd_details = Y.lp.registry.distroseriesdifferences_details;
+	      Y.all('input[name=field.actions.sync]').each(function(button) {
+	        var form = button.ancestor('form');
+                // Enable the button.
+	        button.set('disabled', false);
+		// Bind the creation of the ConfirmationOverlay to the 'click'
+		// event.
+	        button.on('click', function(e) {
+                  if (dsd_details.get_number_of_packages() !== 0) {
+		    e.preventDefault();
+                    var nb_packages = dsd_details.get_label_number_of_packages();
+                    var confirm = new Y.lazr.ConfirmationOverlay({
+                      headerContent: [
+		        "<h2>You're about to sync ",
+			nb_packages,
+			". Continue?<" + "/h2>"
+                        ].join(''),
+                      form_content: dsd_details.get_packages_summary(),
+		      button: button,
+                      form: form
+		    });
+		    confirm.render();
+                  }
+	        });
+              });
+	    });
+          });
+        </script>
+        <div id="launchpad-form-actions" class="actions"
+          tal:define="sync view/actions/byname/field.actions.sync;
+	              upgrade view/actions/byname/field.actions.upgrade|nothing">
+          <input class="button" type="submit" disabled="true"
+            title="Please use a Javascript-enabled browser to sync packages."
+            tal:condition="sync/available"
+            tal:attributes="value sync/label;
+                            name sync/__name__;
+                            id sync/__name__;" />
+	  <input class="button" type="submit"
+	    tal:condition="python: upgrade and upgrade.available"
+	    tal:attributes="value upgrade/label;
+	                    name upgrade/__name__;
+			    id upgrade/__name__;" />
+        </div>
+      </div>
+
       <div metal:fill-slot="widgets">
         <tal:navigation_top
           replace="structure differences/@@+navigation-links-upper" />
