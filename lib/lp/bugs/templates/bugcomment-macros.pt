@@ -50,28 +50,30 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   metal:define-macro="break"
-  tal:attributes="class string:boardComment"
-  style="border-bottom: 0">
-  <div class="boardCommentDetails">
-    <table>
-      <tbody>
-        <tr>
-          <td>
-            <span class="sprite arrowRight">&nbsp;</span>
-            <span tal:replace="num_hidden">42</span> comments hidden
-          </td>
+  id="comments-container">
+  <div class="boardComment" style="border-bottom: 0">
+    <div class="boardCommentDetails">
+      <table>
+        <tbody>
+          <tr>
+            <td>
+              <span class="sprite arrowRight">&nbsp;</span>
+              <span tal:replace="num_hidden">42</span> comments hidden
+            </td>
 
-          <td class="bug-comment-index">
-            <a href="?comments=all"
-               class="sprite retry"
-               style="white-space: nowrap">
-               view all <span
-               tal:replace="view/total_comments"
-               /> comments</a>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+            <td class="bug-comment-index">
+              <a href="?comments=all"
+                 id="show-comments-link"
+                 class="sprite retry"
+                 style="white-space: nowrap">
+                 view all <span
+                 tal:replace="view/total_comments"
+                 /> comments</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 

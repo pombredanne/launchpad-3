@@ -4,6 +4,11 @@
   omit-tag="">
 
   <tal:comments>
+    <div
+      style="display: none"
+      id="next-batch-url"
+      tal:condition="view/has_more_comments_and_activity"
+      tal:content="view/next_batch_url"></div>
     <tal:comment
         repeat="comment_or_activity view/activity_and_comments">
       <tal:is-comment

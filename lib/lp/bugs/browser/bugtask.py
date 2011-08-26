@@ -672,7 +672,14 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     def initialize(self):
         """Set up the needed widgets."""
         bug = self.context.bug
-        IJSONRequestCache(self.request).objects['bug'] = bug
+        cache = IJSONRequestCache(self.request)
+        cache.objects['bug'] = bug
+        cache.objects['total_comments_and_activity'] = (
+            self.total_comments + self.total_activity)
+        cache.objects['initial_comment_batch_offset'] = (
+            self.visible_initial_comments)
+        cache.objects['first visible_recent_comment'] = (
+            self.total_comments - self.visible_recent_comments)
 
         # See render() for how this flag is used.
         self._redirecting_to_bug_list = False
@@ -888,6 +895,11 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         """We count all comments because the db cannot do visibility yet."""
         return self.context.bug.bug_messages.count() - 1
 
+    @cachedproperty
+    def total_activity(self):
+        """Return the count of all activity items for the bug."""
+        return self.context.bug.activity.count()
+
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""
         return (self.context.bug._indexed_messages(
@@ -1040,6 +1052,13 @@ class BugTaskBatchedCommentsAndActivityView(BugTaskView):
     # We never truncate comments in this view; there would be no point.
     visible_comments_truncated_for_display = False
 
+    def initialize(self):
+        cache = IJSONRequestCache(self.request)
+        cache.objects['offset'] = self.offset
+        cache.objects['batch_size'] = self.batch_size
+        cache.objects['next_offset'] = self.offset + self.batch_size
+        super(BugTaskBatchedCommentsAndActivityView, self).initialize()
+
     @property
     def offset(self):
         try:
@@ -1054,12 +1073,23 @@ class BugTaskBatchedCommentsAndActivityView(BugTaskView):
         except TypeError:
             return 100
 
+    @property
+    def next_batch_url(self):
+        return "%s?offset=%s&batch_size=%s" % (
+            canonical_url(self.context, view_name='+batched-comments'),
+            self.offset+self.batch_size, self.batch_size)
+
     @cachedproperty
     def _event_groups(self):
         """See `BugTaskView`."""
         return self._getEventGroups(
             batch_size=self.batch_size,
             offset=self.offset)
+
+    @cachedproperty
+    def has_more_comments_and_activity(self):
+        """Return True if there are more camments and activity to load."""
+        return len(self.activity_and_comments) > 0
 
 
 class BugTaskPortletView:
