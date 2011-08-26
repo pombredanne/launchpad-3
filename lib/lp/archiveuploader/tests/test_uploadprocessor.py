@@ -981,9 +981,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         archive = getUtility(IArchiveSet).getByDistroPurpose(
             distribution=self.ubuntu, purpose=ArchivePurpose.PARTNER)
         try:
-            self.ubuntu.getFileByName(
-                'foocomm_1.0.orig.tar.gz', archive=archive, source=True,
-                binary=False)
+            archive.getFileByName('foocomm_1.0.orig.tar.gz')
         except NotFoundError:
             self.fail('foocomm_1.0.orig.tar.gz is not yet published.')
 
@@ -1389,8 +1387,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
     def testLZMADebUpload(self):
         """Make sure that data files compressed with lzma in Debs work.
 
-        Each Deb contains a data.tar.xxx file where xxx is one of gz, bz2
-        or lzma.  Here we make sure that lzma works.
+        Each Deb contains a data.tar.xxx file where xxx is one of gz, bz2,
+        lzma or xz.  Here we make sure that lzma works.
         """
         # Setup the test.
         self.setupBreezy()
@@ -1412,6 +1410,50 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Upload a binary lzma-compressed package.
         upload_dir = self.queueUpload("bar_1.0-1_lzma_binary")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Successful binary uploads won't generate any email.
+        if len(stub.test_emails) != 0:
+            from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertEqual(
+            len(stub.test_emails), 0,
+            "Expected no emails!  Actually got:\n%s" % raw_msg)
+
+        # Check in the queue to see if it really made it:
+        queue_items = self.breezy.getPackageUploads(
+            status=PackageUploadStatus.NEW, name=u"bar",
+            version=u"1.0-1", exact_match=True)
+        self.assertEqual(
+            queue_items.count(), 1,
+            "Expected one 'bar' item in the queue, actually got %d."
+                % queue_items.count())
+
+    def testXZDebUpload(self):
+        """Make sure that data files compressed with xz in Debs work.
+
+        Each Deb contains a data.tar.xxx file where xxx is one of gz, bz2,
+        lzma or xz.  Here we make sure that xz works.
+        """
+        # Setup the test.
+        self.setupBreezy()
+        self.layer.txn.commit()
+        self.options.context = 'absolutely-anything'
+        uploadprocessor = self.getUploadProcessor(self.layer.txn)
+
+        # Upload the source first to enable the binary later:
+        upload_dir = self.queueUpload("bar_1.0-1_xz")
+        self.processUpload(uploadprocessor, upload_dir)
+        # Make sure it went ok:
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "rejected" not in raw_msg,
+            "Failed to upload bar source:\n%s" % raw_msg)
+        self.publishPackage("bar", "1.0-1")
+        # Clear out emails generated during upload.
+        pop_notifications()
+
+        # Upload a binary xz-compressed package.
+        upload_dir = self.queueUpload("bar_1.0-1_xz_binary")
         self.processUpload(uploadprocessor, upload_dir)
 
         # Successful binary uploads won't generate any email.

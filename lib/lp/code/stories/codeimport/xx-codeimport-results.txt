@@ -65,3 +65,4 @@ is the text of the failure or success type.
     ...     print img
     <img src="/@@/no" title="Job killed" />
     <img src="/@@/no" title="Job reclaimed" />
+    <img src="/@@/no" title="Broken remote branch" />
