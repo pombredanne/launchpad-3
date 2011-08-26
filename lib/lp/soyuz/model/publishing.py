@@ -2000,6 +2000,8 @@ class PublishingSet:
             SourcePackagePublishingHistory, spph_ids, removed_by,
             removal_comment=removal_comment)
 
+        getUtility(IDistroSeriesDifferenceJobSource).createForSPPHs(sources)
+
         # Mark binary publications deleted.
         bpph_ids = [
             bpph.id

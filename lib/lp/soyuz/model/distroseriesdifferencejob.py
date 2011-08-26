@@ -221,6 +221,11 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
         return parent_series_jobs + derived_series_jobs
 
     @classmethod
+    def createForSPPHs(cls, spphs):
+        """See `IDistroSeriesDifferenceJobSource`."""
+        pass
+
+    @classmethod
     def massCreateForSeries(cls, derived_series):
         """See `IDistroSeriesDifferenceJobSource`."""
         if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
