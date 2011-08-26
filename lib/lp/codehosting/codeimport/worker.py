@@ -71,6 +71,7 @@ class CodeImportWorkerExitCode:
     SUCCESS_PARTIAL = 3
     FAILURE_INVALID = 4
     FAILURE_UNSUPPORTED_FEATURE = 5
+    FAILURE_REMOTE_BROKEN = 7
 
 
 class BazaarBranchStore:
@@ -589,6 +590,11 @@ class PullingImportWorker(ImportWorker):
         raise NotImplementedError
 
     @property
+    def broken_remote_exceptions(self):
+        """The exceptions to consider for broken remote branches."""
+        raise NotImplementedError
+
+    @property
     def probers(self):
         """The probers that should be tried for this import."""
         raise NotImplementedError
@@ -640,8 +646,11 @@ class PullingImportWorker(ImportWorker):
                     return (
                         CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE)
                 elif e.__class__ in self.invalid_branch_exceptions:
-                    self._logger.info("Branch invalid: %s", e(str))
+                    self._logger.info("Branch invalid: %s", str(e))
                     return CodeImportWorkerExitCode.FAILURE_INVALID
+                elif e.__class__ in self.broken_remote_exceptions:
+                    self._logger.info("Remote branch broken: %s", str(e))
+                    return CodeImportWorkerExitCode.FAILURE_REMOTE_BROKEN
                 else:
                     raise
             self._logger.info("Pushing local import branch to central store.")
@@ -673,6 +682,10 @@ class GitImportWorker(PullingImportWorker):
             InvalidEntryName,
             SubmodulesRequireSubtrees,
         ]
+
+    @property
+    def broken_remote_exceptions(self):
+        return []
 
     @property
     def probers(self):
@@ -744,6 +757,10 @@ class HgImportWorker(PullingImportWorker):
         ]
 
     @property
+    def broken_remote_exceptions(self):
+        return []
+
+    @property
     def probers(self):
         """See `PullingImportWorker.probers`."""
         from bzrlib.plugins.hg import HgProber
@@ -810,6 +827,11 @@ class BzrSvnImportWorker(PullingImportWorker):
             InvalidEntryName,
             InvalidFileName,
         ]
+
+    @property
+    def broken_remote_exceptions(self):
+        from bzrlib.plugins.svn.errors import IncompleteRepositoryHistory
+        return [IncompleteRepositoryHistory]
 
     def getRevisionLimit(self):
         """See `PullingImportWorker.getRevisionLimit`."""
