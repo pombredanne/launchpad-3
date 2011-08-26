@@ -424,12 +424,6 @@ class MaloneHandler:
             if not IObjectCreatedEvent.providedBy(bug_event):
                 notify(bugtask_event)
 
-    def handleNoBug(self):
-        rollback()
-        raise IncomingEmailError(
-            get_error_message(
-                'command-with-no-bug.txt', error_templates=error_templates))
-
     def handleNoAffectsTarget(self):
         rollback()
         raise IncomingEmailError(
