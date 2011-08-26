@@ -322,13 +322,13 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
             [],
             find_waiting_jobs(dsp.derived_series, package, dsp.parent_series))
 
-    def test_createForSPPHs_obeys_feature_flag(self):
-        self.assertTrue(False) # XXX: Test.
-
     def test_createForSPPHs_creates_job_for_derived_series(self):
         self.assertTrue(False) # XXX: Test.
 
-    def test_createForSPPHs_parent_series(self):
+    def test_createForSPPHs_creates_job_for_parent_series(self):
+        self.assertTrue(False) # XXX: Test.
+
+    def test_createForSPPHs_obeys_feature_flag(self):
         self.assertTrue(False) # XXX: Test.
 
     def test_createForSPPHs_ignores_backports_and_proposed(self):
