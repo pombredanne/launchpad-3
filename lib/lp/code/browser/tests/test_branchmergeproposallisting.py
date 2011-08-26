@@ -368,7 +368,8 @@ class ActiveReviewsWithPrivateBranches(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_private_branch_owner(self):
-        # Merge proposals against private branches are visible to branch owner.
+        # Merge proposals against private branches are visible to
+        # branch owner.
         product = self.factory.makeProduct()
         branch = self.factory.makeBranch(private=True, product=product)
         with person_logged_in(removeSecurityProxy(branch).owner):

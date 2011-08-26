@@ -283,7 +283,7 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         collection = collection.visibleByUser(self.user)
         proposals = collection.getMergeProposals(
             [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW,])
+             BranchMergeProposalStatus.NEEDS_REVIEW, ])
         return proposals
 
     def _getReviewGroup(self, proposal, votes, reviewer):
@@ -331,8 +331,8 @@ class ActiveReviewsView(BranchMergeProposalListingView):
                     else:
                         return self.ARE_DOING
                 # Since team reviews are always pending, and we've eliminated
-                # the case where the reviewer is ther person, then if the reviewer
-                # is in the reviewer team, it is a can do.
+                # the case where the reviewer is ther person, then if
+                # the reviewer is in the reviewer team, it is a can do.
                 if reviewer.inTeam(vote.reviewer):
                     result = self.CAN_DO
         return result
