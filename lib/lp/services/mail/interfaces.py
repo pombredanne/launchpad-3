@@ -137,6 +137,9 @@ class IEmailCommand(Interface):
 class IBugEmailCommand(IEmailCommand):
     """An email command specific to getting or creating a bug."""
 
+    RANK = Attribute(
+        "The int used to determine the order of execution of many commands.")
+
     def execute(parsed_msg, filealias):
         """Either create or get an exiting bug.
 
@@ -150,6 +153,9 @@ class IBugEmailCommand(IEmailCommand):
 class IBugTaskEmailCommand(IEmailCommand):
     """An email command specific to getting or creating a bug task."""
 
+    RANK = Attribute(
+        "The int used to determine the order of execution of many commands.")
+
     def execute(bug):
         """Either create or get an exiting bug task.
 
@@ -160,6 +166,9 @@ class IBugTaskEmailCommand(IEmailCommand):
 class IBugEditEmailCommand(IEmailCommand):
     """An email command specific to editing a bug."""
 
+    RANK = Attribute(
+        "The int used to determine the order of execution of many commands.")
+
     def execute(bug, current_event):
         """Execute the command in the context of the bug.
 
@@ -169,6 +178,9 @@ class IBugEditEmailCommand(IEmailCommand):
 
 class IBugTaskEditEmailCommand(IEmailCommand):
     """An email command specific to editing a bug task."""
+
+    RANK = Attribute(
+        "The int used to determine the order of execution of many commands.")
 
     def execute(bugtask, current_event):
         """Execute the command in the context of the bug task.

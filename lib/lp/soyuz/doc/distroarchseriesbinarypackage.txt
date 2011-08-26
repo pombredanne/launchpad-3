@@ -202,15 +202,19 @@ First, update the cache tables for Celso's PPA:
   >>> LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
 
   >>> from lp.services.log.logger import FakeLogger
-  >>> ubuntu.updateCompleteSourcePackageCache(
-  ...    archive=cprov.archive, ztm=LaunchpadZopelessLayer.txn,
+  >>> from lp.soyuz.model.distributionsourcepackagecache import (
+  ...     DistributionSourcePackageCache)
+  >>> DistributionSourcePackageCache.updateAll(
+  ...    ubuntu, archive=cprov.archive, ztm=LaunchpadZopelessLayer.txn,
   ...    log=FakeLogger())
   DEBUG ...
   DEBUG Considering source 'pmount'
   ...
 
-  >>> warty.updateCompletePackageCache(
-  ...    archive=cprov.archive, ztm=LaunchpadZopelessLayer.txn,
+  >>> from lp.soyuz.model.distroseriespackagecache import (
+  ...     DistroSeriesPackageCache)
+  >>> DistroSeriesPackageCache.updateAll(
+  ...    warty, archive=cprov.archive, ztm=LaunchpadZopelessLayer.txn,
   ...    log=FakeLogger())
   DEBUG Considering binary 'mozilla-firefox'
   ...
