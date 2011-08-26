@@ -21,6 +21,7 @@ from canonical.testing import (
     LaunchpadZopelessLayer,
     ZopelessDatabaseLayer,
     )
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distroseriesdifferencecomment import (
@@ -918,6 +919,53 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         self.assertEqual(
             "Nancy Requester <requester@example.com>",
             emails[1]['From'])
+
+    def test_copying_closes_bugs(self):
+        # Copying a package into a primary archive should close any bugs
+        # mentioned in its changelog.
+
+        # Firstly, lots of boring set up.
+        publisher = SoyuzTestPublisher()
+        publisher.prepareBreezyAutotest()
+        distroseries = publisher.breezy_autotest
+        target_archive = self.factory.makeArchive(
+            distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
+        source_archive = self.factory.makeArchive()
+        bug = self.factory.makeBug()
+
+        # Publish a package in the source archive.
+        source_pub = publisher.getPubSource(
+            distroseries=distroseries, sourcename="libc",
+            version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
+            archive=source_archive)
+        spr = removeSecurityProxy(source_pub).sourcepackagerelease
+        spr.changelog_entry = "closes: %s" % bug.id
+        bugtask = self.factory.makeBugTask(target=spr.sourcepackage, bug=bug)
+
+        # Now put the same named package in the target archive so it gets
+        # auto accepted when we copy.
+        publisher.getPubSource(
+            distroseries=distroseries, sourcename="libc",
+            version="2.8-0", status=PackagePublishingStatus.PUBLISHED,
+            archive=target_archive)
+
+        # Run the copy job.
+        source = getUtility(IPlainPackageCopyJobSource)
+        requester = self.factory.makePerson()
+        with person_logged_in(target_archive.owner):
+            target_archive.newComponentUploader(requester, "restricted")
+        job = source.create(
+            package_name="libc",
+            package_version="2.8-1",
+            source_archive=source_archive,
+            target_archive=target_archive,
+            target_distroseries=distroseries,
+            target_pocket=PackagePublishingPocket.RELEASE,
+            include_binaries=False,
+            requester=requester)
+        self.runJob(job)
+
+        self.assertEqual(BugTaskStatus.FIXRELEASED, bugtask.status)
 
     def test_findMatchingDSDs_matches_all_DSDs_for_job(self):
         # findMatchingDSDs finds matching DSDs for any of the packages
