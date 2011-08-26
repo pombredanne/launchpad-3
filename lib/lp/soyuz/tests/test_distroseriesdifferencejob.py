@@ -27,7 +27,10 @@ from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.services.database import bulk
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
     IDistroSeriesDifferenceJobSource,
@@ -424,6 +427,18 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         job_count = len(find_waiting_jobs(
             dsp.derived_series, spn, dsp.parent_series))
         self.assertIn(job_count, create_jobs)
+
+    def test_createForSPPHs_creates_no_jobs_for_ppas(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        series = dsp.parent_series
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            series, pocket=PackagePublishingPocket.RELEASE,
+            archive=self.factory.makeArchive(
+                distribution=series.distribution, purpose=ArchivePurpose.PPA))
+        spn = spph.sourcepackagerelease.sourcepackagename
+        self.getJobSource().createForSPPHs([spph])
+        self.assertContentEqual(
+            [], find_waiting_jobs(dsp.derived_series, spn, dsp.parent_series))
 
     def test_massCreateForSeries_obeys_feature_flag(self):
         self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: ''}))

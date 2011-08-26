@@ -891,7 +891,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def requestDeletion(self, removed_by, removal_comment=None):
         """See `IPublishing`."""
         self.setDeleted(removed_by, removal_comment)
-        if self.archive == self.distroseries.main_archive:
+        if self.archive.is_main:
             dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
             dsd_job_source.createForPackagePublication(
                 self.distroseries,

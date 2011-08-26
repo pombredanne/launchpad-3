@@ -37,6 +37,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.adapters.overrides import UnknownOverridePolicy
 from lp.soyuz.enums import (
@@ -55,7 +56,10 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.model.distroseriesdifferencejob import find_waiting_jobs
+from lp.soyuz.model.distroseriesdifferencejob import (
+    FEATURE_FLAG_ENABLE_MODULE,
+    find_waiting_jobs,
+    )
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (
@@ -1168,6 +1172,9 @@ class TestPublishingSetLite(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
+    def enableDistroDerivation(self):
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
+
     def test_requestDeletion_marks_SPPHs_deleted(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
         getUtility(IPublishingSet).requestDeletion(
@@ -1211,20 +1218,18 @@ class TestPublishingSetLite(TestCaseWithFactory):
 
     def test_requestDeletion_creates_DistroSeriesDifferenceJobs(self):
         dsp = self.factory.makeDistroSeriesParent()
+        series = dsp.derived_series
         spph = self.factory.makeSourcePackagePublishingHistory(
-            dsp.derived_series)
+            series, pocket=PackagePublishingPocket.RELEASE)
         spn = spph.sourcepackagerelease.sourcepackagename
 
-        dsdjs_before = find_waiting_jobs(
-            dsp.derived_series, spn, dsp.parent_series)
-
+        self.enableDistroDerivation()
         getUtility(IPublishingSet).requestDeletion(
             [spph], self.factory.makePerson())
 
-        dsdjs_after = find_waiting_jobs(
-            dsp.derived_series, spn, dsp.parent_series)
-
-        self.assertEqual(len(dsdjs_before) + 1, len(dsdjs_after))
+        self.assertEqual(
+            1, len(find_waiting_jobs(
+                dsp.derived_series, spn, dsp.parent_series)))
 
 
 class TestSourceDomination(TestNativePublishingBase):

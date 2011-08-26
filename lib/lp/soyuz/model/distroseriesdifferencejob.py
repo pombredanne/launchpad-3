@@ -227,9 +227,10 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
     def createForSPPHs(cls, spphs):
         """See `IDistroSeriesDifferenceJobSource`."""
         for spph in spphs:
-            cls.createForPackagePublication(
-                spph.distroseries,
-                spph.sourcepackagerelease.sourcepackagename, spph.pocket)
+            if spph.archive.is_main:
+                cls.createForPackagePublication(
+                    spph.distroseries,
+                    spph.sourcepackagerelease.sourcepackagename, spph.pocket)
 
     @classmethod
     def massCreateForSeries(cls, derived_series):
