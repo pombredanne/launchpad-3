@@ -160,6 +160,28 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(TestCaseWithFactory)
         adapter = IPickerEntrySource(dsp)
         self.assertTrue(IPickerEntrySource.providedBy(adapter))
 
+    def test_dsp_provides_summary(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        series = self.factory.makeDistroSeries(distribution=dsp.distribution)
+        release = self.factory.makeSourcePackageRelease(
+            distroseries=series,
+            sourcepackagename=dsp.sourcepackagename)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series,
+            sourcepackagerelease=release)
+        [entry] = IPickerEntrySource(dsp).getPickerEntries([dsp], object())
+        self.assertEqual(entry.description, 'Not yet built.')
+
+        archseries = self.factory.makeDistroArchSeries(distroseries=series)
+        bpn = self.factory.makeBinaryPackageName(name='fnord')
+        self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagename=bpn,
+            source_package_release=release,
+            sourcepackagename=dsp.sourcepackagename,
+            distroarchseries=archseries)
+        [entry] = IPickerEntrySource(dsp).getPickerEntries([dsp], object())
+        self.assertEqual(entry.description, 'fnord')
+
 
 class TestPersonVocabulary:
     implements(IHugeVocabulary)
