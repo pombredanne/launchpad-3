@@ -570,6 +570,34 @@ class BugCommandGroupsTestCase(TestCase):
         self.assertEqual(3, len(ordered_commands.groups))
         self.assertEqual(expected, str(ordered_commands))
 
+    def test_BugCommandGroups__iter_(self):
+        email_commands = [
+            ('bug', '1234'),
+            ('importance', 'high'),
+            ('private', 'yes'),
+            ('bug', 'new'),
+            ('security', 'yes'),
+            ('status', 'triaged'),
+            ('affects', 'fnord'),
+            ]
+        commands = [
+            BugEmailCommands.get(name=name, string_args=[args])
+            for name, args in email_commands]
+        ordered_commands = [
+            command for command in BugCommandGroups(commands)]
+        self.assertEqual(7, len(ordered_commands))
+        expected = [
+            'bug 1234',
+            'private yes',
+            'importance high',
+            'bug new',
+            'security yes',
+            'affects fnord',
+            'status triaged',
+            ]
+        self.assertEqual(
+            expected, [str(command) for command in ordered_commands])
+
 
 class FakeSignature:
 

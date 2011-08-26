@@ -153,6 +153,14 @@ class BugCommandGroups(BugCommandGroup):
         this_bug.add(this_bugtask)
         self.add(this_bug)
 
+    def __iter__(self):
+        for bug_group in self.groups:
+            for command in bug_group.commands:
+                yield command
+            for bugtask_group in bug_group.groups:
+                for command in bugtask_group.commands:
+                    yield command
+
     def add(self, command_or_group):
         """Add a `BugCommandGroup` to the groups of commands.
 
@@ -230,7 +238,8 @@ class MaloneHandler:
         elif to_user.lower() != 'edit':
             # Indicate that we didn't handle the mail.
             return False, False, None
-        return None, add_comment_to_bug, commands
+        bug_commands = [command for command in BugCommandGroups(commands)]
+        return None, add_comment_to_bug, bug_commands
 
     def process(self, signed_msg, to_addr, filealias=None, log=None):
         """See IMailHandler."""
@@ -248,40 +257,32 @@ class MaloneHandler:
             bugtask_event = None
 
             processing_errors = []
-            bug_commands = BugCommandGroups(commands)
-            for bug_group in bug_commands.groups:
+            while len(commands) > 0:
+                command = commands.pop(0)
                 try:
-                    # The first command of a BugCommandGroup must be a bug.
-                    bug_commands = bug_group.commands
-                    command = bug_commands.pop(0)
-                    if command.RANK != 0:
-                        self.handleNoBug()
-                    bug, bug_event = command.execute(signed_msg, filealias)
-
-                    if add_comment_to_bug:
-                        message = self.appendBugComment(
-                            bug, signed_msg, filealias)
-                        add_comment_to_bug = False
-                    else:
-                        message = bug.initial_message
-                    self.processAttachments(bug, message, signed_msg)
-
-                    for command in bug_commands:
-                        try:
-                            bug, bug_event = command.execute(bug, bug_event)
-                        except EmailProcessingError, error:
-                            if error.stop_processing:
-                                raise error
-                            else:
-                                processing_errors.append((error, command))
-                                continue
-                    for bugtask_group in bug_group.groups:
-                        # The first command of a BugTaskCommandGroup may not
-                        # be an affects command.
-                        bugtask_commands = bugtask_group.commands
-                        if bugtask_commands[0].RANK == 0:
-                            command = bugtask_commands.pop(0)
-                            bugtask, bugtask_event = command.execute(bug)
+                    if IBugEmailCommand.providedBy(command):
+                        # Finish outstanding work from the previous bug.
+                        self.notify_bug_event(bug_event)
+                        self.notify_bugtask_event(bugtask_event, bug_event)
+                        bugtask = None
+                        bugtask_event = None
+                        # Get or start building a new bug.
+                        bug, bug_event = command.execute(
+                            signed_msg, filealias)
+                        if add_comment_to_bug:
+                            message = self.appendBugComment(
+                                bug, signed_msg, filealias)
+                            add_comment_to_bug = False
+                        else:
+                            message = bug.initial_message
+                        self.processAttachments(bug, message, signed_msg)
+                    elif IBugTaskEmailCommand.providedBy(command):
+                        self.notify_bugtask_event(bugtask_event, bug_event)
+                        bugtask, bugtask_event = command.execute(
+                            bug)
+                    elif IBugEditEmailCommand.providedBy(command):
+                        bug, bug_event = command.execute(bug, bug_event)
+                    elif IBugTaskEditEmailCommand.providedBy(command):
                         if bugtask is None:
                             if len(bug.bugtasks) == 0:
                                 self.handleNoAffectsTarget()
@@ -289,22 +290,9 @@ class MaloneHandler:
                                 bug, getUtility(ILaunchBag).user)
                             if bugtask is None:
                                 self.handleNoDefaultAffectsTarget(bug)
-                        for command in bugtask_commands:
-                            try:
-                                bugtask, bugtask_event = command.execute(
-                                    bugtask, bugtask_event)
-                            except EmailProcessingError, error:
-                                if error.stop_processing:
-                                    raise error
-                                else:
-                                    processing_errors.append((error, command))
-                                    continue
-                        # Finish this bugtask.
-                        self.notify_bugtask_event(bugtask_event, bug_event)
-                        bugtask = None
-                        bugtask_event = None
-                    # Finish this bug.
-                    self.notify_bug_event(bug_event)
+                        bugtask, bugtask_event = command.execute(
+                            bugtask, bugtask_event)
+
                 except EmailProcessingError, error:
                     processing_errors.append((error, command))
                     if error.stop_processing:
@@ -312,11 +300,14 @@ class MaloneHandler:
                         rollback()
                     else:
                         continue
+
             if len(processing_errors) > 0:
                 raise IncomingEmailError(
-                    '\n'.join(
-                        str(error) for error, command in processing_errors),
-                        [command for error, command in processing_errors])
+                    '\n'.join(str(error) for error, command
+                              in processing_errors),
+                    [command for error, command in processing_errors])
+            self.notify_bug_event(bug_event)
+            self.notify_bugtask_event(bugtask_event, bug_event)
 
         except IncomingEmailError, error:
             send_process_error_notification(
