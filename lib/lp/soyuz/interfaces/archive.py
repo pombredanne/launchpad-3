@@ -711,29 +711,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
         """
 
     @operation_parameters(
-        person=Reference(schema=IPerson),
-        # Really IPackageset, corrected in _schema_circular_imports to avoid
-        # circular import.
-        packageset=Reference(
-            Interface, title=_("Package set"), required=True),
-        explicit=Bool(
-            title=_("Explicit"), required=False))
-    # Really IArchivePermission, set in _schema_circular_imports to avoid
-    # circular import.
-    @export_factory_operation(Interface, [])
-    def newPackagesetUploader(person, packageset, explicit=False):
-        """Add a package set based permission for a person.
-
-        :param person: An `IPerson` for whom you want to add permission.
-        :param packageset: An `IPackageset`.
-        :param explicit: True if the package set in question requires
-            specialist skills for proper handling.
-
-        :return: The new `ArchivePermission`, or the existing one if it
-            already exists.
-        """
-
-    @operation_parameters(
         # Really IPackageset, corrected in _schema_circular_imports to avoid
         # circular import.
         packageset=Reference(
@@ -754,24 +731,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
         :return: `ArchivePermission` records for all the uploaders who are
             authorized to upload to the named source package set.
-        """
-
-    @operation_parameters(
-        person=Reference(schema=IPerson),
-        # Really IPackageset, corrected in _schema_circular_imports to avoid
-        # circular import.
-        packageset=Reference(
-            Interface, title=_("Package set"), required=True),
-        explicit=Bool(
-            title=_("Explicit"), required=False))
-    @export_write_operation()
-    def deletePackagesetUploader(person, packageset, explicit=False):
-        """Revoke upload permissions for a person.
-
-        :param person: An `IPerson` for whom you want to revoke permission.
-        :param packageset: An `IPackageset`.
-        :param explicit: The value of the 'explicit' flag for the permission
-            to be revoked.
         """
 
     @operation_parameters(
@@ -1492,6 +1451,29 @@ class IArchiveEdit(Interface):
 
     @operation_parameters(
         person=Reference(schema=IPerson),
+        # Really IPackageset, corrected in _schema_circular_imports to avoid
+        # circular import.
+        packageset=Reference(
+            Interface, title=_("Package set"), required=True),
+        explicit=Bool(
+            title=_("Explicit"), required=False))
+    # Really IArchivePermission, set in _schema_circular_imports to avoid
+    # circular import.
+    @export_factory_operation(Interface, [])
+    def newPackagesetUploader(person, packageset, explicit=False):
+        """Add a package set based permission for a person.
+
+        :param person: An `IPerson` for whom you want to add permission.
+        :param packageset: An `IPackageset`.
+        :param explicit: True if the package set in question requires
+            specialist skills for proper handling.
+
+        :return: The new `ArchivePermission`, or the existing one if it
+            already exists.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
         source_package_name=TextLine(
             title=_("Source Package Name"), required=True))
     @export_write_operation()
@@ -1528,6 +1510,24 @@ class IArchiveEdit(Interface):
 
         :param person: An `IPerson` whose permission should be revoked.
         :param component: An `IComponent` or textual component name.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        # Really IPackageset, corrected in _schema_circular_imports to avoid
+        # circular import.
+        packageset=Reference(
+            Interface, title=_("Package set"), required=True),
+        explicit=Bool(
+            title=_("Explicit"), required=False))
+    @export_write_operation()
+    def deletePackagesetUploader(person, packageset, explicit=False):
+        """Revoke upload permissions for a person.
+
+        :param person: An `IPerson` for whom you want to revoke permission.
+        :param packageset: An `IPackageset`.
+        :param explicit: The value of the 'explicit' flag for the permission
+            to be revoked.
         """
 
     def enable():
