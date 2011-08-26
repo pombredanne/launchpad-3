@@ -322,6 +322,27 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
             [],
             find_waiting_jobs(dsp.derived_series, package, dsp.parent_series))
 
+    def test_createForSPPHs_obeys_feature_flag(self):
+        self.assertTrue(False) # XXX: Test.
+
+    def test_createForSPPHs_creates_job_for_derived_series(self):
+        self.assertTrue(False) # XXX: Test.
+
+    def test_createForSPPHs_parent_series(self):
+        self.assertTrue(False) # XXX: Test.
+
+    def test_createForSPPHs_ignores_backports_and_proposed(self):
+        self.assertTrue(False) # XXX: Test.
+
+    def test_createForSPPHs_creates_no_jobs_for_unrelated_series(self):
+        self.assertTrue(False) # XXX: Test.
+
+    def test_createForSPPHs_distinguishes_distroseries(self):
+        self.assertTrue(False) # XXX: Test.
+
+    def test_createForSPPHs_does_not_break_if_job_already_exists(self):
+        self.assertTrue(False) # XXX: Test.
+
     def test_massCreateForSeries_obeys_feature_flag(self):
         self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: ''}))
         dsp = self.factory.makeDistroSeriesParent()
