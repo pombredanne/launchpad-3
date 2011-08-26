@@ -277,6 +277,33 @@ class MaloneHandlerProcessTestCase(TestCaseWithFactory):
         self.assertEqual(1, len(bug.bugtasks))
         self.assertEqual(project, bug.bugtasks[0].target)
 
+    def test_new_security_bug(self):
+        # The bug commands can appear before and after the affects command.
+        maintainer = self.factory.makePerson(name='maintainer')
+        project = self.factory.makeProduct(name='fnord', owner=maintainer)
+        subscriber = self.factory.makePerson(name='subscriber')
+        with person_logged_in(subscriber):
+            project.addBugSubscription(subscriber, subscriber)
+        transaction.commit()
+        handler = MaloneHandler()
+        with person_logged_in(project.owner):
+            msg = self.factory.makeSignedMessage(
+                body='bad thing\n security yes\n affects fnord',
+                subject='security issue',
+                to_address='new@bugs.launchpad.dev')
+            handler.process(msg, msg['To'])
+        notification = self.getLatestBugNotification()
+        bug = notification.bug
+        self.assertEqual('security issue', bug.title)
+        self.assertEqual(True, bug.security_related)
+        self.assertEqual(1, len(bug.bugtasks))
+        self.assertEqual(project, bug.bugtasks[0].target)
+        recipients = set()
+        for notification in BugNotification.select():
+            for recipient in notification.recipients:
+                recipients.add(recipient.person)
+        self.assertContentEqual([maintainer], recipients)
+
 
 class BugTaskCommandGroupTestCase(TestCase):
 
