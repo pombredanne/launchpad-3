@@ -621,12 +621,17 @@ class SourcePackageRelease(SQLBase):
         try:
             for block in Changelog(changelog.read()):
                 version = block._raw_version
-                if apt_pkg.VersionCompare(version, since_version) <= 0:
+                if (since_version and
+                    apt_pkg.VersionCompare(version,  since_version) <= 0):
                     break
                 try:
                     output += str(block)
                 except ChangelogCreateError:
                     continue
+                if not since_version:
+                    # If a particular version was not requested we just
+                    # return the most recent changelog entry.
+                    break
         except ChangelogParseError:
             return None
 
