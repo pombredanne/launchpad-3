@@ -132,6 +132,24 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
             "=?utf-8?q?Lo=C3=AFc_Mot=C3=B6rhead?= <loic@example.com>",
             notifications[1]["From"])
 
+    def test_fetch_information_spr_multiple_changelogs(self):
+        # If previous_version is passed the "changesfile" entry in the
+        # returned dict should contain the changelogs for all SPRs *since*
+        # that version and up to and including the passed SPR.
+        changelog = self.factory.makeChangelog(
+            spn="foo", versions=["1.2",  "1.1",  "1.0"])
+        expected_changelog = self.factory.makeChangelog(
+            spn="foo", versions=["1.2", "1.1"])
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename="foo", version="1.3", changelog=changelog)
+        self.layer.txn.commit()  # Yay, librarian.
+
+        spr = spph.sourcepackagerelease
+        info = fetch_information(spr, None, None, previous_version="1.0")
+
+        self.assertIn("foo (1.1)", info['changesfile'])
+        self.assertIn("foo (1.2)", info['changesfile'])
+
 
 class TestNotification(TestCaseWithFactory):
 
@@ -175,23 +193,6 @@ class TestNotification(TestCaseWithFactory):
         self.assertEqual(
             u"bær <%s>" % spr.maintainer.preferredemail.email,
             info['maintainer_displayname'])
-
-    def test_fetch_information_spr_multiple_changelogs(self):
-        # If previous_version is passed the "changesfile" entry in the
-        # returned dict should contain the changelogs for all SPRs *since*
-        # that version and up to and including the passed SPR.
-        creator = self.factory.makePerson()
-        maintainer = self.factory.makePerson()
-        old_spr = self.factory.makeSourcePackageRelease(
-            creator=creator, maintainer=maintainer, sourcepackagename="foo",
-            version="1.0", changelog_entry="foo 1.0")
-        spr = self.factory.makeSourcePackageRelease(
-            creator=creator, maintainer=maintainer, sourcepackagename="foo",
-            version="1.1", changelog_entry="foo 1.1")
-        info = fetch_information(spr, None, None, previous_version="0.9")
-
-        self.assertIn("foo 1.0", info['changesfile'])
-        self.assertIn("foo 1.1", info['changesfile'])
 
     def test_fetch_information_bprs(self):
         bpr = self.factory.makeBinaryPackageRelease()
