@@ -163,10 +163,6 @@ def close_bugs_for_sourcepublication(source_publication):
     sourcepackagerelease = source_publication.sourcepackagerelease
     changesfile_object = sourcepackagerelease.upload_changesfile
 
-    # No changesfile available, cannot close bugs.
-    if changesfile_object is None:
-        return
-
     close_bugs_for_sourcepackagerelease(
         sourcepackagerelease, changesfile_object)
 

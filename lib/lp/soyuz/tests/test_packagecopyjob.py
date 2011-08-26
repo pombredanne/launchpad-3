@@ -933,9 +933,10 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         source_archive = self.factory.makeArchive()
         bug = self.factory.makeBug()
 
-        # Publish a package in the source archive.
-        source_pub = publisher.getPubSource(
-            distroseries=distroseries, sourcename="libc",
+        # Publish a package in the source archive and give it a changelog
+        # entry that closes a bug.
+        source_pub = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, sourcepackagename="libc",
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
             archive=source_archive)
         spr = removeSecurityProxy(source_pub).sourcepackagerelease
@@ -953,7 +954,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         source = getUtility(IPlainPackageCopyJobSource)
         requester = self.factory.makePerson()
         with person_logged_in(target_archive.owner):
-            target_archive.newComponentUploader(requester, "restricted")
+            target_archive.newComponentUploader(requester, "main")
         job = source.create(
             package_name="libc",
             package_version="2.8-1",
