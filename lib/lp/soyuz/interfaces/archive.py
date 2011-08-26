@@ -974,9 +974,7 @@ class IArchiveView(IHasBuildRecords):
         :param created_since_date: Only return results whose `date_created`
             is greater than or equal to this date.
 
-        :return: SelectResults containing `ISourcePackagePublishingHistory`,
-            ordered by name. If there are multiple results for the same
-            name then they are sub-ordered newest first.
+        :return: SelectResults containing `ISourcePackagePublishingHistory`.
         """
 
     @rename_parameters_as(
