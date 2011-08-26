@@ -226,12 +226,29 @@ class BranchPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
         return entries
 
 
+class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
+    """Adapt targets (Product, Package, Distribution) to PickerEntrySource."""
+    
+    def getDescription(self, target):
+        """Gets the description data for target picker entries."""
+        raise NotImplemented
+
+    def getPickerEntries(self, term_values, context_object, **kwarg):
+        """See `IPickerEntrySource`"""
+        entries = (
+            super(TargetPickerEntrySourceAdapter, self)
+                .getPickerEntries(term_values, context_object, **kwarg))
+        for target, picker_entry in izip(term_values, entries):
+            picker_entry.description = self.getDescription(target)
+        return entries
+
+
 @adapter(ISourcePackageName)
 class SourcePackageNamePickerEntrySourceAdapter(
                                             DefaultPickerEntrySourceAdapter):
     """Adapts ISourcePackageName to IPickerEntrySource."""
 
-    def getPickerEntry(self, term_values, context_object, **kwarg):
+    def getPickerEntries(self, term_values, context_object, **kwarg):
         """See `IPickerEntrySource`"""
         entries = (
             super(SourcePackageNamePickerEntrySourceAdapter, self)
@@ -245,23 +262,18 @@ class SourcePackageNamePickerEntrySourceAdapter(
 
 @adapter(IDistributionSourcePackage)
 class DistributionSourcePackagePickerEntrySourceAdapter(
-    DefaultPickerEntrySourceAdapter):
-    """Adapts ISourcePackageName to IPickerEntrySource."""
+    TargetPickerEntrySourceAdapter):
+    """Adapts IDistributionSourcePackage to IPickerEntrySource."""
 
-    def getPickerEntries(self, term_values, context_object, **kwarg):
-        """See `IPickerEntrySource`"""
-        entries = (
-            super(DistributionSourcePackagePickerEntrySourceAdapter, self)
-                .getPickerEntries(term_values, context_object, **kwarg))
-        for dsp, picker_entry in izip(term_values, entries):
-            binaries = dsp.publishing_history[0].getBuiltBinaries()
-            binary_names = [binary.binary_package_name for binary in binaries]
-            if binary_names != []:
-                description = ', '.join(binary_names)
-            else:
-                description = 'Not yet built.'
-            picker_entry.description = description
-        return entries
+    def getDescription(self, target):
+        """See `TargetPickerEntrySource`"""
+        binaries = target.publishing_history[0].getBuiltBinaries()
+        binary_names = [binary.binary_package_name for binary in binaries]
+        if binary_names != []:
+            description = ', '.join(binary_names)
+        else:
+            description = 'Not yet built.'
+        return description
 
 
 @adapter(IArchive)
