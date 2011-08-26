@@ -21,6 +21,7 @@ from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import import_secret_test_key
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -202,6 +203,37 @@ class TestMaloneHandler(TestCaseWithFactory):
         message = self.getFailureForMessage('1@bugs.launchpad.dev')
         self.assertIn(
             "There is no such bug in Launchpad: 1", message)
+
+
+class MaloneHandlerProcessTestCase(TestCaseWithFactory):
+    """
+    makeSignedMessage(msgid=None, body=None, subject=None,
+            attachment_contents=None, force_transfer_encoding=False,
+            email_address=None, signing_context=None, to_address=None):
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def construct_email(self, raw_mail):
+        msg = self.factory.makeSignedMessage(body=raw_mail)
+        if not 'Message-Id' in msg:
+            msg['Message-Id'] = self.factory.makeUniqueRFC822MsgId()
+        return msg
+
+    def process_email(self, raw_mail):
+        msg = self.construct_email(raw_mail)
+        handler = MaloneHandler()
+        handler.process(msg, msg['To'])
+
+    def test_new_bug(self):
+        project = self.factory.makeProduct(name='fnord')
+        msg = self.factory.makeSignedMessage(
+            to='new@bugs.launchpad.dev',
+            subject='borked',
+            body='\n affects fnord')
+        handler = MaloneHandler()
+        with person_logged_in(project.owner):
+            handler.process(msg, msg['To'])
 
 
 class BugTaskCommandGroupTestCase(TestCase):
