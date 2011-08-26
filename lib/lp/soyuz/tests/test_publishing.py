@@ -1213,15 +1213,16 @@ class TestPublishingSetLite(TestCaseWithFactory):
         dsp = self.factory.makeDistroSeriesParent()
         spph = self.factory.makeSourcePackagePublishingHistory(
             dsp.derived_series)
+        spn = spph.sourcepackagerelease.sourcepackagename
 
         dsdjs_before = find_waiting_jobs(
-            dsp.derived_series, spph.sourcepackagename, dsp.parent_series)
+            dsp.derived_series, spn, dsp.parent_series)
 
         getUtility(IPublishingSet).requestDeletion(
             [spph], self.factory.makePerson())
 
         dsdjs_after = find_waiting_jobs(
-            dsp.derived_series, spph.sourcepackagename, dsp.parent_series)
+            dsp.derived_series, spn, dsp.parent_series)
 
         self.assertEqual(len(dsdjs_before) + 1, len(dsdjs_after))
 
