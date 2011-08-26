@@ -25,6 +25,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     reconnect_stores,
+    ZopelessDatabaseLayer,
     )
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import getPubConfig
@@ -1160,6 +1161,48 @@ class PublishingSetTests(TestCaseWithFactory):
         record = self.publishing_set.getByIdAndArchive(
             binary_publishing.id, wrong_archive, source=False)
         self.assertEqual(None, record)
+
+
+class TestPublishingSetLite(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_requestDeletion_marks_SPPHs_deleted(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        getUtility(IPublishingSet).requestDeletion(
+            [spph], self.factory.makePerson())
+        transaction.commit()
+        self.assertEqual(PackagePublishingStatus.DELETED, spph.status)
+
+    def test_requestDeletion_leaves_other_SPPHs_alone(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        other_spph = self.factory.makeSourcePackagePublishingHistory()
+        getUtility(IPublishingSet).requestDeletion(
+            [other_spph], self.factory.makePerson())
+        transaction.commit()
+        self.assertEqual(PackagePublishingStatus.PENDING, spph.status)
+
+    def test_requestDeletion_marks_attached_BPPHs_deleted(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        spph = self.factory.makeSPPHForBPPH(bpph)
+        getUtility(IPublishingSet).requestDeletion(
+            [spph], self.factory.makePerson())
+        transaction.commit()
+        self.assertEqual(PackagePublishingStatus.DELETED, spph.status)
+
+    def test_requestDeletion_leaves_other_BPPHs_alone(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        unrelated_spph = self.factory.makeSourcePackagePublishingHistory()
+        getUtility(IPublishingSet).requestDeletion(
+            [unrelated_spph], self.factory.makePerson())
+        transaction.commit()
+        self.assertEqual(PackagePublishingStatus.PENDING, bpph.status)
+
+    def test_requestDeletion_accepts_empty_sources_list(self):
+        person = self.factory.makePerson()
+        getUtility(IPublishingSet).requestDeletion([], person)
+        # The test is that this does not fail.
+        Store.of(person).flush()
 
 
 class TestSourceDomination(TestNativePublishingBase):
