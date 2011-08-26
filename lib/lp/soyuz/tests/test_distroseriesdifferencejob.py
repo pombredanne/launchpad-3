@@ -325,7 +325,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
     def test_createForSPPHs_creates_job_for_derived_series(self):
         dsp = self.factory.makeDistroSeriesParent()
         spph = self.factory.makeSourcePackagePublishingHistory(
-            dsp.parent_series)
+            dsp.parent_series, pocket=PackagePublishingPocket.RELEASE)
         spn = spph.sourcepackagerelease.sourcepackagename
 
         self.getJobSource().createForSPPHs([spph])
@@ -337,7 +337,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
     def test_createForSPPHs_creates_job_for_parent_series(self):
         dsp = self.factory.makeDistroSeriesParent()
         spph = self.factory.makeSourcePackagePublishingHistory(
-            dsp.derived_series)
+            dsp.derived_series, pocket=PackagePublishingPocket.RELEASE)
         spn = spph.sourcepackagerelease.sourcepackagename
 
         self.getJobSource().createForSPPHs([spph])
@@ -350,7 +350,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: ''}))
         dsp = self.factory.makeDistroSeriesParent()
         spph = self.factory.makeSourcePackagePublishingHistory(
-            dsp.parent_series)
+            dsp.parent_series, pocket=PackagePublishingPocket.RELEASE)
         spn = spph.sourcepackagerelease.sourcepackagename
         self.getJobSource().createForSPPHs([spph])
         self.assertContentEqual(
@@ -378,7 +378,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         other_series = self.factory.makeDistroSeries(
             distribution=dsp.derived_series.distribution)
         spph = self.factory.makeSourcePackagePublishingHistory(
-            dsp.parent_series)
+            dsp.parent_series, pocket=PackagePublishingPocket.RELEASE)
         spn = spph.sourcepackagerelease.sourcepackagename
         self.getJobSource().createForSPPHs([spph])
         self.assertContentEqual(
@@ -396,7 +396,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
 
         for distroseries in series:
             self.factory.makeSourcePackagePublishingHistory(
-                distroseries,
+                distroseries, pocket=PackagePublishingPocket.RELEASE,
                 sourcepackagerelease=self.factory.makeSourcePackageRelease(
                     sourcepackagename=spn))
 
@@ -411,7 +411,7 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
     def test_createForSPPHs_behaves_sensibly_if_job_already_exists(self):
         dsp = self.factory.makeDistroSeriesParent()
         spph = self.factory.makeSourcePackagePublishingHistory(
-            dsp.parent_series)
+            dsp.parent_series, pocket=PackagePublishingPocket.RELEASE)
         spn = spph.sourcepackagerelease.sourcepackagename
 
         create_jobs = range(1, 3)
