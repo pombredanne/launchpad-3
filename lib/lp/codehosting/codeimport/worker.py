@@ -704,10 +704,10 @@ class PullingImportWorker(ImportWorker):
             except BadUrl, e:
                 self._logger.info("Invalid URL: %s" % e)
                 return CodeImportWorkerExitCode.FAILURE_FORBIDDEN
-            remote_branch_tip = remote_branch.last_revision()
-            inter_branch = InterBranch.get(remote_branch, bazaar_branch)
-            self._logger.info("Importing branch.")
             try:
+                remote_branch_tip = remote_branch.last_revision()
+                inter_branch = InterBranch.get(remote_branch, bazaar_branch)
+                self._logger.info("Importing branch.")
                 inter_branch.fetch(limit=self.getRevisionLimit())
                 if bazaar_branch.repository.has_revision(remote_branch_tip):
                     pull_result = inter_branch.pull(overwrite=True)
