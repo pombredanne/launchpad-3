@@ -332,12 +332,16 @@ class ArchivePublisherBase:
         self.status = PackagePublishingStatus.SUPERSEDED
         self.datesuperseded = UTC_NOW
 
-    def requestDeletion(self, removed_by, removal_comment=None):
-        """See `IPublishing`."""
+    def setDeleted(self, removed_by, removal_comment=None):
+        """Set to DELETED status."""
         self.status = PackagePublishingStatus.DELETED
         self.datesuperseded = UTC_NOW
         self.removed_by = removed_by
         self.removal_comment = removal_comment
+
+    def requestDeletion(self, removed_by, removal_comment=None):
+        """See `IPublishing`."""
+        self.setDeleted(removed_by, removal_comment)
         if ISourcePackagePublishingHistory.providedBy(self):
             if self.archive == self.distroseries.main_archive:
                 dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
@@ -894,6 +898,15 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                     diff.diff_content, self.archive).http_url
         return None
 
+    def requestDeletion(self, removed_by, removal_comment=None):
+        """See `IPublishing`."""
+        self.setDeleted(removed_by, removal_comment)
+        if self.archive == self.distroseries.main_archive:
+            dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
+            dsd_job_source.createForPackagePublication(
+                self.distroseries,
+                self.sourcepackagerelease.sourcepackagename, self.pocket)
+
     def api_requestDeletion(self, removed_by, removal_comment=None):
         """See `IPublishingEdit`."""
         # Special deletion method for the api that makes sure binaries
@@ -1295,6 +1308,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # Special deletion method for the api.  We don't do anything
         # different here (yet).
         self.requestDeletion(removed_by, removal_comment)
+
+    def requestDeletion(self, removed_by, removal_comment=None):
+        """See `IPublishing`."""
+        self.setDeleted(removed_by, removal_comment)
 
 
 def expand_binary_requests(distroseries, binaries):
@@ -1761,14 +1778,11 @@ class PublishingSet:
 
         return result_set
 
-    def getBinaryPublicationsForSources(
-        self, one_or_more_source_publications):
+    def getBinaryPublicationsForSources(self,
+                                        one_or_more_source_publications):
         """See `IPublishingSet`."""
-        # Import Buildand DistroArchSeries locally to avoid circular imports,
-        # since Build uses SourcePackagePublishingHistory and DistroArchSeries
-        # uses BinaryPackagePublishingHistory.
-        from lp.soyuz.model.distroarchseries import (
-            DistroArchSeries)
+        # Avoid circular imports.
+        from lp.soyuz.model.distroarchseries import DistroArchSeries
 
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
@@ -1955,66 +1969,56 @@ class PublishingSet:
         return self.getBuildStatusSummariesForSourceIdsAndArchive([source_id],
             source_publication.archive)[source_id]
 
+    def setMultipleDeleted(self, publication_class, ids, removed_by,
+                           removal_comment=None):
+        """Mark multiple publication records as deleted."""
+        ids = list(ids)
+        if len(ids) == 0:
+            return
+
+        table = publication_class.__name__
+        permitted_tables = [
+            'BinaryPackagePublishingHistory',
+            'SourcePackagePublishingHistory',
+            ]
+        assert table in permitted_tables, "Deleting wrong type."
+
+        params = sqlvalues(
+            deleted=PackagePublishingStatus.DELETED, now=UTC_NOW,
+            removal_comment=removal_comment, removed_by=removed_by)
+
+        IMasterStore(publication_class).execute("\n".join([
+            "UPDATE %s" % table,
+            """
+            SET
+                status = %(deleted)s,
+                datesuperseded = %(now)s,
+                removed_by = %(removed_by)s,
+                removal_comment = %(removal_comment)s
+            """ % params,
+            "WHERE id IN %s" % sqlvalues(ids),
+            ]))
+
     def requestDeletion(self, sources, removed_by, removal_comment=None):
         """See `IPublishingSet`."""
-
-        # The 'sources' parameter could actually be any kind of sequence
-        # (e.g. even a ResultSet) and the method would still work correctly.
-        # This is problematic when it comes to the type of the return value
-        # however.
-        # Apparently the caller anticipates that we return the sequence of
-        # instances "deleted" adhering to the original type of the 'sources'
-        # parameter.
-        # Since this is too messy we prescribe that the type of 'sources'
-        # must be a list and we return the instances manipulated as a list.
-        # This may not be an ideal solution but this way we at least achieve
-        # consistency.
-        assert isinstance(sources, list), (
-            "The 'sources' parameter must be a list.")
-
+        sources = list(sources)
         if len(sources) == 0:
-            return []
+            return
 
-        # The following piece of query "boiler plate" will be used for
-        # both the source and the binary package publishing history table.
-        query_boilerplate = '''
-            SET status = %s,
-                datesuperseded = %s,
-                removed_by = %s,
-                removal_comment = %s
-            WHERE id IN
-            ''' % sqlvalues(PackagePublishingStatus.DELETED, UTC_NOW,
-                            removed_by, removal_comment)
+        spph_ids = [spph.id for spph in sources]
+        self.setMultipleDeleted(
+            SourcePackagePublishingHistory, spph_ids, removed_by,
+            removal_comment=removal_comment)
 
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
-        # First update the source package publishing history table.
-        source_ids = [source.id for source in sources]
-        if len(source_ids) > 0:
-            query = 'UPDATE SourcePackagePublishingHistory '
-            query += query_boilerplate
-            query += ' %s' % sqlvalues(source_ids)
-            store.execute(query)
-
-        # Prepare the list of associated *binary* packages publishing
-        # history records.
-        binary_packages = []
-        for source in sources:
-            binary_packages.extend(source.getPublishedBinaries())
-
-        if len(binary_packages) == 0:
-            return sources
-
-        # Now run the query that marks the binary packages as deleted
-        # as well.
-        if len(binary_packages) > 0:
-            query = 'UPDATE BinaryPackagePublishingHistory '
-            query += query_boilerplate
-            query += ' %s' % sqlvalues(
-                [binary.id for binary in binary_packages])
-            store.execute(query)
-
-        return sources + binary_packages
+        # Mark binary publications deleted.
+        bpph_ids = [
+            bpph.id
+            for source, bpph, bin, bin_name, arch
+                in self.getBinaryPublicationsForSources(sources)]
+        if len(bpph_ids) > 0:
+            self.setMultipleDeleted(
+                BinaryPackagePublishingHistory, bpph_ids, removed_by,
+                removal_comment=removal_comment)
 
     def getNearestAncestor(
         self, package_name, archive, distroseries, pocket=None,
