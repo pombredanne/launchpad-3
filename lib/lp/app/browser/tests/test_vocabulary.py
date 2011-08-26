@@ -150,6 +150,17 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         self.assertEqual(None, None)
 
 
+class TestDistributionSourcePackagePickerEntrySourceAdapter(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_dsp_to_picker_entry(self):
+        # IPerson can be adpated to IPickerEntry.
+        dsp = self.factory.makeDistributionSourcePackage()
+        adapter = IPickerEntrySource(dsp)
+        self.assertTrue(IPickerEntrySource.providedBy(adapter))
+
+
 class TestPersonVocabulary:
     implements(IHugeVocabulary)
     test_persons = []
