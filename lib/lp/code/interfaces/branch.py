@@ -621,7 +621,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     @export_read_operation()
     @operation_for_version('beta')
     def getMergeProposals(status=None, visible_by_user=None,
-                          merged_revnos=None, eager_load=False):
+                          merged_revnos=None):
         """Return matching BranchMergeProposals."""
 
     def scheduleDiffUpdates():

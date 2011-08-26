@@ -10,7 +10,10 @@ import time
 
 from bzrlib.tests import TestCaseWithTransport
 import CVS
-import pysvn
+
+import subvertpy.client
+import subvertpy.ra
+import subvertpy.wc
 
 from canonical.testing.layers import BaseLayer
 from lp.codehosting.codeimport.foreigntree import (
@@ -33,11 +36,12 @@ class TestSubversionWorkingTree(TestCaseWithTransport):
         :param original_url: The URL of the Subversion branch.
         :param new_path: The path of the checkout.
         """
-        client = pysvn.Client()
-        [(path, local_info)] = client.info2(new_path, recurse=False)
-        [(path, remote_info)] = client.info2(original_url, recurse=False)
-        self.assertEqual(original_url, local_info['URL'])
-        self.assertEqual(remote_info['rev'].number, local_info['rev'].number)
+        working_copy = subvertpy.wc.WorkingCopy(None, new_path)
+        entry = working_copy.entry(new_path)
+
+        remote = subvertpy.ra.RemoteAccess(original_url)
+        self.assertEqual(original_url, entry.url)
+        self.assertEqual(entry.revision, remote.get_latest_revnum())
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
@@ -96,7 +100,7 @@ class TestSubversionWorkingTree(TestCaseWithTransport):
         tree2 = SubversionWorkingTree(self.svn_branch_url, 'tree2')
         tree2.checkout()
 
-        client = pysvn.Client()
+        client = subvertpy.client.Client()
         client.propset(
             'svn:externals', 'external http://foo.invalid/svn/something',
             tree.local_path)

@@ -706,10 +706,53 @@ class BaseBinaryUploadFile(PackageUploadFile):
             yield UploadError(
                 "%s: second chunk is %s, expected control.tar.gz." % (
                 self.filename, control_tar))
-        if data_tar not in ("data.tar.gz", "data.tar.bz2", "data.tar.lzma"):
+        if data_tar not in ("data.tar.gz", "data.tar.bz2", "data.tar.lzma",
+                            "data.tar.xz"):
             yield UploadError(
                 "%s: third chunk is %s, expected data.tar.gz, "
-                "data.tar.bz2 or data.tar.lzma." % (self.filename, data_tar))
+                "data.tar.bz2, data.tar.lzma or data.tar.xz." %
+                (self.filename, data_tar))
+
+        # xz-compressed debs must pre-depend on dpkg >= 1.15.6.
+        XZ_REQUIRED_DPKG_VER = '1.15.6'
+        if data_tar == "data.tar.xz":
+            parsed_deps = []
+            try:
+                parsed_deps = apt_pkg.ParseDepends(
+                    self.control['Pre-Depends'])
+            except (ValueError, TypeError):
+                yield UploadError(
+                    "Can't parse Pre-Depends in the control file.")
+                return
+            except KeyError:
+                # Go past the for loop and yield the error below.
+                pass
+
+            for token in parsed_deps:
+                try:
+                    name, version, relation = token[0]
+                except ValueError:
+                    yield("APT error processing token '%r' from Pre-Depends.")
+                    return
+
+                if name == 'dpkg':
+                    # VersionCompare returns values similar to cmp;
+                    # negative if first < second, zero if first ==
+                    # second and positive if first > second.
+                    if apt_pkg.VersionCompare(
+                        version, XZ_REQUIRED_DPKG_VER) >= 0:
+                        # Pre-Depends dpkg is fine.
+                        return
+                    else:
+                        yield UploadError(
+                            "Pre-Depends dpkg version should be >= %s "
+                            "when using xz compression." %
+                            XZ_REQUIRED_DPKG_VER)
+                        return
+
+            yield UploadError(
+                "Require Pre-Depends: dpkg (>= %s) when using xz "
+                "compression." % XZ_REQUIRED_DPKG_VER)
 
     def verifyDebTimestamp(self):
         """Check specific DEB format timestamp checks."""
@@ -727,7 +770,8 @@ class BaseBinaryUploadFile(PackageUploadFile):
                                 "control.tar.gz")
             # Only one of these files is present in the archive, so loop
             # until we find one of them, otherwise fail.
-            data_files = ("data.tar.gz", "data.tar.bz2", "data.tar.lzma")
+            data_files = ("data.tar.gz", "data.tar.bz2", "data.tar.lzma",
+                          "data.tar.xz")
             for file in data_files:
                 deb_file.seek(0)
                 try:
