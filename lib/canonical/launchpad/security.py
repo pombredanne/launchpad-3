@@ -2247,6 +2247,22 @@ class ViewArchive(AuthorizationBase):
         return not self.obj.private and self.obj.enabled
 
 
+class EditArchive(AuthorizationBase):
+    """Restrict archive editing operations.
+
+    If the archive a primary archive then we check the user is in the
+    distribution's owning team, otherwise we check the archive owner.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = IArchive
+
+    def checkAuthenticated(self, user):
+        if self.obj.is_main:
+            return user.isOwner(self.obj.distribution) or user.in_admin
+
+        return user.isOwner(self.obj) or user.in_admin
+
+
 class AppendArchive(AuthorizationBase):
     """Restrict appending (upload and copy) operations on archives.
 
@@ -2534,15 +2550,6 @@ class ViewIrcID(AnonymousAuthorization):
 
 class ViewWikiName(AnonymousAuthorization):
     usedfor = IWikiName
-
-
-class EditArchivePermissionSet(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IArchivePermissionSet
-
-    def checkAuthenticated(self, user):
-        """Users must be an admin or a member of the tech board."""
-        return user.in_admin or user.in_ubuntu_techboard
 
 
 class ViewPackageset(AnonymousAuthorization):
