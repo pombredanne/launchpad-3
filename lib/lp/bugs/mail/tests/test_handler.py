@@ -278,7 +278,7 @@ class MaloneHandlerProcessTestCase(TestCaseWithFactory):
         self.assertEqual(project, bug.bugtasks[0].target)
 
     def test_new_security_bug(self):
-        # The bug commands can appear before and after the affects command.
+        # Structural subscribers are not notified of security bugs.
         maintainer = self.factory.makePerson(name='maintainer')
         project = self.factory.makeProduct(name='fnord', owner=maintainer)
         subscriber = self.factory.makePerson(name='subscriber')
