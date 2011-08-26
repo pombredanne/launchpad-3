@@ -55,6 +55,7 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.distroseriesdifferencejob import find_waiting_jobs
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (
@@ -1171,6 +1172,7 @@ class TestPublishingSetLite(TestCaseWithFactory):
         spph = self.factory.makeSourcePackagePublishingHistory()
         getUtility(IPublishingSet).requestDeletion(
             [spph], self.factory.makePerson())
+        # XXX JeroenVermeulen 2011-08-25, bug=834388: obviate commit.
         transaction.commit()
         self.assertEqual(PackagePublishingStatus.DELETED, spph.status)
 
@@ -1179,6 +1181,7 @@ class TestPublishingSetLite(TestCaseWithFactory):
         other_spph = self.factory.makeSourcePackagePublishingHistory()
         getUtility(IPublishingSet).requestDeletion(
             [other_spph], self.factory.makePerson())
+        # XXX JeroenVermeulen 2011-08-25, bug=834388: obviate commit.
         transaction.commit()
         self.assertEqual(PackagePublishingStatus.PENDING, spph.status)
 
@@ -1187,6 +1190,7 @@ class TestPublishingSetLite(TestCaseWithFactory):
         spph = self.factory.makeSPPHForBPPH(bpph)
         getUtility(IPublishingSet).requestDeletion(
             [spph], self.factory.makePerson())
+        # XXX JeroenVermeulen 2011-08-25, bug=834388: obviate commit.
         transaction.commit()
         self.assertEqual(PackagePublishingStatus.DELETED, spph.status)
 
@@ -1195,6 +1199,7 @@ class TestPublishingSetLite(TestCaseWithFactory):
         unrelated_spph = self.factory.makeSourcePackagePublishingHistory()
         getUtility(IPublishingSet).requestDeletion(
             [unrelated_spph], self.factory.makePerson())
+        # XXX JeroenVermeulen 2011-08-25, bug=834388: obviate commit.
         transaction.commit()
         self.assertEqual(PackagePublishingStatus.PENDING, bpph.status)
 
@@ -1203,6 +1208,22 @@ class TestPublishingSetLite(TestCaseWithFactory):
         getUtility(IPublishingSet).requestDeletion([], person)
         # The test is that this does not fail.
         Store.of(person).flush()
+
+    def test_requestDeletion_creates_DistroSeriesDifferenceJobs(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            dsp.derived_series)
+
+        dsdjs_before = find_waiting_jobs(
+            dsp.derived_series, spph.sourcepackagename, dsp.parent_series)
+
+        getUtility(IPublishingSet).requestDeletion(
+            [spph], self.factory.makePerson())
+
+        dsdjs_after = find_waiting_jobs(
+            dsp.derived_series, spph.sourcepackagename, dsp.parent_series)
+
+        self.assertEqual(len(dsdjs_before) + 1, len(dsdjs_after))
 
 
 class TestSourceDomination(TestNativePublishingBase):
