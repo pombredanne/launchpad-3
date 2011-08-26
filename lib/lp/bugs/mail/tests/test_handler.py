@@ -214,23 +214,23 @@ class MaloneHandlerProcessTestCase(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     @staticmethod
-    def getLatestBug():
-        latest_notification = BugNotification.selectFirst(orderBy='-id')
-        return latest_notification.bug
+    def getLatestBugNotification():
+        return BugNotification.selectFirst(orderBy='-id')
 
     def test_new_bug(self):
         project = self.factory.makeProduct(name='fnord')
-        msg = self.factory.makeSignedMessage(
-            body='borked\n affects fnord',
-            subject='subject borked',
-            to_address='new@bugs.launchpad.dev')
+        transaction.commit()
         handler = MaloneHandler()
         with person_logged_in(project.owner):
+            msg = self.factory.makeSignedMessage(
+                body='borked\n affects fnord',
+                subject='subject borked',
+                to_address='new@bugs.launchpad.dev')
             handler.process(msg, msg['To'])
-        bug = self.getLatestBug()
+        notification = self.getLatestBugNotification()
+        bug = notification.bug
         self.assertEqual(
-            [project.owner],
-            bug.getBugNotificationRecipients().getRecipients())
+            [project.owner], list(bug.getDirectSubscribers()))
         self.assertEqual(project.owner, bug.owner)
         self.assertEqual('subject borked', bug.title)
         self.assertEqual(1, bug.messages.count())
@@ -238,9 +238,9 @@ class MaloneHandlerProcessTestCase(TestCaseWithFactory):
         self.assertEqual(1, len(bug.bugtasks))
         self.assertEqual(project, bug.bugtasks[0].target)
 
-    def test_new_bugtask_commands_are_processed_in_a_specific_order(self):
-        # Bugtask commands are process in an ordered manner.
-        # affects commands switch the bugtask being updated.
+    def test_new_bug_with_one_misplaced_affects_line(self):
+        # Affects commands in the wrong position are processed as the user
+        # intended when the bug is new and there is only one affects.
         project = self.factory.makeProduct(name='fnord')
         assignee = self.factory.makePerson(name='pting')
         transaction.commit()
@@ -251,11 +251,31 @@ class MaloneHandlerProcessTestCase(TestCaseWithFactory):
                 subject='affects after assignee',
                 to_address='new@bugs.launchpad.dev')
             handler.process(msg, msg['To'])
-        bug = self.getLatestBug()
+        notification = self.getLatestBugNotification()
+        bug = notification.bug
         self.assertEqual('affects after assignee', bug.title)
         self.assertEqual(1, len(bug.bugtasks))
         self.assertEqual(project, bug.bugtasks[0].target)
         self.assertEqual(assignee, bug.bugtasks[0].assignee)
+
+    def test_new_affect_command_interleaved_with_bug_commands(self):
+        # The bug commands can appear before and after the affects command.
+        project = self.factory.makeProduct(name='fnord')
+        transaction.commit()
+        handler = MaloneHandler()
+        with person_logged_in(project.owner):
+            msg = self.factory.makeSignedMessage(
+                body='unsecure\n security yes\n affects fnord\n tag ajax',
+                subject='unsecure code',
+                to_address='new@bugs.launchpad.dev')
+            handler.process(msg, msg['To'])
+        notification = self.getLatestBugNotification()
+        bug = notification.bug
+        self.assertEqual('unsecure code', bug.title)
+        self.assertEqual(True, bug.security_related)
+        self.assertEqual(['ajax'], bug.tags)
+        self.assertEqual(1, len(bug.bugtasks))
+        self.assertEqual(project, bug.bugtasks[0].target)
 
 
 class BugTaskCommandGroupTestCase(TestCase):
