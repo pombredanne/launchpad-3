@@ -21,7 +21,6 @@ from lp.soyuz.interfaces.distroseriesbinarypackage import (
     IDistroSeriesBinaryPackage,
     )
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease,
     )
@@ -66,6 +65,8 @@ class DistroSeriesBinaryPackage:
     @cachedproperty
     def cache(self):
         """See IDistroSeriesBinaryPackage."""
+        from lp.soyuz.model.distroseriespackagecache import (
+            DistroSeriesPackageCache)
         store = Store.of(self.distroseries)
         archive_ids = (
             self.distroseries.distribution.all_distro_archive_ids)

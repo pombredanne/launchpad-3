@@ -21,4 +21,4 @@ class TestVersionInfo(unittest.TestCase):
                 "print revno"]
         process = subprocess.Popen(args, cwd='/tmp', stdout=subprocess.PIPE)
         (output, errors) = process.communicate(None)
-        self.assertEquals(revno, int(output))
+        self.assertEquals(int(revno), int(output))
