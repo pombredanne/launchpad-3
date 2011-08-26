@@ -1052,32 +1052,32 @@ class BugTaskBatchedCommentsAndActivityView(BugTaskView):
     # We never truncate comments in this view; there would be no point.
     visible_comments_truncated_for_display = False
 
-    def initialize(self):
-        cache = IJSONRequestCache(self.request)
-        cache.objects['offset'] = self.offset
-        cache.objects['batch_size'] = self.batch_size
-        cache.objects['next_offset'] = self.offset + self.batch_size
-        super(BugTaskBatchedCommentsAndActivityView, self).initialize()
-
     @property
     def offset(self):
         try:
             return int(self.request.form_ng.getOne('offset'))
         except TypeError:
-            return 0
+            # We return visible_initial_comments, since otherwise we'd
+            # end up repeating comments that are already visible on the
+            # page.
+            return self.visible_initial_comments
 
     @property
     def batch_size(self):
         try:
             return int(self.request.form_ng.getOne('batch_size'))
         except TypeError:
-            return 100
+            return 1000
 
     @property
     def next_batch_url(self):
         return "%s?offset=%s&batch_size=%s" % (
             canonical_url(self.context, view_name='+batched-comments'),
-            self.offset+self.batch_size, self.batch_size)
+            self.next_offset, self.batch_size)
+
+    @property
+    def next_offset(self):
+        return self.offset + self.batch_size
 
     @cachedproperty
     def _event_groups(self):
@@ -1089,7 +1089,9 @@ class BugTaskBatchedCommentsAndActivityView(BugTaskView):
     @cachedproperty
     def has_more_comments_and_activity(self):
         """Return True if there are more camments and activity to load."""
-        return len(self.activity_and_comments) > 0
+        return (
+            len(self.activity_and_comments) > 0 and
+            self.next_offset < (self.total_comments + self.total_activity))
 
 
 class BugTaskPortletView:
