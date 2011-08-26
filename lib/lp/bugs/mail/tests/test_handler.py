@@ -21,7 +21,6 @@ from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import import_secret_test_key
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing.layers import (
-    DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
     )
@@ -36,6 +35,7 @@ from lp.bugs.mail.handler import (
     BugTaskCommandGroup,
     MaloneHandler,
     )
+from lp.bugs.model.bugnotification import BugNotification
 from lp.services.mail import stub
 from lp.testing import (
     celebrity_logged_in,
@@ -211,29 +211,51 @@ class MaloneHandlerProcessTestCase(TestCaseWithFactory):
             attachment_contents=None, force_transfer_encoding=False,
             email_address=None, signing_context=None, to_address=None):
     """
+    layer = LaunchpadFunctionalLayer
 
-    layer = DatabaseFunctionalLayer
-
-    def construct_email(self, raw_mail):
-        msg = self.factory.makeSignedMessage(body=raw_mail)
-        if not 'Message-Id' in msg:
-            msg['Message-Id'] = self.factory.makeUniqueRFC822MsgId()
-        return msg
-
-    def process_email(self, raw_mail):
-        msg = self.construct_email(raw_mail)
-        handler = MaloneHandler()
-        handler.process(msg, msg['To'])
+    @staticmethod
+    def getLatestBug():
+        latest_notification = BugNotification.selectFirst(orderBy='-id')
+        return latest_notification.bug
 
     def test_new_bug(self):
         project = self.factory.makeProduct(name='fnord')
         msg = self.factory.makeSignedMessage(
-            to='new@bugs.launchpad.dev',
-            subject='borked',
-            body='\n affects fnord')
+            body='borked\n affects fnord',
+            subject='subject borked',
+            to_address='new@bugs.launchpad.dev')
         handler = MaloneHandler()
         with person_logged_in(project.owner):
             handler.process(msg, msg['To'])
+        bug = self.getLatestBug()
+        self.assertEqual(
+            [project.owner],
+            bug.getBugNotificationRecipients().getRecipients())
+        self.assertEqual(project.owner, bug.owner)
+        self.assertEqual('subject borked', bug.title)
+        self.assertEqual(1, bug.messages.count())
+        self.assertEqual('borked\n affects fnord', bug.description)
+        self.assertEqual(1, len(bug.bugtasks))
+        self.assertEqual(project, bug.bugtasks[0].target)
+
+    def test_new_bugtask_commands_are_processed_in_a_specific_order(self):
+        # Bugtask commands are process in an ordered manner.
+        # affects commands switch the bugtask being updated.
+        project = self.factory.makeProduct(name='fnord')
+        assignee = self.factory.makePerson(name='pting')
+        transaction.commit()
+        handler = MaloneHandler()
+        with person_logged_in(project.owner):
+            msg = self.factory.makeSignedMessage(
+                body='borked\n assignee pting\n affects fnord',
+                subject='affects after assignee',
+                to_address='new@bugs.launchpad.dev')
+            handler.process(msg, msg['To'])
+        bug = self.getLatestBug()
+        self.assertEqual('affects after assignee', bug.title)
+        self.assertEqual(1, len(bug.bugtasks))
+        self.assertEqual(project, bug.bugtasks[0].target)
+        self.assertEqual(assignee, bug.bugtasks[0].assignee)
 
 
 class BugTaskCommandGroupTestCase(TestCase):
@@ -340,6 +362,22 @@ class BugCommandGroupTestCase(TestCase):
         self.assertEqual(group._groups, group.groups)
         self.assertFalse(group._groups is group.groups)
         self.assertEqual([bugtask_group_1, bugtask_group_2], group.groups)
+
+    def test_BugCommandGroup_groups_new_bug_with_fixable_affects(self):
+        # A new bug that affects only one target does not require the
+        # affects command to be first.
+        group = BugCommandGroup(
+            BugEmailCommands.get('bug', ['new']))
+        status_command = BugEmailCommands.get('status', ['triaged'])
+        bugtask_group_1 = BugTaskCommandGroup(status_command)
+        group.add(bugtask_group_1)
+        affects_command = BugEmailCommands.get('affects', ['fnord'])
+        bugtask_group_2 = BugTaskCommandGroup(affects_command)
+        group.add(bugtask_group_2)
+        self.assertEqual(1, len(group.groups))
+        self.assertFalse(group._groups is group.groups)
+        self.assertEqual(
+            [affects_command, status_command], group.groups[0].commands)
 
     def test_BugCommandGroup__nonzero__false(self):
         # A BugCommandGroup is zero is it has no commands or groups.

@@ -99,7 +99,17 @@ class BugCommandGroup(BugTaskCommandGroup):
 
     @property
     def groups(self):
-        "Return the `BugTaskCommandGroup` in the order they were added."
+        "Return the `BugTaskCommandGroup`s."
+        if (len(self.commands) > 0
+            and self.commands[0].RANK == 0
+            and self.commands[0].string_args == ['new']):
+            if (len(self._groups) == 2
+                and self._groups[0].commands[0].RANK != 0
+                and self._groups[1].commands[0].RANK == 0):
+                # The affects line was in the wrong position and this
+                # exact case can be fixed.
+                self._groups[0]._commands += self._groups[1]._commands
+                del self._groups[1]
         return list(self._groups)
 
     def add(self, command_or_group):
