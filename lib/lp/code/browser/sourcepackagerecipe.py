@@ -479,7 +479,7 @@ class SourcePackageRecipeRequestBuildsAjaxView(
     def _process_error(self, data=None, builds=None, informational=None,
                        errors=None, reason="Validation"):
         """Set up the response and json data to return to the caller."""
-        self.request.response.setStatus(400, reason)
+        self.request.response.setStatus(200, reason)
         self.request.response.setHeader('Content-type', 'application/json')
         return_data = dict(builds=builds, errors=errors)
         if informational:
