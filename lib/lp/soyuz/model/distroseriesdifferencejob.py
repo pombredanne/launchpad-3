@@ -195,13 +195,16 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
         """See `IDistroSeriesDifferenceJobSource`."""
         if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
             return
+
         # -backports and -proposed are not really part of a standard
         # distribution's packages so we're ignoring them here.  They can
         # always be manually synced by the users if necessary, in the
         # rare occasions that they require them.
-        if pocket in (
+        ignored_pockets = [
             PackagePublishingPocket.BACKPORTS,
-            PackagePublishingPocket.PROPOSED):
+            PackagePublishingPocket.PROPOSED,
+            ]
+        if pocket in ignored_pockets:
             return
 
         # Create jobs for DSDs between the derived_series' parents and
@@ -223,7 +226,10 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
     @classmethod
     def createForSPPHs(cls, spphs):
         """See `IDistroSeriesDifferenceJobSource`."""
-        pass
+        for spph in spphs:
+            cls.createForPackagePublication(
+                spph.distroseries,
+                spph.sourcepackagerelease.sourcepackagename, spph.pocket)
 
     @classmethod
     def massCreateForSeries(cls, derived_series):
