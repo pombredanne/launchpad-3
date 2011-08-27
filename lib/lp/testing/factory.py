@@ -3805,6 +3805,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             naked_bpph.datepublished = UTC_NOW
         return bpph
 
+    def makeSPPHForBPPH(self, bpph):
+        """Produce a `SourcePackagePublishingHistory` to match `bpph`.
+
+        :param bpph: A `BinaryPackagePublishingHistory`.
+        :return: A `SourcePackagePublishingHistory` stemming from the same
+            source package as `bpph`, published into the same distroseries,
+            pocket, and archive.
+        """
+        # JeroenVermeulen 2011-08-25, bug=834370: Julian says this isn't
+        # very complete, and ignores architectures.  Improve so we can
+        # remove more of our reliance on the SoyuzTestPublisher.
+        bpr = bpph.binarypackagerelease
+        spph = self.makeSourcePackagePublishingHistory(
+            distroseries=bpph.distroarchseries.distroseries,
+            sourcepackagerelease=bpr.build.source_package_release,
+            pocket=bpph.pocket, archive=bpph.archive)
+        return spph
+
     def makeBinaryPackageName(self, name=None):
         """Make an `IBinaryPackageName`."""
         if name is None:

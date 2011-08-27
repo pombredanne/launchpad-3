@@ -26,6 +26,11 @@
           src="../../../app/javascript/extras/extras.js"></script>
   <script type="text/javascript"
           src="../../../app/javascript/anim/anim.js"></script>
+  <script type="text/javascript"
+          src="../../../app/javascript/overlay/overlay.js"></script>
+  <script type="text/javascript"
+          src="../../../app/javascript/formoverlay/formoverlay.js"></script>
+
   <!-- The module under test -->
   <script type="text/javascript" src="../requestbuild_overlay.js"></script>
 
@@ -34,5 +39,29 @@
 </head>
 <body class="yui3-skin-sam">
 <div id="testbed"></div>
+<script type="text/x-template" id="builds-target-template">
+  <table>
+    <tr class="package-build" id="build-1"></tr>
+    <tr class="package-build" id="build-2"></tr>
+    </table>
+</script>
+<script type="text/x-template" id="requestbuilds-form-template">
+  <div class="form" id="launchpad-form-widgets">
+    <select id="field.archive" name="field.archive" size="1" >
+      <option selected="selected" value="mark/ppa">
+        PPA for Mark Shuttleworth</option>
+    </select>
+    <input name="field.archive-empty-marker" type="hidden" value="1" />
+    <label for="field.distroseries.0">
+      <input checked="checked" type="checkbox"
+           id="field.distroseries.0" name="field.distroseries" value="3" />
+      Hoary</label>
+    <label for="field.distroseries.">
+      <input checked="checked" type="checkbox"
+           id="field.distroseries.1" name="field.distroseries" value="1" />
+      Warty</label>
+    <input name="field.distroseries-empty-marker" type="hidden" value="1" />
+  </div>
+</script>
 </body>
 </html>

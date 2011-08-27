@@ -16,12 +16,13 @@ from datetime import datetime
 import heapq
 import os
 import pstats
-import threading
 import StringIO
+import sys
+import threading
 
 from bzrlib import lsprof
 import oops_datedir_repo.serializer_rfc822
-from zope.pagetemplate.pagetemplatefile import PageTemplateFile
+from z3c.pt.pagetemplate import PageTemplateFile
 from zope.app.publication.interfaces import IEndRequestEvent
 from zope.component import (
     adapter,
@@ -29,6 +30,7 @@ from zope.component import (
     )
 from zope.contenttype.parse import parse
 from zope.error.interfaces import IErrorReportingUtility
+from zope.exceptions.exceptionformatter import format_exception
 from zope.traversing.namespace import view
 
 from canonical.config import config
@@ -344,7 +346,7 @@ def end_request(event):
         del prof_stats
     trace = None
     if 'sqltrace' in actions:
-        trace = da.stop_sql_traceback_logging()
+        trace = da.stop_sql_traceback_logging() or ()
         # The trace is a list of dicts, each with the keys "sql" and
         # "stack".  "sql" is a tuple of start time, stop time, database
         # name (with a "SQL-" prefix), and sql statement.  "stack" is a
@@ -451,7 +453,14 @@ def end_request(event):
     if actions and is_html:
         # Hack the new HTML in at the end of the page.
         encoding = content_type_params.get('charset', 'utf-8')
-        added_html = template(**template_context).encode(encoding)
+        try:
+            added_html = template(**template_context).encode(encoding)
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except:
+            error = ''.join(format_exception(*sys.exc_info(), as_html=True))
+            added_html = (
+                '<div class="profiling_info">' + error + '</div>')
         existing_html = request.response.consumeBody()
         e_start, e_close_body, e_end = existing_html.rpartition(
             '</body>')

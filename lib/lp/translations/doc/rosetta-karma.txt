@@ -366,6 +366,7 @@ description.
     >>> login('test@canonical.com')
     >>> form = {
     ...     u'field.owner': u'test@canonical.com',
+    ...     u'field.name': u'test',
     ...     u'field.priority': u'0',
     ...     u'field.description': u'This is a new description',
     ...     u'field.actions.change': u'Change'}

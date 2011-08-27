@@ -818,6 +818,12 @@ class CodeImportResultStatus(DBEnumeratedType):
         or the URL of one of the branches that it references is blacklisted.
         """)
 
+    FAILURE_REMOTE_BROKEN = DBItem(250, """
+        Broken remote branch
+
+        The remote branch exists but is corrupted in some way
+        """)
+
     RECLAIMED = DBItem(310, """
         Job reclaimed
 
