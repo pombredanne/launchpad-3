@@ -222,12 +222,14 @@ class TestWorkerMonitorUnit(TestCase):
     def makeWorkerMonitorWithJob(self, job_id=1, job_data=()):
         return self.WorkerMonitor(
             job_id, BufferLogger(),
-            FakeCodeImportScheduleEndpointProxy({job_id: job_data}))
+            FakeCodeImportScheduleEndpointProxy({job_id: job_data}),
+            "anything")
 
     def makeWorkerMonitorWithoutJob(self, exception=None):
         return self.WorkerMonitor(
             1, BufferLogger(),
-            FakeCodeImportScheduleEndpointProxy({}, exception))
+            FakeCodeImportScheduleEndpointProxy({}, exception),
+            None)
 
     def test_getWorkerArguments(self):
         # getWorkerArguments returns a deferred that fires with the
@@ -526,7 +528,8 @@ class TestWorkerMonitorRunNoProcess(BzrTestCase):
                 job_data = {}
             CodeImportWorkerMonitor.__init__(
                 self, 1, BufferLogger(),
-                FakeCodeImportScheduleEndpointProxy(job_data))
+                FakeCodeImportScheduleEndpointProxy(job_data),
+                "anything")
             self.result_status = None
             self.process_deferred = process_deferred
 
@@ -750,9 +753,11 @@ class TestWorkerMonitorIntegration(BzrTestCase):
 
         This implementation does it in-process.
         """
+        logger = BufferLogger()
         monitor = CIWorkerMonitorForTesting(
-            job_id, BufferLogger(),
-            xmlrpc.Proxy(config.codeimportdispatcher.codeimportscheduler_url))
+            job_id, logger,
+            xmlrpc.Proxy(config.codeimportdispatcher.codeimportscheduler_url),
+            "anything")
         deferred = monitor.run()
         def save_protocol_object(result):
             """Save the process protocol object.
@@ -846,6 +851,7 @@ class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
         interpreter = '%s/bin/py' % config.root
         reactor.spawnProcess(
             DeferredOnExit(process_end_deferred), interpreter,
-            [interpreter, script_path, str(job_id), '-q'],
+            [interpreter, script_path, '--access-policy=anything', str(job_id),
+                '-q'],
             childFDs={0:0, 1:1, 2:2}, env=os.environ)
         return process_end_deferred

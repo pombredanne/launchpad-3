@@ -16,6 +16,7 @@ from bzrlib.branch import (
     Branch,
     BzrBranchFormat4,
     )
+from bzrlib.bzrdir import BzrDir
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4,
     RepositoryFormat5,
@@ -214,7 +215,7 @@ class BranchMirrorer(object):
         :return: The destination branch.
         """
         return self.opener.runWithTransformFallbackLocationHookInstalled(
-            self.policy.createDestinationBranch, source_branch,
+            BzrDir.open, self.policy.createDestinationBranch, source_branch,
             destination_url)
 
     def openDestinationBranch(self, source_branch, destination_url):
