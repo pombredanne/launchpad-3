@@ -531,7 +531,8 @@ class TestWorkerMonitorRunNoProcess(BzrTestCase):
                 job_data = {}
             CodeImportWorkerMonitor.__init__(
                 self, 1, BufferLogger(),
-                FakeCodeImportScheduleEndpointProxy(job_data))
+                FakeCodeImportScheduleEndpointProxy(job_data),
+                AcceptAnythingPolicy())
             self.result_status = None
             self.process_deferred = process_deferred
 
