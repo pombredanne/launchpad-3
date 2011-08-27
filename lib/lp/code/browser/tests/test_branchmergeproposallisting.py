@@ -28,6 +28,7 @@ from lp.testing import (
     BrowserTestCase,
     login,
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
@@ -359,3 +360,20 @@ class ActiveReviewSortingTest(TestCaseWithFactory):
         self.assertEqual(
             [bmp3, bmp2, bmp1],
             [item.context for item in view.review_groups[view.OTHER]])
+
+
+class ActiveReviewsWithPrivateBranches(TestCaseWithFactory):
+    """Test the sorting of the active review groups."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_private_branch_owner(self):
+        # Merge proposals against private branches are visible to
+        # the branch owner.
+        product = self.factory.makeProduct()
+        branch = self.factory.makeBranch(private=True, product=product)
+        with person_logged_in(removeSecurityProxy(branch).owner):
+            mp = self.factory.makeBranchMergeProposal(target_branch=branch)
+            view = create_initialized_view(
+                branch, name='+activereviews', rootsite='code')
+            self.assertEqual([mp], list(view.getProposals()))

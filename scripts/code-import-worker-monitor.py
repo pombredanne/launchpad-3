@@ -65,7 +65,8 @@ class CodeImportWorker(LaunchpadScript):
     def _main(self, job_id):
         worker = CodeImportWorkerMonitor(
             job_id, self.logger,
-            xmlrpc.Proxy(config.codeimportdispatcher.codeimportscheduler_url))
+            xmlrpc.Proxy(config.codeimportdispatcher.codeimportscheduler_url),
+            self.options.access_policy)
         return worker.run()
 
 if __name__ == '__main__':

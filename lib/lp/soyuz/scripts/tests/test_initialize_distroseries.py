@@ -218,8 +218,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
                 distroseries=self.parent,
                 pocket=pocket)
             source.createMissingBuilds()
-            child = self.factory.makeDistroSeries(
-                distribution=self.parent.parent, previous_series=self.parent)
+            child = self.factory.makeDistroSeries()
             ids = InitializeDistroSeries(child, [self.parent.id])
             self.assertRaisesWithContent(
                 InitializationError,
@@ -240,8 +239,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
                 distroseries=self.parent,
                 pocket=pocket)
             source.createMissingBuilds()
-            child = self.factory.makeDistroSeries(
-                distribution=self.parent.parent, previous_series=self.parent)
+            child = self.factory.makeDistroSeries()
             ids = InitializeDistroSeries(child, [self.parent.id])
             # No exception should be raised.
             ids.check()
@@ -255,10 +253,9 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         # Create builds for the architecture of parent_das2.
         source.createMissingBuilds(architectures_available=[parent_das2])
         # Initialize only with parent_das2's architecture.
-        child = self.factory.makeDistroSeries(
-            distribution=parent.distribution, previous_series=parent)
+        child = self.factory.makeDistroSeries()
         ids = InitializeDistroSeries(
-            child, arches=[parent_das2.architecturetag])
+            child, [parent.id], arches=[parent_das2.architecturetag])
 
         self.assertRaisesWithContent(
             InitializationError,
@@ -350,18 +347,6 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         # Initialization copies all the package from the SECURITY pocket.
         self.parent, self.parent_das = self.setupParent(
             pocket=PackagePublishingPocket.SECURITY)
-        child = self._fullInitialize([self.parent])
-        self.assertDistroSeriesInitializedCorrectly(
-            child, self.parent, self.parent_das)
-
-    def test_success_with_pending_builds(self):
-        # If the parent series has pending builds, and the child's
-        # distribution is different, we can initialize.
-        self.parent, self.parent_das = self.setupParent()
-        source = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=self.parent,
-            pocket=PackagePublishingPocket.RELEASE)
-        source.createMissingBuilds()
         child = self._fullInitialize([self.parent])
         self.assertDistroSeriesInitializedCorrectly(
             child, self.parent, self.parent_das)
@@ -523,8 +508,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             source_package_release=spr2))
         child = self.factory.makeDistroSeries()
         # Initialize with packageset1 only.
-        ids = InitializeDistroSeries(child, [parent.id],
-            child, packagesets=(str(packageset1.id),))
+        ids = InitializeDistroSeries(
+            child, [parent.id], packagesets=(str(packageset1.id),))
 
         # No exception should be raised.
         ids.check()
@@ -547,8 +532,8 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             source_package_release=spr1))
         child = self.factory.makeDistroSeries()
         # Initialize with packageset1 only.
-        ids = InitializeDistroSeries(child, [parent.id],
-            child, packagesets=(str(packageset1.id),))
+        ids = InitializeDistroSeries(
+            child, [parent.id], packagesets=(str(packageset1.id),))
 
         self.assertRaisesWithContent(
             InitializationError,
