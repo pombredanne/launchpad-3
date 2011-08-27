@@ -67,9 +67,6 @@ from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitorProtocol,
     ExitQuietly,
     )
-from lp.codehosting.safe_open import (
-    AcceptAnythingPolicy,
-    )
 from lp.services.log.logger import BufferLogger
 from lp.services.twistedsupport import suppress_stderr
 from lp.services.twistedsupport.tests.test_processmonitor import (
@@ -532,7 +529,7 @@ class TestWorkerMonitorRunNoProcess(BzrTestCase):
             CodeImportWorkerMonitor.__init__(
                 self, 1, BufferLogger(),
                 FakeCodeImportScheduleEndpointProxy(job_data),
-                AcceptAnythingPolicy())
+                "anything")
             self.result_status = None
             self.process_deferred = process_deferred
 
@@ -760,7 +757,7 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         monitor = CIWorkerMonitorForTesting(
             job_id, logger,
             xmlrpc.Proxy(config.codeimportdispatcher.codeimportscheduler_url),
-            AcceptAnythingPolicy())
+            "anything")
         deferred = monitor.run()
         def save_protocol_object(result):
             """Save the process protocol object.
