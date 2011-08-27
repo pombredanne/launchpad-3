@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'BazaarBranchStore',
+    'BzrImportWorker',
     'BzrSvnImportWorker',
     'CSCVSImportWorker',
     'CodeImportBranchOpenPolicy',
@@ -33,8 +34,8 @@ from bzrlib.bzrdir import (
 from bzrlib.errors import (
     ConnectionError,
     InvalidEntryName,
-    NoSuchFile,
     NoRepositoryPresent,
+    NoSuchFile,
     NotBranchError,
     )
 from bzrlib.transport import get_transport
@@ -249,9 +250,9 @@ class CodeImportSourceDetails:
 
     :ivar branch_id: The id of the branch associated to this code import, used
         for locating the existing import and the foreign tree.
-    :ivar rcstype: 'svn', 'cvs', 'hg', 'git', 'bzr-svn', as appropriate.
+    :ivar rcstype: 'svn', 'cvs', 'hg', 'git', 'bzr-svn', 'bzr' as appropriate.
     :ivar url: The branch URL if rcstype in ['svn', 'bzr-svn',
-        'git', 'hg'], None otherwise.
+        'git', 'hg', 'bzr'], None otherwise.
     :ivar cvs_root: The $CVSROOT if rcstype == 'cvs', None otherwise.
     :ivar cvs_module: The CVS module if rcstype == 'cvs', None otherwise.
     """
@@ -269,7 +270,7 @@ class CodeImportSourceDetails:
         """Convert command line-style arguments to an instance."""
         branch_id = int(arguments.pop(0))
         rcstype = arguments.pop(0)
-        if rcstype in ['svn', 'bzr-svn', 'git', 'hg']:
+        if rcstype in ['svn', 'bzr-svn', 'git', 'hg', 'bzr']:
             [url] = arguments
             cvs_root = cvs_module = None
         elif rcstype == 'cvs':
@@ -296,6 +297,8 @@ class CodeImportSourceDetails:
             return cls(branch_id, 'git', str(code_import.url))
         elif code_import.rcs_type == RevisionControlSystems.HG:
             return cls(branch_id, 'hg', str(code_import.url))
+        elif code_import.rcs_type == RevisionControlSystems.BZR:
+            return cls(branch_id, 'bzr', str(code_import.url))
         else:
             raise AssertionError("Unknown rcstype %r." % code_import.rcs_type)
 
@@ -303,7 +306,7 @@ class CodeImportSourceDetails:
         """Return a list of arguments suitable for passing to a child process.
         """
         result = [str(self.branch_id), self.rcstype]
-        if self.rcstype in ['svn', 'bzr-svn', 'git', 'hg']:
+        if self.rcstype in ['svn', 'bzr-svn', 'git', 'hg', 'bzr']:
             result.append(self.url)
         elif self.rcstype == 'cvs':
             result.append(self.cvs_root)
@@ -708,7 +711,12 @@ class PullingImportWorker(ImportWorker):
                 remote_branch_tip = remote_branch.last_revision()
                 inter_branch = InterBranch.get(remote_branch, bazaar_branch)
                 self._logger.info("Importing branch.")
-                inter_branch.fetch(limit=self.getRevisionLimit())
+                revision_limit = self.getRevisionLimit()
+                if revision_limit is None:
+                    # bzr < 2.4 does not support InterBranch.fetch()
+                    bazaar_branch.fetch(remote_branch)
+                else:
+                    inter_branch.fetch(limit=revision_limit)
                 if bazaar_branch.repository.has_revision(remote_branch_tip):
                     pull_result = inter_branch.pull(overwrite=True)
                     if pull_result.old_revid != pull_result.new_revid:
@@ -922,3 +930,25 @@ class BzrSvnImportWorker(PullingImportWorker):
         """See `PullingImportWorker.probers`."""
         from bzrlib.plugins.svn import SvnRemoteProber
         return [SvnRemoteProber]
+
+
+class BzrImportWorker(PullingImportWorker):
+    """An import worker for importing Bazaar branches."""
+
+    invalid_branch_exceptions = [
+        NotBranchError,
+        ConnectionError,
+        ]
+    unsupported_feature_exceptions = []
+
+    def getRevisionLimit(self):
+        """See `PullingImportWorker.getRevisionLimit`."""
+        # For now, just grab the whole branch at once.
+        # bzr does support fetch(limit=) but it isn't very efficient at the moment.
+        return None
+
+    @property
+    def probers(self):
+        """See `PullingImportWorker.probers`."""
+        from bzrlib.bzrdir import BzrProber, RemoteBzrProber
+        return [BzrProber, RemoteBzrProber]

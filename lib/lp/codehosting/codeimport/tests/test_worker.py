@@ -16,6 +16,9 @@ from bzrlib.branch import (
     Branch,
     BranchReferenceFormat,
     )
+from bzrlib.branchbuilder import (
+    BranchBuilder,
+    )
 from bzrlib.bzrdir import (
     BzrDir,
     BzrDirFormat,
@@ -45,6 +48,7 @@ from canonical.testing.layers import BaseLayer
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.safe_open import (
     AcceptAnythingPolicy,
+    BlacklistPolicy,
     BadUrl,
     SafeBranchOpener,
     )
@@ -53,6 +57,7 @@ from lp.codehosting.codeimport.tarball import (
     extract_tarball,
     )
 from lp.codehosting.codeimport.tests.servers import (
+    BzrServer,
     CVSServer,
     GitServer,
     MercurialServer,
@@ -60,6 +65,7 @@ from lp.codehosting.codeimport.tests.servers import (
     )
 from lp.codehosting.codeimport.worker import (
     BazaarBranchStore,
+    BzrImportWorker,
     BzrSvnImportWorker,
     CodeImportBranchOpenPolicy,
     CodeImportWorkerExitCode,
@@ -1012,13 +1018,13 @@ class PullingImportWorkerTests:
         t.mkdir('reference')
         a_bzrdir = BzrDir.create(self.get_url('reference'))
         BranchReferenceFormat().initialize(a_bzrdir, target_branch=branch)
-        return a_bzrdir.root_transport.base
+        return a_bzrdir.root_transport.base, branch.base
 
     def test_reject_branch_reference(self):
         # URLs that point to other branch types than that expected by the
         # import should be rejected.
         args = {'rcstype': self.rcstype}
-        reference_url = self.createBranchReference()
+        reference_url, target_url = self.createBranchReference()
         if self.rcstype in ('git', 'bzr-svn', 'hg'):
             args['url'] = reference_url
         else:
@@ -1193,6 +1199,83 @@ class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
             source_details, self.get_transport('import_data'),
             self.bazaar_store, logging.getLogger(),
             opener_policy=opener_policy)
+
+
+class TestBzrImport(WorkerTest, TestActualImportMixin,
+                    PullingImportWorkerTests):
+
+    rcstype = 'bzr'
+
+    def setUp(self):
+        super(TestBzrImport, self).setUp()
+        self.setUpImport()
+
+    def makeImportWorker(self, source_details, opener_policy):
+        """Make a new `ImportWorker`."""
+        return BzrImportWorker(
+            source_details, self.get_transport('import_data'),
+            self.bazaar_store, logging.getLogger(), opener_policy)
+
+    def makeForeignCommit(self, source_details):
+        """Change the foreign tree, generating exactly one commit."""
+        branch = Branch.open(source_details.url)
+        builder = BranchBuilder(branch=branch)
+        builder.build_commit(message=self.factory.getUniqueString(),
+            committer="Joe Random Hacker <joe@example.com>")
+        self.foreign_commit_count += 1
+
+    def makeSourceDetails(self, branch_name, files):
+        """Make Bzr `CodeImportSourceDetails` pointing at a real Bzr repo.
+        """
+        repository_path = self.makeTemporaryDirectory()
+        bzr_server = BzrServer(repository_path)
+        bzr_server.start_server()
+        self.addCleanup(bzr_server.stop_server)
+
+        bzr_server.makeRepo(files)
+        self.foreign_commit_count = 1
+
+        return self.factory.makeCodeImportSourceDetails(
+            rcstype='bzr', url=bzr_server.get_url())
+
+    def test_partial(self):
+        self.skip(
+            "Partial fetching is not supported for native bzr branches "
+            "at the moment.")
+
+    def test_unsupported_feature(self):
+        self.skip("All Bazaar features are supported by Bazaar.")
+
+    def test_reject_branch_reference(self):
+        # Branch references are allowed in the BzrImporter, but their URL
+        # should be checked.
+        reference_url, target_url = self.createBranchReference()
+        source_details = self.factory.makeCodeImportSourceDetails(
+            url=reference_url, rcstype='bzr')
+        policy = BlacklistPolicy(True, [target_url])
+        worker = self.makeImportWorker(source_details, opener_policy=policy)
+        self.assertEqual(
+            CodeImportWorkerExitCode.FAILURE_FORBIDDEN, worker.run())
+
+    def test_support_branch_reference(self):
+        # Branch references are allowed in the BzrImporter.
+        reference_url, target_url = self.createBranchReference()
+        target_branch = Branch.open(target_url)
+        builder = BranchBuilder(branch=target_branch)
+        builder.build_commit(message=self.factory.getUniqueString(),
+            committer="Some Random Hacker <jane@example.com>")
+        source_details = self.factory.makeCodeImportSourceDetails(
+            url=reference_url, rcstype='bzr')
+        worker = self.makeImportWorker(source_details,
+            opener_policy=AcceptAnythingPolicy())
+        self.assertEqual(
+            CodeImportWorkerExitCode.SUCCESS, worker.run())
+        branch = self.getStoredBazaarBranch(worker)
+        self.assertEqual(
+            1, len(branch.revision_history()))
+        self.assertEqual(
+            "Some Random Hacker <jane@example.com>",
+            branch.repository.get_revision(branch.last_revision()).committer)
 
 
 class CodeImportBranchOpenPolicyTests(TestCase):

@@ -26,9 +26,9 @@ from bzrlib.transport import get_transport
 from canonical.config import config
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
-    BzrSvnImportWorker, CSCVSImportWorker, CodeImportBranchOpenPolicy,
-    CodeImportSourceDetails, GitImportWorker, HgImportWorker,
-    get_default_bazaar_branch_store)
+    BzrImportWorker, BzrSvnImportWorker, CSCVSImportWorker,
+    CodeImportBranchOpenPolicy, CodeImportSourceDetails, GitImportWorker,
+    HgImportWorker, get_default_bazaar_branch_store)
 from lp.codehosting.safe_open import AcceptAnythingPolicy
 from canonical.launchpad import scripts
 
@@ -77,6 +77,9 @@ class CodeImportWorker:
         elif source_details.rcstype == 'hg':
             load_optional_plugin('hg')
             import_worker_cls = HgImportWorker
+        elif source_details.rcstype == 'bzr':
+            load_optional_plugin('loom')
+            import_worker_cls = BzrImportWorker
         elif source_details.rcstype in ['cvs', 'svn']:
             import_worker_cls = CSCVSImportWorker
         else:

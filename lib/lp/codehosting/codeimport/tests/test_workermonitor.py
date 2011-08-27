@@ -49,6 +49,7 @@ from lp.code.model.codeimport import CodeImport
 from lp.code.model.codeimportjob import CodeImportJob
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.tests.servers import (
+    BzrServer,
     CVSServer,
     GitServer,
     MercurialServer,
@@ -67,6 +68,7 @@ from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitorProtocol,
     ExitQuietly,
     )
+from lp.codehosting.safe_open import AcceptAnythingPolicy
 from lp.services.log.logger import BufferLogger
 from lp.services.twistedsupport import suppress_stderr
 from lp.services.twistedsupport.tests.test_processmonitor import (
@@ -704,6 +706,17 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         return self.factory.makeCodeImport(
             hg_repo_url=self.hg_server.get_url())
 
+    def makeBzrCodeImport(self):
+        """Make a `CodeImport` that points to a real Bazaar branch."""
+        self.bzr_server = BzrServer(self.repo_path)
+        self.bzr_server.start_server()
+        self.addCleanup(self.bzr_server.stop_server)
+
+        self.bzr_server.makeRepo([('README', 'contents')])
+        self.foreign_commit_count = 1
+        return self.factory.makeCodeImport(
+            bzr_branch_url=self.bzr_server.get_url())
+
     def getStartedJobForImport(self, code_import):
         """Get a started `CodeImportJob` for `code_import`.
 
@@ -800,6 +813,15 @@ class TestWorkerMonitorIntegration(BzrTestCase):
     def test_import_hg(self):
         # Create a Mercurial CodeImport and import it.
         job = self.getStartedJobForImport(self.makeHgCodeImport())
+        code_import_id = job.code_import.id
+        job_id = job.id
+        self.layer.txn.commit()
+        result = self.performImport(job_id)
+        return result.addCallback(self.assertImported, code_import_id)
+
+    def test_import_bzr(self):
+        # Create a Bazaar CodeImport and import it.
+        job = self.getStartedJobForImport(self.makeBzrCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
         self.layer.txn.commit()
