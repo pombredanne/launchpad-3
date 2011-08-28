@@ -173,8 +173,9 @@
       <dt>Time zone:
         <a tal:replace="structure overview_menu/editlocation/fmt:icon" />
       </dt>
-      <dd tal:content="context/time_zone">UTC</dd>
-      <tal:offset content="context/show_time_offset">+0000</tal:offset>
+      <dd><tal:offset content="context/time_zone">UTC</tal:offset>
+      (UTC<tal:offset content="view/show_time_offset">+0000</tal:offset>)
+      </dd>
     </dl>
 
     <dl id="karma">
