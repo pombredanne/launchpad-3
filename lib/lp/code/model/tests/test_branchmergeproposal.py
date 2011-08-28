@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -12,9 +12,7 @@ from datetime import (
     timedelta,
     )
 from difflib import unified_diff
-from unittest import (
-    TestCase,
-    )
+from unittest import TestCase
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.restfulclient.errors import BadRequest
@@ -28,11 +26,9 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.ftests import import_secret_test_key
 from canonical.launchpad.interfaces.launchpad import IPrivacy
-from lp.services.messages.interfaces.message import IMessageJob
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing.layers import (
-    AppServerLayer,
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer,
@@ -79,6 +75,7 @@ from lp.code.tests.helpers import (
     )
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
+from lp.services.messages.interfaces.message import IMessageJob
 from lp.testing import (
     ExpectedException,
     launchpadlib_for,
@@ -86,8 +83,8 @@ from lp.testing import (
     login_person,
     person_logged_in,
     TestCaseWithFactory,
-    ws_object,
     WebServiceTestCase,
+    ws_object,
     )
 from lp.testing.factory import (
     GPGSigningContext,

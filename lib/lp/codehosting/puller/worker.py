@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,14 +17,14 @@ from bzrlib.branch import (
     BzrBranchFormat4,
     )
 from bzrlib.bzrdir import BzrDir
+from bzrlib.plugins.loom.branch import LoomSupport
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4,
     RepositoryFormat5,
     RepositoryFormat6,
     )
-import bzrlib.ui
-from bzrlib.plugins.loom.branch import LoomSupport
 from bzrlib.transport import get_transport
+import bzrlib.ui
 from bzrlib.ui import SilentUIFactory
 from lazr.uri import (
     InvalidURIError,
@@ -76,8 +76,6 @@ class BadUrlScheme(BadUrl):
     def __init__(self, scheme, url):
         BadUrl.__init__(self, scheme, url)
         self.scheme = scheme
-
-
 
 
 def get_canonical_url_for_branch_name(unique_name):

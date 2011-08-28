@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0702
@@ -163,6 +163,7 @@ class CodeImportWorkerMonitor:
         """
         deferred = self.codeimport_endpoint.callRemote(
             'getImportDataForJobID', self._job_id)
+
         def _processResult(result):
             code_import_arguments, branch_url, log_file_name = result
             self._branch_url = branch_url
@@ -170,7 +171,8 @@ class CodeImportWorkerMonitor:
             self._logger.info(
                 'Found source details: %s', code_import_arguments)
             return code_import_arguments
-        return deferred.addCallbacks(_processResult, self._trap_nosuchcodeimportjob)
+        return deferred.addCallbacks(
+            _processResult, self._trap_nosuchcodeimportjob)
 
     def updateHeartbeat(self, tail):
         """Call the updateHeartbeat method for the job we are working on."""
