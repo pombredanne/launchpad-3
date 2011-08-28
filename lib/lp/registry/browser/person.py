@@ -3201,7 +3201,7 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
                 return True
 
         return False
- 
+
     @property
     def show_time_offset(self):
         """
