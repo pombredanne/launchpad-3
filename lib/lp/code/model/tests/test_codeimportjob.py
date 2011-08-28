@@ -502,7 +502,8 @@ class TestCodeImportJobWorkflowDeletePendingJob(TestCaseWithFactory,
     def test_noJob(self):
         # CodeImportJobWorkflow.deletePendingJob fails if the
         # CodeImport is not associated to a CodeImportJob.
-        new_import = self.factory.makeCodeImport()
+        new_import = self.factory.makeCodeImport(
+            review_status=CodeImportReviewStatus.NEW)
         branch_name = new_import.branch.unique_name
         # Testing deletePendingJob failure.
         self.assertFailure(

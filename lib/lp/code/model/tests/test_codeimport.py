@@ -248,7 +248,11 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
             job.destroySelf()
 
     def makeApprovedImportWithPendingJob(self):
-        return self.factory.makeCodeImport()
+        code_import = self.factory.makeCodeImport()
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED},
+            self.import_operator)
+        return code_import
 
     def makeApprovedImportWithRunningJob(self):
         code_import = self.makeApprovedImportWithPendingJob()
@@ -256,9 +260,12 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
         self.assertEqual(code_import.import_job, job)
         return code_import
 
-    def test_approved_has_job(self):
-        # An approved new code import has a job.
+    def test_approve(self):
+        # Approving a code import will create a job for it.
         code_import = self.factory.makeCodeImport()
+        code_import.updateFromData(
+            {'review_status': CodeImportReviewStatus.REVIEWED},
+            self.import_operator)
         self.assertIsNot(None, code_import.import_job)
         self.assertEqual(
             CodeImportReviewStatus.REVIEWED, code_import.review_status)
