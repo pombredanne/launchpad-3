@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the code import worker."""
@@ -12,23 +12,19 @@ import subprocess
 import tempfile
 import time
 
+from bzrlib import trace
 from bzrlib.branch import (
     Branch,
     BranchReferenceFormat,
     )
-from bzrlib.branchbuilder import (
-    BranchBuilder,
-    )
+from bzrlib.branchbuilder import BranchBuilder
 from bzrlib.bzrdir import (
     BzrDir,
     BzrDirFormat,
     format_registry,
     )
-from bzrlib.errors import (
-    NoSuchFile,
-    )
+from bzrlib.errors import NoSuchFile
 from bzrlib.tests import TestCaseWithTransport
-from bzrlib import trace
 from bzrlib.transport import get_transport
 from bzrlib.urlutils import (
     join as urljoin,
@@ -46,12 +42,6 @@ import subvertpy.ra
 from canonical.config import config
 from canonical.testing.layers import BaseLayer
 from lp.codehosting import load_optional_plugin
-from lp.codehosting.safe_open import (
-    AcceptAnythingPolicy,
-    BlacklistPolicy,
-    BadUrl,
-    SafeBranchOpener,
-    )
 from lp.codehosting.codeimport.tarball import (
     create_tarball,
     extract_tarball,
@@ -76,6 +66,12 @@ from lp.codehosting.codeimport.worker import (
     HgImportWorker,
     ImportDataStore,
     ImportWorker,
+    )
+from lp.codehosting.safe_open import (
+    AcceptAnythingPolicy,
+    BadUrl,
+    BlacklistPolicy,
+    SafeBranchOpener,
     )
 from lp.codehosting.tests.helpers import create_branch_with_one_revision
 from lp.services.log.logger import BufferLogger
@@ -223,7 +219,8 @@ class TestBazaarBranchStore(WorkerTest):
         target_url = store._getMirrorURL(self.arbitrary_branch_id)
         knit_format = format_registry.get('knit')()
         tree = create_branch_with_one_revision(target_url, format=knit_format)
-        self.assertNotEquals(tree.bzrdir._format.repository_format.network_name(),
+        self.assertNotEquals(
+            tree.bzrdir._format.repository_format.network_name(),
             default_format.repository_format.network_name())
 
         # The fetched branch is in the default format.
@@ -494,7 +491,6 @@ class TestImportDataStore(WorkerTest):
         self.assertEquals(content, transport.get_bytes(remote_name))
 
 
-
 class MockForeignWorkingTree:
     """Working tree that records calls to checkout and update."""
 
@@ -669,8 +665,10 @@ class TestCSCVSWorker(WorkerTest):
         # getForeignTree returns an object that represents the 'foreign'
         # branch (i.e. a CVS or Subversion branch).
         worker = self.makeImportWorker()
+
         def _getForeignTree(target_path):
             return MockForeignWorkingTree(target_path)
+
         worker.foreign_tree_store._getForeignTree = _getForeignTree
         working_tree = worker.getForeignTree()
         self.assertIsSameRealPath(
@@ -873,7 +871,7 @@ class TestActualImportMixin:
         self.assertPositive(output.tell())
 
         self.addCleanup(
-            lambda : clean_up_default_stores_for_import(source_details))
+            lambda: clean_up_default_stores_for_import(source_details))
 
         tree_path = tempfile.mkdtemp()
         self.addCleanup(lambda: shutil.rmtree(tree_path))
@@ -977,7 +975,8 @@ class SubversionImportHelpers:
         client.add('working_tree/newfile')
         client.log_msg_func = lambda c: 'Add a file'
         (revnum, date, author) = client.commit(['working_tree'], recurse=True)
-        # CSCVS breaks on commits without an author, so make sure there is one.
+        # CSCVS breaks on commits without an author, so make sure there
+        # is one.
         self.assertIsNot(None, author)
         self.foreign_commit_count += 1
         shutil.rmtree('working_tree')
@@ -1037,8 +1036,10 @@ class PullingImportWorkerTests:
 
     def test_invalid(self):
         # If there is no branch in the target URL, exit with FAILURE_INVALID
-        worker = self.makeImportWorker(self.factory.makeCodeImportSourceDetails(
-            rcstype=self.rcstype, url="http://localhost/path/non/existant"),
+        worker = self.makeImportWorker(
+            self.factory.makeCodeImportSourceDetails(
+                rcstype=self.rcstype,
+                url="http://localhost/path/non/existant"),
             opener_policy=AcceptAnythingPolicy())
         self.assertEqual(
             CodeImportWorkerExitCode.FAILURE_INVALID, worker.run())
@@ -1046,8 +1047,9 @@ class PullingImportWorkerTests:
     def test_forbidden(self):
         # If the branch specified is using an invalid scheme, exit with
         # FAILURE_FORBIDDEN
-        worker = self.makeImportWorker(self.factory.makeCodeImportSourceDetails(
-            rcstype=self.rcstype, url="file:///local/path"),
+        worker = self.makeImportWorker(
+            self.factory.makeCodeImportSourceDetails(
+                rcstype=self.rcstype, url="file:///local/path"),
             opener_policy=CodeImportBranchOpenPolicy())
         self.assertEqual(
             CodeImportWorkerExitCode.FAILURE_FORBIDDEN, worker.run())
@@ -1058,22 +1060,23 @@ class PullingImportWorkerTests:
             'trunk', [('bzr\\doesnt\\support\\this', 'Original contents')]),
             opener_policy=AcceptAnythingPolicy())
         self.assertEqual(
-            CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE, worker.run())
+            CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE,
+            worker.run())
 
     def test_partial(self):
-        # Only config.codeimport.revisions_import_limit will be imported in a
-        # given run.
+        # Only config.codeimport.revisions_import_limit will be imported
+        # in a given run.
         worker = self.makeImportWorker(self.makeSourceDetails(
             'trunk', [('README', 'Original contents')]),
             opener_policy=AcceptAnythingPolicy())
         self.makeForeignCommit(worker.source_details)
         self.assertTrue(self.foreign_commit_count > 1)
+        import_limit = self.foreign_commit_count - 1
         self.pushConfig(
             'codeimport',
-            git_revisions_import_limit=self.foreign_commit_count-1,
-            svn_revisions_import_limit=self.foreign_commit_count-1,
-            hg_revisions_import_limit=self.foreign_commit_count-1,
-            )
+            git_revisions_import_limit=import_limit,
+            svn_revisions_import_limit=import_limit,
+            hg_revisions_import_limit=import_limit)
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS_PARTIAL, worker.run())
         self.assertEqual(
