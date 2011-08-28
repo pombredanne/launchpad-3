@@ -64,7 +64,6 @@ import:
     Import Status: Reviewed
     This branch is an import of the Subversion branch
     from svn://svn.example.com/fooix/trunk.
-    ----
     The next import is scheduled to run
     as soon as possible.
     Edit import source or review import

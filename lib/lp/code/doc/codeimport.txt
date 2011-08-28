@@ -275,8 +275,6 @@ created if done through the web UI, so we'll add nopriv here.
     To: david.allouche@canonical.com, ...
     Subject: Code import product.../name... status: Reviewed
     <BLANKLINE>
-    The import has been approved and an import will start shortly.
-    <BLANKLINE>
     ... is now being imported from:
         http://svn.example.com/project/trunk
     instead of:
@@ -292,8 +290,6 @@ created if done through the web UI, so we'll add nopriv here.
     From: Code Import Person <import@example.com>
     To: import@example.com
     Subject: Code import product.../name... status: Reviewed
-    <BLANKLINE>
-    The import has been approved and an import will start shortly.
     <BLANKLINE>
     ... is now being imported from:
         http://svn.example.com/project/trunk

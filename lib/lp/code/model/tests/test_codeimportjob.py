@@ -883,8 +883,7 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         unchecked_result_fields.difference_update(['log_file', 'status'])
 
         code_import = self.factory.makeCodeImport()
-        removeSecurityProxy(code_import).review_status = \
-            CodeImportReviewStatus.REVIEWED
+        removeSecurityProxy(code_import).import_job.destroySelf()
         self.assertFinishJobPassesThroughJobField(
             'code_import', 'code_import', code_import)
         unchecked_result_fields.remove('code_import')

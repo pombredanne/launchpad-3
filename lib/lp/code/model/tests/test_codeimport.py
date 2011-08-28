@@ -65,7 +65,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
             rcs_type=RevisionControlSystems.SVN,
             url=self.factory.getUniqueURL(scheme="svn"))
         self.assertEqual(
-            CodeImportReviewStatus.NEW,
+            CodeImportReviewStatus.REVIEWED,
             code_import.review_status)
         # No job is created for the import.
         self.assertIsNot(None, code_import.import_job)
@@ -614,7 +614,8 @@ class TestTryFailingImportAgain(TestCaseWithFactory):
         # tryFailingImportAgain only succeeds for imports that are FAILING.
         outcomes = {}
         for status in CodeImportReviewStatus.items:
-            code_import = self.factory.makeCodeImport()
+            code_import = self.factory.makeCodeImport(
+                review_status=CodeImportReviewStatus.NEW)
             code_import.updateFromData(
                 {'review_status': status}, self.factory.makePerson())
             try:
