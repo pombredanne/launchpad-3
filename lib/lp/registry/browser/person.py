@@ -3201,7 +3201,14 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
                 return True
 
         return False
-
+ 
+    @property
+    def show_time_offset(self):
+        """
+        Return the time-zone and offset from UTC
+        """
+        offset = datetime.now(pytz.timezone('Asia/Kolkata')).strftime("%z")
+        return offset
 
 class PersonParticipationView(LaunchpadView):
     """View for the ~person/+participation page."""
