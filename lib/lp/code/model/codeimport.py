@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -140,7 +140,7 @@ class CodeImport(SQLBase):
             return self.url
         else:
             raise AssertionError(
-                'Unknown rcs type: %s'% self.rcs_type.title)
+                "Unknown rcs type: %s" % self.rcs_type.title)
 
     def _removeJob(self):
         """If there is a pending job, remove it."""
@@ -220,15 +220,16 @@ class CodeImport(SQLBase):
 
     def requestImport(self, requester, error_if_already_requested=False):
         """See `ICodeImport`."""
-        if self.import_job is None: # not in automatic mode
-            raise CodeImportNotInReviewedState("This code import is %s, and "
-                "must be Reviewed for you to call requestImport."
+        if self.import_job is None:
+            # Not in automatic mode.
+            raise CodeImportNotInReviewedState(
+                "This code import is %s, and must be Reviewed for you to "
+                "call requestImport."
                 % self.review_status.name)
-        if (self.import_job.state != CodeImportJobState.PENDING):
-            assert (self.import_job.state == CodeImportJobState.RUNNING)
-            # Already running
-            raise CodeImportAlreadyRunning("This code import is already "
-                    "running.")
+        if self.import_job.state != CodeImportJobState.PENDING:
+            assert self.import_job.state == CodeImportJobState.RUNNING
+            raise CodeImportAlreadyRunning(
+                "This code import is already running.")
         elif self.import_job.requesting_user is not None:
             if error_if_already_requested:
                 raise CodeImportAlreadyRequested("This code import has "
@@ -262,7 +263,7 @@ class CodeImportSet:
         else:
             raise AssertionError(
                 "Don't know how to sanity check source details for unknown "
-                "rcs_type %s"%rcs_type)
+                "rcs_type %s" % rcs_type)
         if review_status is None:
             # Auto approve git and hg imports.
             if rcs_type in (
