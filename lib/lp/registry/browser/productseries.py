@@ -33,7 +33,6 @@ import cgi
 from operator import attrgetter
 
 from bzrlib.revision import NULL_REVISION
-from lazr.enum import DBItem
 from lazr.restful.interface import (
     copy_field,
     use_template,
