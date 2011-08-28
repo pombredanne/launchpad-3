@@ -438,7 +438,7 @@ class CodeImportNewView(CodeImportBaseView):
 
         self.request.response.addNotification("""
             New code import created. The code import operators
-            have been notified and the request will be reviewed shortly.""")
+            have been notified and the code import will start shortly.""")
 
     def _showApprove(self, ignored):
         """Is the user an admin or member of vcs-imports?"""
