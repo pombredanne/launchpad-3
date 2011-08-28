@@ -3346,11 +3346,26 @@ class PersonSet:
 
     def getByEmail(self, email):
         """See `IPersonSet`."""
-        email = ensure_unicode(email).strip().lower()
-        return IStore(Person).find(
+        address = self.getByEmails([email]).one()
+        if address:
+            return address[1]
+
+    def getByEmails(self, emails, include_hidden=True):
+        """See `IPersonSet`."""
+        if not emails:
+            return EmptyResultSet()
+        addresses = [
+            ensure_unicode(address.lower().strip())
+            for address in emails]
+        extra_query = True
+        if not include_hidden:
+            extra_query = Person.hide_email_addresses == False
+        return IStore(Person).using(
             Person,
-            Person.id == EmailAddress.personID,
-            EmailAddress.email.lower() == email).one()
+            Join(EmailAddress, EmailAddress.personID == Person.id)
+        ).find(
+            (EmailAddress, Person),
+            EmailAddress.email.lower().is_in(addresses), extra_query)
 
     def latest_teams(self, limit=5):
         """See `IPersonSet`."""

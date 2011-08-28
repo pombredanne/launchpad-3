@@ -474,7 +474,7 @@ class ObjectFactory:
             branch_id = self.getUniqueInteger()
         if rcstype is None:
             rcstype = 'svn'
-        if rcstype in ['svn', 'bzr-svn', 'hg']:
+        if rcstype in ['svn', 'bzr-svn', 'hg', 'bzr']:
             assert cvs_root is cvs_module is None
             if url is None:
                 url = self.getUniqueURL()
@@ -2123,7 +2123,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None, target=None, branch_name=None,
-                       git_repo_url=None, hg_repo_url=None, registrant=None,
+                       git_repo_url=None, hg_repo_url=None,
+                       bzr_branch_url=None, registrant=None,
                        rcs_type=None, review_status=None):
         """Create and return a new, arbitrary code import.
 
@@ -2132,7 +2133,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         unique URL.
         """
         if (svn_branch_url is cvs_root is cvs_module is git_repo_url is
-            hg_repo_url is None):
+            hg_repo_url is bzr_branch_url is None):
             svn_branch_url = self.getUniqueURL()
 
         if target is None:
@@ -2149,29 +2150,32 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             else:
                 assert rcs_type in (RevisionControlSystems.SVN,
                                     RevisionControlSystems.BZR_SVN)
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name, rcs_type=rcs_type,
-                url=svn_branch_url)
+                url=svn_branch_url, review_status=review_status)
         elif git_repo_url is not None:
             assert rcs_type in (None, RevisionControlSystems.GIT)
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
-                url=git_repo_url)
+                url=git_repo_url, review_status=review_status)
         elif hg_repo_url is not None:
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.HG,
-                url=hg_repo_url)
+                url=hg_repo_url, review_status=review_status)
+        elif bzr_branch_url is not None:
+            return code_import_set.new(
+                registrant, target, branch_name,
+                rcs_type=RevisionControlSystems.BZR,
+                url=bzr_branch_url, review_status=review_status)
         else:
             assert rcs_type in (None, RevisionControlSystems.CVS)
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.CVS,
-                cvs_root=cvs_root, cvs_module=cvs_module)
-        if review_status:
-            removeSecurityProxy(code_import).review_status = review_status
-        return code_import
+                cvs_root=cvs_root, cvs_module=cvs_module,
+                review_status=review_status)
 
     def makeChangelog(self, spn=None, versions=[]):
         """Create and return a LFA of a valid Debian-style changelog."""
@@ -3798,6 +3802,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if status == PackagePublishingStatus.PUBLISHED:
             naked_bpph.datepublished = UTC_NOW
         return bpph
+
+    def makeSPPHForBPPH(self, bpph):
+        """Produce a `SourcePackagePublishingHistory` to match `bpph`.
+
+        :param bpph: A `BinaryPackagePublishingHistory`.
+        :return: A `SourcePackagePublishingHistory` stemming from the same
+            source package as `bpph`, published into the same distroseries,
+            pocket, and archive.
+        """
+        # JeroenVermeulen 2011-08-25, bug=834370: Julian says this isn't
+        # very complete, and ignores architectures.  Improve so we can
+        # remove more of our reliance on the SoyuzTestPublisher.
+        bpr = bpph.binarypackagerelease
+        spph = self.makeSourcePackagePublishingHistory(
+            distroseries=bpph.distroarchseries.distroseries,
+            sourcepackagerelease=bpr.build.source_package_release,
+            pocket=bpph.pocket, archive=bpph.archive)
+        return spph
 
     def makeBinaryPackageName(self, name=None):
         """Make an `IBinaryPackageName`."""

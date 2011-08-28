@@ -56,6 +56,20 @@ class TestCodeImportCreation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def test_new_svn_import_svn_scheme(self):
+        """A subversion import can use the svn:// scheme."""
+        code_import = CodeImportSet().new(
+            registrant=self.factory.makePerson(),
+            target=IBranchTarget(self.factory.makeProduct()),
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.SVN,
+            url=self.factory.getUniqueURL(scheme="svn"))
+        self.assertEqual(
+            CodeImportReviewStatus.NEW,
+            code_import.review_status)
+        # No job is created for the import.
+        self.assertIsNot(None, code_import.import_job)
+
     def test_reviewed_svn_import(self):
         """A specific review status can be set for a new import."""
         code_import = CodeImportSet().new(
@@ -87,6 +101,21 @@ class TestCodeImportCreation(TestCaseWithFactory):
         # A job is created for the import.
         self.assertIsNot(None, code_import.import_job)
 
+    def test_git_import_git_scheme(self):
+        """A git import can have a git:// style URL."""
+        code_import = CodeImportSet().new(
+            registrant=self.factory.makePerson(),
+            target=IBranchTarget(self.factory.makeProduct()),
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.GIT,
+            url=self.factory.getUniqueURL(scheme="git"),
+            review_status=None)
+        self.assertEqual(
+            CodeImportReviewStatus.REVIEWED,
+            code_import.review_status)
+        # A job is created for the import.
+        self.assertIsNot(None, code_import.import_job)
+
     def test_git_import_reviewed(self):
         """A new git import is always reviewed by default."""
         code_import = CodeImportSet().new(
@@ -109,6 +138,21 @@ class TestCodeImportCreation(TestCaseWithFactory):
             target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.HG,
+            url=self.factory.getUniqueURL(),
+            review_status=None)
+        self.assertEqual(
+            CodeImportReviewStatus.REVIEWED,
+            code_import.review_status)
+        # A job is created for the import.
+        self.assertIsNot(None, code_import.import_job)
+
+    def test_bzr_import_reviewed(self):
+        """A new bzr import is always reviewed by default."""
+        code_import = CodeImportSet().new(
+            registrant=self.factory.makePerson(),
+            target=IBranchTarget(self.factory.makeProduct()),
+            branch_name='mirrored',
+            rcs_type=RevisionControlSystems.BZR,
             url=self.factory.getUniqueURL(),
             review_status=None)
         self.assertEqual(

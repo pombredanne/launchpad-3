@@ -49,6 +49,7 @@ from lp.code.model.codeimport import CodeImport
 from lp.code.model.codeimportjob import CodeImportJob
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.tests.servers import (
+    BzrServer,
     CVSServer,
     GitServer,
     MercurialServer,
@@ -67,6 +68,7 @@ from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitorProtocol,
     ExitQuietly,
     )
+from lp.codehosting.safe_open import AcceptAnythingPolicy
 from lp.services.log.logger import BufferLogger
 from lp.services.twistedsupport import suppress_stderr
 from lp.services.twistedsupport.tests.test_processmonitor import (
@@ -222,12 +224,14 @@ class TestWorkerMonitorUnit(TestCase):
     def makeWorkerMonitorWithJob(self, job_id=1, job_data=()):
         return self.WorkerMonitor(
             job_id, BufferLogger(),
-            FakeCodeImportScheduleEndpointProxy({job_id: job_data}))
+            FakeCodeImportScheduleEndpointProxy({job_id: job_data}),
+            "anything")
 
     def makeWorkerMonitorWithoutJob(self, exception=None):
         return self.WorkerMonitor(
             1, BufferLogger(),
-            FakeCodeImportScheduleEndpointProxy({}, exception))
+            FakeCodeImportScheduleEndpointProxy({}, exception),
+            None)
 
     def test_getWorkerArguments(self):
         # getWorkerArguments returns a deferred that fires with the
@@ -451,7 +455,25 @@ class TestWorkerMonitorUnit(TestCase):
             makeFailure(
                 error.ProcessTerminated,
                 exitCode=CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE))
-        self.assertEqual(calls, [CodeImportResultStatus.FAILURE_UNSUPPORTED_FEATURE])
+        self.assertEqual(
+            calls, [CodeImportResultStatus.FAILURE_UNSUPPORTED_FEATURE])
+        self.assertOopsesLogged([])
+        # We return the deferred that callFinishJob returns -- if
+        # callFinishJob did not swallow the error, this will fail the test.
+        return ret
+
+    def test_callFinishJobCallsFinishJobRemoteBroken(self):
+        # If the argument to callFinishJob indicates that the subprocess
+        # exited with a code of FAILURE_REMOTE_BROKEN, it
+        # calls finishJob with a status of FAILURE_REMOTE_BROKEN.
+        worker_monitor = self.makeWorkerMonitorWithJob()
+        calls = self.patchOutFinishJob(worker_monitor)
+        ret = worker_monitor.callFinishJob(
+            makeFailure(
+                error.ProcessTerminated,
+                exitCode=CodeImportWorkerExitCode.FAILURE_REMOTE_BROKEN))
+        self.assertEqual(
+            calls, [CodeImportResultStatus.FAILURE_REMOTE_BROKEN])
         self.assertOopsesLogged([])
         # We return the deferred that callFinishJob returns -- if
         # callFinishJob did not swallow the error, this will fail the test.
@@ -508,7 +530,8 @@ class TestWorkerMonitorRunNoProcess(BzrTestCase):
                 job_data = {}
             CodeImportWorkerMonitor.__init__(
                 self, 1, BufferLogger(),
-                FakeCodeImportScheduleEndpointProxy(job_data))
+                FakeCodeImportScheduleEndpointProxy(job_data),
+                "anything")
             self.result_status = None
             self.process_deferred = process_deferred
 
@@ -683,6 +706,17 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         return self.factory.makeCodeImport(
             hg_repo_url=self.hg_server.get_url())
 
+    def makeBzrCodeImport(self):
+        """Make a `CodeImport` that points to a real Bazaar branch."""
+        self.bzr_server = BzrServer(self.repo_path)
+        self.bzr_server.start_server()
+        self.addCleanup(self.bzr_server.stop_server)
+
+        self.bzr_server.makeRepo([('README', 'contents')])
+        self.foreign_commit_count = 1
+        return self.factory.makeCodeImport(
+            bzr_branch_url=self.bzr_server.get_url())
+
     def getStartedJobForImport(self, code_import):
         """Get a started `CodeImportJob` for `code_import`.
 
@@ -732,9 +766,11 @@ class TestWorkerMonitorIntegration(BzrTestCase):
 
         This implementation does it in-process.
         """
+        logger = BufferLogger()
         monitor = CIWorkerMonitorForTesting(
-            job_id, BufferLogger(),
-            xmlrpc.Proxy(config.codeimportdispatcher.codeimportscheduler_url))
+            job_id, logger,
+            xmlrpc.Proxy(config.codeimportdispatcher.codeimportscheduler_url),
+            "anything")
         deferred = monitor.run()
         def save_protocol_object(result):
             """Save the process protocol object.
@@ -777,6 +813,15 @@ class TestWorkerMonitorIntegration(BzrTestCase):
     def test_import_hg(self):
         # Create a Mercurial CodeImport and import it.
         job = self.getStartedJobForImport(self.makeHgCodeImport())
+        code_import_id = job.code_import.id
+        job_id = job.id
+        self.layer.txn.commit()
+        result = self.performImport(job_id)
+        return result.addCallback(self.assertImported, code_import_id)
+
+    def test_import_bzr(self):
+        # Create a Bazaar CodeImport and import it.
+        job = self.getStartedJobForImport(self.makeBzrCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
         self.layer.txn.commit()
@@ -828,6 +873,7 @@ class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
         interpreter = '%s/bin/py' % config.root
         reactor.spawnProcess(
             DeferredOnExit(process_end_deferred), interpreter,
-            [interpreter, script_path, str(job_id), '-q'],
+            [interpreter, script_path, '--access-policy=anything', str(job_id),
+                '-q'],
             childFDs={0:0, 1:1, 2:2}, env=os.environ)
         return process_end_deferred
