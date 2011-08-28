@@ -1,4 +1,5 @@
-= Code import results =
+Code import results
+===================
 
 Information about the last ten import runs for a code import are shown
 on the branch index page with the other code import details.
@@ -15,9 +16,11 @@ shown on the branch page, so we create two imports in order to test
 how each result type is rendered.
 
     >>> odin = factory.makeCodeImportMachine(hostname='odin')
-    >>> make_all_result_types(code_import_1, factory, machine=odin, start=0, count=7)
+    >>> make_all_result_types(
+    ...     code_import_1, factory, machine=odin, start=0, count=7)
     >>> branch_url_1 = canonical_url(code_import_1.branch)
-    >>> make_all_result_types(code_import_2, factory, machine=odin, start=7, count=7)
+    >>> make_all_result_types(
+    ...     code_import_2, factory, machine=odin, start=7, count=7)
     >>> branch_url_2 = canonical_url(code_import_2.branch)
     >>> logout()
 
@@ -66,3 +69,4 @@ is the text of the failure or success type.
     <img src="/@@/no" title="Job killed" />
     <img src="/@@/no" title="Job reclaimed" />
     <img src="/@@/no" title="Broken remote branch" />
+    <img src="/@@/no" title="Forbidden URL" />

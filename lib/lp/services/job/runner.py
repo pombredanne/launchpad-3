@@ -40,7 +40,6 @@ from ampoule import (
 from lazr.delegates import delegates
 import transaction
 from twisted.internet import (
-    defer,
     reactor,
     )
 from twisted.protocols import amp
@@ -61,10 +60,6 @@ from lp.services.job.interfaces.job import (
 from lp.services.mail.sendmail import MailController
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.twistedsupport import run_reactor
-from lp.services.twistedsupport.task import (
-    ParallelLimitedTaskConsumer,
-    PollingTaskSource,
-    )
 
 
 class BaseRunnableJobSource:
@@ -472,36 +467,21 @@ class TwistedJobRunner(BaseJobRunner):
             oops = self._doOops(job, sys.exc_info())
             self._logOopsId(oops['id'])
 
-    def getTaskSource(self):
-        """Return a task source for all jobs in job_source."""
-
-        def producer():
-            while True:
-                # XXX: JonathanLange bug=741204: If we're getting all of the
-                # jobs at the start anyway, we can use a DeferredSemaphore,
-                # instead of the more complex PollingTaskSource, which is
-                # better suited to cases where we don't know how much work
-                # there will be.
-                jobs = list(self.job_source.iterReady())
-                if len(jobs) == 0:
-                    yield None
-                for job in jobs:
-                    yield lambda: self.runJobInSubprocess(job)
-        return PollingTaskSource(5, producer().next)
-
-    def doConsumer(self):
-        """Create a ParallelLimitedTaskConsumer for this job type."""
-        # 1 is hard-coded for now until we're sure we'd get gains by running
-        # more than one at a time.  Note that several tests, including
-        # test_timeout, rely on this being 1.
-        consumer = ParallelLimitedTaskConsumer(1, logger=None)
-        return consumer.consume(self.getTaskSource())
-
     def runAll(self):
-        """Run all ready jobs, and any that become ready while running."""
+        """Run all ready jobs."""
         self.pool.start()
-        d = defer.maybeDeferred(self.doConsumer)
-        d.addCallbacks(self.terminated, self.failed)
+        try:
+            jobs = list(self.job_source.iterReady())
+            if len(jobs) == 0:
+                self.terminated()
+                return
+            d = self.runJobInSubprocess(jobs[0])
+            for job in jobs[1:]:
+                d.addCallback(lambda ignored: self.runJobInSubprocess(job))
+            d.addCallbacks(self.terminated, self.failed)
+        except:
+            self.terminated()
+            raise
 
     def terminated(self, ignored=None):
         """Callback to stop the processpool and reactor."""

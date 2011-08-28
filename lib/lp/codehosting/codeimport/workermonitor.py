@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0702
@@ -125,7 +125,7 @@ class CodeImportWorkerMonitor:
     path_to_script = os.path.join(
         config.root, 'scripts', 'code-import-worker.py')
 
-    def __init__(self, job_id, logger, codeimport_endpoint):
+    def __init__(self, job_id, logger, codeimport_endpoint, access_policy):
         """Construct an instance.
 
         :param job_id: The ID of the CodeImportJob we are to work on.
@@ -138,6 +138,7 @@ class CodeImportWorkerMonitor:
         self._log_file = tempfile.TemporaryFile()
         self._branch_url = None
         self._log_file_name = 'no-name-set.txt'
+        self._access_policy = access_policy
 
     def _logOopsFromFailure(self, failure):
         request = log_oops_from_failure(
@@ -162,6 +163,7 @@ class CodeImportWorkerMonitor:
         """
         deferred = self.codeimport_endpoint.callRemote(
             'getImportDataForJobID', self._job_id)
+
         def _processResult(result):
             code_import_arguments, branch_url, log_file_name = result
             self._branch_url = branch_url
@@ -169,7 +171,8 @@ class CodeImportWorkerMonitor:
             self._logger.info(
                 'Found source details: %s', code_import_arguments)
             return code_import_arguments
-        return deferred.addCallbacks(_processResult, self._trap_nosuchcodeimportjob)
+        return deferred.addCallbacks(
+            _processResult, self._trap_nosuchcodeimportjob)
 
     def updateHeartbeat(self, tail):
         """Call the updateHeartbeat method for the job we are working on."""
@@ -223,7 +226,10 @@ class CodeImportWorkerMonitor:
         deferred = defer.Deferred()
         protocol = self._makeProcessProtocol(deferred)
         interpreter = '%s/bin/py' % config.root
-        command = [interpreter, self.path_to_script] + worker_arguments
+        args = [interpreter, self.path_to_script]
+        if self._access_policy is not None:
+            args.append("--access-policy=%s" % self._access_policy)
+        command = args + worker_arguments
         self._logger.info(
             "Launching worker child process %s.", command)
         reactor.spawnProcess(
@@ -257,6 +263,8 @@ class CodeImportWorkerMonitor:
                 CodeImportResultStatus.FAILURE_UNSUPPORTED_FEATURE,
             CodeImportWorkerExitCode.FAILURE_INVALID:
                 CodeImportResultStatus.FAILURE_INVALID,
+            CodeImportWorkerExitCode.FAILURE_FORBIDDEN:
+                CodeImportResultStatus.FAILURE_FORBIDDEN,
             CodeImportWorkerExitCode.FAILURE_REMOTE_BROKEN:
                 CodeImportResultStatus.FAILURE_REMOTE_BROKEN,
                 }

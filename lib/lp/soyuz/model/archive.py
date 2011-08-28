@@ -58,8 +58,8 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
 from canonical.launchpad.components.tokens import (
-    create_unique_token_for_table,
     create_token,
+    create_unique_token_for_table,
     )
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias,
@@ -150,8 +150,8 @@ from lp.soyuz.interfaces.archive import (
     NoSuchPPA,
     NoTokensForTeams,
     PocketNotFound,
-    VersionRequiresName,
     validate_external_dependencies,
+    VersionRequiresName,
     )
 from lp.soyuz.interfaces.archivearch import IArchiveArchSet
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
@@ -1881,10 +1881,7 @@ class Archive(SQLBase):
             "This archive is already deleted.")
 
         # Set all the publications to DELETED.
-        statuses = (
-            PackagePublishingStatus.PENDING,
-            PackagePublishingStatus.PUBLISHED)
-        sources = list(self.getPublishedSources(status=statuses))
+        sources = self.getPublishedSources(status=active_publishing_status)
         getUtility(IPublishingSet).requestDeletion(
             sources, removed_by=deleted_by,
             removal_comment="Removed when deleting archive")

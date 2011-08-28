@@ -410,7 +410,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
     def getMergeProposals(self, status=None, visible_by_user=None,
-                          merged_revnos=None):
+                          merged_revnos=None, eager_load=False):
         """See `IBranch`."""
         if not status:
             status = (
@@ -420,7 +420,8 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
         return collection.getMergeProposals(
-            status, target_branch=self, merged_revnos=merged_revnos)
+            status, target_branch=self, merged_revnos=merged_revnos,
+            eager_load=eager_load)
 
     def isBranchMergeable(self, target_branch):
         """See `IBranch`."""
