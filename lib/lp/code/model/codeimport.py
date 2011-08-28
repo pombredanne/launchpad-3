@@ -195,7 +195,8 @@ class CodeImport(SQLBase):
             setattr(self, name, value)
         if 'review_status' in data:
             if data['review_status'] == CodeImportReviewStatus.REVIEWED:
-                CodeImportJobWorkflow().newJob(self)
+                if self.import_job is None:
+                    CodeImportJobWorkflow().newJob(self)
             else:
                 self._removeJob()
         event = event_set.newModify(self, user, token)
