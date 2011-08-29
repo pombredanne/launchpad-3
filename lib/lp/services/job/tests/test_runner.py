@@ -500,13 +500,6 @@ class MemoryHogJob(StaticJobSource):
         self.x = '*' * (10 ** 6)
 
 
-class NoJobs(StaticJobSource):
-
-    done = False
-
-    jobs = []
-
-
 class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
@@ -614,14 +607,6 @@ class TestTwistedJobRunner(ZopeTestInSubProcess, TestCaseWithFactory):
         self.assertIn('Job resulted in OOPS', logger.getLogBuffer())
         oops = self.getOopsReport(runner, 0)
         self.assertEqual('MemoryError', oops.type)
-
-    def test_no_jobs(self):
-        logger = BufferLogger()
-        logger.setLevel(logging.INFO)
-        runner = TwistedJobRunner.runFromSource(
-            NoJobs, 'branchscanner', logger)
-        self.assertEqual(
-            (0, 0), (len(runner.completed_jobs), len(runner.incomplete_jobs)))
 
 
 class TestJobCronScript(ZopeTestInSubProcess, TestCaseWithFactory):
