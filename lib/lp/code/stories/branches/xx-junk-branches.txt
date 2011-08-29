@@ -17,7 +17,6 @@ branch.
     >>> browser.open('http://code.launchpad.dev/~eric')
     >>> browser.getLink("Register a branch").click()
     >>> browser.getControl('Name').value = 'personal-junk'
-    >>> browser.getControl('Hosted').click()
     >>> browser.getControl('Register Branch').click()
 
 Posting the form should succeed and redirect to the page of the newly created
@@ -46,7 +45,6 @@ Junk branches can also be associated with a team.
     >>> browser.open('http://code.launchpad.dev/~vikings')
     >>> browser.getLink("Register a branch").click()
     >>> browser.getControl('Name').value = 'team-junk'
-    >>> browser.getControl('Hosted').click()
     >>> browser.getControl('Register Branch').click()
 
     >>> print browser.url

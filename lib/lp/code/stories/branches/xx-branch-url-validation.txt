@@ -6,7 +6,6 @@ First, let's define a helper to post to the Person +addbranch form.
     ...     user_browser.open(
     ...         'http://code.launchpad.dev/~lifeless/+addbranch')
     ...     user_browser.getControl('Name').value = 'pyresources'
-    ...     user_browser.getControl('Branch URL').value = url
     ...     user_browser.getControl('Register Branch').click()
 
 Try to create a branch with an invalid URL.

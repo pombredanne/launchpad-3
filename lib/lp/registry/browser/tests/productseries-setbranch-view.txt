@@ -367,8 +367,7 @@ in an error.
     ...     print error
     <BLANKLINE>
     This foreign branch URL is already specified for
-    the imported branch <a href="http://code.launchpad.dev/~.../chevy/chevette-branch">~.../chevy/chevette-branch</a>.
-
+    the imported branch <a href="http://.../chevy/chevette-branch">~.../chevy/chevette-branch</a>.
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
 
@@ -409,7 +408,7 @@ error if a duplicate name is used.
     >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
     >>> for error in view.errors:
     ...     print error
-
+    <BLANKLINE>
     This foreign branch URL is already specified for the imported branch
     <a href="http://.../blazer-branch">...</a>.
     >>> print view.errors_in_action
