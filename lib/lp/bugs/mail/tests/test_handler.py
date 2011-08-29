@@ -206,11 +206,7 @@ class TestMaloneHandler(TestCaseWithFactory):
 
 
 class MaloneHandlerProcessTestCase(TestCaseWithFactory):
-    """
-    makeSignedMessage(msgid=None, body=None, subject=None,
-            attachment_contents=None, force_transfer_encoding=False,
-            email_address=None, signing_context=None, to_address=None):
-    """
+    """Test the bug mail processing loop."""
     layer = LaunchpadFunctionalLayer
 
     @staticmethod
@@ -422,7 +418,9 @@ class BugCommandGroupTestCase(TestCase):
         bugtask_group_2 = BugTaskCommandGroup(affects_command)
         group.add(bugtask_group_2)
         self.assertEqual(1, len(group.groups))
-        self.assertFalse(group._groups is group.groups)
+        self.assertIsNot(
+            group._groups, group.groups,
+            "List reference returned instead of copy.")
         self.assertEqual(
             [affects_command, status_command], group.groups[0].commands)
 
@@ -610,9 +608,7 @@ class BugCommandGroupsTestCase(TestCase):
         commands = [
             BugEmailCommands.get(name=name, string_args=[args])
             for name, args in email_commands]
-        ordered_commands = [
-            command for command in BugCommandGroups(commands)]
-        self.assertEqual(7, len(ordered_commands))
+        ordered_commands = list(BugCommandGroups(commands))
         expected = [
             'bug 1234',
             'private yes',

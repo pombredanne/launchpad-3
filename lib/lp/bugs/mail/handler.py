@@ -238,7 +238,7 @@ class MaloneHandler:
         elif to_user.lower() != 'edit':
             # Indicate that we didn't handle the mail.
             return False, False, None
-        bug_commands = [command for command in BugCommandGroups(commands)]
+        bug_commands = list(BugCommandGroups(commands))
         return None, add_comment_to_bug, bug_commands
 
     def process(self, signed_msg, to_addr, filealias=None, log=None):
