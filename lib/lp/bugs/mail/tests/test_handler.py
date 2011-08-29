@@ -25,13 +25,22 @@ from canonical.testing.layers import (
     LaunchpadZopelessLayer,
     )
 from lp.bugs.interfaces.bug import IBugSet
-from lp.bugs.mail.commands import BugEmailCommand
-from lp.bugs.mail.handler import MaloneHandler
+from lp.bugs.mail.commands import (
+    BugEmailCommand,
+    BugEmailCommands,
+    )
+from lp.bugs.mail.handler import (
+    BugCommandGroup,
+    BugCommandGroups,
+    BugTaskCommandGroup,
+    MaloneHandler,
+    )
 from lp.services.mail import stub
 from lp.testing import (
     celebrity_logged_in,
     login,
     person_logged_in,
+    TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.factory import GPGSigningContext
@@ -193,6 +202,283 @@ class TestMaloneHandler(TestCaseWithFactory):
         message = self.getFailureForMessage('1@bugs.launchpad.dev')
         self.assertIn(
             "There is no such bug in Launchpad: 1", message)
+
+
+class BugTaskCommandGroupTestCase(TestCase):
+
+    def test_BugTaskCommandGroup_init_with_command(self):
+        # BugTaskCommandGroup can be inited with a BugEmailCommands.
+        command = BugEmailCommands.get('status', ['triaged'])
+        group = BugTaskCommandGroup(command)
+        self.assertEqual([command], group._commands)
+
+    def test_BugTaskCommandGroup_add(self):
+        # BugEmailCommands can be added to the group.
+        command_1 = BugEmailCommands.get('affects', ['fnord'])
+        command_2 = BugEmailCommands.get('status', ['triaged'])
+        group = BugTaskCommandGroup()
+        group.add(command_1)
+        group.add(command_2)
+        self.assertEqual([command_1, command_2], group._commands)
+
+    def test_BugTaskCommandGroup_sorted_commands(self):
+        # Commands are sorted by the Command's Rank.
+        command_3 = BugEmailCommands.get('importance', ['low'])
+        command_2 = BugEmailCommands.get('status', ['triaged'])
+        command_1 = BugEmailCommands.get('affects', ['fnord'])
+        group = BugTaskCommandGroup()
+        group.add(command_3)
+        group.add(command_2)
+        group.add(command_1)
+        self.assertEqual(0, command_1.RANK)
+        self.assertEqual(4, command_2.RANK)
+        self.assertEqual(5, command_3.RANK)
+        self.assertEqual(
+            [command_1, command_2, command_3], group.commands)
+
+    def test_BugTaskCommandGroup__nonzero__false(self):
+        # A BugTaskCommandGroup is zero is it has no commands.
+        group = BugTaskCommandGroup()
+        self.assertEqual(0, len(group._commands))
+        self.assertFalse(bool(group))
+
+    def test_BugTaskCommandGroup__nonzero__true(self):
+        # A BugTaskCommandGroup is non-zero is it has commands.
+        group = BugTaskCommandGroup(
+            BugEmailCommands.get('affects', ['fnord']))
+        self.assertEqual(1, len(group._commands))
+        self.assertTrue(bool(group))
+
+    def test_BugTaskCommandGroup__str__(self):
+        # The str of a BugTaskCommandGroup is the ideal order of the
+        # text commands in the email.
+        command_1 = BugEmailCommands.get('affects', ['fnord'])
+        command_2 = BugEmailCommands.get('status', ['triaged'])
+        group = BugTaskCommandGroup()
+        group.add(command_1)
+        group.add(command_2)
+        self.assertEqual(
+            'affects fnord\nstatus triaged', str(group))
+
+
+class BugCommandGroupTestCase(TestCase):
+
+    def test_BugCommandGroup_init_with_command(self):
+        # A BugCommandGroup can be inited with a BugEmailCommand.
+        command = BugEmailCommands.get('private', ['true'])
+        group = BugCommandGroup(command)
+        self.assertEqual([command], group._commands)
+        self.assertEqual([], group._groups)
+
+    def test_BugCommandGroup_add_command(self):
+        # A BugEmailCommand can be added to a BugCommandGroup.
+        command = BugEmailCommands.get('private', ['true'])
+        group = BugCommandGroup()
+        group.add(command)
+        self.assertEqual([], group._groups)
+        self.assertEqual([command], group._commands)
+
+    def test_BugCommandGroup_add_bugtask_empty_group(self):
+        # Empty BugTaskCommandGroups are ignored.
+        bugtask_group = BugTaskCommandGroup()
+        group = BugCommandGroup()
+        group.add(bugtask_group)
+        self.assertEqual([], group._commands)
+        self.assertEqual([], group._groups)
+
+    def test_BugCommandGroup_add_bugtask_non_empty_group(self):
+        # Non-empty BugTaskCommandGroups are added.
+        bugtask_group = BugTaskCommandGroup(
+            BugEmailCommands.get('affects', ['fnord']))
+        group = BugCommandGroup()
+        group.add(bugtask_group)
+        self.assertEqual([], group._commands)
+        self.assertEqual([bugtask_group], group._groups)
+
+    def test_BugCommandGroup_groups(self):
+        # The groups property returns a copy _groups list in the order that
+        # that they were added.
+        bugtask_group_1 = BugTaskCommandGroup(
+            BugEmailCommands.get('affects', ['fnord']))
+        group = BugCommandGroup()
+        group.add(bugtask_group_1)
+        bugtask_group_2 = BugTaskCommandGroup(
+            BugEmailCommands.get('affects', ['pting']))
+        group.add(bugtask_group_2)
+        self.assertEqual(group._groups, group.groups)
+        self.assertFalse(group._groups is group.groups)
+        self.assertEqual([bugtask_group_1, bugtask_group_2], group.groups)
+
+    def test_BugCommandGroup__nonzero__false(self):
+        # A BugCommandGroup is zero is it has no commands or groups.
+        group = BugCommandGroup()
+        self.assertEqual(0, len(group._commands))
+        self.assertEqual(0, len(group._groups))
+        self.assertFalse(bool(group))
+
+    def test_BugCommandGroup__nonzero__true_commands(self):
+        # A BugCommandGroup is not zero is it has a command.
+        group = BugCommandGroup(
+            BugEmailCommands.get('private', ['true']))
+        self.assertEqual(1, len(group._commands))
+        self.assertEqual(0, len(group._groups))
+        self.assertTrue(bool(group))
+
+    def test_BugCommandGroup__nonzero__true_groups(self):
+        # A BugCommandGroup is not zero is it has a group.
+        group = BugCommandGroup()
+        group.add(BugTaskCommandGroup(
+            BugEmailCommands.get('affects', ['fnord'])))
+        self.assertEqual(0, len(group._commands))
+        self.assertEqual(1, len(group._groups))
+        self.assertTrue(bool(group))
+
+    def test_BugCommandGroup__str__(self):
+        # The str of a BugCommandGroup is the ideal order of the
+        # text commands in the email.
+        bug_group = BugCommandGroup(
+            BugEmailCommands.get('private', ['true']))
+        bug_group.add(
+            BugEmailCommands.get('security', ['false']))
+        bugtask_group = BugTaskCommandGroup(
+            BugEmailCommands.get('affects', ['fnord']))
+        bug_group.add(bugtask_group)
+        self.assertEqual(
+            'security false\nprivate true\naffects fnord', str(bug_group))
+
+
+class BugCommandGroupsTestCase(TestCase):
+
+    def test_BugCommandGroups_add_bug_email_command(self):
+        # BugEmailCommands are ignored.
+        group = BugCommandGroups([])
+        group.add(
+            BugEmailCommands.get('private', ['true']))
+        self.assertEqual([], group._commands)
+        self.assertEqual([], group._groups)
+
+    def test_BugCommandGroups_add_bug_empty_group(self):
+        # Empty BugCommandGroups are ignored.
+        group = BugCommandGroups([])
+        group.add(
+            BugCommandGroup())
+        self.assertEqual([], group._commands)
+        self.assertEqual([], group._groups)
+
+    def test_BugCommandGroup_add_bug_non_empty_group(self):
+        # Non-empty BugCommandGroups are added.
+        group = BugCommandGroups([])
+        bug_group = BugCommandGroup(
+            BugEmailCommands.get('private', ['true']))
+        group.add(bug_group)
+        self.assertEqual([], group._commands)
+        self.assertEqual([bug_group], group._groups)
+
+    def test_BugCommandGroups__init__no_commands(self):
+        # Emails may not contain any commands to group.
+        ordered_commands = BugCommandGroups([])
+        self.assertEqual(0, len(ordered_commands.groups))
+        self.assertEqual('', str(ordered_commands))
+
+    def test_BugCommandGroups__init__one_bug_no_bugtasks(self):
+        # Commands can operate on one bug.
+        email_commands = [
+            ('bug', '1234'),
+            ('private', 'true'),
+            ]
+        commands = [
+            BugEmailCommands.get(name=name, string_args=[args])
+            for name, args in email_commands]
+        ordered_commands = BugCommandGroups(commands)
+        expected = '\n'.join([
+            'bug 1234',
+            'private true',
+            ])
+        self.assertEqual(1, len(ordered_commands.groups))
+        self.assertEqual(2, len(ordered_commands.groups[0].commands))
+        self.assertEqual(0, len(ordered_commands.groups[0].groups))
+        self.assertEqual(expected, str(ordered_commands))
+
+    def test_BugCommandGroups__init__one_bug_one_bugtask(self):
+        # Commands can operate on one bug and one bugtask.
+        email_commands = [
+            ('bug', 'new'),
+            ('affects', 'fnord'),
+            ('importance', 'high'),
+            ('private', 'true'),
+            ]
+        commands = [
+            BugEmailCommands.get(name=name, string_args=[args])
+            for name, args in email_commands]
+        ordered_commands = BugCommandGroups(commands)
+        expected = '\n'.join([
+            'bug new',
+            'private true',
+            'affects fnord',
+            'importance high',
+            ])
+        self.assertEqual(1, len(ordered_commands.groups))
+        self.assertEqual(2, len(ordered_commands.groups[0].commands))
+        self.assertEqual(1, len(ordered_commands.groups[0].groups))
+        self.assertEqual(
+            2, len(ordered_commands.groups[0].groups[0].commands))
+        self.assertEqual(expected, str(ordered_commands))
+
+    def test_BugCommandGroups__init__one_bug_many_bugtask(self):
+        # Commands can operate on one bug and one bugtask.
+        email_commands = [
+            ('bug', 'new'),
+            ('affects', 'fnord'),
+            ('importance', 'high'),
+            ('private', 'true'),
+            ('affects', 'pting'),
+            ('importance', 'low'),
+            ]
+        commands = [
+            BugEmailCommands.get(name=name, string_args=[args])
+            for name, args in email_commands]
+        ordered_commands = BugCommandGroups(commands)
+        expected = '\n'.join([
+            'bug new',
+            'private true',
+            'affects fnord',
+            'importance high',
+            'affects pting',
+            'importance low',
+            ])
+        self.assertEqual(1, len(ordered_commands.groups))
+        self.assertEqual(2, len(ordered_commands.groups[0].commands))
+        self.assertEqual(2, len(ordered_commands.groups[0].groups))
+        self.assertEqual(
+            2, len(ordered_commands.groups[0].groups[0].commands))
+        self.assertEqual(
+            2, len(ordered_commands.groups[0].groups[1].commands))
+        self.assertEqual(expected, str(ordered_commands))
+
+    def test_BugCommandGroups_init_many_bugs(self):
+        # Commands can operate on many bugs.
+        email_commands = [
+            ('bug', '1234'),
+            ('importance', 'high'),
+            ('bug', '5678'),
+            ('importance', 'low'),
+            ('bug', '4321'),
+            ('importance', 'medium'),
+            ]
+        commands = [
+            BugEmailCommands.get(name=name, string_args=[args])
+            for name, args in email_commands]
+        ordered_commands = BugCommandGroups(commands)
+        expected = '\n'.join([
+            'bug 1234',
+            'importance high',
+            'bug 5678',
+            'importance low',
+            'bug 4321',
+            'importance medium',
+            ])
+        self.assertEqual(3, len(ordered_commands.groups))
+        self.assertEqual(expected, str(ordered_commands))
 
 
 class FakeSignature:
