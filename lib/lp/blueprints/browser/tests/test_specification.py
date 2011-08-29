@@ -4,18 +4,25 @@
 __metaclass__ = type
 
 from datetime import datetime
+import doctest
 import unittest
 
 from lazr.restful.testing.webservice import FakeRequest
 import pytz
-from testtools.matchers import Equals
+from testtools.matchers import (
+    DocTestMatches,
+    Equals,
+    )
 from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
 from canonical.launchpad.webapp.servers import StepsToGo
-from canonical.launchpad.testing.pages import find_tag_by_id
+from canonical.launchpad.testing.pages import (
+    extract_text,
+    find_tag_by_id,
+    )
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.tales import format_link
 from lp.blueprints.browser import specification
@@ -30,7 +37,6 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
-
 
 class TestSpecificationSearch(TestCaseWithFactory):
 
@@ -155,6 +161,15 @@ class TestSpecificationView(TestCaseWithFactory):
         self.assertEqual('nofollow', li.a['rel'])
         self.assertEqual(spec.specurl, li.a['href'])
 
+    def test_registration_date_displayed(self):
+        """The time frame does not prepend on incorrectly."""
+        spec = self.factory.makeSpecification(
+            owner=self.factory.makePerson(displayname="Some Person"))
+        html = create_initialized_view(
+                spec, '+index')()
+        self.assertThat(extract_text(html), DocTestMatches(extract_text(
+            "... Registered by Some Person a moment ago ..."), doctest.ELLIPSIS
+            | doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF))
 
 class TestSpecificationEditStatusView(TestCaseWithFactory):
     """Test the SpecificationEditStatusView."""

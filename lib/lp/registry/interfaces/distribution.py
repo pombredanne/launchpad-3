@@ -545,21 +545,6 @@ class IDistributionPublic(
         (a substring of) their binary package names.
         """
 
-    def getFileByName(filename, archive=None, source=True, binary=True):
-        """Find and return a LibraryFileAlias for the filename supplied.
-
-        The file returned will be one of those published in the distribution.
-
-        If searching both source and binary, and the file is found in the
-        binary packages it'll return that over a file for a source package.
-
-        If 'archive' is not passed the distribution.main_archive is assumed.
-
-        At least one of source and binary must be true.
-
-        Raises NotFoundError if it fails to find the named file.
-        """
-
     def guessPublishedSourcePackageName(pkgname):
         """Return the "published" SourcePackageName related to pkgname.
 

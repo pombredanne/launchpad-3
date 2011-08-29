@@ -9,10 +9,13 @@ __metaclass__ = type
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
-from lp.translations.browser.potemplate import POTemplateAdminView
+from lp.translations.browser.potemplate import (
+    POTemplateAdminView,
+    POTemplateEditView,
+    )
 
 
-class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
+class TestPOTemplateEditViewValidation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -29,6 +32,42 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
         data.update(**kwargs)
         return data
 
+    def test_field_names_productseries(self):
+        # A product series template has one set of field names that include
+        # the template name.
+        potemplate = self.factory.makePOTemplate()
+        view = POTemplateEditView(potemplate, LaunchpadTestRequest())
+        self.assertContentEqual(
+            ['name', 'translation_domain', 'description', 'priority',
+             'path', 'iscurrent', 'owner'],
+            view.field_names)
+
+    def test_field_names_sourcepackage(self):
+        # A sourcepackage template has two more fields compared to the
+        # product series templates.
+        sourcepackage = self.factory.makeSourcePackage()
+        potemplate = self.factory.makePOTemplate(
+            distroseries=sourcepackage.distroseries,
+            sourcepackagename=sourcepackage.sourcepackagename)
+        view = POTemplateEditView(potemplate, LaunchpadTestRequest())
+        self.assertContentEqual(
+            ['name', 'translation_domain', 'description', 'priority',
+             'path', 'iscurrent', 'sourcepackagename', 'languagepack'],
+            view.field_names)
+
+    def test_detects_invalid_names(self):
+        # A template name must be satisfying the valid_name constraint.
+        invalid_name = 'name!'
+        potemplate = self.factory.makePOTemplate()
+        data = self._makeData(potemplate, name=invalid_name)
+        view = POTemplateEditView(potemplate, LaunchpadTestRequest())
+        view.validate(data)
+        self.assertEqual(
+            [u'Template name can only start with lowercase letters a-z '
+             u'or digits 0-9, and other than those characters, can only '
+             u'contain "-", "+" and "." characters.'],
+            view.errors)
+
     def test_detects_name_clash_on_name_change(self):
         # A template name may not already be used.
         existing_name = self.factory.getUniqueString()
@@ -36,7 +75,7 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
         series = existing_potemplate.productseries
         potemplate = self.factory.makePOTemplate(productseries=series)
 
-        view = POTemplateAdminView(potemplate, LaunchpadTestRequest())
+        view = POTemplateEditView(potemplate, LaunchpadTestRequest())
         data = self._makeData(potemplate, name=existing_name)
         view.validate(data)
         self.assertEqual([u'Name is already in use.'], view.errors)
@@ -49,10 +88,49 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
         series = existing_potemplate.productseries
         potemplate = self.factory.makePOTemplate(productseries=series)
 
-        view = POTemplateAdminView(potemplate, LaunchpadTestRequest())
+        view = POTemplateEditView(potemplate, LaunchpadTestRequest())
         data = self._makeData(potemplate, translation_domain=existing_domain)
         view.validate(data)
         self.assertEqual([u'Domain is already in use.'], view.errors)
+
+    def test_detects_name_clash_on_sourcepackage_change(self):
+        # Detect changing to a source package that already has a template of
+        # the same name.
+        sourcepackage = self.factory.makeSourcePackage()
+        existing_potemplate = self.factory.makePOTemplate(
+            sourcepackage=sourcepackage)
+        potemplate = self.factory.makePOTemplate(
+            distroseries=sourcepackage.distroseries,
+            name=existing_potemplate.name)
+
+        view = POTemplateEditView(potemplate, LaunchpadTestRequest())
+        data = self._makeData(
+            potemplate, sourcepackagename=sourcepackage.sourcepackagename)
+        view.validate(data)
+        self.assertEqual(
+            [u'Source package already has a template with that same name.'],
+            view.errors)
+
+    def test_detects_domain_clash_on_sourcepackage_change(self):
+        # Detect changing to a source package that already has a template with
+        # the same translation domain.
+        sourcepackage = self.factory.makeSourcePackage()
+        existing_potemplate = self.factory.makePOTemplate(
+            sourcepackage=sourcepackage)
+        potemplate = self.factory.makePOTemplate(
+            distroseries=sourcepackage.distroseries,
+            translation_domain=existing_potemplate.translation_domain)
+
+        view = POTemplateEditView(potemplate, LaunchpadTestRequest())
+        data = self._makeData(
+            potemplate, sourcepackagename=sourcepackage.sourcepackagename)
+        view.validate(data)
+        self.assertEqual(
+            [u'Source package already has a template with that same domain.'],
+            view.errors)
+
+
+class TestPOTemplateAdminViewValidation(TestPOTemplateEditViewValidation):
 
     def test_detects_name_clash_on_productseries_change(self):
         # Detect changing to a productseries that already has a template of
@@ -84,42 +162,6 @@ class TestPOTemplateAdminViewValidation(TestCaseWithFactory):
         view.validate(data)
         self.assertEqual(
             [u'Series already has a template with that same domain.'],
-            view.errors)
-
-    def test_detects_name_clash_on_sourcepackage_change(self):
-        # Detect changing to a source package that already has a template of
-        # the same name.
-        sourcepackage = self.factory.makeSourcePackage()
-        existing_potemplate = self.factory.makePOTemplate(
-            sourcepackage=sourcepackage)
-        potemplate = self.factory.makePOTemplate(
-            distroseries=sourcepackage.distroseries,
-            name=existing_potemplate.name)
-
-        view = POTemplateAdminView(potemplate, LaunchpadTestRequest())
-        data = self._makeData(
-            potemplate, sourcepackagename=sourcepackage.sourcepackagename)
-        view.validate(data)
-        self.assertEqual(
-            [u'Source package already has a template with that same name.'],
-            view.errors)
-
-    def test_detects_domain_clash_on_sourcepackage_change(self):
-        # Detect changing to a productseries that already has a template with
-        # the same translation domain.
-        sourcepackage = self.factory.makeSourcePackage()
-        existing_potemplate = self.factory.makePOTemplate(
-            sourcepackage=sourcepackage)
-        potemplate = self.factory.makePOTemplate(
-            distroseries=sourcepackage.distroseries,
-            translation_domain=existing_potemplate.translation_domain)
-
-        view = POTemplateAdminView(potemplate, LaunchpadTestRequest())
-        data = self._makeData(
-            potemplate, sourcepackagename=sourcepackage.sourcepackagename)
-        view.validate(data)
-        self.assertEqual(
-            [u'Source package already has a template with that same domain.'],
             view.errors)
 
     def test_detects_no_sourcepackage_or_productseries(self):
