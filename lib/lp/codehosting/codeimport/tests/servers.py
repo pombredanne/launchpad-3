@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Server classes that know how to create various kinds of foreign archive."""
@@ -21,17 +21,17 @@ import signal
 import stat
 import subprocess
 import tempfile
-import time
 import threading
+import time
 
 from bzrlib.branch import Branch
 from bzrlib.branchbuilder import BranchBuilder
 from bzrlib.bzrdir import BzrDir
-from bzrlib.tests.treeshape import build_tree_contents
 from bzrlib.tests.test_server import (
     ReadonlySmartTCPServer_for_testing,
     TestServer,
     )
+from bzrlib.tests.treeshape import build_tree_contents
 from bzrlib.transport import Server
 from bzrlib.urlutils import (
     escape,
@@ -45,14 +45,12 @@ from dulwich.server import (
     DictBackend,
     TCPGitServer,
     )
-from mercurial.ui import (
-    ui as hg_ui,
-    )
 from mercurial.hgweb import (
     hgweb,
     server as hgweb_server,
     )
 from mercurial.localrepo import localrepository
+from mercurial.ui import ui as hg_ui
 import subvertpy.ra
 import subvertpy.repos
 
@@ -120,7 +118,7 @@ class SubversionServer(Server):
         if self._use_svn_serve:
             conf_path = os.path.join(
                 self.repository_path, 'conf/svnserve.conf')
-            with open(conf_path , 'w') as conf_file:
+            with open(conf_path, 'w') as conf_file:
                 conf_file.write('[general]\nanon-access = write\n')
             self._svnserve = subprocess.Popen(
                 ['svnserve', '--daemon', '--foreground', '--threads',
@@ -355,7 +353,8 @@ class MercurialServer(Server):
             finally:
                 f.close()
             repo[None].add([filename])
-        repo.commit(text='<The commit message>', user='jane Foo <joe@foo.com>')
+        repo.commit(
+            text='<The commit message>', user='jane Foo <joe@foo.com>')
 
 
 class BzrServer(Server):
@@ -373,10 +372,11 @@ class BzrServer(Server):
         branch.get_config().set_user_option("create_signatures", "never")
         builder = BranchBuilder(branch=branch)
         actions = [('add', ('', 'tree-root', 'directory', None))]
-        actions += [('add', (path, path+'-id', 'file', content)) for (path,
-            content) in tree_contents]
-        builder.build_snapshot(None, None,
-                actions, committer='Joe Foo <joe@foo.com>',
+        actions += [
+            ('add', (path, path + '-id', 'file', content))
+            for (path, content) in tree_contents]
+        builder.build_snapshot(
+            None, None, actions, committer='Joe Foo <joe@foo.com>',
                 message=u'<The commit message>')
 
     def get_url(self):
@@ -388,12 +388,17 @@ class BzrServer(Server):
     def start_server(self):
         super(BzrServer, self).start_server()
         self.createRepository(self.repository_path)
+
         class LocalURLServer(TestServer):
             def __init__(self, repository_path):
                 self.repository_path = repository_path
-            def start_server(self): pass
+
+            def start_server(self):
+                pass
+
             def get_url(self):
                 return local_path_to_url(self.repository_path)
+
         if self._use_server:
             self._bzrserver = ReadonlySmartTCPServer_for_testing()
             self._bzrserver.start_server(

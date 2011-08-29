@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """The code import worker. This imports code from foreign repositories."""
@@ -48,31 +48,29 @@ from bzrlib.urlutils import (
 import cscvs
 from cscvs.cmds import totla
 import CVS
-import SCM
-
-from canonical.config import config
-
 from lazr.uri import (
     InvalidURIError,
     URI,
     )
+import SCM
 
+from canonical.config import config
 from lp.code.enums import RevisionControlSystems
 from lp.code.interfaces.branch import get_blacklisted_hostnames
 from lp.codehosting.codeimport.foreigntree import (
     CVSWorkingTree,
     SubversionWorkingTree,
     )
-from lp.codehosting.safe_open import (
-    BadUrl,
-    BranchOpenPolicy,
-    SafeBranchOpener,
-    )
 from lp.codehosting.codeimport.tarball import (
     create_tarball,
     extract_tarball,
     )
 from lp.codehosting.codeimport.uifactory import LoggingUIFactory
+from lp.codehosting.safe_open import (
+    BadUrl,
+    BranchOpenPolicy,
+    SafeBranchOpener,
+    )
 from lp.services.propertycache import cachedproperty
 
 
@@ -944,7 +942,8 @@ class BzrImportWorker(PullingImportWorker):
     def getRevisionLimit(self):
         """See `PullingImportWorker.getRevisionLimit`."""
         # For now, just grab the whole branch at once.
-        # bzr does support fetch(limit=) but it isn't very efficient at the moment.
+        # bzr does support fetch(limit=) but it isn't very efficient at
+        # the moment.
         return None
 
     @property
