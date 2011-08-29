@@ -192,6 +192,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             checked_branches.append(self)
             if self.stacked_on not in checked_branches:
                 is_stacked_on_private = (
+                    self.stacked_on.explicitly_private or
                     self.stacked_on._isStackedOnPrivate(checked_branches))
         return is_stacked_on_private
 
