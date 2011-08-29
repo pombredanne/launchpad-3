@@ -60,6 +60,8 @@ class BranchRewriteScript(LaunchpadScript):
                 else:
                     # Standard input has been closed, so die.
                     return
+            except KeyboardInterrupt:
+                sys.exit()
             except Exception:
                 self.logger.exception('Exception occurred:')
                 print "NULL"
