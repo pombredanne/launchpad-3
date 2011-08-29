@@ -230,7 +230,7 @@ class BranchPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
 
 class TargetPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
     """Adapt targets (Product, Package, Distribution) to PickerEntrySource."""
-    
+
     def getDescription(self, target):
         """Gets the description data for target picker entries."""
         raise NotImplemented

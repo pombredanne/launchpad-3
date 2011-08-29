@@ -150,7 +150,8 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         self.assertEqual(None, None)
 
 
-class TestDistributionSourcePackagePickerEntrySourceAdapter(TestCaseWithFactory):
+class TestDistributionSourcePackagePickerEntrySourceAdapter(
+        TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
@@ -193,7 +194,8 @@ class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
 
     def test_product_provides_summary(self):
         product = self.factory.makeProduct()
-        [entry] = IPickerEntrySource(product).getPickerEntries([product], object())
+        [entry] = IPickerEntrySource(product).getPickerEntries(
+                [product], object())
         self.assertEqual(entry.description, product.summary)
 
 
@@ -208,7 +210,8 @@ class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
 
     def test_distribution_provides_summary(self):
         distribution = self.factory.makeDistribution()
-        [entry] = IPickerEntrySource(distribution).getPickerEntries([distribution], object())
+        [entry] = IPickerEntrySource(distribution).getPickerEntries(
+                [distribution], object())
         self.assertEqual(entry.description, distribution.summary)
 
 
