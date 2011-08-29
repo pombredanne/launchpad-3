@@ -16,6 +16,8 @@ from lp.testing import TestCase
 # the tests to pass.
 MY_LINE_NUMBER = 17
 
+MY_FILE_NAME = __file__[:__file__.rindex('.py')] + '.py'
+
 
 class Supplement:
     def __init__(self, kwargs):
@@ -33,6 +35,12 @@ def get_frame(supplement=None, info=None):
         __traceback_info__ = info
         __traceback_info__  # Quiet down the linter.
     return sys._getframe()
+
+
+class BadString:
+
+    def __str__(self):
+        raise ValueError()
 
 
 class TestStacktrace(TestCase):
@@ -71,7 +79,7 @@ class TestStacktrace(TestCase):
     def test_get_frame_data_standard(self):
         filename, lineno, name, line, modname, supplement, info = (
             stacktrace._get_frame_data(get_frame(), MY_LINE_NUMBER))
-        self.assertEqual(__file__, filename)
+        self.assertEqual(MY_FILE_NAME, filename)
         self.assertEqual(MY_LINE_NUMBER, lineno)
         self.assertEqual('get_frame', name)
         self.assertStartsWith(line, 'MY_LINE_NUMBER = ')
@@ -91,7 +99,7 @@ class TestStacktrace(TestCase):
                 get_frame(supplement={}), MY_LINE_NUMBER))
         self.assertEqual(
             dict(source_url=None, line=None, column=None, expression=None,
-                 warnings=(), extra=None),
+                 warnings=[], extra=None),
             supplement)
 
     def test_get_frame_data_supplement_and_info(self):
@@ -101,7 +109,7 @@ class TestStacktrace(TestCase):
                 MY_LINE_NUMBER))
         self.assertEqual(
             dict(source_url=None, line=None, column=None, expression=None,
-                 warnings=(), extra=None),
+                 warnings=[], extra=None),
             supplement)
         self.assertEqual('foo bar', info)
 
@@ -119,9 +127,9 @@ class TestStacktrace(TestCase):
                     )),
                 MY_LINE_NUMBER))
         self.assertEqual(
-            dict(source_url='/foo/bar.pt', line=42, column=84,
+            dict(source_url='/foo/bar.pt', line='42', column='84',
                  expression='tal:define="foo view/foo"',
-                 warnings=('watch out', 'pass auf'),
+                 warnings=['watch out', 'pass auf'],
                  extra='read all about it'),
             supplement)
 
@@ -134,7 +142,7 @@ class TestStacktrace(TestCase):
                 MY_LINE_NUMBER))
         self.assertEqual(
             dict(source_url=None, line=None, column=None, expression=None,
-                 warnings=(), extra=None),
+                 warnings=[], extra=None),
             supplement)
 
     def test_get_frame_data_supplement_bad_getInfo_with_traceback(self):
@@ -153,16 +161,47 @@ class TestStacktrace(TestCase):
             stacktrace.DEBUG_EXCEPTION_FORMATTER = False
         self.assertEqual(
             dict(source_url=None, line=None, column=None, expression=None,
-                 warnings=(), extra=None),
+                 warnings=[], extra=None),
             supplement)
         self.assertIn('boo_hiss', stderr.getvalue())
+
+    def test_get_frame_data_broken_str(self):
+        bad = BadString()
+        filename, lineno, name, line, modname, supplement, info = (
+            stacktrace._get_frame_data(
+                get_frame(
+                    supplement=dict(
+                        source_url=bad,
+                        line=bad,
+                        column=bad,
+                        expression=bad,
+                        warnings=('watch out', bad),
+                        getInfo=lambda: bad
+                    ),
+                    info=bad),
+                MY_LINE_NUMBER))
+        self.assertEqual(
+            dict(source_url=None, line=None, column=None,
+                 expression=None, warnings=['watch out'], extra=None),
+            supplement)
+        self.assertIs(None, info)
+
+    def test_get_frame_data_broken_warnings(self):
+        filename, lineno, name, line, modname, supplement, info = (
+            stacktrace._get_frame_data(
+                get_frame(
+                    supplement=dict(
+                        warnings=object()
+                    )),
+                MY_LINE_NUMBER))
+        self.assertEqual([], supplement['warnings'])
 
     def test_extract_stack(self):
         extracted = stacktrace.extract_stack(get_frame())
         self.assertTrue(len(extracted) > 1)
         filename, lineno, name, line, modname, supplement, info = (
             extracted[-1])
-        self.assertEqual(__file__, filename)
+        self.assertEqual(MY_FILE_NAME, filename)
         self.assertIsInstance(lineno, int)
         self.assertEqual('get_frame', name)
         self.assertEqual('return sys._getframe()', line)
@@ -179,7 +218,7 @@ class TestStacktrace(TestCase):
         self.assertEqual(1, len(extracted))
         filename, lineno, name, line, modname, supplement, info = (
             extracted[0])
-        self.assertEqual(__file__, filename)
+        self.assertEqual(MY_FILE_NAME, filename)
         self.assertIsInstance(lineno, int)
         self.assertEqual('test_extract_tb', name)
         self.assertEqual('raise ValueError()', line)
@@ -195,7 +234,7 @@ class TestStacktrace(TestCase):
             self.assertEndsWith(line, '\n')
         line = formatted[-1].split('\n')
         self.assertStartsWith(
-            line[0], '  File "' + __file__ + '", line ')
+            line[0], '  File "' + MY_FILE_NAME + '", line ')
         self.assertEndsWith(line[0], ', in get_frame')
         self.assertEqual('    return sys._getframe()', line[1])
 
@@ -218,7 +257,7 @@ class TestStacktrace(TestCase):
             self.assertEndsWith(line, '\n')
         line = formatted[-1].split('\n')
         self.assertStartsWith(
-            line[0], '  File "' + __file__ + '", line ')
+            line[0], '  File "' + MY_FILE_NAME + '", line ')
         self.assertEndsWith(line[0], ', in get_frame')
         self.assertEqual('    return sys._getframe()', line[1])
         self.assertEqual('   - /foo/bar.pt', line[2])
@@ -234,13 +273,8 @@ class TestStacktrace(TestCase):
         self.assertEqual('   - I am the Walrus', line[8])
 
     def test_format_list_extra_errors(self):
-        extracted = stacktrace.extract_stack(
-            get_frame(
-                supplement=dict(
-                    # This will cause an error because it is not iterable.
-                    warnings=object()
-                ))
-            )
+        extracted = stacktrace.extract_stack(get_frame(supplement=dict()))
+        extracted[-1][-2]['warnings'] = object()  # This should never happen.
         stderr = sys.stderr = StringIO.StringIO()
         self.assertFalse(stacktrace.DEBUG_EXCEPTION_FORMATTER)
         stacktrace.DEBUG_EXCEPTION_FORMATTER = True

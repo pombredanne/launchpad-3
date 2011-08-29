@@ -811,6 +811,19 @@ class CodeImportResultStatus(DBEnumeratedType):
         Bazaar or the Bazaar foreign branch support.
         """)
 
+    FAILURE_FORBIDDEN = DBItem(240, """
+        Forbidden URL
+
+        The import failed because the URL of the branch that is imported
+        or the URL of one of the branches that it references is blacklisted.
+        """)
+
+    FAILURE_REMOTE_BROKEN = DBItem(250, """
+        Broken remote branch
+
+        The remote branch exists but is corrupted in some way
+        """)
+
     RECLAIMED = DBItem(310, """
         Job reclaimed
 
