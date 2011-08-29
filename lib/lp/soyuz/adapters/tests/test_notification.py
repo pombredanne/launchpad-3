@@ -134,7 +134,7 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
             notifications[1]["From"])
 
     def test_fetch_information_spr_multiple_changelogs(self):
-        # If previous_version is passed the "changesfile" entry in the
+        # If previous_version is passed the "changelog" entry in the
         # returned dict should contain the changelogs for all SPRs *since*
         # that version and up to and including the passed SPR.
         changelog = self.factory.makeChangelog(
@@ -146,8 +146,8 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         spr = spph.sourcepackagerelease
         info = fetch_information(spr, None, None, previous_version="1.0")
 
-        self.assertIn("foo (1.1)", info['changesfile'])
-        self.assertIn("foo (1.2)", info['changesfile'])
+        self.assertIn("foo (1.1)", info['changelog'])
+        self.assertIn("foo (1.2)", info['changelog'])
 
     def test_notify_bpr_rejected(self):
         # If we notify about a rejected bpr with no source, a notification is
@@ -206,7 +206,7 @@ class TestNotification(TestCaseWithFactory):
         info = fetch_information(
             None, None, changes)
         self.assertEqual('2001-01-01', info['date'])
-        self.assertEqual(' * Foo!', info['changesfile'])
+        self.assertEqual(' * Foo!', info['changelog'])
         fields = [
             info['changedby'],
             info['maintainer'],
@@ -223,7 +223,7 @@ class TestNotification(TestCaseWithFactory):
             creator=creator, maintainer=maintainer)
         info = fetch_information(spr, None, None)
         self.assertEqual(info['date'], spr.dateuploaded)
-        self.assertEqual(info['changesfile'], spr.changelog_entry)
+        self.assertEqual(info['changelog'], spr.changelog_entry)
         self.assertEqual(
             info['changedby'], format_address_for_person(spr.creator))
         self.assertEqual(
@@ -240,7 +240,7 @@ class TestNotification(TestCaseWithFactory):
         info = fetch_information(None, [bpr], None)
         spr = bpr.build.source_package_release
         self.assertEqual(info['date'], spr.dateuploaded)
-        self.assertEqual(info['changesfile'], spr.changelog_entry)
+        self.assertEqual(info['changelog'], spr.changelog_entry)
         self.assertEqual(
             info['changedby'], format_address_for_person(spr.creator))
         self.assertEqual(

@@ -273,7 +273,7 @@ def assemble_body(blamer, spr, bprs, archive, distroseries, summary, changes,
         'STATUS': ACTION_DESCRIPTIONS[action],
         'SUMMARY': summary,
         'DATE': 'Date: %s' % info['date'],
-        'CHANGESFILE': info['changesfile'],
+        'CHANGESFILE': info['changelog'],
         'DISTRO': distroseries.distribution.title,
         'ANNOUNCE': 'No announcement sent',
         'CHANGEDBY': '',
@@ -635,7 +635,7 @@ def fetch_information(spr, bprs, changes, previous_version=None):
         changesfile = date = None
 
     return {
-        'changesfile': changesfile,
+        'changelog': changesfile,
         'date': date,
         'changedby': changedby,
         'changedby_displayname': changedby_displayname,
