@@ -8,6 +8,8 @@ from storm.store import Store
 from testtools.matchers import LessThan
 import transaction
 from zope.component import getUtility
+import doctest
+from testtools.matchers import DocTestMatches
 
 from canonical.config import config
 from canonical.launchpad.ftests import (
@@ -19,6 +21,7 @@ from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+from canonical.launchpad.testing.pages import extract_text
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
@@ -79,6 +82,13 @@ class TestPersonIndexView(TestCaseWithFactory):
         message = 'Finch is queued to be be merged in a few minutes.'
         self.assertEqual(1, len(notifications))
         self.assertEqual(message, notifications[0].message)
+        
+    def test_display_utcoffset(self):
+        person = self.factory.makePerson(time_zone='Asia/Kolkata')
+        html = create_initialized_view(person, '+portlet-contact-details')()
+        self.assertThat(extract_text(html), DocTestMatches(extract_text(
+            "... Asia/Kolkata (UTC+0530) ..."), doctest.ELLIPSIS
+            | doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF))
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
