@@ -178,11 +178,7 @@ class Branch(SQLBase, BzrIdentityMixin):
 
     @property
     def private(self):
-        return self.explicitly_private or self.stacked_on_private
-
-    @cachedproperty
-    def stacked_on_private(self):
-        return self._isStackedOnPrivate()
+        return self.explicitly_private or self._isStackedOnPrivate()
 
     def _isStackedOnPrivate(self, checked_branches=None):
         # Return True if any of this branch's stacked_on branches is private.
