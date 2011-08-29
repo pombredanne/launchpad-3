@@ -63,9 +63,15 @@
 	    Y.on('domready', function() {
               var dsd_details = Y.lp.registry.distroseriesdifferences_details;
 	      Y.all('input[name=field.actions.sync]').each(function(button) {
+                // Cleanup the button's title which says the button is disabled if
+                // Javascript is disabled.
+                button.set('title', '');
+                // Create a function to bypass the display of the Confirmation
+                // Overlay is no package has been selected.
                 var has_synced_packages = function() {
                   return (dsd_details.get_number_of_packages() !== 0);
                 }
+                // Create the Confirmation Overlay.
 		new Y.lazr.ConfirmationOverlay({
                   button: button,
                   display_confirmation_fn: has_synced_packages,
