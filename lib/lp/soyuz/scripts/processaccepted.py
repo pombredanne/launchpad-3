@@ -67,11 +67,11 @@ def get_bugs_from_changes_file(changes_file):
     return bugs
 
 
-def get_bugs_from_changelog_entry(sourcepackagerelease):
+def get_bugs_from_changelog_entry(sourcepackagerelease, since_version):
     """Parse the changelog_entry in the sourcepackagerelease and return a
     list of `IBug`s referenced by it.
     """
-    changelog = sourcepackagerelease.changelog_entry
+    changelog = sourcepackagerelease.aggregate_changelog(since_version)
     closes = []
     # There are 2 main regexes to match.  Each match from those can then
     # have further multiple matches from the 3rd regex:
@@ -151,7 +151,7 @@ def close_bugs_for_queue_item(queue_item, changesfile_object=None):
             source_queue_item.sourcepackagerelease, changesfile_object)
 
 
-def close_bugs_for_sourcepublication(source_publication):
+def close_bugs_for_sourcepublication(source_publication, since_version=None):
     """Close bugs for a given sourcepublication.
 
     Given a `ISourcePackagePublishingHistory` close bugs mentioned in
@@ -164,19 +164,32 @@ def close_bugs_for_sourcepublication(source_publication):
     changesfile_object = sourcepackagerelease.upload_changesfile
 
     close_bugs_for_sourcepackagerelease(
-        sourcepackagerelease, changesfile_object)
+        sourcepackagerelease, changesfile_object, since_version)
 
 
-def close_bugs_for_sourcepackagerelease(source_release, changesfile_object):
+def close_bugs_for_sourcepackagerelease(source_release, changesfile_object,
+                                        since_version=None):
     """Close bugs for a given source.
 
     Given a `ISourcePackageRelease` and a corresponding changesfile object,
     close bugs mentioned in the changesfile in the context of the source.
+
+    If changesfile_object is None and since_version is supplied,
+    close all the bugs in changelog entries made after that version and up
+    to and including the source_release's version.  It does this by parsing
+    the changelog on the sourcepackagerelease.  This could be extended in
+    the future to deal with the changes file as well but there is no
+    requirement to do so right now.
     """
+    if since_version is not None:
+        assert changesfile_object is None, (
+            "Only set since_version if changesfile_object is None")
+
     if changesfile_object:
         bugs_to_close = get_bugs_from_changes_file(changesfile_object)
     else:
-        bugs_to_close = get_bugs_from_changelog_entry(source_release)
+        bugs_to_close = get_bugs_from_changelog_entry(
+            source_release, since_version=since_version)
 
     # No bugs to be closed by this upload, move on.
     if not bugs_to_close:
