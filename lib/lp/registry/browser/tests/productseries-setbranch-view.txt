@@ -206,7 +206,7 @@ A correct URL is accepted.
     ...     print error
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
-    Mirrored branch created and linked to the series.
+    Code import created and branch linked to the series.
     >>> print series.branch.name
     blazer-branch
 
@@ -409,10 +409,12 @@ error if a duplicate name is used.
     >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
     >>> for error in view.errors:
     ...     print error
-    You already have a branch for <em>Chevy</em> called <em>blazer-branch</em>.
+
+    This foreign branch URL is already specified for the imported branch
+    <a href="http://.../blazer-branch">...</a>.
     >>> print view.errors_in_action
-    True
+    False
     >>> print view.next_url
-    None
+    http://launchpad.dev/chevy/corvair
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
