@@ -680,9 +680,10 @@ class SubmissionParser(object):
                  where the values are the parsing results of _parseHAL,
                  _parseProcessors, _parseAliases.
         """
-        # Submissions from checkbox for Maverick and Natty unfortunately do
-        # not contain a <sysfs-attributes> node. A default value here
-        # allows us to mark these submissions.
+        # Submissions from checkbox for Lucid, Maverick and Natty
+        # unfortunately do not contain a <sysfs-attributes> node.
+        # A default value here allows us to mark these submissions.
+        # See also bug 835103.
         hardware_data = {
             'sysfs-attributes': None,
             }
@@ -1333,10 +1334,11 @@ class SubmissionParser(object):
         should have a corresponding sysfs node, and this node should
         define the attributes 'vendor', 'model', 'type'.
         """
-        # Broken submissions from Maverick and Natty. We'll have to deal
-        # with incomplete data for SCSI devices in this case if we don't
-        # want to drop the entire submission, so just pretend that things
-        # are fine.
+        # Broken submissions from Lucid, Maverick and Natty. We'll have
+        # to deal with incomplete data for SCSI devices in this case if
+        # we don't want to drop the entire submission, so just pretend
+        # that things are fine.
+        # See also bug 835103.
         if sysfs_data is None:
             return True
         for device in udev_data:
@@ -1470,7 +1472,8 @@ class SubmissionParser(object):
             if sysfs_data is not None:
                 sysfs_data_for_device = sysfs_data.get(device_path)
             else:
-                # broken maverick and natty submissions.
+                # broken Lucid, Maverick and Natty submissions.
+                # See also bug 835103.
                 sysfs_data_for_device = None
             if device_path == UDEV_ROOT_PATH:
                 device = UdevDevice(
@@ -2748,9 +2751,10 @@ class UdevDevice(BaseDevice):
         # different nodes: SCSI hosts, SCSI targets and SCSI devices.
         # They are distiguished by the property DEVTYPE.
 
-        # Hack for broken submissions from maverick and natty:
+        # Hack for broken submissions from Lucid, Maverick and Natty:
         # If we don't have sysfs information, pretend that no SCSI
         # related node corresponds to a real device.
+        # See also bug 835103.
         if self.sysfs is None:
             return False
         properties = self.udev['E']
