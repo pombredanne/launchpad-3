@@ -8,6 +8,7 @@ __metaclass__ = type
 from textwrap import dedent
 
 from fixtures import EnvironmentVariableFixture
+from storm.exceptions import DisconnectionError
 from zope.component import (
     adapts,
     queryAdapter,
@@ -17,9 +18,12 @@ from zope.interface import (
     Interface,
     )
 
-from canonical.testing.layers import BaseLayer
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.testing.layers import BaseLayer, LaunchpadZopelessLayer
+from lp.registry.model.person import Person
 from lp.testing import TestCase
 from lp.testing.fixture import (
+    PGBouncerFixture,
     RabbitServer,
     ZopeAdapterFixture,
     )
@@ -89,3 +93,59 @@ class TestZopeAdapterFixture(TestCase):
             self.assertIsInstance(adapter, FooToBar)
         # The adapter is no longer registered.
         self.assertIs(None, queryAdapter(context, IBar))
+
+
+class TestPGBouncerFixture(TestCase):
+    layer = LaunchpadZopelessLayer
+
+    def is_connected(self):
+        # First rollback any existing transaction to ensure we attempt
+        # to reconnect. We currently rollback the store explicitely
+        # rather than call transaction.abort() due to Bug #819282.
+        store = IMasterStore(Person)
+        store.rollback()
+
+        try:
+            store.find(Person).first()
+            return True
+        except DisconnectionError:
+            return False
+
+    def test_stop_and_start(self):
+        # Database is working.
+        assert self.is_connected()
+
+        # And database with the fixture is working too.
+        pgbouncer = PGBouncerFixture()
+        with PGBouncerFixture() as pgbouncer:
+            assert self.is_connected()
+
+            # pgbouncer is transparant. To confirm we are connecting via
+            # pgbouncer, we need to shut it down and confirm our
+            # connections are dropped.
+            pgbouncer.stop()
+            assert not self.is_connected()
+
+            # If we restart it, things should be back to normal.
+            pgbouncer.start()
+            assert self.is_connected()
+
+        # Database is still working.
+        assert self.is_connected()
+
+    def test_stop_no_start(self):
+        # Database is working.
+        assert self.is_connected()
+
+        # And database with the fixture is working too.
+        with PGBouncerFixture() as pgbouncer:
+            assert self.is_connected()
+
+            # pgbouncer is transparant. To confirm we are connecting via
+            # pgbouncer, we need to shut it down and confirm our
+            # connections are dropped.
+            pgbouncer.stop()
+            assert not self.is_connected()
+
+        # Database is still working.
+        assert self.is_connected()

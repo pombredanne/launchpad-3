@@ -41,7 +41,10 @@ class ConnectionWrapper:
     def close(self):
         if self in PgTestSetup.connections:
             PgTestSetup.connections.remove(self)
-            self.real_connection.close()
+            try:
+                self.real_connection.close()
+            except psycopg2.InterfaceError:
+                pass # Already closed, killed etc. Ignore.
 
     def rollback(self, InterfaceError=psycopg2.InterfaceError):
         # In our test suites, rollback ends up being called twice in some
