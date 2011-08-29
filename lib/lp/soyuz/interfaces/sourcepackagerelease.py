@@ -240,16 +240,6 @@ class ISourcePackageRelease(Interface):
         :return: total size (in KB) of this package
         """
 
-    def aggregate_changelog(since_version=None):
-        """Get all the changelogs since the version specified.
-
-        :param since_version: Return changelogs of all versions
-            after since_version up to and including the version of this
-            sourcepackagerelease.
-        :return: A concatenated set of changelogs of all the required
-            versions, with a blank line between each.
-        """
-
 
 class PackageDiffAlreadyRequestedError(Exception):
     """Raised when an `IPackageDiff` request already exists."""
