@@ -14,7 +14,10 @@ import transaction
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadScriptLayer,
+    )
 from lp.code.interfaces.codehosting import branch_id_alias
 from lp.codehosting.rewrite import BranchRewriter
 from lp.codehosting.vfs import branch_id_to_path
@@ -23,6 +26,7 @@ from lp.testing import (
     FakeTime,
     TestCaseWithFactory,
     )
+from lp.testing.fixture import PGBouncerFixture
 
 
 class TestBranchRewriter(TestCaseWithFactory):
@@ -177,7 +181,8 @@ class TestBranchRewriter(TestCaseWithFactory):
         transaction.commit()
         rewriter.rewriteLine('/' + branch.unique_name + '/.bzr/README')
         rewriter.rewriteLine('/' + branch.unique_name + '/.bzr/README')
-        logging_output_lines = self.getLoggerOutput(rewriter).strip().split('\n')
+        logging_output_lines = self.getLoggerOutput(
+            rewriter).strip().split('\n')
         self.assertEqual(2, len(logging_output_lines))
         self.assertIsNot(
             None,
@@ -194,7 +199,8 @@ class TestBranchRewriter(TestCaseWithFactory):
         self.fake_time.advance(
             config.codehosting.branch_rewrite_cache_lifetime + 1)
         rewriter.rewriteLine('/' + branch.unique_name + '/.bzr/README')
-        logging_output_lines = self.getLoggerOutput(rewriter).strip().split('\n')
+        logging_output_lines = self.getLoggerOutput(
+            rewriter).strip().split('\n')
         self.assertEqual(2, len(logging_output_lines))
         self.assertIsNot(
             None,
@@ -274,3 +280,62 @@ class TestBranchRewriterScript(TestCaseWithFactory):
         # The script produces logging output, but not to stderr.
         self.assertEqual('', err)
         self.assertEqual(expected_lines, output_lines)
+
+
+class TestBranchRewriterScriptHandlesDisconnects(TestCaseWithFactory):
+    """Ensure branch-rewrite.py survives fastdowntime deploys."""
+    layer = LaunchpadScriptLayer
+
+    def setUp(self):
+        super(TestBranchRewriterScriptHandlesDisconnects, self).setUp()
+        self.pgbouncer = PGBouncerFixture()
+        self.addCleanup(self.pgbouncer.cleanUp)
+        self.pgbouncer.setUp()
+
+    def spawn(self):
+        script_file = os.path.join(
+            config.root, 'scripts', 'branch-rewrite.py')
+
+        self.rewriter_proc = subprocess.Popen(
+            [script_file], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, bufsize=0)
+
+    def request(self, query):
+        self.rewriter_proc.stdin.write(query + '\n')
+        return self.rewriter_proc.stdout.readline().rstrip('\n')
+
+    def test_disconnect(self):
+        self.spawn()
+
+        # Everything should be working, and we get valid output.
+        out = self.request('foo')
+        assert out.endswith('/foo'), out
+
+        self.pgbouncer.stop()
+
+        # Now with pgbouncer down, we should get NULL messages and
+        # stderr spam, and this keeps happening. We test more than
+        # once to ensure that we will keep trying to reconnect even
+        # after several failures.
+        for count in range(5):
+            out = self.request('foo')
+            assert out == 'NULL', out
+
+        self.pgbouncer.start()
+
+        # Everything should be working, and we get valid output.
+        out = self.request('foo')
+        assert out.endswith('/foo'), out
+
+    def test_starts_with_db_down(self):
+        self.pgbouncer.stop()
+        self.spawn()
+
+        for count in range(5):
+            out = self.request('foo')
+            assert out == 'NULL', out
+
+        self.pgbouncer.start()
+
+        out = self.request('foo')
+        assert out.endswith('/foo'), out
