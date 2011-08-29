@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -13,8 +13,11 @@ from zope.component import getUtility
 
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import LaunchpadView
-
 from lp.app.errors import NotFoundError
+from lp.bugs.interfaces.bugtask import (
+    BugTaskSearchParams,
+    IBugTaskSet,
+    )
 from lp.code.errors import (
     CannotHaveLinkedBranch,
     InvalidNamespace,
@@ -22,8 +25,6 @@ from lp.code.errors import (
     NoSuchBranch,
     )
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
-from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import InvalidProductName
 
 
@@ -65,7 +66,7 @@ class LinkCheckerAPI(LaunchpadView):
         for link_type in links_to_check:
             links = links_to_check[link_type]
             invalid_links = self.link_checkers[link_type](links)
-            result['invalid_'+link_type] = invalid_links
+            result['invalid_' + link_type] = invalid_links
 
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(result)
@@ -96,9 +97,10 @@ class LinkCheckerAPI(LaunchpadView):
             bug_ids = getUtility(IBugTaskSet).searchBugIds(params)
             invalid = set(bugs) - set(bug_ids)
             for bug in invalid:
-                invalid_links['/bugs/' + str(bug)] = "Bug %s cannot be found" % bug
+                invalid_links['/bugs/' + str(bug)] = (
+                    "Bug %s cannot be found" % bug)
         return invalid_links
-         
+
     def _error_message(self, ex):
         if hasattr(ex, 'display_message'):
             return ex.display_message

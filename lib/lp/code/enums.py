@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Enumerations used in the lp/code modules."""
@@ -222,7 +222,7 @@ class BranchSubscriptionDiffSize(DBEnumeratedType):
         Limit the generated diff to 500 lines.
         """)
 
-    ONEKLINES  = DBItem(1000, """
+    ONEKLINES = DBItem(1000, """
         1000 lines
 
         Limit the generated diff to 1000 lines.
@@ -234,7 +234,7 @@ class BranchSubscriptionDiffSize(DBEnumeratedType):
         Limit the generated diff to 5000 lines.
         """)
 
-    WHOLEDIFF  = DBItem(-1, """
+    WHOLEDIFF = DBItem(-1, """
         Send entire diff
 
         Don't limit the size of the diff.
