@@ -147,7 +147,7 @@ appears as if there is no series branch set.
 
     >>> login('admin@canonical.com')
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(branch).private = True
+    >>> removeSecurityProxy(branch).explicitly_private = True
     >>> logout()
 
     >>> anon_browser.open('http://launchpad.dev/fooix')

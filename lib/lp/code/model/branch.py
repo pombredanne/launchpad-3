@@ -152,18 +152,8 @@ from lp.services.mail.notificationrecipientset import NotificationRecipientSet
 from lp.services.propertycache import cachedproperty
 
 
-class BranchMetaclass(SQLBase.__metaclass__):
-    # We need to alias some class attributes.
-    # Existing code uses Branch.private to reference the Storm column.
-    @property
-    def private(self):
-        return self.explicitly_private
-
-
 class Branch(SQLBase, BzrIdentityMixin):
     """A sequence of ordered revisions in Bazaar."""
-
-    __metaclass__ = BranchMetaclass
 
     implements(IBranch, IBranchNavigationMenu, IPrivacy)
     _table = 'Branch'
@@ -186,26 +176,24 @@ class Branch(SQLBase, BzrIdentityMixin):
     explicitly_private = BoolCol(
         default=False, notNull=True, dbName='private')
 
-    def __setattr__(self, key, value):
-        # Some code still initialises branches with private=...
-        if key == 'private':
-            self.explicitly_private = value
-        else:
-            super(Branch, self).__setattr__(key, value)
+    @property
+    def private(self):
+        return self.explicitly_private or self.stacked_on_private
 
     @cachedproperty
-    def private(self):
-        return self._isPrivate()
+    def stacked_on_private(self):
+        return self._isStackedOnPrivate()
 
-    def _isPrivate(self, checked_branches=None):
-        # A branch is private if any of it's stacked_on branches is private.
-        is_private = self.explicitly_private
-        if not is_private and self.stacked_on is not None:
+    def _isStackedOnPrivate(self, checked_branches=None):
+        # Return True if any of this branch's stacked_on branches is private.
+        is_stacked_on_private = False
+        if self.stacked_on is not None:
             checked_branches = checked_branches or []
             checked_branches.append(self)
             if self.stacked_on not in checked_branches:
-                is_private = self.stacked_on._isPrivate(checked_branches)
-        return is_private
+                is_stacked_on_private = (
+                    self.stacked_on._isStackedOnPrivate(checked_branches))
+        return is_stacked_on_private
 
     def setPrivate(self, private, user):
         """See `IBranch`."""

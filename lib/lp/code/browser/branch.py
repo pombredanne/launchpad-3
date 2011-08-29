@@ -715,7 +715,8 @@ class BranchEditSchema(Interface):
         'lifecycle_status',
         'whiteboard',
         ])
-    private = copy_field(IBranch['private'], readonly=False)
+    explicitly_private = copy_field(
+        IBranch['explicitly_private'], readonly=False)
     reviewer = copy_field(IBranch['reviewer'], required=True)
     owner = copy_field(IBranch['owner'], readonly=False)
 
@@ -758,7 +759,10 @@ class BranchEditFormView(LaunchpadEditFormView):
                     "The branch owner has been changed to %s (%s)"
                     % (new_owner.displayname, new_owner.name))
         if 'private' in data:
-            private = data.pop('private')
+            # Read only for display.
+            data.pop('private')
+        if 'explicitly_private' in data:
+            private = data.pop('explicitly_private')
             if (private != self.context.private
                 and self.context.private == self.context.explicitly_private):
                 # We only want to show notifications if it actually changed.
@@ -1007,7 +1011,8 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     """The main branch view for editing the branch attributes."""
 
     field_names = [
-        'owner', 'name', 'private', 'url', 'description', 'lifecycle_status']
+        'owner', 'name', 'explicitly_private', 'url', 'description',
+        'lifecycle_status']
 
     custom_widget('lifecycle_status', LaunchpadRadioWidgetWithDescription)
 
@@ -1027,7 +1032,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             # If this branch is public but is deemed private because it is
             # stacked on a private branch, disable the field.
             if not branch.explicitly_private:
-                show_private_field = True
+                show_private_field = False
                 private_info = Bool(
                     __name__="private",
                     title=_("Branch is confidential"),
@@ -1041,7 +1046,6 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 self.form_fields['private'].custom_widget = (
                     CustomWidgetFactory(
                         CheckBoxWidget, extra='disabled="disabled"'))
-
         else:
             # If the branch is public, and can be made private, show the
             # field.  Users with special access rights to branches can set
@@ -1051,7 +1055,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
                 user_has_special_branch_access(self.user))
 
         if not show_private_field:
-            self.form_fields = self.form_fields.omit('private')
+            self.form_fields = self.form_fields.omit('explicitly_private')
 
         # If the user can administer branches, then they should be able to
         # assign the ownership of the branch to any valid person or team.
