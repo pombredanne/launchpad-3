@@ -464,7 +464,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         with person_logged_in(owner):
             recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
             self.assertTrue(check_permission('launchpad.View', recipe))
-        removeSecurityProxy(branch).private=True
+        removeSecurityProxy(branch).explicitly_private=True
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', recipe))
         self.assertFalse(check_permission('launchpad.View', recipe))
