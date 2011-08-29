@@ -2119,7 +2119,7 @@ class IPersonSet(Interface):
 
     def getByEmails(emails, include_hidden=True):
         """Search for people with the given email addresses.
-        
+
         :param emails: A list of email addresses.
         :param include_hidden: Include people who have opted to hide their
             email. Defaults to True.
