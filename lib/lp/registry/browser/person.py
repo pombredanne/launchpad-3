@@ -3204,7 +3204,7 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
 
     @property
     def time_zone_offset(self):
-        """Return the time-zone and offset from UTC"""
+        """Return a string with offset from UTC"""
         return datetime.now(
             pytz.timezone(self.context.time_zone)).strftime("%z")
 
