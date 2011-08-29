@@ -3,13 +3,16 @@
 
 __metaclass__ = type
 
+import doctest
+
 from storm.expr import LeftJoin
 from storm.store import Store
-from testtools.matchers import LessThan
+from testtools.matchers import (
+    DocTestMatches,
+    LessThan,
+    )
 import transaction
 from zope.component import getUtility
-import doctest
-from testtools.matchers import DocTestMatches
 
 from canonical.config import config
 from canonical.launchpad.ftests import (
@@ -19,9 +22,9 @@ from canonical.launchpad.ftests import (
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from canonical.launchpad.testing.pages import extract_text
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.launchpad.testing.pages import extract_text
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
