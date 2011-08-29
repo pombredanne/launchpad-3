@@ -10,7 +10,13 @@ __all__ = [
     ]
 
 
+import apt_pkg
 import datetime
+from debian.changelog import (
+    Changelog,
+    ChangelogCreateError,
+    ChangelogParseError,
+    )
 import operator
 import re
 from StringIO import StringIO
@@ -603,3 +609,33 @@ class SourcePackageRelease(SQLBase):
         return PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,
             requester=requester, status=status)
+
+    def aggregate_changelog(self, since_version):
+        """See `ISourcePackagePublishingHistory`."""
+        if self.changelog is None:
+            return None
+
+        apt_pkg.InitSystem()
+        output = ""
+        changelog = self.changelog
+        # The python-debian API for parsing changelogs is pretty awful. The
+        # only useful way of extracting info is to use the iterator on
+        # Changelog and then compare versions.
+        try:
+            for block in Changelog(changelog.read()):
+                version = block._raw_version
+                if (since_version and
+                    apt_pkg.VersionCompare(version, since_version) <= 0):
+                    break
+                try:
+                    output += str(block)
+                except ChangelogCreateError:
+                    continue
+                if not since_version:
+                    # If a particular version was not requested we just
+                    # return the most recent changelog entry.
+                    break
+        except ChangelogParseError:
+            return None
+
+        return output

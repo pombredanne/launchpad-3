@@ -81,6 +81,23 @@ class TestSourcePackageRelease(TestCaseWithFactory):
         spr = self.factory.makeSourcePackageRelease(homepage="<invalid<url")
         self.assertEquals("<invalid<url", spr.homepage)
 
+    def test_aggregate_changelog(self):
+        # If since_version is passed the "changelog" entry returned
+        # should contain the changelogs for all releases *since*
+        # that version and up to and including the context SPR.
+        changelog = self.factory.makeChangelog(
+            spn="foo", versions=["1.3",  "1.2",  "1.1",  "1.0"])
+        expected_changelog = self.factory.makeChangelog(
+            spn="foo", versions=["1.3", "1.2", "1.1"])
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename="foo", version="1.3", changelog=changelog)
+        transaction.commit()  # Yay, librarian.
+
+        observed = spph.sourcepackagerelease.aggregate_changelog(
+            since_version="1.0")
+        expected = expected_changelog.read()
+        self.assertEqual(expected.strip(), observed.strip())
+
 
 class TestSourcePackageReleaseGetBuildByArch(TestCaseWithFactory):
     """Tests for SourcePackageRelease.getBuildByArch()."""

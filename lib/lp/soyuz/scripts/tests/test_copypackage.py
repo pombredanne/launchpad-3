@@ -1413,7 +1413,9 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         archive = self.test_publisher.ubuntutest.main_archive
         source = self.test_publisher.getPubSource(
             archive=archive, version='1.0-2', architecturehintlist='any')
-        source.sourcepackagerelease.changelog_entry = '* Foo!'
+        changelog = self.factory.makeChangelog(spn="foo", versions=["1.0-2"])
+        source.sourcepackagerelease.changelog = changelog
+        transaction.commit()  # Librarian.
         nobby = self.createNobby(('i386', 'hppa'))
         getUtility(ISourcePackageFormatSelectionSet).add(
             nobby, SourcePackageFormat.FORMAT_1_0)
@@ -1427,9 +1429,26 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         self.assertEquals(
             get_ppa_reference(target_archive),
             notification['X-Launchpad-PPA'])
-        self.assertIn(
-            source.sourcepackagerelease.changelog_entry,
-            notification.as_string())
+        body = notification.get_payload()[0].get_payload()
+        expected = dedent("""\
+            Accepted:
+             OK: foo_1.0-2.dsc
+                 -> Component: main Section: base
+
+            foo (1.0-2) unstable; urgency=3Dlow
+
+              * 1.0-2.
+
+             -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
+
+
+
+            -- =
+
+            You are receiving this email because you are the uploader of the above
+            PPA package.
+            """)
+        self.assertEqual(expected, body)
 
     def test_copy_generates_notification(self):
         # When a copy into a primary archive is performed, a notification is
@@ -1437,7 +1456,8 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         archive = self.test_publisher.ubuntutest.main_archive
         source = self.test_publisher.getPubSource(
             archive=archive, version='1.0-2', architecturehintlist='any')
-        source.sourcepackagerelease.changelog_entry = '* Foo!'
+        changelog = self.factory.makeChangelog(spn="foo", versions=["1.0-2"])
+        source.sourcepackagerelease.changelog = changelog
         # Copying to a primary archive reads the changes to close bugs.
         transaction.commit()
         nobby = self.createNobby(('i386', 'hppa'))
@@ -1455,15 +1475,63 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
         for mail in (notification, announcement):
             self.assertEquals(
                 '[ubuntutest/nobby] foo 1.0-2 (Accepted)', mail['Subject'])
-        expected_text = dedent("""
-            * Foo!
+        expected_text = dedent("""\
+            foo (1.0-2) unstable; urgency=3Dlow
+
+              * 1.0-2.
+
+             -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
+
+
 
             Date: %s
             Changed-By: Foo Bar <foo.bar@canonical.com>
             http://launchpad.dev/ubuntutest/nobby/+source/foo/1.0-2
             """ % source.sourcepackagerelease.dateuploaded)
-        self.assertIn(expected_text, notification.as_string())
-        self.assertIn(expected_text, announcement.as_string())
+        # Spurious newlines are a pain and don't really affect the end
+        # results so stripping is the easiest route here.
+        expected_text.strip()
+        body = mail.get_payload()[0].get_payload()
+        self.assertEqual(expected_text, body)
+        self.assertEqual(expected_text, body)
+
+    def test_copy_notification_contains_aggregate_change_log(self):
+        # When copying a package that generates a notification,
+        # the changelog should contain all of the changelog_entry texts for
+        # all the sourcepackagereleases between the last published version
+        # and the new version.
+        archive = self.test_publisher.ubuntutest.main_archive
+        source3 = self.test_publisher.getPubSource(
+            sourcename="foo", archive=archive, version='1.2',
+            architecturehintlist='any')
+        changelog = self.factory.makeChangelog(
+            spn="foo", versions=["1.2",  "1.1",  "1.0"])
+        source3.sourcepackagerelease.changelog = changelog
+        transaction.commit()
+
+        # Now make a new series, nobby, and publish foo 1.0 in it.
+        nobby = self.createNobby(('i386', 'hppa'))
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            nobby, SourcePackageFormat.FORMAT_1_0)
+        nobby.changeslist = 'nobby-changes@example.com'
+        source1 = self.factory.makeSourcePackageRelease(
+            sourcepackagename="foo", version="1.0")
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=source1, distroseries=nobby,
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=source3.pocket)
+
+        # Now copy foo 1.3 from ubuntutest.
+        [copied_source] = do_copy(
+            [source3], nobby.main_archive, nobby, source3.pocket, False,
+            person=source3.sourcepackagerelease.creator,
+            check_permissions=False, send_email=True)
+
+        [notification, announcement] = pop_notifications()
+        for mail in (notification, announcement):
+            mailtext = mail.as_string()
+            self.assertIn("foo (1.1)", mailtext)
+            self.assertIn("foo (1.2)", mailtext)
 
     def test_copy_generates_rejection_email(self):
         # When a copy into a primary archive fails, we expect a rejection
