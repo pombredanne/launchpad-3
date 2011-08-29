@@ -116,6 +116,8 @@ class CodeImport(SQLBase):
                 config.codeimport.default_interval_git,
             RevisionControlSystems.HG:
                 config.codeimport.default_interval_hg,
+            RevisionControlSystems.BZR:
+                config.codeimport.default_interval_bzr,
             }
         seconds = default_interval_dict[self.rcs_type]
         return timedelta(seconds=seconds)
@@ -133,7 +135,8 @@ class CodeImport(SQLBase):
             RevisionControlSystems.SVN,
             RevisionControlSystems.GIT,
             RevisionControlSystems.BZR_SVN,
-            RevisionControlSystems.HG):
+            RevisionControlSystems.HG,
+            RevisionControlSystems.BZR):
             return self.url
         else:
             raise AssertionError(
@@ -252,7 +255,8 @@ class CodeImportSet:
         elif rcs_type in (RevisionControlSystems.SVN,
                           RevisionControlSystems.BZR_SVN,
                           RevisionControlSystems.GIT,
-                          RevisionControlSystems.HG):
+                          RevisionControlSystems.HG,
+                          RevisionControlSystems.BZR):
             assert cvs_root is None and cvs_module is None
             assert url is not None
         else:
@@ -262,7 +266,8 @@ class CodeImportSet:
         if review_status is None:
             # Auto approve git and hg imports.
             if rcs_type in (
-                RevisionControlSystems.GIT, RevisionControlSystems.HG):
+                RevisionControlSystems.GIT, RevisionControlSystems.HG,
+                RevisionControlSystems.BZR):
                 review_status = CodeImportReviewStatus.REVIEWED
             else:
                 review_status = CodeImportReviewStatus.NEW

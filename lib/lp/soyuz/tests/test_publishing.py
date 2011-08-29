@@ -37,6 +37,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.adapters.overrides import UnknownOverridePolicy
 from lp.soyuz.enums import (
@@ -55,6 +56,10 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.distroseriesdifferencejob import (
+    FEATURE_FLAG_ENABLE_MODULE,
+    find_waiting_jobs,
+    )
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (
@@ -1167,33 +1172,14 @@ class TestPublishingSetLite(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def makeMatchingSourceAndBinaryPPH(self):
-        """Produce a matching pair of SPPH and BPPH.
-
-        Returns a tuple of one SourcePackagePublishingHistory "spph" and
-        one BinaryPackagePublishingHistory "bpph" stemming from the same
-        source package, published into the same distroseries, pocket, and
-        archive.
-        """
-        bpph = self.factory.makeBinaryPackagePublishingHistory()
-        bpr = bpph.binarypackagerelease
-        self.assertNotEqual(None, bpr)
-        spph = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=bpph.distroarchseries.distroseries,
-            sourcepackagerelease=bpr.build.source_package_release,
-            pocket=bpph.pocket, archive=bpph.archive)
-        return spph, bpph
-
-    def test_makeMatchingSourceAndBinaryPPH(self):
-        # makeMatchingSourceAndBinaryPPH really produces a matching pair
-        # of spph and bpph.
-        spph, bpph = self.makeMatchingSourceAndBinaryPPH()
-        self.assertContentEqual([bpph], spph.getPublishedBinaries())
+    def enableDistroDerivation(self):
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
 
     def test_requestDeletion_marks_SPPHs_deleted(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
         getUtility(IPublishingSet).requestDeletion(
             [spph], self.factory.makePerson())
+        # XXX JeroenVermeulen 2011-08-25, bug=834388: obviate commit.
         transaction.commit()
         self.assertEqual(PackagePublishingStatus.DELETED, spph.status)
 
@@ -1202,13 +1188,16 @@ class TestPublishingSetLite(TestCaseWithFactory):
         other_spph = self.factory.makeSourcePackagePublishingHistory()
         getUtility(IPublishingSet).requestDeletion(
             [other_spph], self.factory.makePerson())
+        # XXX JeroenVermeulen 2011-08-25, bug=834388: obviate commit.
         transaction.commit()
         self.assertEqual(PackagePublishingStatus.PENDING, spph.status)
 
     def test_requestDeletion_marks_attached_BPPHs_deleted(self):
-        spph, bpph = self.makeMatchingSourceAndBinaryPPH()
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        spph = self.factory.makeSPPHForBPPH(bpph)
         getUtility(IPublishingSet).requestDeletion(
             [spph], self.factory.makePerson())
+        # XXX JeroenVermeulen 2011-08-25, bug=834388: obviate commit.
         transaction.commit()
         self.assertEqual(PackagePublishingStatus.DELETED, spph.status)
 
@@ -1217,6 +1206,7 @@ class TestPublishingSetLite(TestCaseWithFactory):
         unrelated_spph = self.factory.makeSourcePackagePublishingHistory()
         getUtility(IPublishingSet).requestDeletion(
             [unrelated_spph], self.factory.makePerson())
+        # XXX JeroenVermeulen 2011-08-25, bug=834388: obviate commit.
         transaction.commit()
         self.assertEqual(PackagePublishingStatus.PENDING, bpph.status)
 
@@ -1225,6 +1215,21 @@ class TestPublishingSetLite(TestCaseWithFactory):
         getUtility(IPublishingSet).requestDeletion([], person)
         # The test is that this does not fail.
         Store.of(person).flush()
+
+    def test_requestDeletion_creates_DistroSeriesDifferenceJobs(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        series = dsp.derived_series
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            series, pocket=PackagePublishingPocket.RELEASE)
+        spn = spph.sourcepackagerelease.sourcepackagename
+
+        self.enableDistroDerivation()
+        getUtility(IPublishingSet).requestDeletion(
+            [spph], self.factory.makePerson())
+
+        self.assertEqual(
+            1, len(find_waiting_jobs(
+                dsp.derived_series, spn, dsp.parent_series)))
 
 
 class TestSourceDomination(TestNativePublishingBase):

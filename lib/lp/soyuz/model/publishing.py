@@ -339,16 +339,6 @@ class ArchivePublisherBase:
         self.removed_by = removed_by
         self.removal_comment = removal_comment
 
-    def requestDeletion(self, removed_by, removal_comment=None):
-        """See `IPublishing`."""
-        self.setDeleted(removed_by, removal_comment)
-        if ISourcePackagePublishingHistory.providedBy(self):
-            if self.archive == self.distroseries.main_archive:
-                dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
-                dsd_job_source.createForPackagePublication(
-                    self.distroseries,
-                    self.sourcepackagerelease.sourcepackagename, self.pocket)
-
     def requestObsolescence(self):
         """See `IArchivePublisher`."""
         # The tactic here is to bypass the domination step when publishing,
@@ -901,7 +891,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def requestDeletion(self, removed_by, removal_comment=None):
         """See `IPublishing`."""
         self.setDeleted(removed_by, removal_comment)
-        if self.archive == self.distroseries.main_archive:
+        if self.archive.is_main:
             dsd_job_source = getUtility(IDistroSeriesDifferenceJobSource)
             dsd_job_source.createForPackagePublication(
                 self.distroseries,
@@ -2009,6 +1999,8 @@ class PublishingSet:
         self.setMultipleDeleted(
             SourcePackagePublishingHistory, spph_ids, removed_by,
             removal_comment=removal_comment)
+
+        getUtility(IDistroSeriesDifferenceJobSource).createForSPPHs(sources)
 
         # Mark binary publications deleted.
         bpph_ids = [
