@@ -618,11 +618,14 @@ class SourcePackageRelease(SQLBase):
         apt_pkg.InitSystem()
         output = ""
         changelog = self.changelog
+        # The python-debian API for parsing changelogs is pretty awful. The
+        # only useful way of extracting info is to use the iterator on
+        # Changelog and then compare versions.
         try:
             for block in Changelog(changelog.read()):
                 version = block._raw_version
                 if (since_version and
-                    apt_pkg.VersionCompare(version,  since_version) <= 0):
+                    apt_pkg.VersionCompare(version, since_version) <= 0):
                     break
                 try:
                     output += str(block)
