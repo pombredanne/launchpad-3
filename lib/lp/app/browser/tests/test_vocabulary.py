@@ -155,7 +155,6 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(TestCaseWithFactory)
     layer = DatabaseFunctionalLayer
 
     def test_dsp_to_picker_entry(self):
-        # IPerson can be adpated to IPickerEntry.
         dsp = self.factory.makeDistributionSourcePackage()
         adapter = IPickerEntrySource(dsp)
         self.assertTrue(IPickerEntrySource.providedBy(adapter))
@@ -181,6 +180,36 @@ class TestDistributionSourcePackagePickerEntrySourceAdapter(TestCaseWithFactory)
             distroarchseries=archseries)
         [entry] = IPickerEntrySource(dsp).getPickerEntries([dsp], object())
         self.assertEqual(entry.description, 'fnord')
+
+
+class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_product_to_picker_entry(self):
+        product = self.factory.makeProduct()
+        adapter = IPickerEntrySource(product)
+        self.assertTrue(IPickerEntrySource.providedBy(adapter))
+
+    def test_product_provides_summary(self):
+        product = self.factory.makeProduct()
+        [entry] = IPickerEntrySource(product).getPickerEntries([product], object())
+        self.assertEqual(entry.description, product.summary)
+
+
+class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_distribution_to_picker_entry(self):
+        distribution = self.factory.makeDistribution()
+        adapter = IPickerEntrySource(distribution)
+        self.assertTrue(IPickerEntrySource.providedBy(adapter))
+
+    def test_distribution_provides_summary(self):
+        distribution = self.factory.makeDistribution()
+        [entry] = IPickerEntrySource(distribution).getPickerEntries([distribution], object())
+        self.assertEqual(entry.description, distribution.summary)
 
 
 class TestPersonVocabulary:

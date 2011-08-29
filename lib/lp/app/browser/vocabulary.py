@@ -40,10 +40,12 @@ from lp.app.browser.tales import (
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from lp.app.errors import UnexpectedFormData
 from lp.code.interfaces.branch import IBranch
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.pillaraffiliation import IHasAffiliation
 from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
@@ -274,6 +276,23 @@ class DistributionSourcePackagePickerEntrySourceAdapter(
         else:
             description = 'Not yet built.'
         return description
+
+
+@adapter(IProduct)
+class ProductPickerEntrySourceAdapter(TargetPickerEntrySourceAdapter):
+    """Adapts IProduct to IPickerEntrySource."""
+
+    def getDescription(self, target):
+        """See `TargetPickerEntrySource`"""
+        return target.summary
+
+
+@adapter(IDistribution)
+class DistributionPickerEntrySourceAdapter(TargetPickerEntrySourceAdapter):
+
+    def getDescription(self, target):
+        """See `TargetPickerEntrySource`"""
+        return target.summary
 
 
 @adapter(IArchive)
