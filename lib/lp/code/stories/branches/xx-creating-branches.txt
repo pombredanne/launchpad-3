@@ -86,9 +86,6 @@ Now, post the branch creation form for the product.
 The specified URL has a trailing slash. In the next test, we will check
 that it has been stripped.
 
-    >>> user_browser.getControl('Branch URL').value = (
-    ...     'http://example.com/applets/main/')
-
     >>> user_browser.getControl('Name').value = 'main'
     >>> user_browser.getControl('Experimental').click()
     >>> user_browser.getControl('Register Branch').click()
@@ -106,12 +103,6 @@ by matching for the angle brackets of an enclosing tag.
 
     >>> print extract_text(find_tag_by_id(content, 'privacy'))
     This branch is public
-
-    >>> print extract_text(content.h1)
-    lp://dev/~no-priv/applets/main
-
-    >>> print extract_text(find_tag_by_id(content, 'mirror-location'))
-    Location: http://example.com/applets/main
 
 This page includes a link to other branches associated with that
 product, and a link to other branches maintained by that person.
