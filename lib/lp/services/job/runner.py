@@ -42,6 +42,9 @@ import transaction
 from twisted.internet import (
     reactor,
     )
+from twisted.internet.defer import (
+    succeed,
+    )
 from twisted.protocols import amp
 from twisted.python import log
 from zope.component import getUtility
@@ -173,15 +176,32 @@ class BaseJobRunner(object):
         if self.error_utility is None:
             self.error_utility = errorlog.globalErrorUtility
 
+    def acquireLease(self, job):
+        self.logger.debug(
+            'Trying to acquire lease for job in state %s' % (
+                job.status.title,))
+        try:
+            job.acquireLease()
+        except LeaseHeld:
+            self.logger.debug(
+                'Could not acquire lease for %s' % self.job_str(job))
+            self.incomplete_jobs.append(job)
+            return False
+        return True
+
+    @staticmethod
+    def job_str(job):
+        class_name = job.__class__.__name__
+        ijob_id = removeSecurityProxy(job).job.id
+        return '%s (ID %d)' % (class_name, ijob_id)
+
     def runJob(self, job):
         """Attempt to run a job, updating its status as appropriate."""
         job = IRunnableJob(job)
 
-        class_name = job.__class__.__name__
-        job_id = removeSecurityProxy(job).job.id
         self.logger.info(
-            'Running %s (ID %d) in status %s' % (
-                class_name, job_id, job.status.title,))
+            'Running %s in status %s' % (
+                self.job_str(job), job.status.title))
         job.start()
         transaction.commit()
         do_retry = False
@@ -291,14 +311,7 @@ class JobRunner(BaseJobRunner):
         """Run all the Jobs for this JobRunner."""
         for job in self.jobs:
             job = IRunnableJob(job)
-            self.logger.debug(
-                'Trying to acquire lease for job in state %s' % (
-                    job.status.title,))
-            try:
-                job.acquireLease()
-            except LeaseHeld:
-                self.logger.debug('Could not acquire lease for job')
-                self.incomplete_jobs.append(job)
+            if not self.acquireLease(job):
                 continue
             # Commit transaction to clear the row lock.
             transaction.commit()
@@ -412,21 +425,16 @@ class TwistedJobRunner(BaseJobRunner):
         :return: a Deferred that fires when the job has completed.
         """
         job = IRunnableJob(job)
-        try:
-            job.acquireLease()
-        except LeaseHeld:
-            self.incomplete_jobs.append(job)
-            return
+        if not self.acquireLease(job):
+            return succeed(None)
         # Commit transaction to clear the row lock.
         transaction.commit()
         job_id = job.id
         deadline = timegm(job.lease_expires.timetuple())
 
         # Log the job class and database ID for debugging purposes.
-        class_name = job.__class__.__name__
-        ijob_id = removeSecurityProxy(job).job.id
         self.logger.info(
-            'Running %s (ID %d).' % (class_name, ijob_id))
+            'Running %s.' % self.job_str(job))
         self.logger.debug(
             'Running %r, lease expires %s', job, job.lease_expires)
         deferred = self.pool.doWork(
