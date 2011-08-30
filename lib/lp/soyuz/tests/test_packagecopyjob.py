@@ -8,6 +8,7 @@ import operator
 from storm.store import Store
 from testtools.content import text_content
 from testtools.matchers import MatchesStructure
+from textwrap import dedent
 import transaction
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -940,7 +941,17 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
             archive=source_archive)
         spr = removeSecurityProxy(source_pub).sourcepackagerelease
-        spr.changelog_entry = "closes: %s" % bug.id
+        changelog = dedent("""\
+            foo (1.0-1) unstable; urgency=low
+
+              * closes: %s
+
+             -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
+
+            """ % bug.id)
+        spr.changelog = self.factory.makeLibraryFileAlias(content=changelog)
+        spr.changelog_entry = "dummy"
+        self.layer.txn.commit()  # Librarian.
         bugtask = self.factory.makeBugTask(target=spr.sourcepackage, bug=bug)
 
         # Now put the same named package in the target archive so it gets
