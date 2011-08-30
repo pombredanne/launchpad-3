@@ -95,7 +95,7 @@ class TestSourcePackageRelease(TestCaseWithFactory):
 
         observed = spph.sourcepackagerelease.aggregate_changelog(
             since_version="1.0")
-        expected = expected_changelog.read()
+        expected = expected_changelog.read().decode("utf-8")
         self.assertEqual(expected.strip(), observed.strip())
 
 

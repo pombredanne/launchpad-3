@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# NOTE: The first line above must stay first; do not move the copyright
+# notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
+#
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -2174,21 +2178,26 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return code_import
 
     def makeChangelog(self, spn=None, versions=[]):
-        """Create and return a LFA of a valid Debian-style changelog."""
+        """Create and return a LFA of a valid Debian-style changelog.
+
+        Note that the changelog returned is unicode - this is deliberate
+        so that code is forced to cope with it as utf-8 changelogs are
+        normal.
+        """
         if spn is None:
             spn = self.getUniqueString()
         changelog = ''
         for version in versions:
-            entry = dedent('''
+            entry = dedent(u'''\
             %s (%s) unstable; urgency=low
 
               * %s.
 
-             -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
+             -- Føo Bær <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
 
             ''' % (spn, version, version))
             changelog += entry
-        return self.makeLibraryFileAlias(content=changelog)
+        return self.makeLibraryFileAlias(content=changelog.encode("utf-8"))
 
     def makeCodeImportEvent(self):
         """Create and return a CodeImportEvent."""

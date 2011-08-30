@@ -175,7 +175,7 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
 
               * 1.1.
 
-             -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
+             -- F=C3=B8o B=C3=A6r <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
 
 
 

@@ -638,4 +638,4 @@ class SourcePackageRelease(SQLBase):
         except ChangelogParseError:
             return None
 
-        return output
+        return output.decode("utf-8", "replace")
