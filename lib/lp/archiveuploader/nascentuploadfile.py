@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Specific models for uploaded files"""
@@ -19,15 +19,15 @@ __all__ = [
     'splitComponentAndSection',
     ]
 
-import apt_inst
-import apt_pkg
-from debian.deb822 import Deb822Dict
 import hashlib
 import os
 import subprocess
 import sys
 import time
 
+import apt_inst
+import apt_pkg
+from debian.deb822 import Deb822Dict
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -819,7 +819,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
             yield UploadError("%s: deb contents timestamp check failed: %s"
                  % (self.filename, error))
 
-
     #
     #   Database relationship methods
     #
@@ -848,7 +847,6 @@ class BaseBinaryUploadFile(PackageUploadFile):
             raise UploadError(
                 "Unable to find source package %s/%s in %s" % (
                 self.source_name, self.source_version, distroseries.name))
-
 
     def verifySourcePackageRelease(self, sourcepackagerelease):
         """Check if the given ISourcePackageRelease matches the context."""

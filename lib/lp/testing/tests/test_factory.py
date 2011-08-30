@@ -345,15 +345,16 @@ class TestFactory(TestCaseWithFactory):
 
     # makeCodeImport
     def test_makeCodeImportNoStatus(self):
-        # If makeCodeImport is not given a review status, it defaults to NEW.
+        # If makeCodeImport is not given a review status,
+        # it defaults to REVIEWED.
         code_import = self.factory.makeCodeImport()
         self.assertEqual(
-            CodeImportReviewStatus.NEW, code_import.review_status)
+            CodeImportReviewStatus.REVIEWED, code_import.review_status)
 
     def test_makeCodeImportReviewStatus(self):
         # If makeCodeImport is given a review status, then that is the status
         # of the created import.
-        status = CodeImportReviewStatus.REVIEWED
+        status = CodeImportReviewStatus.SUSPENDED
         code_import = self.factory.makeCodeImport(review_status=status)
         self.assertEqual(status, code_import.review_status)
 
