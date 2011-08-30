@@ -234,7 +234,8 @@ class TestSourcePackageRecipeAddViewInitalValues(TestCaseWithFactory):
         # If the initial name exists, a generator is used to find an unused
         # name by appending a numbered suffix on the end.
         owner = self.factory.makePerson()
-        self.factory.makeSourcePackageRecipe(owner=owner, name=u'widget-daily')
+        self.factory.makeSourcePackageRecipe(
+            owner=owner, name=u'widget-daily')
         widget = self.factory.makeProduct(name='widget')
         branch = self.factory.makeProductBranch(widget)
         with person_logged_in(owner):
@@ -1097,7 +1098,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Latest builds
             Status .* Archive
-            Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel Secret PPA
+            Successful build on 2010-03-16 buildlog \(.*\)
+                Secret Squirrel Secret PPA
             Request build\(s\)""", self.getMainText(recipe))
 
     def test_index_success_with_binary_builds(self):
@@ -1127,8 +1129,9 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Latest builds
             Status .* Archive
-            Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel Secret PPA
-              chocolate - 0\+r42 in .* \(estimated\) i386
+            Successful build on 2010-03-16 buildlog \(.*\)
+               Secret Squirrel Secret PPA chocolate - 0\+r42 in .*
+               \(estimated\) i386
             Request build\(s\)""", self.getMainText(recipe))
 
     def test_index_success_with_completed_binary_build(self):
@@ -1162,8 +1165,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Latest builds
             Status .* Archive
-            Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel Secret PPA
-              chocolate - 0\+r42 on 2010-04-16 buildlog \(.*\) i386
+            Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel
+              Secret PPA chocolate - 0\+r42 on 2010-04-16 buildlog \(.*\) i386
             Request build\(s\)""", self.getMainText(recipe))
 
     def test_index_no_builds(self):
