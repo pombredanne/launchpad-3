@@ -247,6 +247,7 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -882,10 +883,18 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @cachedproperty
     def linked_branches(self):
         """Filter out the bug_branch links to non-visible private branches."""
-        linked_branches = []
-        for linked_branch in self.context.bug.linked_branches:
-            if check_permission('launchpad.View', linked_branch.branch):
-                linked_branches.append(linked_branch)
+        linked_branches = list(
+            self.context.bug.getVisibleLinkedBranches(
+                self.user, eager_load=True))
+        # This is an optimization for when we look at the merge proposals.
+        # Note that, like all of these sorts of Storm cache optimizations, it
+        # only helps if [launchpad] storm_cache_size in launchpad-lazr.conf is
+        # pretty big--and as of this writing, it isn't for developer
+        # instances.
+        if linked_branches:
+            list(getUtility(IAllBranches).getMergeProposals(
+                for_branches=[link.branch for link in linked_branches],
+                eager_load=True))
         return linked_branches
 
     @property
