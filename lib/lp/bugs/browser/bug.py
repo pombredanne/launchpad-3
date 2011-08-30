@@ -37,6 +37,7 @@ from lazr.enum import (
     )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IJSONRequestCache
 import pytz
 from zope import formlib
@@ -801,10 +802,8 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         self.updateBugFromData(data)
 
 
-class BugSecrecyEditView(BugEditViewBase):
-    """Page for marking a bug as a private/public."""
-
-    field_names = ['private', 'security_related']
+class BugSecrecyEditView(LaunchpadFormView):
+    """Form for marking a bug as a private/public."""
 
     @property
     def label(self):
@@ -812,26 +811,18 @@ class BugSecrecyEditView(BugEditViewBase):
 
     page_title = label
 
-    def setUpFields(self):
-        """Make the read-only version of the form fields writable."""
-        private_field = Bool(
-            __name__='private',
-            title=_("This bug report should be private"),
-            required=False,
-            description=_("Private bug reports are visible only to "
-                          "their subscribers."),
-            default=False)
-        security_related_field = Bool(
-            __name__='security_related',
-            title=_("This bug is a security vulnerability"),
-            required=False, default=False)
+    class schema(Interface):
+        """Schema for editing secrecy info."""
+        private_field = copy_field(IBug['private'], readonly=False)
+        security_related_field = copy_field(
+            IBug['security_related'], readonly=False)
 
-        super(BugSecrecyEditView, self).setUpFields()
-        self.form_fields = self.form_fields.omit('private')
-        self.form_fields = self.form_fields.omit('security_related')
-        self.form_fields = (
-            formlib.form.Fields(private_field) +
-            formlib.form.Fields(security_related_field))
+    @property
+    def next_url(self):
+        """Return the next URL to call when this call completes."""
+        if not self.request.is_ajax:
+            return canonical_url(self.context)
+        return None
 
     @property
     def initial_values(self):
@@ -867,9 +858,8 @@ class BugSecrecyEditView(BugEditViewBase):
                 changed_fields.append('security_related')
             notify(ObjectModifiedEvent(
                     bug, bug_before_modification, changed_fields))
-
-        # Apply other changes.
-        self.updateBugFromData(data)
+        if self.request.is_ajax:
+            return ''
 
     def _handlePrivacyChanged(self, user_will_be_subscribed):
         """Handle the case where the privacy of the bug has been changed.
