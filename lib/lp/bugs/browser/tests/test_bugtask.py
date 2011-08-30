@@ -1025,10 +1025,12 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
     def test_offset(self):
         # BugTaskBatchedCommentsAndActivityView.offset returns the
         # current offset being used to select a batch of bug comments
-        # and activity or 0 if one has not been specified.
+        # and activity. If one is not specified, the view's
+        # visible_initial_comments count will be returned (so that
+        # comments already shown on the page won't appear twice).
         bug_task = self.factory.makeBugTask()
         view = create_initialized_view(bug_task, '+batched-comments')
-        self.assertEqual(0, view.offset)
+        self.assertEqual(view.visible_initial_comments, view.offset)
         view = create_initialized_view(
             bug_task, '+batched-comments', form={'offset': 100})
         self.assertEqual(100, view.offset)
@@ -1036,10 +1038,10 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
     def test_batch_size(self):
         # BugTaskBatchedCommentsAndActivityView.batch_size returns the
         # current batch_size being used to select a batch of bug comments
-        # and activity or 100 if one has not been specified.
+        # and activity or 1000 if one has not been specified.
         bug_task = self.factory.makeBugTask()
         view = create_initialized_view(bug_task, '+batched-comments')
-        self.assertEqual(100, view.batch_size)
+        self.assertEqual(1000, view.batch_size)
         view = create_initialized_view(
             bug_task, '+batched-comments', form={'batch_size': 20})
         self.assertEqual(20, view.batch_size)
@@ -1062,8 +1064,11 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
         # contents of activity_and_comments properly. Trying to test it
         # with multiply different datatypes is fragile at best.
         bug = self._makeNoisyBug(comments_only=True)
+        # We create a batched view with an offset of 0 so that all the
+        # comments are returned.
         batched_view = create_initialized_view(
-            bug.default_bugtask, '+batched-comments')
+            bug.default_bugtask, '+batched-comments',
+            form={'offset': 0})
         unbatched_view = create_initialized_view(
             bug.default_bugtask, '+index')
         self.assertEqual(
