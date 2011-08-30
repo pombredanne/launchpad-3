@@ -49,8 +49,8 @@
 <div
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  metal:define-macro="break"
-  id="comments-container">
+  metal:define-macro="break">
+  <div id="comments-container"></div>
   <div class="boardComment" style="border-bottom: 0">
     <div class="boardCommentDetails">
       <table>
@@ -59,6 +59,10 @@
             <td>
               <span class="sprite arrowRight">&nbsp;</span>
               <span tal:replace="num_hidden">42</span> comments hidden
+              <span id="more-comments-spinner" style="display: none;">
+                Loading more comments
+                <img src="/@@/spinner" />
+              </span>
             </td>
 
             <td class="bug-comment-index">
