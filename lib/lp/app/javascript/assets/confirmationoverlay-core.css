@@ -1,0 +1,38 @@
+.yui3-lazr-confirmationoverlay-hidden {
+    visibility: hidden;
+    }
+
+.yui3-lazr-confirmationoverlay-content {
+    padding-left: 1em;
+    padding-right: 1em;
+    }
+
+/* The same as the Launchpad style, so the example represents
+ * how it will look.
+ */
+.yui3-lazr-confirmationoverlay-form th,
+.yui3-lazr-confirmationoverlay-form td {
+    padding-bottom: 1em;
+    }
+
+.yui3-lazr-confirmationoverlay-form
+div.yui3-lazr-confirmationoverlay-actions {
+    padding-top: 0;
+    padding-bottom: 0;
+    text-align: right;
+    }
+
+/* This gets rid of the 12px margin-bottom that yui specifies
+ * in its base.css.
+ */
+.yui3-lazr-confirmationoverlay-form table {
+    margin-bottom: 0;
+    }
+
+.yui3-lazr-confirmationoverlay-form-header {
+    margin-top: 1em;
+    }
+
+.yui3-lazr-confirmationoverlay a.close-button {
+    visibility: hidden;
+    }

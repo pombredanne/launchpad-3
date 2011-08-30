@@ -345,6 +345,7 @@ class Builder:
             if not os.path.isdir(path):
                 continue
             self.build_assets(name)
+        self.build_assets(".")
         self.update_combined_css_skins()
 
 
