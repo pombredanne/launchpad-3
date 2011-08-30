@@ -99,6 +99,7 @@ from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
     PrivateBranchRecipe,
+    TooManyBuilds,
     TooNewRecipeFormat,
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
@@ -135,7 +136,7 @@ class RecipesForPersonBreadcrumb(Breadcrumb):
 
 
 class SourcePackageRecipeHierarchy(Hierarchy):
-    """"Hierarchy for Source Package Recipe."""
+    """Hierarchy for Source Package Recipe."""
 
     vhost_breadcrumb = False
 
@@ -541,7 +542,13 @@ class SourcePackageRecipeRequestDailyBuildView(LaunchpadFormView):
     @action('Build now', name='build')
     def build_action(self, action, data):
         recipe = self.context
-        builds = recipe.performDailyBuild()
+        try:
+            builds = recipe.performDailyBuild()
+        except TooManyBuilds, e:
+            self.request.response.addErrorNotification(str(e))
+            self.next_url = canonical_url(recipe)
+            return
+
         if self.request.is_ajax:
             template = ViewPageTemplateFile(
                     "../templates/sourcepackagerecipe-builds.pt")

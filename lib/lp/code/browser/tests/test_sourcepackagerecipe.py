@@ -23,6 +23,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
@@ -43,6 +44,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
     SourcePackageRecipeEditView,
     SourcePackageRecipeRequestBuildsView,
+    SourcePackageRecipeRequestDailyBuildView,
     SourcePackageRecipeView,
     )
 from lp.code.browser.sourcepackagerecipebuild import (
@@ -1337,6 +1339,24 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertEqual(
             set([2505]),
             set(build.buildqueue_record.lastscore for build in builds))
+
+    def test_request_daily_builds_action_over_quota(self):
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, daily_build_archive=self.ppa,
+            name=u'julia', is_stale=True, build_daily=True)
+        # Create some previous builds.
+        series = list(recipe.distroseries)[0]
+        for x in xrange(5):
+            build = recipe.requestBuild(
+                self.ppa, self.chef, series, PackagePublishingPocket.RELEASE)
+            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+        harness = LaunchpadFormHarness(
+            recipe, SourcePackageRecipeRequestDailyBuildView)
+        harness.submit('build', {})
+        self.assertEqual(
+            'You have exceeded your quota for recipe chef/julia '
+            'for distroseries ubuntu warty',
+            harness.view.request.notifications[0].message)
 
     def test_request_builds_page(self):
         """Ensure the +request-builds page is sane."""
