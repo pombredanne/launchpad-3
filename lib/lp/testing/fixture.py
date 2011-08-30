@@ -58,7 +58,7 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
     """Inserts a controllable pgbouncer instance in front of PostgreSQL.
 
     The pgbouncer proxy can be shutdown and restarted at will, simulating
-    database outages as fastdowntime deployments.
+    database outages and fastdowntime deployments.
     """
 
     def __init__(self):
