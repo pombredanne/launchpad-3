@@ -9,14 +9,17 @@
   <body>
     <div class="top-portlet" metal:fill-slot="main">
       <h1>Lost something?</h1>
-      <p>There&#8217;s no page with this address in Launchpad.</p>
+      <p>
+      There&#8217;s no page with this address in Launchpad. If you've been here
+      previously, it may have been removed.
+      </p> 
       <tal:referred condition="view/referrer">
         <p>
           If you got here from a link elsewhere on Launchpad,
           sorry about that.
           We&#8217;ve recorded the problem,
           and we&#8217;ll fix it as soon as we can.
-        </p>
+        </p> 
         <p>
           Otherwise, complain to the maintainers of the page that linked here.
         </p>
@@ -32,7 +35,8 @@
         </p>
       </tal:referred>
       <p tal:condition="not:view/referrer">
-        Check that you entered the address correctly, or search for it:
+      Check that you are logged in as the correct acount, or that you
+      entered the address correctly, or search for it:
       </p>
       <form
         tal:attributes="action string:${rooturl}+search"
