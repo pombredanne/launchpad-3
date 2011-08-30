@@ -1439,10 +1439,6 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
 
               * 1.0-2.
 
-             -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
-
-
-
             -- =
 
             You are receiving this email because you are the uploader of the above
@@ -1479,10 +1475,6 @@ class TestDoDirectCopy(TestCaseWithFactory, BaseDoCopyTests):
             foo (1.0-2) unstable; urgency=3Dlow
 
               * 1.0-2.
-
-             -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
-
-
 
             Date: %s
             Changed-By: Foo Bar <foo.bar@canonical.com>

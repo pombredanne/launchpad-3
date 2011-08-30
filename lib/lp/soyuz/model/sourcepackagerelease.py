@@ -616,7 +616,7 @@ class SourcePackageRelease(SQLBase):
             return None
 
         apt_pkg.InitSystem()
-        output = ""
+        chunks = []
         changelog = self.changelog
         # The python-debian API for parsing changelogs is pretty awful. The
         # only useful way of extracting info is to use the iterator on
@@ -627,8 +627,14 @@ class SourcePackageRelease(SQLBase):
                 if (since_version and
                     apt_pkg.VersionCompare(version, since_version) <= 0):
                     break
+                # Poking in private attributes is not nice but again the
+                # API is terrible.  We want to ensure that the name/date
+                # line is omitted from these composite changelogs.
+                block._no_trailer = True
                 try:
-                    output += str(block)
+                    # python-debian adds an extra blank line to the chunks
+                    # so we'll have to sort this out.
+                    chunks.append(str(block).rstrip())
                 except ChangelogCreateError:
                     continue
                 if not since_version:
@@ -638,4 +644,5 @@ class SourcePackageRelease(SQLBase):
         except ChangelogParseError:
             return None
 
-        return output
+        output = "\n\n".join(chunks)
+        return output.decode("utf-8", "replace")

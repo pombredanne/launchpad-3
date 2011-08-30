@@ -175,10 +175,6 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
 
               * 1.1.
 
-             -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
-
-
-
             =3D=3D=3D
 
             If you don't understand why your files were rejected please send an email

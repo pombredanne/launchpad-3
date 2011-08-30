@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from textwrap import dedent
 import transaction
 from zope.component import getUtility
 
@@ -87,16 +88,25 @@ class TestSourcePackageRelease(TestCaseWithFactory):
         # that version and up to and including the context SPR.
         changelog = self.factory.makeChangelog(
             spn="foo", versions=["1.3",  "1.2",  "1.1",  "1.0"])
-        expected_changelog = self.factory.makeChangelog(
-            spn="foo", versions=["1.3", "1.2", "1.1"])
+        expected_changelog = dedent(u"""\
+            foo (1.3) unstable; urgency=low
+
+              * 1.3.
+
+            foo (1.2) unstable; urgency=low
+
+              * 1.2.
+
+            foo (1.1) unstable; urgency=low
+
+              * 1.1.""")
         spph = self.factory.makeSourcePackagePublishingHistory(
             sourcepackagename="foo", version="1.3", changelog=changelog)
         transaction.commit()  # Yay, librarian.
 
         observed = spph.sourcepackagerelease.aggregate_changelog(
             since_version="1.0")
-        expected = expected_changelog.read()
-        self.assertEqual(expected.strip(), observed.strip())
+        self.assertEqual(expected_changelog, observed)
 
 
 class TestSourcePackageReleaseGetBuildByArch(TestCaseWithFactory):
