@@ -147,5 +147,5 @@ class TestPGBouncerFixture(TestCase):
             pgbouncer.stop()
             assert not self.is_connected()
 
-        # Database is still working.
+        # Database is working again.
         assert self.is_connected()
