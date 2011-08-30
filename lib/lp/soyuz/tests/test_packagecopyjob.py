@@ -923,7 +923,8 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
 
     def test_copying_closes_bugs(self):
         # Copying a package into a primary archive should close any bugs
-        # mentioned in its changelog.
+        # mentioned in its changelog for versions added since the most
+        # recently published version in the target.
 
         # Firstly, lots of boring set up.
         publisher = SoyuzTestPublisher()
@@ -932,30 +933,48 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
         target_archive = self.factory.makeArchive(
             distroseries.distribution, purpose=ArchivePurpose.PRIMARY)
         source_archive = self.factory.makeArchive()
-        bug = self.factory.makeBug()
+        bug280 = self.factory.makeBug()
+        bug281 = self.factory.makeBug()
+        bug282 = self.factory.makeBug()
 
         # Publish a package in the source archive and give it a changelog
         # entry that closes a bug.
         source_pub = self.factory.makeSourcePackagePublishingHistory(
             distroseries=distroseries, sourcepackagename="libc",
-            version="2.8-1", status=PackagePublishingStatus.PUBLISHED,
+            version="2.8-2", status=PackagePublishingStatus.PUBLISHED,
             archive=source_archive)
         spr = removeSecurityProxy(source_pub).sourcepackagerelease
         changelog = dedent("""\
-            foo (1.0-1) unstable; urgency=low
+            libc (2.8-2) unstable; urgency=low
 
               * closes: %s
 
              -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
 
-            """ % bug.id)
+            libc (2.8-1) unstable; urgency=low
+
+              * closes: %s
+
+             -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
+
+            libc (2.8-0) unstable; urgency=low
+
+              * closes: %s
+
+             -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
+            """ % (bug282.id, bug281.id, bug280.id))
         spr.changelog = self.factory.makeLibraryFileAlias(content=changelog)
         spr.changelog_entry = "dummy"
         self.layer.txn.commit()  # Librarian.
-        bugtask = self.factory.makeBugTask(target=spr.sourcepackage, bug=bug)
+        bugtask280 = self.factory.makeBugTask(
+            target=spr.sourcepackage, bug=bug280)
+        bugtask281 = self.factory.makeBugTask(
+            target=spr.sourcepackage, bug=bug281)
+        bugtask282 = self.factory.makeBugTask(
+            target=spr.sourcepackage, bug=bug282)
 
-        # Now put the same named package in the target archive so it gets
-        # auto accepted when we copy.
+        # Now put the same named package in the target archive at the
+        # oldest version in the changelog.
         publisher.getPubSource(
             distroseries=distroseries, sourcename="libc",
             version="2.8-0", status=PackagePublishingStatus.PUBLISHED,
@@ -968,7 +987,7 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             target_archive.newComponentUploader(requester, "main")
         job = source.create(
             package_name="libc",
-            package_version="2.8-1",
+            package_version="2.8-2",
             source_archive=source_archive,
             target_archive=target_archive,
             target_distroseries=distroseries,
@@ -977,7 +996,10 @@ class PlainPackageCopyJobTests(TestCaseWithFactory, LocalTestHelper):
             requester=requester)
         self.runJob(job)
 
-        self.assertEqual(BugTaskStatus.FIXRELEASED, bugtask.status)
+        # All the bugs apart from the one for 2.8-0 should be fixed.
+        self.assertEqual(BugTaskStatus.FIXRELEASED, bugtask282.status)
+        self.assertEqual(BugTaskStatus.FIXRELEASED, bugtask281.status)
+        self.assertEqual(BugTaskStatus.NEW, bugtask280.status)
 
     def test_findMatchingDSDs_matches_all_DSDs_for_job(self):
         # findMatchingDSDs finds matching DSDs for any of the packages
