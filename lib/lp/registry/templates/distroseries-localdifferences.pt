@@ -42,7 +42,7 @@
       <p><tal:replace replace="structure view/explanation/escapedtext" /></p>
 
       <metal:package_filter_form
-	use-macro="context/@@+macros/distroseries-localdiff-search-form" />
+        use-macro="context/@@+macros/distroseries-localdiff-search-form" />
 
       <div metal:use-macro="context/@@launchpad_form/form">
 
@@ -55,45 +55,45 @@
       </span>
       <div metal:fill-slot="buttons">
         <script type="text/javascript">
-	  LPS.use(
+          LPS.use(
             'node', 'event', 'lp.registry.distroseriesdifferences_details',
-	    'lp.app.confirmationoverlay',function(Y) {
-	    Y.on('domready', function() {
+            'lp.app.confirmationoverlay',function(Y) {
+            Y.on('domready', function() {
               var dsd_details = Y.lp.registry.distroseriesdifferences_details;
-	      Y.all('input[name=field.actions.sync]').each(function(button) {
+              Y.all('input[name=field.actions.sync]').each(function(button) {
                 // Cleanup the button's title which says the button is disabled if
                 // Javascript is disabled.
                 button.set('title', '');
                 // Create a function to bypass the display of the Confirmation
-                // Overlay if no package has been selected.
+                // Overlay if no package has been selected.
                 var has_synced_packages = function() {
                   return (dsd_details.get_number_of_packages() !== 0);
                 }
                 // Create the Confirmation Overlay.
-		new Y.lp.app.confirmationoverlay.ConfirmationOverlay({
+                new Y.lp.app.confirmationoverlay.ConfirmationOverlay({
                   button: button,
                   display_confirmation_fn: has_synced_packages,
-		  form_content_fn: dsd_details.get_packages_summary,
+                  form_content_fn: dsd_details.get_packages_summary,
                   header_content_fn: dsd_details.get_confirmation_header_number_of_packages
-                  });
+                });
               });
-	    });
+            });
           });
         </script>
         <div id="launchpad-form-actions" class="actions"
           tal:define="sync view/actions/byname/field.actions.sync;
-	              upgrade view/actions/byname/field.actions.upgrade|nothing">
-          <input class="button" type="submit" disabled="true"
+                      upgrade view/actions/byname/field.actions.upgrade|nothing">
+        <input class="button" type="submit" disabled="true"
             title="Please use a Javascript-enabled browser to sync packages."
             tal:condition="sync/available"
             tal:attributes="value sync/label;
                             name sync/__name__;
                             id sync/__name__;" />
-	  <input class="button" type="submit"
-	    tal:condition="python: upgrade and upgrade.available"
-	    tal:attributes="value upgrade/label;
-	                    name upgrade/__name__;
-			    id upgrade/__name__;" />
+      <input class="button" type="submit"
+        tal:condition="python: upgrade and upgrade.available"
+        tal:attributes="value upgrade/label;
+                        name upgrade/__name__;
+                        id upgrade/__name__;" />
         </div>
       </div>
 
