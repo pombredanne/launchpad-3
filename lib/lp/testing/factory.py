@@ -1121,7 +1121,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             branch_type=branch_type, name=name, registrant=registrant,
             url=url, **optional_branch_args)
         if private:
-            removeSecurityProxy(branch).private = True
+            removeSecurityProxy(branch).explicitly_private = True
         if stacked_on is not None:
             removeSecurityProxy(branch).stacked_on = stacked_on
         if reviewer is not None:
@@ -2153,34 +2153,32 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             else:
                 assert rcs_type in (RevisionControlSystems.SVN,
                                     RevisionControlSystems.BZR_SVN)
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name, rcs_type=rcs_type,
-                url=svn_branch_url)
+                url=svn_branch_url, review_status=review_status)
         elif git_repo_url is not None:
             assert rcs_type in (None, RevisionControlSystems.GIT)
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
-                url=git_repo_url)
+                url=git_repo_url, review_status=review_status)
         elif hg_repo_url is not None:
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.HG,
-                url=hg_repo_url)
+                url=hg_repo_url, review_status=review_status)
         elif bzr_branch_url is not None:
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.BZR,
-                url=bzr_branch_url)
+                url=bzr_branch_url, review_status=review_status)
         else:
             assert rcs_type in (None, RevisionControlSystems.CVS)
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.CVS,
-                cvs_root=cvs_root, cvs_module=cvs_module)
-        if review_status:
-            removeSecurityProxy(code_import).review_status = review_status
-        return code_import
+                cvs_root=cvs_root, cvs_module=cvs_module,
+                review_status=review_status)
 
     def makeChangelog(self, spn=None, versions=[]):
         """Create and return a LFA of a valid Debian-style changelog."""

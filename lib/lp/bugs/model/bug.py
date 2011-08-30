@@ -1295,11 +1295,11 @@ BugMessage""" % sqlvalues(self.id))
             notify(ObjectDeletedEvent(bug_branch, user=user))
             bug_branch.destroySelf()
 
-    def getVisibleLinkedBranches(self, user):
+    def getVisibleLinkedBranches(self, user, eager_load=False):
         """Return all the branches linked to the bug that `user` can see."""
         all_branches = getUtility(IAllBranches)
         linked_branches = list(all_branches.visibleByUser(
-            user).linkedToBugs([self]).getBranches())
+            user).linkedToBugs([self]).getBranches(eager_load=eager_load))
         if len(linked_branches) == 0:
             return EmptyResultSet()
         else:

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views which export vocabularies as JSON for widgets."""
@@ -11,10 +11,10 @@ __all__ = [
     'get_person_picker_entry_metadata',
     ]
 
-import simplejson
 from itertools import izip
 
 from lazr.restful.interfaces import IWebServiceClientRequest
+import simplejson
 from zope.app.form.interfaces import MissingInputError
 from zope.app.schema.vocabulary import IVocabularyFactory
 from zope.component import (
@@ -32,12 +32,12 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import NoCanonicalUrl
 from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from lp.app.browser.tales import (
     DateTimeFormatterAPI,
     IRCNicknameFormatterAPI,
     ObjectImageDisplayAPI,
     )
-from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 from lp.app.errors import UnexpectedFormData
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.distribution import IDistribution
@@ -386,8 +386,8 @@ class HugeVocabularyJSONView:
                 self.context,
                 enhanced_picker_enabled=self.enhanced_picker_enabled,
                 picker_expander_enabled=self.picker_expander_enabled,
-                personpicker_affiliation_enabled=
-                    self.personpicker_affiliation_enabled)
+                personpicker_affiliation_enabled=(
+                    self.personpicker_affiliation_enabled))
             for term_value, picker_entry in izip(term_values, picker_entries):
                 picker_term_entries[term_value] = picker_entry
 
