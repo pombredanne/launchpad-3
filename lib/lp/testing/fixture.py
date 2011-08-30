@@ -88,22 +88,16 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
     def setUp(self):
         super(PGBouncerFixture, self).setUp()
 
+        # reconnect_store cleanup added first so it is run last, after
+        # the environment variables have been reset.
         from canonical.testing.layers import reconnect_stores
+        self.addCleanup(reconnect_stores)
 
         # Abuse the PGPORT environment variable to get things connecting
         # via pgbouncer. Otherwise, we would need to temporarily
         # overwrite the database connection strings in the config.
-        pgport_fixture = EnvironmentVariableFixture('PGPORT', str(self.port))
-        pghost_fixture = EnvironmentVariableFixture('PGHOST', 'localhost')
-
-        # reconnect_store cleanup added first so it is run last, after
-        # the environment variables have been reset.
-        self.addCleanup(reconnect_stores)
-        self.addCleanup(pgport_fixture.cleanUp)
-        self.addCleanup(pghost_fixture.cleanUp)
-
-        pgport_fixture.setUp()
-        pghost_fixture.setUp()
+        self.useFixture(EnvironmentVariableFixture('PGPORT', str(self.port)))
+        self.useFixture(EnvironmentVariableFixture('PGHOST', 'localhost'))
 
         # Reset database connections so they go through pgbouncer.
         reconnect_stores()
