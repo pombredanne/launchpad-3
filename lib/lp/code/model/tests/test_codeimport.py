@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for methods of CodeImport and CodeImportSet."""
@@ -318,7 +318,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
         # Suspending a new import has no impact on jobs.
         code_import = self.factory.makeCodeImport()
         code_import.updateFromData(
-            {'review_status':CodeImportReviewStatus.SUSPENDED},
+            {'review_status': CodeImportReviewStatus.SUSPENDED},
             self.import_operator)
         self.assertIs(None, code_import.import_job)
         self.assertEqual(
@@ -348,7 +348,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
         # Invalidating a new import has no impact on jobs.
         code_import = self.factory.makeCodeImport()
         code_import.updateFromData(
-            {'review_status':CodeImportReviewStatus.INVALID},
+            {'review_status': CodeImportReviewStatus.INVALID},
             self.import_operator)
         self.assertIs(None, code_import.import_job)
         self.assertEqual(
@@ -378,7 +378,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
         # Marking a new import as failing has no impact on jobs.
         code_import = self.factory.makeCodeImport()
         code_import.updateFromData(
-            {'review_status':CodeImportReviewStatus.FAILING},
+            {'review_status': CodeImportReviewStatus.FAILING},
             self.import_operator)
         self.assertIs(None, code_import.import_job)
         self.assertEqual(
@@ -388,7 +388,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
         # Marking an import with a pending job as failing, removes job.
         code_import = self.makeApprovedImportWithPendingJob()
         code_import.updateFromData(
-            {'review_status':CodeImportReviewStatus.FAILING},
+            {'review_status': CodeImportReviewStatus.FAILING},
             self.import_operator)
         self.assertIs(None, code_import.import_job)
         self.assertEqual(
@@ -398,7 +398,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
         # Marking an import with a running job as failing leaves job.
         code_import = self.makeApprovedImportWithRunningJob()
         code_import.updateFromData(
-            {'review_status':CodeImportReviewStatus.FAILING},
+            {'review_status': CodeImportReviewStatus.FAILING},
             self.import_operator)
         self.assertIsNot(None, code_import.import_job)
         self.assertEqual(
@@ -691,7 +691,6 @@ class TestRequestImport(TestCaseWithFactory):
             git_repo_url=self.factory.getUniqueURL())
         requester = self.factory.makePerson()
         code_import.requestImport(requester)
-        old_date = code_import.import_job.date_due
         e = self.assertRaises(
             CodeImportAlreadyRequested, code_import.requestImport, requester,
             error_if_already_requested=True)

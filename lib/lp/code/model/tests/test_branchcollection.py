@@ -800,7 +800,7 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         # The target branch must be in the branch collection, as must the
         # source branch.
         mp1 = self.factory.makeBranchMergeProposal()
-        removeSecurityProxy(mp1.target_branch).private = True
+        removeSecurityProxy(mp1.target_branch).explicitly_private = True
         collection = self.all_branches.visibleByUser(None)
         proposals = collection.getMergeProposals()
         self.assertEqual([], list(proposals))

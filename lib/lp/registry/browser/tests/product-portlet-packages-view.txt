@@ -30,7 +30,7 @@ does not happen automatically.
     ...     transaction.commit()
     ...     reconnect_stores(config.statistician.dbuser)
     ...     ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    ...     ignore = DistributionSourcePackageCache.updateAll(
+    ...     DistributionSourcePackageCache.updateAll(
     ...         ubuntu, archive=ubuntu.main_archive, log=logger,
     ...         ztm=transaction)
     ...     transaction.commit()

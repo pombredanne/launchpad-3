@@ -5,13 +5,13 @@
 
 __metaclass__ = type
 
+import threading
+
 from bzrlib import urlutils
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
-
 from lazr.uri import URI
 
-import threading
 
 __all__ = [
     'AcceptAnythingPolicy',
@@ -173,8 +173,8 @@ class SingleSchemePolicy(BranchOpenPolicy):
 class SafeBranchOpener(object):
     """Safe branch opener.
 
-    All locations that are opened (stacked-on branches, references) are checked
-    against a policy object.
+    All locations that are opened (stacked-on branches, references) are
+    checked against a policy object.
 
     The policy object is expected to have the following methods:
     * checkOneURL
@@ -193,12 +193,12 @@ class SafeBranchOpener(object):
         """Install the ``transformFallbackLocation`` hook.
 
         This is done at module import time, but transformFallbackLocationHook
-        doesn't do anything unless the `_active_openers` threading.Local object
-        has a 'opener' attribute in this thread.
+        doesn't do anything unless the `_active_openers` threading.Local
+        object has a 'opener' attribute in this thread.
 
-        This is in a module-level function rather than performed at module level
-        so that it can be called in setUp for testing `SafeBranchOpener` as
-        bzrlib.tests.TestCase.setUp clears hooks.
+        This is in a module-level function rather than performed at module
+        level so that it can be called in setUp for testing `SafeBranchOpener`
+        as bzrlib.tests.TestCase.setUp clears hooks.
         """
         Branch.hooks.install_named_hook(
             'transform_fallback_location',
@@ -288,6 +288,7 @@ class SafeBranchOpener(object):
         url = self.checkAndFollowBranchReference(url, open_dir=open_dir)
         if open_dir is None:
             open_dir = BzrDir.open
+
         def open_branch(url):
             dir = open_dir(url)
             return dir.open_branch()
