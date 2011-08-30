@@ -243,7 +243,7 @@ any changes were made, or None if not.
     >>> code_import = factory.makeProductCodeImport(
     ...     svn_branch_url='http://svn.example.com/project')
     >>> print code_import.review_status.title
-    Pending Review
+    Reviewed
 
 When an import operator updates the code import emails are sent out to
 the branch subscribers and members of VCS Imports that describe the
@@ -275,8 +275,6 @@ created if done through the web UI, so we'll add nopriv here.
     To: david.allouche@canonical.com, ...
     Subject: Code import product.../name... status: Reviewed
     <BLANKLINE>
-    The import has been approved and an import will start shortly.
-    <BLANKLINE>
     ... is now being imported from:
         http://svn.example.com/project/trunk
     instead of:
@@ -292,8 +290,6 @@ created if done through the web UI, so we'll add nopriv here.
     From: Code Import Person <import@example.com>
     To: import@example.com
     Subject: Code import product.../name... status: Reviewed
-    <BLANKLINE>
-    The import has been approved and an import will start shortly.
     <BLANKLINE>
     ... is now being imported from:
         http://svn.example.com/project/trunk

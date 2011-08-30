@@ -680,7 +680,13 @@ class SubmissionParser(object):
                  where the values are the parsing results of _parseHAL,
                  _parseProcessors, _parseAliases.
         """
-        hardware_data = {}
+        # Submissions from checkbox for Lucid, Maverick and Natty
+        # unfortunately do not contain a <sysfs-attributes> node.
+        # A default value here allows us to mark these submissions.
+        # See also bug 835103.
+        hardware_data = {
+            'sysfs-attributes': None,
+            }
         for node in hardware_node.getchildren():
             parser = self._parse_hardware_section[node.tag]
             result = parser(node)
@@ -1328,6 +1334,13 @@ class SubmissionParser(object):
         should have a corresponding sysfs node, and this node should
         define the attributes 'vendor', 'model', 'type'.
         """
+        # Broken submissions from Lucid, Maverick and Natty. We'll have
+        # to deal with incomplete data for SCSI devices in this case if
+        # we don't want to drop the entire submission, so just pretend
+        # that things are fine.
+        # See also bug 835103.
+        if sysfs_data is None:
+            return True
         for device in udev_data:
             subsystem = device['E'].get('SUBSYSTEM')
             if subsystem != 'scsi':
@@ -1456,13 +1469,19 @@ class SubmissionParser(object):
         dmi_data = parsed_data['hardware']['dmi']
         for udev_data in parsed_data['hardware']['udev']:
             device_path = udev_data['P']
+            if sysfs_data is not None:
+                sysfs_data_for_device = sysfs_data.get(device_path)
+            else:
+                # broken Lucid, Maverick and Natty submissions.
+                # See also bug 835103.
+                sysfs_data_for_device = None
             if device_path == UDEV_ROOT_PATH:
                 device = UdevDevice(
-                    self, udev_data, sysfs_data=sysfs_data.get(device_path),
+                    self, udev_data, sysfs_data=sysfs_data_for_device,
                     dmi_data=dmi_data)
             else:
                 device = UdevDevice(
-                    self, udev_data, sysfs_data=sysfs_data.get(device_path))
+                    self, udev_data, sysfs_data=sysfs_data_for_device)
             self.devices[device_path] = device
 
         # The parent-child relations are derived from the path names of
@@ -2731,6 +2750,13 @@ class UdevDevice(BaseDevice):
         # udev sets the property SUBSYSTEM to "scsi" for a number of
         # different nodes: SCSI hosts, SCSI targets and SCSI devices.
         # They are distiguished by the property DEVTYPE.
+
+        # Hack for broken submissions from Lucid, Maverick and Natty:
+        # If we don't have sysfs information, pretend that no SCSI
+        # related node corresponds to a real device.
+        # See also bug 835103.
+        if self.sysfs is None:
+            return False
         properties = self.udev['E']
         return (properties.get('SUBSYSTEM') == 'scsi' and
                 properties.get('DEVTYPE') == 'scsi_device')

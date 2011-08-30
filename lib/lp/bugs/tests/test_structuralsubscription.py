@@ -1,11 +1,10 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for `StructuralSubscription`."""
 
 __metaclass__ = type
 
-from storm.expr import SQL
 from storm.store import (
     EmptyResultSet,
     ResultSet,
@@ -15,8 +14,8 @@ from testtools.matchers import StartsWith
 from zope.security.interfaces import Unauthorized
 
 from canonical.testing.layers import (
-    LaunchpadFunctionalLayer,
     DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
     )
 from lp.bugs.enum import BugNotificationLevel
 from lp.bugs.interfaces.bugtask import (
@@ -24,18 +23,16 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus,
     )
 from lp.bugs.mail.bugnotificationrecipients import BugNotificationRecipients
-from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugsubscriptionfilter import (
     BugSubscriptionFilter,
     BugSubscriptionFilterMute,
     MuteNotAllowed,
     )
 from lp.bugs.model.structuralsubscription import (
-    get_structural_subscriptions_for_bug,
     get_structural_subscribers,
     get_structural_subscription_targets,
+    get_structural_subscriptions_for_bug,
     )
-from lp.bugs.scripts.bugnotification import get_email_notifications
 from lp.testing import (
     anonymous_logged_in,
     login_person,
@@ -527,7 +524,7 @@ class TestGetStructuralSubscriptionTargets(TestCaseWithFactory):
             project=project, owner=project.owner)
         subscriber = self.factory.makePerson()
         with person_logged_in(subscriber):
-            self_sub = project.addBugSubscription(subscriber, subscriber)
+            project.addBugSubscription(subscriber, subscriber)
         # This is a sanity check.
         self.assertEqual(project, product.parent_subscription_target)
         bug = self.factory.makeBug(product=product)
@@ -535,6 +532,7 @@ class TestGetStructuralSubscriptionTargets(TestCaseWithFactory):
         self.assertEqual(
             set([(bug.bugtasks[0], product), (bug.bugtasks[0], project)]),
             set(result))
+
 
 class TestGetStructuralSubscriptionsForBug(TestCaseWithFactory):
 
