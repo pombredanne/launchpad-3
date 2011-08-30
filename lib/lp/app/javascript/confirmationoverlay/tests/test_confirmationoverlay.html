@@ -5,16 +5,16 @@
 
   <!-- YUI and test setup -->
   <script type="text/javascript"
-          src="../../../../canonical/launchpad/icing/yui/yui/yui.js">
+          src="../../../../../canonical/launchpad/icing/yui/yui/yui.js">
   </script>
-  <link rel="stylesheet" href="../../../app/javascript/testing/test.css" />
+  <link rel="stylesheet" href="../../../../app/javascript/testing/test.css" />
   <script type="text/javascript"
-          src="../../../app/javascript/testing/testrunner.js"></script>
+          src="../../../../app/javascript/testing/testrunner.js"></script>
 
   <!-- dependent modules from lazr-->
-  <script type="text/javascript" src="../lazr/lazr.js"></script>
-  <script type="text/javascript" src="../overlay/overlay.js"></script>
-  <script type="text/javascript" src="../formoverlay/formoverlay.js"></script>
+  <script type="text/javascript" src="../../lazr/lazr.js"></script>
+  <script type="text/javascript" src="../../overlay/overlay.js"></script>
+  <script type="text/javascript" src="../../formoverlay/formoverlay.js"></script>
 
   <!-- The module under test -->
   <script type="text/javascript" src="../confirmationoverlay.js"></script>
@@ -24,6 +24,9 @@
 
 </head>
 <body class="yui3-skin-sam">
+  <div id="placeholder" style="display:none;">
+  </div>
+
   <script type="text/x-template" id="form-template">
     <span id="test">content</span>
     <form name="my-form">
