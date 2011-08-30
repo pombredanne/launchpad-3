@@ -189,8 +189,8 @@ class PgTestSetup:
                 # available.
                 # Avoid circular imports
                 section = """[database]
-rw_main_master: dbname=%s
-rw_main_slave:  dbname=%s
+rw_main_master: dbname=%s host=localhost
+rw_main_slave:  dbname=%s host=localhost
 
 """ % (self.dbname, self.dbname)
                 if BaseLayer.config_fixture is not None:

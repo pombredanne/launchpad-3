@@ -97,7 +97,6 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
         # via pgbouncer. Otherwise, we would need to temporarily
         # overwrite the database connection strings in the config.
         self.useFixture(EnvironmentVariableFixture('PGPORT', str(self.port)))
-        self.useFixture(EnvironmentVariableFixture('PGHOST', 'localhost'))
 
         # Reset database connections so they go through pgbouncer.
         reconnect_stores()
