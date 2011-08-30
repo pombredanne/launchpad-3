@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -49,6 +49,7 @@ class IPillar(Interface):
         Bool(title=_('Active'),
              description=_("Whether or not this item is active.")))
     pillar_category = Attribute('The category title applicable to the pillar')
+
 
 class IHasAliases(Interface):
 
@@ -119,7 +120,6 @@ class IPillarNameSet(Interface):
 
     def count_search_matches(text):
         """Return the total number of Pillars matching :text:"""
-
 
     @operation_parameters(text=TextLine(title=u"Search text"),
                           limit=Int(title=u"Maximum number of items to "

@@ -478,7 +478,7 @@ class ObjectFactory:
             branch_id = self.getUniqueInteger()
         if rcstype is None:
             rcstype = 'svn'
-        if rcstype in ['svn', 'bzr-svn', 'hg']:
+        if rcstype in ['svn', 'bzr-svn', 'hg', 'bzr']:
             assert cvs_root is cvs_module is None
             if url is None:
                 url = self.getUniqueURL()
@@ -759,6 +759,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             address, person, email_status, account)
 
     def makeTeam(self, owner=None, displayname=None, email=None, name=None,
+                 description=None,
                  subscription_policy=TeamSubscriptionPolicy.OPEN,
                  visibility=None, members=None):
         """Create and return a new, arbitrary Team.
@@ -768,6 +769,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :type owner: `IPerson` or string
         :param displayname: The team's display name.  If not given we'll use
             the auto-generated name.
+        :param description: Team team's description.
         :type string:
         :param email: The email address to use as the team's contact address.
         :type email: string
@@ -793,7 +795,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname = SPACE.join(
                 word.capitalize() for word in name.split('-'))
         team = getUtility(IPersonSet).newTeam(
-            owner, name, displayname, subscriptionpolicy=subscription_policy)
+            owner, name, displayname, teamdescription=description,
+            subscriptionpolicy=subscription_policy)
         if visibility is not None:
             # Visibility is normally restricted to launchpad.Commercial, so
             # removing the security proxy as we don't care here.
@@ -1122,7 +1125,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             branch_type=branch_type, name=name, registrant=registrant,
             url=url, **optional_branch_args)
         if private:
-            removeSecurityProxy(branch).private = True
+            removeSecurityProxy(branch).explicitly_private = True
         if stacked_on is not None:
             removeSecurityProxy(branch).stacked_on = stacked_on
         if reviewer is not None:
@@ -2127,7 +2130,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None, target=None, branch_name=None,
-                       git_repo_url=None, hg_repo_url=None, registrant=None,
+                       git_repo_url=None, hg_repo_url=None,
+                       bzr_branch_url=None, registrant=None,
                        rcs_type=None, review_status=None):
         """Create and return a new, arbitrary code import.
 
@@ -2136,7 +2140,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         unique URL.
         """
         if (svn_branch_url is cvs_root is cvs_module is git_repo_url is
-            hg_repo_url is None):
+            hg_repo_url is bzr_branch_url is None):
             svn_branch_url = self.getUniqueURL()
 
         if target is None:
@@ -2153,29 +2157,32 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             else:
                 assert rcs_type in (RevisionControlSystems.SVN,
                                     RevisionControlSystems.BZR_SVN)
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name, rcs_type=rcs_type,
-                url=svn_branch_url)
+                url=svn_branch_url, review_status=review_status)
         elif git_repo_url is not None:
             assert rcs_type in (None, RevisionControlSystems.GIT)
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
-                url=git_repo_url)
+                url=git_repo_url, review_status=review_status)
         elif hg_repo_url is not None:
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.HG,
-                url=hg_repo_url)
+                url=hg_repo_url, review_status=review_status)
+        elif bzr_branch_url is not None:
+            return code_import_set.new(
+                registrant, target, branch_name,
+                rcs_type=RevisionControlSystems.BZR,
+                url=bzr_branch_url, review_status=review_status)
         else:
             assert rcs_type in (None, RevisionControlSystems.CVS)
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.CVS,
-                cvs_root=cvs_root, cvs_module=cvs_module)
-        if review_status:
-            removeSecurityProxy(code_import).review_status = review_status
-        return code_import
+                cvs_root=cvs_root, cvs_module=cvs_module,
+                review_status=review_status)
 
     def makeChangelog(self, spn=None, versions=[]):
         """Create and return a LFA of a valid Debian-style changelog.

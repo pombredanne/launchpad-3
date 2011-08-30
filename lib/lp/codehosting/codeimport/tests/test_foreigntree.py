@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for foreign branch support."""
@@ -10,7 +10,6 @@ import time
 
 from bzrlib.tests import TestCaseWithTransport
 import CVS
-
 import subvertpy.client
 import subvertpy.ra
 import subvertpy.wc
@@ -179,7 +178,6 @@ class TestCVSWorkingTree(TestCaseWithTransport):
         tree2.checkout()
 
         self.assertFileEqual(new_content, 'working_tree2/README')
-
 
     def test_update(self):
         # update() fetches any changes to the branch from the remote branch.

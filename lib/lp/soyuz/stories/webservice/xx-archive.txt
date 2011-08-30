@@ -34,7 +34,8 @@ We publish a subset of their attributes.
 
 For "devel" additional attributes are available.
 
-    >>> cprov_archive_devel = webservice.get("/~cprov/+archive/ppa", api_version='devel').jsonBody()
+    >>> cprov_archive_devel = webservice.get(
+    ...     "/~cprov/+archive/ppa", api_version='devel').jsonBody()
     >>> pprint_entry(cprov_archive_devel)
     commercial: False
     dependencies_collection_link: u'http://.../~cprov/+archive/ppa/dependencies'
