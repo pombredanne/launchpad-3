@@ -51,7 +51,8 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   metal:define-macro="break">
   <div id="comments-container"></div>
-  <div class="boardComment" style="border-bottom: 0">
+  <div class="boardComment" style="border-bottom: 0"
+    id="comments-hidden-message">
     <div class="boardCommentDetails">
       <table>
         <tbody>
