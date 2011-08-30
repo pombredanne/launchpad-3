@@ -129,7 +129,7 @@ class Dominator:
             assert pubs[name], (
                 "Empty list of publications for %s" % name)
             for pubrec in pubs[name][1:]:
-                pubrec.supersede(pubs[name][0], self)
+                pubrec.supersede(pubs[name][0], logger=self.logger)
 
     def _sortPackages(self, pkglist, is_source=True):
         """Map out packages by name, and sort by descending version.
