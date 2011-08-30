@@ -1067,7 +1067,7 @@ class BugTaskBatchedCommentsAndActivityView(BugTaskView):
         try:
             return int(self.request.form_ng.getOne('batch_size'))
         except TypeError:
-            return 1000
+            return config.malone.comments_list_default_batch_size
 
     @property
     def next_batch_url(self):

@@ -23,6 +23,7 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
@@ -1038,10 +1039,13 @@ class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
     def test_batch_size(self):
         # BugTaskBatchedCommentsAndActivityView.batch_size returns the
         # current batch_size being used to select a batch of bug comments
-        # and activity or 1000 if one has not been specified.
+        # and activity or the default configured batch size if one has
+        # not been specified.
         bug_task = self.factory.makeBugTask()
         view = create_initialized_view(bug_task, '+batched-comments')
-        self.assertEqual(1000, view.batch_size)
+        self.assertEqual(
+            config.malone.comments_list_default_batch_size,
+            view.batch_size)
         view = create_initialized_view(
             bug_task, '+batched-comments', form={'batch_size': 20})
         self.assertEqual(20, view.batch_size)
