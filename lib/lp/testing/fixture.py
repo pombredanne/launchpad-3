@@ -83,6 +83,7 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
         security_cfg_config.read([security_cfg_path])
         for section_name in security_cfg_config.sections():
             self.users[section_name] = 'trusted'
+            self.users[section_name + '_ro'] = 'trusted'
         self.users[os.environ['USER']] = 'trusted'
 
     def setUp(self):
