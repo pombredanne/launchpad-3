@@ -81,19 +81,19 @@
           });
         </script>
         <div id="launchpad-form-actions" class="actions"
-          tal:define="sync view/actions/byname/field.actions.sync;
+          tal:define="sync view/actions/byname/field.actions.sync|nothing;
                       upgrade view/actions/byname/field.actions.upgrade|nothing">
-        <input class="button" type="submit" disabled="true"
-            title="Please use a Javascript-enabled browser to sync packages."
-            tal:condition="sync/available"
-            tal:attributes="value sync/label;
-                            name sync/__name__;
-                            id sync/__name__;" />
-      <input class="button" type="submit"
-        tal:condition="python: upgrade and upgrade.available"
-        tal:attributes="value upgrade/label;
-                        name upgrade/__name__;
-                        id upgrade/__name__;" />
+          <input class="button" type="submit" disabled="true"
+              title="Please use a Javascript-enabled browser to sync packages."
+              tal:condition="python:sync and sync.available"
+              tal:attributes="value sync/label;
+                              name sync/__name__;
+                              id sync/__name__;" />
+          <input class="button" type="submit"
+            tal:condition="python: upgrade and upgrade.available"
+            tal:attributes="value upgrade/label;
+                            name upgrade/__name__;
+                            id upgrade/__name__;" />
         </div>
       </div>
 
