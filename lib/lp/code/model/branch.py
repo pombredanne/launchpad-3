@@ -171,11 +171,30 @@ class Branch(SQLBase, BzrIdentityMixin):
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
 
-    private = BoolCol(default=False, notNull=True)
+    # This attribute signifies whether *this* branch is private, irrespective
+    # of the state of any stacked on branches.
+    explicitly_private = BoolCol(
+        default=False, notNull=True, dbName='private')
+
+    @property
+    def private(self):
+        return self.explicitly_private or self._isStackedOnPrivate()
+
+    def _isStackedOnPrivate(self, checked_branches=None):
+        # Return True if any of this branch's stacked_on branches is private.
+        is_stacked_on_private = False
+        if self.stacked_on is not None:
+            checked_branches = checked_branches or []
+            checked_branches.append(self)
+            if self.stacked_on not in checked_branches:
+                is_stacked_on_private = (
+                    self.stacked_on.explicitly_private or
+                    self.stacked_on._isStackedOnPrivate(checked_branches))
+        return is_stacked_on_private
 
     def setPrivate(self, private, user):
         """See `IBranch`."""
-        if private == self.private:
+        if private == self.explicitly_private:
             return
         # Only check the privacy policy if the user is not special.
         if (not user_has_special_branch_access(user)):
@@ -185,7 +204,7 @@ class Branch(SQLBase, BzrIdentityMixin):
                 raise BranchCannotBePrivate()
             if not private and not policy.canBranchesBePublic():
                 raise BranchCannotBePublic()
-        self.private = private
+        self.explicitly_private = private
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
@@ -376,7 +395,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
     def getMergeProposals(self, status=None, visible_by_user=None,
-                          merged_revnos=None):
+                          merged_revnos=None, eager_load=False):
         """See `IBranch`."""
         if not status:
             status = (
@@ -386,7 +405,8 @@ class Branch(SQLBase, BzrIdentityMixin):
 
         collection = getUtility(IAllBranches).visibleByUser(visible_by_user)
         return collection.getMergeProposals(
-            status, target_branch=self, merged_revnos=merged_revnos)
+            status, target_branch=self, merged_revnos=merged_revnos,
+            eager_load=eager_load)
 
     def isBranchMergeable(self, target_branch):
         """See `IBranch`."""
@@ -1175,7 +1195,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         This method doesn't check the stacked upon branch.  That is handled by
         the `visibleByUser` method.
         """
-        if not self.private:
+        if not self.explicitly_private:
             return True
         if user is None:
             return False

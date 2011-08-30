@@ -85,6 +85,7 @@ class BugEmailCommand(EmailCommand):
     implements(IBugEmailCommand)
 
     _numberOfArguments = 1
+    RANK = 0
 
     def execute(self, parsed_msg, filealias):
         """See IBugEmailCommand."""
@@ -160,6 +161,7 @@ class PrivateEmailCommand(EmailCommand):
     implements(IBugEditEmailCommand)
 
     _numberOfArguments = 1
+    RANK = 3
 
     def execute(self, context, current_event):
         """See `IEmailCommand`. Much of this method has been lifted from
@@ -206,6 +208,7 @@ class SecurityEmailCommand(EmailCommand):
     implements(IBugEditEmailCommand)
 
     _numberOfArguments = 1
+    RANK = 2
 
     def execute(self, context, current_event):
         """See `IEmailCommand`.
@@ -260,6 +263,7 @@ class SubscribeEmailCommand(EmailCommand):
     """Subscribes someone to the bug."""
 
     implements(IBugEditEmailCommand)
+    RANK = 7
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
@@ -300,6 +304,7 @@ class UnsubscribeEmailCommand(EmailCommand):
     """Unsubscribes someone from the bug."""
 
     implements(IBugEditEmailCommand)
+    RANK = 8
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
@@ -335,6 +340,7 @@ class SummaryEmailCommand(EditEmailCommand):
 
     implements(IBugEditEmailCommand)
     _numberOfArguments = 1
+    RANK = 1
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
@@ -365,6 +371,7 @@ class DuplicateEmailCommand(EmailCommand):
 
     implements(IBugEditEmailCommand)
     _numberOfArguments = 1
+    RANK = 6
 
     def execute(self, context, current_event):
         """See IEmailCommand."""
@@ -405,6 +412,7 @@ class CVEEmailCommand(EmailCommand):
     implements(IBugEditEmailCommand)
 
     _numberOfArguments = 1
+    RANK = 5
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
@@ -422,6 +430,7 @@ class AffectsEmailCommand(EmailCommand):
 
     implements(IBugTaskEmailCommand)
     _numberOfArguments = 1
+    RANK = 0
 
     @classmethod
     def _splitPath(cls, path):
@@ -633,6 +642,7 @@ class AssigneeEmailCommand(EditEmailCommand):
     implements(IBugTaskEditEmailCommand)
 
     _numberOfArguments = 1
+    RANK = 2
 
     def convertArguments(self, context):
         """See EmailCommand."""
@@ -655,6 +665,7 @@ class MilestoneEmailCommand(EditEmailCommand):
     implements(IBugTaskEditEmailCommand)
 
     _numberOfArguments = 1
+    RANK = 3
 
     def convertArguments(self, context):
         """See EmailCommand."""
@@ -741,6 +752,7 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
 class StatusEmailCommand(DBSchemaEditEmailCommand):
     """Changes a bug task's status."""
     dbschema = BugTaskStatus
+    RANK = 4
 
     def setAttributeValue(self, context, attr_name, attr_value):
         """See EmailCommand."""
@@ -758,11 +770,13 @@ class StatusEmailCommand(DBSchemaEditEmailCommand):
 class ImportanceEmailCommand(DBSchemaEditEmailCommand):
     """Changes a bug task's importance."""
     dbschema = BugTaskImportance
+    RANK = 5
 
 
 class ReplacedByImportanceCommand(EmailCommand):
     """This command has been replaced by the 'importance' command."""
     implements(IBugTaskEditEmailCommand)
+    RANK = 1
 
     def execute(self, context, current_event):
         raise EmailProcessingError(
@@ -776,6 +790,7 @@ class TagEmailCommand(EmailCommand):
     """Assigns a tag to or removes a tag from bug."""
 
     implements(IBugEditEmailCommand)
+    RANK = 4
 
     def execute(self, bug, current_event):
         """See `IEmailCommand`."""
