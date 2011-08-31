@@ -1357,8 +1357,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             recipe, SourcePackageRecipeRequestDailyBuildView)
         harness.submit('build', {})
         self.assertEqual(
-            'You have exceeded your quota for recipe chef/julia '
-            'for distroseries ubuntu warty',
+            "You have exceeded your quota for recipe chef/julia "
+            "for distroseries ubuntu warty",
             harness.view.request.notifications[0].message)
 
     def test_request_builds_page(self):
@@ -1698,7 +1698,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         self.assertIn('Logs have no tails!', main_text)
 
     def getMainText(self, build, view_name=None):
-        """"Return the main text of a view's web page."""
+        """Return the main text of a view's web page."""
         browser = self.getViewBrowser(build, '+index')
         return extract_text(find_main_content(browser.contents))
 
