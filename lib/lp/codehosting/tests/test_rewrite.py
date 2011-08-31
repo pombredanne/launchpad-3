@@ -7,8 +7,10 @@ __metaclass__ = type
 
 import os
 import re
+from select import select
 import signal
 import subprocess
+import time
 
 import transaction
 from zope.security.proxy import removeSecurityProxy
@@ -16,7 +18,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
-    LaunchpadScriptLayer,
+    DatabaseLayer,
     )
 from lp.code.interfaces.codehosting import branch_id_alias
 from lp.codehosting.rewrite import BranchRewriter
@@ -24,6 +26,7 @@ from lp.codehosting.vfs import branch_id_to_path
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
     FakeTime,
+    TestCase,
     TestCaseWithFactory,
     )
 from lp.testing.fixture import PGBouncerFixture
@@ -282,9 +285,9 @@ class TestBranchRewriterScript(TestCaseWithFactory):
         self.assertEqual(expected_lines, output_lines)
 
 
-class TestBranchRewriterScriptHandlesDisconnects(TestCaseWithFactory):
+class TestBranchRewriterScriptHandlesDisconnects(TestCase):
     """Ensure branch-rewrite.py survives fastdowntime deploys."""
-    layer = LaunchpadScriptLayer
+    layer = DatabaseLayer
 
     def spawn(self):
         script_file = os.path.join(
@@ -298,7 +301,24 @@ class TestBranchRewriterScriptHandlesDisconnects(TestCaseWithFactory):
 
     def request(self, query):
         self.rewriter_proc.stdin.write(query + '\n')
-        return self.rewriter_proc.stdout.readline().rstrip('\n')
+        self.rewriter_proc.stdin.flush()
+
+        timeout = 30 # Need to include script startup time for first result.
+        start = time.time()
+        result = ""
+        while time.time() < start + timeout and not result.endswith('\n'):
+            rlist = select([self.rewriter_proc.stdout],[],[],timeout)
+            if rlist:
+                more_result = os.read(self.rewriter_proc.stdout.fileno(), 1024)
+                if more_result == "":
+                    self.rewriter_proc.stdout.close()
+                    break
+                result += more_result
+        if result.endswith('\n'):
+            return result.rstrip('\n')
+        self.fail(
+            "Incomplete line or no result retrieved from subprocess: %s"
+            % repr(result))
 
     def test_reconnects_when_disconnected(self):
         pgbouncer = self.useFixture(PGBouncerFixture())
