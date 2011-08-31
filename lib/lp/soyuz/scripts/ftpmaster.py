@@ -52,6 +52,7 @@ from lp.registry.interfaces.pocket import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.services.browser_helpers import get_plural_text
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
@@ -62,6 +63,10 @@ from lp.soyuz.adapters.packagelocation import (
     )
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
+from lp.soyuz.interfaces.publishing import (
+    IPublishingSet,
+    ISourcePackagePublishingHistory,
+    )
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,
@@ -1256,26 +1261,38 @@ class PackageRemover(SoyuzScript):
 
         self.logger.info("Removing candidates:")
         for removable in removables:
-            self.logger.info('\t%s' % removable.displayname)
+            self.logger.info('\t%s', removable.displayname)
 
-        self.logger.info("Removed-by: %s" % removed_by.displayname)
-        self.logger.info("Comment: %s" % self.options.removal_comment)
+        self.logger.info("Removed-by: %s", removed_by.displayname)
+        self.logger.info("Comment: %s", self.options.removal_comment)
 
         removals = []
-        for removable in removables:
-            removable.requestDeletion(
-                removed_by=removed_by,
-                removal_comment=self.options.removal_comment)
-            removals.append(removable)
-
-        if len(removals) == 1:
-            self.logger.info(
-                "%s package successfully removed." % len(removals))
-        elif len(removals) > 1:
-            self.logger.info(
-                "%s packages successfully removed." % len(removals))
+        if self.options.binaryonly or self.options.sourceonly:
+            # Tedious.  Delete each BPPH/SPPH individually.
+            for removable in removables:
+                removable.requestDeletion(
+                    removed_by=removed_by,
+                    removal_comment=self.options.removal_comment)
+                removals.append(removable)
         else:
+            # Mass-delete the sources, and the binaries will follow
+            # automatically.  The binaries are only interesting for
+            # logging.
+            sources = [
+                removable
+                for removable in removables
+                    if ISourcePackagePublishingHistory.implementedBy(
+                            removable)]
+            getUtility(IPublishingSet).requestDeletion(
+                sources, removed_by,
+                removal_comment=self.options.removal_comment)
+
+        if len(removals) == 0:
             self.logger.info("No package removed (bug ?!?).")
+        else:
+            self.logger.info(
+                "%d %s successfully removed.", len(removals),
+                get_plural_text(len(removals), "package", "packages"))
 
         # Information returned mainly for the benefit of the test harness.
         return removals
