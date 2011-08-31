@@ -86,7 +86,7 @@ class CodeImport(SQLBase):
         storm_validator=validate_public_person, notNull=False, default=None)
 
     review_status = EnumCol(schema=CodeImportReviewStatus, notNull=True,
-        default=CodeImportReviewStatus.NEW)
+        default=CodeImportReviewStatus.REVIEWED)
 
     rcs_type = EnumCol(schema=RevisionControlSystems,
         notNull=False, default=None)

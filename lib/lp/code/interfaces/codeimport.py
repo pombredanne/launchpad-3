@@ -108,9 +108,8 @@ class ICodeImport(Interface):
     review_status = exported(
         Choice(
             title=_("Review Status"), vocabulary=CodeImportReviewStatus,
-            default=CodeImportReviewStatus.NEW, readonly=True,
-            description=_("Before a code import is performed, it is reviewed."
-                " Only reviewed imports are processed.")))
+            default=CodeImportReviewStatus.REVIEWED, readonly=True,
+            description=_("Only reviewed imports are processed.")))
 
     rcs_type = exported(
         Choice(title=_("Type of RCS"), readonly=True,
