@@ -881,7 +881,6 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
             cache, cls=ResourceJSONEncoder,
             media_type=EntryResource.JSON_TYPE)
 
-
     def _handlePrivacyChanged(self, user_will_be_subscribed):
         """Handle the case where the privacy of the bug has been changed.
 
