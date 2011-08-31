@@ -154,11 +154,11 @@ class IDistroSeriesDifferencePublic(Interface):
         description=_(
             "The most recent published version in the derived series."))
 
-    source_version = TextLine(
+    source_version = exported(TextLine(
         title=_("Source version"), readonly=True,
         description=_(
             "The version of the most recent source publishing in the "
-            "derived series."))
+            "derived series.")))
 
     parent_source_pub = Reference(
         ISourcePackagePublishingHistory,
@@ -166,17 +166,17 @@ class IDistroSeriesDifferencePublic(Interface):
         description=_(
             "The most recent published version in the parent series."))
 
-    parent_source_version = TextLine(
+    parent_source_version = exported(TextLine(
         title=_("Parent source version"), readonly=True,
         description=_(
             "The version of the most recent source publishing in the "
-            "parent series."))
+            "parent series.")))
 
-    base_version = TextLine(
+    base_version = exported(TextLine(
         title=_("Base version"), readonly=True,
         description=_(
             "The common base version of the package for differences "
-            "with different versions in the parent and derived series."))
+            "with different versions in the parent and derived series.")))
 
     base_source_pub = Reference(
         ISourcePackagePublishingHistory,
