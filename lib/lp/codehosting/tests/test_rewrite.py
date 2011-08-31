@@ -286,12 +286,6 @@ class TestBranchRewriterScriptHandlesDisconnects(TestCaseWithFactory):
     """Ensure branch-rewrite.py survives fastdowntime deploys."""
     layer = LaunchpadScriptLayer
 
-    def setUp(self):
-        super(TestBranchRewriterScriptHandlesDisconnects, self).setUp()
-        self.pgbouncer = PGBouncerFixture()
-        self.addCleanup(self.pgbouncer.cleanUp)
-        self.pgbouncer.setUp()
-
     def spawn(self):
         script_file = os.path.join(
             config.root, 'scripts', 'branch-rewrite.py')
@@ -300,18 +294,22 @@ class TestBranchRewriterScriptHandlesDisconnects(TestCaseWithFactory):
             [script_file], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, bufsize=0)
 
+        self.addCleanup(self.rewriter_proc.terminate)
+
     def request(self, query):
         self.rewriter_proc.stdin.write(query + '\n')
         return self.rewriter_proc.stdout.readline().rstrip('\n')
 
-    def test_disconnect(self):
+    def test_reconnects_when_disconnected(self):
+        pgbouncer = self.useFixture(PGBouncerFixture())
+
         self.spawn()
 
         # Everything should be working, and we get valid output.
         out = self.request('foo')
-        assert out.endswith('/foo'), out
+        self.assertEndsWith(out, '/foo')
 
-        self.pgbouncer.stop()
+        pgbouncer.stop()
 
         # Now with pgbouncer down, we should get NULL messages and
         # stderr spam, and this keeps happening. We test more than
@@ -319,23 +317,27 @@ class TestBranchRewriterScriptHandlesDisconnects(TestCaseWithFactory):
         # after several failures.
         for count in range(5):
             out = self.request('foo')
-            assert out == 'NULL', out
+            self.assertEqual(out, 'NULL')
 
-        self.pgbouncer.start()
+        pgbouncer.start()
 
         # Everything should be working, and we get valid output.
         out = self.request('foo')
-        assert out.endswith('/foo'), out
+        self.assertEndsWith(out, '/foo')
 
     def test_starts_with_db_down(self):
-        self.pgbouncer.stop()
+        pgbouncer = self.useFixture(PGBouncerFixture())
+
+        # Start with the database down.
+        pgbouncer.stop()
+
         self.spawn()
 
         for count in range(5):
             out = self.request('foo')
-            assert out == 'NULL', out
+            self.assertEqual(out, 'NULL')
 
-        self.pgbouncer.start()
+        pgbouncer.start()
 
         out = self.request('foo')
-        assert out.endswith('/foo'), out
+        self.assertEndsWith(out, '/foo')
