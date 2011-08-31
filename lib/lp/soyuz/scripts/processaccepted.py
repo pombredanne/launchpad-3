@@ -181,15 +181,13 @@ def close_bugs_for_sourcepackagerelease(source_release, changesfile_object,
     the future to deal with the changes file as well but there is no
     requirement to do so right now.
     """
-    if since_version is not None:
-        assert changesfile_object is None, (
-            "Only set since_version if changesfile_object is None")
-
-    if changesfile_object:
-        bugs_to_close = get_bugs_from_changes_file(changesfile_object)
-    else:
+    if since_version and source_release.changelog:
         bugs_to_close = get_bugs_from_changelog_entry(
             source_release, since_version=since_version)
+    elif changesfile_object:
+        bugs_to_close = get_bugs_from_changes_file(changesfile_object)
+    else:
+        return
 
     # No bugs to be closed by this upload, move on.
     if not bugs_to_close:
