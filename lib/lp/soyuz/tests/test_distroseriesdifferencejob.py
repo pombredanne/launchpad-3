@@ -962,3 +962,22 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
         for user in script_users:
             self.layer.switchDbUser(user)
             list(dsp.parent_series.getDerivedSeries())
+
+    def test_passesPackagesetFilter(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        self.factory.makePackageset(distroseries=dsp.parent_series)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=dsp.parent_series,
+            archive=dsp.parent_series.main_archive,
+            pocket=PackagePublishingPocket.RELEASE)
+        dsdj = create_job(
+            dsp.derived_series, spph.sourcepackagerelease.sourcepackagename,
+            dsp.parent_series)
+        transaction.commit()
+
+        self.layer.switchDbUser('distroseriesdifferencejob')
+
+        dsdj.passesPackagesetFilter()
+
+        # The test is that we get here without exceptions.
+        pass
