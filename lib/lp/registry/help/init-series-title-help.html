@@ -60,13 +60,13 @@
         <li><em>Parent Builds:</em> If the parent has any builds in
             progress for sources that you are copying,
             the initialization will be refused. This is to stop you ending
-            up with the same version binary with different contents in the
-            parent than the child, because the child would rebuild a source
-            with no (copied) binaries.
+            up with the same version binary with contents that differ between
+            parent and child, because the child would rebuild a source
+            that didn't get its binary copied too.
         </li>
         <li><em>Pending (Queued) Parent Builds:</em> If the parent has any
             builds for sources that you are copying that are waiting in the
-            upload queues (pending archive admin action),
+            pending-acceptance queues (pending archive admin action),
             the initialization will be refused for the same reasons as
             copying "Parent Builds" above.
         </li>
