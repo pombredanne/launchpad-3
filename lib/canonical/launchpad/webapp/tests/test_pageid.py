@@ -114,9 +114,9 @@ class TestPageIdCorners(TestCase):
         return self.publication.constructPageID(self.view, self.context)
 
     def test_pageid_with_multiple_op_fields(self):
-        # The publisher will combine mutliple form values with the same name
+        # The publisher will combine multiple form values with the same name
         # into a list.  If those values are for "ws.op", the page ID mechanism
-        # should just ignore the op alltogether.  (It used to generate an
+        # should just ignore the op altogether.  (It used to generate an
         # error, see bug 810113).
         self.view.request.form_values['ws.op'] = ['one', 'another']
         self.assertEqual(self.makePageID(), 'FakeContext:FakeView')
