@@ -37,6 +37,9 @@ from lp.services.scripts.base import (
 from lp.soyuz.enums import (
     ArchivePurpose,
     PackageUploadStatus,
+    re_bug_numbers,
+    re_closes,
+    re_lp_closes,
     )
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.queue import IPackageUploadSet
@@ -61,6 +64,35 @@ def get_bugs_from_changes_file(changes_file):
             continue
         else:
             bugs.append(bug)
+    return bugs
+
+
+def get_bugs_from_changelog_entry(sourcepackagerelease, since_version):
+    """Parse the changelog_entry in the sourcepackagerelease and return a
+    list of `IBug`s referenced by it.
+    """
+    changelog = sourcepackagerelease.aggregate_changelog(since_version)
+    closes = []
+    # There are 2 main regexes to match.  Each match from those can then
+    # have further multiple matches from the 3rd regex:
+    # closes: NNN, NNN
+    # lp: #NNN, #NNN
+    regexes = (
+        re_closes.finditer(changelog), re_lp_closes.finditer(changelog))
+    for regex in regexes:
+        for match in regex:
+            bug_match = re_bug_numbers.findall(match.group(0))
+            closes += map(int, bug_match)
+
+    bugs = []
+    for bug_id in closes:
+        try:
+            bug = getUtility(IBugSet).get(bug_id)
+        except NotFoundError:
+            continue
+        else:
+            bugs.append(bug)
+
     return bugs
 
 
@@ -119,7 +151,7 @@ def close_bugs_for_queue_item(queue_item, changesfile_object=None):
             source_queue_item.sourcepackagerelease, changesfile_object)
 
 
-def close_bugs_for_sourcepublication(source_publication):
+def close_bugs_for_sourcepublication(source_publication, since_version=None):
     """Close bugs for a given sourcepublication.
 
     Given a `ISourcePackagePublishingHistory` close bugs mentioned in
@@ -131,21 +163,31 @@ def close_bugs_for_sourcepublication(source_publication):
     sourcepackagerelease = source_publication.sourcepackagerelease
     changesfile_object = sourcepackagerelease.upload_changesfile
 
-    # No changesfile available, cannot close bugs.
-    if changesfile_object is None:
-        return
-
     close_bugs_for_sourcepackagerelease(
-        sourcepackagerelease, changesfile_object)
+        sourcepackagerelease, changesfile_object, since_version)
 
 
-def close_bugs_for_sourcepackagerelease(source_release, changesfile_object):
+def close_bugs_for_sourcepackagerelease(source_release, changesfile_object,
+                                        since_version=None):
     """Close bugs for a given source.
 
     Given a `ISourcePackageRelease` and a corresponding changesfile object,
     close bugs mentioned in the changesfile in the context of the source.
+
+    If changesfile_object is None and since_version is supplied,
+    close all the bugs in changelog entries made after that version and up
+    to and including the source_release's version.  It does this by parsing
+    the changelog on the sourcepackagerelease.  This could be extended in
+    the future to deal with the changes file as well but there is no
+    requirement to do so right now.
     """
-    bugs_to_close = get_bugs_from_changes_file(changesfile_object)
+    if since_version and source_release.changelog:
+        bugs_to_close = get_bugs_from_changelog_entry(
+            source_release, since_version=since_version)
+    elif changesfile_object:
+        bugs_to_close = get_bugs_from_changes_file(changesfile_object)
+    else:
+        return
 
     # No bugs to be closed by this upload, move on.
     if not bugs_to_close:
