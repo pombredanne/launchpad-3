@@ -3689,8 +3689,8 @@ class BugTaskSubscriptionPortletDetails(BugSubscriptionPortletView):
     """View for loading subscription portlet details for a bug task.
 
     This view is called when the portlet needs to be updated as a result of
-    another user action. So we need to return the HTML required for the
-    portlet as well as items to put into the Javascript cache.
+    another user action. We need to return the  items to put into the
+    Javascript cache.
     """
 
     def __init__(self, context, request):
