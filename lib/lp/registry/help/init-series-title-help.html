@@ -20,19 +20,24 @@
       different distribution.
       </li>
     </ul>
+    <p>
+        In both cases, initialization is done as a background task after the
+        "Initialize Series" button is pressed
+    </p>
 
-     <h2>Continuation Series</h2>
+     <h3>Continuation Series</h3>
      <p>This will copy all the sources and binaries from the previous
          series in the distribution.  Its parent series default to the
          parent series used in the previous series, but they can be changed.
          This is useful, for example, when the new series has a longer
          support period and you wish to sync packages from a more stable
-         upstream series.
+         upstream series.  On an Ubuntu-sized distribution,
+         expect the background task to complete in around 10 minutes.
      </p>
      <p>It will also copy all of the settings from the previous series,
          such as upload permissions and packagesets.</p>
 
-     <h2>New Derived Distribution Series</h2>
+     <h3>New Derived Distribution Series</h3>
      <p>Initializing a new distribution is a complicated task. It takes a
          long time and has a lot of checks. There are various things that
          you need to specify:
@@ -43,6 +48,29 @@
            <li>Whether to rebuild the copied packages,
                or copy binaries from the parents.</li>
          </ul>
+         Normally you can expect the initialization to complete in minutes
+         if you have less than around 1000 packages, but it will non-linearly
+         increase as the number of copied packages increases, because it has
+         to check that you are not copying conflicting packages.
+     </p>
+
+     <h3>Pre-initialization Checks and Errors</h3>
+     <p>
+       <ul>
+        <li><em>Parent Builds:</em> If the parent has any builds in
+            progress for sources that you are copying,
+            the initialization will be refused. This is to stop you ending
+            up with the same version binary with different contents in the
+            parent than the child, because the child would rebuild a source
+            with no (copied) binaries.
+        </li>
+        <li><em>Pending (Queued) Parent Builds:</em> If the parent has any
+            builds for sources that you are copying that are waiting in the
+            upload queues (pending archive admin action),
+            the initialization will be refused for the same reasons as
+            copying "Parent Builds" above.
+        </li>
+       </ul>
      </p>
 
   </body>
