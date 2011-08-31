@@ -124,51 +124,6 @@ class TestBugTaskView(TestCaseWithFactory):
                 self.factory.makeBugAttachment(bug=task.bug)
         self.assertThat(task, browses_under_limit)
 
-    def test_rendered_query_counts_reduced_with_branches(self):
-        f = self.factory
-        owner = f.makePerson()
-        ds = f.makeDistroSeries()
-        sourcepackagenames = [
-            f.makeSourcePackageName('testsourcepackagename%d' % i)
-            for i in range(10)]
-        sourcepackages = [
-            f.makeSourcePackage(
-                sourcepackagename=name, distroseries=ds, publish=True)
-            for name in sourcepackagenames]
-        bug = f.makeBug()
-        bugtasks = []
-        for sp in sourcepackages:
-            bugtask = f.makeBugTask(bug=bug, owner=owner, target=sp)
-            bugtasks.append(bugtask)
-        task = bugtasks[0]
-        url = canonical_url(task)
-        recorder = QueryCollector()
-        recorder.register()
-        self.addCleanup(recorder.unregister)
-        self.invalidate_caches(task)
-        self.getUserBrowser(url, owner)
-        # At least 20 of these should be removed.
-        self.assertThat(recorder, HasQueryCount(LessThan(100)))
-        count_with_no_branches = recorder.count
-        self.invalidate_caches(task)
-        with person_logged_in(owner):
-            for sp in sourcepackages:
-                target_branch = f.makePackageBranch(
-                    sourcepackage=sp, owner=owner)
-                source_branch = f.makeBranchTargetBranch(
-                    target_branch.target, owner=owner)
-                bug.linkBranch(source_branch, owner)
-                f.makeBranchMergeProposal(
-                    target_branch=target_branch,
-                    registrant=owner,
-                    source_branch=source_branch)
-        self.getUserBrowser(url, owner)
-        # Ideally this should be much fewer, but this tries to keep a win of
-        # removing more than half of these.
-        self.assertThat(recorder, HasQueryCount(
-            LessThan(count_with_no_branches + 45),
-            ))
-
     def test_interesting_activity(self):
         # The interesting_activity property returns a tuple of interesting
         # `BugActivityItem`s.
