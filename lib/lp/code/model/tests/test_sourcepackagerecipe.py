@@ -101,7 +101,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         """
         registrant = self.factory.makePerson()
         return dict(
-            registrant=registrant,
+            registrant = registrant,
             owner = self.factory.makeTeam(owner=registrant),
             distroseries = [self.factory.makeDistroSeries()],
             name = self.factory.getUniqueString(u'recipe-name'),
@@ -304,13 +304,13 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         store = Store.of(build)
         store.flush()
         build_job = store.find(SourcePackageRecipeBuildJob,
-                SourcePackageRecipeBuildJob.build_id==build.id).one()
+                SourcePackageRecipeBuildJob.build_id == build.id).one()
         self.assertProvides(build_job, ISourcePackageRecipeBuildJob)
         self.assertTrue(build_job.virtualized)
         job = build_job.job
         self.assertProvides(job, IJob)
         self.assertEquals(job.status, JobStatus.WAITING)
-        build_queue = store.find(BuildQueue, BuildQueue.job==job.id).one()
+        build_queue = store.find(BuildQueue, BuildQueue.job == job.id).one()
         self.assertProvides(build_queue, IBuildQueue)
         self.assertTrue(build_queue.virtualized)
 
@@ -497,7 +497,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         with person_logged_in(owner):
             recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
             self.assertTrue(check_permission('launchpad.View', recipe))
-        removeSecurityProxy(branch).explicitly_private=True
+        removeSecurityProxy(branch).explicitly_private = True
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', recipe))
         self.assertFalse(check_permission('launchpad.View', recipe))
@@ -639,12 +639,12 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         """SourcePackageRecipe.getPendingBuildInfo() is as expected."""
         person = self.factory.makePerson()
         archives = [self.factory.makeArchive(owner=person) for x in range(4)]
-        distroseries= self.factory.makeSourcePackageRecipeDistroseries()
+        distroseries = self.factory.makeSourcePackageRecipeDistroseries()
         recipe = self.factory.makeSourcePackageRecipe()
 
         build_info = []
         for archive in archives:
-            build = recipe.requestBuild(archive, person, distroseries)
+            recipe.requestBuild(archive, person, distroseries)
             build_info.insert(0, {
                 "distroseries": distroseries.displayname,
                 "archive": '%s/%s' %
@@ -1069,7 +1069,7 @@ class TestWebservice(TestCaseWithFactory):
         """SourcePackageRecipe.[pending_|completed_]builds is as expected."""
         person = self.factory.makePerson()
         archives = [self.factory.makeArchive(owner=person) for x in range(4)]
-        distroseries= self.factory.makeSourcePackageRecipeDistroseries()
+        distroseries = self.factory.makeSourcePackageRecipeDistroseries()
 
         recipe, user, launchpad = self.makeRecipe(person)
         distroseries = ws_object(launchpad, distroseries)
@@ -1089,7 +1089,7 @@ class TestWebservice(TestCaseWithFactory):
         """SourcePackageRecipe.getPendingBuildInfo() is as expected."""
         person = self.factory.makePerson()
         archives = [self.factory.makeArchive(owner=person) for x in range(4)]
-        distroseries= self.factory.makeSourcePackageRecipeDistroseries()
+        distroseries = self.factory.makeSourcePackageRecipeDistroseries()
 
         recipe, user, launchpad = self.makeRecipe(person)
         ws_distroseries = ws_object(launchpad, distroseries)
@@ -1097,7 +1097,7 @@ class TestWebservice(TestCaseWithFactory):
         build_info = []
         for archive in archives:
             ws_archive = ws_object(launchpad, archive)
-            build = recipe.requestBuild(
+            recipe.requestBuild(
                 archive=ws_archive, distroseries=ws_distroseries,
                 pocket=PackagePublishingPocket.RELEASE.title)
             build_info.insert(0, {

@@ -480,9 +480,9 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         with recipe_parser_newest_version(145.115):
             recipe = dedent(u'''\
-                # bzr-builder format 145.115 deb-version {debupstream}-0~{revno}
-                %s
-                ''') % branch.bzr_identity
+              # bzr-builder format 145.115 deb-version {debupstream}-0~{revno}
+              %s
+              ''') % branch.bzr_identity
             browser = self.createRecipe(recipe, branch)
             self.assertEqual(
                 get_feedback_messages(browser.contents)[1],
@@ -592,7 +592,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
     def test_new_sourcepackage_branch_recipe_with_related_branches(self):
         # The related branches should be rendered correctly on the page.
-        reference_branch= self.factory.makePackageBranch()
+        reference_branch = self.factory.makePackageBranch()
         (branch, ignore, related_package_branch_info) = (
                 self.factory.makeRelatedBranches(reference_branch))
         browser = self.getUserBrowser(
@@ -1039,7 +1039,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
     def test_edit_sourcepackage_branch_recipe_with_related_branches(self):
         # The related branches should be rendered correctly on the page.
         with person_logged_in(self.chef):
-            reference_branch= self.factory.makePackageBranch()
+            reference_branch = self.factory.makePackageBranch()
             recipe = self.factory.makeSourcePackageRecipe(
                     owner=self.chef, branches=[reference_branch])
             (branch, ignore, related_package_branch_info) = (
@@ -1152,10 +1152,11 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             sourcepackagerelease=source_package_release, archive=self.ppa,
             distroseries=self.squirrel)
         builder = self.factory.makeBuilder()
-        binary_build = removeSecurityProxy(self.factory.makeBinaryPackageBuild(
-            source_package_release=source_package_release,
-            distroarchseries=self.squirrel.nominatedarchindep,
-            processor=builder.processor))
+        binary_build = removeSecurityProxy(
+            self.factory.makeBinaryPackageBuild(
+                source_package_release=source_package_release,
+                distroarchseries=self.squirrel.nominatedarchindep,
+                processor=builder.processor))
         binary_build.queueBuild()
         binary_build.status = BuildStatus.FULLYBUILT
         binary_build.date_started = datetime(2010, 04, 16, tzinfo=UTC)
