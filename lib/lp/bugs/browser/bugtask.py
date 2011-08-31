@@ -26,6 +26,7 @@ __all__ = [
     'BugTaskPortletView',
     'BugTaskPrivacyAdapter',
     'BugTaskRemoveQuestionView',
+    'BugTaskSubscriptionPortletDetails',
     'BugTasksAndNominationsView',
     'BugTaskSearchListingView',
     'BugTaskSetNavigation',
@@ -65,6 +66,10 @@ from lazr.enum import (
     )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful import (
+    EntryResource,
+    ResourceJSONEncoder,
+    )
 from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import (
     IFieldHTMLRenderer,
@@ -187,6 +192,7 @@ from lp.app.widgets.popup import PersonPickerWidget
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.bug import (
     BugContextMenu,
+    BugSubscriptionPortletView,
     BugTextView,
     BugViewMixin,
     )
@@ -3677,6 +3683,29 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
     @property
     def label(self):
         return self.getSearchPageHeading()
+
+
+class BugTaskSubscriptionPortletDetails(BugSubscriptionPortletView):
+    """View for loading subscription portlet details for a bug task.
+
+    This view is called when the portlet needs to be updated as a result of
+    another user action. So we need to return the HTML required for the
+    portlet as well as items to put into the Javascript cache.
+    """
+
+    def __init__(self, context, request):
+        bug = context.bug
+        super(BugTaskSubscriptionPortletDetails, self).__init__(bug, request)
+
+    def render(self):
+        # The view html.
+        html = super(BugTaskSubscriptionPortletDetails, self).render()
+        # The objects to stick into the Javascript cache.
+        cache = IJSONRequestCache(self.request).objects
+        result = {'html': html, 'cache_data': cache}
+        return dumps(
+            result, cls=ResourceJSONEncoder,
+            media_type=EntryResource.JSON_TYPE)
 
 
 class BugTaskPrivacyAdapter:

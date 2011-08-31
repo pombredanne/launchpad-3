@@ -50,21 +50,4 @@
       <li tal:content="structure context_menu/editsubscriptions/render" />
     </ul>
   </div>
-  <script type="text/javascript">
-    LPS.use('io-base', 'node',
-            'lp.bugs.bugtask_index.portlets.subscription', function(Y) {
-        // Must be done inline here to ensure the load event fires.
-        // This is a work around for a YUI3 issue with event handling.
-        var subscription_link = Y.one('.menu-link-subscription');
-        var subscription_link_handler;
-        if (subscription_link) {
-            subscription_link_handler = subscription_link.on(
-                'click', function(e) { e.preventDefault(); });
-        }
-
-        Y.on('domready', function() {
-            Y.lp.bugs.bugtask_index.portlets.subscription.initialize();
-        });
-    });
-  </script>
 </div>

@@ -14,6 +14,7 @@ __all__ = [
     'BugNavigation',
     'BugSecrecyEditView',
     'BugSetNavigation',
+    'BugSubscriptionPortletView',
     'BugTextView',
     'BugURL',
     'BugView',
@@ -49,10 +50,7 @@ from zope.interface import (
     Interface,
     providedBy,
     )
-from zope.schema import (
-    Bool,
-    Choice,
-    )
+from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
