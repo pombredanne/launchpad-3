@@ -334,10 +334,8 @@ class ArchivePublisherBase:
 
     def setDeleted(self, removed_by, removal_comment=None):
         """Set to DELETED status."""
-        self.status = PackagePublishingStatus.DELETED
-        self.datesuperseded = UTC_NOW
-        self.removed_by = removed_by
-        self.removal_comment = removal_comment
+        getUtility(IPublishingSet).setMultipleDeleted(
+            self.__class__, [self.id], removed_by, removal_comment)
 
     def requestObsolescence(self):
         """See `IArchivePublisher`."""
