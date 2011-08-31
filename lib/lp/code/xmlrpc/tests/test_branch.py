@@ -320,7 +320,7 @@ class TestExpandURL(TestCaseWithFactory):
     def test_private_branch_as_development_focus(self):
         # We resolve private linked branches using the writable alias.
         product, trunk = self.makeProdutWithTrunk()
-        removeSecurityProxy(trunk).private = True
+        removeSecurityProxy(trunk).explicitly_private = True
         self.assertOnlyWritableResolves(product.name)
 
     def test_private_branch_as_user(self):

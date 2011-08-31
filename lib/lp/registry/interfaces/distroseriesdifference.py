@@ -70,12 +70,17 @@ class IDistroSeriesDifferencePublic(Interface):
 
     source_package_name_id = Int(
         title=u"Source package name id", required=True, readonly=True)
-    source_package_name = exported(Reference(
+    source_package_name = Reference(
         ISourcePackageName,
         title=_("Source package name"), required=True, readonly=True,
         description=_(
             "The package with a difference between the derived series "
-            "and its parent.")))
+            "and its parent."))
+
+    sourcepackagename = exported(
+        TextLine(
+            title=_("Source Package Name"),
+            required=False, readonly=True))
 
     package_diff = Reference(
         IPackageDiff, title=_("Package diff"), required=False,

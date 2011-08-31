@@ -28,10 +28,6 @@
       <strong>Owner:</strong>
       <a tal:replace="structure context/owner/fmt:link">owner name</a>
     </p>
-    <div>
-      <a href="+edit" class="edit sprite"
-         tal:condition="context/required:launchpad.Edit">Change details</a>
-    </div>
   </div>
 
   <div class="yui-g">
@@ -109,7 +105,7 @@
         <h3>Administration</h3>
         <p>If you want to synchronize these translations manually, you
           can
-          <tal:both condition="context/required:launchpad.Edit">
+          <tal:both condition="context/required:launchpad.TranslationsAdmin">
             <a tal:attributes="href context/menu:navigation/upload/url"
                class="add sprite">upload</a>
             or
@@ -119,11 +115,16 @@
           translation tarballs.
         </p>
         <div tal:condition="context/required:launchpad.TranslationsAdmin">
-          <a tal:attributes="href
-                             context/menu:navigation/administer/url"
+          <a href="+edit" class="edit sprite"
+             tal:condition="context/required:launchpad.TranslationsAdmin">
+            Change details</a>
+          <tal:admin condition="context/required:launchpad.Admin">
+            — <a tal:attributes="href
+                               context/menu:navigation/administer/url"
              class="edit sprite">
-            Administer this template
-          </a>
+              Administer this template
+            </a>
+          </tal:admin>
         </div>
       </div>
     </div>
