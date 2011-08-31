@@ -160,7 +160,7 @@ class SubmissionParser(object):
             self.logger.warning(
                 'Parsing submission %s: %s' % (self.submission_key, message))
 
-    def fix_frequent_errors(self, submission):
+    def fixFrequentErrors(self, submission):
         """Fixes for frequent formal errors in the submissions.
         """
         # A considerable number of reports for Lucid has ESC characters
@@ -174,7 +174,7 @@ class SubmissionParser(object):
         :return: an `lxml.etree` instance representation of a valid
             submission or None for invalid submissions.
         """
-        submission = self.fix_frequent_errors(submission)
+        submission = self.fixFrequentErrors(submission)
         try:
             tree = etree.parse(StringIO(submission), parser=self.doc_parser)
         except SyntaxError, error_value:

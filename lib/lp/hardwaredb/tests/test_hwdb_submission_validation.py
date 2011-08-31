@@ -113,6 +113,16 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         validated, submission_id = self.runValidator(sample_data)
         self.assertTrue(validated is not None)
 
+    def test_fixFrequentErrors_two_comments(self):
+        # The regular expression used in fixFrequentErrors() does not
+        # delete the content between two <comment> nodes.
+        two_comments = "<comment></comment>something else<comment></comment>"
+        parser = SubmissionParser()
+        self.assertEqual(
+            '<comment/>something else<comment/>',
+            parser.fixFrequentErrors(two_comments),
+            'Bad regular expression in fixFrequentErrors()')
+
     def _getLastOopsTime(self):
         try:
             last_oops_time = globalErrorUtility.getLastOopsReport().time
