@@ -1,7 +1,5 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-import simplejson
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 
 __metaclass__ = type
 
@@ -865,33 +863,6 @@ class TestBugTaskEditView(TestCaseWithFactory):
         self.assertEqual(ds, bug_task.target)
         notifications = view.request.response.notifications
         self.assertEqual(0, len(notifications))
-
-
-class TestBugTaskSubscriptionPortletDetails(TestCaseWithFactory):
-    # Tests for BugTaskSubscriptionPortletDetails
-
-    layer = DatabaseFunctionalLayer
-
-    def test_view_render(self):
-        person = self.factory.makePerson()
-        bug = self.factory.makeBug()
-        login_person(person)
-        bug.subscribe(person, person)
-        bugtask = self.factory.makeBugTask(bug=bug)
-        getUtility(ILaunchBag).add(bugtask)
-        view = create_initialized_view(
-            bugtask, name='+portlet-subscription-details', rootsite='bugs')
-        cache_data = simplejson.loads(view.render())
-        self.assertFalse(cache_data['other_subscription_notifications'])
-        subscription_data = cache_data['subscription']
-        self.assertEqual(
-            'http://launchpad.dev/api/devel/bugs/%s' % bug.id,
-            subscription_data['bug_link'])
-        self.assertEqual(
-            'http://launchpad.dev/api/devel/~%s' % person.name,
-            subscription_data['person_link'])
-        self.assertEqual(
-            'Discussion', subscription_data['bug_notification_level'])
 
 
 class TestProjectGroupBugs(TestCaseWithFactory):

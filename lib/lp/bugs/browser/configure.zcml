@@ -544,12 +544,6 @@
             name="+portlet-subscription"
             template="../templates/bug-portlet-subscription.pt"/>
         <browser:page
-            for="lp.bugs.interfaces.bug.IBugTask"
-            class="lp.bugs.browser.bugtask.BugTaskSubscriptionPortletDetails"
-            permission="launchpad.View"
-            name="+portlet-subscription-details"
-            template="../templates/bug-portlet-subscription.pt"/>
-        <browser:page
             for="lp.bugs.interfaces.bug.IBug"
             class="lp.bugs.browser.bug.BugView"
             permission="launchpad.View"
