@@ -29,6 +29,7 @@ __all__ = [
     'logout',
     'map_branch_contents',
     'normalize_whitespace',
+    'nonblocking_readline',
     'oauth_access_token_for',
     'person_logged_in',
     'quote_jquery_expression',
@@ -69,6 +70,7 @@ import logging
 import os
 from pprint import pformat
 import re
+from select import select
 import shutil
 import subprocess
 import sys
@@ -1325,3 +1327,24 @@ class ExpectedException(TTExpectedException):
 def extract_lp_cache(text):
     match = re.search(r'<script>LP.cache = (\{.*\});</script>', text)
     return simplejson.loads(match.group(1))
+
+
+def nonblocking_readline(instream, timeout):
+    """Non-blocking readline.
+
+    Files must provide a valid fileno() method. This is a test helper
+    as it is inefficient and unlikely useful for production code.
+    """
+    result = StringIO()
+    start = now = time.time()
+    while (now < start + timeout and not result.getvalue().endswith('\n')):
+        rlist = select([instream], [], [], timeout - (now - start))
+        if rlist:
+            # Reading 1 character at a time is inefficient, but means
+            # we don't need to implement put-back.
+            next_char = os.read(instream.fileno(), 1)
+            if next_char == "":
+                break  # EOF
+            result.write(next_char)
+        now = time.time()
+    return result.getvalue()

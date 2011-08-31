@@ -7,10 +7,8 @@ __metaclass__ = type
 
 import os
 import re
-from select import select
 import signal
 import subprocess
-import time
 
 import transaction
 from zope.security.proxy import removeSecurityProxy
@@ -26,6 +24,7 @@ from lp.codehosting.vfs import branch_id_to_path
 from lp.services.log.logger import BufferLogger
 from lp.testing import (
     FakeTime,
+    nonblocking_readline,
     TestCase,
     TestCaseWithFactory,
     )
@@ -303,22 +302,15 @@ class TestBranchRewriterScriptHandlesDisconnects(TestCase):
         self.rewriter_proc.stdin.write(query + '\n')
         self.rewriter_proc.stdin.flush()
 
-        timeout = 30 # Need to include script startup time for first result.
-        start = time.time()
-        result = ""
-        while time.time() < start + timeout and not result.endswith('\n'):
-            rlist = select([self.rewriter_proc.stdout],[],[],timeout)
-            if rlist:
-                more_result = os.read(self.rewriter_proc.stdout.fileno(), 1024)
-                if more_result == "":
-                    self.rewriter_proc.stdout.close()
-                    break
-                result += more_result
+        # 60 second timeout as we might need to wait for the script to
+        # finish starting up.
+        result = nonblocking_readline(self.rewriter_proc.stdout, 60)
+
         if result.endswith('\n'):
-            return result.rstrip('\n')
+            return result[:-1]
         self.fail(
             "Incomplete line or no result retrieved from subprocess: %s"
-            % repr(result))
+            % repr(result.getvalue()))
 
     def test_reconnects_when_disconnected(self):
         pgbouncer = self.useFixture(PGBouncerFixture())
