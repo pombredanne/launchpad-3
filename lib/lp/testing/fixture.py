@@ -91,8 +91,7 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
 
         # reconnect_store cleanup added first so it is run last, after
         # the environment variables have been reset.
-        from canonical.testing.layers import reconnect_stores
-        self.addCleanup(reconnect_stores)
+        self.addCleanup(self._maybe_reconnect_stores)
 
         # Abuse the PGPORT environment variable to get things connecting
         # via pgbouncer. Otherwise, we would need to temporarily
@@ -100,7 +99,21 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
         self.useFixture(EnvironmentVariableFixture('PGPORT', str(self.port)))
 
         # Reset database connections so they go through pgbouncer.
-        reconnect_stores()
+        self._maybe_reconnect_stores()
+
+    def _maybe_reconnect_stores(self):
+        """Force Storm Stores to reconnect if they are registered.
+
+        This is a noop if the Component Architecture is not loaded,
+        as we are using a test layer that doesn't provide database
+        connections.
+        """
+        from canonical.testing.layers import (
+            reconnect_stores,
+            is_ca_available,
+            )
+        if is_ca_available():
+            reconnect_stores()
 
 
 class ZopeAdapterFixture(Fixture):
