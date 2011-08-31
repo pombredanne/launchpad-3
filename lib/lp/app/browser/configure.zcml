@@ -420,6 +420,10 @@
     />
 
   <adapter
+    factory="lp.app.browser.vocabulary.DistributionSourcePackagePickerEntrySourceAdapter"
+    />
+
+  <adapter
     factory="lp.app.browser.vocabulary.ArchivePickerEntrySourceAdapter"
     />
 

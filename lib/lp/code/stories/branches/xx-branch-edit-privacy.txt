@@ -129,3 +129,36 @@ is no option to mark the branch as public.
     Traceback (most recent call last):
     ...
     LookupError: label 'Keep branch confidential'
+
+
+Branches stacked on private branches
+------------------------------------
+
+A public branch is private if it is stacked on a private branch. When the
+branch is edited, it is shown as private but the checkbox widget is disabled
+and the title and hint text is updated to inform the user.
+
+    >>> login('admin@canonical.com')
+    >>> stacked_on_branch = factory.makeAnyBranch(private=True)
+    >>> stacked_branch = factory.makeAnyBranch(stacked_on=stacked_on_branch)
+    >>> url = canonical_url(stacked_branch)
+    >>> logout()
+
+    >>> admin_browser.open(url)
+    >>> admin_browser.getLink('Change branch details').click()
+    >>> privacy_checkbox = admin_browser.getControl('Branch is confidential')
+    >>> print privacy_checkbox.selected
+    True
+    >>> print privacy_checkbox.disabled
+    True
+    >>> ('branch is confidential because it is stacked on a private branch'
+    ...  in admin_browser.contents)
+    True
+
+If the branch is edited and saved, there is no user message displayed since
+the transitive privacy status hasn't changed.
+
+    >>> admin_browser.getControl('Description').value = "New changes"
+    >>> admin_browser.getControl('Change Branch').click()
+    >>> print_feedback_messages(browser.contents)
+    ...

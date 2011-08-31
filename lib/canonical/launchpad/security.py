@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -1262,6 +1262,24 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     Product owners does not have administrative privileges.
     """
 
+    permission = 'launchpad.Admin'
+    usedfor = IPOTemplate
+
+    def checkAuthenticated(self, user):
+        template = self.obj
+        if user.in_rosetta_experts or user.in_admin:
+            return True
+        if template.distroseries is not None:
+            # Template is on a distribution.
+            return (
+                self.forwardCheckAuthenticated(user, template.distroseries,
+                                               'launchpad.TranslationsAdmin'))
+        else:
+            # Template is on a product.
+            return False
+
+
+class EditPOTemplateDetails(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IPOTemplate
 
@@ -1269,30 +1287,14 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
         template = self.obj
         if template.distroseries is not None:
             # Template is on a distribution.
-            return AdminDistroSeriesTranslations(
-                template.distroseries).checkAuthenticated(user)
+            return (
+                user.isOwner(template) or
+                self.forwardCheckAuthenticated(user, template.distroseries))
         else:
             # Template is on a product.
-            return AdminProductSeriesTranslations(
-                template.productseries).checkAuthenticated(user)
-
-
-class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = IPOTemplate
-
-    def checkAuthenticated(self, user):
-        """Allow anyone with admin rights; owners, product owners and
-        distribution owners; and for distros, translation group owners.
-        """
-        if (self.obj.productseries is not None and
-            user.inTeam(self.obj.productseries.product.owner)):
-            # The user is the owner of the product.
-            return True
-
-        return (
-            AdminPOTemplateDetails.checkAuthenticated(self, user) or
-            EditByOwnersOrAdmins.checkAuthenticated(self, user))
+            return (
+                user.isOwner(template) or
+                self.forwardCheckAuthenticated(user, template.productseries))
 
 
 class AddPOTemplate(OnlyRosettaExpertsAndAdmins):
@@ -2246,6 +2248,22 @@ class ViewArchive(AuthorizationBase):
         return not self.obj.private and self.obj.enabled
 
 
+class EditArchive(AuthorizationBase):
+    """Restrict archive editing operations.
+
+    If the archive a primary archive then we check the user is in the
+    distribution's owning team, otherwise we check the archive owner.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = IArchive
+
+    def checkAuthenticated(self, user):
+        if self.obj.is_main:
+            return user.isOwner(self.obj.distribution) or user.in_admin
+
+        return user.isOwner(self.obj) or user.in_admin
+
+
 class AppendArchive(AuthorizationBase):
     """Restrict appending (upload and copy) operations on archives.
 
@@ -2533,15 +2551,6 @@ class ViewIrcID(AnonymousAuthorization):
 
 class ViewWikiName(AnonymousAuthorization):
     usedfor = IWikiName
-
-
-class EditArchivePermissionSet(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IArchivePermissionSet
-
-    def checkAuthenticated(self, user):
-        """Users must be an admin or a member of the tech board."""
-        return user.in_admin or user.in_ubuntu_techboard
 
 
 class ViewPackageset(AnonymousAuthorization):

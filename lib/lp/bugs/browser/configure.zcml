@@ -564,8 +564,7 @@
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bugtask.BugTaskTableRowView"
             permission="launchpad.View"
-            name="+bugtasks-and-nominations-table-row"
-            template="../templates/bugtask-tasks-and-nominations-table-row.pt"/>
+            name="+bugtasks-and-nominations-table-row"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IBugTarget"
             permission="zope.Public"

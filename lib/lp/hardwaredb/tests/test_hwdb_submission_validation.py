@@ -697,8 +697,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         is required, and either <hal> or all three tags <udev>, <dmi>,
         <sysfs-attributes> must be present.
         """
-        # Omitting any of the three tags <udev>, <dmi>, <sysfs-attributes>
-        # makes the data invalid.
+        # Omitting one of the tags <udev>, <dmi> makes the data invalid.
+        # Omitting <sysfs-attributes> is tolerated.
         all_tags = ['udev', 'dmi', 'sysfs-attributes']
         for index, missing_tag in enumerate(all_tags):
             test_tags = all_tags[:]
@@ -712,10 +712,13 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
                 from_text='<hal',
                 to_text='</hal>')
             result, submission_id = self.runValidator(sample_data)
-            self.assertErrorMessage(
-                submission_id, result,
-                'Expecting an element %s, got nothing' % missing_tag,
-                'missing tag <%s> in <hardware>' % missing_tag)
+            if missing_tag != 'sysfs-attributes':
+                self.assertErrorMessage(
+                    submission_id, result,
+                    'Expecting an element %s, got nothing' % missing_tag,
+                    'missing tag <%s> in <hardware>' % missing_tag)
+            else:
+                self.assertFalse(result is None)
 
     def testHardwareSubTagHalMixedWithUdev(self):
         """Mixing <hal> with <udev>, <dmi>, <sysfs-attributes> is impossible.
