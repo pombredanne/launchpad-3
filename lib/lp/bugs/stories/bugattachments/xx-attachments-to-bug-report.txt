@@ -1,4 +1,4 @@
-= File Attachments of the Bug Report =
+File Attachments of the Bug Report\n====
 
 File attachments of the bug report itself are displayed in the list of
 comments. Since the text of this comment is already displayed as the
@@ -47,13 +47,18 @@ displayed as the bug report).
     on 2007-03-15:
     #0
     sample data
+    (edit)
     (8 bytes,
     text/plain)
     >>> link = browser.getLink('sample data')
     >>> print link.url
     http://bugs.launchpad.dev/jokosher/+bug/11/+attachment/1/+files/test.txt
+    >>> edit_link = browser.getLink('edit')
+    >>> print edit_link.url
+    http://bugs.launchpad.dev/jokosher/+bug/11/+attachment/1
 
-== Patch attachments are shown before non-patch attachments ==
+
+Patch attachments are shown before non-patch attachments\n====
 
     >>> login("test@canonical.com")
     >>> launchbag.clear()
@@ -70,4 +75,4 @@ displayed as the bug report).
     ...a patch...
     ...Bug attachments...
     ...sample data...
-    ... 
+    ...
