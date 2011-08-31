@@ -254,7 +254,8 @@ class TestBranchRewriterScript(TestCaseWithFactory):
         # buffering, write a complete line of output.
         for input_line in input_lines:
             proc.stdin.write(input_line + '\n')
-            output_lines.append(proc.stdout.readline().rstrip('\n'))
+            output_lines.append(
+                nonblocking_readline(proc.stdout, 60).rstrip('\n'))
         # If we create a new branch after the branch-rewrite.py script has
         # connected to the database, or edit a branch name that has already
         # been rewritten, both are rewritten successfully.
@@ -268,14 +269,16 @@ class TestBranchRewriterScript(TestCaseWithFactory):
             'file:///var/tmp/bazaar.launchpad.dev/mirrors/%s/.bzr/README'
             % branch_id_to_path(new_branch.id))
         proc.stdin.write(new_branch_input + '\n')
-        output_lines.append(proc.stdout.readline().rstrip('\n'))
+        output_lines.append(
+            nonblocking_readline(proc.stdout, 60).rstrip('\n'))
 
         edited_branch_input = '/%s/.bzr/README' % edited_branch.unique_name
         expected_lines.append(
             'file:///var/tmp/bazaar.launchpad.dev/mirrors/%s/.bzr/README'
             % branch_id_to_path(edited_branch.id))
         proc.stdin.write(edited_branch_input + '\n')
-        output_lines.append(proc.stdout.readline().rstrip('\n'))
+        output_lines.append(
+            nonblocking_readline(proc.stdout, 60).rstrip('\n'))
 
         os.kill(proc.pid, signal.SIGINT)
         err = proc.stderr.read()
