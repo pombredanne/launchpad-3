@@ -58,7 +58,7 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
     """Inserts a controllable pgbouncer instance in front of PostgreSQL.
 
     The pgbouncer proxy can be shutdown and restarted at will, simulating
-    database outages as fastdowntime deployments.
+    database outages and fastdowntime deployments.
     """
 
     def __init__(self):
@@ -83,30 +83,37 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
         security_cfg_config.read([security_cfg_path])
         for section_name in security_cfg_config.sections():
             self.users[section_name] = 'trusted'
+            self.users[section_name + '_ro'] = 'trusted'
         self.users[os.environ['USER']] = 'trusted'
 
     def setUp(self):
         super(PGBouncerFixture, self).setUp()
 
-        from canonical.testing.layers import reconnect_stores
+        # reconnect_store cleanup added first so it is run last, after
+        # the environment variables have been reset.
+        self.addCleanup(self._maybe_reconnect_stores)
 
         # Abuse the PGPORT environment variable to get things connecting
         # via pgbouncer. Otherwise, we would need to temporarily
         # overwrite the database connection strings in the config.
-        pgport_fixture = EnvironmentVariableFixture('PGPORT', str(self.port))
-        pghost_fixture = EnvironmentVariableFixture('PGHOST', 'localhost')
-
-        # reconnect_store cleanup added first so it is run last, after
-        # the environment variables have been reset.
-        self.addCleanup(reconnect_stores)
-        self.addCleanup(pgport_fixture.cleanUp)
-        self.addCleanup(pghost_fixture.cleanUp)
-
-        pgport_fixture.setUp()
-        pghost_fixture.setUp()
+        self.useFixture(EnvironmentVariableFixture('PGPORT', str(self.port)))
 
         # Reset database connections so they go through pgbouncer.
-        reconnect_stores()
+        self._maybe_reconnect_stores()
+
+    def _maybe_reconnect_stores(self):
+        """Force Storm Stores to reconnect if they are registered.
+
+        This is a noop if the Component Architecture is not loaded,
+        as we are using a test layer that doesn't provide database
+        connections.
+        """
+        from canonical.testing.layers import (
+            reconnect_stores,
+            is_ca_available,
+            )
+        if is_ca_available():
+            reconnect_stores()
 
 
 class ZopeAdapterFixture(Fixture):

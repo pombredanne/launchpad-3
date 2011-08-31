@@ -8,6 +8,7 @@ __metaclass__ = type
 from textwrap import dedent
 
 from fixtures import EnvironmentVariableFixture
+import psycopg2
 from storm.exceptions import DisconnectionError
 from zope.component import (
     adapts,
@@ -18,8 +19,13 @@ from zope.interface import (
     Interface,
     )
 
+from canonical.config import dbconfig
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from canonical.testing.layers import BaseLayer, LaunchpadZopelessLayer
+from canonical.testing.layers import (
+    BaseLayer,
+    DatabaseLayer,
+    LaunchpadZopelessLayer,
+    )
 from lp.registry.model.person import Person
 from lp.testing import TestCase
 from lp.testing.fixture import (
@@ -95,7 +101,11 @@ class TestZopeAdapterFixture(TestCase):
         self.assertIs(None, queryAdapter(context, IBar))
 
 
-class TestPGBouncerFixture(TestCase):
+class TestPGBouncerFixtureWithCA(TestCase):
+    """PGBouncerFixture reconnect tests for Component Architecture layers.
+
+    Registered Storm Stores should be reconnected through pgbouncer.
+    """
     layer = LaunchpadZopelessLayer
 
     def is_connected(self):
@@ -147,5 +157,51 @@ class TestPGBouncerFixture(TestCase):
             pgbouncer.stop()
             assert not self.is_connected()
 
-        # Database is still working.
+        # Database is working again.
         assert self.is_connected()
+
+
+class TestPGBouncerFixtureWithoutCA(TestCase):
+    """PGBouncerFixture tests for non-Component Architecture layers."""
+    layer = DatabaseLayer
+
+    def is_db_available(self):
+        # Direct connection to the DB.
+        con_str = dbconfig.rw_main_master + ' user=launchpad_main'
+        try:
+            con = psycopg2.connect(con_str)
+            cur = con.cursor()
+            cur.execute("SELECT id FROM Person LIMIT 1")
+            con.close()
+            return True
+        except psycopg2.OperationalError:
+            return False
+
+    def test_install_fixture(self):
+        self.assert_(self.is_db_available())
+
+        with PGBouncerFixture() as pgbouncer:
+            self.assert_(self.is_db_available())
+
+            pgbouncer.stop()
+            self.assert_(not self.is_db_available())
+
+        # This confirms that we are again connecting directly to the
+        # database, as the pgbouncer process was shutdown.
+        self.assert_(self.is_db_available())
+
+    def test_install_fixture_with_restart(self):
+        self.assert_(self.is_db_available())
+
+        with PGBouncerFixture() as pgbouncer:
+            self.assert_(self.is_db_available())
+
+            pgbouncer.stop()
+            self.assert_(not self.is_db_available())
+
+            pgbouncer.start()
+            self.assert_(self.is_db_available())
+
+        # Note that because pgbouncer was left running, we can't confirm
+        # that we are now connecting directly to the database.
+        self.assert_(self.is_db_available())
