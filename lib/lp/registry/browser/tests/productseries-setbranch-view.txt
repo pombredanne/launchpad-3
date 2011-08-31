@@ -178,7 +178,7 @@ For Bazaar branches the scheme may only be http or https.
     ...     'field.rcs_type': 'BZR',
     ...     'field.branch_name': 'blazer-branch',
     ...     'field.branch_owner': product.owner.name,
-    ...     'field.repo_url': 'bzr://bzr.com/foo',
+    ...     'field.repo_url': 'bzr+ssh://bzr.com/foo',
     ...     'field.actions.update': 'Update',
     ...     }
     >>> view = create_initialized_view(series, name='+setbranch', principal=product.owner, form=form)
@@ -186,8 +186,9 @@ For Bazaar branches the scheme may only be http or https.
     ...     print notification.message
     >>> for error in view.errors:
     ...     print error
-    ('repo_url'...The URI scheme "bzr" is not allowed.  Only URIs with the following schemes may be
-    used: http, https'))
+    ('repo_url'...The URI scheme "bzr+ssh" is not allowed.  Only URIs with the following schemes may be
+    used: bzr, http, https'))
+
 
 A correct URL is accepted.
 

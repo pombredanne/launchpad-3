@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213,E0602
@@ -1597,7 +1597,7 @@ class IBugTaskSet(Interface):
         The assignee and the assignee's validity are precached.
         """
 
-    def getBugTaskTargetMilestones(self, bugtasks, eager=False):
+    def getBugTaskTargetMilestones(bugtasks):
         """Get all the milestones for the selected bugtasks' targets."""
 
     open_bugtask_search = Attribute("A search returning open bugTasks.")

@@ -23,6 +23,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
@@ -43,6 +44,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
     SourcePackageRecipeEditView,
     SourcePackageRecipeRequestBuildsView,
+    SourcePackageRecipeRequestDailyBuildView,
     SourcePackageRecipeView,
     )
 from lp.code.browser.sourcepackagerecipebuild import (
@@ -232,7 +234,8 @@ class TestSourcePackageRecipeAddViewInitalValues(TestCaseWithFactory):
         # If the initial name exists, a generator is used to find an unused
         # name by appending a numbered suffix on the end.
         owner = self.factory.makePerson()
-        self.factory.makeSourcePackageRecipe(owner=owner, name=u'widget-daily')
+        self.factory.makeSourcePackageRecipe(
+            owner=owner, name=u'widget-daily')
         widget = self.factory.makeProduct(name='widget')
         branch = self.factory.makeProductBranch(widget)
         with person_logged_in(owner):
@@ -1095,7 +1098,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Latest builds
             Status .* Archive
-            Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel Secret PPA
+            Successful build on 2010-03-16 buildlog \(.*\)
+                Secret Squirrel Secret PPA
             Request build\(s\)""", self.getMainText(recipe))
 
     def test_index_success_with_binary_builds(self):
@@ -1125,8 +1129,9 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Latest builds
             Status .* Archive
-            Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel Secret PPA
-              chocolate - 0\+r42 in .* \(estimated\) i386
+            Successful build on 2010-03-16 buildlog \(.*\)
+               Secret Squirrel Secret PPA chocolate - 0\+r42 in .*
+               \(estimated\) i386
             Request build\(s\)""", self.getMainText(recipe))
 
     def test_index_success_with_completed_binary_build(self):
@@ -1160,8 +1165,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Latest builds
             Status .* Archive
-            Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel Secret PPA
-              chocolate - 0\+r42 on 2010-04-16 buildlog \(.*\) i386
+            Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel
+              Secret PPA chocolate - 0\+r42 on 2010-04-16 buildlog \(.*\) i386
             Request build\(s\)""", self.getMainText(recipe))
 
     def test_index_no_builds(self):
@@ -1337,6 +1342,24 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertEqual(
             set([2505]),
             set(build.buildqueue_record.lastscore for build in builds))
+
+    def test_request_daily_builds_action_over_quota(self):
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, daily_build_archive=self.ppa,
+            name=u'julia', is_stale=True, build_daily=True)
+        # Create some previous builds.
+        series = list(recipe.distroseries)[0]
+        for x in xrange(5):
+            build = recipe.requestBuild(
+                self.ppa, self.chef, series, PackagePublishingPocket.RELEASE)
+            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+        harness = LaunchpadFormHarness(
+            recipe, SourcePackageRecipeRequestDailyBuildView)
+        harness.submit('build', {})
+        self.assertEqual(
+            "You have exceeded your quota for recipe chef/julia "
+            "for distroseries ubuntu warty",
+            harness.view.request.notifications[0].message)
 
     def test_request_builds_page(self):
         """Ensure the +request-builds page is sane."""

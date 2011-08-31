@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -122,7 +122,7 @@ class IDistroSeriesDifferenceJobSource(IJobSource):
     """An `IJob` for creating `DistroSeriesDifference`s."""
 
     def createForPackagePublication(derivedseries, sourcepackagename, pocket):
-        """Create jobs as appropriate for a given status publication.
+        """Create jobs as appropriate for a given package publication.
 
         :param derived_series: A `DistroSeries` that is assumed to be
             derived from `parent_series`.
@@ -131,6 +131,9 @@ class IDistroSeriesDifferenceJobSource(IJobSource):
         :param pocket: The `PackagePublishingPocket` for the publication.
         :return: An iterable of `DistroSeriesDifferenceJob`.
         """
+
+    def createForSPPHs(spphs):
+        """Create jobs for given `SourcePackagePublishingHistory`s."""
 
     def massCreateForSeries(derived_series):
         """Create jobs for all the publications inside the given distroseries

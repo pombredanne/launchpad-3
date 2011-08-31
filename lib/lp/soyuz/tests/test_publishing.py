@@ -25,6 +25,7 @@ from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadZopelessLayer,
     reconnect_stores,
+    ZopelessDatabaseLayer,
     )
 from lp.app.errors import NotFoundError
 from lp.archivepublisher.config import getPubConfig
@@ -36,6 +37,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
+from lp.services.features.testing import FeatureFixture
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.adapters.overrides import UnknownOverridePolicy
 from lp.soyuz.enums import (
@@ -54,6 +56,11 @@ from lp.soyuz.interfaces.publishing import (
     )
 from lp.soyuz.interfaces.queue import QueueInconsistentStateError
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.distroseriesdifferencejob import (
+    FEATURE_FLAG_ENABLE_MODULE,
+    find_waiting_jobs,
+    )
+from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.processor import ProcessorFamily
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
@@ -556,7 +563,8 @@ class SoyuzTestPublisher:
         reconnect_stores(config.statistician.dbuser)
         distroseries = getUtility(IDistroSeriesSet).get(distroseries.id)
 
-        distroseries.updateCompletePackageCache(
+        DistroSeriesPackageCache.updateAll(
+            distroseries,
             archive=distroseries.distribution.main_archive,
             ztm=transaction,
             log=DevNullLogger())
@@ -886,7 +894,7 @@ class OverrideFromAncestryTestCase(TestCaseWithFactory):
             self.assertEquals(copy.component.name, 'universe')
 
     def test_overrideFromAncestry_fallback_to_source_component(self):
-        # overrideFromancestry on the lack of ancestry, falls back to the
+        # overrideFromAncestry on the lack of ancestry, falls back to the
         # component the source was originally uploaded to.
         source = self.makeSource()
 
@@ -1158,6 +1166,70 @@ class PublishingSetTests(TestCaseWithFactory):
         record = self.publishing_set.getByIdAndArchive(
             binary_publishing.id, wrong_archive, source=False)
         self.assertEqual(None, record)
+
+
+class TestPublishingSetLite(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def enableDistroDerivation(self):
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
+
+    def test_requestDeletion_marks_SPPHs_deleted(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        getUtility(IPublishingSet).requestDeletion(
+            [spph], self.factory.makePerson())
+        # XXX JeroenVermeulen 2011-08-25, bug=834388: obviate commit.
+        transaction.commit()
+        self.assertEqual(PackagePublishingStatus.DELETED, spph.status)
+
+    def test_requestDeletion_leaves_other_SPPHs_alone(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        other_spph = self.factory.makeSourcePackagePublishingHistory()
+        getUtility(IPublishingSet).requestDeletion(
+            [other_spph], self.factory.makePerson())
+        # XXX JeroenVermeulen 2011-08-25, bug=834388: obviate commit.
+        transaction.commit()
+        self.assertEqual(PackagePublishingStatus.PENDING, spph.status)
+
+    def test_requestDeletion_marks_attached_BPPHs_deleted(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        spph = self.factory.makeSPPHForBPPH(bpph)
+        getUtility(IPublishingSet).requestDeletion(
+            [spph], self.factory.makePerson())
+        # XXX JeroenVermeulen 2011-08-25, bug=834388: obviate commit.
+        transaction.commit()
+        self.assertEqual(PackagePublishingStatus.DELETED, spph.status)
+
+    def test_requestDeletion_leaves_other_BPPHs_alone(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        unrelated_spph = self.factory.makeSourcePackagePublishingHistory()
+        getUtility(IPublishingSet).requestDeletion(
+            [unrelated_spph], self.factory.makePerson())
+        # XXX JeroenVermeulen 2011-08-25, bug=834388: obviate commit.
+        transaction.commit()
+        self.assertEqual(PackagePublishingStatus.PENDING, bpph.status)
+
+    def test_requestDeletion_accepts_empty_sources_list(self):
+        person = self.factory.makePerson()
+        getUtility(IPublishingSet).requestDeletion([], person)
+        # The test is that this does not fail.
+        Store.of(person).flush()
+
+    def test_requestDeletion_creates_DistroSeriesDifferenceJobs(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        series = dsp.derived_series
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            series, pocket=PackagePublishingPocket.RELEASE)
+        spn = spph.sourcepackagerelease.sourcepackagename
+
+        self.enableDistroDerivation()
+        getUtility(IPublishingSet).requestDeletion(
+            [spph], self.factory.makePerson())
+
+        self.assertEqual(
+            1, len(find_waiting_jobs(
+                dsp.derived_series, spn, dsp.parent_series)))
 
 
 class TestSourceDomination(TestNativePublishingBase):

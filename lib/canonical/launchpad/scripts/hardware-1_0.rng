@@ -148,11 +148,17 @@
                         <element name="dmi">
                             <text/>
                         </element>
-                        <element name="sysfs-attributes">
-                            <zeroOrMore>
-                                <text/>
-                            </zeroOrMore>
-                        </element>
+                        <optional>
+                            <!-- Unfortunately, the checkbox version in
+                                 Maverick and Natty do not provide sysfs
+                                 data.
+                            -->
+                            <element name="sysfs-attributes">
+                                <zeroOrMore>
+                                    <text/>
+                                </zeroOrMore>
+                            </element>
+                        </optional>
                     </interleave>
                 </group>
             </choice>

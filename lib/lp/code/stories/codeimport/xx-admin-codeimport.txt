@@ -61,9 +61,11 @@ import:
     ...     print extract_text(div)
     >>> import_browser.open(svn_import_location)
     >>> print_import_details(import_browser)
-    Import Status: Pending Review
+    Import Status: Reviewed
     This branch is an import of the Subversion branch
     from svn://svn.example.com/fooix/trunk.
+    The next import is scheduled to run
+    as soon as possible.
     Edit import source or review import
 
 
@@ -76,7 +78,6 @@ import operators.
     >>> import_browser.getLink('Edit import source or review import').click()
     >>> print_submit_buttons(import_browser.contents)
     Update
-    Approve
     Mark Invalid
     Suspend
     Mark Failing
@@ -188,24 +189,6 @@ and imports targetting source packages.
     >>> for message in get_feedback_messages(import_browser.contents):
     ...     print extract_text(message)
     The code import has been updated.
-
-
-Approving an import
-+++++++++++++++++++
-
-When a code import is approved, a pending job is created for it.
-
-    >>> import_browser.open(svn_import_location + '/+edit-import')
-    >>> import_browser.getControl('Approve').click()
-    >>> print_import_details(import_browser)
-    Import Status: Reviewed
-    ...
-    The next import is scheduled to run as soon as possible.
-    Edit import source or review import
-
-    >>> for message in get_feedback_messages(import_browser.contents):
-    ...     print extract_text(message)
-    The code import has been approved.
 
 
 Invalidating an import

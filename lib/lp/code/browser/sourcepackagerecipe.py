@@ -99,6 +99,7 @@ from lp.code.errors import (
     BuildAlreadyPending,
     NoSuchBranch,
     PrivateBranchRecipe,
+    TooManyBuilds,
     TooNewRecipeFormat,
     )
 from lp.code.interfaces.branchtarget import IBranchTarget
@@ -479,7 +480,7 @@ class SourcePackageRecipeRequestBuildsAjaxView(
     def _process_error(self, data=None, builds=None, informational=None,
                        errors=None, reason="Validation"):
         """Set up the response and json data to return to the caller."""
-        self.request.response.setStatus(400, reason)
+        self.request.response.setStatus(200, reason)
         self.request.response.setHeader('Content-type', 'application/json')
         return_data = dict(builds=builds, errors=errors)
         if informational:
@@ -541,7 +542,13 @@ class SourcePackageRecipeRequestDailyBuildView(LaunchpadFormView):
     @action('Build now', name='build')
     def build_action(self, action, data):
         recipe = self.context
-        builds = recipe.performDailyBuild()
+        try:
+            builds = recipe.performDailyBuild()
+        except TooManyBuilds, e:
+            self.request.response.addErrorNotification(str(e))
+            self.next_url = canonical_url(recipe)
+            return
+
         if self.request.is_ajax:
             template = ViewPageTemplateFile(
                     "../templates/sourcepackagerecipe-builds.pt")

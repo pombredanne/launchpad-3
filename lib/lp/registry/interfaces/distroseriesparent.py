@@ -83,7 +83,7 @@ class IDistroSeriesParentSet(Interface):
         :param parent_series: An `IDistroseries`
         """
 
-    def getByDerivedAndParentSeries(self, derived_series, parent_series):
+    def getByDerivedAndParentSeries(derived_series, parent_series):
         """Get the `DistroSeriesParent` by derived and parent series.
 
         :param derived_series: The derived `IDistroseries`

@@ -18,7 +18,6 @@ __all__ = [
 import cgi
 import urllib
 
-import pytz
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 from zope.interface import (
@@ -71,9 +70,6 @@ from lp.registry.interfaces.person import (
     IPersonSet,
     ITeam,
     )
-
-
-UTC = pytz.UTC
 
 
 class LoginTokenSetNavigation(GetitemNavigation):
@@ -245,7 +241,15 @@ class ClaimTeamView(
 
     @action(_('Continue'), name='confirm')
     def confirm_action(self, action, data):
-        self.claimed_profile.convertToTeam(team_owner=self.context.requester)
+        # Avoid circular imports.
+        from lp.registry.model.person import AlreadyConvertedException
+        try:
+            self.claimed_profile.convertToTeam(
+                team_owner=self.context.requester)
+        except AlreadyConvertedException, e:
+            self.request.response.addErrorNotification(e)
+            self.context.consume()
+            return
         # Although we converted the person to a team it seems that the
         # security proxy still thinks it's an IPerson and not an ITeam,
         # which means to edit it we need to be logged in as the person we

@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0213
@@ -411,7 +411,7 @@ class IArchivePermissionSet(Interface):
         :param component: An `IComponent` or a string package name.
         """
 
-    def deleteQueueAdmin(self, archive, person, component):
+    def deleteQueueAdmin(archive, person, component):
         """Revoke queue admin permissions for a person.
 
         :param archive: The context `IArchive` for the permission check.
