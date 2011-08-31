@@ -3698,13 +3698,10 @@ class BugTaskSubscriptionPortletDetails(BugSubscriptionPortletView):
         super(BugTaskSubscriptionPortletDetails, self).__init__(bug, request)
 
     def render(self):
-        # The view html.
-        html = super(BugTaskSubscriptionPortletDetails, self).render()
-        # The objects to stick into the Javascript cache.
+        # The result are the Javascript cache items.
         cache = IJSONRequestCache(self.request).objects
-        result = {'html': html, 'cache_data': cache}
         return dumps(
-            result, cls=ResourceJSONEncoder,
+            cache, cls=ResourceJSONEncoder,
             media_type=EntryResource.JSON_TYPE)
 
 

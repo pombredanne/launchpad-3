@@ -881,13 +881,7 @@ class TestBugTaskSubscriptionPortletDetails(TestCaseWithFactory):
         getUtility(ILaunchBag).add(bugtask)
         view = create_initialized_view(
             bugtask, name='+portlet-subscription-details', rootsite='bugs')
-        content_data = simplejson.loads(view.render())
-
-        # The view returns a dict containing  html and cache_data.
-        contents = content_data['html']
-        portlet = find_tag_by_id(contents, 'portlet-subscription')
-        self.assertIsNot(None, portlet)
-        cache_data = content_data['cache_data']
+        cache_data = simplejson.loads(view.render())
         self.assertFalse(cache_data['other_subscription_notifications'])
         subscription_data = cache_data['subscription']
         self.assertEqual(
