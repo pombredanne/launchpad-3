@@ -70,12 +70,12 @@ class IDistroSeriesDifferencePublic(Interface):
 
     source_package_name_id = Int(
         title=u"Source package name id", required=True, readonly=True)
-    source_package_name = Reference(
+    source_package_name = exported(Reference(
         ISourcePackageName,
         title=_("Source package name"), required=True, readonly=True,
         description=_(
             "The package with a difference between the derived series "
-            "and its parent."))
+            "and its parent.")))
 
     package_diff = Reference(
         IPackageDiff, title=_("Package diff"), required=False,
@@ -117,11 +117,11 @@ class IDistroSeriesDifferencePublic(Interface):
             "The status of the diff between the base version and the "
             "parent version.")))
 
-    status = Choice(
+    status = exported(Choice(
         title=_('Distro series difference status.'),
         description=_('The current status of this difference.'),
         vocabulary=DistroSeriesDifferenceStatus,
-        required=True, readonly=True)
+        required=True, readonly=True))
 
     difference_type = Choice(
         title=_('Difference type'),
