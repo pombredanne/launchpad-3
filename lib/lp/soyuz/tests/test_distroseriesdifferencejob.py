@@ -955,7 +955,6 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
             list(dsp.parent_series.getDerivedSeries())
 
     def test_passesPackagesetFilter(self):
-        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: u'on'}))
         dsp = self.factory.makeDistroSeriesParent()
         self.factory.makePackageset(distroseries=dsp.parent_series)
         spph = self.factory.makeSourcePackagePublishingHistory(
@@ -972,5 +971,4 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
         dsdj.passesPackagesetFilter()
 
         # The test is that we get here without exceptions.
-        transaction.commit()
-        self.layer.switchDbUser('launchpad')
+        pass
