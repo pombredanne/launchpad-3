@@ -345,15 +345,16 @@ class TestFactory(TestCaseWithFactory):
 
     # makeCodeImport
     def test_makeCodeImportNoStatus(self):
-        # If makeCodeImport is not given a review status, it defaults to NEW.
+        # If makeCodeImport is not given a review status,
+        # it defaults to REVIEWED.
         code_import = self.factory.makeCodeImport()
         self.assertEqual(
-            CodeImportReviewStatus.NEW, code_import.review_status)
+            CodeImportReviewStatus.REVIEWED, code_import.review_status)
 
     def test_makeCodeImportReviewStatus(self):
         # If makeCodeImport is given a review status, then that is the status
         # of the created import.
-        status = CodeImportReviewStatus.REVIEWED
+        status = CodeImportReviewStatus.SUSPENDED
         code_import = self.factory.makeCodeImport(review_status=status)
         self.assertEqual(status, code_import.review_status)
 
@@ -518,6 +519,20 @@ class TestFactory(TestCaseWithFactory):
         spr = self.factory.makeSourcePackageRelease(
             dsc_maintainer_rfc822=maintainer)
         self.assertEqual(maintainer, spr.dsc_maintainer_rfc822)
+
+    # makeSPPHForBPPH
+    def test_makeSPPHForBPPH_returns_ISPPH(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        spph = self.factory.makeSPPHForBPPH(bpph)
+        self.assertThat(spph, IsProxied())
+        self.assertThat(
+            removeSecurityProxy(spph),
+            Provides(ISourcePackagePublishingHistory))
+
+    def test_makeSPPHForBPPH_returns_SPPH_for_BPPH(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        spph = self.factory.makeSPPHForBPPH(bpph)
+        self.assertContentEqual([bpph], spph.getPublishedBinaries())
 
     # makeSuiteSourcePackage
     def test_makeSuiteSourcePackage_returns_ISuiteSourcePackage(self):

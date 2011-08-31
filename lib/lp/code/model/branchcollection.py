@@ -359,7 +359,8 @@ class GenericBranchCollection:
         scope_tables = [Branch] + self._tables.values()
         scope_expressions = self._branch_filter_expressions
         select = self.store.using(*scope_tables).find(
-            (Branch.id, Branch.private, Branch.ownerID), *scope_expressions)
+            (Branch.id, Branch.explicitly_private, Branch.ownerID),
+            *scope_expressions)
         branches_query = select._get_select()
         with_expr = [With("scope_branches", branches_query)
             ] + self._getCandidateBranchesWith()
@@ -709,7 +710,7 @@ class AnonymousBranchCollection(GenericBranchCollection):
 
     def _getBranchVisibilityExpression(self, branch_class=Branch):
         """Return the where clauses for visibility."""
-        return [branch_class.private == False]
+        return [branch_class.explicitly_private == False]
 
     def _getCandidateBranchesWith(self):
         """Return WITH clauses defining candidate branches.
@@ -800,7 +801,7 @@ class VisibleBranchCollection(GenericBranchCollection):
             Select(Branch.id,
                    And(Branch.owner == TeamParticipation.teamID,
                        TeamParticipation.person == person,
-                       Branch.private == True)),
+                       Branch.explicitly_private == True)),
             # Private branches the person is subscribed to, either directly or
             # indirectly.
             Select(Branch.id,
@@ -808,7 +809,7 @@ class VisibleBranchCollection(GenericBranchCollection):
                        BranchSubscription.person ==
                        TeamParticipation.teamID,
                        TeamParticipation.person == person,
-                       Branch.private == True)))
+                       Branch.explicitly_private == True)))
         return private_branches
 
     def _getBranchVisibilityExpression(self, branch_class=Branch):
@@ -817,7 +818,7 @@ class VisibleBranchCollection(GenericBranchCollection):
         :param branch_class: The Branch class to use - permits using
             ClassAliases.
         """
-        public_branches = branch_class.private == False
+        public_branches = branch_class.explicitly_private == False
         if self._private_branch_ids is None:
             # Public only.
             return [public_branches]

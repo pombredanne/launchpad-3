@@ -338,7 +338,7 @@ class TeamMembership(SQLBase):
             deactivated: [proposed, approved, admin, invited],
             expired: [proposed, approved, admin, invited],
             proposed: [approved, admin, declined],
-            declined: [proposed, approved, admin],
+            declined: [proposed, approved, admin, invited],
             invited: [approved, admin, invitation_declined],
             invitation_declined: [invited, approved, admin]}
 

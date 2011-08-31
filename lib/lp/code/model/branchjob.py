@@ -21,7 +21,10 @@ import tempfile
 
 from bzrlib.branch import Branch as BzrBranch
 from bzrlib.diff import show_diff_trees
-from bzrlib.errors import NoSuchFile
+from bzrlib.errors import (
+    NoSuchFile,
+    NotBranchError,
+    )
 from bzrlib.log import (
     log_formatter,
     show_log,
@@ -107,6 +110,7 @@ from lp.scripts.helpers import TransactionFreeOperation
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.mail.sendmail import format_address_for_person
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
@@ -275,6 +279,11 @@ class BranchJobDerived(BaseRunnableJob):
             vars.append(('branch_name', self.context.branch.unique_name))
         return vars
 
+    def getErrorRecipients(self):
+        if self.requester is None:
+            return []
+        return [format_address_for_person(self.requester)]
+
 
 class BranchDiffJob(BranchJobDerived):
     """A Job that calculates the a diff related to a Branch."""
@@ -361,14 +370,17 @@ class BranchUpgradeJob(BranchJobDerived):
     classProvides(IBranchUpgradeJobSource)
     class_job_type = BranchJobType.UPGRADE_BRANCH
 
+    user_error_types = (NotBranchError,)
+
+    def getOperationDescription(self):
+        return 'upgrading a branch'
+
     @classmethod
-    def create(cls, branch):
+    def create(cls, branch, requester):
         """See `IBranchUpgradeJobSource`."""
-        if not branch.needs_upgrading:
-            raise AssertionError('Branch does not need upgrading.')
-        if branch.upgrade_pending:
-            raise AssertionError('Branch already has upgrade pending.')
-        branch_job = BranchJob(branch, BranchJobType.UPGRADE_BRANCH, {})
+        branch.checkUpgrade()
+        branch_job = BranchJob(
+            branch, BranchJobType.UPGRADE_BRANCH, {}, requester=requester)
         return cls(branch_job)
 
     @staticmethod
