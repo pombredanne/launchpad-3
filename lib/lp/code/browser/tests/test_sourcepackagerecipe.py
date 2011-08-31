@@ -1506,7 +1506,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
 
 class TestSourcePackageRecipeBuildView(BrowserTestCase):
-    """Test behaviour of SourcePackageReciptBuildView."""
+    """Test behaviour of SourcePackageRecipeBuildView."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -1675,7 +1675,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         self.assertIn('Logs have no tails!', main_text)
 
     def getMainText(self, build, view_name=None):
-        """"Return the main text of a view's web page."""
+        """Return the main text of a view's web page."""
         browser = self.getViewBrowser(build, '+index')
         return extract_text(find_main_content(browser.contents))
 

@@ -1647,7 +1647,8 @@ class ViewBuildFarmJobOld(AuthorizationBase):
 
     def _checkBuildPermission(self, user=None):
         """Check access to `IPackageBuild` for this job."""
-        permission = ViewBinaryPackageBuild(self.obj.build)
+        permission = getAdapter(
+            self.obj.build, IAuthorization, self.permission)
         if user is None:
             return permission.checkUnauthenticated()
         else:

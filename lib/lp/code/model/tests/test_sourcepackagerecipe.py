@@ -418,6 +418,39 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe.requestBuild(archive, recipe.owner, series,
                 PackagePublishingPocket.RELEASE)
 
+    def test_requestBuildPrivatePPAWithArchivePermission(self):
+        """User is not in PPA owner team but has ArchivePermission.
+
+        The case where the user is not in the PPA owner team but is allowed to
+        upload to the PPA via an explicit ArchivePermission takes a different
+        security path than if he were part of the team.
+        """
+
+        # Create a team private PPA.
+        team_owner = self.factory.makePerson()
+        team = self.factory.makeTeam(owner=team_owner)
+        team_p3a = self.factory.makeArchive(
+            owner=team, displayname='Private PPA', name='p3a',
+            private=True)
+
+        # Create a recipe with the team P3A as the build destination.
+        recipe = self.factory.makeSourcePackageRecipe()
+
+        # Add upload component rights for the non-team person.
+        with person_logged_in(team_owner):
+            team_p3a.newComponentUploader(
+                person=recipe.owner, component_name="main")
+        (distroseries,) = list(recipe.distroseries)
+
+        # Try to request a build.  It should work.
+        with person_logged_in(recipe.owner):
+            build = recipe.requestBuild(
+                team_p3a, recipe.owner, distroseries,
+                PackagePublishingPocket.RELEASE)
+            self.assertEqual(build.archive, team_p3a)
+            self.assertEqual(build.distroseries, distroseries)
+            self.assertEqual(build.requester, recipe.owner)
+
     def test_sourcepackagerecipe_description(self):
         """Ensure that the SourcePackageRecipe has a proper description."""
         description = u'The whoozits and whatzits.'

@@ -135,7 +135,7 @@ class RecipesForPersonBreadcrumb(Breadcrumb):
 
 
 class SourcePackageRecipeHierarchy(Hierarchy):
-    """"Hierarchy for Source Package Recipe."""
+    """Hierarchy for Source Package Recipe."""
 
     vhost_breadcrumb = False
 
