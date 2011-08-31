@@ -112,6 +112,10 @@ def create_multiple_jobs(derived_series, parent_series):
         SourcePackagePublishingHistory.distroseries == derived_series.id,
         SourcePackagePublishingHistory.status.is_in(active_publishing_status))
     nb_jobs = source_package_releases.count()
+
+    if nb_jobs == 0:
+        return []
+
     sourcepackagenames = source_package_releases.values(
         SourcePackageRelease.sourcepackagenameID)
     job_ids = Job.createMultiple(store, nb_jobs)
