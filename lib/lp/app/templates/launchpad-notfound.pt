@@ -10,9 +10,12 @@
     <div class="top-portlet" metal:fill-slot="main">
       <h1>Lost something?</h1>
       <p>
-      There&#8217;s no page with this address in Launchpad. If you've been here
-      previously, it may have been removed.
+      This page does not exist, or you may not have permission to see it.  
       </p> 
+
+      <p>
+      If you have been to this page before, it is possible it has been removed.
+      </p>
       <tal:referred condition="view/referrer">
         <p>
           If you got here from a link elsewhere on Launchpad,
@@ -35,7 +38,7 @@
         </p>
       </tal:referred>
       <p tal:condition="not:view/referrer">
-      Check that you are logged in as the correct acount, or that you
+      Check that you are logged in with the correct acount, or that you
       entered the address correctly, or search for it:
       </p>
       <form

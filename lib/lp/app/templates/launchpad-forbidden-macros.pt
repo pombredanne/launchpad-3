@@ -10,9 +10,6 @@
   <p>
     You are logged in as <span tal:content="request/lp:person/title" />.
   </p>
-  <p>
-    You may need to log in under another account to access this url. 
-  </p>
   </div>
   <p tal:condition="not: request/lp:person">
     You are not logged in.
