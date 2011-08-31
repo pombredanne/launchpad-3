@@ -19,5 +19,31 @@
       distribution and you want to copy the packages from a series in a
       different distribution.
       </li>
+    </ul>
+
+     <h2>Continuation Series</h2>
+     <p>This will copy all the sources and binaries from the previous
+         series in the distribution.  Its parent series default to the
+         parent series used in the previous series, but they can be changed.
+         This is useful, for example, when the new series has a longer
+         support period and you wish to sync packages from a more stable
+         upstream series.
+     </p>
+     <p>It will also copy all of the settings from the previous series,
+         such as upload permissions and packagesets.</p>
+
+     <h2>New Derived Distribution Series</h2>
+     <p>Initializing a new distribution is a complicated task. It takes a
+         long time and has a lot of checks. There are various things that
+         you need to specify:
+         <ul>
+           <li>One or more parents to inherit packages from.</li>
+           <li>Which architectures available in parents that you want to use</li>
+           <li>Which packagesets you want to copy from the parents</li>
+           <li>Whether to rebuild the copied packages,
+               or copy binaries from the parents.</li>
+         </ul>
+     </p>
+
   </body>
 </html>
