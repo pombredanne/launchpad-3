@@ -181,13 +181,13 @@ class DistroSeriesDifferenceWebServiceTestCase(TestCaseWithFactory):
         ws_diff = ws_object(self.factory.makeLaunchpadService(
             self.factory.makePerson()), ds_diff)
 
-        self.assertIs(None, ws_diff.status)
+        self.assertEqual(u'Blacklisted always', ws_diff.status)
 
-    def test_source_package_name(self):
-        # The difference's source_package_name is exposed.
+    def test_sourcepackagename(self):
+        # The difference's sourcepackagename is exposed.
         ds_diff = self.factory.makeDistroSeriesDifference(
-            source_package_name_str='package')
+            source_package_name_str=u'package')
         ws_diff = ws_object(self.factory.makeLaunchpadService(
             self.factory.makePerson()), ds_diff)
 
-        self.assertIs(None, ws_diff.source_package_name)
+        self.assertEqual(u'package', ws_diff.sourcepackagename)
