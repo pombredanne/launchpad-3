@@ -281,12 +281,16 @@ class GenericBranchCollection:
                           target_branch=None, merged_revnos=None,
                           eager_load=False):
         """See `IBranchCollection`."""
-        if (self._asymmetric_filter_expressions or for_branches is not None or
-            target_branch is not None or merged_revnos is not None):
-            if ((for_branches is not None and not for_branches) or 
-                (merged_revnos is not None and not merged_revnos)):
-                # Make a shortcut.
-                return EmptyResultSet()
+        if for_branches is not None and not for_branches:
+            # We have an empty branches list, so we can shortcut.
+            return EmptyResultSet()
+        elif merged_revnos is not None and not merged_revnos:
+            # We have an empty revnos list, so we can shortcut.
+            return EmptyResultSet()
+        elif (self._asymmetric_filter_expressions or
+            for_branches is not None or
+            target_branch is not None or
+            merged_revnos is not None):
             return self._naiveGetMergeProposals(statuses, for_branches,
                 target_branch, merged_revnos, eager_load)
         else:

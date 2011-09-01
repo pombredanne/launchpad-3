@@ -124,45 +124,42 @@ class TestBugTaskView(TestCaseWithFactory):
                 self.factory.makeBugAttachment(bug=task.bug)
         self.assertThat(task, browses_under_limit)
 
+    def makeLinkedBranchMergeProposal(self, sourcepackage, bug, owner):
+        with person_logged_in(owner):
+            f = self.factory
+            target_branch = f.makePackageBranch(
+                sourcepackage=sourcepackage, owner=owner)
+            source_branch = f.makeBranchTargetBranch(
+                target_branch.target, owner=owner)
+            bug.linkBranch(source_branch, owner)
+            return f.makeBranchMergeProposal(
+                target_branch=target_branch,
+                registrant=owner,
+                source_branch=source_branch)
+
     def test_rendered_query_counts_reduced_with_branches(self):
         f = self.factory
         owner = f.makePerson()
         ds = f.makeDistroSeries()
-        sourcepackagenames = [
-            f.makeSourcePackageName('testsourcepackagename%d' % i)
-            for i in range(10)]
-        sourcepackages = [
-            f.makeSourcePackage(
-                sourcepackagename=name, distroseries=ds, publish=True)
-            for name in sourcepackagenames]
         bug = f.makeBug()
-        bugtasks = []
+        sourcepackages = [
+            f.makeSourcePackage(distroseries=ds, publish=True)
+            for i in range(5)]
         for sp in sourcepackages:
             bugtask = f.makeBugTask(bug=bug, owner=owner, target=sp)
-            bugtasks.append(bugtask)
-        task = bugtasks[0]
-        url = canonical_url(task)
+        url = canonical_url(bug.default_bugtask)
         recorder = QueryCollector()
         recorder.register()
         self.addCleanup(recorder.unregister)
-        self.invalidate_caches(task)
+        self.invalidate_caches(bug.default_bugtask)
         self.getUserBrowser(url, owner)
         # At least 20 of these should be removed.
         self.assertThat(recorder, HasQueryCount(LessThan(100)))
         count_with_no_branches = recorder.count
-        self.invalidate_caches(task)
-        with person_logged_in(owner):
-            for sp in sourcepackages:
-                target_branch = f.makePackageBranch(
-                    sourcepackage=sp, owner=owner)
-                source_branch = f.makeBranchTargetBranch(
-                    target_branch.target, owner=owner)
-                bug.linkBranch(source_branch, owner)
-                f.makeBranchMergeProposal(
-                    target_branch=target_branch,
-                    registrant=owner,
-                    source_branch=source_branch)
-        self.getUserBrowser(url, owner)
+        for sp in sourcepackages:
+            self.makeLinkedBranchMergeProposal(sp, bug, owner)
+        self.invalidate_caches(bug.default_bugtask)
+        self.getUserBrowser(url, owner)  # This triggers the query recorder.
         # Ideally this should be much fewer, but this tries to keep a win of
         # removing more than half of these.
         self.assertThat(recorder, HasQueryCount(
