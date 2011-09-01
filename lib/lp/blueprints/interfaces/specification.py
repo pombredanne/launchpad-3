@@ -124,7 +124,7 @@ class SpecNameField(ContentNameField):
 
 class SpecURLField(TextLine):
 
-    errormessage = _("%s is already registered by <a href=\"%s\">%s</a>.")
+    errormessage = _('%s is already registered by <a href=\"%s\">%s</a>.')
 
     def _validate(self, specurl):
         TextLine._validate(self, specurl)
@@ -134,10 +134,11 @@ class SpecURLField(TextLine):
             return
 
         specification = getUtility(ISpecificationSet).getByURL(specurl)
-        specification_url = canonical_url(specification)
         if specification is not None:
-            raise LaunchpadValidationError(structured(self.errormessage %
-                (specurl, specification_url, specification.title)))
+            specification_url = canonical_url(specification)
+            raise LaunchpadValidationError(
+                    structured(self.errormessage, specurl, specification_url,
+                        specification.title))
 
 
 class ISpecificationPublic(IHasOwner, IHasLinkedBranches):

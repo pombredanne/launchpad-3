@@ -102,7 +102,7 @@ class TestSpecificationValidation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_specurl_validation(self):
+    def test_specurl_validation_valid(self):
         existing = self.factory.makeSpecification(
             specurl=u'http://ubuntu.com')
         spec = self.factory.makeSpecification()
@@ -110,6 +110,25 @@ class TestSpecificationValidation(TestCaseWithFactory):
         field = ISpecification['specurl'].bind(spec)
         e = self.assertRaises(LaunchpadValidationError, field.validate,
             u'http://ubuntu.com')
-        self.assertEqual(str(e),
+        self.assertEqual(
             '%s is already registered by <a href="%s">%s</a>.'
-            % (u'http://ubuntu.com', url, existing.title))
+            % (u'http://ubuntu.com', url, existing.title),str(e))
+
+    def test_specurl_validation_valid(self):
+        spec = self.factory.makeSpecification()
+        field = ISpecification['specurl'].bind(spec)
+        field.validate(u'http://example.com/nigelb')
+
+    def test_specurl_validation_escape(self):
+        existing = self.factory.makeSpecification(
+                specurl=u'http://ubuntu.com/foo',
+                title='<script>alert("foo");</script>')
+        cleaned_title = '&lt;script&gt;alert("foo");&lt;/script&gt;'
+        spec = self.factory.makeSpecification()
+        url = canonical_url(existing)
+        field = ISpecification['specurl'].bind(spec)
+        e = self.assertRaises(LaunchpadValidationError, field.validate,
+            u'http://ubuntu.com/foo')
+        self.assertEqual(
+            '%s is already registered by <a href="%s">%s</a>.'
+            % (u'http://ubuntu.com/foo', url, cleaned_title),str(e))
