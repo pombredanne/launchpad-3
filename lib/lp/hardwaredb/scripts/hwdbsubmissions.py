@@ -3098,8 +3098,8 @@ def process_pending_submissions(transaction, logger, max_submissions=None,
         'Processed %i valid and %i invalid HWDB submissions'
         % (loop.valid_submissions, loop.invalid_submissions))
 
-def reprocess_invalid_submissions(transaction, logger, max_submissions=None,
-                                  record_warnings=True, start):
+def reprocess_invalid_submissions(transaction, logger, start,
+                                  max_submissions=None, record_warnings=True):
     """Reprocess invalid submissions.
 
     Parse submissions that have been marked as invalid. A newer

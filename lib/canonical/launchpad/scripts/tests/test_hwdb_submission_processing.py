@@ -4444,14 +4444,16 @@ class TestUdevDevice(TestCaseHWDB):
             'provide bus, vendor ID, product ID or product name: None None '
             'None None /devices/pci0000:00/0000:00:1d.7/usb1/1-1/1-1:1.0')
 
-    def test_warnings_can_be_suppressed(self):
-        """Logging of warnings can be suppressed."""
+    def test_warnings_not_suppressed(self):
+        """Logging of warnings can be allowed."""
         parser = SubmissionParser(self.log)
         parser.submission_key = "log_with_warnings"
         parser._logWarning("This message is logged.")
         self.assertWarningMessage(
             parser.submission_key, "This message is logged.")
 
+    def test_warnings_suppressed(self):
+        """Logging of warnings can be suppressed."""
         number_of_existing_log_messages = len(self.handler.records)
         parser = SubmissionParser(self.log, record_warnings=False)
         parser.submission_key = "log_without_warnings"
