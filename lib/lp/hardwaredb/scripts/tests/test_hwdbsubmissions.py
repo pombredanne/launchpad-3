@@ -101,3 +101,15 @@ class TestProcessingLoops(TestCaseWithFactory):
         # The sample data already contains one submission.
         submissions = loop.getUnprocessedSubmissions(1)
         self.assertEqual(1, len(submissions))
+
+    def test_BadSubmissions_respects_start(self):
+        # It is possible to request a start id. Previous entries are ignored.
+        submission1 = self.factory.makeHWSubmission(
+            status=HWSubmissionProcessingStatus.INVALID)
+        submission2 = self.factory.makeHWSubmission(
+            status=HWSubmissionProcessingStatus.INVALID)
+        self.assertTrue(submission1.id < submission2.id)
+        loop = self._makeBadSubmissionsLoop(submission2.id)
+        # The sample data already contains one submission.
+        submissions = loop.getUnprocessedSubmissions(2)
+        self.assertEqual([submission2], submissions)
