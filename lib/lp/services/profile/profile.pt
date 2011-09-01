@@ -74,7 +74,7 @@ a.clicktext {font-weight: normal;}
     (<code>++profile++sql</code>). You can also combine these
     (<code>++profile++show&callgrind</code> or
     <code>++profile++show&pstats</code> or others, with each action separated
-    with commas).</tal:block></p>
+    with ampersands).</tal:block></p>
     <p>The <code>++profile++sqltrace</code> can take too much time to let a
     page practically render, especially on qastaging and staging.  You can
     filter to only get the stacktraces you want in this case; see information
