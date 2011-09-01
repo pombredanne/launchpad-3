@@ -1337,8 +1337,9 @@ def nonblocking_readline(instream, timeout):
     """
     result = StringIO()
     start = now = time.time()
-    while (now < start + timeout and not result.getvalue().endswith('\n')):
-        rlist = select([instream], [], [], timeout - (now - start))
+    deadline = start + timeout
+    while (now < deadline and not result.getvalue().endswith('\n')):
+        rlist = select([instream], [], [], deadline - now)
         if rlist:
             # Reading 1 character at a time is inefficient, but means
             # we don't need to implement put-back.
