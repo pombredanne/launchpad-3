@@ -23,6 +23,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.ftests import LaunchpadFormHarness
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_main_content,
@@ -43,6 +44,7 @@ from lp.buildmaster.enums import BuildStatus
 from lp.code.browser.sourcepackagerecipe import (
     SourcePackageRecipeEditView,
     SourcePackageRecipeRequestBuildsView,
+    SourcePackageRecipeRequestDailyBuildView,
     SourcePackageRecipeView,
     )
 from lp.code.browser.sourcepackagerecipebuild import (
@@ -232,7 +234,8 @@ class TestSourcePackageRecipeAddViewInitalValues(TestCaseWithFactory):
         # If the initial name exists, a generator is used to find an unused
         # name by appending a numbered suffix on the end.
         owner = self.factory.makePerson()
-        self.factory.makeSourcePackageRecipe(owner=owner, name=u'widget-daily')
+        self.factory.makeSourcePackageRecipe(
+            owner=owner, name=u'widget-daily')
         widget = self.factory.makeProduct(name='widget')
         branch = self.factory.makeProductBranch(widget)
         with person_logged_in(owner):
@@ -477,9 +480,9 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
         with recipe_parser_newest_version(145.115):
             recipe = dedent(u'''\
-                # bzr-builder format 145.115 deb-version {debupstream}-0~{revno}
-                %s
-                ''') % branch.bzr_identity
+              # bzr-builder format 145.115 deb-version {debupstream}-0~{revno}
+              %s
+              ''') % branch.bzr_identity
             browser = self.createRecipe(recipe, branch)
             self.assertEqual(
                 get_feedback_messages(browser.contents)[1],
@@ -589,7 +592,7 @@ class TestSourcePackageRecipeAddView(TestCaseForRecipe):
 
     def test_new_sourcepackage_branch_recipe_with_related_branches(self):
         # The related branches should be rendered correctly on the page.
-        reference_branch= self.factory.makePackageBranch()
+        reference_branch = self.factory.makePackageBranch()
         (branch, ignore, related_package_branch_info) = (
                 self.factory.makeRelatedBranches(reference_branch))
         browser = self.getUserBrowser(
@@ -1036,7 +1039,7 @@ class TestSourcePackageRecipeEditView(TestCaseForRecipe):
     def test_edit_sourcepackage_branch_recipe_with_related_branches(self):
         # The related branches should be rendered correctly on the page.
         with person_logged_in(self.chef):
-            reference_branch= self.factory.makePackageBranch()
+            reference_branch = self.factory.makePackageBranch()
             recipe = self.factory.makeSourcePackageRecipe(
                     owner=self.chef, branches=[reference_branch])
             (branch, ignore, related_package_branch_info) = (
@@ -1095,7 +1098,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Latest builds
             Status .* Archive
-            Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel Secret PPA
+            Successful build on 2010-03-16 buildlog \(.*\)
+                Secret Squirrel Secret PPA
             Request build\(s\)""", self.getMainText(recipe))
 
     def test_index_success_with_binary_builds(self):
@@ -1125,8 +1129,9 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Latest builds
             Status .* Archive
-            Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel Secret PPA
-              chocolate - 0\+r42 in .* \(estimated\) i386
+            Successful build on 2010-03-16 buildlog \(.*\)
+               Secret Squirrel Secret PPA chocolate - 0\+r42 in .*
+               \(estimated\) i386
             Request build\(s\)""", self.getMainText(recipe))
 
     def test_index_success_with_completed_binary_build(self):
@@ -1147,10 +1152,11 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             sourcepackagerelease=source_package_release, archive=self.ppa,
             distroseries=self.squirrel)
         builder = self.factory.makeBuilder()
-        binary_build = removeSecurityProxy(self.factory.makeBinaryPackageBuild(
-            source_package_release=source_package_release,
-            distroarchseries=self.squirrel.nominatedarchindep,
-            processor=builder.processor))
+        binary_build = removeSecurityProxy(
+            self.factory.makeBinaryPackageBuild(
+                source_package_release=source_package_release,
+                distroarchseries=self.squirrel.nominatedarchindep,
+                processor=builder.processor))
         binary_build.queueBuild()
         binary_build.status = BuildStatus.FULLYBUILT
         binary_build.date_started = datetime(2010, 04, 16, tzinfo=UTC)
@@ -1160,8 +1166,8 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         self.assertTextMatchesExpressionIgnoreWhitespace("""\
             Latest builds
             Status .* Archive
-            Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel Secret PPA
-              chocolate - 0\+r42 on 2010-04-16 buildlog \(.*\) i386
+            Successful build on 2010-03-16 buildlog \(.*\) Secret Squirrel
+              Secret PPA chocolate - 0\+r42 on 2010-04-16 buildlog \(.*\) i386
             Request build\(s\)""", self.getMainText(recipe))
 
     def test_index_no_builds(self):
@@ -1338,6 +1344,24 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             set([2505]),
             set(build.buildqueue_record.lastscore for build in builds))
 
+    def test_request_daily_builds_action_over_quota(self):
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, daily_build_archive=self.ppa,
+            name=u'julia', is_stale=True, build_daily=True)
+        # Create some previous builds.
+        series = list(recipe.distroseries)[0]
+        for x in xrange(5):
+            build = recipe.requestBuild(
+                self.ppa, self.chef, series, PackagePublishingPocket.RELEASE)
+            removeSecurityProxy(build).status = BuildStatus.FULLYBUILT
+        harness = LaunchpadFormHarness(
+            recipe, SourcePackageRecipeRequestDailyBuildView)
+        harness.submit('build', {})
+        self.assertEqual(
+            "You have exceeded your quota for recipe chef/julia "
+            "for distroseries ubuntu warty",
+            harness.view.request.notifications[0].message)
+
     def test_request_builds_page(self):
         """Ensure the +request-builds page is sane."""
         recipe = self.makeRecipe()
@@ -1506,7 +1530,7 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
 
 
 class TestSourcePackageRecipeBuildView(BrowserTestCase):
-    """Test behaviour of SourcePackageReciptBuildView."""
+    """Test behaviour of SourcePackageRecipeBuildView."""
 
     layer = LaunchpadFunctionalLayer
 
@@ -1675,7 +1699,7 @@ class TestSourcePackageRecipeBuildView(BrowserTestCase):
         self.assertIn('Logs have no tails!', main_text)
 
     def getMainText(self, build, view_name=None):
-        """"Return the main text of a view's web page."""
+        """Return the main text of a view's web page."""
         browser = self.getViewBrowser(build, '+index')
         return extract_text(find_main_content(browser.contents))
 

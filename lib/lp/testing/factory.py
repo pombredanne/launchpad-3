@@ -2291,16 +2291,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return bmp.nominateReviewer(candidate, bmp.registrant)
 
     def makeMessage(self, subject=None, content=None, parent=None,
-                    owner=None):
+                    owner=None, datecreated=None):
         if subject is None:
             subject = self.getUniqueString()
         if content is None:
             content = self.getUniqueString()
         if owner is None:
             owner = self.makePerson()
+        if datecreated is None:
+            datecreated = datetime.now(UTC)
         rfc822msgid = self.makeUniqueRFC822MsgId()
         message = Message(rfc822msgid=rfc822msgid, subject=subject,
-            owner=owner, parent=parent)
+            owner=owner, parent=parent, datecreated=datecreated)
         MessageChunk(message=message, sequence=1, content=content)
         return message
 

@@ -215,6 +215,15 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
 
         self.assertEqual(JobStatus.WAITING, dsdjob.job.status)
 
+    def test_create_multiple_jobs_no_jobs(self):
+        # If no job needs to be created, create_multiple_jobs
+        # returns an empty list.
+        dsp = self.factory.makeDistroSeriesParent()
+        job_ids = create_multiple_jobs(
+            dsp.derived_series, dsp.parent_series)
+
+        self.assertEqual([], job_ids)
+
     def find_waiting_jobs_finds_waiting_jobs(self):
         dsp = self.factory.makeDistroSeriesParent()
         package = self.factory.makeSourcePackageName()
@@ -953,3 +962,22 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
         for user in script_users:
             self.layer.switchDbUser(user)
             list(dsp.parent_series.getDerivedSeries())
+
+    def test_passesPackagesetFilter(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        self.factory.makePackageset(distroseries=dsp.parent_series)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=dsp.parent_series,
+            archive=dsp.parent_series.main_archive,
+            pocket=PackagePublishingPocket.RELEASE)
+        dsdj = create_job(
+            dsp.derived_series, spph.sourcepackagerelease.sourcepackagename,
+            dsp.parent_series)
+        transaction.commit()
+
+        self.layer.switchDbUser('distroseriesdifferencejob')
+
+        dsdj.passesPackagesetFilter()
+
+        # The test is that we get here without exceptions.
+        pass
