@@ -49,6 +49,7 @@ from lp.hardwaredb.interfaces.hwdb import (
     IHWVendorIDSet,
     IHWVendorNameSet,
     )
+from lp.hardwaredb.model.hwdb import HWSubmission
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner
@@ -121,7 +122,7 @@ SYSFS_SCSI_DEVICE_ATTRIBUTES = set(('vendor', 'model', 'type'))
 class SubmissionParser(object):
     """A Parser for the submissions to the hardware database."""
 
-    def __init__(self, logger=None):
+    def __init__(self, logger=None, record_warnings=True):
         if logger is None:
             logger = getLogger()
         self.logger = logger
@@ -137,6 +138,7 @@ class SubmissionParser(object):
         self._setMainSectionParsers()
         self._setHardwareSectionParsers()
         self._setSoftwareSectionParsers()
+        self.record_warnings = record_warnings
 
     def _logError(self, message, submission_key, create_oops=True):
         """Log `message` for an error in submission submission_key`."""
@@ -149,6 +151,8 @@ class SubmissionParser(object):
 
     def _logWarning(self, message, warning_id=None):
         """Log `message` for a warning in submission submission_key`."""
+        if not self.record_warnings:
+            return
         if warning_id is None:
             issue_warning = True
         elif warning_id not in self._logged_warnings:
@@ -2936,12 +2940,12 @@ class UdevDevice(BaseDevice):
         return self.udev['id']
 
 
-class ProcessingLoop(object):
+class ProcessingLoopBase(object):
     """An `ITunableLoop` for processing HWDB submissions."""
 
     implements(ITunableLoop)
 
-    def __init__(self, transaction, logger, max_submissions):
+    def __init__(self, transaction, logger, max_submissions, record_warnings):
         self.transaction = transaction
         self.logger = logger
         self.max_submissions = max_submissions
@@ -2949,6 +2953,7 @@ class ProcessingLoop(object):
         self.invalid_submissions = 0
         self.finished = False
         self.janitor = getUtility(ILaunchpadCelebrities).janitor
+        self.record_warnings = record_warnings
 
     def _validateSubmission(self, submission):
         submission.status = HWSubmissionProcessingStatus.PROCESSED
@@ -2971,16 +2976,16 @@ class ProcessingLoop(object):
         error_utility.raising(info, request)
         self.logger.error('%s (%s)' % (error_explanation, request.oopsid))
 
+    def getUnprocessedSubmissions(self, chunk_size):
+        raise NotImplementedError
+
     def __call__(self, chunk_size):
         """Process a batch of yet unprocessed HWDB submissions."""
         # chunk_size is a float; we compare it below with an int value,
         # which can lead to unexpected results. Since it is also used as
         # a limit for an SQL query, convert it into an integer.
         chunk_size = int(chunk_size)
-        submissions = getUtility(IHWSubmissionSet).getByStatus(
-            HWSubmissionProcessingStatus.SUBMITTED,
-            user=self.janitor
-            )[:chunk_size]
+        submissions = self.getUnprocessedSubmissions(chunk_size)
         # Listify the submissions, since we'll have to loop over each
         # one anyway. This saves a COUNT query for getting the number of
         # submissions
@@ -2997,7 +3002,7 @@ class ProcessingLoop(object):
         # loop.
         for submission in submissions:
             try:
-                parser = SubmissionParser(self.logger)
+                parser = SubmissionParser(self.logger, self.record_warnings)
                 success = parser.processSubmission(submission)
                 if success:
                     self._validateSubmission(submission)
@@ -3043,13 +3048,44 @@ class ProcessingLoop(object):
                     break
         self.transaction.commit()
 
-def process_pending_submissions(transaction, logger, max_submissions=None):
+
+class ProcessingLoopForPendingSubmissions(ProcessingLoopBase):
+
+    def getUnprocessedSubmissions(self, chunk_size):
+        submissions = getUtility(IHWSubmissionSet).getByStatus(
+            HWSubmissionProcessingStatus.SUBMITTED,
+            user=self.janitor
+            )[:chunk_size]
+        submissions = list(submissions)
+        return submissions
+
+
+class ProcessingLoopForReprocessingBadSubmissions(ProcessingLoopBase):
+
+    def __init__(self, transaction, logger, max_submissions, record_warnings,
+                 start):
+        super(ProcessingLoopForReprocessingBadSubmissions, self).__init__(
+            transaction, logger, max_submissions, record_warnings)
+        self.start = start
+
+    def getUnprocessedSubmissions(self, chunk_size):
+        submissions = getUtility(IHWSubmissionSet).getByStatus(
+            HWSubmissionProcessingStatus.INVALID, user=self.janitor)
+        submissions.find(HWSubmission.id >= self.start)
+        submissions = list(submissions[:chunk_size])
+        self.start = submissions[-1].id + 1
+        return submissions
+
+
+def process_pending_submissions(transaction, logger, max_submissions=None,
+                                record_warnings=True):
     """Process pending submissions.
 
     Parse pending submissions, store extracted data in HWDB tables and
     mark them as either PROCESSED or INVALID.
     """
-    loop = ProcessingLoop(transaction, logger, max_submissions)
+    loop = ProcessingLoopForPendingSubmissions(
+        transaction, logger, max_submissions, record_warnings)
     # It is hard to predict how long it will take to parse a submission.
     # we don't want to last a DB transaction too long but we also
     # don't want to commit more often than necessary. The LoopTuner
@@ -3061,3 +3097,25 @@ def process_pending_submissions(transaction, logger, max_submissions=None):
     logger.info(
         'Processed %i valid and %i invalid HWDB submissions'
         % (loop.valid_submissions, loop.invalid_submissions))
+
+def reprocess_invalid_submissions(transaction, logger, max_submissions=None,
+                                  record_warnings=True, start):
+    """Reprocess invalid submissions.
+
+    Parse submissions that have been marked as invalid. A newer
+    variant of the parser might be able to process them.
+    """
+    loop = ProcessingLoopForReprocessingBadSubmissions(
+        transaction, logger, max_submissions, record_warnings, start)
+    # It is hard to predict how long it will take to parse a submission.
+    # we don't want to last a DB transaction too long but we also
+    # don't want to commit more often than necessary. The LoopTuner
+    # handles this for us. The loop's run time will be approximated to
+    # 2 seconds, but will never handle more than 50 submissions.
+    loop_tuner = LoopTuner(
+                loop, 2, minimum_chunk_size=1, maximum_chunk_size=50)
+    loop_tuner.run()
+    logger.info(
+        'Processed %i valid and %i invalid HWDB submissions'
+        % (loop.valid_submissions, loop.invalid_submissions))
+    logger.info('last processed: %i' % loop.start)
