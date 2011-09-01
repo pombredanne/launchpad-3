@@ -3,9 +3,14 @@
 
 __metaclass__ = type
 
+import doctest
+
 from storm.expr import LeftJoin
 from storm.store import Store
-from testtools.matchers import LessThan
+from testtools.matchers import (
+    DocTestMatches,
+    LessThan,
+    )
 import transaction
 from zope.component import getUtility
 
@@ -17,6 +22,7 @@ from canonical.launchpad.ftests import (
 from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from canonical.launchpad.testing.pages import extract_text
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import (
@@ -79,6 +85,13 @@ class TestPersonIndexView(TestCaseWithFactory):
         message = 'Finch is queued to be be merged in a few minutes.'
         self.assertEqual(1, len(notifications))
         self.assertEqual(message, notifications[0].message)
+
+    def test_display_utcoffset(self):
+        person = self.factory.makePerson(time_zone='Asia/Kolkata')
+        html = create_initialized_view(person, '+portlet-contact-details')()
+        self.assertThat(extract_text(html), DocTestMatches(extract_text(
+            "... Asia/Kolkata (UTC+0530) ..."), doctest.ELLIPSIS
+            | doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF))
 
 
 class TestPersonViewKarma(TestCaseWithFactory):
@@ -202,7 +215,7 @@ class TestShouldShowPpaSection(TestCaseWithFactory):
 
         # But if the context person has a second ppa that is public,
         # then anon users will see the section.
-        second_ppa = self.factory.makeArchive(owner=self.owner)
+        self.factory.makeArchive(owner=self.owner)
         person_view = PersonView(self.owner, LaunchpadTestRequest())
         self.failUnless(person_view.should_show_ppa_section)
 
@@ -226,7 +239,7 @@ class TestShouldShowPpaSection(TestCaseWithFactory):
         self.failIf(person_view.should_show_ppa_section)
 
         # Unless the team also has another ppa which is public.
-        second_ppa = self.factory.makeArchive(owner=self.team)
+        self.factory.makeArchive(owner=self.team)
         person_view = PersonView(self.team, LaunchpadTestRequest())
         self.failUnless(person_view.should_show_ppa_section)
 
@@ -295,7 +308,7 @@ class TestPersonEditView(TestCaseWithFactory):
             'field.actions.add_email': 'Add',
             'field.newemail': email_address,
             }
-        view = create_initialized_view(self.person, "+editemails", form=form)
+        create_initialized_view(self.person, "+editemails", form=form)
 
         # If everything worked, there should now be a login token to validate
         # this email address for this user.
@@ -307,7 +320,7 @@ class TestPersonEditView(TestCaseWithFactory):
 
     def test_add_email_address_taken(self):
         email_address = self.factory.getUniqueEmailAddress()
-        account = self.factory.makeAccount(
+        self.factory.makeAccount(
             displayname='deadaccount',
             email=email_address,
             status=AccountStatus.NOACCOUNT)
@@ -345,7 +358,7 @@ class TestTeamCreationView(TestCaseWithFactory):
             'field.subscriptionpolicy-empty-marker': 1,
             }
         person_set = getUtility(IPersonSet)
-        view = create_initialized_view(
+        create_initialized_view(
             person_set, '+newteam', form=form)
         team = person_set.getByName('libertyland')
         self.assertTrue(team is not None)
@@ -353,7 +366,7 @@ class TestTeamCreationView(TestCaseWithFactory):
 
     def test_validate_email_catches_taken_emails(self):
         email_address = self.factory.getUniqueEmailAddress()
-        account = self.factory.makeAccount(
+        self.factory.makeAccount(
             displayname='libertylandaccount',
             email=email_address,
             status=AccountStatus.NOACCOUNT)
@@ -477,7 +490,7 @@ class TestPersonParticipationView(TestCaseWithFactory):
         # Verify the path of indirect membership.
         a_team = self.factory.makeTeam(name='a')
         b_team = self.factory.makeTeam(name='b', owner=a_team)
-        c_team = self.factory.makeTeam(name='c', owner=b_team)
+        self.factory.makeTeam(name='c', owner=b_team)
         login_person(a_team.teamowner)
         a_team.addMember(self.user, a_team.teamowner)
         transaction.commit()
@@ -525,8 +538,8 @@ class TestPersonRelatedSoftwareView(TestCaseWithFactory):
                 sourcename=source_name,
                 status=PackagePublishingStatus.PUBLISHED,
                 archive=archive,
-                maintainer = maintainer,
-                creator = self.user,
+                maintainer=maintainer,
+                creator=self.user,
                 distroseries=self.warty)
         login(ANONYMOUS)
 
@@ -620,6 +633,7 @@ class TestPersonUploadedPackagesView(TestCaseWithFactory):
             self.spph.source_package_name)
         self.assertIn('<a href="%s/+bugs">' % expected_base, html)
         self.assertIn('<a href="%s/+questions">' % expected_base, html)
+
 
 class TestPersonPPAPackagesView(TestCaseWithFactory):
     """Test the maintained packages view."""
@@ -884,7 +898,8 @@ class BugTaskViewsTestBase:
         view = create_initialized_view(self.person, self.view_name)
         Store.of(self.subscribed_bug).invalidate()
         with StormStatementRecorder() as recorder:
-            prejoins=[(Person, LeftJoin(Person, BugTask.owner==Person.id))]
+            prejoins = [
+                (Person, LeftJoin(Person, BugTask.owner == Person.id))]
             bugtasks = view.searchUnbatched(prejoins=prejoins)
             [bugtask.owner for bugtask in bugtasks]
         self.assertThat(recorder, HasQueryCount(LessThan(3)))
