@@ -85,12 +85,12 @@
                       upgrade view/actions/byname/field.actions.upgrade|nothing">
           <input class="button" type="submit" disabled="true"
               title="Please use a Javascript-enabled browser to sync packages."
-              tal:condition="python:sync and sync.available"
+              tal:condition="python:sync and sync.available()"
               tal:attributes="value sync/label;
                               name sync/__name__;
                               id sync/__name__;" />
           <input class="button" type="submit"
-            tal:condition="python: upgrade and upgrade.available"
+            tal:condition="python: upgrade and upgrade.available()"
             tal:attributes="value upgrade/label;
                             name upgrade/__name__;
                             id upgrade/__name__;" />
