@@ -13,15 +13,16 @@ __metaclass__ = type
 import contextlib
 from cProfile import Profile
 from datetime import datetime
+import heapq
 import os
 import pstats
-import threading
 import StringIO
+import sys
+import threading
 
-from bzrlib import errors
 from bzrlib import lsprof
 import oops_datedir_repo.serializer_rfc822
-from zope.pagetemplate.pagetemplatefile import PageTemplateFile
+from z3c.pt.pagetemplate import PageTemplateFile
 from zope.app.publication.interfaces import IEndRequestEvent
 from zope.component import (
     adapter,
@@ -29,6 +30,7 @@ from zope.component import (
     )
 from zope.contenttype.parse import parse
 from zope.error.interfaces import IErrorReportingUtility
+from zope.exceptions.exceptionformatter import format_exception
 from zope.traversing.namespace import view
 
 from canonical.config import config
@@ -156,7 +158,7 @@ class Profilers(threading.local):
         self.actions = None
         self.profiler = None
         self.memory_profile_start = None
-        
+
 _profilers = Profilers()
 
 
@@ -210,7 +212,9 @@ def _maybe_profile(event):
     if config.profiling.profile_all_requests:
         actions.add('callgrind')
     if actions:
-        if actions.difference(('help',)):
+        if 'sqltrace' in actions:
+            da.start_sql_traceback_logging()
+        if 'show' in actions or actions.intersection(available_profilers):
             _profilers.profiler = Profiler()
             _profilers.profiler.start()
     if config.profiling.memory_profile_log:
@@ -340,11 +344,123 @@ def end_request(event):
         template_context['multiple_profiles'] = prof_stats.count > 1
         # Try to free some more memory.
         del prof_stats
+    trace = None
+    if 'sqltrace' in actions:
+        trace = da.stop_sql_traceback_logging() or ()
+        # The trace is a list of dicts, each with the keys "sql" and
+        # "stack".  "sql" is a tuple of start time, stop time, database
+        # name (with a "SQL-" prefix), and sql statement.  "stack" is a
+        # tuple of filename, line number, function name, text, module
+        # name, optional supplement dict, and optional info string.  The
+        # supplement dict has keys 'source_url', 'line', 'column',
+        # 'expression', 'warnings' (an iterable), and 'extra', any of
+        # which may be None.
+        top_sql = []
+        top_python = []
+        triggers = {}
+        ix = 1  # We display these, so start at 1, not 0.
+        last_stop_time = 0
+        _heappushpop = heapq.heappushpop  # This is an optimization.
+        for step in trace:
+            # Set up an identifier for each trace step.
+            step['id'] = ix
+            step['sql'] = dict(zip(
+                ('start', 'stop', 'name', 'statement'), step['sql']))
+            # Divide up the stack into the more unique (app) and less
+            # unique (db) bits.
+            app_stack = step['app_stack'] = []
+            db_stack = step['db_stack'] = []
+            storm_found = False
+            for f in step['stack']:
+                f_data = dict(zip(
+                    ('filename', 'lineno', 'name', 'line', 'module',
+                     'supplement', 'info'), f))
+                storm_found = storm_found or (
+                    f_data['module'] and
+                    f_data['module'].startswith('storm.'))
+                if storm_found:
+                    db_stack.append(f_data)
+                else:
+                    app_stack.append(f_data)
+            # Begin to gather what app code is triggering the most SQL
+            # calls.
+            trigger_key = tuple(
+                (f['filename'], f['lineno']) for f in app_stack)
+            if trigger_key not in triggers:
+                triggers[trigger_key] = []
+            triggers[trigger_key].append(ix)
+            # Get the nbest (n=10) sql and python times
+            step['python_time'] = step['sql']['start'] - last_stop_time
+            step['sql_time'] = step['sql']['stop'] - step['sql']['start']
+            python_data = (step['python_time'], ix, step)
+            sql_data = (step['sql_time'], ix, step)
+            if ix < 10:
+                top_sql.append(sql_data)
+                top_python.append(python_data)
+            else:
+                if ix == 10:
+                    heapq.heapify(top_sql)
+                    heapq.heapify(top_python)
+                _heappushpop(top_sql, sql_data)
+                _heappushpop(top_python, python_data)
+            # Reset for next loop.
+            last_stop_time = step['sql']['stop']
+            ix += 1
+        # Finish setting up top sql and python times.
+        top_sql.sort(reverse=True)
+        top_python.sort(reverse=True)
+        top_sql_ids = []
+        for rank, (key, ix, step) in enumerate(top_sql):
+            step['sql_rank'] = rank + 1
+            step['sql_class'] = (
+                'sql_danger' if key > 500 else
+                'sql_warning' if key > 100 else None)
+            top_sql_ids.append(dict(
+                value=key,
+                ix=ix,
+                rank=step['sql_rank'],
+                cls=step['sql_class']))
+        top_python_ids = []
+        for rank, (key, ix, step) in enumerate(top_python):
+            step['python_rank'] = rank + 1
+            step['python_class'] = (
+                'python_danger' if key > 500 else
+                'python_warning' if key > 100 else None)
+            top_python_ids.append(dict(
+                value=key,
+                ix=ix,
+                rank=step['python_rank'],
+                cls=step['python_class']))
+        # Identify the repeated Python calls that generated SQL.
+        triggers = triggers.items()
+        triggers.sort(key=lambda x: len(x[1]))
+        triggers.reverse()
+        top_triggers = []
+        for (key, ixs) in triggers:
+            if len(ixs) == 1:
+                break
+            info = trace[ixs[0] - 1]['app_stack'][-1].copy()
+            info['indexes'] = ixs
+            info['count'] = len(ixs)
+            top_triggers.append(info)
+        template_context.update(dict(
+            sqltrace=trace,
+            top_sql=top_sql_ids,
+            top_python=top_python_ids,
+            top_triggers=top_triggers,
+            sql_count=len(trace)))
     template_context['dump_path'] = os.path.abspath(dump_path)
     if actions and is_html:
         # Hack the new HTML in at the end of the page.
         encoding = content_type_params.get('charset', 'utf-8')
-        added_html = template(**template_context).encode(encoding)
+        try:
+            added_html = template(**template_context).encode(encoding)
+        except (SystemExit, KeyboardInterrupt):
+            raise
+        except:
+            error = ''.join(format_exception(*sys.exc_info(), as_html=True))
+            added_html = (
+                '<div class="profiling_info">' + error + '</div>')
         existing_html = request.response.consumeBody()
         e_start, e_close_body, e_end = existing_html.rpartition(
             '</body>')
@@ -397,7 +513,7 @@ def get_desired_profile_actions(request):
                 result.remove('log')
                 result.add('callgrind')
             # Only honor the available options.
-            available_options = set(('show',))
+            available_options = set(('show', 'sqltrace', 'help'))
             available_options.update(available_profilers)
             result.intersection_update(available_options)
             # If we didn't end up with any known actions, we need to help the

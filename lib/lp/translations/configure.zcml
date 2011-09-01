@@ -431,15 +431,15 @@
             <allow
                 interface="lp.translations.interfaces.potemplate.IPOTemplate"/>
             <require
-                permission="launchpad.Edit"
-                set_attributes="
-                    owner priority description translation_domain path
-                    iscurrent"/>
-            <require
                 permission="launchpad.TranslationsAdmin"
                 set_attributes="
-                    name productseries distroseries sourcepackagename
-                    sourcepackageversion binarypackagename languagepack
+                    name owner priority description translation_domain path
+                    iscurrent languagepack sourcepackagename"/>
+            <require
+                permission="launchpad.Admin"
+                set_attributes="
+                    productseries distroseries
+                    sourcepackageversion binarypackagename
                     source_file_format source_file date_last_updated
                     from_sourcepackagename header"/>
         </class>

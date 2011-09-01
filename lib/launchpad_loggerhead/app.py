@@ -1,39 +1,58 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import logging
 import os
-import sys
 import threading
 import urllib
 import urlparse
 import xmlrpclib
 
-from bzrlib import errors, lru_cache, urlutils
+from bzrlib import (
+    errors,
+    lru_cache,
+    urlutils,
+    )
 from bzrlib.transport import get_transport
-from loggerhead.apps import favicon_app, static_app
+from loggerhead.apps import (
+    favicon_app,
+    static_app,
+    )
 from loggerhead.apps.branch import BranchWSGIApp
 import oops_wsgi
-from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
-from openid.extensions.sreg import SRegRequest, SRegResponse
-from paste import httpserver
+from openid.consumer.consumer import (
+    CANCEL,
+    Consumer,
+    FAILURE,
+    SUCCESS,
+    )
+from openid.extensions.sreg import (
+    SRegRequest,
+    SRegResponse,
+    )
 from paste.fileapp import DataApp
 from paste.httpexceptions import (
     HTTPMovedPermanently,
     HTTPNotFound,
     HTTPUnauthorized,
     )
-from paste.request import construct_url, parse_querystring, path_info_pop
+from paste.request import (
+    construct_url,
+    parse_querystring,
+    path_info_pop,
+    )
 
 from canonical.config import config
-from canonical.launchpad.xmlrpc import faults
+from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.launchpad.webapp.errorlog import (
-    ErrorReportingUtility, ScriptRequest)
+from canonical.launchpad.xmlrpc import faults
 from lp.code.interfaces.codehosting import (
-    BRANCH_TRANSPORT, LAUNCHPAD_ANONYMOUS)
-from lp.codehosting.vfs import get_lp_server
+    BRANCH_TRANSPORT,
+    LAUNCHPAD_ANONYMOUS,
+    )
 from lp.codehosting.safe_open import safe_open
+from lp.codehosting.vfs import get_lp_server
+
 
 robots_txt = '''\
 User-agent: *
@@ -99,7 +118,7 @@ class RootApp:
         raise HTTPMovedPermanently(openid_request.redirectURL(
             config.codehosting.secure_codebrowse_root,
             config.codehosting.secure_codebrowse_root + '+login/?'
-            + urllib.urlencode({'back_to':back_to})))
+            + urllib.urlencode({'back_to': back_to})))
 
     def _complete_login(self, environ, start_response):
         """Complete the OpenID authentication process.
@@ -227,7 +246,8 @@ class RootApp:
             try:
                 view = BranchWSGIApp(
                     bzr_branch, branch_name, {'cachepath': cachepath},
-                    self.graph_cache, branch_link=branch_link, served_url=None)
+                    self.graph_cache, branch_link=branch_link,
+                    served_url=None)
                 return view.app(environ, start_response)
             finally:
                 bzr_branch.unlock()
@@ -242,28 +262,29 @@ def make_error_utility():
     return error_utility
 
 
-# XXX: This HTML template should be replaced with the same one that lpnet uses
-# for reporting OOPSes to users, or at least something that looks similar.  But
-# even this is better than the "Internal Server Error" you'd get otherwise.
-#  - Andrew Bennetts, 2010-07-27.
+# XXX AndrewBennets 2010-07-27: This HTML template should be replaced
+# with the same one that lpnet uses for reporting OOPSes to users, or at
+# least something that looks similar.  But even this is better than the
+# "Internal Server Error" you'd get otherwise.
 _oops_html_template = '''\
 <html>
-<head><title>Oops! %(oopsid)s</title></head>
+<head><title>Oops! %(id)s</title></head>
 <body>
 <h1>Oops!</h1>
 <p>Something broke while generating the page.
 Please try again in a few minutes, and if the problem persists file a bug at
 <a href="https://bugs.launchpad.net/launchpad"
 >https://bugs.launchpad.net/launchpad</a>
-and quote OOPS-ID <strong>%(oopsid)s</strong>
+and quote OOPS-ID <strong>%(id)s</strong>
 </p></body></html>'''
 
 
 def oops_middleware(app):
     """Middleware to log an OOPS if the request fails.
 
-    If the request fails before the response body has started then this returns
-    a basic HTML error page with the OOPS ID to the user (and status code 500).
+    If the request fails before the response body has started then this
+    returns a basic HTML error page with the OOPS ID to the user (and status
+    code 500).
     """
     error_utility = make_error_utility()
     return oops_wsgi.make_app(app, error_utility._oops_config,

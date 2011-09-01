@@ -19,6 +19,7 @@ from pytz import UTC
 import simplejson
 from sqlobject import SQLObjectNotFound
 from storm.locals import Store
+from testtools import ExpectedException
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -56,14 +57,17 @@ from lp.code.enums import (
     CodeReviewNotificationLevel,
     )
 from lp.code.errors import (
+    AlreadyLatestFormat,
     BranchCannotBePrivate,
     BranchCannotBePublic,
     BranchCreatorNotMemberOfOwnerTeam,
     BranchCreatorNotOwner,
     BranchTargetError,
     CannotDeleteBranch,
+    CannotUpgradeNonHosted,
     InvalidBranchMergeProposal,
     InvalidMergeQueueConfig,
+    UpgradePending,
     )
 from lp.code.interfaces.branch import (
     DEFAULT_BRANCH_STATUS_IN_LISTING,
@@ -586,12 +590,30 @@ class TestBranchUpgrade(TestCaseWithFactory):
         branch = self.factory.makePersonalBranch()
         self.assertFalse(branch.needs_upgrading)
 
+    def test_checkUpgrade_empty_formats(self):
+        branch = self.factory.makePersonalBranch()
+        with ExpectedException(
+            AlreadyLatestFormat,
+            'Branch lp://dev/~person-name.*junk/branch.* is in the latest'
+            ' format, so it cannot be upgraded.'):
+            branch.checkUpgrade()
+
     def test_needsUpgrade_mirrored_branch(self):
         branch = self.factory.makeBranch(
             branch_type=BranchType.MIRRORED,
             branch_format=BranchFormat.BZR_BRANCH_6,
             repository_format=RepositoryFormat.BZR_REPOSITORY_4)
         self.assertFalse(branch.needs_upgrading)
+
+    def test_checkUpgrade_mirrored_branch(self):
+        branch = self.factory.makeBranch(
+            branch_type=BranchType.MIRRORED,
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
+        with ExpectedException(
+            CannotUpgradeNonHosted,
+            'Cannot upgrade non-hosted branch %s' % branch.bzr_identity):
+            branch.checkUpgrade()
 
     def test_needsUpgrade_remote_branch(self):
         branch = self.factory.makeBranch(
@@ -621,6 +643,20 @@ class TestBranchUpgrade(TestCaseWithFactory):
 
         self.assertFalse(branch.needs_upgrading)
 
+    def test_checkUpgrade_already_requested(self):
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
+        branch.requestUpgrade(branch.owner)
+        with ExpectedException(
+            UpgradePending,
+            'An upgrade is already in progress for branch'
+            ' lp://dev/~person-name.*junk/branch.*.'):
+            branch.checkUpgrade()
+
     def test_needsUpgrading_branch_format_unrecognized(self):
         # A branch has a needs_upgrading attribute that returns whether or not
         # a branch needs to be upgraded or not.  If the format is
@@ -638,6 +674,17 @@ class TestBranchUpgrade(TestCaseWithFactory):
             branch_format=BranchFormat.BZR_BRANCH_8,
             repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertFalse(branch.needs_upgrading)
+
+    def test_checkUpgrade_branch_format_upgrade_not_needed(self):
+        # If a branch is up-to-date, checkUpgrade raises AlreadyLatestFormat
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_8,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
+        with ExpectedException(
+            AlreadyLatestFormat,
+            'Branch lp://dev/~person-name.*junk/branch.* is in the latest'
+            ' format, so it cannot be upgraded.'):
+            branch.checkUpgrade()
 
     def test_needsUpgrading_branch_format_upgrade_needed(self):
         # A branch has a needs_upgrading attribute that returns whether or not
@@ -691,18 +738,19 @@ class TestBranchUpgrade(TestCaseWithFactory):
 
     def test_requestUpgrade_no_upgrade_needed(self):
         # If a branch doesn't need to be upgraded, requestUpgrade raises an
-        # AssertionError.
+        # AlreadyLatestFormat.
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_8,
             repository_format=RepositoryFormat.BZR_CHK_2A)
         owner = removeSecurityProxy(branch).owner
         login_person(owner)
         self.addCleanup(logout)
-        self.assertRaises(AssertionError, branch.requestUpgrade, branch.owner)
+        self.assertRaises(
+            AlreadyLatestFormat, branch.requestUpgrade, branch.owner)
 
     def test_requestUpgrade_upgrade_pending(self):
         # If there is a pending upgrade already requested, requestUpgrade
-        # raises an AssertionError.
+        # raises an UpgradePending.
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_6)
         owner = removeSecurityProxy(branch).owner
@@ -710,7 +758,7 @@ class TestBranchUpgrade(TestCaseWithFactory):
         self.addCleanup(logout)
         branch.requestUpgrade(branch.owner)
 
-        self.assertRaises(AssertionError, branch.requestUpgrade, branch.owner)
+        self.assertRaises(UpgradePending, branch.requestUpgrade, branch.owner)
 
     def test_upgradePending(self):
         # If there is a BranchUpgradeJob pending for the branch, return True.
@@ -1462,7 +1510,6 @@ class TestBranchDeletionConsequences(TestCase):
         """break_links allows deleting a code import branch."""
         code_import = self.factory.makeCodeImport()
         code_import_id = code_import.id
-        self.factory.makeCodeImportJob(code_import)
         code_import.branch.destroySelf(break_references=True)
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)
@@ -1527,7 +1574,6 @@ class TestBranchDeletionConsequences(TestCase):
         """DeleteCodeImport.__call__ must delete the CodeImport."""
         code_import = self.factory.makeCodeImport()
         code_import_id = code_import.id
-        self.factory.makeCodeImportJob(code_import)
         DeleteCodeImport(code_import)()
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)
@@ -1730,6 +1776,18 @@ class BranchAddLandingTarget(TestCaseWithFactory):
         votes = set((vote.reviewer, vote.review_type) for vote in bmp.votes)
         self.assertEqual(
             set([(person1, 'review1'), (person2, 'review2')]), votes)
+
+
+class TestLandingCandidates(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_private_branch(self):
+        """landing_candidates works for private branches."""
+        branch = self.factory.makeBranch(private=True)
+        with person_logged_in(removeSecurityProxy(branch).owner):
+            mp = self.factory.makeBranchMergeProposal(target_branch=branch)
+            self.assertContentEqual([mp], branch.landing_candidates)
 
 
 class BranchDateLastModified(TestCaseWithFactory):
@@ -2166,6 +2224,30 @@ class TestPendingWrites(TestCaseWithFactory):
         transaction.commit()
         branch.startMirroring()
         self.assertEqual(True, branch.pending_writes)
+
+
+class TestBranchPrivacy(TestCaseWithFactory):
+    """Tests for branch privacy."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Use an admin user as we aren't checking edit permissions here.
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+
+    def test_public_stacked_on_private_is_private(self):
+        # A public branch stacked on a private branch is private.
+        stacked_on = self.factory.makeBranch(private=True)
+        branch = self.factory.makeBranch(stacked_on=stacked_on, private=False)
+        self.assertTrue(branch.private)
+        self.assertFalse(branch.explicitly_private)
+
+    def test_private_stacked_on_public_is_private(self):
+        # A public branch stacked on a private branch is private.
+        stacked_on = self.factory.makeBranch(private=False)
+        branch = self.factory.makeBranch(stacked_on=stacked_on, private=True)
+        self.assertTrue(branch.private)
+        self.assertTrue(branch.explicitly_private)
 
 
 class TestBranchSetPrivate(TestCaseWithFactory):

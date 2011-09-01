@@ -1,6 +1,31 @@
+<!-- Style is supposed to go in the head. We don't have one here. This seems
+to work for FF and WebKit. -->
+<style type="text/css">
+.python_topten {margin-bottom: 4px;}
+.python_danger {background-color: red;}
+.python_warning {background-color: yellow;}
+.sql_danger .sqlstep {background-color: red;}
+.sql_warning .sqlstep {background-color: yellow;}
+.trace .dbstack {font-size: smaller; color: gray}
+.sqlinfo {border-bottom: 1px gray dotted; padding-bottom: 2px;}
+.sqlstats {margin-left: 1ex;}
+.sqlstep {border: LightGray solid 1px; margin-bottom: 4px;}
+.sqlstep.sql_danger {border-color: red;}
+.sqlstep.sql_warning {border-color: yellow;}
+.sqlstep .trace {background-color: GhostWhite; font-size: small; clear: both;}
+.sqlstep .trace .line {margin-left: 2em; font-family: monospace;}
+.sqlstep .trace .supplement, .sqlstep .trace .extrainfo {
+    font-weight: bold; margin-left: 2em;}
+.tracebackwarning {color: red;}
+.col1 {width: 60em; float: left;}
+a.clicktext {font-weight: normal;}
+.trace {overflow: hidden;}
+.trace.inner {height: auto; overflow: hidden;}
+.querylinks {margin-left: 2em;}
+</style>
 <div class="profiling_info">
   <div class="hide_reveal_profiling" id="reveal_profiling">
-  Click to REVEAL profiling information
+  <a href="#">Click to REVEAL profiling information</a>
   </div>
 </div>
 <div class="profiling_info" id="profiling_info"
@@ -22,9 +47,11 @@
                  multiple_profiles options/multiple_profiles|nothing;
                  inline_ignored actions/inline_ignored|nothing;
                  inline actions/inline|nothing;
+                 sqltrace actions/sqltrace|nothing;
+                 sqltrace_steps options/sqltrace|nothing;
                  ">
   <div class="hide_reveal_profiling" id="hide_profiling">
-  Click to HIDE profiling information
+  <a href="#">Click to HIDE profiling information</a>
   </div>
   <h1>Profiling Information</h1>
   <tal:block condition="help">
@@ -38,12 +65,14 @@
     <code>++profile++show</code>.</tal:block> <tal:block condition="not:
     always_log">In order to get profiling results, you need to ask for an HTML
     view (<code>++profile++show</code>), a KCacheGrind-friendly log on the
-    filesystem (<code>++profile++callgrind</code>), or a PStats-friendly log
+    filesystem (<code>++profile++callgrind</code>), a PStats-friendly log
     (Python standard library) on the filesystem
-    (<code>++profile++pstats</code>). You can also ask for local HTML
-    profiling plus one of the two log files
+    (<code>++profile++pstats</code>), or an HTML view of the SQL and the
+    Python stacktrace when each SQL call was made
+    (<code>++profile++sqltrace</code>). You can also combine these
     (<code>++profile++show,callgrind</code> or
-    <code>++profile++show,pstats</code>).</tal:block></p>
+    <code>++profile++show,pstats</code> or others,
+    with each action separated with commas).</tal:block></p>
     <p>The "++profile++" path segment can usually go anywhere in the URL
     (e.g., <code>http://launchpad.dev/++profile++show</code> or
     <code>http://launchpad.dev/++profile++show/Firefox</code> or
@@ -111,6 +140,110 @@ with profiling():
     href="http://docs.python.org/library/profile.html#instant-user-s-manual"
     >Python documentation</a>.</p>
   </tal:block>
+  <h2>SQL trace</h2>
+  <tal:block condition="not:sqltrace">
+    <p>Use <code>++profile++sqltrace</code> in your URL to see the SQL that
+    the page runs, along with start and stop times, the database used, and the
+    stacktrace for when each sql call is made.</p> <p>Note that if you do not
+    want the tracebacks, <code>++profile++show</code> will include OOPS data
+    at the end of the profiling information, which has what what you want.</p>
+  </tal:block>
+  <tal:block condition="sqltrace">
+    <h3>Top 10 SQL times</h3>
+    <ol>
+      <li tal:repeat="info options/top_sql" tal:attributes="class info/cls">
+        <a tal:attributes="href string:#sqlstep-${info/ix}">Query number
+        <tal:block tal:content="info/ix"></tal:block></a> (<tal:block
+        replace="info/value"></tal:block> milliseconds)
+      </li>
+    </ol>
+    <h3>Top 10 Python times</h3>
+    <ol>
+      <li tal:repeat="info options/top_python" tal:attributes="class info/cls">
+        <a tal:attributes="href string:#pythonstep-${info/ix}">Before query
+        number <tal:block tal:content="info/ix"></tal:block></a> (<tal:block
+        replace="info/value"></tal:block> milliseconds)
+      </li>
+    </ol>
+    <h3>Repeated Python SQL Triggers</h3>
+    <p tal:condition="not: options/top_triggers">None.</p>
+    <div tal:condition="options/top_triggers">
+      <p>Typically, these show loops.  The traceback may show extra
+      information, such as from page templates, that indicate the variable
+      within the loop.  If you want to add more information to identify the
+      variables in the loop, in your Python add either an informational string
+      with the variable name <code>__traceback_info__</code>, or add a
+      <code>__traceback_supplement__</code> as used in
+      lp.services.stacktrace.</p>
+      <div tal:repeat="trigger options/top_triggers">
+        <div>File &quot;<tal:block replace="trigger/filename"></tal:block>&quot;,
+              line <tal:block replace="trigger/lineno"></tal:block></div>
+        <div class="querylinks">
+          <tal:block replace="trigger/count"></tal:block> related queries (<a
+          href="#" class="expandall">expand all tracebacks</a>): <span
+          tal:repeat="ix trigger/indexes"> <a tal:attributes="href
+          string:#sqlstep-${ix}" tal:content="ix"></a> </span>
+        </div>
+      </div>
+    </div>
+    <h3>SQL (<tal:block replace="options/sql_count"></tal:block> queries)</h3>
+    <p>Each sql line begins with the start time and the stop time, along with
+    the name of the database on which the query ran.  Times are in
+    milliseconds since request start.</p>
+    <div><a href="#" id="show-all-tracebacks">Show all tracebacks</a> / <a href="#"
+    id="hide-all-tracebacks">Hide all tracebacks</a></div>
+    <div tal:repeat="step sqltrace_steps">
+      <div tal:condition="step/python_rank|nothing" tal:attributes="class
+      string: python_topten ${step/python_class}; id
+      string:pythonstep-${step/id}"><strong>Top ten (# <tal:block
+      replace="step/python_rank"></tal:block>):</strong> Python work took
+      <span tal:replace="step/python_time" /> milliseconds in-between SQL
+      calls.</div>
+      <div tal:attributes="class string: sqlstep ${step/sql_class|nothing};
+                           id string:sqlstep-${step/id};">
+        <div class="sqlinfo">
+          <div class="col1"><span><tal:block replace="step/id"></tal:block>.
+          <span class="sqlstats"><span
+          tal:replace="step/sql/start"></span> - <span
+          tal:replace="step/sql/stop"></span> @ <tal:block
+          replace="step/sql/name"></tal:block></span></span> <span
+          tal:condition="step/sql_rank|nothing"><strong>Top ten (# <tal:block
+          replace="step/sql_rank"></tal:block>):</strong> SQL took <span
+          tal:replace="step/sql_time" /> milliseconds</span></div> <a href="#"
+          class="clicktext">Click to toggle Python traceback.</a>
+        </div>
+        <div class="trace"><div class="inner">
+          <div class="appstack" tal:define="stack step/app_stack">
+            <div tal:repeat="frame stack" metal:define-macro="draw-stack">
+              <div>File &quot;<tal:block replace="frame/filename"></tal:block>&quot;,
+              line <tal:block replace="frame/lineno"></tal:block>, in
+              <tal:block replace="frame/name"></tal:block></div>
+              <div tal:condition="frame/line" tal:content="frame/line" class="line"></div>
+              <div tal:define="supp frame/supplement" tal:condition="supp" class="supplement">
+                <div tal:condition="supp/source_url" tal:content="supp/source_url"></div>
+                <div tal:define="line supp/line; column supp/column;"
+                     tal:condition="python:line or column">
+                <tal:block condition="line">Line <span tal:replace="line"></span><tal:block condition="column">, </tal:block></tal:block>
+                <tal:block condition="column">Column <span tal:replace="column"></span></tal:block>
+                </div>
+                <div tal:condition="supp/expression">Expression: <code tal:content="supp/expression"></code></div>
+                <div tal:condition="supp/warnings">
+                  <div tal:repeat="warning supp/warnings" class="tracebackwarning">Warning: <span tal:replace="supp/warnings"></span></div>
+                </div>
+                <pre tal:condition="supp/extra"
+                     tal:content="supp/extra"></pre>
+              </div>
+              <pre tal:condition="frame/info" tal:content="frame/info" class="extrainfo"></pre>
+            </div>
+          </div>
+          <div class="dbstack" tal:define="stack step/db_stack">
+            <div metal:use-macro="template/macros/draw-stack"></div>
+          </div>
+        </div></div>
+        <pre  tal:attributes="class string: sql ${step/sql_class|nothing}" tal:content="step/sql/statement"></pre>
+      </div>
+    </div>
+  </tal:block>
   <h2>Profile quick view</h2>
   <tal:block condition="not:show">
     <p>Use <code>++profile++show</code> in your URL in order to see immediate
@@ -133,12 +266,74 @@ with profiling():
   </tal:block>
 </div>
 <script>
-LPS.use('node', 'lp', function (Y) {
+LPS.use('node', 'lp', 'transition', function (Y) {
     Y.one('div#reveal_profiling').on('click', function (e) {
         Y.one('div#profiling_info').setStyle('display', 'block');
+        e.preventDefault();
     });
     Y.one('div#hide_profiling').on('click', function (e) {
         Y.one('div#profiling_info').setStyle('display', 'none');
+        e.preventDefault();
+    });
+    function slideIn(target) {
+        target.transition({
+            easing: 'ease-in',
+            duration: 0.75, // seconds
+            height: '0px'
+        }, function() {
+            target.setStyle('display', 'none');
+        });
+    }
+    function slideOut(target) {
+        target.setStyles({display: 'block', height: '0px'});
+        var inner = target.one('.inner');
+        var height = parseInt(inner.getComputedStyle('height'));
+        target.transition({
+            easing: 'ease-out',
+            duration: 0.75, // seconds
+            height: height+'px'
+        }, function() {
+            target.setStyle('height', 'auto');
+        });
+    }
+    // We use "all" on these two as a lazy way to handle the possibility
+    // that the link may not be there.
+    Y.all('#show-all-tracebacks').on('click', function (e) {
+        // For speed, just force them all open without animation.
+        Y.all('.trace').setStyles({display: 'block', height: 'auto'});
+        e.preventDefault();
+    });
+    Y.all('#hide-all-tracebacks').on('click', function (e) {
+        // For speed, just force them all closed without animation.
+        Y.all('.trace').setStyle('display', 'none');
+        e.preventDefault();
+    });
+    Y.all('.expandall').on('click', function (e) {
+        var links = e.currentTarget.ancestor('.querylinks').all('span a');
+        links.each(function (link) {
+            var href = link.get('href');
+            var identifier = href.slice(href.indexOf('#'));
+            var target = Y.one(identifier).one('.trace');
+            // target.setStyles({display: 'block', height: 'auto'});
+            if (target.getStyle('display') !== 'block') {
+                slideOut(target);
+            }
+        });
+        e.preventDefault();
+    });
+    Y.on('load', function(e) {
+        // We hide the tracebacks with Javascript so that, if the Javascript
+        // does not load, we still can easily see the tracebacks.
+        Y.all('.trace').setStyle('display', 'none');
+        Y.all('.sqlinfo').on('click', function(e) {
+            var trace = e.currentTarget.ancestor('.sqlstep').one('.trace');
+            if (trace.getStyle('display') === 'block') {
+                slideIn(trace);
+            } else {
+                slideOut(trace);
+            }
+            e.preventDefault();
+        });
     });
 });
 </script>

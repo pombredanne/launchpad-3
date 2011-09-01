@@ -195,7 +195,10 @@ class ShadowedList:
             raise ValueError(
                 "values and shadow_values must have the same length.")
         self.values = values
-        self.shadow_values = shadow_values
+        # Store always a copy: values and shadow_values may be identical,
+        # and if this is the case, the two reverse() calls in the method
+        # reverse() below will cancel each other.
+        self.shadow_values = shadow_values[:]
 
     def __len__(self):
         """See `list`."""
@@ -271,6 +274,11 @@ class StormRangeFactory:
         else:
             self.plain_resultset = resultset
         self.error_cb = error_cb
+        self.forward_sort_order = self.getOrderBy()
+        if self.forward_sort_order is Undef:
+            raise StormRangeFactoryError(
+                'StormRangeFactory requires a sorted result set.')
+        self.backward_sort_order = self.reverseSortOrder()
 
     def getOrderBy(self):
         """Return the order_by expressions of the result set."""
@@ -283,9 +291,6 @@ class StormRangeFactory:
         if not zope_isinstance(row, tuple):
             row = (row, )
         sort_expressions = self.getOrderBy()
-        if sort_expressions is Undef:
-            raise StormRangeFactoryError(
-                'StormRangeFactory requires a sorted result set.')
         for expression in sort_expressions:
             if zope_isinstance(expression, Desc):
                 expression = expression.expr
@@ -531,8 +536,11 @@ class StormRangeFactory:
 
     def getSlice(self, size, endpoint_memo='', forwards=True):
         """See `IRangeFactory`."""
-        if not forwards:
-            self.resultset.order_by(*self.reverseSortOrder())
+        if forwards:
+            self.resultset.order_by(*self.forward_sort_order)
+        else:
+            self.resultset.order_by(*self.backward_sort_order)
+
         parsed_memo = self.parseMemo(endpoint_memo)
         # Note that lazr.batchnavigator calls len(slice), so we can't
         # return the plain result set.

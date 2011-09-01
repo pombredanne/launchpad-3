@@ -50,6 +50,11 @@ class TestDistribution(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    def test_pillar_category(self):
+        # The pillar category is correct.
+        distro = self.factory.makeDistribution()
+        self.assertEqual("Distribution", distro.pillar_category)
+
     def test_distribution_repr_ansii(self):
         # Verify that ANSI displayname is ascii safe.
         distro = self.factory.makeDistribution(
