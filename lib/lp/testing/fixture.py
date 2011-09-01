@@ -85,6 +85,10 @@ class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
             self.users[section_name] = 'trusted'
             self.users[section_name + '_ro'] = 'trusted'
         self.users[os.environ['USER']] = 'trusted'
+        self.users['pgbouncer'] = 'trusted'
+
+        # Administrative access is useful for debugging.
+        self.admin_users = ['launchpad', 'pgbouncer', os.environ['USER']]
 
     def setUp(self):
         super(PGBouncerFixture, self).setUp()
