@@ -3062,8 +3062,8 @@ class ProcessingLoopForPendingSubmissions(ProcessingLoopBase):
 
 class ProcessingLoopForReprocessingBadSubmissions(ProcessingLoopBase):
 
-    def __init__(self, transaction, logger, max_submissions, record_warnings,
-                 start):
+    def __init__(self, start, transaction, logger,
+                 max_submissions, record_warnings):
         super(ProcessingLoopForReprocessingBadSubmissions, self).__init__(
             transaction, logger, max_submissions, record_warnings)
         self.start = start
@@ -3106,7 +3106,7 @@ def reprocess_invalid_submissions(start, transaction, logger,
     variant of the parser might be able to process them.
     """
     loop = ProcessingLoopForReprocessingBadSubmissions(
-        transaction, logger, max_submissions, record_warnings, start)
+        start, transaction, logger, max_submissions, record_warnings)
     # It is hard to predict how long it will take to parse a submission.
     # we don't want to last a DB transaction too long but we also
     # don't want to commit more often than necessary. The LoopTuner
