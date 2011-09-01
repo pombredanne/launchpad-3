@@ -181,27 +181,27 @@ class TestPGBouncerFixtureWithoutCA(TestCase):
         self.assert_(self.is_db_available())
 
         with PGBouncerFixture() as pgbouncer:
-            self.assert_(self.is_db_available())
+            self.assertTrue(self.is_db_available())
 
             pgbouncer.stop()
-            self.assert_(not self.is_db_available())
+            self.assertFalse(self.is_db_available())
 
         # This confirms that we are again connecting directly to the
         # database, as the pgbouncer process was shutdown.
-        self.assert_(self.is_db_available())
+        self.assertTrue(self.is_db_available())
 
     def test_install_fixture_with_restart(self):
         self.assert_(self.is_db_available())
 
         with PGBouncerFixture() as pgbouncer:
-            self.assert_(self.is_db_available())
+            self.assertTrue(self.is_db_available())
 
             pgbouncer.stop()
-            self.assert_(not self.is_db_available())
+            self.assertFalse(self.is_db_available())
 
             pgbouncer.start()
-            self.assert_(self.is_db_available())
+            self.assertTrue(self.is_db_available())
 
         # Note that because pgbouncer was left running, we can't confirm
         # that we are now connecting directly to the database.
-        self.assert_(self.is_db_available())
+        self.assertTrue(self.is_db_available())
