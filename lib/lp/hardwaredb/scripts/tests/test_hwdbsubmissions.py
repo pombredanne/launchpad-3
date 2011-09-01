@@ -61,3 +61,43 @@ class TestProcessingLoops(TestCaseWithFactory):
         # The sample data already contains one submission.
         submissions = loop.getUnprocessedSubmissions(2)
         self.assertEqual(2, len(submissions))
+
+    def _makeBadSubmissionsLoop(self, start=0):
+        """Parameters don't matter for these tests."""
+        return ProcessingLoopForReprocessingBadSubmissions(
+            start, None, None, 0, False)
+
+    def test_BadSubmissions_invalid_found(self):
+        # The BadSubmissions loop finds invalid entries.
+        submission = self.factory.makeHWSubmission(
+            status=HWSubmissionProcessingStatus.INVALID)
+        loop = self._makeBadSubmissionsLoop()
+        submissions = loop.getUnprocessedSubmissions(2)
+        self.assertEqual([submission], submissions)
+
+    def test_BadSubmissions_processed_not_found(self):
+        # The BadSubmissions loop ignores processed entries.
+        self.factory.makeHWSubmission(
+            status=HWSubmissionProcessingStatus.PROCESSED)
+        loop = self._makeBadSubmissionsLoop()
+        submissions = loop.getUnprocessedSubmissions(2)
+        self.assertEqual([], submissions)
+
+    def test_BadSubmissions_submitted_not_found(self):
+        # The BadSubmissions loop ignores submitted entries.
+        self.factory.makeHWSubmission(
+            status=HWSubmissionProcessingStatus.SUBMITTED)
+        loop = self._makeBadSubmissionsLoop()
+        submissions = loop.getUnprocessedSubmissions(2)
+        self.assertEqual([], submissions)
+
+    def test_BadSubmissions_respects_chunk_size(self):
+        # Only the requested number of entries are returned.
+        self.factory.makeHWSubmission(
+            status=HWSubmissionProcessingStatus.INVALID)
+        self.factory.makeHWSubmission(
+            status=HWSubmissionProcessingStatus.INVALID)
+        loop = self._makeBadSubmissionsLoop()
+        # The sample data already contains one submission.
+        submissions = loop.getUnprocessedSubmissions(1)
+        self.assertEqual(1, len(submissions))
