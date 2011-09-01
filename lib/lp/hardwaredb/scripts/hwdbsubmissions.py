@@ -34,6 +34,7 @@ import pytz
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.lazr.xml import RelaxNGValidator
 
@@ -3073,9 +3074,10 @@ class ProcessingLoopForReprocessingBadSubmissions(ProcessingLoopBase):
     def getUnprocessedSubmissions(self, chunk_size):
         submissions = getUtility(IHWSubmissionSet).getByStatus(
             HWSubmissionProcessingStatus.INVALID, user=self.janitor)
-        submissions.find(HWSubmission.id >= self.start)
+        removeSecurityProxy(submissions).find(HWSubmission.id >= self.start)
         submissions = list(submissions[:chunk_size])
-        self.start = submissions[-1].id + 1
+        if len(submissions) > 0:
+            self.start = submissions[-1].id + 1
         return submissions
 
 
