@@ -55,7 +55,7 @@ class HWDBSubmissionProcessor(LaunchpadCronScript):
                 return
 
         process_pending_submissions(
-            self.txn, self.logger, max_submissions, self.warnings)
+            self.txn, self.logger, max_submissions, self.options.warnings)
 
 if __name__ == '__main__':
     script = HWDBSubmissionProcessor(

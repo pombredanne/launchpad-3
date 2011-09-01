@@ -64,9 +64,14 @@ class HWDBSubmissionProcessor(LaunchpadScript):
             start = int(self.options.start)
         except ValueError:
             self.logger.error('Option --start must have an integer value.')
+            return
+        if start < 0:
+            self.logger.error('--start must be a positive integer.')
+            return
 
         reprocess_invalid_submissions(
-            start, self.txn, self.logger, max_submissions, self.warnings)
+            start, self.txn, self.logger,
+            max_submissions, self.options.warnings)
 
 if __name__ == '__main__':
     script = HWDBSubmissionProcessor(
