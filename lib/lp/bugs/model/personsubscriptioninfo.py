@@ -302,7 +302,7 @@ class PersonSubscriptions(object):
                 }
         direct = {}
         from_duplicate = {}
-        as_owner = {} # This is an owner of a pillar with no bug supervisor.
+        as_owner = {}  # This is an owner of a pillar with no bug supervisor.
         as_assignee = {}
         subscription_data = {
             'direct': direct,

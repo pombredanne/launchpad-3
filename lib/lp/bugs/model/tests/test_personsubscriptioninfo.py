@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 from testtools.matchers import LessThan
-import transaction
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.adapter import SQLLogger
