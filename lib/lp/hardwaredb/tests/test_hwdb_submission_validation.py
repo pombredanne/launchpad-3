@@ -2823,3 +2823,22 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             submission_id, result,
             'Extra element context in interleave',
             'detection of an invalid sub.node of <info> failed')
+
+    def test_natty_reports_validate(self):
+        # HWDB submissions from Natty can be processed.
+        # the raw data from these reports would be passed directly
+        # to the RelaxNG validator, they would fail, because they
+        # do not have the sub-nodes <dmi> and <udev> inside <hardware>.
+        # The data is stored instead in the nodes
+        # <info command="grep -r . /sys/class/dmi/id/ 2&gt;/dev/null">
+        # and <info command="udevadm info --export-db">
+        #
+        # The method SubmissionParser.fixFrequentErrors() (called by
+        # _getValidatedEtree()) creates the missing nodes, so that
+        # _getValidatedEtree() succeeds.
+        sample_data_path = os.path.join(
+            config.root, 'lib', 'canonical', 'launchpad', 'scripts',
+            'tests', 'hardwaretest-natty.xml')
+        sample_data = open(sample_data_path).read()
+        result, submission_id = self.runValidator(sample_data)
+        self.assertIsNot(None, result)
