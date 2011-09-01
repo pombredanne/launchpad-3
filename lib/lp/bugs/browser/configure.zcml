@@ -272,7 +272,7 @@
     <browser:page
         for="lp.registry.interfaces.person.IPerson"
         name="+team-bugs-macro"
-        template="../templates/team-bugs-macro.pt"
+        template="../templates/person-team-bugs-macro.pt"
         permission="zope.Public"
         class="lp.app.browser.launchpad.Macro"/>
     <browser:page
