@@ -37,6 +37,7 @@ from lp.app.interfaces.security import IAuthorization
 from lp.app.security import (
     AnonymousAuthorization,
     AuthorizationBase,
+    ForwardedAuthorization,
     )
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfig
 from lp.blueprints.interfaces.specification import (
@@ -1000,14 +1001,27 @@ class AdminDistroSeriesDifference(AuthorizationBase):
             archive.getComponentsForQueueAdmin(user.person)) or user.in_admin
 
 
-class EditDistroSeriesDifference(AuthorizationBase):
+class EditDistroSeriesDifference(ForwardedAuthorization):
     """Anyone with lp.View on the distribution can edit a DSD."""
     permission = 'launchpad.Edit'
     usedfor = IDistroSeriesDifferenceEdit
 
-    def checkAuthenticated(self, user):
-        return self.forwardCheckAuthenticated(
-            user, self.obj.derived_series.distribution, 'launchpad.View')
+    ## def __init__(self, obj):
+    ##     super(EditDistroSeriesDifference, self).__init__(
+    ##         obj.derived_series.distribution, 'launchpad.View')
+
+    def __new__(cls, obj):
+        return super(EditDistroSeriesDifference, cls).__new__(
+            obj.derived_series.distribution, 'launchpad.View')
+
+## class EditDistroSeriesDifference(AuthorizationBase):
+##     """Anyone with lp.View on the distribution can edit a DSD."""
+##     permission = 'launchpad.Edit'
+##     usedfor = IDistroSeriesDifferenceEdit
+
+##     def checkAuthenticated(self, user):
+##         return self.forwardCheckAuthenticated(
+##             user, self.obj.derived_series.distribution, 'launchpad.View')
 
 
 class SeriesDrivers(AuthorizationBase):
