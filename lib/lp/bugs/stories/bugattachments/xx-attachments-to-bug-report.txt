@@ -55,7 +55,8 @@ displayed as the bug report).
     http://bugs.launchpad.dev/jokosher/+bug/11/+attachment/1/+files/test.txt
     >>> edit_link = find_tags_by_class(browser.contents, 'edit sprite')[1]
     >>> print edit_link
-    <a alt="edit" class="sprite edit" href="/jokosher/+bug/11/+attachment/1"></a>
+    <a alt="edit" class="sprite edit"...
+    ...href="/jokosher/+bug/11/+attachment/1"></a>
 
 
 Patch attachments are shown before non-patch attachments
