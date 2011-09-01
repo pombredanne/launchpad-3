@@ -355,7 +355,7 @@ def end_request(event):
     trace = None
     if 'sql' in actions:
         trace = da.stop_sql_logging() or ()
-        # The trace is a list of dicts, each with the keys "sql" and "stack". 
+        # The trace is a list of dicts, each with the keys "sql" and "stack".
         # "sql" is a tuple of start time, stop time, database name (with a
         # "SQL-" prefix), and sql statement.  "stack" is None or a tuple of
         # filename, line number, function name, text, module name, optional
@@ -559,11 +559,13 @@ def _make_startswith(value):
         return sql.startswith(value)
     return startswith
 
+
 def _make_endswith(value):
     """Return a function that returns true if its argument endswith value"""
     def endswith(sql):
         return sql.endswith(value)
     return endswith
+
 
 def _make_includes(value):
     """Return a function that returns true if its argument includes value"""
@@ -579,15 +581,16 @@ _condition_functions = {
 
 _normalize_whitespace = partial(re.compile('\s+').sub, ' ')
 
+
 def _make_condition_function(condition_string):
     """Given DSL string, return dict including function implementing string.
-    
+
     DSL is very simple. Conditions are separated by semicolons, which
     represent logical or.  Each condition should begin with (case insensitive)
     "startswith ", "endswith ", or "includes ".  The part of the condition
     after this word and before the next semicolon or end-of-string is the
     match string, which is case-insensitive and whitespace-normalized.
-    
+
     Returned dict has three elements: the function that implements the DSL,
     the list of conditions that were included, and the list of conditions
     that were excluded (because they were not understood).
@@ -610,6 +613,7 @@ def _make_condition_function(condition_string):
             included.append(description)
         else:
             ignored.append(description)
+
     def condition_aggregate(sql):
         for condition in conditions:
             if condition(sql):

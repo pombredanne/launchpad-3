@@ -211,7 +211,8 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.assertIs(
             getattr(profile._profilers, 'memory_profile_start', None),
             None)
-        self.assertEquals(set(profile._profilers.actions), set(('callgrind', )))
+        self.assertEquals(
+            set(profile._profilers.actions), set(('callgrind', )))
 
     def test_optional_profiling_with_log_request_starts_profiling(self):
         # If profiling is allowed and a request with the "log" marker URL
@@ -222,7 +223,8 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.assertIs(
             getattr(profile._profilers, 'memory_profile_start', None),
             None)
-        self.assertEquals(set(profile._profilers.actions), set(('callgrind', )))
+        self.assertEquals(
+            set(profile._profilers.actions), set(('callgrind', )))
 
     def test_optional_profiling_with_combined_request_starts_profiling(self):
         # If profiling is allowed and a request with the "callgrind" and
