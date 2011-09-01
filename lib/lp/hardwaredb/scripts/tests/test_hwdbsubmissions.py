@@ -32,7 +32,7 @@ class TestProcessingLoops(TestCaseWithFactory):
         self.assertEqual([submission], submissions[1:])
 
     def test_PendingSubmissions_processed_not_found(self):
-        # The PendingSubmissions loop ignores invalid entries.
+        # The PendingSubmissions loop ignores processed entries.
         submission = self.factory.makeHWSubmission(
             status=HWSubmissionProcessingStatus.PROCESSED)
         loop = self._makePendingSubmissionsLoop()
@@ -51,3 +51,13 @@ class TestProcessingLoops(TestCaseWithFactory):
         self.assertEqual([], submissions[1:])
         self.assertNotEqual([submission], submissions)
 
+    def test_PendingSubmissions_respects_chunk_size(self):
+        # Only the requested number of entries are returned.
+        self.factory.makeHWSubmission(
+            status=HWSubmissionProcessingStatus.SUBMITTED)
+        self.factory.makeHWSubmission(
+            status=HWSubmissionProcessingStatus.SUBMITTED)
+        loop = self._makePendingSubmissionsLoop()
+        # The sample data already contains one submission.
+        submissions = loop.getUnprocessedSubmissions(2)
+        self.assertEqual(2, len(submissions))
