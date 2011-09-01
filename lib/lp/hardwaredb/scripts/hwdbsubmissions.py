@@ -3074,7 +3074,8 @@ class ProcessingLoopForReprocessingBadSubmissions(ProcessingLoopBase):
     def getUnprocessedSubmissions(self, chunk_size):
         submissions = getUtility(IHWSubmissionSet).getByStatus(
             HWSubmissionProcessingStatus.INVALID, user=self.janitor)
-        removeSecurityProxy(submissions).find(HWSubmission.id >= self.start)
+        submissions = removeSecurityProxy(submissions).find(
+            HWSubmission.id >= self.start)
         submissions = list(submissions[:chunk_size])
         if len(submissions) > 0:
             self.start = submissions[-1].id + 1
