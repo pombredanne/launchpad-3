@@ -102,7 +102,7 @@ class TestSpecificationValidation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_specurl_validation_valid(self):
+    def test_specurl_validation_duplicate(self):
         existing = self.factory.makeSpecification(
             specurl=u'http://ubuntu.com')
         spec = self.factory.makeSpecification()
@@ -112,7 +112,7 @@ class TestSpecificationValidation(TestCaseWithFactory):
             u'http://ubuntu.com')
         self.assertEqual(
             '%s is already registered by <a href="%s">%s</a>.'
-            % (u'http://ubuntu.com', url, existing.title),str(e))
+            % (u'http://ubuntu.com', url, existing.title), str(e))
 
     def test_specurl_validation_valid(self):
         spec = self.factory.makeSpecification()
@@ -131,4 +131,4 @@ class TestSpecificationValidation(TestCaseWithFactory):
             u'http://ubuntu.com/foo')
         self.assertEqual(
             '%s is already registered by <a href="%s">%s</a>.'
-            % (u'http://ubuntu.com/foo', url, cleaned_title),str(e))
+            % (u'http://ubuntu.com/foo', url, cleaned_title), str(e))
