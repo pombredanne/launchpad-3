@@ -109,7 +109,9 @@ class TestSpecificationValidation(TestCaseWithFactory):
         spec = self.factory.makeSpecification()
         url = canonical_url(existing)
         field = ISpecification['specurl'].bind(spec)
-        with ExpectedException(LaunchpadValidationError,
-            '%s is already registered by <a href="%s">%s</a>.' % (
-            u'http://ubuntu.com', url, existing.title)):
-            field.validate(u'http://ubuntu.com')
+        e = self.assertRaises(LaunchpadValidationError, field.validate,
+            u'http://ubuntu.com')
+        self.assertEqual(str(e),
+            '%s is already registered by <a href="%s">%s</a>.'
+            % (u'http://ubuntu.com', url, existing.title))
+
