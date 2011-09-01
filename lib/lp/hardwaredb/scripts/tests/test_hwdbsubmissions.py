@@ -27,6 +27,27 @@ class TestProcessingLoops(TestCaseWithFactory):
         submission = self.factory.makeHWSubmission(
             status=HWSubmissionProcessingStatus.SUBMITTED)
         loop = self._makePendingSubmissionsLoop()
-        # The sample data already contains one
+        # The sample data already contains one submission which we ignore.
         submissions = loop.getUnprocessedSubmissions(2)
         self.assertEqual([submission], submissions[1:])
+
+    def test_PendingSubmissions_processed_not_found(self):
+        # The PendingSubmissions loop ignores invalid entries.
+        submission = self.factory.makeHWSubmission(
+            status=HWSubmissionProcessingStatus.PROCESSED)
+        loop = self._makePendingSubmissionsLoop()
+        # The sample data already contains one submission which we ignore.
+        submissions = loop.getUnprocessedSubmissions(2)
+        self.assertEqual([], submissions[1:])
+        self.assertNotEqual([submission], submissions)
+
+    def test_PendingSubmissions_invalid_not_found(self):
+        # The PendingSubmissions loop ignores invalid entries.
+        submission = self.factory.makeHWSubmission(
+            status=HWSubmissionProcessingStatus.INVALID)
+        loop = self._makePendingSubmissionsLoop()
+        # The sample data already contains one submission which we ignore.
+        submissions = loop.getUnprocessedSubmissions(2)
+        self.assertEqual([], submissions[1:])
+        self.assertNotEqual([submission], submissions)
+
