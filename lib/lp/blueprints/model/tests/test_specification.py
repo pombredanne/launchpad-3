@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 
-from testtools import ExpectedException
 from testtools.matchers import Equals
 
 from canonical.launchpad.webapp import canonical_url
@@ -114,4 +113,3 @@ class TestSpecificationValidation(TestCaseWithFactory):
         self.assertEqual(str(e),
             '%s is already registered by <a href="%s">%s</a>.'
             % (u'http://ubuntu.com', url, existing.title))
-
