@@ -13,9 +13,11 @@ __metaclass__ = type
 import contextlib
 from cProfile import Profile
 from datetime import datetime
+from functools import partial
 import heapq
 import os
 import pstats
+import re
 import StringIO
 import sys
 import threading
@@ -210,11 +212,14 @@ def _maybe_profile(event):
     _profilers.actions = actions
     _profilers.profiling = True
     if config.profiling.profile_all_requests:
-        actions.add('callgrind')
+        actions['callgrind'] = ''
     if actions:
-        if 'sqltrace' in actions:
-            da.start_sql_logging(tracebacks_if=True)
-        if 'show' in actions or actions.intersection(available_profilers):
+        if 'sql' in actions:
+            condition = actions['sql']
+            if condition not in (True, False):
+                condition = condition['condition']
+            da.start_sql_logging(condition)
+        if 'show' in actions or available_profilers.intersection(actions):
             _profilers.profiler = Profiler()
             _profilers.profiler.start()
     if config.profiling.memory_profile_log:
@@ -233,12 +238,14 @@ def start():
     actions = _profilers.actions
     profiler = _profilers.profiler
     if actions is None:
-        actions = _profilers.actions = set()
+        actions = _profilers.actions = {}
         _profilers.profiling = True
-    elif actions.difference(('help',)) and 'inline' not in actions:
-        actions.add('inline_ignored')
+    elif 'inline' not in actions and (
+        'show' in actions or available_profilers.intersection(actions)):
+        # We have a request-based profile in progress.  That wins.
+        actions['inline_ignored'] = ''
         return
-    actions.update(('pstats', 'show', 'inline'))
+    actions.update((k, '') for k in ('pstats', 'show', 'inline'))
     if profiler is None:
         profiler = _profilers.profiler = Profiler()
         profiler.start()
@@ -261,8 +268,10 @@ def stop():
 @contextlib.contextmanager
 def profiling():
     start()
-    yield
-    stop()
+    try:
+        yield
+    finally:
+        stop()
 
 
 @adapter(IEndRequestEvent)
@@ -293,8 +302,7 @@ def end_request(event):
         _major, _minor, content_type_params = parse(content_type)
         is_html = _major == 'text' and _minor == 'html'
     template_context = {
-        # Dicts are easier for tal expressions.
-        'actions': dict((action, True) for action in actions),
+        'actions': dict((key, True) for key in actions),
         'always_log': config.profiling.profile_all_requests}
     dump_path = config.profiling.profile_dir
     if _profilers.profiler is not None:
@@ -345,16 +353,15 @@ def end_request(event):
         # Try to free some more memory.
         del prof_stats
     trace = None
-    if 'sqltrace' in actions:
+    if 'sql' in actions:
         trace = da.stop_sql_logging() or ()
-        # The trace is a list of dicts, each with the keys "sql" and
-        # "stack".  "sql" is a tuple of start time, stop time, database
-        # name (with a "SQL-" prefix), and sql statement.  "stack" is a
-        # tuple of filename, line number, function name, text, module
-        # name, optional supplement dict, and optional info string.  The
-        # supplement dict has keys 'source_url', 'line', 'column',
-        # 'expression', 'warnings' (an iterable), and 'extra', any of
-        # which may be None.
+        # The trace is a list of dicts, each with the keys "sql" and "stack". 
+        # "sql" is a tuple of start time, stop time, database name (with a
+        # "SQL-" prefix), and sql statement.  "stack" is None or a tuple of
+        # filename, line number, function name, text, module name, optional
+        # supplement dict, and optional info string.  The supplement dict has
+        # keys 'source_url', 'line', 'column', 'expression', 'warnings' (an
+        # iterable), and 'extra', any of which may be None.
         top_sql = []
         top_python = []
         triggers = {}
@@ -366,29 +373,30 @@ def end_request(event):
             step['id'] = ix
             step['sql'] = dict(zip(
                 ('start', 'stop', 'name', 'statement'), step['sql']))
-            # Divide up the stack into the more unique (app) and less
-            # unique (db) bits.
-            app_stack = step['app_stack'] = []
-            db_stack = step['db_stack'] = []
-            storm_found = False
-            for f in step['stack']:
-                f_data = dict(zip(
-                    ('filename', 'lineno', 'name', 'line', 'module',
-                     'supplement', 'info'), f))
-                storm_found = storm_found or (
-                    f_data['module'] and
-                    f_data['module'].startswith('storm.'))
-                if storm_found:
-                    db_stack.append(f_data)
-                else:
-                    app_stack.append(f_data)
-            # Begin to gather what app code is triggering the most SQL
-            # calls.
-            trigger_key = tuple(
-                (f['filename'], f['lineno']) for f in app_stack)
-            if trigger_key not in triggers:
-                triggers[trigger_key] = []
-            triggers[trigger_key].append(ix)
+            if step['stack'] is not None:
+                # Divide up the stack into the more unique (app) and less
+                # unique (db) bits.
+                app_stack = step['app_stack'] = []
+                db_stack = step['db_stack'] = []
+                storm_found = False
+                for f in step['stack']:
+                    f_data = dict(zip(
+                        ('filename', 'lineno', 'name', 'line', 'module',
+                         'supplement', 'info'), f))
+                    storm_found = storm_found or (
+                        f_data['module'] and
+                        f_data['module'].startswith('storm.'))
+                    if storm_found:
+                        db_stack.append(f_data)
+                    else:
+                        app_stack.append(f_data)
+                # Begin to gather what app code is triggering the most SQL
+                # calls.
+                trigger_key = tuple(
+                    (f['filename'], f['lineno']) for f in app_stack)
+                if trigger_key not in triggers:
+                    triggers[trigger_key] = []
+                triggers[trigger_key].append(ix)
             # Get the nbest (n=10) sql and python times
             step['python_time'] = step['sql']['start'] - last_stop_time
             step['sql_time'] = step['sql']['stop'] - step['sql']['start']
@@ -449,6 +457,14 @@ def end_request(event):
             top_python=top_python_ids,
             top_triggers=top_triggers,
             sql_count=len(trace)))
+        if actions['sql'] is True:
+            template_context['sql_traceback_all'] = True
+        elif actions['sql'] is False:
+            template_context['sql_traceback_none'] = True
+        else:
+            conditions = actions['sql'].copy()
+            del conditions['condition']
+            template_context['sql_traceback_conditions'] = conditions
     template_context['dump_path'] = os.path.abspath(dump_path)
     if actions and is_html:
         # Hack the new HTML in at the end of the page.
@@ -488,7 +504,7 @@ def get_desired_profile_actions(request):
     URL.  Note that ++profile++ alone without actions is interpreted as
     the "help" action.
     """
-    result = set()
+    result = dict()
     path_info = request.get('PATH_INFO')
     if path_info:
         # if not, this is almost certainly a test not bothering to set up
@@ -505,22 +521,102 @@ def get_desired_profile_actions(request):
             # include traversal in the profile.
             actions, slash, tail = end.partition('/')
             result.update(
-                action for action in (
-                    item.strip().lower() for item in actions.split(','))
-                if action)
+                (name.strip(), config.strip())
+                for name, partition, config in (
+                    item.strip().lower().partition(':')
+                    for item in actions.split('&'))
+                if name.strip())
             # 'log' is backwards compatible for 'callgrind'.
             if 'log' in result:
-                result.remove('log')
-                result.add('callgrind')
+                result['callgrind'] = result.pop('log')
+            if 'sqltrace' in result:
+                condition = result['sqltrace']
+                if condition:
+                    condition = _make_condition_function(condition)
+                else:
+                    condition = True
+                del result['sqltrace']
+                result['sql'] = condition
+            elif 'sql' in result:
+                result['sql'] = False
             # Only honor the available options.
-            available_options = set(('show', 'sqltrace', 'help'))
+            available_options = set(('show', 'sql', 'help'))
             available_options.update(available_profilers)
-            result.intersection_update(available_options)
+            # .keys() gives a list, not mutated during iteration.
+            for key in result.keys():
+                if key not in available_options:
+                    del result[key]
             # If we didn't end up with any known actions, we need to help the
             # user.
             if not result:
-                result.add('help')
+                result['help'] = ''
     return result
+
+
+def _make_startswith(value):
+    """Return a function that returns true if its argument startswith value"""
+    def startswith(sql):
+        return sql.startswith(value)
+    return startswith
+
+def _make_endswith(value):
+    """Return a function that returns true if its argument endswith value"""
+    def endswith(sql):
+        return sql.endswith(value)
+    return endswith
+
+def _make_includes(value):
+    """Return a function that returns true if its argument includes value"""
+    def includes(sql):
+        return value in sql
+    return includes
+
+_condition_functions = {
+    'STARTSWITH': _make_startswith,
+    'ENDSWITH': _make_endswith,
+    'INCLUDES': _make_includes
+    }
+
+_normalize_whitespace = partial(re.compile('\s+').sub, ' ')
+
+def _make_condition_function(condition_string):
+    """Given DSL string, return dict including function implementing string.
+    
+    DSL is very simple. Conditions are separated by semicolons, which
+    represent logical or.  Each condition should begin with (case insensitive)
+    "startswith ", "endswith ", or "includes ".  The part of the condition
+    after this word and before the next semicolon or end-of-string is the
+    match string, which is case-insensitive and whitespace-normalized.
+    
+    Returned dict has three elements: the function that implements the DSL,
+    the list of conditions that were included, and the list of conditions
+    that were excluded (because they were not understood).
+    """
+    conditions = []
+    included = []
+    ignored = []
+    for constraint, partition, value in (
+        c.strip().partition(' ') for c
+        in condition_string.upper().split('|')):
+        # Process each condition.
+        constraint = constraint.strip()
+        if not constraint:
+            # This was something ignorable, like a trailing | or something.
+            continue
+        value = _normalize_whitespace(value.strip())
+        description = dict(constraint=constraint, value=value)
+        if constraint in _condition_functions:
+            conditions.append(_condition_functions[constraint](value))
+            included.append(description)
+        else:
+            ignored.append(description)
+    def condition_aggregate(sql):
+        for condition in conditions:
+            if condition(sql):
+                return True
+        return False
+    return dict(
+        condition=condition_aggregate, included=included, ignored=ignored)
 
 
 class ProfileNamespace(view):
