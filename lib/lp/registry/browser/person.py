@@ -2199,6 +2199,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
     page_title = 'Assigned bugs'
+    link_back = '+assignedbugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None, prejoins=[]):
@@ -2220,7 +2221,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
         """Should the assignee widget be shown on the advanced search page?"""
         return False
 
-    def shouldShowAssignedToTeamPortlet(self):
+    def shouldShowTeamPortlet(self):
         """Should the team assigned bugs portlet be shown?"""
         return True
 
@@ -2345,6 +2346,7 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
     page_title = 'Subscribed bugs'
+    link_back = '+subscribedbugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None, prejoins=[]):
@@ -2361,6 +2363,10 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
         sup = super(PersonSubscribedBugTaskSearchListingView, self)
         return sup.searchUnbatched(
             searchtext, context, extra_params, prejoins)
+
+    def shouldShowTeamPortlet(self):
+        """Should the team assigned bugs portlet be shown?"""
+        return True
 
     def getSearchPageHeading(self):
         """The header for the search page."""
