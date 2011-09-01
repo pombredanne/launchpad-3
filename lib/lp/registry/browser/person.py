@@ -3202,6 +3202,12 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
 
         return False
 
+    @property
+    def time_zone_offset(self):
+        """Return a string with offset from UTC"""
+        return datetime.now(
+            pytz.timezone(self.context.time_zone)).strftime("%z")
+
 
 class PersonParticipationView(LaunchpadView):
     """View for the ~person/+participation page."""

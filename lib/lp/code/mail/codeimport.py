@@ -51,6 +51,7 @@ def new_import(code_import, event):
         RevisionControlSystems.BZR_SVN: 'subversion',
         RevisionControlSystems.GIT: 'git',
         RevisionControlSystems.HG: 'mercurial',
+        RevisionControlSystems.BZR: 'bazaar',
         }
     body = get_email_template('new-code-import.txt') % {
         'person': code_import.registrant.displayname,
@@ -123,7 +124,8 @@ def make_email_body_for_code_import_update(
     elif code_import.rcs_type in (RevisionControlSystems.SVN,
                                   RevisionControlSystems.BZR_SVN,
                                   RevisionControlSystems.GIT,
-                                  RevisionControlSystems.HG):
+                                  RevisionControlSystems.HG,
+                                  RevisionControlSystems.BZR):
         if CodeImportEventDataType.OLD_URL in event_data:
             old_url = event_data[CodeImportEventDataType.OLD_URL]
             body.append(

@@ -892,8 +892,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         system.
         """
         try:
-            self.ubuntu.getFileByName(
-                'bar_1.0.orig.tar.gz', source=True, binary=False)
+            self.ubuntu.main_archive.getFileByName('bar_1.0.orig.tar.gz')
         except NotFoundError:
             self.fail('bar_1.0.orig.tar.gz is not yet published.')
 

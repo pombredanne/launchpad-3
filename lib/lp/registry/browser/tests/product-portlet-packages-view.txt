@@ -16,6 +16,8 @@ does not happen automatically.
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from lp.registry.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
+    >>> from lp.soyuz.model.distributionsourcepackagecache import (
+    ...     DistributionSourcePackageCache)
 
     >>> import transaction
     >>> from lp.services.log.logger import BufferLogger
@@ -28,8 +30,9 @@ does not happen automatically.
     ...     transaction.commit()
     ...     reconnect_stores(config.statistician.dbuser)
     ...     ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    ...     ignore = ubuntu.updateCompleteSourcePackageCache(
-    ...         archive=ubuntu.main_archive, log=logger, ztm=transaction)
+    ...     DistributionSourcePackageCache.updateAll(
+    ...         ubuntu, archive=ubuntu.main_archive, log=logger,
+    ...         ztm=transaction)
     ...     transaction.commit()
     ...     reconnect_stores('launchpad')
     ...     # Get ubuntu, our product, and the sourcepackage name again
