@@ -2365,7 +2365,7 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
             searchtext, context, extra_params, prejoins)
 
     def shouldShowTeamPortlet(self):
-        """Should the team assigned bugs portlet be shown?"""
+        """Should the team subscribed bugs portlet be shown?"""
         return True
 
     def getSearchPageHeading(self):
