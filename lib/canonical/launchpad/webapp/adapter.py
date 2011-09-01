@@ -6,13 +6,16 @@
 
 __metaclass__ = type
 
+from functools import partial
 import logging
 import os
 import re
+import StringIO
 import sys
 import thread
 import threading
 from time import time
+import traceback
 import warnings
 
 import psycopg2
@@ -79,6 +82,7 @@ from lp.services.timeline.requesttimeline import (
     )
 from lp.services.stacktrace import (
     extract_stack,
+    extract_tb,
     print_list,
     )
 
@@ -91,9 +95,11 @@ __all__ = [
     'get_request_start_time',
     'get_request_duration',
     'get_store_name',
+    'print_queries',
     'soft_timeout_expired',
-    'start_sql_traceback_logging',
-    'stop_sql_traceback_logging',
+    'SQLLogger',
+    'start_sql_logging',
+    'stop_sql_logging',
     'StoreSelector',
     ]
 
@@ -202,7 +208,9 @@ def clear_request_started():
         warnings.warn('clear_request_started() called outside of a request',
             stacklevel=2)
     _local.request_start_time = None
-    _local.sql_trace = None
+    _local.sql_logging = None
+    _local.sql_logging_start = None
+    _local.sql_logging_tracebacks_if = None
     request = get_current_browser_request()
     set_request_timeline(request, Timeline())
     if getattr(_local, 'commit_logger', None) is not None:
@@ -351,17 +359,74 @@ def soft_timeout_expired():
         return True
 
 
-def start_sql_traceback_logging():
-    """Set the sql traceback data logging for the current request."""
-    _local.sql_trace = []
+def start_sql_logging(tracebacks_if=False):
+    """Turn the sql data logging on."""
+    if getattr(_local, 'sql_logging', None) is not None:
+        warnings.warn('SQL logging already started')
+        return
+    _local.sql_logging_tracebacks_if = tracebacks_if
+    _local.sql_logging = []
+    _local.sql_logging_start = int(time() * 1000)
 
 
-def stop_sql_traceback_logging():
-    """Stop the sql traceback data logging and return the result."""
-    result = getattr(_local, 'sql_trace', None)
-    _local.sql_trace = None
+def stop_sql_logging():
+    """Turn off the sql data logging and return the result."""
+    result = getattr(_local, 'sql_logging', None)
+    _local.sql_logging_tracebacks_if = None
+    _local.sql_logging = None
+    _local.sql_logging_start = None
+    if result is None:
+        warnings.warn('SQL logging not started')
     return result
 
+
+class SQLLogger:
+
+    def __init__(self, tracebacks_if=False):
+        self.tracebacks_if = tracebacks_if
+
+    queries = None
+
+    def __enter__(self):
+        self.queries = None
+        start_sql_logging(self.tracebacks_if)
+
+    def __exit__(self, exc_type, exc_value, tb):
+        self.queries = stop_sql_logging()
+
+    def __str__(self):
+        if self.queries is None:
+            return '(no queries)'
+        else:
+            out = StringIO.StringIO()
+            print_queries(self.queries, file=out)
+            return out.getvalue()
+
+
+def print_queries(queries, file=None):
+    if file is None:
+        file = sys.stdout
+    for query in queries:
+        stack = query['stack']
+        if stack is not None:
+            exception = query['exception']
+            if exception is not None:
+                file.write(
+                    'Error when determining whether to generate a '
+                    'stacktrace.\n')
+                file.write('Traceback (most recent call last):\n')
+            print_list(stack, file)
+            if exception is not None:
+                lines = traceback.format_exception_only(*exception)
+                file.write(' '.join(lines))
+            file.write("." * 70 + "\n")
+        sql = query['sql']
+        if sql is not None:
+            file.write('%d-%d@%s %s\n' % sql)
+        else:
+            file.write('(no SQL recorded)\n')
+        file.write("-" * 70 + "\n")
+        
 
 # ---- Prevent database access in the main thread of the app server
 
@@ -625,25 +690,19 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
 class LaunchpadStatementTracer:
     """Storm tracer class to log executed statements."""
 
+    _normalize_whitespace = partial(re.compile('\s+').sub, ' ')
+
     def __init__(self):
         self._debug_sql = bool(os.environ.get('LP_DEBUG_SQL'))
         self._debug_sql_extra = bool(os.environ.get('LP_DEBUG_SQL_EXTRA'))
 
     def connection_raw_execute(self, connection, raw_cursor,
                                statement, params):
-        sql_trace = getattr(_local, 'sql_trace', None)
-        if sql_trace is not None or self._debug_sql_extra:
-            # Gather data for the [start|stop]_sql_traceback_logging
-            # feature, as exposed by ++profile++sqltrace, and/or for stderr,
-            # as exposed by LP_DEBUG_SQL_EXTRA.
-            stack = extract_stack()
-            if sql_trace is not None:
-                sql_trace.append(dict(stack=stack, sql=None))
-            if self._debug_sql_extra:
-                print_list(stack)
-                sys.stderr.write("." * 70 + "\n")
         statement_to_log = statement
-        if params:
+        print_traceback = self._debug_sql_extra
+        log_sql = getattr(_local, 'sql_logging', None)
+        render_sql = print_traceback or self._debug_sql or log_sql is not None
+        if render_sql and params:
             # There are some bind parameters so we want to insert them into
             # the sql statement so we can log the statement.
             query_params = list(Connection.to_database(params))
@@ -656,18 +715,41 @@ class LaunchpadStatementTracer:
             param_strings = [repr(p) if isinstance(p, basestring) else p
                                  for p in query_params]
             statement_to_log = quoted_statement % tuple(param_strings)
+        # Record traceback to log, if requested.
+        log_traceback = False
+        if log_sql is not None:
+            log_sql.append(dict(stack=None, sql=None, exception=None))
+            conditional = getattr(_local, 'sql_logging_tracebacks_if', None)
+            if callable(conditional):
+                try:
+                    log_traceback = conditional(
+                        self._normalize_whitespace(
+                            statement_to_log.strip()).upper())
+                except (MemoryError, SystemExit, KeyboardInterrupt):
+                    raise
+                except:
+                    exc_type, exc_value, tb = sys.exc_info()
+                    log_sql[-1]['exception'] = (exc_type, exc_value)
+                    log_sql[-1]['stack'] = extract_tb(tb)
+            else:
+                log_traceback = bool(conditional)
+        if print_traceback or log_traceback:
+            stack = extract_stack()
+            if log_traceback:
+                log_sql[-1]['stack'] = stack
+            if print_traceback:
+                print_list(stack)
+                sys.stderr.write("." * 70 + "\n")
         # store the last executed statement as an attribute on the current
         # thread
         threading.currentThread().lp_last_sql_statement = statement
         request_starttime = getattr(_local, 'request_start_time', None)
         if request_starttime is None:
-            if (sql_trace is not None or
-                self._debug_sql or
-                self._debug_sql_extra):
+            if render_sql:
                 # Stash some information for logging at the end of the
-                # request.
+                # SQL execution.
                 connection._lp_statement_info = (
-                    time(),
+                    int(time() * 1000),
                     'SQL-%s' % connection._database.name,
                     statement_to_log)
             return
@@ -682,24 +764,26 @@ class LaunchpadStatementTracer:
             # action may be None if the tracer was installed after the
             # statement was submitted.
             action.finish()
-        # Do data reporting for the [start|stop]_sql_traceback_logging
-        # feature, as exposed by ++profile++sqltrace, and/or for stderr,
-        # as exposed by LP_DEBUG_SQL_EXTRA and LP_DEBUG_SQL.
-        sql_trace = getattr(_local, 'sql_trace', None)
-        if sql_trace is not None or self._debug_sql or self._debug_sql_extra:
+        log_sql = getattr(_local, 'sql_logging', None)
+        if log_sql is not None or self._debug_sql or self._debug_sql_extra:
             data = None
             if action is not None:
                 data = action.logTuple()
             else:
                 info = getattr(connection, '_lp_statement_info', None)
                 if info is not None:
+                    stop = int(time() * 1000)
                     start, dbname, statement = info
+                    logging_start = (
+                        getattr(_local, 'sql_logging_start', None) or start)
                     # Times are in milliseconds, to mirror actions.
-                    duration = int((time() - start) * 1000)
-                    data = (0, duration, dbname, statement)
+                    start = start - logging_start
+                    stop = stop - logging_start
+                    data = (start, stop, dbname, statement)
+                    connection._lp_statement_info = None
             if data is not None:
-                if sql_trace and sql_trace[-1]['sql'] is None:
-                    sql_trace[-1]['sql'] = data
+                if log_sql and log_sql[-1]['sql'] is None:
+                    log_sql[-1]['sql'] = data
                 if self._debug_sql or self._debug_sql_extra:
                     sys.stderr.write('%d-%d@%s %s\n' % data)
                     sys.stderr.write("-" * 70 + "\n")

@@ -213,7 +213,7 @@ def _maybe_profile(event):
         actions.add('callgrind')
     if actions:
         if 'sqltrace' in actions:
-            da.start_sql_traceback_logging()
+            da.start_sql_logging(tracebacks_if=True)
         if 'show' in actions or actions.intersection(available_profilers):
             _profilers.profiler = Profiler()
             _profilers.profiler.start()
@@ -346,7 +346,7 @@ def end_request(event):
         del prof_stats
     trace = None
     if 'sqltrace' in actions:
-        trace = da.stop_sql_traceback_logging() or ()
+        trace = da.stop_sql_logging() or ()
         # The trace is a list of dicts, each with the keys "sql" and
         # "stack".  "sql" is a tuple of start time, stop time, database
         # name (with a "SQL-" prefix), and sql statement.  "stack" is a
