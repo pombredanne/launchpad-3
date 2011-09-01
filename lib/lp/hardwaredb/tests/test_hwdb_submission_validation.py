@@ -99,6 +99,30 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertEqual(result, None,
                          'Invalid root node not detected')
 
+    def testBadDataInCommentNode(self):
+        """Many submissions contain ESC symbols in <comment> nodes.
+
+        The cElementTree parser does not accept this; The processing
+        script deals with this by emptying all <comment> nodes before
+        building the element tree. (Note that we don't process data
+        from this node at all.)
+        """
+        bad_comment_node = "\n<comment>\x1b</comment>"
+        sample_data = self.replaceSampledata(
+            self.sample_data, bad_comment_node, "<comment>", "</comment>")
+        validated, submission_id = self.runValidator(sample_data)
+        self.assertTrue(validated is not None)
+
+    def test_fixFrequentErrors_two_comments(self):
+        # The regular expression used in fixFrequentErrors() does not
+        # delete the content between two <comment> nodes.
+        two_comments = "<comment></comment>something else<comment></comment>"
+        parser = SubmissionParser()
+        self.assertEqual(
+            '<comment/>something else<comment/>',
+            parser.fixFrequentErrors(two_comments),
+            'Bad regular expression in fixFrequentErrors()')
+
     def _getLastOopsTime(self):
         try:
             last_oops_time = globalErrorUtility.getLastOopsReport().time
@@ -120,7 +144,8 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             after=True)
         # Add the OopsHandler to the log, because we want to make sure this
         # doesn't create an Oops report.
-        logging.getLogger('test_hwdb_submission_parser').addHandler(OopsHandler(self.log.name))
+        logging.getLogger('test_hwdb_submission_parser').addHandler(
+            OopsHandler(self.log.name))
         result, submission_id = self.runValidator(sample_data)
         last_oops_time = self._getLastOopsTime()
         # We use the class method here, because it's been overrided for the
@@ -2694,26 +2719,6 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             submission_id, result,
             'Element driver has extra content: nonsense',
             'detection of invalid sub-tag <nonsense> of <driver> in <target>')
-
-    def testCommentTag(self):
-        """Validation of the <comment> tag."""
-        # This tag has no attributes.
-        sample_data = self.sample_data.replace(
-            '<comment>', '<comment foo="bar">')
-        result, submission_id = self.runValidator(sample_data)
-        self.assertErrorMessage(
-            submission_id, result,
-            'Invalid attribute foo for element comment',
-            'detection of invalid attribute of <comment>')
-
-        # Sub-tags are not allowed.
-        sample_data = self.sample_data.replace(
-            '<comment>', '<comment><nonsense/>')
-        result, submission_id = self.runValidator(sample_data)
-        self.assertErrorMessage(
-            submission_id, result,
-            'Element comment has extra content: nonsense',
-            'detection of invalid sub-tag <nonsense> of <comment>')
 
     def testMissingContextNode(self):
         """Validation of the <context> node."""

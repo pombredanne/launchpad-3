@@ -45,6 +45,18 @@
             var privacy_notification_enabled = false;
       </script>
       </tal:if>
+      <tal:if
+        condition="request/features/bugs.batched_comment_loading.enabled">
+      <script type="text/javascript">
+          var batched_comment_loading_enabled = true;
+      </script>
+      </tal:if>
+      <tal:else
+        condition="not: request/features/bugs.batched_comment_loading.enabled">
+      <script type="text/javascript">
+          var batched_comment_loading_enabled = false;
+      </script>
+      </tal:else>
       <style type="text/css">
         /* Align the 'add comment' link to the right of the comment box. */
         #add-comment-form textarea { width: 100%; }
