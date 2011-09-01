@@ -426,7 +426,7 @@ def print_queries(queries, file=None):
         else:
             file.write('(no SQL recorded)\n')
         file.write("-" * 70 + "\n")
-        
+
 
 # ---- Prevent database access in the main thread of the app server
 

@@ -154,6 +154,7 @@ class TestLoggingOutsideOfRequest(TestCase):
 
     def test_data_logging_with_broken_conditional_stacktrace(self):
         error = ValueError('rutebega')
+
         def ow(sql):
             raise error
         da.start_sql_logging(tracebacks_if=ow)
