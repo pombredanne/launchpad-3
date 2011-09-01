@@ -11,6 +11,8 @@ __metaclass__ = type
 __all__ = [
            'SubmissionParser',
            'process_pending_submissions',
+           'ProcessingLoopForPendingSubmissions',
+           'ProcessingLoopForReprocessingBadSubmissions',
           ]
 
 import bz2
