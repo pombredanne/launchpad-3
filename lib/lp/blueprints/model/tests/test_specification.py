@@ -5,9 +5,13 @@
 
 __metaclass__ = type
 
+from testtools import ExpectedException
 from testtools.matchers import Equals
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.app.validators import LaunchpadValidationError
+from lp.blueprints.interfaces.specification import ISpecification
 from lp.testing import TestCaseWithFactory
 
 
@@ -93,3 +97,19 @@ class TestSpecificationSubscriptionSort(TestCaseWithFactory):
             dave.displayname]
         people = [sub.person.displayname for sub in spec.subscriptions]
         self.assertEqual(sorted_subscriptions, people)
+
+
+class TestSpecificationValidation(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_specurl_validation(self):
+        existing = self.factory.makeSpecification(
+            specurl=u'http://ubuntu.com')
+        spec = self.factory.makeSpecification()
+        url = canonical_url(existing)
+        field = ISpecification['specurl'].bind(spec)
+        with ExpectedException(LaunchpadValidationError,
+            '%s is already registered by <a href="%s">%s</a>.' % (
+            u'http://ubuntu.com', url, existing.title)):
+            field.validate(u'http://ubuntu.com')

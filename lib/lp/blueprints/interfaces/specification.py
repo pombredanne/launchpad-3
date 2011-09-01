@@ -46,6 +46,8 @@ from zope.schema import (
     )
 
 from canonical.launchpad import _
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.menu import structured
 from lp.app.validators import LaunchpadValidationError
 from lp.app.validators.url import valid_webref
 from lp.blueprints.enums import (
@@ -122,7 +124,7 @@ class SpecNameField(ContentNameField):
 
 class SpecURLField(TextLine):
 
-    errormessage = _("%s is already registered by another blueprint.")
+    errormessage = _("%s is already registered by <a href=\"%s\">%s</a>.")
 
     def _validate(self, specurl):
         TextLine._validate(self, specurl)
@@ -132,8 +134,10 @@ class SpecURLField(TextLine):
             return
 
         specification = getUtility(ISpecificationSet).getByURL(specurl)
+        specification_url = canonical_url(specification)
         if specification is not None:
-            raise LaunchpadValidationError(self.errormessage % specurl)
+            raise LaunchpadValidationError(structured(self.errormessage %
+                (specurl, specification_url, specification.title)))
 
 
 class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
@@ -373,7 +377,7 @@ class ISpecificationPublic(IHasOwner, IHasLinkedBranches):
         CollectionField(
             title=_("Branches associated with this spec, usually "
             "branches on which this spec is being implemented."),
-            value_type=Reference(schema=Interface), # ISpecificationBranch
+            value_type=Reference(schema=Interface),  # ISpecificationBranch
             readonly=True),
         as_of="devel")
 
