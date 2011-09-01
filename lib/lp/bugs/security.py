@@ -98,8 +98,7 @@ class EditBugBranch(EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
     def __init__(self, bug_branch):
         # The same permissions as for the BugBranch's bug should apply
         # to the BugBranch itself.
-        EditPublicByLoggedInUserAndPrivateByExplicitSubscribers.__init__(
-            self, bug_branch.bug)
+        super(EditBugBranch, self).__init__(bug_branch.bug)
 
 
 class ViewBugAttachment(ForwardedAuthorization):
@@ -115,8 +114,7 @@ class ViewBugAttachment(ForwardedAuthorization):
         super(ViewBugAttachment, self).__init__(bugattachment.bug)
 
 
-class EditBugAttachment(
-    EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
+class EditBugAttachment(ForwardedAuthorization):
     """Security adapter for editing a bug attachment.
 
     If the user is authorized to view the bug, he's allowed to edit the
@@ -126,8 +124,7 @@ class EditBugAttachment(
     usedfor = IBugAttachment
 
     def __init__(self, bugattachment):
-        EditPublicByLoggedInUserAndPrivateByExplicitSubscribers.__init__(
-            self, bugattachment.bug)
+        super(EditBugAttachment, self).__init__(bugattachment.bug)
 
 
 class ViewBugSubscription(AnonymousAuthorization):

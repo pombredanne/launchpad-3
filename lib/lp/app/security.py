@@ -11,7 +11,6 @@ __all__ = [
     'ForwardedAuthorization',
     ]
 
-from lp.services.propertycache import cachedproperty
 from zope.component import (
     getAdapter,
     queryAdapter,
@@ -113,24 +112,26 @@ class AnonymousAuthorization(AuthorizationBase):
 
 class ForwardedAuthorization(AuthorizationBase):
 
-    ## permission = None
-    ## usedfor = None
+    permission = None
+    usedfor = None
 
-    ## def __init__(self, forwarded_object, permission=None):
-    ##     self.forwarded_object = forwarded_object
-    ##     self.permission = permission
+    def __init__(self, forwarded_object, permission=None):
+        self.forwarded_object = forwarded_object
+        self.permission = permission
 
-    ## @cachedproperty
-    ## def forwarded_adapter(self):
-    ##     adapter = getAdapter(
-    ##         self.forwarded_object, IAuthorization, self.permission)
-    ##     return adapter
+    @property
+    def forwarded_adapter(self):
+        adapter = getAdapter(
+            self.forwarded_object, IAuthorization, self.permission)
+        return adapter
 
-    ## def checkAuthenticated(self, user):
-    ##     return self.forwarded_adapter.checkAuthenticated(user)
+    def checkAuthenticated(self, user):
+        return self.forwarded_adapter.checkAuthenticated(user)
 
-    ## def checkUnauthenticated(self):
-    ##     return self.forwarded_adapter.checkUnauthenticated()
+    def checkUnauthenticated(self):
+        return self.forwarded_adapter.checkUnauthenticated()
 
-    def __new__(cls, obj, permission):
-        return getAdapter(obj, IAuthorization, permission)
+    ## def __new__(cls, obj, permission=None):
+    ##     if permission is None:
+    ##         permission = cls.permission
+    ##     return getAdapter(obj, IAuthorization, permission)

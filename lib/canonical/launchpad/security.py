@@ -1006,22 +1006,9 @@ class EditDistroSeriesDifference(ForwardedAuthorization):
     permission = 'launchpad.Edit'
     usedfor = IDistroSeriesDifferenceEdit
 
-    ## def __init__(self, obj):
-    ##     super(EditDistroSeriesDifference, self).__init__(
-    ##         obj.derived_series.distribution, 'launchpad.View')
-
-    def __new__(cls, obj):
-        return super(EditDistroSeriesDifference, cls).__new__(
+    def __init__(self, obj):
+        super(EditDistroSeriesDifference, self).__init__(
             obj.derived_series.distribution, 'launchpad.View')
-
-## class EditDistroSeriesDifference(AuthorizationBase):
-##     """Anyone with lp.View on the distribution can edit a DSD."""
-##     permission = 'launchpad.Edit'
-##     usedfor = IDistroSeriesDifferenceEdit
-
-##     def checkAuthenticated(self, user):
-##         return self.forwardCheckAuthenticated(
-##             user, self.obj.derived_series.distribution, 'launchpad.View')
 
 
 class SeriesDrivers(AuthorizationBase):
@@ -1932,14 +1919,14 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
                 self.forwardCheckAuthenticated(user, self.obj.distribution))
 
 
-class AdminDistributionSourcePackageTranslations(AuthorizationBase):
+class AdminDistributionSourcePackageTranslations(ForwardedAuthorization):
     """DistributionSourcePackage objects link to a distribution."""
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistributionSourcePackage
 
-    def checkAuthenticated(self, user):
-        """Distribution admins are admins for source packages as well."""
-        return self.forwardCheckAuthenticated(user, self.obj.distribution)
+    def __init__(self, obj):
+        super(AdminDistributionSourcePackageTranslations, self).__init__(
+            obj.distribution)
 
 
 class AdminProductSeriesTranslations(AuthorizationBase):
@@ -1985,32 +1972,21 @@ class BranchMergeProposalView(AuthorizationBase):
             self.branches))
 
 
-class PreviewDiffView(AuthorizationBase):
+class PreviewDiffView(ForwardedAuthorization):
     permission = 'launchpad.View'
     usedfor = IPreviewDiff
 
-    @property
-    def bmp_view(self):
-        return BranchMergeProposalView(self.obj.branch_merge_proposal)
-
-    def checkAuthenticated(self, user):
-        """Is the user able to view the preview diff?
-
-        The user can see a preview diff if they can see the merge proposal.
-        """
-        return self.bmp_view.checkAuthenticated(user)
-
-    def checkUnauthenticated(self):
-        """Is anyone able to view the branch merge proposal?
-
-        The user can see a preview diff if they can see the merge proposal.
-        """
-        return self.bmp_view.checkUnauthenticated()
+    def __init__(self, obj):
+        super(PreviewDiffView, self).__init__(obj.branch_merge_proposal)
 
 
-class CodeReviewVoteReferenceEdit(AuthorizationBase):
+class CodeReviewVoteReferenceEdit(ForwardedAuthorization):
     permission = 'launchpad.Edit'
     usedfor = ICodeReviewVoteReference
+
+    def __init__(self, obj):
+        super(CodeReviewVoteReferenceEdit, self).__init__(
+            obj.branch_merge_proposal.target_branch)
 
     def checkAuthenticated(self, user):
         """Only the affected teams may change the review request.
@@ -2022,57 +1998,28 @@ class CodeReviewVoteReferenceEdit(AuthorizationBase):
         Anyone with edit permissions on the target branch of the merge
         proposal can also edit the reviews.
         """
-        if user.inTeam(self.obj.reviewer) or user.inTeam(self.obj.registrant):
-            return True
-        target_access = EditBranch(
-            self.obj.branch_merge_proposal.target_branch)
-        return target_access.checkAuthenticated(user)
+        return (user.inTeam(self.obj.reviewer) or
+                user.inTeam(self.obj.registrant) or
+                super(CodeReviewVoteReferenceEdit, self).checkAuthenticated(
+                    user))
 
 
-class CodeReviewCommentView(AuthorizationBase):
+class CodeReviewCommentView(ForwardedAuthorization):
     permission = 'launchpad.View'
     usedfor = ICodeReviewComment
 
-    def checkAuthenticated(self, user):
-        """Is the user able to view the code review comment?
-
-        The user can see a code review comment if they can see the branch
-        merge proposal.
-        """
-        bmp_checker = BranchMergeProposalView(self.obj.branch_merge_proposal)
-        return bmp_checker.checkAuthenticated(user)
-
-    def checkUnauthenticated(self):
-        """Are not-logged-in people able to view the code review comment?
-
-        They can see a code review comment if they can see the branch merge
-        proposal.
-        """
-        bmp_checker = BranchMergeProposalView(self.obj.branch_merge_proposal)
-        return bmp_checker.checkUnauthenticated()
+    def __init__(self, obj):
+        super(CodeReviewCommentView, self).__init__(
+            obj.branch_merge_proposal)
 
 
-class CodeReviewCommentDelete(AuthorizationBase):
+class CodeReviewCommentDelete(ForwardedAuthorization):
     permission = 'launchpad.Edit'
     usedfor = ICodeReviewCommentDeletion
 
-    def checkAuthenticated(self, user):
-        """Is the user able to view the code review message?
-
-        The user can see a code review message if they can see the branch
-        merge proposal.
-        """
-        bmp_checker = BranchMergeProposalEdit(self.obj.branch_merge_proposal)
-        return bmp_checker.checkAuthenticated(user)
-
-    def checkUnauthenticated(self):
-        """Are not-logged-in people able to view the code review message?
-
-        They can see a code review message if they can see the branch merge
-        proposal.
-        """
-        bmp_checker = BranchMergeProposalEdit(self.obj.branch_merge_proposal)
-        return bmp_checker.checkUnauthenticated()
+    def __init__(self, obj):
+        super(CodeReviewCommentDelete, self).__init__(
+            obj.branch_merge_proposal)
 
 
 class BranchMergeProposalEdit(AuthorizationBase):
@@ -2333,7 +2280,7 @@ class ViewArchiveAuthToken(AuthorizationBase):
         return auth_edit.checkAuthenticated(user)
 
 
-class EditArchiveAuthToken(AuthorizationBase):
+class EditArchiveAuthToken(ForwardedAuthorization):
     """Restrict editing of archive tokens.
 
     The user should have append privileges to the context archive, or be an
@@ -2342,14 +2289,16 @@ class EditArchiveAuthToken(AuthorizationBase):
     permission = "launchpad.Edit"
     usedfor = IArchiveAuthToken
 
+    def __init__(self, obj):
+        super(EditArchiveAuthToken, self).__init__(
+            obj.archive, 'launchpad.Append')
+
     def checkAuthenticated(self, user):
-        auth_append = AppendArchive(self.obj.archive)
-        if auth_append.checkAuthenticated(user):
-            return True
-        return user.in_admin
+        return (user.in_admin or
+                super(EditArchiveAuthToken, self).checkAuthenticated(user))
 
 
-class ViewPersonalArchiveSubscription(AuthorizationBase):
+class ViewPersonalArchiveSubscription(ForwardedAuthorization):
     """Restrict viewing of personal archive subscriptions (non-db class).
 
     The user should be the subscriber, have append privilege to the archive
@@ -2358,15 +2307,15 @@ class ViewPersonalArchiveSubscription(AuthorizationBase):
     permission = "launchpad.View"
     usedfor = IPersonalArchiveSubscription
 
+    def __init__(self, obj):
+        super(ViewPersonalArchiveSubscription, self).__init__(
+            obj.archive, 'launchpad.Append')
+
     def checkAuthenticated(self, user):
-        if user.person == self.obj.subscriber:
+        if user.person == self.obj.subscriber or user.in_admin:
             return True
-        append_archive = AppendArchive(self.obj.archive)
-
-        if append_archive.checkAuthenticated(user):
-            return True
-
-        return user.in_admin
+        return super(
+            ViewPersonalArchiveSubscription, self).checkAuthenticated(user)
 
 
 class ViewArchiveSubscriber(AuthorizationBase):
@@ -2378,15 +2327,16 @@ class ViewArchiveSubscriber(AuthorizationBase):
     permission = "launchpad.View"
     usedfor = IArchiveSubscriber
 
+    def __init__(self, obj):
+        super(ViewArchiveSubscriber, self).__init__(
+            obj, 'launchpad.Edit')
+
     def checkAuthenticated(self, user):
-        auth_edit = EditArchiveSubscriber(self.obj)
-        result = auth_edit.checkAuthenticated(user)
-        if not result:
-            result = user.inTeam(self.obj.subscriber)
-        return result
+        return (user.inTeam(self.obj.subscriber) or
+                super(ViewArchiveSubscriber, self).checkAuthenticated(user))
 
 
-class EditArchiveSubscriber(AuthorizationBase):
+class EditArchiveSubscriber(ForwardedAuthorization):
     """Restrict editing of archive subscribers.
 
     The user should have append privilege to the archive or be an admin.
@@ -2394,11 +2344,13 @@ class EditArchiveSubscriber(AuthorizationBase):
     permission = "launchpad.Edit"
     usedfor = IArchiveSubscriber
 
+    def __init__(self, obj):
+        super(EditArchiveSubscriber, self).__init__(
+            obj.archive, 'launchpad.Append')
+
     def checkAuthenticated(self, user):
-        auth_append = AppendArchive(self.obj.archive)
-        if auth_append.checkAuthenticated(user):
-            return True
-        return user.in_admin
+        return (user.in_admin or
+                super(EditArchiveSubscriber, self).checkAuthenticated(user))
 
 
 class DerivedAuthorization(AuthorizationBase):
@@ -2457,13 +2409,13 @@ class ViewSourcePackagePublishingHistory(ViewArchive):
         super(ViewSourcePackagePublishingHistory, self).__init__(obj.archive)
 
 
-class EditPublishing(AuthorizationBase):
+class EditPublishing(ForwardedAuthorization):
     """Restrict editing of source and binary packages.."""
     permission = "launchpad.Edit"
     usedfor = IPublishingEdit
 
-    def checkAuthenticated(self, user):
-        return AppendArchive(self.obj.archive).checkAuthenticated(user)
+    def __init__(self, obj):
+        super(EditPublishing, self).__init__(obj.archive, 'launchpad.Append')
 
 
 class ViewBinaryPackagePublishingHistory(ViewSourcePackagePublishingHistory):
@@ -2493,8 +2445,8 @@ class ViewSourcePackageRelease(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Verify that the user can view the sourcepackagerelease."""
         for archive in self.obj.published_archives:
-            auth_archive = ViewArchive(archive)
-            if auth_archive.checkAuthenticated(user):
+            adapter = getAdapter(archive, IAuthorization, self.permission)
+            if adapter.checkAuthenticated(user):
                 return True
         return False
 
