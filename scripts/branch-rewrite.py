@@ -19,8 +19,6 @@ import sys
 
 from canonical.database.sqlbase import ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.config import config
-from canonical.launchpad.interfaces.lpstorm import ISlaveStore
-from lp.code.model.branch import Branch
 from lp.codehosting.rewrite import BranchRewriter
 from lp.services.log.loglevels import INFO, WARNING
 from lp.services.scripts.base import LaunchpadScript
@@ -60,18 +58,11 @@ class BranchRewriteScript(LaunchpadScript):
                 else:
                     # Standard input has been closed, so die.
                     return
-            except Exception:
+            except KeyboardInterrupt:
+                sys.exit()
+            except:
                 self.logger.exception('Exception occurred:')
                 print "NULL"
-                # The exception might have been a DisconnectionError or
-                # similar. Cleanup such as database reconnection will
-                # not happen until the transaction is rolled back. We
-                # are explicitly rolling back the store here instead of
-                # using transaction.abort() due to Bug #819282.
-                try:
-                    ISlaveStore(Branch).rollback()
-                except Exception:
-                    self.logger.exception('Exception occurred in rollback:')
 
 
 if __name__ == '__main__':
