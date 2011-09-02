@@ -13,7 +13,6 @@ import sys
 import thread
 import threading
 from time import time
-import traceback
 import warnings
 
 import psycopg2
@@ -78,6 +77,10 @@ from lp.services.timeline.requesttimeline import (
     get_request_timeline,
     set_request_timeline,
     )
+from lp.services.stacktrace import (
+    extract_stack,
+    print_list,
+    )
 
 
 __all__ = [
@@ -89,6 +92,8 @@ __all__ = [
     'get_request_duration',
     'get_store_name',
     'soft_timeout_expired',
+    'start_sql_traceback_logging',
+    'stop_sql_traceback_logging',
     'StoreSelector',
     ]
 
@@ -197,6 +202,7 @@ def clear_request_started():
         warnings.warn('clear_request_started() called outside of a request',
             stacklevel=2)
     _local.request_start_time = None
+    _local.sql_trace = None
     request = get_current_browser_request()
     set_request_timeline(request, Timeline())
     if getattr(_local, 'commit_logger', None) is not None:
@@ -343,6 +349,18 @@ def soft_timeout_expired():
         return False
     except RequestExpired:
         return True
+
+
+def start_sql_traceback_logging():
+    """Set the sql traceback data logging for the current request."""
+    _local.sql_trace = []
+
+
+def stop_sql_traceback_logging():
+    """Stop the sql traceback data logging and return the result."""
+    result = getattr(_local, 'sql_trace', None)
+    _local.sql_trace = None
+    return result
 
 
 # ---- Prevent database access in the main thread of the app server
@@ -523,8 +541,9 @@ class LaunchpadSessionDatabase(Postgres):
             # This is fallback code for old config files. It can be
             # removed when all live configs have been updated to use the
             # 'database' setting instead of 'dbname' + 'dbhost' settings.
-            self._dsn = 'dbname=%s user=%s' % (config.launchpad_session.dbname,
-                                            config.launchpad_session.dbuser)
+            self._dsn = 'dbname=%s user=%s' % (
+                config.launchpad_session.dbname,
+                config.launchpad_session.dbuser)
             if config.launchpad_session.dbhost:
                 self._dsn += ' host=%s' % config.launchpad_session.dbhost
 
@@ -612,9 +631,17 @@ class LaunchpadStatementTracer:
 
     def connection_raw_execute(self, connection, raw_cursor,
                                statement, params):
-        if self._debug_sql_extra:
-            traceback.print_stack()
-            sys.stderr.write("." * 70 + "\n")
+        sql_trace = getattr(_local, 'sql_trace', None)
+        if sql_trace is not None or self._debug_sql_extra:
+            # Gather data for the [start|stop]_sql_traceback_logging
+            # feature, as exposed by ++profile++sqltrace, and/or for stderr,
+            # as exposed by LP_DEBUG_SQL_EXTRA.
+            stack = extract_stack()
+            if sql_trace is not None:
+                sql_trace.append(dict(stack=stack, sql=None))
+            if self._debug_sql_extra:
+                print_list(stack)
+                sys.stderr.write("." * 70 + "\n")
         statement_to_log = statement
         if params:
             # There are some bind parameters so we want to insert them into
@@ -629,14 +656,20 @@ class LaunchpadStatementTracer:
             param_strings = [repr(p) if isinstance(p, basestring) else p
                                  for p in query_params]
             statement_to_log = quoted_statement % tuple(param_strings)
-        if self._debug_sql or self._debug_sql_extra:
-            sys.stderr.write(statement_to_log + "\n")
-            sys.stderr.write("-" * 70 + "\n")
         # store the last executed statement as an attribute on the current
         # thread
         threading.currentThread().lp_last_sql_statement = statement
         request_starttime = getattr(_local, 'request_start_time', None)
         if request_starttime is None:
+            if (sql_trace is not None or
+                self._debug_sql or
+                self._debug_sql_extra):
+                # Stash some information for logging at the end of the
+                # request.
+                connection._lp_statement_info = (
+                    time(),
+                    'SQL-%s' % connection._database.name,
+                    statement_to_log)
             return
         action = get_request_timeline(get_current_browser_request()).start(
             'SQL-%s' % connection._database.name, statement_to_log)
@@ -649,6 +682,27 @@ class LaunchpadStatementTracer:
             # action may be None if the tracer was installed after the
             # statement was submitted.
             action.finish()
+        # Do data reporting for the [start|stop]_sql_traceback_logging
+        # feature, as exposed by ++profile++sqltrace, and/or for stderr,
+        # as exposed by LP_DEBUG_SQL_EXTRA and LP_DEBUG_SQL.
+        sql_trace = getattr(_local, 'sql_trace', None)
+        if sql_trace is not None or self._debug_sql or self._debug_sql_extra:
+            data = None
+            if action is not None:
+                data = action.logTuple()
+            else:
+                info = getattr(connection, '_lp_statement_info', None)
+                if info is not None:
+                    start, dbname, statement = info
+                    # Times are in milliseconds, to mirror actions.
+                    duration = int((time() - start) * 1000)
+                    data = (0, duration, dbname, statement)
+            if data is not None:
+                if sql_trace and sql_trace[-1]['sql'] is None:
+                    sql_trace[-1]['sql'] = data
+                if self._debug_sql or self._debug_sql_extra:
+                    sys.stderr.write('%d-%d@%s %s\n' % data)
+                    sys.stderr.write("-" * 70 + "\n")
 
     def connection_raw_execute_error(self, connection, raw_cursor,
                                      statement, params, error):

@@ -162,7 +162,7 @@ class BugTrackerVocabulary(SQLObjectVocabularyBase):
             raise LookupError(token)
         return self.toTerm(result)
 
-    def search(self, query):
+    def search(self, query, vocab_filter=None):
         """Search for web bug trackers."""
         query = ensure_unicode(query).lower()
         results = IStore(self._table).find(
@@ -179,7 +179,7 @@ class BugTrackerVocabulary(SQLObjectVocabularyBase):
 
     def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
-        results = self.search(query)
+        results = self.search(query, vocab_filter)
         return CountableIterator(results.count(), results, self.toTerm)
 
 
@@ -436,7 +436,7 @@ class PPAVocabulary(SQLObjectVocabularyBase):
         else:
             return self.toTerm(obj)
 
-    def search(self, query):
+    def search(self, query, vocab_filter=None):
         """Return a resultset of archives.
 
         This is a helper required by `SQLObjectVocabularyBase.searchForTerms`.

@@ -77,7 +77,10 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.archive import Archive
-from lp.soyuz.model.archivepermission import ArchivePermission
+from lp.soyuz.model.archivepermission import (
+    ArchivePermission,
+    ArchivePermissionSet,
+    )
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount,
     )
@@ -480,6 +483,9 @@ class TestArchiveCanUpload(TestCaseWithFactory):
     def test_checkArchivePermission_distro_archive(self):
         # Regular users can not upload to ubuntu
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        # The factory sets the archive owner the same as the distro owner,
+        # change that here to ensure the security adapter checks are right.
+        removeSecurityProxy(archive).owner = self.factory.makePerson()
         main = getUtility(IComponentSet)["main"]
         # A regular user doesn't have access
         somebody = self.factory.makePerson()
@@ -487,7 +493,7 @@ class TestArchiveCanUpload(TestCaseWithFactory):
             archive.checkArchivePermission(somebody, main))
         # An ubuntu core developer does have access
         coredev = self.factory.makePerson()
-        with person_logged_in(archive.owner):
+        with person_logged_in(archive.distribution.owner):
             archive.newComponentUploader(coredev, main.name)
         self.assertEquals(True, archive.checkArchivePermission(coredev, main))
 
@@ -679,8 +685,7 @@ class TestArchiveCanUpload(TestCaseWithFactory):
         packageset = self.factory.makePackageset(
             distroseries=distroseries, packages=packages)
         person = self.factory.makePerson()
-        techboard = getUtility(ILaunchpadCelebrities).ubuntu_techboard
-        with person_logged_in(techboard):
+        with person_logged_in(archive.distribution.owner):
             archive.newPackagesetUploader(person, packageset)
         return person, packageset
 
@@ -2137,7 +2142,7 @@ class TestSyncSource(TestCaseWithFactory):
          to_series, version) = self._setup_copy_data(
             target_purpose=ArchivePurpose.PRIMARY)
         person = self.factory.makePerson()
-        with person_logged_in(target_archive.owner):
+        with person_logged_in(target_archive.distribution.owner):
             target_archive.newComponentUploader(person, "universe")
         target_archive.copyPackage(
             source_name, version, source_archive, to_pocket.name,
@@ -2244,7 +2249,7 @@ class TestSyncSource(TestCaseWithFactory):
          to_series, version) = self._setup_copy_data(
             target_purpose=ArchivePurpose.PRIMARY)
         person = self.factory.makePerson()
-        with person_logged_in(target_archive.owner):
+        with person_logged_in(target_archive.distribution.owner):
             target_archive.newComponentUploader(person, "universe")
         target_archive.copyPackages(
             [source_name], source_archive, to_pocket.name,
@@ -2267,3 +2272,15 @@ class TestSyncSource(TestCaseWithFactory):
             target_archive.copyPackages, [source_name], source_archive,
             to_pocket.name, to_series=to_series.name, include_binaries=False,
             person=person)
+
+
+class TestRemovingPermissions(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_remove_permission_is_none(self):
+        # Several API functions remove permissions if they are not already
+        # removed.  This verifies that the underlying utility function does
+        # not generate an error if the permission is None.
+        ap_set = ArchivePermissionSet()
+        ap_set._remove_permission(None)

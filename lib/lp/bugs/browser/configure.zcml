@@ -564,8 +564,7 @@
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bugtask.BugTaskTableRowView"
             permission="launchpad.View"
-            name="+bugtasks-and-nominations-table-row"
-            template="../templates/bugtask-tasks-and-nominations-table-row.pt"/>
+            name="+bugtasks-and-nominations-table-row"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IBugTarget"
             permission="zope.Public"
@@ -646,6 +645,12 @@
             class="lp.bugs.browser.bugtask.BugTaskView"
             permission="launchpad.View"
             template="../templates/bugtask-index.pt"/>
+        <browser:page
+            name="+batched-comments"
+            for="lp.bugs.interfaces.bugtask.IBugTask"
+            class="lp.bugs.browser.bugtask.BugTaskBatchedCommentsAndActivityView"
+            permission="launchpad.View"
+            template="../templates/bugtask-batched-comments.pt"/>
         <browser:page
             name="+choose-affected-product"
             for="lp.bugs.interfaces.bugtask.IBugTask"

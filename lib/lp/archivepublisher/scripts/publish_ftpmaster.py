@@ -148,6 +148,21 @@ def find_run_parts_dir(distro, parts):
         return None
 
 
+def map_distro_pubconfigs(distro):
+    """Return dict mapping archive purpose for distro's pub configs.
+
+    :param distro: `Distribution` to get publisher configs for.
+    :return: Dict mapping archive purposes to publisher configs, insofar as
+        they have publisher configs.
+    """
+    candidates = [
+        (archive.purpose, getPubConfig(archive))
+        for archive in get_publishable_archives(distro)]
+    return dict(
+        (purpose, config)
+        for purpose, config in candidates if config is not None)
+
+
 class PublishFTPMaster(LaunchpadCronScript):
     """Publish a distro (update).
 
@@ -241,9 +256,7 @@ class PublishFTPMaster(LaunchpadCronScript):
         So: getConfigs[distro][purpose] gives you a config.
         """
         return dict(
-            (distro, dict(
-                (archive.purpose, getPubConfig(archive))
-                for archive in get_publishable_archives(distro)))
+            (distro, map_distro_pubconfigs(distro))
             for distro in self.distributions)
 
     def locateIndexesMarker(self, distribution, suite):
@@ -536,9 +549,10 @@ class PublishFTPMaster(LaunchpadCronScript):
         """Publish the distro's complete uploads."""
         self.logger.debug("Full publication.  This may take some time.")
         for archive in get_publishable_archives(distribution):
-            # This, for the main archive, is where the script spends
-            # most of its time.
-            self.publishDistroArchive(distribution, archive)
+            if archive.purpose in self.configs[distribution]:
+                # This, for the main archive, is where the script spends
+                # most of its time.
+                self.publishDistroArchive(distribution, archive)
 
     def publish(self, distribution, security_only=False):
         """Do the main publishing work.
@@ -595,14 +609,6 @@ class PublishFTPMaster(LaunchpadCronScript):
             # We've done enough here.  Leave some server time for others.
             return
 
-        for series in distribution.series:
-            suites_needing_indexes = self.listSuitesNeedingIndexes(series)
-            if len(suites_needing_indexes) > 0:
-                self.createIndexes(distribution, suites_needing_indexes)
-                # Don't try to do too much in one run.  Leave the rest
-                # of the work for next time.
-                return
-
         self.processAccepted(distribution)
 
         self.rsyncBackupDists(distribution)
@@ -630,5 +636,6 @@ class PublishFTPMaster(LaunchpadCronScript):
         self.setUpDirs()
 
         for distribution in self.distributions:
-            self.processDistro(distribution)
-            self.txn.commit()
+            if len(self.configs[distribution]) > 0:
+                self.processDistro(distribution)
+                self.txn.commit()

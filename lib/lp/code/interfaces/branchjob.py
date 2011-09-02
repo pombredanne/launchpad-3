@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -111,10 +111,11 @@ class IBranchUpgradeJob(IRunnableJob):
 
 class IBranchUpgradeJobSource(IJobSource):
 
-    def create(branch):
+    def create(branch, requester):
         """Upgrade a branch to a more current format.
 
         :param branch: The database branch to upgrade.
+        :param requester: The person requesting the upgrade.
         """
 
 
