@@ -2199,7 +2199,7 @@ class PersonAssignedBugTaskSearchListingView(RelevantMilestonesMixin,
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
     page_title = 'Assigned bugs'
-    link_back = '+assignedbugs'
+    view_name = '+assignedbugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None, prejoins=[]):
@@ -2346,7 +2346,7 @@ class PersonSubscribedBugTaskSearchListingView(RelevantMilestonesMixin,
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
                        "importance", "status"]
     page_title = 'Subscribed bugs'
-    link_back = '+subscribedbugs'
+    view_name = '+subscribedbugs'
 
     def searchUnbatched(self, searchtext=None, context=None,
                         extra_params=None, prejoins=[]):

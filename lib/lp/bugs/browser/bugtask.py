@@ -2744,6 +2744,10 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
             IProduct.providedBy(self.context) or
             IProjectGroup.providedBy(self.context))
 
+    def shouldShowTeamPortlet(self):
+        """Should the User's Teams portlet me shown in the results?"""
+        return False
+
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""
         form = self.request.form

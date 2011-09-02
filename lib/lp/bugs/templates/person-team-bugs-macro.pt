@@ -18,7 +18,7 @@
             <td tal:content="structure team/image:icon" />
             <td>
               <a tal:attributes="
-                  href string:${team/fmt:url}/${view/link_back}"
+                  href string:${team/fmt:url}/${view/view_name}"
                 tal:content="team/title">Team name</a>
             </td>
           </tr>
