@@ -1010,6 +1010,9 @@ class EditDistroSeriesDifference(ForwardedAuthorization):
         super(EditDistroSeriesDifference, self).__init__(
             obj.derived_series.distribution, 'launchpad.View')
 
+    def checkUnauthenticated(self):
+        return False
+
 
 class SeriesDrivers(AuthorizationBase):
     """Drivers can approve or decline features and target bugs.
@@ -1987,6 +1990,7 @@ class CodeReviewVoteReferenceEdit(ForwardedAuthorization):
     def __init__(self, obj):
         super(CodeReviewVoteReferenceEdit, self).__init__(
             obj.branch_merge_proposal.target_branch)
+        self.obj = obj
 
     def checkAuthenticated(self, user):
         """Only the affected teams may change the review request.
@@ -2310,6 +2314,7 @@ class ViewPersonalArchiveSubscription(ForwardedAuthorization):
     def __init__(self, obj):
         super(ViewPersonalArchiveSubscription, self).__init__(
             obj.archive, 'launchpad.Append')
+        self.obj = obj
 
     def checkAuthenticated(self, user):
         if user.person == self.obj.subscriber or user.in_admin:
@@ -2318,7 +2323,7 @@ class ViewPersonalArchiveSubscription(ForwardedAuthorization):
             ViewPersonalArchiveSubscription, self).checkAuthenticated(user)
 
 
-class ViewArchiveSubscriber(AuthorizationBase):
+class ViewArchiveSubscriber(ForwardedAuthorization):
     """Restrict viewing of archive subscribers.
 
     The user should be the subscriber, have append privilege to the
@@ -2330,6 +2335,7 @@ class ViewArchiveSubscriber(AuthorizationBase):
     def __init__(self, obj):
         super(ViewArchiveSubscriber, self).__init__(
             obj, 'launchpad.Edit')
+        self.obj = obj
 
     def checkAuthenticated(self, user):
         return (user.inTeam(self.obj.subscriber) or

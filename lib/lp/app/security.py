@@ -11,10 +11,7 @@ __all__ = [
     'ForwardedAuthorization',
     ]
 
-from zope.component import (
-    getAdapter,
-    queryAdapter,
-    )
+from zope.component import queryAdapter
 from zope.interface import implements
 from zope.security.permission import checkPermission
 
@@ -117,21 +114,22 @@ class ForwardedAuthorization(AuthorizationBase):
 
     def __init__(self, forwarded_object, permission=None):
         self.forwarded_object = forwarded_object
-        self.permission = permission
+        if permission is not None:
+            self.permission = permission
 
     @property
     def forwarded_adapter(self):
-        adapter = getAdapter(
+        return queryAdapter(
             self.forwarded_object, IAuthorization, self.permission)
-        return adapter
 
     def checkAuthenticated(self, user):
-        return self.forwarded_adapter.checkAuthenticated(user)
+        adapter = self.forwarded_adapter
+        if adapter is None:
+            return False
+        return adapter.checkAuthenticated(user)
 
     def checkUnauthenticated(self):
-        return self.forwarded_adapter.checkUnauthenticated()
-
-    ## def __new__(cls, obj, permission=None):
-    ##     if permission is None:
-    ##         permission = cls.permission
-    ##     return getAdapter(obj, IAuthorization, permission)
+        adapter = self.forwarded_adapter
+        if adapter is None:
+            return False
+        return adapter.checkUnauthenticated()
