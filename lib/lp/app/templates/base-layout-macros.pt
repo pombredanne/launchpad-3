@@ -143,11 +143,6 @@
         Y.on('lp:context:web_link:changed', function(e) {
             window.location = e.new_value;
         });
-
-        // Set-up all BETA divs.
-        Y.on("load", function() {
-            Y.all("div.beta").append('<img src="/@@/beta2" alt="[BETA]" />');
-        });
     });
   </script>
 </metal:page-javascript>
