@@ -29,6 +29,7 @@
     <title tal:content="view/fmt:pagetitle">Page Title</title>
     <link rel="shortcut icon" href="/@@/launchpad.png" />
 
+    <link href='http://fonts.googleapis.com/css?family=Ubuntu' rel='stylesheet' type='text/css' />
     <tal:atomfeeds define="feed_links view/feed_links | nothing">
       <link rel="alternate" type="application/atom+xml"
         tal:repeat="link feed_links"
