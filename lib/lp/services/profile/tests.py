@@ -43,6 +43,85 @@ EXAMPLE_HTML_END = '''\
 EXAMPLE_HTML = EXAMPLE_HTML_START + EXAMPLE_HTML_END
 
 
+class SQLDSLTest(TestCase):
+
+    def assertCondition(self,
+                        condition_string, succeeds, fails, included, ignored):
+        results = profile._make_condition_function(condition_string)
+        self.assertEqual(included, results['included'])
+        self.assertEqual(ignored, results['ignored'])
+        for example in succeeds:
+            self.assertTrue(results['condition'](example))
+        for example in fails:
+            self.assertFalse(results['condition'](example))
+
+    def test_startswith(self):
+        self.assertCondition(
+            'startswith foo bar',
+            succeeds=['FOO BARBAZ'],
+            fails=['BARBAZ FOO'],
+            included=[dict(constraint='STARTSWITH', value='FOO BAR')],
+            ignored=[])
+
+    def test_endswith(self):
+        self.assertCondition(
+            'endswith foo bar',
+            succeeds=['BAZ FOO BAR'],
+            fails=['BARBAZ FOO'],
+            included=[dict(constraint='ENDSWITH', value='FOO BAR')],
+            ignored=[])
+
+    def test_includes(self):
+        self.assertCondition(
+            'includes foo bar',
+            succeeds=['BAZ FOO BAR BING'],
+            fails=['BARBAZ FOO'],
+            included=[dict(constraint='INCLUDES', value='FOO BAR')],
+            ignored=[])
+
+    def test_whitespace_normalized(self):
+        self.assertCondition(
+            '  startswith        foo     bar  ',
+            succeeds=['FOO BARBAZ'],
+            fails=['BARBAZ FOO'],
+            included=[dict(constraint='STARTSWITH', value='FOO BAR')],
+            ignored=[])
+
+    def test_many_conditions(self):
+        self.assertCondition(
+            'startswith foo bar | endswith shazam|includes balooba',
+            succeeds=['FOO BARBAZ', 'SALAMI SHAZAM', 'FORTUNA BALOOBA CAT'],
+            fails=['BARBAZ FOO'],
+            included=[dict(constraint='STARTSWITH', value='FOO BAR'),
+                      dict(constraint='ENDSWITH', value='SHAZAM'),
+                      dict(constraint='INCLUDES', value='BALOOBA')],
+            ignored=[])
+
+    def test_trailing_or(self):
+        self.assertCondition(
+            'startswith foo bar|',
+            succeeds=['FOO BARBAZ'],
+            fails=['BARBAZ FOO'],
+            included=[dict(constraint='STARTSWITH', value='FOO BAR')],
+            ignored=[])
+
+    def test_one_ignored(self):
+        self.assertCondition(
+            'matches foo bar',
+            succeeds=[],
+            fails=['BARBAZ FOO'],
+            included=[],
+            ignored=[dict(constraint='MATCHES', value='FOO BAR')])
+
+    def test_one_included_one_ignored(self):
+        self.assertCondition(
+            'matches kumquat | startswith foo bar',
+            succeeds=['FOO BAR HAMSTER'],
+            fails=['BARBAZ FOO'],
+            included=[dict(constraint='STARTSWITH', value='FOO BAR')],
+            ignored=[dict(constraint='MATCHES', value='KUMQUAT')])
+
+
 class BaseTest(TestCase):
 
     def _get_request(self, path='/'):
@@ -99,7 +178,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
             profiling_allowed='False', profile_all_requests='True',
             memory_profile_log='.')
         profile.start_request(self._get_start_event(
-            '/++profile++show,callgrind'))
+            '/++profile++show&callgrind'))
         self.assertCleanProfilerState('config was ignored')
 
     def test_optional_profiling_without_marked_request_has_no_profile(self):
@@ -107,7 +186,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
         # request.
         self.pushProfilingConfig(profiling_allowed='True')
         profile.start_request(self._get_start_event('/'))
-        self.assertEqual(profile._profilers.actions, set())
+        self.assertEqual(profile._profilers.actions, {})
         self.assertIs(getattr(profile._profilers, 'profiler', None), None)
         self.assertIs(
             getattr(profile._profilers, 'memory_profile_start', None), None)
@@ -121,7 +200,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.assertIs(
             getattr(profile._profilers, 'memory_profile_start', None),
             None)
-        self.assertEquals(profile._profilers.actions, set(('show', )))
+        self.assertEquals(set(profile._profilers.actions), set(('show', )))
 
     def test_optional_profiling_with_callgrind_request_starts_profiling(self):
         # If profiling is allowed and a request with the "callgrind" marker
@@ -132,7 +211,8 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.assertIs(
             getattr(profile._profilers, 'memory_profile_start', None),
             None)
-        self.assertEquals(profile._profilers.actions, set(('callgrind', )))
+        self.assertEquals(
+            set(profile._profilers.actions), set(('callgrind', )))
 
     def test_optional_profiling_with_log_request_starts_profiling(self):
         # If profiling is allowed and a request with the "log" marker URL
@@ -143,20 +223,21 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.assertIs(
             getattr(profile._profilers, 'memory_profile_start', None),
             None)
-        self.assertEquals(profile._profilers.actions, set(('callgrind', )))
+        self.assertEquals(
+            set(profile._profilers.actions), set(('callgrind', )))
 
     def test_optional_profiling_with_combined_request_starts_profiling(self):
         # If profiling is allowed and a request with the "callgrind" and
         # "show" marker URL segment is made, profiling starts.
         self.pushProfilingConfig(profiling_allowed='True')
         profile.start_request(
-            self._get_start_event('/++profile++callgrind,show/'))
+            self._get_start_event('/++profile++callgrind&show/'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
         self.assertIs(
             getattr(profile._profilers, 'memory_profile_start', None),
             None)
         self.assertEquals(
-            profile._profilers.actions, set(('callgrind', 'show')))
+            set(profile._profilers.actions), set(('callgrind', 'show')))
 
     def test_optional_profiling_with_reversed_request_starts_profiling(self):
         # If profiling is allowed and a request with the "show" and the
@@ -166,13 +247,13 @@ class TestRequestStartHandler(TestCleanupProfiler):
         # difference from the previous test.  Also, it doesn't have a
         # trailing slash. :-P
         profile.start_request(
-            self._get_start_event('/++profile++show,callgrind'))
+            self._get_start_event('/++profile++show&callgrind'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
         self.assertIs(
             getattr(profile._profilers, 'memory_profile_start', None),
             None)
         self.assertEquals(
-            profile._profilers.actions, set(('callgrind', 'show')))
+            set(profile._profilers.actions), set(('callgrind', 'show')))
 
     def test_optional_profiling_with_pstats_request_starts_profiling(self):
         # If profiling is allowed and a request with the "pstats" marker,
@@ -185,7 +266,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.assertIs(
             getattr(profile._profilers, 'memory_profile_start', None),
             None)
-        self.assertEquals(profile._profilers.actions, set(('pstats',)))
+        self.assertEquals(set(profile._profilers.actions), set(('pstats',)))
 
     def test_optional_profiling_with_log_pstats(self):
         # If profiling is allowed and a request with the "log" and "pstats"
@@ -193,13 +274,13 @@ class TestRequestStartHandler(TestCleanupProfiler):
         # and pstats request.
         self.pushProfilingConfig(profiling_allowed='True')
         profile.start_request(
-            self._get_start_event('/++profile++log,pstats/'))
+            self._get_start_event('/++profile++log&pstats/'))
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
         self.assertIs(
             getattr(profile._profilers, 'memory_profile_start', None),
             None)
         self.assertEquals(
-            profile._profilers.actions, set(('callgrind', 'pstats',)))
+            set(profile._profilers.actions), set(('callgrind', 'pstats',)))
 
     def test_optional_profiling_with_callgrind_pstats(self):
         # If profiling is allowed and a request with both the "pstats" and
@@ -207,14 +288,14 @@ class TestRequestStartHandler(TestCleanupProfiler):
         # profiler.
         self.pushProfilingConfig(profiling_allowed='True')
         profile.start_request(
-            self._get_start_event('/++profile++pstats,callgrind/'))
+            self._get_start_event('/++profile++pstats&callgrind/'))
         self.assertIsInstance(profile._profilers.profiler,
                               profile.Profiler)
         self.assertIs(
             getattr(profile._profilers, 'memory_profile_start', None),
             None)
         self.assertEquals(
-            profile._profilers.actions, set(('pstats', 'callgrind')))
+            set(profile._profilers.actions), set(('pstats', 'callgrind')))
 
     def test_forced_profiling_registers_action(self):
         # profile_all_requests should register as a callgrind action.
@@ -225,7 +306,8 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.assertIs(
             getattr(profile._profilers, 'memory_profile_start', None),
             None)
-        self.assertEquals(profile._profilers.actions, set(('callgrind', )))
+        self.assertEquals(
+            set(profile._profilers.actions), set(('callgrind', )))
 
     def test_optional_profiling_with_wrong_request_helps(self):
         # If profiling is allowed and a request with the marker URL segment
@@ -236,7 +318,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.assertIs(
             getattr(profile._profilers, 'memory_profile_start', None),
             None)
-        self.assertEquals(profile._profilers.actions, set(('help', )))
+        self.assertEquals(set(profile._profilers.actions), set(('help', )))
 
     def test_forced_profiling_with_wrong_request_helps(self):
         # If profiling is forced and a request with the marker URL segment
@@ -249,7 +331,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
             getattr(profile._profilers, 'memory_profile_start', None),
             None)
         self.assertEquals(
-            profile._profilers.actions, set(('help', 'callgrind')))
+            set(profile._profilers.actions), set(('help', 'callgrind')))
 
     def test_memory_profile_start(self):
         self.pushProfilingConfig(
@@ -258,7 +340,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.assertIs(getattr(profile._profilers, 'profiler', None), None)
         self.assertIsInstance(profile._profilers.memory_profile_start, tuple)
         self.assertEqual(len(profile._profilers.memory_profile_start), 2)
-        self.assertEqual(profile._profilers.actions, set())
+        self.assertEqual(profile._profilers.actions, {})
 
     def test_combo_memory_and_profile_start(self):
         self.pushProfilingConfig(
@@ -267,13 +349,30 @@ class TestRequestStartHandler(TestCleanupProfiler):
         self.assertIsInstance(profile._profilers.profiler, profile.Profiler)
         self.assertIsInstance(profile._profilers.memory_profile_start, tuple)
         self.assertEqual(len(profile._profilers.memory_profile_start), 2)
-        self.assertEquals(profile._profilers.actions, set(('show', )))
+        self.assertEquals(set(profile._profilers.actions), set(('show', )))
 
     def test_sqltrace_start(self):
         self.pushProfilingConfig(profiling_allowed='True')
         profile.start_request(self._get_start_event('/++profile++sqltrace/'))
         self.assertIs(getattr(profile._profilers, 'profiler', None), None)
-        self.assertEquals(profile._profilers.actions, set(('sqltrace', )))
+        self.assertEquals(profile._profilers.actions, dict(sql=True))
+        self.assertEqual([], da.stop_sql_logging())
+
+    def test_sql_start(self):
+        self.pushProfilingConfig(profiling_allowed='True')
+        profile.start_request(self._get_start_event('/++profile++sql/'))
+        self.assertIs(getattr(profile._profilers, 'profiler', None), None)
+        self.assertEquals(profile._profilers.actions, dict(sql=False))
+        self.assertEqual([], da.stop_sql_logging())
+
+    def test_sqltrace_filtered_start(self):
+        self.pushProfilingConfig(profiling_allowed='True')
+        profile.start_request(self._get_start_event(
+            '/++profile++sqltrace:includes bugsubscription/'))
+        self.assertIs(getattr(profile._profilers, 'profiler', None), None)
+        self.assertEquals(set(profile._profilers.actions), set(('sql', )))
+        data = profile._profilers.actions['sql']
+        self.assertTrue(data['condition']('SELECT BUGSUBSCRIPTION FROM FOO'))
         self.assertEqual([], da.stop_sql_logging())
 
 
@@ -380,7 +479,7 @@ class TestBasicRequestEndHandler(BaseRequestEndHandlerTest):
         self.pushProfilingConfig(
             profiling_allowed='False', profile_all_requests='True',
             memory_profile_log=self.memory_profile_log)
-        request = self.endRequest('/++profile++show,callgrind')
+        request = self.endRequest('/++profile++show&callgrind')
         self.assertIs(getattr(request, 'oops', None), None)
         self.assertEqual(self.getAddedResponse(request), '')
         self.assertEqual(self.getMemoryLog(), [])
@@ -469,7 +568,7 @@ class TestCallgrindProfilerRequestEndHandler(BaseRequestEndHandlerTest):
         # If profiling is allowed and a request with the "callgrind" and
         # "show" marker URL segment is made, profiling starts.
         self.pushProfilingConfig(profiling_allowed='True')
-        request = self.endRequest('/++profile++callgrind,show')
+        request = self.endRequest('/++profile++callgrind&show')
         self.assertProfilePaths(
             self.assertBasicProfileExists(request, show=True))
 
@@ -499,7 +598,7 @@ class TestBothProfilersRequestEndHandler(BaseRequestEndHandlerTest):
         # "pstats" markers is made, profiling starts with the callgrind
         # approach only.
         self.pushProfilingConfig(profiling_allowed='True')
-        request = self.endRequest('/++profile++callgrind,pstats/')
+        request = self.endRequest('/++profile++callgrind&pstats/')
         self.assertBothProfiles(self.assertBasicProfileExists(request))
         # We had a bug in which the callgrind file was actually a pstats
         # file.  What we can do minimally to prevent this in the future is
@@ -606,14 +705,14 @@ class TestBeforeTraverseHandler(TestCleanupProfiler):
             profiling_allowed='False', profile_all_requests='True',
             memory_profile_log='.')
         event = BeforeTraverseEvent(None,
-            self._get_request('/++profile++show,callgrind'))
+            self._get_request('/++profile++show&callgrind'))
         with FeatureFixture({'profiling.enabled': 'on'}):
             profile.before_traverse(event)
             self.assertTrue(profile._profilers.profiling)
             self.assertIsInstance(
                 profile._profilers.profiler, profile.Profiler)
             self.assertEquals(
-                set(('show', 'callgrind')), profile._profilers.actions)
+                set(('show', 'callgrind')), set(profile._profilers.actions))
 
 
 class TestInlineProfiling(BaseRequestEndHandlerTest):
@@ -643,7 +742,7 @@ class TestInlineProfiling(BaseRequestEndHandlerTest):
         # ++profile++ wins over inline.
         self.pushProfilingConfig(profiling_allowed='True')
         request = self.endRequest(
-            '/++profile++show,callgrind', work=self.make_work())
+            '/++profile++show&callgrind', work=self.make_work())
         response = self.assertBasicProfileExists(request, show=True)
         self.assertCallgrindProfile(response)
         self.assertIn('Inline request ignored', response)
@@ -658,12 +757,23 @@ class TestInlineProfiling(BaseRequestEndHandlerTest):
             self.assertBasicProfileExists(request, show=True))
 
 
-class TestSqlTrace(TestCaseWithFactory, BaseRequestEndHandlerTest):
+class TestSqlLogging(TestCaseWithFactory, BaseRequestEndHandlerTest):
 
     layer = layers.DatabaseFunctionalLayer
 
     def testLogging(self):
-        # This is basically a smoketest.  The underlying machinery has tests.
+        self.pushProfilingConfig(profiling_allowed='True')
+        request = self.endRequest(
+            '/++profile++sql/', work=self.factory.makeBug)
+        response = self.getAddedResponse(request)
+        self.assertIn('Top 10 SQL times', response)
+        self.assertIn('Query number', response)
+        self.assertIn('Top 10 Python times', response)
+        self.assertIn('Before query', response)
+        self.assertTrue('Repeated Python SQL Triggers' not in response)
+        self.assertTrue('Show all tracebacks' not in response)
+
+    def testTraceLogging(self):
         self.pushProfilingConfig(profiling_allowed='True')
         request = self.endRequest(
             '/++profile++sqltrace/', work=self.factory.makeBug)
@@ -674,5 +784,23 @@ class TestSqlTrace(TestCaseWithFactory, BaseRequestEndHandlerTest):
         self.assertIn('Before query', response)
         self.assertIn('Repeated Python SQL Triggers', response)
         self.assertIn('Show all tracebacks', response)
+        # This file should be part of several of the tracebacks.
+        self.assertIn(__file__.replace('.pyc', '.py'), response)
+
+    def testTraceLoggingConditionally(self):
+        self.pushProfilingConfig(profiling_allowed='True')
+        request = self.endRequest(
+            '/++profile++sqltrace:includes SELECT/',
+            work=self.factory.makeBug)
+        response = self.getAddedResponse(request)
+        self.assertIn('Top 10 SQL times', response)
+        self.assertIn('Query number', response)
+        self.assertIn('Top 10 Python times', response)
+        self.assertIn('Before query', response)
+        self.assertIn('Repeated Python SQL Triggers', response)
+        self.assertIn('Show all tracebacks', response)
+        self.assertIn(
+            'You have requested tracebacks for statements that match only',
+            response)
         # This file should be part of several of the tracebacks.
         self.assertIn(__file__.replace('.pyc', '.py'), response)
