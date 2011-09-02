@@ -1265,7 +1265,7 @@ class PackageRemover(SoyuzScript):
         removals = []
         if self.options.binaryonly or self.options.sourceonly:
             removable.requestDeletion(
-                removedby=removed_by,
+                removed_by=removed_by,
                 removal_comment=self.options.removal_comment)
             removals.append(removable)
 
