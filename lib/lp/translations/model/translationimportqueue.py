@@ -835,45 +835,41 @@ class TranslationImportQueue:
         :return: The matching entry or None, if no matching entry was found
             at all."""
 
-        # Find possible candidates by querying the database.
-        queries = ['TranslationImportQueueEntry.path = %s' % sqlvalues(path)]
-        queries.append(
-            'TranslationImportQueueEntry.importer = %s' % sqlvalues(importer))
-        # Depending on how specific the new entry is, potemplate and pofile
-        # may be None.
+        # We disallow entries with the identical path, importer, potemplate
+        # and target (eg. productseries or distroseries/sourcepackagename).
+        clauses = [
+            TranslationImportQueueEntry.path==path,
+            TranslationImportQueueEntry.importer==importer,
+            ]
         if potemplate is not None:
-            queries.append(
-                'TranslationImportQueueEntry.potemplate = %s' % sqlvalues(
-                    potemplate))
+            clauses.append(
+                TranslationImportQueueEntry.potemplate==potemplate)
         if pofile is not None:
-            queries.append(
-                'TranslationImportQueueEntry.pofile = %s' % sqlvalues(pofile))
-        if sourcepackagename is not None:
-            # The import is related with a sourcepackage and a distribution.
-            queries.append(
-                'TranslationImportQueueEntry.sourcepackagename = %s' % (
-                    sqlvalues(sourcepackagename)))
-            queries.append(
-                'TranslationImportQueueEntry.distroseries = %s' % sqlvalues(
-                    distroseries))
+            clauses.append(Or(
+                TranslationImportQueueEntry.pofile==pofile,
+                TranslationImportQueueEntry.pofile==None))
+        if productseries is None:
+            assert sourcepackagename is not None and distroseries is not None
+            clauses.extend([
+                TranslationImportQueueEntry.distroseries_id==distroseries.id,
+                (TranslationImportQueueEntry.sourcepackagename_id==
+                 sourcepackagename.id),
+                ])
         else:
-            # The import is related with a productseries.
-            assert productseries is not None, (
-                'sourcepackagename and productseries cannot be both None at'
-                ' the same time.')
-
-            queries.append(
-                'TranslationImportQueueEntry.productseries = %s' % sqlvalues(
-                    productseries))
-        # Order the results by level of specificity.
-        entries = TranslationImportQueueEntry.select(
-                ' AND '.join(queries),
-                orderBy="potemplate IS NULL DESC, pofile IS NULL DESC")
+            clauses.append(
+                TranslationImportQueueEntry.productseries_id==productseries.id)
+        store = IMasterStore(TranslationImportQueueEntry)
+        entries = store.find(
+            TranslationImportQueueEntry, *clauses)
+        entries = list(
+            entries.order_by(
+                ['pofile is null desc', 'potemplate is null desc']))
+        count = len(entries)
 
         # Deal with the simple cases.
-        if entries.count() == 0:
+        if count == 0:
             return None
-        if entries.count() == 1:
+        if count == 1:
             return entries[0]
 
         # Check that the top two entries differ in levels of specificity.
