@@ -487,4 +487,16 @@
             permission="zope.Public"
             attributes="name title description"/>
     </class>
+    <class
+        class="lp.registry.vocabularies.VocabularyFilterPerson">
+        <require
+            permission="zope.Public"
+            attributes="name title description"/>
+    </class>
+    <class
+        class="lp.registry.vocabularies.VocabularyFilterTeam">
+        <require
+            permission="zope.Public"
+            attributes="name title description"/>
+    </class>
 </configure>

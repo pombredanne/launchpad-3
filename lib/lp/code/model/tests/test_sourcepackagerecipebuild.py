@@ -168,7 +168,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             recipe = self.factory.makeSourcePackageRecipe(branches=[branch])
             build = self.factory.makeSourcePackageRecipeBuild(recipe=recipe)
             self.assertTrue(check_permission('launchpad.View', build))
-        removeSecurityProxy(branch).private = True
+        removeSecurityProxy(branch).explicitly_private = True
         with person_logged_in(self.factory.makePerson()):
             self.assertFalse(check_permission('launchpad.View', build))
         login(ANONYMOUS)
@@ -605,7 +605,7 @@ class TestBuildNotifications(TrialTestCase):
 
     def test_handleStatus_OK(self):
         """Building the source package does _not_ immediately send mail.
-        
+
         (The archive uploader mail send one later.
         """
         return self.assertDeferredNotifyCount(

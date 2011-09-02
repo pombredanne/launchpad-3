@@ -35,13 +35,21 @@ class TestPillarVocabularyBase(TestCaseWithFactory):
             self.vocabulary.supportedFilters()
         )
 
-    def test_toTerm(self):
+    def test_Product_toTerm(self):
         # Product terms are composed of title, name, and the object.
         term = self.vocabulary.toTerm(self.product)
-        title = '%s (Product)' % self.product.title
+        title = '%s (Project)' % self.product.title
         self.assertEqual(title, term.title)
         self.assertEqual(self.product.name, term.token)
         self.assertEqual(self.product, term.value)
+
+    def test_ProjectGroup_toTerm(self):
+        # ProductGroup terms are composed of title, name, and the object.
+        term = self.vocabulary.toTerm(self.project_group)
+        title = '%s (Project Group)' % self.project_group.title
+        self.assertEqual(title, term.title)
+        self.assertEqual(self.project_group.name, term.token)
+        self.assertEqual(self.project_group, term.value)
 
     def test_getTermByToken(self):
         # Tokens are case insentive because the product name is lowercase.

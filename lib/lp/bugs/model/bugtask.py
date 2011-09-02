@@ -135,10 +135,7 @@ from lp.registry.interfaces.distribution import (
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
-from lp.registry.interfaces.distroseries import (
-    IDistroSeries,
-    IDistroSeriesSet,
-    )
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
     IMilestoneSet,
     IProjectGroupMilestone,
@@ -148,14 +145,8 @@ from lp.registry.interfaces.person import (
     validate_person,
     validate_public_person,
     )
-from lp.registry.interfaces.product import (
-    IProduct,
-    IProductSet,
-    )
-from lp.registry.interfaces.productseries import (
-    IProductSeries,
-    IProductSeriesSet,
-    )
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
@@ -339,40 +330,6 @@ def BugTaskToBugAdapter(bugtask):
     return bugtask.bug
 
 
-@block_implicit_flushes
-def validate_target_attribute(self, attr, value):
-    """Update the targetnamecache."""
-    # Don't update targetnamecache during _init().
-    if self._SO_creating or self._inhibit_target_check:
-        return value
-    # Determine the new target attributes.
-    target_params = dict(
-        product=self.product,
-        productseries=self.productseries,
-        sourcepackagename=self.sourcepackagename,
-        distribution=self.distribution,
-        distroseries=self.distroseries)
-    utility_iface_dict = {
-        'productID': IProductSet,
-        'productseriesID': IProductSeriesSet,
-        'sourcepackagenameID': ISourcePackageNameSet,
-        'distributionID': IDistributionSet,
-        'distroseriesID': IDistroSeriesSet,
-        }
-    utility_iface = utility_iface_dict[attr]
-    if value is None:
-        target_params[attr[:-2]] = None
-    else:
-        target_params[attr[:-2]] = getUtility(utility_iface).get(value)
-
-    # Update the target name cache with the potential new target. The
-    # attribute changes haven't been made yet, so we need to calculate the
-    # target manually.
-    self.updateTargetNameCache(bug_target_from_key(**target_params))
-
-    return value
-
-
 class PassthroughValue:
     """A wrapper to allow setting values on conjoined bug tasks."""
 
@@ -400,13 +357,10 @@ def validate_conjoined_attribute(self, attr, value):
     # people try to update the conjoined slave via the API.
     conjoined_master = self.conjoined_master
     if conjoined_master is not None:
-        setattr(self.conjoined_master, attr, value)
+        setattr(conjoined_master, attr, value)
         return value
 
-    # The conjoined slave is updated before the master one because,
-    # for distro tasks, conjoined_slave does a comparison on
-    # sourcepackagename, and the sourcepackagenames will not match
-    # if the conjoined master is altered before the conjoined slave!
+    # If there is a conjoined slave, update that.
     conjoined_bugtask = self.conjoined_slave
     if conjoined_bugtask:
         setattr(conjoined_bugtask, attr, PassthroughValue(value))
@@ -427,15 +381,6 @@ def validate_assignee(self, attr, value):
     return validate_person(self, attr, value)
 
 
-@block_implicit_flushes
-def validate_sourcepackagename(self, attr, value):
-    is_passthrough = isinstance(value, PassthroughValue)
-    value = validate_conjoined_attribute(self, attr, value)
-    if not is_passthrough:
-        self._syncSourcePackages(value)
-    return validate_target_attribute(self, attr, value)
-
-
 def validate_target(bug, target):
     """Validate a bugtask target against a bug's existing tasks.
 
@@ -446,7 +391,8 @@ def validate_target(bug, target):
             "A fix for this bug has already been requested for %s"
             % target.displayname)
 
-    if IDistributionSourcePackage.providedBy(target):
+    if (IDistributionSourcePackage.providedBy(target) or
+        ISourcePackage.providedBy(target)):
         # If the distribution has at least one series, check that the
         # source package has been published in the distribution.
         if (target.sourcepackagename is not None and
@@ -514,24 +460,19 @@ class BugTask(SQLBase):
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     product = ForeignKey(
         dbName='product', foreignKey='Product',
-        notNull=False, default=None,
-        storm_validator=validate_target_attribute)
+        notNull=False, default=None)
     productseries = ForeignKey(
         dbName='productseries', foreignKey='ProductSeries',
-        notNull=False, default=None,
-        storm_validator=validate_target_attribute)
+        notNull=False, default=None)
     sourcepackagename = ForeignKey(
         dbName='sourcepackagename', foreignKey='SourcePackageName',
-        notNull=False, default=None,
-        storm_validator=validate_sourcepackagename)
+        notNull=False, default=None)
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution',
-        notNull=False, default=None,
-        storm_validator=validate_target_attribute)
+        notNull=False, default=None)
     distroseries = ForeignKey(
         dbName='distroseries', foreignKey='DistroSeries',
-        notNull=False, default=None,
-        storm_validator=validate_target_attribute)
+        notNull=False, default=None)
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone',
         notNull=False, default=None,
@@ -712,7 +653,7 @@ class BugTask(SQLBase):
         """See `IBugTask`."""
         return self.bug.isSubscribed(person)
 
-    def _syncSourcePackages(self, new_spnid):
+    def _syncSourcePackages(self, new_spn):
         """Synchronize changes to source packages with other distrotasks.
 
         If one distroseriestask's source package is changed, all the
@@ -720,22 +661,22 @@ class BugTask(SQLBase):
         package has to be changed, as well as the corresponding
         distrotask.
         """
-        if self.bug is None:
-            # The validator is being called on an incomplete bug task.
+        if self.bug is None or not (self.distribution or self.distroseries):
+            # The validator is being called on a new or non-distro task.
             return
-        if self.distroseries is not None:
-            distribution = self.distroseries.distribution
-        else:
-            distribution = self.distribution
-        if distribution is not None:
-            for bugtask in self.related_tasks:
-                if bugtask.distroseries:
-                    related_distribution = bugtask.distroseries.distribution
-                else:
-                    related_distribution = bugtask.distribution
-                if (related_distribution == distribution and
-                    bugtask.sourcepackagenameID == self.sourcepackagenameID):
-                    bugtask.sourcepackagenameID = PassthroughValue(new_spnid)
+        distribution = self.distribution or self.distroseries.distribution
+        for bugtask in self.related_tasks:
+            relevant = (
+                bugtask.sourcepackagename == self.sourcepackagename and
+                distribution in (
+                    bugtask.distribution,
+                    getattr(bugtask.distroseries, 'distribution', None)))
+            if relevant:
+                key = bug_target_to_key(bugtask.target)
+                key['sourcepackagename'] = new_spn
+                bugtask.transitionToTarget(
+                    bug_target_from_key(**key),
+                    _sync_sourcepackages=False)
 
     def getContributorInfo(self, user, person):
         """See `IBugTask`."""
@@ -1200,13 +1141,13 @@ class BugTask(SQLBase):
 
         validate_target(self.bug, target)
 
-    def transitionToTarget(self, target):
+    def transitionToTarget(self, target, _sync_sourcepackages=True):
         """See `IBugTask`.
 
-        This method allows changing the target of some bug
-        tasks. The rules it follows are similar to the ones
-        enforced implicitly by the code in
-        lib/canonical/launchpad/browser/bugtask.py#BugTaskEditView.
+        If _sync_sourcepackages is True (the default) and the
+        sourcepackagename is being changed, any other tasks for the same
+        name in this distribution will have their names updated to
+        match. This should only be used by _syncSourcePackages.
         """
 
         if self.target == target:
@@ -1223,12 +1164,17 @@ class BugTask(SQLBase):
             # current target, or reset it to None
             self.milestone = None
 
-        # Inhibit validate_target_attribute, as we can't set them all
-        # atomically, but we know the final result is correct.
-        self._inhibit_target_check = True
-        for name, value in bug_target_to_key(target).iteritems():
+        new_key = bug_target_to_key(target)
+
+        # As a special case, if the sourcepackagename has changed then
+        # we update any other tasks for the same distribution and
+        # sourcepackagename. This keeps series tasks consistent.
+        if (_sync_sourcepackages and
+            new_key['sourcepackagename'] != self.sourcepackagename):
+            self._syncSourcePackages(new_key['sourcepackagename'])
+
+        for name, value in new_key.iteritems():
             setattr(self, name, value)
-        self._inhibit_target_check = False
         self.updateTargetNameCache()
 
         # After the target has changed, we need to recalculate the maximum bug
