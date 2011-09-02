@@ -24,6 +24,7 @@ from storm.expr import (
     With,
     )
 from storm.info import ClassAlias
+from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -280,8 +281,16 @@ class GenericBranchCollection:
                           target_branch=None, merged_revnos=None,
                           eager_load=False):
         """See `IBranchCollection`."""
-        if (self._asymmetric_filter_expressions or for_branches or
-            target_branch or merged_revnos):
+        if for_branches is not None and not for_branches:
+            # We have an empty branches list, so we can shortcut.
+            return EmptyResultSet()
+        elif merged_revnos is not None and not merged_revnos:
+            # We have an empty revnos list, so we can shortcut.
+            return EmptyResultSet()
+        elif (self._asymmetric_filter_expressions or
+            for_branches is not None or
+            target_branch is not None or
+            merged_revnos is not None):
             return self._naiveGetMergeProposals(statuses, for_branches,
                 target_branch, merged_revnos, eager_load)
         else:
