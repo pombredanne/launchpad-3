@@ -79,17 +79,38 @@ class ForkingServerForTests(object):
         #       settings, we have to somehow pass it a new config-on-disk to
         #       use.
         self.socket_path = config.codehosting.forking_daemon_socket
+        command = [sys.executable, bzr_path, 'launchpad-forking-service',
+                   '--path', self.socket_path, '-Derror']
         process = subprocess.Popen(
-            [sys.executable, bzr_path, 'launchpad-forking-service',
-             '--path', self.socket_path,
-            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
         self.process = process
-        # Wait for it to indicate it is running
+        stderr = []
         # The first line should be "Preloading" indicating it is ready
-        process.stderr.readline()
+        stderr.append(process.stderr.readline())
         # The next line is the "Listening on socket" line
-        process.stderr.readline()
-        # Now it is ready
+        stderr.append(process.stderr.readline())
+        # Now it should be ready.  If there were any errors, let's check, and
+        # report them.
+        if process.poll() is not None or 'error' in ''.join(stderr).lower():
+            # Looks like there was a problem. We cannot use addDetail because
+            # we are not on a testcase. A "print" is the best we can do.  That
+            # should still be visible on buildbot, which is where we have seen
+            # spurious failures so far.
+            print
+            print "stdout:"
+            print self.process.stdout.read()
+            print "-" * 70
+            print "stderr:"
+            print ''.join(stderr)
+            print self.process.stderr.read()
+            print "-" * 70
+            raise RuntimeError(
+                'Bzr server did not start.  See stdout and stderr reported '
+                'above. Command was "%s".  PYTHONPATH was "%s".  '
+                'BZR_PLUGIN_PATH was "%s".' %
+                (' '.join(command),
+                 env.get('PYTHONPATH'),
+                 env.get('BZR_PLUGIN_PATH')))
 
     def tearDown(self):
         # SIGTERM is the graceful exit request, potentially we could wait a
