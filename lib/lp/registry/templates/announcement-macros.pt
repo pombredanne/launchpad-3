@@ -14,9 +14,6 @@
    tal:attributes="id id_string/fmt:css-id">
     <h2 tal:condition="show_title">
       <a tal:attributes="href string:${announcement/fmt:url}">
-        <tal:date tal:condition="announcement/date_announced">
-          <span tal:replace="announcement/date_announced/fmt:date"/>:
-        </tal:date>
         <tal:title content="announcement/title">News item title</tal:title>
       </a>
     </h2>
@@ -25,7 +22,11 @@
       Written for
       <tal:pillar replace="structure announcement/target/fmt:link" />
       by
-      <tal:registrant replace="structure announcement/registrant/fmt:link" />.
+      <tal:registrant replace="structure announcement/registrant/fmt:link" />
+      <tal:date tal:condition="announcement/date_announced">
+        on
+        <span tal:replace="announcement/date_announced/fmt:date" />
+      </tal:date>
     </p>
 
     <div tal:condition="announcement/summary"
