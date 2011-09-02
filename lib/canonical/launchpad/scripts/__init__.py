@@ -19,7 +19,6 @@ __all__ = [
 import atexit
 import os
 import sys
-from textwrap import dedent
 import threading
 
 from zope.configuration.config import ConfigurationMachine
@@ -37,6 +36,7 @@ from canonical.launchpad.scripts.logger import (
     logger,
     logger_options,
     )
+from canonical.database.postgresql import ConnectionString
 # Intentional re-export, following along the lines of the logger module.
 from canonical.launchpad.scripts.loghandlers import WatchedFileHandler
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
@@ -118,7 +118,7 @@ def execute_zcml_for_scripts(use_web_security=False):
 def db_options(parser):
     """Add and handle default database connection options on the command line
 
-    Adds -d (--database), -H (--host) and -U (--user)
+    Adds -d (--database), -H (--host), -P (--port) and -U (--user)
 
     Parsed options provide dbname, dbhost and dbuser attributes.
 
@@ -134,20 +134,26 @@ def db_options(parser):
     To test, we first need to store the current values so we can reset them
     later.
 
-    >>> dbname, dbhost, dbuser = lp.get_dbname(), lp.dbhost, lp.dbuser
+    >>> dbname, dbhost, dbport, dbuser = (
+    ...     lp.get_dbname(), lp.dbhost, lp.dbport, lp.dbuser)
 
     Ensure that command line options propagate to where we say they do
 
+    >>> from optparse import OptionParser
     >>> parser = OptionParser()
     >>> db_options(parser)
     >>> options, args = parser.parse_args(
-    ...     ['--dbname=foo', '--host=bar', '--user=baz'])
-    >>> options.dbname, lp.get_dbname(), config.database.dbname
-    ('foo', 'foo', 'foo')
-    >>> (options.dbhost, lp.dbhost, config.database.dbhost)
-    ('bar', 'bar', 'bar')
+    ...     ['--dbname=foo', '--host=bar', '--user=baz', '--port=6432'])
+    >>> options.dbname, lp.get_dbname()
+    ('foo', 'foo')
+    >>> (options.dbhost, lp.dbhost)
+    ('bar', 'bar')
     >>> (options.dbuser, lp.dbuser)
     ('baz', 'baz')
+    >>> (options.dbport, lp.dbport)
+    (6432, 6432)
+    >>> config.database.rw_main_master
+    'dbname=foo user=baz host=bar port=6432'
 
     Make sure that the default user is None
 
@@ -159,15 +165,29 @@ def db_options(parser):
 
     Reset config
 
-    >>> lp.dbhost, lp.dbuser = dbhost, dbuser
+    >>> lp.dbhost, lp.dbport, lp.dbuser = dbhost, dbport, dbuser
     """
+    startup_connection_string = ConnectionString(
+        config.database.rw_main_master)
+
+    def update_db_config(**kw):
+        connection_string_keys = [
+            'rw_main_master',
+            'rw_main_slave',
+            'ro_main_master',
+            'ro_main_slave',
+            ]
+        config_data = ["[database]"]
+        for con_str_key in connection_string_keys:
+            con_str = ConnectionString(getattr(config.database, con_str_key))
+            for kwarg, kwval in kw.items():
+                setattr(con_str, kwarg, kwval)
+            config_data.append("%s: %s" % (con_str_key, str(con_str)))
+        config.push('update_db_config', '\n'.join(config_data))
+
     def dbname_callback(option, opt_str, value, parser):
         parser.values.dbname = value
-        config_data = dedent("""
-            [database]
-            dbname: %s
-            """ % value)
-        config.push('dbname_callback', config_data)
+        update_db_config(dbname=value)
         lp.dbname_override = value
 
     parser.add_option(
@@ -179,11 +199,7 @@ def db_options(parser):
 
     def dbhost_callback(options, opt_str, value, parser):
         parser.values.dbhost = value
-        config_data = dedent("""
-            [database]
-            dbhost: %s
-            """ % value)
-        config.push('dbhost_callback', config_data)
+        update_db_config(host=value)
         lp.dbhost = value
 
     parser.add_option(
@@ -192,8 +208,21 @@ def db_options(parser):
              help="Hostname or IP address of PostgreSQL server."
              )
 
+    def dbport_callback(options, opt_str, value, parser):
+        value = int(value)
+        parser.values.dbport = value
+        update_db_config(port=value)
+        lp.dbport = value
+
+    parser.add_option(
+        "-p", "--port", action="callback", callback=dbport_callback,
+        type=int, dest="dbport", default=lp.dbport,
+        help="Port PostgreSQL server is listening on."
+        )
+
     def dbuser_callback(options, opt_str, value, parser):
         parser.values.dbuser = value
+        update_db_config(user=value)
         lp.dbuser = value
 
     parser.add_option(
@@ -206,6 +235,6 @@ def db_options(parser):
     # as a PostgreSQL user named the same as the current Unix user').
     # If the -U option was not given on the command line, our callback is
     # never called so we need to set this different default here.
-    # Same for dbhost
     lp.dbuser = None
-    lp.dbhost = None
+    lp.dbhost = startup_connection_string.host
+    lp.dbport = startup_connection_string.port
