@@ -118,7 +118,7 @@ def execute_zcml_for_scripts(use_web_security=False):
 def db_options(parser):
     """Add and handle default database connection options on the command line
 
-    Adds -d (--database), -H (--host), -P (--port) and -U (--user)
+    Adds -d (--database), -H (--host), -p (--port) and -U (--user)
 
     Parsed options provide dbname, dbhost and dbuser attributes.
 
