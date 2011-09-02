@@ -41,7 +41,7 @@
                   can_perform_sync view/canPerformSync;">
 
       <div class="beta">
-        <img src="/@@/beta2" alt="[BETA]" />
+        <img src="/@@/beta" alt="[BETA]" />
       </div>
 
       <p><tal:replace replace="structure view/explanation/escapedtext" /></p>

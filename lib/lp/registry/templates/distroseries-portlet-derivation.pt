@@ -14,7 +14,7 @@
     </tal:multiple_parents>
 
     <div class="beta">
-      <img src="/@@/beta2" alt="[BETA]" />
+      <img src="/@@/beta" alt="[BETA]" />
     </div>
 
       <tal:diffs define="nb_diffs view/num_version_differences;
