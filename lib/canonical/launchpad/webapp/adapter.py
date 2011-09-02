@@ -699,10 +699,7 @@ class LaunchpadStatementTracer:
     def connection_raw_execute(self, connection, raw_cursor,
                                statement, params):
         statement_to_log = statement
-        print_traceback = self._debug_sql_extra
-        log_sql = getattr(_local, 'sql_logging', None)
-        render_sql = print_traceback or self._debug_sql or log_sql is not None
-        if render_sql and params:
+        if params:
             # There are some bind parameters so we want to insert them into
             # the sql statement so we can log the statement.
             query_params = list(Connection.to_database(params))
@@ -716,6 +713,8 @@ class LaunchpadStatementTracer:
                                  for p in query_params]
             statement_to_log = quoted_statement % tuple(param_strings)
         # Record traceback to log, if requested.
+        print_traceback = self._debug_sql_extra
+        log_sql = getattr(_local, 'sql_logging', None)
         log_traceback = False
         if log_sql is not None:
             log_sql.append(dict(stack=None, sql=None, exception=None))
@@ -745,7 +744,7 @@ class LaunchpadStatementTracer:
         threading.currentThread().lp_last_sql_statement = statement
         request_starttime = getattr(_local, 'request_start_time', None)
         if request_starttime is None:
-            if render_sql:
+            if print_traceback or self._debug_sql or log_sql is not None:
                 # Stash some information for logging at the end of the
                 # SQL execution.
                 connection._lp_statement_info = (
