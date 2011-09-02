@@ -986,6 +986,33 @@ invalid line
             result,
             'Invalid parsing result for <hardware>')
 
+    def testHardware_no_sysfs_node(self):
+        """If teh <sysfs-attributes> node is missing, parseHardware()
+        returns a dicitionary where the entry for this node is None.
+        """
+        parser = self.MockSubmissionParserParseHardwareTest(self.log)
+
+        node = etree.fromstring("""
+            <hardware>
+                <hal/>
+                <processors/>
+                <aliases/>
+                <udev/>
+                <dmi/>
+            </hardware>
+            """)
+        result = parser._parseHardware(node)
+        self.assertEqual({
+            'hal': 'parsed HAL data',
+            'processors': 'parsed processor data',
+            'aliases': 'parsed alias data',
+            'udev': 'parsed udev data',
+            'dmi': 'parsed DMI data',
+            'sysfs-attributes': None,
+            },
+            result,
+            'Invalid parsing result for <hardware>')
+
     def test_parseHardware_sub_parsers_fail(self):
         """Test of SubmissionParser._parseHardware().
 
@@ -2161,6 +2188,17 @@ invalid line
         self.assertTrue(
             parser.checkUdevScsiProperties(
                 [self.udev_root_device, self.udev_scsi_device], sysfs_data))
+
+    def testCheckUdevScsiProperties_data_is_none(self):
+        """Test of SubmissionParser.checkUdevScsiProperties().
+
+        checkUdevScsiProperties() even if no sysfs properties are
+        available.
+        """
+        parser = SubmissionParser()
+        self.assertTrue(
+            parser.checkUdevScsiProperties(
+                [self.udev_root_device, self.udev_scsi_device], None))
 
     def testCheckUdevScsiProperties_missing_devtype(self):
         """Test of SubmissionParser.checkUdevScsiProperties().

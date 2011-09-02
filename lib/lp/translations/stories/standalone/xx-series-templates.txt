@@ -90,15 +90,17 @@ appropriate page.
     >>> print utc_browser.url
     http://.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+edit
 
+Administration page is inaccessible.
+
     >>> utc_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+templates')
     >>> utc_browser.getLink(
-    ...     url='+source/evolution/+pots/evolution-2.2/+admin').click()
-    >>> print utc_browser.url
-    http://.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+admin
+    ...     url='+source/evolution/+pots/evolution-2.2/+admin')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 
-Trying to edit/administer disabled templates brings them to the
-appropriate page.
+Trying to edit disabled templates brings them to the appropriate page.
 
     >>> utc_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+templates')
@@ -107,12 +109,15 @@ appropriate page.
     >>> print utc_browser.url
     http://.../ubuntu/hoary/+source/evolution/+pots/disabled-template/+edit
 
+Administration page is inaccessible.
+
     >>> utc_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+templates')
     >>> utc_browser.getLink(
-    ...     url='+source/evolution/+pots/disabled-template/+admin').click()
-    >>> print utc_browser.url
-    http://.../ubuntu/hoary/+source/evolution/+pots/disabled-template/+admin
+    ...     url='+source/evolution/+pots/disabled-template/+admin')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
 
 
 Links to the templates

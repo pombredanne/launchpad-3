@@ -55,7 +55,7 @@ We can get some information about the import using this URL.
     >>> print representation['branch_link']
     http://.../~import-owner/scruff/import
     >>> print representation['review_status']
-    Pending Review
+    Reviewed
     >>> print representation['rcs_type']
     Subversion via CSCVS
     >>> print representation['url']
@@ -105,7 +105,7 @@ and there is information available about the import itsef.
     >>> print representation['branch_link']
     http://.../~import-owner/scruffbuntu/manic/scruff/import
     >>> print representation['review_status']
-    Pending Review
+    Reviewed
     >>> print representation['rcs_type']
     Subversion via CSCVS
     >>> print representation['url']

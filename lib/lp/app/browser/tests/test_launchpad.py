@@ -185,7 +185,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         branch = self.factory.makeProductBranch()
         naked_product = removeSecurityProxy(branch.product)
         ICanHasLinkedBranch(naked_product).setBranch(branch)
-        removeSecurityProxy(branch).private = True
+        removeSecurityProxy(branch).explicitly_private = True
         login(ANONYMOUS)
         requiredMessage = (
             u"The target %s does not have a linked branch." %
@@ -211,7 +211,7 @@ class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
         branch = self.factory.makeProductBranch()
         naked_product = removeSecurityProxy(branch.product)
         ICanHasLinkedBranch(naked_product).setBranch(branch)
-        removeSecurityProxy(branch).private = True
+        removeSecurityProxy(branch).explicitly_private = True
         login(ANONYMOUS)
         self.assertNotFound(naked_product.name, use_default_referer=False)
 
@@ -413,7 +413,6 @@ class TestPersonTraversal(TestCaseWithFactory, TraversalMixin):
         self.assertEqual(
             canonical_url(person, rootsite='bugs'),
             view.target.rstrip('/'))
-
 
 
 class TestErrorViews(TestCaseWithFactory):
