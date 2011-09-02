@@ -115,7 +115,8 @@ class TestCodeImportJobSetGetJobForMachine(TestCaseWithFactory):
 
     def makeJob(self, state, date_due_delta, requesting_user=None):
         """Create a CodeImportJob object from a spec."""
-        code_import = self.factory.makeCodeImport()
+        code_import = self.factory.makeCodeImport(
+            review_status=CodeImportReviewStatus.NEW)
         job = self.factory.makeCodeImportJob(code_import)
         if state == CodeImportJobState.RUNNING:
             getUtility(ICodeImportJobWorkflow).startJob(job, self.machine)
@@ -387,11 +388,12 @@ class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
     def test_wrongReviewStatus(self):
         # CodeImportJobWorkflow.newJob fails if the CodeImport review_status
         # is different from REVIEWED.
-        new_import = self.factory.makeCodeImport()
+        new_import = self.factory.makeCodeImport(
+            review_status=CodeImportReviewStatus.SUSPENDED)
         branch_name = new_import.branch.unique_name
         # Testing newJob failure.
         self.assertFailure(
-            "Review status of %s is not REVIEWED: NEW" % (branch_name,),
+            "Review status of %s is not REVIEWED: SUSPENDED" % (branch_name,),
             getUtility(ICodeImportJobWorkflow).newJob, new_import)
 
     def test_existingJob(self):
@@ -417,14 +419,17 @@ class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
         # If there is no CodeImportResult for the CodeImport, then the new
         # CodeImportJob has date_due set to UTC_NOW.
         code_import = self.getCodeImportForDateDueTest()
-        job = getUtility(ICodeImportJobWorkflow).newJob(code_import)
-        self.assertSqlAttributeEqualsDate(job, 'date_due', UTC_NOW)
+        self.assertSqlAttributeEqualsDate(code_import.import_job, 'date_due',
+            UTC_NOW)
 
     def test_dateDueRecentPreviousResult(self):
         # If there is a CodeImportResult for the CodeImport that is more
         # recent than the effective_update_interval, then the new
         # CodeImportJob has date_due set in the future.
         code_import = self.getCodeImportForDateDueTest()
+        # A code import job is automatically started when a reviewed code import
+        # is created. Remove it, so a "clean" one can be created later.
+        removeSecurityProxy(code_import).import_job.destroySelf()
         # Create a CodeImportResult that started a long time ago. This one
         # must be superseded by the more recent one created below.
         machine = self.factory.makeCodeImportMachine()
@@ -469,8 +474,8 @@ class TestCodeImportJobWorkflowNewJob(TestCaseWithFactory,
             date_job_started=datetime(2000, 1, 1, 12, 0, 0, tzinfo=UTC),
             date_created=datetime(2000, 1, 1, 12, 5, 0, tzinfo=UTC))
         # When we create the job, its date due must be set to UTC_NOW.
-        job = getUtility(ICodeImportJobWorkflow).newJob(code_import)
-        self.assertSqlAttributeEqualsDate(job, 'date_due', UTC_NOW)
+        self.assertSqlAttributeEqualsDate(code_import.import_job, 'date_due',
+            UTC_NOW)
 
 
 class TestCodeImportJobWorkflowDeletePendingJob(TestCaseWithFactory,
@@ -500,7 +505,8 @@ class TestCodeImportJobWorkflowDeletePendingJob(TestCaseWithFactory,
     def test_noJob(self):
         # CodeImportJobWorkflow.deletePendingJob fails if the
         # CodeImport is not associated to a CodeImportJob.
-        new_import = self.factory.makeCodeImport()
+        new_import = self.factory.makeCodeImport(
+            review_status=CodeImportReviewStatus.NEW)
         branch_name = new_import.branch.unique_name
         # Testing deletePendingJob failure.
         self.assertFailure(
@@ -578,7 +584,7 @@ class TestCodeImportJobWorkflowRequestJob(TestCaseWithFactory,
         # CodeImportJobWorkflow.requestJob sets requesting_user and
         # date_due if the current date_due is in the future.
         code_import = self.factory.makeCodeImport()
-        pending_job = self.factory.makeCodeImportJob(code_import)
+        pending_job = code_import.import_job
         person = self.factory.makePerson()
         # Set date_due in the future. ICodeImportJob does not allow setting
         # date_due, so we must use removeSecurityProxy.
@@ -877,8 +883,7 @@ class TestCodeImportJobWorkflowFinishJob(TestCaseWithFactory,
         unchecked_result_fields.difference_update(['log_file', 'status'])
 
         code_import = self.factory.makeCodeImport()
-        removeSecurityProxy(code_import).review_status = \
-            CodeImportReviewStatus.REVIEWED
+        removeSecurityProxy(code_import).import_job.destroySelf()
         self.assertFinishJobPassesThroughJobField(
             'code_import', 'code_import', code_import)
         unchecked_result_fields.remove('code_import')

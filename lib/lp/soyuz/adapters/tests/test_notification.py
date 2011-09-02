@@ -7,6 +7,7 @@
 
 from email.utils import formataddr
 from storm.store import Store
+from textwrap import dedent
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -168,6 +169,60 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         expected_email = email.format(package_name=spr.sourcepackagename.name)
         self.assertIn(expected_email, bcc_address)
 
+    def test_fetch_information_spr_multiple_changelogs(self):
+        # If previous_version is passed the "changelog" entry in the
+        # returned dict should contain the changelogs for all SPRs *since*
+        # that version and up to and including the passed SPR.
+        changelog = self.factory.makeChangelog(
+            spn="foo", versions=["1.2",  "1.1",  "1.0"])
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename="foo", version="1.3", changelog=changelog)
+        self.layer.txn.commit()  # Yay, librarian.
+
+        spr = spph.sourcepackagerelease
+        info = fetch_information(spr, None, None, previous_version="1.0")
+
+        self.assertIn("foo (1.1)", info['changelog'])
+        self.assertIn("foo (1.2)", info['changelog'])
+
+    def test_notify_bpr_rejected(self):
+        # If we notify about a rejected bpr with no source, a notification is
+        # sent.
+        bpr = self.factory.makeBinaryPackageRelease()
+        changelog = self.factory.makeChangelog(spn="foo", versions=["1.1"])
+        removeSecurityProxy(
+            bpr.build.source_package_release).changelog = changelog
+        self.layer.txn.commit()
+        archive = self.factory.makeArchive()
+        pocket = self.factory.getAnyPocket()
+        distroseries = self.factory.makeDistroSeries()
+        person = self.factory.makePerson()
+        notify(
+            person, None, [bpr], [], archive, distroseries, pocket,
+            action='rejected')
+        [notification] = pop_notifications()
+        body = notification.get_payload()[0].get_payload()
+        self.assertEqual(person_to_email(person), notification['To'])
+        expected_body = dedent("""\
+            Rejected:
+            Rejected by archive administrator.
+
+            foo (1.1) unstable; urgency=3Dlow
+
+              * 1.1.
+
+            =3D=3D=3D
+
+            If you don't understand why your files were rejected please send an email
+            to launchpad-users@lists.launchpad.net for help (requires membership).
+
+            -- =
+
+            You are receiving this email because you are the uploader of the above
+            PPA package.
+            """)
+        self.assertEqual(expected_body, body)
+
 
 class TestNotification(TestCaseWithFactory):
 
@@ -183,7 +238,7 @@ class TestNotification(TestCaseWithFactory):
         info = fetch_information(
             None, None, changes)
         self.assertEqual('2001-01-01', info['date'])
-        self.assertEqual(' * Foo!', info['changesfile'])
+        self.assertEqual(' * Foo!', info['changelog'])
         fields = [
             info['changedby'],
             info['maintainer'],
@@ -200,7 +255,7 @@ class TestNotification(TestCaseWithFactory):
             creator=creator, maintainer=maintainer)
         info = fetch_information(spr, None, None)
         self.assertEqual(info['date'], spr.dateuploaded)
-        self.assertEqual(info['changesfile'], spr.changelog_entry)
+        self.assertEqual(info['changelog'], spr.changelog_entry)
         self.assertEqual(
             info['changedby'], format_address_for_person(spr.creator))
         self.assertEqual(
@@ -217,7 +272,7 @@ class TestNotification(TestCaseWithFactory):
         info = fetch_information(None, [bpr], None)
         spr = bpr.build.source_package_release
         self.assertEqual(info['date'], spr.dateuploaded)
-        self.assertEqual(info['changesfile'], spr.changelog_entry)
+        self.assertEqual(info['changelog'], spr.changelog_entry)
         self.assertEqual(
             info['changedby'], format_address_for_person(spr.creator))
         self.assertEqual(
@@ -269,24 +324,6 @@ class TestNotification(TestCaseWithFactory):
             action='accepted')
         notifications = pop_notifications()
         self.assertEqual(0, len(notifications))
-
-    def test_notify_bpr_rejected(self):
-        # If we notify about a rejected bpr with no source, a notification is
-        # sent.
-        bpr = self.factory.makeBinaryPackageRelease()
-        removeSecurityProxy(
-            bpr.build.source_package_release).changelog_entry = '* Foo!'
-        archive = self.factory.makeArchive()
-        pocket = self.factory.getAnyPocket()
-        distroseries = self.factory.makeDistroSeries()
-        person = self.factory.makePerson()
-        notify(
-            person, None, [bpr], [], archive, distroseries, pocket,
-            action='rejected')
-        [notification] = pop_notifications()
-        body = notification.as_string()
-        self.assertEqual(person_to_email(person), notification['To'])
-        self.assertIn('Rejected by archive administrator.\n\n* Foo!\n', body)
 
     def test_reject_changes_file_no_email(self):
         # If we are rejecting a mail, and the person to notify has no

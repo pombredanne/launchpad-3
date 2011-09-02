@@ -661,6 +661,15 @@ class LaunchpadStatementTracer:
         threading.currentThread().lp_last_sql_statement = statement
         request_starttime = getattr(_local, 'request_start_time', None)
         if request_starttime is None:
+            if (sql_trace is not None or
+                self._debug_sql or
+                self._debug_sql_extra):
+                # Stash some information for logging at the end of the
+                # request.
+                connection._lp_statement_info = (
+                    time(),
+                    'SQL-%s' % connection._database.name,
+                    statement_to_log)
             return
         action = get_request_timeline(get_current_browser_request()).start(
             'SQL-%s' % connection._database.name, statement_to_log)
@@ -673,15 +682,27 @@ class LaunchpadStatementTracer:
             # action may be None if the tracer was installed after the
             # statement was submitted.
             action.finish()
-            # Do data reporting for the [start|stop]_sql_traceback_logging
-            # feature, as exposed by ++profile++sqltrace, and/or for stderr,
-            # as exposed by LP_DEBUG_SQL_EXTRA and LP_DEBUG_SQL.
-            sql_trace = getattr(_local, 'sql_trace', None)
-            if sql_trace and sql_trace[-1]['sql'] is None:
-                sql_trace[-1]['sql'] = action.logTuple()
-            if self._debug_sql or self._debug_sql_extra:
-                sys.stderr.write('%d-%d@%s %s\n' % action.logTuple())
-                sys.stderr.write("-" * 70 + "\n")
+        # Do data reporting for the [start|stop]_sql_traceback_logging
+        # feature, as exposed by ++profile++sqltrace, and/or for stderr,
+        # as exposed by LP_DEBUG_SQL_EXTRA and LP_DEBUG_SQL.
+        sql_trace = getattr(_local, 'sql_trace', None)
+        if sql_trace is not None or self._debug_sql or self._debug_sql_extra:
+            data = None
+            if action is not None:
+                data = action.logTuple()
+            else:
+                info = getattr(connection, '_lp_statement_info', None)
+                if info is not None:
+                    start, dbname, statement = info
+                    # Times are in milliseconds, to mirror actions.
+                    duration = int((time() - start) * 1000)
+                    data = (0, duration, dbname, statement)
+            if data is not None:
+                if sql_trace and sql_trace[-1]['sql'] is None:
+                    sql_trace[-1]['sql'] = data
+                if self._debug_sql or self._debug_sql_extra:
+                    sys.stderr.write('%d-%d@%s %s\n' % data)
+                    sys.stderr.write("-" * 70 + "\n")
 
     def connection_raw_execute_error(self, connection, raw_cursor,
                                      statement, params, error):

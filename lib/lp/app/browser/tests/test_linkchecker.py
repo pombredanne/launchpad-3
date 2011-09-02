@@ -1,4 +1,4 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for the LinkCheckerAPI."""
@@ -10,7 +10,6 @@ from random import shuffle
 import simplejson
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.linkchecker import LinkCheckerAPI
@@ -75,7 +74,7 @@ class TestLinkCheckerAPI(TestCaseWithFactory):
         branch_urls = list(valid_branch_urls)
         branch_urls.extend(invalid_branch_urls)
         shuffle(branch_urls)
-        
+
         bug_urls = list(valid_bug_urls)
         bug_urls.extend(invalid_bug_urls)
         shuffle(bug_urls)
@@ -99,12 +98,14 @@ class TestLinkCheckerAPI(TestCaseWithFactory):
     def test_only_valid_links(self):
         branch_urls = self.make_valid_branch_links()
         bug_urls = self.make_valid_bug_links()
-        self.invoke_link_checker(valid_branch_urls=branch_urls, valid_bug_urls=bug_urls)
+        self.invoke_link_checker(
+            valid_branch_urls=branch_urls, valid_bug_urls=bug_urls)
 
     def test_only_invalid_links(self):
         branch_urls = self.make_invalid_branch_links()
         bug_urls = self.make_invalid_bug_links()
-        self.invoke_link_checker(invalid_branch_urls=branch_urls, invalid_bug_urls=bug_urls)
+        self.invoke_link_checker(
+            invalid_branch_urls=branch_urls, invalid_bug_urls=bug_urls)
 
     def test_valid_and_invald_links(self):
         valid_branch_urls = self.make_valid_branch_links()

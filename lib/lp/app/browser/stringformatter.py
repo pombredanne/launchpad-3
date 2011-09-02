@@ -4,6 +4,7 @@
 """TALES formatter for strings."""
 from base64 import urlsafe_b64encode
 
+
 __metaclass__ = type
 __all__ = [
     'add_word_breaks',
@@ -283,7 +284,8 @@ class FormattersAPI:
         # linkify to the general bug url.
         url = '/bugs/%s' % bugnum
         # The text will have already been cgi escaped.
-        return '<a href="%s" class="bug-link">%s</a>%s' % (url, text, trailers)
+        return '<a href="%s" class="bug-link">%s</a>%s' % (
+            url, text, trailers)
 
     @staticmethod
     def _handle_parens_in_trailers(url, trailers):
