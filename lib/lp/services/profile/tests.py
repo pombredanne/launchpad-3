@@ -82,7 +82,6 @@ class TestCleanupProfiler(BaseTest):
         profile._profilers.actions = None
         profile._profilers.memory_profile_start = None
         profile._profilers.profiling = False
-        da.stop_sql_traceback_logging()
         super(TestCleanupProfiler, self).tearDown()
 
 
@@ -275,7 +274,7 @@ class TestRequestStartHandler(TestCleanupProfiler):
         profile.start_request(self._get_start_event('/++profile++sqltrace/'))
         self.assertIs(getattr(profile._profilers, 'profiler', None), None)
         self.assertEquals(profile._profilers.actions, set(('sqltrace', )))
-        self.assertEqual([], da.stop_sql_traceback_logging())
+        self.assertEqual([], da.stop_sql_logging())
 
 
 class BaseRequestEndHandlerTest(BaseTest):
