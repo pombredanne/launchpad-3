@@ -2841,4 +2841,4 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             'tests', 'hardwaretest-natty.xml')
         sample_data = open(sample_data_path).read()
         result, submission_id = self.runValidator(sample_data)
-        self.assertIsNot(None, result)
+        self.assertTrue(result is None)
