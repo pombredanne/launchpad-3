@@ -838,26 +838,28 @@ class TranslationImportQueue:
         # We disallow entries with the identical path, importer, potemplate
         # and target (eg. productseries or distroseries/sourcepackagename).
         clauses = [
-            TranslationImportQueueEntry.path==path,
-            TranslationImportQueueEntry.importer==importer,
+            TranslationImportQueueEntry.path == path,
+            TranslationImportQueueEntry.importer == importer,
             ]
         if potemplate is not None:
             clauses.append(
-                TranslationImportQueueEntry.potemplate==potemplate)
+                TranslationImportQueueEntry.potemplate == potemplate)
         if pofile is not None:
             clauses.append(Or(
-                TranslationImportQueueEntry.pofile==pofile,
-                TranslationImportQueueEntry.pofile==None))
+                TranslationImportQueueEntry.pofile == pofile,
+                TranslationImportQueueEntry.pofile == None))
         if productseries is None:
             assert sourcepackagename is not None and distroseries is not None
             clauses.extend([
-                TranslationImportQueueEntry.distroseries_id==distroseries.id,
-                (TranslationImportQueueEntry.sourcepackagename_id==
+                (TranslationImportQueueEntry.distroseries_id ==
+                 distroseries.id),
+                (TranslationImportQueueEntry.sourcepackagename_id ==
                  sourcepackagename.id),
                 ])
         else:
             clauses.append(
-                TranslationImportQueueEntry.productseries_id==productseries.id)
+                TranslationImportQueueEntry.productseries_id ==
+                productseries.id)
         store = IMasterStore(TranslationImportQueueEntry)
         entries = store.find(
             TranslationImportQueueEntry, *clauses)
