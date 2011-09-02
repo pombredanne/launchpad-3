@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """FTPMaster utilities."""
@@ -63,10 +63,6 @@ from lp.soyuz.adapters.packagelocation import (
     )
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
-from lp.soyuz.interfaces.publishing import (
-    IPublishingSet,
-    ISourcePackagePublishingHistory,
-    )
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript,
     SoyuzScriptError,
@@ -1268,24 +1264,10 @@ class PackageRemover(SoyuzScript):
 
         removals = []
         if self.options.binaryonly or self.options.sourceonly:
-            # Tedious.  Delete each BPPH/SPPH individually.
-            for removable in removables:
-                removable.requestDeletion(
-                    removed_by=removed_by,
-                    removal_comment=self.options.removal_comment)
-                removals.append(removable)
-        else:
-            # Mass-delete the sources, and the binaries will follow
-            # automatically.  The binaries are only interesting for
-            # logging.
-            sources = [
-                removable
-                for removable in removables
-                    if ISourcePackagePublishingHistory.implementedBy(
-                            removable)]
-            getUtility(IPublishingSet).requestDeletion(
-                sources, removed_by,
+            removable.requestDeletion(
+                removedby=removed_by,
                 removal_comment=self.options.removal_comment)
+            removals.append(removable)
 
         if len(removals) == 0:
             self.logger.info("No package removed (bug ?!?).")
