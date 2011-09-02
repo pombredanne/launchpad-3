@@ -646,6 +646,12 @@
             permission="launchpad.View"
             template="../templates/bugtask-index.pt"/>
         <browser:page
+            name="+batched-comments"
+            for="lp.bugs.interfaces.bugtask.IBugTask"
+            class="lp.bugs.browser.bugtask.BugTaskBatchedCommentsAndActivityView"
+            permission="launchpad.View"
+            template="../templates/bugtask-batched-comments.pt"/>
+        <browser:page
             name="+choose-affected-product"
             for="lp.bugs.interfaces.bugtask.IBugTask"
             class="lp.bugs.browser.bugalsoaffects.BugAlsoAffectsProductMetaView"
