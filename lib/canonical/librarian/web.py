@@ -7,6 +7,7 @@ from datetime import datetime
 import time
 from urlparse import urlparse
 
+from storm.exceptions import DisconnectionError
 from twisted.python import log
 from twisted.web import resource, static, util, server, proxy
 from twisted.internet.threads import deferToThread
@@ -125,8 +126,15 @@ class LibraryFileAliasResource(resource.Resource):
             raise NotFound
 
     def _eb_getFileAlias(self, failure):
-        failure.trap(NotFound)
-        return fourOhFour
+        err = failure.trap(NotFound, DisconnectionError)
+        if err == DisconnectionError:
+            return resource.ErrorPage(
+                503, 'Database unavailable',
+                'A required database is unavailable.\n'
+                'See http://identi.ca/launchpadstatus '
+                'for maintenance and outage notifications.')
+        else:
+            return fourOhFour
 
     def _cb_getFileAlias(
             self, (dbcontentID, dbfilename, mimetype, date_created, restricted),
