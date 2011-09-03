@@ -11,14 +11,12 @@ from cStringIO import StringIO
 import urllib2
 
 from fixtures import Fixture
-import transaction
 
 from canonical.librarian.client import LibrarianClient
 from canonical.librarian.testing.server import LibrarianServerFixture
 from canonical.testing.layers import (
     BaseLayer,
     DatabaseFunctionalLayer,
-    DatabaseLayer,
     )
 from lp.testing import TestCase
 from lp.testing.fixture import PGBouncerFixture
