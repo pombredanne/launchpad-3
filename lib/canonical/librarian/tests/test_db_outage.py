@@ -60,11 +60,11 @@ class PGBouncerLibrarianLayer(DatabaseFunctionalLayer):
 
     @classmethod
     def testSetUp(cls):
-        pass
+        cls.pgbouncer_fixture.start()
 
     @classmethod
     def testTearDown(cls):
-        pass
+        cls.pgbouncer_fixture.start()
 
 
 class TestLibrarianDBOutage(TestCase):
@@ -83,8 +83,9 @@ class TestLibrarianDBOutage(TestCase):
     def get_error_code(self):
         # We need to talk to every Librarian thread to ensure all the
         # Librarian database connections are in a known state.
-        # XXX StuartBishop 2011-09-01: 20 might be overkill, but
-        # I don't know where this is configured.
+        # XXX StuartBishop 2011-09-01 bug=840046: 20 might be overkill
+        # for the test run, but we have no real way of knowing how many
+        # connections are in use.
         num_librarian_threads = 20
         codes = set()
         for count in range(num_librarian_threads):
