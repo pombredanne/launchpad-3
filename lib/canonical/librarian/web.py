@@ -27,7 +27,8 @@ defaultResource = static.Data("""
         <h1>Launchpad Librarian</h1>
         <p>
         http://librarian.launchpad.net/ is a
-        file repository used by <a href="https://launchpad.net/">Launchpad</a>.
+        file repository used by
+        <a href="https://launchpad.net/">Launchpad</a>.
         </p>
         <p><small>Copyright 2004-2009 Canonical Ltd.</small></p>
         <!-- kthxbye. -->
@@ -108,7 +109,8 @@ class LibraryFileAliasResource(resource.Resource):
 
         token = request.args.get('token', [None])[0]
         path = request.path
-        deferred = deferToThread(self._getFileAlias, self.aliasID, token, path)
+        deferred = deferToThread(
+            self._getFileAlias, self.aliasID, token, path)
         deferred.addCallback(
                 self._cb_getFileAlias, filename, request
                 )
@@ -137,7 +139,8 @@ class LibraryFileAliasResource(resource.Resource):
             return fourOhFour
 
     def _cb_getFileAlias(
-            self, (dbcontentID, dbfilename, mimetype, date_created, restricted),
+            self,
+            (dbcontentID, dbfilename, mimetype, date_created, restricted),
             filename, request
             ):
         # Return a 404 if the filename in the URL is incorrect. This offers
@@ -175,6 +178,7 @@ class LibraryFileAliasResource(resource.Resource):
 
 class File(static.File):
     isLeaf = True
+
     def __init__(
         self, contentType, encoding, modification_time, *args, **kwargs):
         # Have to convert the UTC datetime to POSIX timestamp (localtime)
