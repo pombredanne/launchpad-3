@@ -11,6 +11,8 @@ import tempfile
 
 from zope.component import getUtility
 
+from canonical.config import dbconfig
+from canonical.database.postgresql import ConnectionString
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.services.database import write_transaction
@@ -123,12 +125,21 @@ class LibraryFileUpload(object):
             # If the client told us the name of the database it's using,
             # check that it matches.
             if self.databaseName is not None:
+                # Per Bug #840068, there are two methods of getting the
+                # database name (connection string and db
+                # introspection), and they can give different results
+                # due to pgbouncer database aliases. Lets check both,
+                # and if either patch pass.
+                config_dbname = ConnectionString(
+                    dbconfig.rw_main_master).dbname
+
                 store = getUtility(IStoreSelector).get(
                         MAIN_STORE, DEFAULT_FLAVOR)
                 result = store.execute("SELECT current_database()")
-                databaseName = result.get_one()[0]
-                if self.databaseName != databaseName:
-                    raise WrongDatabaseError(self.databaseName, databaseName)
+                real_dbname = result.get_one()[0]
+                if self.databaseName not in (config_dbname, real_dbname):
+                    raise WrongDatabaseError(
+                        self.databaseName, (config_dbname, real_dbname))
 
             self.debugLog.append(
                 'database name %r ok' % (self.databaseName, ))
