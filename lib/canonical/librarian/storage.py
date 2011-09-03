@@ -129,7 +129,7 @@ class LibraryFileUpload(object):
                 # database name (connection string and db
                 # introspection), and they can give different results
                 # due to pgbouncer database aliases. Lets check both,
-                # and if either patch pass.
+                # and succeed if either matches.
                 config_dbname = ConnectionString(
                     dbconfig.rw_main_master).dbname
 
