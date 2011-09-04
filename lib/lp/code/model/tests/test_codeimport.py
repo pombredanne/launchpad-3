@@ -56,20 +56,6 @@ class TestCodeImportCreation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_new_svn_import(self):
-        """A new subversion code import should have NEW status."""
-        code_import = CodeImportSet().new(
-            registrant=self.factory.makePerson(),
-            target=IBranchTarget(self.factory.makeProduct()),
-            branch_name='imported',
-            rcs_type=RevisionControlSystems.SVN,
-            url=self.factory.getUniqueURL())
-        self.assertEqual(
-            CodeImportReviewStatus.NEW,
-            code_import.review_status)
-        # No job is created for the import.
-        self.assertIs(None, code_import.import_job)
-
     def test_new_svn_import_svn_scheme(self):
         """A subversion import can use the svn:// scheme."""
         code_import = CodeImportSet().new(
@@ -79,10 +65,10 @@ class TestCodeImportCreation(TestCaseWithFactory):
             rcs_type=RevisionControlSystems.SVN,
             url=self.factory.getUniqueURL(scheme="svn"))
         self.assertEqual(
-            CodeImportReviewStatus.NEW,
+            CodeImportReviewStatus.REVIEWED,
             code_import.review_status)
         # No job is created for the import.
-        self.assertIs(None, code_import.import_job)
+        self.assertIsNot(None, code_import.import_job)
 
     def test_reviewed_svn_import(self):
         """A specific review status can be set for a new import."""
@@ -92,30 +78,15 @@ class TestCodeImportCreation(TestCaseWithFactory):
             branch_name='imported',
             rcs_type=RevisionControlSystems.SVN,
             url=self.factory.getUniqueURL(),
-            review_status=CodeImportReviewStatus.REVIEWED)
+            review_status=None)
         self.assertEqual(
             CodeImportReviewStatus.REVIEWED,
             code_import.review_status)
         # A job is created for the import.
         self.assertIsNot(None, code_import.import_job)
 
-    def test_new_cvs_import(self):
-        """A new CVS code import should have NEW status."""
-        code_import = CodeImportSet().new(
-            registrant=self.factory.makePerson(),
-            target=IBranchTarget(self.factory.makeProduct()),
-            branch_name='imported',
-            rcs_type=RevisionControlSystems.CVS,
-            cvs_root=self.factory.getUniqueURL(),
-            cvs_module='module')
-        self.assertEqual(
-            CodeImportReviewStatus.NEW,
-            code_import.review_status)
-        # No job is created for the import.
-        self.assertIs(None, code_import.import_job)
-
-    def test_reviewed_cvs_import(self):
-        """A specific review status can be set for a new import."""
+    def test_cvs_import_reviewed(self):
+        """A new CVS code import should have REVIEWED status."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
             target=IBranchTarget(self.factory.makeProduct()),
@@ -123,7 +94,7 @@ class TestCodeImportCreation(TestCaseWithFactory):
             rcs_type=RevisionControlSystems.CVS,
             cvs_root=self.factory.getUniqueURL(),
             cvs_module='module',
-            review_status=CodeImportReviewStatus.REVIEWED)
+            review_status=None)
         self.assertEqual(
             CodeImportReviewStatus.REVIEWED,
             code_import.review_status)
@@ -275,8 +246,7 @@ class TestCodeImportDeletion(TestCaseWithFactory):
         """Ensure deleting CodeImport objects deletes associated jobs."""
         code_import = self.factory.makeCodeImport()
         login_person(getUtility(ILaunchpadCelebrities).vcs_imports.teamowner)
-        code_import_job = self.factory.makeCodeImportJob(code_import)
-        job_id = code_import_job.id
+        job_id = code_import.import_job.id
         CodeImportJobSet().getById(job_id)
         job = CodeImportJobSet().getById(job_id)
         assert job is not None
@@ -644,7 +614,8 @@ class TestTryFailingImportAgain(TestCaseWithFactory):
         # tryFailingImportAgain only succeeds for imports that are FAILING.
         outcomes = {}
         for status in CodeImportReviewStatus.items:
-            code_import = self.factory.makeCodeImport()
+            code_import = self.factory.makeCodeImport(
+                review_status=CodeImportReviewStatus.NEW)
             code_import.updateFromData(
                 {'review_status': status}, self.factory.makePerson())
             try:
@@ -726,9 +697,10 @@ class TestRequestImport(TestCaseWithFactory):
         self.assertEqual(requester, e.requesting_user)
 
     def test_exception_on_disabled(self):
-        # get an SVN request, which isn't reviewed by default
+        # get an SVN request which is suspended
         code_import = self.factory.makeCodeImport(
-            svn_branch_url=self.factory.getUniqueURL())
+            svn_branch_url=self.factory.getUniqueURL(),
+            review_status=CodeImportReviewStatus.SUSPENDED)
         requester = self.factory.makePerson()
         # which leads to an exception if we try and ask for an import
         self.assertRaises(

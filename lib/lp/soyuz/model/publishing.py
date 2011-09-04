@@ -740,7 +740,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def supersede(self, dominant=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
-        assert self.status in [PUBLISHED, PENDING], (
+        assert self.status in active_publishing_status, (
             "Should not dominate unpublished source %s" %
             self.sourcepackagerelease.title)
 
@@ -1120,7 +1120,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # tolerate SUPERSEDED architecture-independent binaries, because
         # they are dominated automatically once the first publication is
         # processed.
-        if self.status not in [PUBLISHED, PENDING]:
+        if self.status not in active_publishing_status:
             assert not self.binarypackagerelease.architecturespecific, (
                 "Should not dominate unpublished architecture specific "
                 "binary %s (%s)" % (

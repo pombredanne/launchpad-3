@@ -349,6 +349,29 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         self.assertIs(
             None, parser.devices[pci_ethernet_controller_path].sysfs)
 
+    def test_buildUdevDeviceList_no_sysfs_data(self):
+        """Sysfs data is not required (maverick and natty submissions)."""
+        root_device_path = '/devices/LNXSYSTM:00'
+        pci_pci_bridge_path = '/devices/pci0000:00/0000:00:1c.0'
+        pci_ethernet_controller_path = (
+            '/devices/pci0000:00/0000:00:1c.0/0000:02:00.0')
+
+        udev_paths = (
+            root_device_path, pci_pci_bridge_path,
+            pci_ethernet_controller_path)
+
+        sysfs_data = None
+
+        parsed_data = self.makeUdevDeviceParsedData(udev_paths, sysfs_data)
+        parser = SubmissionParser()
+        parser.buildUdevDeviceList(parsed_data)
+
+        self.assertIs(
+            None, parser.devices[pci_pci_bridge_path].sysfs)
+
+        self.assertIs(
+            None, parser.devices[pci_ethernet_controller_path].sysfs)
+
     def test_buildUdevDeviceList_invalid_device_path(self):
         """Test the creation of UdevDevice instances for a submission.
 
@@ -3873,6 +3896,20 @@ class TestUdevDevice(TestCaseHWDB):
         self.assertTrue(device.is_scsi_device)
 
         device = UdevDevice(None, self.root_device)
+        self.assertFalse(device.is_scsi_device)
+
+    def test_is_scsi_device__no_sysfs_data(self):
+        """Test of UdevDevice.is_scsi_device.
+
+        If there is no sysfs data for a real SCSI device, is it not
+        considered as a real SCSI device.
+
+        Reason: Without sysfs data, we don't know the vendor and
+        model name, making it impossible to store data about the
+        device in the database.
+        """
+        device = UdevDevice(
+            None, self.scsi_scanner_device_data, None)
         self.assertFalse(device.is_scsi_device)
 
     def test_scsi_vendor(self):

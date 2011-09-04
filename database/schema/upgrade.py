@@ -544,7 +544,7 @@ if __name__ == '__main__':
             action="store_false", help="Don't actually commit changes"
             )
     parser.add_option(
-            "-p", "--partial", dest="partial", default=False,
+            "--partial", dest="partial", default=False,
             action="store_true",
             help="Commit after applying each patch",
             )

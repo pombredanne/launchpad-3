@@ -14,6 +14,7 @@ from datetime import (
 import os.path
 
 from bzrlib.errors import NotBranchError
+from bzrlib.revision import NULL_REVISION
 import pytz
 from storm.expr import (
     And,
@@ -157,7 +158,9 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
 
         revno, current_rev = branch.last_revision_info()
         repository = branch.repository
-        for rev_id in repository.iter_reverse_revision_history(current_rev):
+        graph = repository.get_graph()
+        for rev_id in graph.iter_lefthand_ancestry(
+                current_rev, (NULL_REVISION, )):
             revision = repository.get_revision(rev_id)
             revision_date = self._getRevisionTime(revision)
             if self._isTranslationsCommit(revision):

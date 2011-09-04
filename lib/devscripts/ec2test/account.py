@@ -23,6 +23,7 @@ import paramiko
 
 
 VALID_AMI_OWNERS = {
+    # Amazon account number: name/nickname (only for logging).
     '255383312499': 'gary',
     '559320013529': 'flacoste',
     '200337130613': 'mwhudson',
@@ -37,6 +38,7 @@ VALID_AMI_OWNERS = {
     '507541322704': 'sinzui',
     '424228475252': 'wallyworld',
     '292290876294': 'stevenk',
+    '259696152397': 'bac',
     # ...anyone else want in on the fun?
     }
 
