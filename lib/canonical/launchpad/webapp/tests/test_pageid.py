@@ -99,3 +99,24 @@ class TestCollectionResourcePageIDs(TestCase):
         self.assertEqual(
             self.makePageID(),
             'FakeContext:FakeCollectionResourceView:#milestone-page-resource')
+
+
+class TestPageIdCorners(TestCase):
+    """Ensure that the page ID generation handles corner cases well."""
+
+    def setUp(self):
+        super(TestPageIdCorners, self).setUp()
+        self.publication = WebServicePublication(db=None)
+        self.view = FakeView()
+        self.context = FakeContext()
+
+    def makePageID(self):
+        return self.publication.constructPageID(self.view, self.context)
+
+    def test_pageid_with_multiple_op_fields(self):
+        # The publisher will combine multiple form values with the same name
+        # into a list.  If those values are for "ws.op", the page ID mechanism
+        # should just ignore the op altogether.  (It used to generate an
+        # error, see bug 810113).
+        self.view.request.form_values['ws.op'] = ['one', 'another']
+        self.assertEqual(self.makePageID(), 'FakeContext:FakeView')

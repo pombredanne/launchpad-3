@@ -47,6 +47,7 @@ class TestMacroNontraversability(TestCaseWithFactory):
         '+macros',
         '+translations-macros',
         '+object-reassignment',
+        '+team-bugs-macro',
     )
 
     @staticmethod
