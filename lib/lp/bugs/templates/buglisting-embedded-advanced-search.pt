@@ -9,8 +9,9 @@
 <body>
   <div metal:fill-slot="side">
     <tal:menu replace="structure context/@@+global-actions" />
-    <div tal:condition="view/shouldShowAssignedToTeamPortlet|nothing"
-      tal:content="structure context/@@+portlet-team-assignedbugs" />
+    <tal:portlet-team-bugs condition="view/shouldShowTeamPortlet">
+      <div metal:use-macro="context/@@+team-bugs-macro/show" />
+    </tal:portlet-team-bugs>
   </div>
 
   <div metal:fill-slot="main">

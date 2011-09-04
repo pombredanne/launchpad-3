@@ -1455,6 +1455,12 @@ class Person(
             "You can't add a member with this status: %s." % status.name)
 
         event = JoinTeamEvent
+        tm = TeamMembership.selectOneBy(person=person, team=self)
+        if tm is not None:
+            if tm.status == TeamMembershipStatus.ADMIN or (
+                tm.status == TeamMembershipStatus.APPROVED and status ==
+                TeamMembershipStatus.PROPOSED):
+                status = tm.status
         if person.is_team:
             assert not self.hasParticipationEntryFor(person), (
                 "Team '%s' is a member of '%s'. As a consequence, '%s' can't "
@@ -1468,12 +1474,21 @@ class Person(
             is_reviewer_admin_of_new_member = (
                 person in reviewer.getAdministratedTeams())
             if not force_team_add and not is_reviewer_admin_of_new_member:
-                status = TeamMembershipStatus.INVITED
-                event = TeamInvitationEvent
+                if tm is None or tm.status not in (
+                    TeamMembershipStatus.PROPOSED,
+                    TeamMembershipStatus.APPROVED,
+                    TeamMembershipStatus.ADMIN,
+                    ):
+                    status = TeamMembershipStatus.INVITED
+                    event = TeamInvitationEvent
+                else:
+                    if tm.status == TeamMembershipStatus.PROPOSED:
+                        status = TeamMembershipStatus.APPROVED
+                    else:
+                        status = tm.status
 
         status_changed = True
         expires = self.defaultexpirationdate
-        tm = TeamMembership.selectOneBy(person=person, team=self)
         if tm is None:
             tm = TeamMembershipSet().new(
                 person, self, status, reviewer, dateexpires=expires,

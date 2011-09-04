@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive Domination class.
@@ -57,7 +57,11 @@ import functools
 import operator
 
 import apt_pkg
-from storm.expr import And, Count, Select
+from storm.expr import (
+    And,
+    Count,
+    Select,
+    )
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
@@ -65,16 +69,15 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
-from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.enums import (
     BinaryPackageFormat,
     PackagePublishingStatus,
     )
+from lp.soyuz.interfaces.publishing import inactive_publishing_status
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
-
 
 # Days before a package will be removed from disk.
 STAY_OF_EXECUTION = 1
@@ -98,7 +101,7 @@ def _compare_packages_by_version_and_date(get_release, p1, p2):
 
 
 class Dominator:
-    """ Manage the process of marking packages as superseded.
+    """Manage the process of marking packages as superseded.
 
     Packages are marked as superseded when they become obsolete.
     """
@@ -110,9 +113,8 @@ class Dominator:
         new stuff into the distribution but before the publisher
         creates the file lists for apt-ftparchive.
         """
-        self._logger = logger
+        self.logger = logger
         self.archive = archive
-        self.debug = self._logger.debug
 
     def _dominatePublications(self, pubs):
         """Perform dominations for the given publications.
@@ -121,39 +123,43 @@ class Dominator:
             publication must be PUBLISHED or PENDING, and the first in each
             list will be treated as dominant (so should be the latest).
         """
-        self.debug("Dominating packages...")
+        self.logger.debug("Dominating packages...")
 
         for name in pubs.keys():
             assert pubs[name], (
                 "Empty list of publications for %s" % name)
             for pubrec in pubs[name][1:]:
-                pubrec.supersede(pubs[name][0], self)
+                pubrec.supersede(pubs[name][0], logger=self.logger)
 
     def _sortPackages(self, pkglist, is_source=True):
-        # pkglist is a list of packages with the following
-        #  * sourcepackagename or packagename as appropriate
-        #  * version
-        #  * status
-        # Don't care about any other attributes
+        """Map out packages by name, and sort by descending version.
+
+        :param pkglist: An iterable of `SourcePackagePublishingHistory` or
+            `BinaryPackagePublishingHistory`.
+        :param is_source: Whether this call involves source package
+            publications.  If so, work with `SourcePackagePublishingHistory`.
+            If not, work with `BinaryPackagepublishingHistory`.
+        :return: A dict mapping each package name (as UTF-8 encoded string)
+            to a list of publications from `pkglist`, newest first.
+        """
+        self.logger.debug("Sorting packages...")
+
+        if is_source:
+            get_release = operator.attrgetter("sourcepackagerelease")
+            get_name = operator.attrgetter("sourcepackagename")
+        else:
+            get_release = operator.attrgetter("binarypackagerelease")
+            get_name = operator.attrgetter("binarypackagename")
+
         outpkgs = {}
-
-        self.debug("Sorting packages...")
-
-        attr_prefix = 'source' if is_source else 'binary'
-        get_release = operator.attrgetter(attr_prefix + 'packagerelease')
-        get_name = operator.attrgetter(attr_prefix + 'packagename')
-
         for inpkg in pkglist:
-            L = outpkgs.setdefault(
-                get_name(get_release(inpkg)).name.encode('utf-8'), [])
-            L.append(inpkg)
+            key = get_name(get_release(inpkg)).name.encode('utf-8')
+            outpkgs.setdefault(key, []).append(inpkg)
 
-        for pkgname in outpkgs:
-            if len(outpkgs[pkgname]) > 1:
-                outpkgs[pkgname].sort(
-                    functools.partial(
-                        _compare_packages_by_version_and_date, get_release))
-                outpkgs[pkgname].reverse()
+        sort_order = functools.partial(
+            _compare_packages_by_version_and_date, get_release)
+        for package_pubs in outpkgs.itervalues():
+            package_pubs.sort(cmp=sort_order, reverse=True)
 
         return outpkgs
 
@@ -188,9 +194,10 @@ class Dominator:
         # Avoid circular imports.
         from lp.soyuz.model.publishing import (
             BinaryPackagePublishingHistory,
-            SourcePackagePublishingHistory)
+            SourcePackagePublishingHistory,
+            )
 
-        self.debug("Beginning superseded processing...")
+        self.logger.debug("Beginning superseded processing...")
 
         # XXX: dsilvers 2005-09-22 bug=55030:
         # Need to make binaries go in groups but for now this'll do.
@@ -215,10 +222,10 @@ class Dominator:
         # then we can consider them eligible for removal.
         for pub_record in binary_records:
             binpkg_release = pub_record.binarypackagerelease
-            self.debug("%s/%s (%s) has been judged eligible for removal" %
-                       (binpkg_release.binarypackagename.name,
-                        binpkg_release.version,
-                        pub_record.distroarchseries.architecturetag))
+            self.logger.debug(
+                "%s/%s (%s) has been judged eligible for removal",
+                binpkg_release.binarypackagename.name, binpkg_release.version,
+                pub_record.distroarchseries.architecturetag)
             self._setScheduledDeletionDate(pub_record)
             # XXX cprov 20070820: 'datemadepending' is useless, since it's
             # always equals to "scheduleddeletiondate - quarantine".
@@ -262,28 +269,29 @@ class Dominator:
                     continue
 
             # Okay, so there's no unremoved binaries, let's go for it...
-            self.debug(
-                "%s/%s (%s) source has been judged eligible for removal" %
-                (srcpkg_release.sourcepackagename.name,
-                 srcpkg_release.version, pub_record.id))
+            self.logger.debug(
+                "%s/%s (%s) source has been judged eligible for removal",
+                srcpkg_release.sourcepackagename.name, srcpkg_release.version,
+                pub_record.id)
             self._setScheduledDeletionDate(pub_record)
             # XXX cprov 20070820: 'datemadepending' is pointless, since it's
             # always equals to "scheduleddeletiondate - quarantine".
             pub_record.datemadepending = UTC_NOW
 
-    def judgeAndDominate(self, dr, pocket):
-        """Perform the domination and superseding calculations
+    def dominateBinaries(self, distroseries, pocket):
+        """Perform domination on binary package publications.
 
-        It only works across the distroseries and pocket specified.
+        Dominates binaries, restricted to `distroseries`, `pocket`, and
+        `self.archive`.
         """
         # Avoid circular imports.
-        from lp.soyuz.model.publishing import (
-             BinaryPackagePublishingHistory,
-             SourcePackagePublishingHistory)
+        from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
-        for distroarchseries in dr.architectures:
-            self.debug("Performing domination across %s/%s (%s)" % (
-                dr.name, pocket.title, distroarchseries.architecturetag))
+        for distroarchseries in distroseries.architectures:
+            self.logger.debug(
+                "Performing domination across %s/%s (%s)",
+                distroseries.name, pocket.title,
+                distroarchseries.architecturetag)
 
             bpph_location_clauses = And(
                 BinaryPackagePublishingHistory.status ==
@@ -313,15 +321,24 @@ class Dominator:
                 BinaryPackageRelease.binpackageformat !=
                     BinaryPackageFormat.DDEB,
                 bpph_location_clauses)
-            self.debug("Dominating binaries...")
+            self.logger.debug("Dominating binaries...")
             self._dominatePublications(self._sortPackages(binaries, False))
 
-        self.debug("Performing domination across %s/%s (Source)" %
-                   (dr.name, pocket.title))
+    def dominateSources(self, distroseries, pocket):
+        """Perform domination on source package publications.
+
+        Dominates sources, restricted to `distroseries`, `pocket`, and
+        `self.archive`.
+        """
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+        self.logger.debug(
+            "Performing domination across %s/%s (Source)",
+            distroseries.name, pocket.title)
         spph_location_clauses = And(
             SourcePackagePublishingHistory.status ==
                 PackagePublishingStatus.PUBLISHED,
-            SourcePackagePublishingHistory.distroseries == dr,
+            SourcePackagePublishingHistory.distroseries == distroseries,
             SourcePackagePublishingHistory.archive == self.archive,
             SourcePackagePublishingHistory.pocket == pocket,
             )
@@ -343,9 +360,17 @@ class Dominator:
             SourcePackageRelease.sourcepackagenameID.is_in(
                 candidate_source_names),
             spph_location_clauses)
-        self.debug("Dominating sources...")
+        self.logger.debug("Dominating sources...")
         self._dominatePublications(self._sortPackages(sources))
         flush_database_updates()
+
+    def judge(self, distroseries, pocket):
+        """Judge superseded sources and binaries."""
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import (
+             BinaryPackagePublishingHistory,
+             SourcePackagePublishingHistory,
+             )
 
         sources = SourcePackagePublishingHistory.select("""
             sourcepackagepublishinghistory.distroseries = %s AND
@@ -353,8 +378,9 @@ class Dominator:
             sourcepackagepublishinghistory.pocket = %s AND
             sourcepackagepublishinghistory.status IN %s AND
             sourcepackagepublishinghistory.scheduleddeletiondate is NULL
-            """ % sqlvalues(dr, self.archive, pocket,
-                            ELIGIBLE_DOMINATION_STATES))
+            """ % sqlvalues(
+                distroseries, self.archive, pocket,
+                inactive_publishing_status))
 
         binaries = BinaryPackagePublishingHistory.select("""
             binarypackagepublishinghistory.distroarchseries =
@@ -364,11 +390,22 @@ class Dominator:
             binarypackagepublishinghistory.pocket = %s AND
             binarypackagepublishinghistory.status IN %s AND
             binarypackagepublishinghistory.scheduleddeletiondate is NULL
-            """ % sqlvalues(dr, self.archive, pocket,
-                            ELIGIBLE_DOMINATION_STATES),
+            """ % sqlvalues(
+                distroseries, self.archive, pocket,
+                inactive_publishing_status),
             clauseTables=['DistroArchSeries'])
 
         self._judgeSuperseded(sources, binaries)
 
-        self.debug("Domination for %s/%s finished" %
-                   (dr.name, pocket.title))
+    def judgeAndDominate(self, distroseries, pocket):
+        """Perform the domination and superseding calculations
+
+        It only works across the distroseries and pocket specified.
+        """
+
+        self.dominateBinaries(distroseries, pocket)
+        self.dominateSources(distroseries, pocket)
+        self.judge(distroseries, pocket)
+
+        self.logger.debug(
+            "Domination for %s/%s finished", distroseries.name, pocket.title)

@@ -562,6 +562,11 @@ class DistroSeriesDifference(StormBase):
                 DistroSeriesDifference.source_package_name_id)
         return DecoratedResultSet(differences, itemgetter(0))
 
+    @property
+    def sourcepackagename(self):
+        """See `IDistroSeriesDifference`"""
+        return self.source_package_name.name
+
     @cachedproperty
     def source_pub(self):
         """See `IDistroSeriesDifference`."""
