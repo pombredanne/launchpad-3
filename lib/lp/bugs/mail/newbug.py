@@ -67,7 +67,8 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None,
                     "You have assigned this bug to yourself for %(target)s")
             else:
                 contents += (
-                    "%(assigner)s has assigned this bug to you for %(target)s")
+                    "%(assigner)s has assigned this bug to you for " +
+                    "%(target)s")
             content_substitutions['assigner'] = (
                 event_creator.unique_displayname)
             content_substitutions['target'] = bugtask.target.displayname
