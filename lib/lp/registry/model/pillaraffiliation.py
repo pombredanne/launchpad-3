@@ -34,6 +34,7 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage,
     )
+from lp.registry.model.teammembership import find_team_participations
 
 
 class IHasAffiliation(Interface):
@@ -61,36 +62,71 @@ class PillarAffiliation(object):
 
     implements(IHasAffiliation)
 
+    # We rank the affiliations from most important to least important.
+    # Unlisted roles are given a rank of 10.
+    affiliation_priorities = {
+        'maintainer': 1,
+        'driver': 2,
+        'bug supervisor': 3,
+        'security contact': 4,
+    }
+
     def __init__(self, context):
         self.context = context
 
     def getPillar(self):
         return self.context
 
-    def _getAffiliationDetails(self, person, pillar):
+    def _getAffiliation(self, person, pillar):
         """ Return the affiliation information for a person, if any.
+
+        Subclasses will override this method to perform specific affiliation
+        checks.
+        The return result is a list of tuples (pillar displayanme, role).
+        """
+        return []
+
+    def _getAffiliationTeamRoles(self, pillar):
+        """ Return teams for which a person needs to belong, if affiliated.
 
         A person is affiliated with a pillar if they are in the list of
         drivers or are the maintainer.
-        The return result is a list of tuples (pillar displayanme, role).
         """
-        result = []
-        if person.inTeam(pillar.owner):
-            result.append((pillar.displayname, 'maintainer'))
-        for driver in pillar.drivers:
-            if person.inTeam(driver):
-                result.append((pillar.displayname, 'driver'))
-                break
+        result = {
+            (pillar.displayname, 'maintainer'): [pillar.owner],
+            (pillar.displayname, 'driver'): pillar.drivers}
         return result
 
     def getAffiliationBadges(self, persons):
         """ Return the affiliation badge details for people given a context.
+
+        There are 2 ways we check for affiliation:
+        1. Generic membership checks of particular teams as returned by
+           _getAffiliationTeamRoles
+        2. Specific affiliation checks as performed by _getAffiliation
         """
         pillar = self.getPillar()
         result = []
+
+        # We find the teams to check for participation..
+        affiliation_team_details = self._getAffiliationTeamRoles(pillar)
+        teams_to_check = set()
+        for teams in affiliation_team_details.values():
+            teams_to_check.update(teams)
+        # We gather the participation for the persons.
+        people_teams = find_team_participations(persons, teams_to_check)
+
         for person in persons:
-            affiliation_details = self._getAffiliationDetails(person, pillar)
-            if not affiliation_details:
+            # Specific affiliations
+            affiliations = self._getAffiliation(person, pillar)
+            # Generic, team based affiliations
+            affiliated_teams = people_teams.get(person, [])
+            for affiliated_team in affiliated_teams:
+                for affiliation, teams in affiliation_team_details.items():
+                    if affiliated_team in teams:
+                        affiliations.append(affiliation)
+
+            if not affiliations:
                 result.append([])
                 continue
 
@@ -108,8 +144,14 @@ class PillarAffiliation(object):
             else:
                 default_icon_url = "/@@/product-badge"
             icon_url = getIconUrl(self.context, pillar, default_icon_url)
+
+            # Sort the affiliation list according the the importance of each
+            # affiliation role.
+            affiliations.sort(
+                key=lambda affiliation_rec:
+                    self.affiliation_priorities.get(affiliation_rec[1], 10))
             badges = []
-            for affiliation in affiliation_details:
+            for affiliation in affiliations:
                 alt_text = "%s %s" % affiliation
                 badges.append(BadgeDetails(icon_url, alt_text))
             result.append(badges)
@@ -121,19 +163,19 @@ class BugTaskPillarAffiliation(PillarAffiliation):
     def getPillar(self):
         return self.context.pillar
 
-    def _getAffiliationDetails(self, person, pillar):
+    def _getAffiliationTeamRoles(self, pillar):
         """ A person is affiliated with a bugtask based on (in order):
         - owner of bugtask pillar
         - driver of bugtask pillar
         - bug supervisor of bugtask pillar
         - security contact of bugtask pillar
         """
-        result = super(BugTaskPillarAffiliation, self)._getAffiliationDetails(
-            person, pillar)
-        if person.inTeam(pillar.bug_supervisor):
-            result.append((pillar.displayname, 'bug supervisor'))
-        if person.inTeam(pillar.security_contact):
-            result.append((pillar.displayname, 'security contact'))
+        super_instance = super(BugTaskPillarAffiliation, self)
+        result = super_instance._getAffiliationTeamRoles(pillar)
+        result[(pillar.displayname, 'bug supervisor')] = (
+            [pillar.bug_supervisor])
+        result[(pillar.displayname, 'security contact')] = (
+            [pillar.security_contact])
         return result
 
 
@@ -146,9 +188,9 @@ class BranchPillarAffiliation(BugTaskPillarAffiliation):
     def getBranch(self):
         return self.context
 
-    def _getAffiliationDetails(self, person, pillar):
+    def _getAffiliation(self, person, pillar):
         super_instance = super(BranchPillarAffiliation, self)
-        result = super_instance._getAffiliationDetails(person, pillar)
+        result = super_instance._getAffiliation(person, pillar)
         if self.getBranch().isPersonTrustedReviewer(person):
             result.append((pillar.displayname, 'trusted reviewer'))
         return result
@@ -185,18 +227,20 @@ class SpecificationPillarAffiliation(PillarAffiliation):
 
 
 class QuestionPillarAffiliation(PillarAffiliation):
-    """An affiliation adapter for questions."""
+    """An affiliation adapter for questions.
+
+    A person is affiliated with a question based on (in order):
+    - answer contact for question target
+    - owner of question target
+    - driver of question target
+    """
+
     def getPillar(self):
         return self.context.product or self.context.distribution
 
-    def _getAffiliationDetails(self, person, pillar):
-        """ A person is affiliated with a question based on (in order):
-        - answer contact for question target
-        - owner of question target
-        - driver of question target
-        """
+    def _getAffiliation(self, person, pillar):
         result = (super(QuestionPillarAffiliation, self)
-                                ._getAffiliationDetails(person, pillar))
+                                ._getAffiliation(person, pillar))
         target = self.context.target
         if IDistributionSourcePackage.providedBy(target):
             question_targets = (target, target.distribution)

@@ -9,6 +9,10 @@
 >
   <div tal:condition="not:context/private"
   >This branch is public</div>
-  <div tal:condition="context/private"
-  >This branch is <strong>private</strong></div>
+  <div tal:condition="context/private">
+      This branch is <strong>private</strong>
+      <tal:msg condition="not:context/explicitly_private">
+          because it is stacked on a private branch.
+      </tal:msg>
+  </div>
 </div>

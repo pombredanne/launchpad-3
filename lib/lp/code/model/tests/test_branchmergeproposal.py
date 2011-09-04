@@ -936,8 +936,8 @@ class TestMergeProposalNotification(TestCaseWithFactory):
             charlie, BranchSubscriptionNotificationLevel.NOEMAIL, None,
             CodeReviewNotificationLevel.FULL, charlie)
         # Make both branches private.
-        removeSecurityProxy(bmp.source_branch).private = True
-        removeSecurityProxy(bmp.target_branch).private = True
+        removeSecurityProxy(bmp.source_branch).explicitly_private = True
+        removeSecurityProxy(bmp.target_branch).explicitly_private = True
         recipients = bmp.getNotificationRecipients(
             CodeReviewNotificationLevel.FULL)
         self.assertFalse(bob in recipients)
@@ -1164,7 +1164,7 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         # proposals that the logged in user is able to see.
         proposal = self._make_merge_proposal('albert', 'november', 'work')
         # Mark the source branch private.
-        removeSecurityProxy(proposal.source_branch).private = True
+        removeSecurityProxy(proposal.source_branch).explicitly_private = True
         self._make_merge_proposal('albert', 'mike', 'work')
 
         albert = getUtility(IPersonSet).getByName('albert')
@@ -1203,7 +1203,7 @@ class TestBranchMergeProposalGetterGetProposals(TestCaseWithFactory):
         proposal = self._make_merge_proposal(
             'xray', 'november', 'work', registrant=albert)
         # Mark the source branch private.
-        removeSecurityProxy(proposal.source_branch).private = True
+        removeSecurityProxy(proposal.source_branch).explicitly_private = True
 
         november = getUtility(IProductSet).getByName('november')
         # The proposal is visible to charles.

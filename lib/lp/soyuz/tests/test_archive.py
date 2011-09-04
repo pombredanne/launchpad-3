@@ -77,7 +77,10 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.archive import Archive
-from lp.soyuz.model.archivepermission import ArchivePermission
+from lp.soyuz.model.archivepermission import (
+    ArchivePermission,
+    ArchivePermissionSet,
+    )
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount,
     )
@@ -2269,3 +2272,15 @@ class TestSyncSource(TestCaseWithFactory):
             target_archive.copyPackages, [source_name], source_archive,
             to_pocket.name, to_series=to_series.name, include_binaries=False,
             person=person)
+
+
+class TestRemovingPermissions(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_remove_permission_is_none(self):
+        # Several API functions remove permissions if they are not already
+        # removed.  This verifies that the underlying utility function does
+        # not generate an error if the permission is None.
+        ap_set = ArchivePermissionSet()
+        ap_set._remove_permission(None)

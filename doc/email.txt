@@ -120,9 +120,8 @@ to send emails (`simple_sendmail`, `sendmail` or possibly `raw_sendmail`)
 Functional Tests
 ----------------
 
-The functional test harness is configured to allow easy testing of
-emails.  See `canonical/launchpad/mail/ftests/test_stub.py` for example
-code.
+The functional test harness is configured to allow easy testing of emails.
+See `lp/services/mail/tests/test_stub.py` for example code.
 
 
 Details
@@ -133,10 +132,10 @@ defines a single `send` method. There are two standard `IMailDelivery`
 implementations:
 
     1. `QueuedDelivery` -- email is delivered in a seperate thread. We use
-        this for production.
+       this for production.
 
     2. `DirectDelivery` -- email is send synchronously during transaction
-        commit.  We use this for tests.
+       commit.  We use this for tests.
 
 Both implementations will send no email if the transaction is aborted.  Both
 implementations use events to notify anything that cares to subscribe if
@@ -154,14 +153,14 @@ In addition to these two, there are three more `IMailer` implementations
 for use with Launchpad development (production instances will just use
 `SMTPMailer` or `SendmailMailer`):
 
-    3. StubMailer -- rewrites the envelope headers and optionally the RFC 2822
-       To and From headers before handing on to a different `IMailer`.
+    3. `StubMailer` -- rewrites the envelope headers and optionally the RFC
+       2822 To and From headers before handing on to a different `IMailer`.
 
-    4. TestMailer -- stores the email in memory in a Python list object called
-       `lp.services.mail.stub.test_email` for easy access by unit
+    4. `TestMailer` -- stores the email in memory in a Python list object
+       called `lp.services.mail.stub.test_email` for easy access by unit
        tests.
 
-    5. MboxMailer -- stores the email in a Unix mbox file before optionally
+    5. `MboxMailer` -- stores the email in a Unix mbox file before optionally
        handing the message off to another `IMailer`.
 
 Developers (and production and dogfood server, until we are confident
@@ -173,5 +172,5 @@ developers or innocent civilians.  Or you can use the MboxMailer.
 The functional test suite is already configured to use the TestMailer.
 However, if you use a StubMailer or MboxMailer and want the test suite to
 work, you must hook it up to a TestMailer explicitly.  See
-`canonical/launchpad/mail/ftests/test_stub.py` for an example showing how
-functional tests can check that notifications are being sent correctly.
+`lp/services/mail/tests/test_stub.py` for an example showing how functional
+tests can check that notifications are being sent correctly.
