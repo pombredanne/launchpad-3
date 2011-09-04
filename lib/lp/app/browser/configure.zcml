@@ -424,6 +424,14 @@
     />
 
   <adapter
+    factory="lp.app.browser.vocabulary.ProductPickerEntrySourceAdapter"
+    />
+
+  <adapter
+    factory="lp.app.browser.vocabulary.DistributionPickerEntrySourceAdapter"
+    />
+
+  <adapter
     factory="lp.app.browser.vocabulary.ArchivePickerEntrySourceAdapter"
     />
 

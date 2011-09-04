@@ -310,8 +310,18 @@ class TestPublishFTPMasterScript(TestCaseWithFactory, HelpersMixin):
         script.setUp()
         self.assertEqual([distro], script.getConfigs().keys())
 
+    def test_getConfigs_skips_configless_distros(self):
+        distro = self.factory.makeDistribution(no_pubconf=True)
+        script = self.makeScript(distro)
+        script.setUp()
+        self.assertEqual({}, script.getConfigs()[distro])
+
     def test_script_is_happy_with_no_publications(self):
         distro = self.makeDistroWithPublishDirectory()
+        self.makeScript(distro).main()
+
+    def test_script_is_happy_with_no_pubconfigs(self):
+        distro = self.factory.makeDistribution(no_pubconf=True)
         self.makeScript(distro).main()
 
     def test_produces_listings(self):
