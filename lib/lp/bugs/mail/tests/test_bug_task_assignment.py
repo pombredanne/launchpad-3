@@ -65,6 +65,22 @@ class TestAssignmentNotification(TestCaseWithFactory):
         self.assertTrue(rationale in msg,
                         '%s not in\n%s\n' % (rationale, msg))
 
+    def test_self_assignee_notification_message(self):
+        """Test notification string when a person is assigned a task by
+           someone else."""
+        self.assertEqual(len(stub.test_emails), 0, 'emails in queue')
+        self.bug_task.transitionToAssignee(self.user)
+        notify(ObjectModifiedEvent(
+            self.bug_task, self.bug_task_before_modification,
+            edited_fields=['assignee']))
+        transaction.commit()
+        self.assertEqual(len(stub.test_emails), 1, 'email not sent')
+        rationale = (
+            'You have assigned this bug to yourself for Rebirth')
+        msg = stub.test_emails[-1][2]
+        self.assertTrue(rationale in msg,
+                        '%s not in\n%s\n' % (rationale, msg))
+
     def test_assignee_not_a_subscriber(self):
         """Test that a new recipient being assigned a bug task does send
            a NEW message."""
