@@ -72,6 +72,13 @@ _time_regex = re.compile(r"""
     re.VERBOSE)
 
 _broken_comment_nodes_re = re.compile('(<comment>.*?</comment>)', re.DOTALL)
+_missing_udev_node_data = re.compile(
+    '<info command="udevadm info --export-db">(.*?)</info>', re.DOTALL)
+_missing_dmi_node_data = re.compile(
+    r'<info command="grep -r \. /sys/class/dmi/id/ 2&gt;/dev/null">(.*?)'
+    '</info>', re.DOTALL)
+_udev_node_exists = re.compile('<hardware>.*?<udev>.*?</hardware>', re.DOTALL)
+_dmi_node_exists = re.compile('<hardware>.*?<dmi>.*?</hardware>', re.DOTALL)
 
 ROOT_UDI = '/org/freedesktop/Hal/devices/computer'
 UDEV_ROOT_PATH = '/devices/LNXSYSTM:00'
@@ -166,7 +173,36 @@ class SubmissionParser(object):
         # A considerable number of reports for Lucid has ESC characters
         # in comment nodes. We don't need the comment nodes at all, so
         # we can simply empty them.
-        return _broken_comment_nodes_re.sub('<comment/>', submission)
+        submission = _broken_comment_nodes_re.sub('<comment/>', submission)
+
+        # Submissions from Natty don't have the nodes <dmi> and <udev>
+        # as children of the <hardware> node. Fortunately, they provide
+        # this data in
+        #
+        #    <context>
+        #        <info command="grep -r . /sys/class/dmi/id/ 2&gt;/dev/null">
+        #        ...
+        #        </info>
+        #        <info command="udevadm info --export-db">
+        #        ...
+        #        </info>
+        #    </context>
+        #
+        # We can try to find the two relevant <info> nodes inside <context>
+        # and move their content into the proper subnodes of <hardware>.
+        if _udev_node_exists.search(submission) is None:
+            mo = _missing_udev_node_data.search(submission)
+            if mo is not None:
+                missing_data = mo.group(1)
+                missing_data = '<udev>%s</udev>\n</hardware>' % missing_data
+                submission = submission.replace('</hardware>', missing_data)
+        if _dmi_node_exists.search(submission) is None:
+            mo = _missing_dmi_node_data.search(submission)
+            if mo is not None:
+                missing_data = mo.group(1)
+                missing_data = '<dmi>%s</dmi>\n</hardware>' % missing_data
+                submission = submission.replace('</hardware>', missing_data)
+        return submission
 
     def _getValidatedEtree(self, submission, submission_key):
         """Create an etree doc from the XML string submission and validate it.
