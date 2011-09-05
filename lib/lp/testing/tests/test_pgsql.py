@@ -53,7 +53,7 @@ class TestPgTestSetup(testtools.TestCase, TestWithFixtures):
         fixture.setUp()
         self.addCleanup(fixture.dropDb)
         self.addCleanup(fixture.tearDown)
-        expected_value = 'dbname=%s host=localhost' % fixture.dbname
+        expected_value = 'dbname=%s' % fixture.dbname
         self.assertEqual(expected_value, dbconfig.rw_main_master)
         self.assertEqual(expected_value, dbconfig.rw_main_slave)
         with ConfigUseFixture(BaseLayer.appserver_config_name):
