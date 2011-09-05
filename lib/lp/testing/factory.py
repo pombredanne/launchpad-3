@@ -3690,8 +3690,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            date_uploaded=UTC_NOW,
                                            scheduleddeletiondate=None,
                                            ancestor=None,
-                                           **kwargs
-                                           ):
+                                           **kwargs):
         """Make a `SourcePackagePublishingHistory`.
 
         :param sourcepackagerelease: The source package release to publish
@@ -4095,7 +4094,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                          emailaddress=u'test@canonical.com',
                          distroarchseries=None, private=False,
                          contactable=False, system=None,
-                         submission_data=None):
+                         submission_data=None, status=None):
         """Create a new HWSubmission."""
         if date_created is None:
             date_created = datetime.now(pytz.UTC)
@@ -4116,10 +4115,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         format = HWSubmissionFormat.VERSION_1
         submission_set = getUtility(IHWSubmissionSet)
 
-        return submission_set.createSubmission(
+        submission = submission_set.createSubmission(
             date_created, format, private, contactable,
             submission_key, emailaddress, distroarchseries,
             raw_submission, filename, filesize, system)
+
+        if status is not None:
+            removeSecurityProxy(submission).status = status
+        return submission
 
     def makeHWSubmissionDevice(self, submission, device, driver, parent,
                                hal_device_id):
