@@ -9,6 +9,7 @@ from datetime import (
     )
 import re
 import subprocess
+from testtools.matchers import Equals
 from unittest import (
     TestCase,
     TestLoader,
@@ -52,7 +53,8 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-from lp.registry.model.teammembership import (
+from lp.registry.model.teammembership import (\
+    find_team_participations,
     TeamMembership,
     TeamParticipation,
     )
@@ -60,8 +62,9 @@ from lp.testing import (
     login_celebrity,
     person_logged_in,
     TestCaseWithFactory,
-    )
+    StormStatementRecorder)
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing.matchers import HasQueryCount
 from lp.testing.storm import reload_object
 
 
@@ -259,6 +262,53 @@ class TeamParticipationTestCase(TestCaseWithFactory):
 
     def getTeamParticipationCount(self):
         return IStore(TeamParticipation).find(TeamParticipation).count()
+
+
+class TestTeamParticipationQuery(TeamParticipationTestCase):
+    """A test case for teammembership.test_find_team_participations."""
+
+    def test_find_team_participations(self):
+        # The correct team participations are found and the query count is 1.
+        self.team1.addMember(self.no_priv, self.foo_bar)
+        self.team2.addMember(self.no_priv, self.foo_bar)
+        self.team1.addMember(self.team2, self.foo_bar, force_team_add=True)
+
+        people = [self.team1, self.team2]
+        with StormStatementRecorder() as recorder:
+            people_teams = find_team_participations(people)
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertContentEqual([self.team1, self.team2], people_teams.keys())
+        self.assertContentEqual([self.team1], people_teams[self.team1])
+        self.assertContentEqual(
+            [self.team1, self.team2], people_teams[self.team2])
+
+    def test_find_team_participations_limited_teams(self):
+        # The correct team participations are found and the query count is 1.
+        self.team1.addMember(self.no_priv, self.foo_bar)
+        self.team2.addMember(self.no_priv, self.foo_bar)
+        self.team1.addMember(self.team2, self.foo_bar, force_team_add=True)
+
+        people = [self.foo_bar, self.team2]
+        teams = [self.team1, self.team2]
+        with StormStatementRecorder() as recorder:
+            people_teams = find_team_participations(people, teams)
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertContentEqual(
+            [self.foo_bar, self.team2], people_teams.keys())
+        self.assertContentEqual(
+            [self.team1, self.team2], people_teams[self.foo_bar])
+        self.assertContentEqual(
+            [self.team1, self.team2], people_teams[self.team2])
+
+    def test_find_team_participations_no_query(self):
+        # Check that no database query is made unless necessary.
+        people = [self.foo_bar, self.team2]
+        teams = [self.foo_bar]
+        with StormStatementRecorder() as recorder:
+            people_teams = find_team_participations(people, teams)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+        self.assertContentEqual([self.foo_bar], people_teams.keys())
+        self.assertContentEqual([self.foo_bar], people_teams[self.foo_bar])
 
 
 class TestTeamParticipationHierarchy(TeamParticipationTestCase):

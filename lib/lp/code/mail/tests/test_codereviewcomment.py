@@ -195,7 +195,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         ctrl = mailer.generateEmail(
             subscriber.preferredemail.email, subscriber)
         self.assertEqual('Review: Approve', ctrl.body.splitlines()[0])
-        self.assertEqual(ctrl.body.splitlines()[1:-3],
+        self.assertEqual(ctrl.body.splitlines()[2:-3],
                          mailer.message.text_contents.splitlines())
 
     def test_generateEmailWithVoteAndTag(self):
@@ -205,7 +205,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         ctrl = mailer.generateEmail(
             subscriber.preferredemail.email, subscriber)
         self.assertEqual('Review: Approve dbtag', ctrl.body.splitlines()[0])
-        self.assertEqual(ctrl.body.splitlines()[1:-3],
+        self.assertEqual(ctrl.body.splitlines()[2:-3],
                          mailer.message.text_contents.splitlines())
 
     def makeComment(self, email_message):

@@ -340,3 +340,5 @@ class AnnouncementView(LaunchpadView):
     @property
     def label(self):
         return self.context.title
+
+    page_title = label

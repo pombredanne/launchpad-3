@@ -12,8 +12,8 @@ This module is deprecated.
 __metaclass__ = type
 
 import os
-import re
 
+from canonical.database.postgresql import ConnectionString
 from canonical.config import dbconfig
 from canonical.database.sqlbase import (
     ISOLATION_LEVEL_DEFAULT, ZopelessTransactionManager)
@@ -36,6 +36,7 @@ __all__ = [
 # office environment.
 dbhost = os.environ.get('LP_DBHOST', None)
 dbuser = os.environ.get('LP_DBUSER', None)
+dbport = os.environ.get('LP_DBPORT', None)
 dbname_override = os.environ.get('LP_DBNAME', None)
 
 
@@ -46,15 +47,15 @@ def get_dbname():
     """
     if dbname_override is not None:
         return dbname_override
-    match = re.search(r'dbname=(\S*)', dbconfig.main_master)
-    assert match is not None, 'Invalid main_master connection string'
-    return  match.group(1)
+    dbname = ConnectionString(dbconfig.main_master).dbname
+    assert dbname is not None, 'Invalid main_master connection string'
+    return  dbname
 
 
 if dbhost is None:
-    match = re.search(r'host=(\S*)', dbconfig.main_master)
-    if match is not None:
-        dbhost = match.group(1)
+    dbhost = ConnectionString(dbconfig.main_master).host
+if dbport is None:
+    dbport = ConnectionString(dbconfig.main_master).port
 
 if dbuser is None:
     dbuser = dbconfig.dbuser
@@ -80,7 +81,7 @@ def initZopeless(dbname=None, dbhost=None, dbuser=None,
         #        "Passing dbuser parameter to initZopeless will soon "
         #        "be mandatory", DeprecationWarning, stacklevel=2
         #        )
-        pass # Disabled. Bug#3050
+        pass  # Disabled. Bug #3050
     if dbname is None:
         dbname = get_dbname()
     if dbhost is None:
