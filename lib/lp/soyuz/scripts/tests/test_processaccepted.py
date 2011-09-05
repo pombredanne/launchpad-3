@@ -10,6 +10,7 @@ from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.soyuz.scripts.processaccepted import (
     close_bugs_for_sourcepackagerelease,
+    close_bugs_for_sourcepublication,
     )
 from lp.testing import TestCaseWithFactory
 
@@ -27,11 +28,13 @@ class TestClosingBugs(TestCaseWithFactory):
     """
     layer = LaunchpadZopelessLayer
 
-    def makeChangelogWithBugs(self, spr):
+    def makeChangelogWithBugs(self, spr, target_distro=None):
         """Create a changelog for the passed sourcepackagerelease that has
         6 bugs referenced.
 
         :param spr: The sourcepackagerelease that needs a changelog.
+        :param target_distro: the distribution context for the source package
+            bug target.  If None, default to its uploaded distribution.
 
         :return: A tuple which is a list of (bug, bugtask)
         """
@@ -39,9 +42,12 @@ class TestClosingBugs(TestCaseWithFactory):
         # as tuples.
         bugs = []
         for i in range(6):
+            if target_distro is None:
+                target = spr.sourcepackage
+            else:
+                target = target_distro.getSourcePackage(spr.sourcepackagename)
             bug = self.factory.makeBug()
-            bugtask = self.factory.makeBugTask(
-                target=spr.sourcepackage, bug=bug)
+            bugtask = self.factory.makeBugTask(target=target, bug=bug)
             bugs.append((bug, bugtask))
         # Make a changelog entry for a package which contains the IDs of
         # the 6 bugs separated across 3 releases.
@@ -93,5 +99,27 @@ class TestClosingBugs(TestCaseWithFactory):
                 self.assertEqual(BugTaskStatus.FIXRELEASED, bugtask.status)
             else:
                 self.assertEqual(BugTaskStatus.NEW, bugtask.status)
+
+    def test__close_bugs_for_sourcepublication__uses_right_distro(self):
+        # If a source was originally uploaded to a different distro,
+        # closing bugs based on a publication of the same source in a new
+        # distro should work.
+        spr = self.factory.makeSourcePackageRelease(changelog_entry="blah")
+        bugs = self.makeChangelogWithBugs(spr)
+        target_distro = self.factory.makeDistribution()
+        source_spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr)
+        target_distroseries = self.factory.makeDistroSeries(target_distro)
+        target_spph = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=spr, distroseries=target_distroseries)
+
+        # The test depends on this pre-condition.
+        self.assertNotEqual(spr.upload_distroseries.distribution,
+                            target_distroseries.distribution)
+
+        close_bugs_for_sourcepublication(target_spph)
+
+        for bug, bugtask in bugs:
+            self.assertEqual(BugTaskStatus.FIXRELEASED, bugtask.status)
 
 
