@@ -8,6 +8,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.bugs.interfaces.bugtask import BugTaskStatus
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.scripts.processaccepted import (
     close_bugs_for_sourcepackagerelease,
     close_bugs_for_sourcepublication,
@@ -28,7 +29,7 @@ class TestClosingBugs(TestCaseWithFactory):
     """
     layer = LaunchpadZopelessLayer
 
-    def makeChangelogWithBugs(self, spr, target_distro=None):
+    def makeChangelogWithBugs(self, spr, target_series=None):
         """Create a changelog for the passed sourcepackagerelease that has
         6 bugs referenced.
 
@@ -42,10 +43,10 @@ class TestClosingBugs(TestCaseWithFactory):
         # as tuples.
         bugs = []
         for i in range(6):
-            if target_distro is None:
+            if target_series is None:
                 target = spr.sourcepackage
             else:
-                target = target_distro.getSourcePackage(spr.sourcepackagename)
+                target = target_series.getSourcePackage(spr.sourcepackagename)
             bug = self.factory.makeBug()
             bugtask = self.factory.makeBugTask(target=target, bug=bug)
             bugs.append((bug, bugtask))
@@ -104,20 +105,24 @@ class TestClosingBugs(TestCaseWithFactory):
         # If a source was originally uploaded to a different distro,
         # closing bugs based on a publication of the same source in a new
         # distro should work.
+
+        # Create a source package that was originally uploaded to one
+        # distro and publish it in a second distro.
         spr = self.factory.makeSourcePackageRelease(changelog_entry="blah")
-        bugs = self.makeChangelogWithBugs(spr)
         target_distro = self.factory.makeDistribution()
-        source_spph = self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagerelease=spr)
         target_distroseries = self.factory.makeDistroSeries(target_distro)
+        bugs = self.makeChangelogWithBugs(
+            spr, target_series=target_distroseries)
         target_spph = self.factory.makeSourcePackagePublishingHistory(
-            sourcepackagerelease=spr, distroseries=target_distroseries)
+            sourcepackagerelease=spr, distroseries=target_distroseries,
+            archive=target_distro.main_archive,
+            pocket=PackagePublishingPocket.RELEASE)
 
         # The test depends on this pre-condition.
         self.assertNotEqual(spr.upload_distroseries.distribution,
                             target_distroseries.distribution)
 
-        close_bugs_for_sourcepublication(target_spph)
+        close_bugs_for_sourcepublication(target_spph, since_version="1.0")
 
         for bug, bugtask in bugs:
             self.assertEqual(BugTaskStatus.FIXRELEASED, bugtask.status)
