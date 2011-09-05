@@ -319,6 +319,7 @@ class TestGeneralizedPublication(TestCaseWithFactory):
                 sourcepackagerelease=spr, distroseries=distroseries,
                 pocket=pocket)
             for counter in xrange(len(ages))]
+        self.alterCreationDates(spphs, ages)
 
         self.assertEqual(
             [spphs[2], spphs[0], spphs[1]],
@@ -342,6 +343,7 @@ class TestGeneralizedPublication(TestCaseWithFactory):
                 sourcepackagerelease=self.factory.makeSourcePackageRelease(
                     version=version))
             for counter in xrange(len(ages))]
+        self.alterCreationDates(spphs, ages)
 
         self.assertEqual(
             [spphs[2], spphs[0], spphs[1]],
