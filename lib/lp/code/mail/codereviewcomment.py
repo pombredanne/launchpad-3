@@ -92,7 +92,7 @@ class CodeReviewCommentMailer(BMPMailer):
                 vote_tag = ''
             else:
                 vote_tag = ' ' + self.code_review_comment.vote_tag
-            self.body_prefix = 'Review: %s%s\n' % (
+            self.body_prefix = 'Review: %s%s\n\n' % (
                 self.code_review_comment.vote.title, vote_tag)
         self.body_main = self.message.text_contents
         self.proposal_url = canonical_url(self.merge_proposal)
