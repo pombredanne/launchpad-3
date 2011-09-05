@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for domination.py."""
@@ -7,12 +7,20 @@ __metaclass__ = type
 
 import datetime
 
+import apt_pkg
+
 from canonical.database.sqlbase import flush_database_updates
-from lp.archivepublisher.domination import Dominator, STAY_OF_EXECUTION
+from canonical.testing.layers import ZopelessDatabaseLayer
+from lp.archivepublisher.domination import (
+    Dominator,
+    GeneralizedPublication,
+    STAY_OF_EXECUTION,
+    )
 from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
+from lp.testing import TestCaseWithFactory
 
 
 class TestDominator(TestNativePublishingBase):
@@ -200,3 +208,130 @@ class TestDominationOfObsoletedSeries(TestDomination):
         TestDomination.setUp(self)
         self.ubuntutest['breezy-autotest'].status = (
             SeriesStatus.OBSOLETE)
+
+
+class TestGeneralizedPublication(TestCaseWithFactory):
+    """Test publication generalization helpers."""
+
+    layer = ZopelessDatabaseLayer
+
+    def makeSPPHsForVersions(self, versions):
+        """Create publication records for each of `versions`.
+
+        They records are created in the same order in which they are
+        specified.  Make the order irregular to prove that version ordering
+        is not a coincidence of object creation order etc.
+
+        Versions may also be identical; each publication record will still
+        have its own package release.
+        """
+        distroseries = self.factory.makeDistroSeries()
+        pocket = self.factory.getAnyPocket()
+        sprs = [
+            self.factory.makeSourcePackageRelease(version=version)
+            for version in versions]
+        return [
+            self.factory.makePackagePublishingHistory(
+                distroseries=distroseries, pocket=pocket,
+                sourcepackagerelease=spr)
+            for spr in sprs]
+
+    def listSourceVersions(self, spphs):
+        """Extract the versions from `spphs` as a list, in the same order."""
+        return [spph.sourcepackagerelease.version for spph in spphs]
+
+    def test_getPackageVersion_gets_source_version(self):
+        spph = self.factory.makeSourcePackagePublishingHistory()
+        self.assertEqual(
+            spph.sourcepackagerelease.version,
+            GeneralizedPublication(is_source=True).getPackageVersion(spph))
+
+    def test_getPackageVersion_gets_binary_version(self):
+        bpph = self.factory.makeBinaryPackagePublishingHistory()
+        self.assertEqual(
+            bpph.binarypackagerelease.version,
+            GeneralizedPublication(is_source=False).getPackageVersion(bpph))
+
+    def test_compare_sorts_versions(self):
+        versions = [
+            '1.1v2',
+            '1.1v1',
+            '1.1v3',
+            ]
+        spphs = self.makeSPPHsForVersions(versions)
+        sorted_spphs = sorted(spphs, cmp=GeneralizedPublication().compare)
+        self.assertEqual(
+            sorted(versions),
+            self.listSourceVersions(sorted_spphs))
+
+    def test_compare_orders_versions_by_debian_rules(self):
+        versions = [
+            '1.1.0',
+            '1.10',
+            '1.1',
+            '1.1ubuntu0',
+            ]
+        spphs = self.makeSPPHsForVersions(versions)
+
+        debian_sorted_versions = sorted(versions, cmp=apt_pkg.VersionCompare)
+
+        # Assumption: in this case, Debian version ordering is not the
+        # same as alphabetical version ordering.
+        self.assertNotEqual(sorted(versions), debian_sorted_versions)
+
+        # The compare method produces the Debian ordering.
+        sorted_spphs = sorted(spphs, cmp=GeneralizedPublication().compare)
+        self.assertEqual(
+            sorted(versions, cmp=apt_pkg.VersionCompare),
+            self.listSourceVersions(sorted_spphs))
+
+    def test_compare_breaks_tie_with_creation_date(self):
+        # When two publications are tied for comparison because they are
+        # for the same package release, they are ordered by creation
+        # date.
+        distroseries = self.factory.makeDistroSeries()
+        pocket = self.factory.getAnyPocket()
+        spr = self.factory.makeSourcePackageRelease()
+        now = datetime.datetime.utcnow()
+        creation_dates = [
+            now - datetime.timedelta(2),
+            now - datetime.timedelta(1),
+            now - datetime.timedelta(3),
+            ]
+        spphs = [
+            self.factory.makeSourcePackagePublishingHistory(
+                sourcepackagerelease=spr, distroseries=distroseries,
+                pocket=pocket, datecreated=date)
+            for date in creation_dates]
+
+        sorted_spphs = sorted(spphs, cmp=GeneralizedPublication().compare)
+
+        self.assertEqual(
+            sorted(creation_dates),
+            [spph.datecreated for spph in sorted_spphs])
+
+    def test_compare_breaks_tie_for_releases_with_same_version(self):
+        # When two publications are tied for comparison because they
+        # belong to releases with the same version string, they are
+        # ordered by creation date.
+        version = "1.%d" % self.factory.getUniqueInteger()
+        now = datetime.datetime.utcnow()
+        creation_dates = [
+            now - datetime.timedelta(2),
+            now - datetime.timedelta(1),
+            now - datetime.timedelta(3),
+            ]
+        distroseries = self.factory.makeDistroSeries()
+        pocket = self.factory.getAnyPocket()
+        spphs = [
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=distroseries, pocket=pocket, datecreated=date,
+                sourcepackagerelease=self.factory.makeSourcePackageRelease(
+                    version=version))
+            for date in creation_dates]
+
+        sorted_spphs = sorted(spphs, cmp=GeneralizedPublication().compare)
+
+        self.assertEqual(
+            sorted(creation_dates),
+            [spph.datecreated for spph in sorted_spphs])
