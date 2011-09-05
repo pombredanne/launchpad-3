@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """FTPMaster utilities."""
@@ -52,6 +52,7 @@ from lp.registry.interfaces.pocket import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.services.browser_helpers import get_plural_text
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
@@ -1256,10 +1257,10 @@ class PackageRemover(SoyuzScript):
 
         self.logger.info("Removing candidates:")
         for removable in removables:
-            self.logger.info('\t%s' % removable.displayname)
+            self.logger.info('\t%s', removable.displayname)
 
-        self.logger.info("Removed-by: %s" % removed_by.displayname)
-        self.logger.info("Comment: %s" % self.options.removal_comment)
+        self.logger.info("Removed-by: %s", removed_by.displayname)
+        self.logger.info("Comment: %s", self.options.removal_comment)
 
         removals = []
         for removable in removables:
@@ -1268,14 +1269,12 @@ class PackageRemover(SoyuzScript):
                 removal_comment=self.options.removal_comment)
             removals.append(removable)
 
-        if len(removals) == 1:
-            self.logger.info(
-                "%s package successfully removed." % len(removals))
-        elif len(removals) > 1:
-            self.logger.info(
-                "%s packages successfully removed." % len(removals))
-        else:
+        if len(removals) == 0:
             self.logger.info("No package removed (bug ?!?).")
+        else:
+            self.logger.info(
+                "%d %s successfully removed.", len(removals),
+                get_plural_text(len(removals), "package", "packages"))
 
         # Information returned mainly for the benefit of the test harness.
         return removals

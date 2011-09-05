@@ -71,6 +71,8 @@ _time_regex = re.compile(r"""
     """,
     re.VERBOSE)
 
+_broken_comment_nodes_re = re.compile('(<comment>.*?</comment>)', re.DOTALL)
+
 ROOT_UDI = '/org/freedesktop/Hal/devices/computer'
 UDEV_ROOT_PATH = '/devices/LNXSYSTM:00'
 
@@ -158,12 +160,21 @@ class SubmissionParser(object):
             self.logger.warning(
                 'Parsing submission %s: %s' % (self.submission_key, message))
 
+    def fixFrequentErrors(self, submission):
+        """Fixes for frequent formal errors in the submissions.
+        """
+        # A considerable number of reports for Lucid has ESC characters
+        # in comment nodes. We don't need the comment nodes at all, so
+        # we can simply empty them.
+        return _broken_comment_nodes_re.sub('<comment/>', submission)
+
     def _getValidatedEtree(self, submission, submission_key):
         """Create an etree doc from the XML string submission and validate it.
 
         :return: an `lxml.etree` instance representation of a valid
             submission or None for invalid submissions.
         """
+        submission = self.fixFrequentErrors(submission)
         try:
             tree = etree.parse(StringIO(submission), parser=self.doc_parser)
         except SyntaxError, error_value:
