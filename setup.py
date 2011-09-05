@@ -60,7 +60,6 @@ setup(
         'oops_datedir_repo',
         'oops_wsgi',
         'paramiko',
-        'pgbouncer',
         'psycopg2',
         'python-memcached',
         'pyasn1',

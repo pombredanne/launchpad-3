@@ -11,15 +11,9 @@ __all__ = [
     'ZopeViewReplacementFixture',
     ]
 
-from ConfigParser import SafeConfigParser
-import os.path
 from textwrap import dedent
 
-from fixtures import (
-    EnvironmentVariableFixture,
-    Fixture,
-    )
-import pgbouncer.fixture
+from fixtures import Fixture
 import rabbitfixture.server
 from zope.component import (
     getGlobalSiteManager,
@@ -32,8 +26,6 @@ from zope.security.checker import (
     getCheckerForInstancesOf,
     undefineChecker,
     )
-
-from canonical.config import config
 
 
 class RabbitServer(rabbitfixture.server.RabbitServer):
@@ -52,68 +44,6 @@ class RabbitServer(rabbitfixture.server.RabbitServer):
             password: guest
             virtual_host: /
             """ % self.config.port)
-
-
-class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
-    """Inserts a controllable pgbouncer instance in front of PostgreSQL.
-
-    The pgbouncer proxy can be shutdown and restarted at will, simulating
-    database outages and fastdowntime deployments.
-    """
-
-    def __init__(self):
-        super(PGBouncerFixture, self).__init__()
-
-        # Known databases
-        from canonical.testing.layers import DatabaseLayer
-        dbnames = [
-            DatabaseLayer._db_fixture.dbname,
-            DatabaseLayer._db_template_fixture.dbname,
-            'session_ftest',
-            'launchpad_empty',
-            ]
-        for dbname in dbnames:
-            self.databases[dbname] = 'dbname=%s port=5432 host=localhost' % (
-                dbname,)
-
-        # Known users, pulled from security.cfg
-        security_cfg_path = os.path.join(
-            config.root, 'database', 'schema', 'security.cfg')
-        security_cfg_config = SafeConfigParser({})
-        security_cfg_config.read([security_cfg_path])
-        for section_name in security_cfg_config.sections():
-            self.users[section_name] = 'trusted'
-            self.users[section_name + '_ro'] = 'trusted'
-        self.users[os.environ['USER']] = 'trusted'
-
-    def setUp(self):
-        super(PGBouncerFixture, self).setUp()
-
-        # reconnect_store cleanup added first so it is run last, after
-        # the environment variables have been reset.
-        self.addCleanup(self._maybe_reconnect_stores)
-
-        # Abuse the PGPORT environment variable to get things connecting
-        # via pgbouncer. Otherwise, we would need to temporarily
-        # overwrite the database connection strings in the config.
-        self.useFixture(EnvironmentVariableFixture('PGPORT', str(self.port)))
-
-        # Reset database connections so they go through pgbouncer.
-        self._maybe_reconnect_stores()
-
-    def _maybe_reconnect_stores(self):
-        """Force Storm Stores to reconnect if they are registered.
-
-        This is a noop if the Component Architecture is not loaded,
-        as we are using a test layer that doesn't provide database
-        connections.
-        """
-        from canonical.testing.layers import (
-            reconnect_stores,
-            is_ca_available,
-            )
-        if is_ca_available():
-            reconnect_stores()
 
 
 class ZopeAdapterFixture(Fixture):

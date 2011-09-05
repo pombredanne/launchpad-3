@@ -15,8 +15,7 @@ simple configuration).
 
     >>> from canonical.config import config
     >>> from canonical.testing.layers import DatabaseLayer
-    >>> expected = (
-    ...     'dbname=%s host=localhost' % DatabaseLayer._db_fixture.dbname)
+    >>> expected = 'dbname=%s' % DatabaseLayer._db_fixture.dbname
     >>> expected == config.database.rw_main_master
     True
     >>> config.database.db_statement_timeout is None
