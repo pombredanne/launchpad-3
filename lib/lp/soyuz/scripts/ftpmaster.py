@@ -1263,7 +1263,7 @@ class PackageRemover(SoyuzScript):
         self.logger.info("Comment: %s", self.options.removal_comment)
 
         removals = []
-        if self.options.binaryonly or self.options.sourceonly:
+        for removable in removables:
             removable.requestDeletion(
                 removed_by=removed_by,
                 removal_comment=self.options.removal_comment)
