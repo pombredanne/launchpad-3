@@ -28,8 +28,7 @@ class TestDatabaseConfig(TestCase):
         self.assertEquals('librarian', config.librarian.dbuser)
 
         dbconfig.setConfigSection('librarian')
-        expected_db = (
-            'dbname=%s host=localhost' % DatabaseLayer._db_fixture.dbname)
+        expected_db = 'dbname=%s' % DatabaseLayer._db_fixture.dbname
         self.assertEquals(expected_db, dbconfig.rw_main_master)
         self.assertEquals('librarian', dbconfig.dbuser)
 
