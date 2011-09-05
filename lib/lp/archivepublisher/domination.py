@@ -150,6 +150,10 @@ class GeneralizedPublication:
         else:
             self.traits = BinaryPublicationTraits
 
+    def getPackageName(self, pub):
+        """Get the package's name."""
+        return self.traits.getPackageName(pub)
+
     def getPackageVersion(self, pub):
         """Obtain the version string for a publicaiton record."""
         return self.traits.getPackageRelease(pub).version

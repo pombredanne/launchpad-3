@@ -231,7 +231,7 @@ class TestGeneralizedPublication(TestCaseWithFactory):
             self.factory.makeSourcePackageRelease(version=version)
             for version in versions]
         return [
-            self.factory.makePackagePublishingHistory(
+            self.factory.makeSourcePackagePublishingHistory(
                 distroseries=distroseries, pocket=pocket,
                 sourcepackagerelease=spr)
             for spr in sprs]
@@ -239,6 +239,23 @@ class TestGeneralizedPublication(TestCaseWithFactory):
     def listSourceVersions(self, spphs):
         """Extract the versions from `spphs` as a list, in the same order."""
         return [spph.sourcepackagerelease.version for spph in spphs]
+
+    def listCreaitonDates(self, spphs):
+        """Extract creation dates from `spphs` into a list."""
+        return [spph.datecreated for spph in spphs]
+
+    def alterCreationDates(self, spphs, ages):
+        """Set `datecreated` on each of `spphs` according to `ages`.
+
+        :param spphs: Iterable of `SourcePackagePublishingHistory`.  Their
+            respective creation dates will be offset by the respective ages
+            found in `ages` (with the two being matched up in the same order).
+        :param ages: Iterable of ages.  Must provide the same number of items
+            as `spphs`.  Ages are `timedelta` objects that will be subtracted
+            from the creation dates on the respective records in `spph`.
+        """
+        for spph, age in zip(spphs, ages):
+            spph.datecreated -= age
 
     def test_getPackageVersion_gets_source_version(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
@@ -292,46 +309,40 @@ class TestGeneralizedPublication(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         pocket = self.factory.getAnyPocket()
         spr = self.factory.makeSourcePackageRelease()
-        now = datetime.datetime.utcnow()
-        creation_dates = [
-            now - datetime.timedelta(2),
-            now - datetime.timedelta(1),
-            now - datetime.timedelta(3),
+        ages = [
+            datetime.timedelta(2),
+            datetime.timedelta(1),
+            datetime.timedelta(3),
             ]
         spphs = [
             self.factory.makeSourcePackagePublishingHistory(
                 sourcepackagerelease=spr, distroseries=distroseries,
-                pocket=pocket, datecreated=date)
-            for date in creation_dates]
-
-        sorted_spphs = sorted(spphs, cmp=GeneralizedPublication().compare)
+                pocket=pocket)
+            for counter in xrange(len(ages))]
 
         self.assertEqual(
-            sorted(creation_dates),
-            [spph.datecreated for spph in sorted_spphs])
+            [spphs[2], spphs[0], spphs[1]],
+            sorted(spphs, cmp=GeneralizedPublication().compare))
 
     def test_compare_breaks_tie_for_releases_with_same_version(self):
         # When two publications are tied for comparison because they
         # belong to releases with the same version string, they are
         # ordered by creation date.
         version = "1.%d" % self.factory.getUniqueInteger()
-        now = datetime.datetime.utcnow()
-        creation_dates = [
-            now - datetime.timedelta(2),
-            now - datetime.timedelta(1),
-            now - datetime.timedelta(3),
+        ages = [
+            datetime.timedelta(2),
+            datetime.timedelta(1),
+            datetime.timedelta(3),
             ]
         distroseries = self.factory.makeDistroSeries()
         pocket = self.factory.getAnyPocket()
         spphs = [
             self.factory.makeSourcePackagePublishingHistory(
-                distroseries=distroseries, pocket=pocket, datecreated=date,
+                distroseries=distroseries, pocket=pocket,
                 sourcepackagerelease=self.factory.makeSourcePackageRelease(
                     version=version))
-            for date in creation_dates]
-
-        sorted_spphs = sorted(spphs, cmp=GeneralizedPublication().compare)
+            for counter in xrange(len(ages))]
 
         self.assertEqual(
-            sorted(creation_dates),
-            [spph.datecreated for spph in sorted_spphs])
+            [spphs[2], spphs[0], spphs[1]],
+            sorted(spphs, cmp=GeneralizedPublication().compare))
