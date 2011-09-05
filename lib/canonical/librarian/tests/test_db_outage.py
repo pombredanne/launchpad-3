@@ -74,11 +74,14 @@ class TestLibrarianDBOutage(TestCase):
         self.client = LibrarianClient()
 
         # Add a file to the Librarian so we can download it.
+        self.url = self._makeLibraryFileUrl()
+
+    def _makeLibraryFileUrl(self):
         data = 'whatever'
-        self.url = self.client.remoteAddFile(
+        return self.client.remoteAddFile(
             'foo.txt', len(data), StringIO(data), 'text/plain')
 
-    def get_error_code(self):
+    def getErrorCode(self):
         # We need to talk to every Librarian thread to ensure all the
         # Librarian database connections are in a known state.
         # XXX StuartBishop 2011-09-01 bug=840046: 20 might be overkill
@@ -97,13 +100,13 @@ class TestLibrarianDBOutage(TestCase):
 
     def test_outage(self):
         # Everything should be working fine to start with.
-        self.assertEqual(self.get_error_code(), 200)
+        self.assertEqual(self.getErrorCode(), 200)
 
         # When the outage kicks in, we start getting 503 responses
         # instead of 200 and 404s.
         self.pgbouncer.stop()
-        self.assertEqual(self.get_error_code(), 503)
+        self.assertEqual(self.getErrorCode(), 503)
 
         # When the outage is over, things are back to normal.
         self.pgbouncer.start()
-        self.assertEqual(self.get_error_code(), 200)
+        self.assertEqual(self.getErrorCode(), 200)
