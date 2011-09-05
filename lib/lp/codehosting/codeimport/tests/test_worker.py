@@ -1156,7 +1156,8 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         self.assertEquals(
             { "branch": "other" },
             source_transport.get_segment_parameters())
-        worker = self.makeImportWorker(source_details)
+        worker = self.makeImportWorker(source_details,
+            opener_policy=AcceptAnythingPolicy())
         self.assertTrue(self.foreign_commit_count > 1)
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS, worker.run())
