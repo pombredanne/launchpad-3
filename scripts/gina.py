@@ -209,9 +209,8 @@ def import_sourcepackages(packages_map, kdb, package_root,
     npacks = len(packages_map.src_map)
     log.info('%i Source Packages to be imported', npacks)
 
-    for list_source in sorted(
-        packages_map.src_map.values(), key=lambda x: x[0].get("Package")):
-        for source in list_source:
+    for package in sorted(packages_map.src_map.iterkeys()):
+        for source in packages_map.src_map[package]:
             count += 1
             attempt_source_package_import(
                 source, kdb, package_root, keyrings, importer_handler)
@@ -244,10 +243,9 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
         log.info(
             '%i Binary Packages to be imported for %s', npacks, archtag)
         # Go over binarypackages importing them for this architecture
-        for binary in sorted(packages_map.bin_map[archtag].values(),
-                             key=lambda x: x.get("Package")):
+        for package_name in sorted(packages_map.bin_map[archtag].iterkeys()):
+            binary = packages_map.bin_map[archtag][package_name]
             count += 1
-            package_name = binary.get("Package", "unknown")
             try:
                 try:
                     do_one_binarypackage(binary, archtag, kdb, package_root,
