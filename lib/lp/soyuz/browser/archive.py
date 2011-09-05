@@ -22,6 +22,7 @@ __all__ = [
     'ArchivePackagesView',
     'ArchiveView',
     'ArchiveViewBase',
+    'EnableRestrictedFamiliesMixin',
     'make_archive_vocabulary',
     'PackageCopyingMixin',
     'traverse_named_ppa',
@@ -2033,7 +2034,38 @@ class ArchiveEditView(BaseArchiveEditView):
         return 'Edit %s' % self.context.displayname
 
 
-class ArchiveAdminView(BaseArchiveEditView):
+class EnableRestrictedFamiliesMixin:
+    """A mixin that provides enabled_restricted_families field support"""
+
+    def createEnabledRestrictedFamilies(self, description=None):
+        """Creates the 'enabled_restricted_families' field.
+
+        """
+        terms = []
+        for family in getUtility(IProcessorFamilySet).getRestricted():
+            terms.append(SimpleTerm(
+                family, token=family.name, title=family.title))
+        old_field = IArchive['enabled_restricted_families']
+        return form.Fields(
+            List(__name__=old_field.__name__,
+                 title=old_field.title,
+                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
+                 required=False,
+                 description=old_field.description if description is None
+                     else description),
+                 render_context=self.render_context)
+
+    def validate_enabled_restricted_families(self, data, error_msg):
+        enabled_restricted_families = data['enabled_restricted_families']
+        require_virtualized = data.get('require_virtualized', False)
+        proc_family_set = getUtility(IProcessorFamilySet)
+        if (not require_virtualized and
+            set(enabled_restricted_families) !=
+                set(proc_family_set.getRestricted())):
+            self.setFieldError('enabled_restricted_families', error_msg)
+
+
+class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
 
     field_names = ['enabled', 'private', 'commercial', 'require_virtualized',
                    'build_debug_symbols', 'buildd_secret', 'authorized_size',
@@ -2097,6 +2129,16 @@ class ArchiveAdminView(BaseArchiveEditView):
                 'commercial',
                 'Can only set commericial for private archives.')
 
+        enabled_restricted_families = data.get('enabled_restricted_families')
+        if (enabled_restricted_families and
+            not self.context.canSetEnabledRestrictedFamilies(
+                enabled_restricted_families)):
+            self.setFieldError(
+                'enabled_restricted_families',
+                'Main archives can not be restricted to certain '
+                'architectures unless they are set to build on '
+                'virtualized builders.')
+
     @property
     def owner_is_private_team(self):
         """Is the owner a private team?
@@ -2106,6 +2148,13 @@ class ArchiveAdminView(BaseArchiveEditView):
         """
         return self.context.owner.visibility == PersonVisibility.PRIVATE
 
+    @property
+    def initial_values(self):
+        return {
+            'enabled_restricted_families':
+                self.context.enabled_restricted_families,
+            }
+
     def setUpFields(self):
         """Override `LaunchpadEditFormView`.
 
@@ -2113,23 +2162,6 @@ class ArchiveAdminView(BaseArchiveEditView):
         """
         super(ArchiveAdminView, self).setUpFields()
         self.form_fields += self.createEnabledRestrictedFamilies()
-
-    def createEnabledRestrictedFamilies(self):
-        """Creates the 'enabled_restricted_families' field.
-
-        """
-        terms = []
-        for family in getUtility(IProcessorFamilySet).getRestricted():
-            terms.append(SimpleTerm(
-                family, token=family.name, title=family.title))
-        old_field = IArchive['enabled_restricted_families']
-        return form.Fields(
-            List(__name__=old_field.__name__,
-                 title=old_field.title,
-                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
-                 required=False,
-                 description=old_field.description),
-                 render_context=self.render_context)
 
 
 class ArchiveDeleteView(LaunchpadFormView):

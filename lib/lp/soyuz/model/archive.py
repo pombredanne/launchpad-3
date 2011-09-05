@@ -1910,8 +1910,8 @@ class Archive(SQLBase):
         """Retrieve the restricted architecture families this archive can
         build on."""
         # Main archives are always allowed to build on restricted
-        # architectures.
-        if self.is_main:
+        # architectures if require_virtualized is False.
+        if self.is_main and not self.require_virtualized:
             return getUtility(IProcessorFamilySet).getRestricted()
         archive_arch_set = getUtility(IArchiveArchSet)
         restricted_families = archive_arch_set.getRestrictedFamilies(self)
@@ -1921,13 +1921,16 @@ class Archive(SQLBase):
     def _setEnabledRestrictedFamilies(self, value):
         """Set the restricted architecture families this archive can
         build on."""
-        # Main archives are always allowed to build on restricted
-        # architectures.
-        if self.is_main:
+        # Main archives are not allowed to build on restricted
+        # architectures unless they are set to build on virtualized
+        # builders.
+        if (self.is_main and not self.require_virtualized):
             proc_family_set = getUtility(IProcessorFamilySet)
             if set(value) != set(proc_family_set.getRestricted()):
-                raise CannotRestrictArchitectures("Main archives can not "
-                        "be restricted to certain architectures")
+                raise CannotRestrictArchitectures(
+                    "Main archives can not be restricted to certain "
+                    "architectures unless they are set to build on "
+                    "virtualized builders")
         archive_arch_set = getUtility(IArchiveArchSet)
         restricted_families = archive_arch_set.getRestrictedFamilies(self)
         for (family, archive_arch) in restricted_families:
