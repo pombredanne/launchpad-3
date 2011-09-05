@@ -153,6 +153,7 @@ class FakeForwardedAuthorization(ForwardedAuthorization):
 
 class FakeForwardedObject:
     implements(IDummy)
+
     def __init__(self):
         self.child_obj = Dummy()
 
