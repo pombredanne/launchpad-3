@@ -327,8 +327,8 @@ class ArchivePublisherBase:
         fields = self.buildIndexStanzaFields()
         return fields.makeOutput()
 
-    def supersede(self):
-        """See `IPublishing`."""
+    def setSuperseded(self):
+        """Set to SUPERSEDED status."""
         self.status = PackagePublishingStatus.SUPERSEDED
         self.datesuperseded = UTC_NOW
 
@@ -744,7 +744,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             "Should not dominate unpublished source %s" %
             self.sourcepackagerelease.title)
 
-        super(SourcePackagePublishingHistory, self).supersede()
+        self.setSuperseded()
 
         if dominant is not None:
             if logger is not None:
@@ -1128,7 +1128,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 self.distroarchseries.architecturetag))
             return
 
-        super(BinaryPackagePublishingHistory, self).supersede()
+        self.setSuperseded()
 
         if dominant is not None:
             # DDEBs cannot themselves be dominant; they are always dominated

@@ -195,9 +195,6 @@ class IPublishingView(Interface):
         the field name and value is the value string.
         """
 
-    def supersede():
-        """Supersede this publication."""
-
     def requestObsolescence():
         """Make this publication obsolete.
 
