@@ -3,7 +3,10 @@
 
 __metaclass__ = type
 
-from zope.component import getSiteManager
+from zope.component import (
+    getSiteManager,
+    queryAdapter,
+    )
 from zope.interface import (
     implements,
     Interface,
@@ -11,9 +14,29 @@ from zope.interface import (
 
 from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.interfaces.security import IAuthorization
-from lp.app.security import AuthorizationBase
+from lp.app.security import (
+    AuthorizationBase,
+    ForwardedAuthorization,
+    )
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
+
+
+def registerFakeSecurityAdapter(interface, permission, adapter=None):
+    """Register an instance of FakeSecurityAdapter.
+
+    Create a factory for an instance of FakeSecurityAdapter and register
+    it as an adapter for the given interface and permission name.
+    """
+    if adapter is None:
+        adapter = FakeSecurityAdapter()
+
+    def adapter_factory(adaptee):
+        return adapter
+
+    getSiteManager().registerAdapter(
+        adapter_factory, (interface,), IAuthorization, permission)
+    return adapter
 
 
 class FakeSecurityAdapter(AuthorizationBase):
@@ -24,13 +47,13 @@ class FakeSecurityAdapter(AuthorizationBase):
         self.checkUnauthenticated = FakeMethod()
 
 
-class DummyInterface(Interface):
+class IDummy(Interface):
     """Marker interface to test forwarding."""
 
 
-class DummyClass:
-    """An implementation of DummyInterface."""
-    implements(DummyInterface)
+class Dummy:
+    """An implementation of IDummy."""
+    implements(IDummy)
 
 
 class TestAuthorizationBase(TestCaseWithFactory):
@@ -59,33 +82,18 @@ class TestAuthorizationBase(TestCaseWithFactory):
             (0, adapter.checkAuthenticated.call_count),
             (1, adapter.checkUnauthenticated.call_count))
 
-    def _registerFakeSecurityAdpater(self, interface, permission):
-        """Register an instance of FakeSecurityAdapter.
-
-        Create a factory for an instance of FakeSecurityAdapter and register
-        it as an adapter for the given interface and permission name.
-        """
-        adapter = FakeSecurityAdapter()
-
-        def adapter_factory(adaptee):
-            return adapter
-
-        getSiteManager().registerAdapter(
-            adapter_factory, (interface,), IAuthorization, permission)
-        return adapter
-
     def test_forwardCheckAuthenticated_object_changes(self):
         # Requesting a check for the same permission on a different object.
         permission = self.factory.getUniqueString()
-        next_adapter = self._registerFakeSecurityAdpater(
-            DummyInterface, permission)
+        next_adapter = registerFakeSecurityAdapter(
+            IDummy, permission)
 
         adapter = FakeSecurityAdapter()
         adapter.permission = permission
         adapter.usedfor = None
         adapter.checkPermissionIsRegistered = FakeMethod(result=True)
 
-        adapter.forwardCheckAuthenticated(None, DummyClass())
+        adapter.forwardCheckAuthenticated(None, Dummy())
 
         self.assertVectorEqual(
             (1, adapter.checkPermissionIsRegistered.call_count),
@@ -94,12 +102,12 @@ class TestAuthorizationBase(TestCaseWithFactory):
     def test_forwardCheckAuthenticated_permission_changes(self):
         # Requesting a check for a different permission on the same object.
         next_permission = self.factory.getUniqueString()
-        next_adapter = self._registerFakeSecurityAdpater(
-            DummyInterface, next_permission)
+        next_adapter = registerFakeSecurityAdapter(
+            IDummy, next_permission)
 
-        adapter = FakeSecurityAdapter(DummyClass())
+        adapter = FakeSecurityAdapter(Dummy())
         adapter.permission = self.factory.getUniqueString()
-        adapter.usedfor = DummyInterface
+        adapter.usedfor = IDummy
         adapter.checkPermissionIsRegistered = FakeMethod(result=True)
 
         adapter.forwardCheckAuthenticated(None, permission=next_permission)
@@ -112,15 +120,15 @@ class TestAuthorizationBase(TestCaseWithFactory):
         # Requesting a check for a different permission and a different
         # object.
         next_permission = self.factory.getUniqueString()
-        next_adapter = self._registerFakeSecurityAdpater(
-            DummyInterface, next_permission)
+        next_adapter = registerFakeSecurityAdapter(
+            IDummy, next_permission)
 
         adapter = FakeSecurityAdapter()
         adapter.permission = self.factory.getUniqueString()
         adapter.usedfor = None
         adapter.checkPermissionIsRegistered = FakeMethod(result=True)
 
-        adapter.forwardCheckAuthenticated(None, DummyClass(), next_permission)
+        adapter.forwardCheckAuthenticated(None, Dummy(), next_permission)
 
         self.assertVectorEqual(
             (1, adapter.checkPermissionIsRegistered.call_count),
@@ -130,8 +138,62 @@ class TestAuthorizationBase(TestCaseWithFactory):
         # If the requested forwarding adapter does not exist, return False.
         adapter = FakeSecurityAdapter()
         adapter.permission = self.factory.getUniqueString()
-        adapter.usedfor = DummyInterface
+        adapter.usedfor = IDummy
         adapter.checkPermissionIsRegistered = FakeMethod(result=True)
 
         self.assertFalse(
-            adapter.forwardCheckAuthenticated(None, DummyClass()))
+            adapter.forwardCheckAuthenticated(None, Dummy()))
+
+
+class FakeForwardedAuthorization(ForwardedAuthorization):
+    def __init__(self, obj, permission=None):
+        super(FakeForwardedAuthorization, self).__init__(
+            obj.child_obj, permission)
+
+
+class FakeForwardedObject:
+    implements(IDummy)
+    def __init__(self):
+        self.child_obj = Dummy()
+
+
+class TestForwardedAuthorizationBase(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_ForwardedAuthorization_same_permissions(self):
+
+        permission = self.factory.getUniqueString()
+        fake_obj = FakeForwardedObject()
+        outer_adapter = FakeForwardedAuthorization(fake_obj)
+        outer_adapter.permission = permission
+
+        inner_adapter = FakeSecurityAdapter()
+        inner_adapter.permission = permission
+        registerFakeSecurityAdapter(IDummy, permission, inner_adapter)
+        user = object()
+        outer_adapter.checkAuthenticated(user)
+        outer_adapter.checkUnauthenticated()
+        self.assertVectorEqual(
+            (1, inner_adapter.checkAuthenticated.call_count),
+            (1, inner_adapter.checkUnauthenticated.call_count))
+
+    def test_ForwardedAuthorization_different_permissions(self):
+        perm_inner = 'inner'
+        perm_outer = 'outer'
+        fake_obj = FakeForwardedObject()
+        outer_adapter = FakeForwardedAuthorization(fake_obj, perm_inner)
+        registerFakeSecurityAdapter(IDummy, perm_outer, outer_adapter)
+
+        inner_adapter = FakeSecurityAdapter()
+        inner_adapter.permission = perm_inner
+        registerFakeSecurityAdapter(IDummy, perm_inner, inner_adapter)
+
+        user = object()
+        adapter = queryAdapter(
+            FakeForwardedObject(), IAuthorization, perm_outer)
+        adapter.checkAuthenticated(user)
+        adapter.checkUnauthenticated()
+        self.assertVectorEqual(
+            (1, inner_adapter.checkAuthenticated.call_count),
+            (1, inner_adapter.checkUnauthenticated.call_count))
