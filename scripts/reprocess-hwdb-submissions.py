@@ -23,12 +23,12 @@ submissions that cannot be processed are set to the status INVALID.
 
 import _pythonpath
 
-from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadScript
 from lp.hardwaredb.scripts.hwdbsubmissions import (
-    process_pending_submissions)
+    reprocess_invalid_submissions)
 
 
-class HWDBSubmissionProcessor(LaunchpadCronScript):
+class HWDBSubmissionProcessor(LaunchpadScript):
 
     def add_my_options(self):
         """See `LaunchpadScript`."""
@@ -38,6 +38,10 @@ class HWDBSubmissionProcessor(LaunchpadCronScript):
         self.parser.add_option(
             '-w', '--warnings', action="store_true", default=False,
             help='Include warnings.')
+        self.parser.add_option(
+            '-s', '--start',
+            help=('Process HWSubmission records having an id greater or '
+                  'equal than this value.'))
 
     def main(self):
         max_submissions = self.options.max_submissions
@@ -53,9 +57,21 @@ class HWDBSubmissionProcessor(LaunchpadCronScript):
                 self.logger.error(
                     '--max_submissions must be a positive integer.')
                 return
+        if self.options.start is None:
+            self.logger.error('Option --start not specified.')
+            return
+        try:
+            start = int(self.options.start)
+        except ValueError:
+            self.logger.error('Option --start must have an integer value.')
+            return
+        if start < 0:
+            self.logger.error('--start must be a positive integer.')
+            return
 
-        process_pending_submissions(
-            self.txn, self.logger, max_submissions, self.options.warnings)
+        reprocess_invalid_submissions(
+            start, self.txn, self.logger,
+            max_submissions, self.options.warnings)
 
 if __name__ == '__main__':
     script = HWDBSubmissionProcessor(
