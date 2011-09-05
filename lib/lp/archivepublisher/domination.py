@@ -411,34 +411,27 @@ class Dominator:
         """
         # Avoid circular imports.
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+
         self.logger.debug(
             "Performing domination across %s/%s (Source)",
             distroseries.name, pocket.title)
-        spph_location_clauses = And(
-            SourcePackagePublishingHistory.status ==
-                PackagePublishingStatus.PUBLISHED,
-            SourcePackagePublishingHistory.distroseries == distroseries,
-            SourcePackagePublishingHistory.archive == self.archive,
-            SourcePackagePublishingHistory.pocket == pocket,
-            )
+
+        spph_location_clauses = self._composeActiveSourcePubsCondition(
+            distroseries, pocket)
+        having_multiple_active_publications = (
+            Count(SourcePackagePublishingHistory.id) > 1)
         candidate_source_names = Select(
             SourcePackageName.id,
-            And(
-                SourcePackageRelease.sourcepackagenameID ==
-                    SourcePackageName.id,
-                SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                    SourcePackageRelease.id,
-                spph_location_clauses,
-            ),
+            And(join_spr_spn(), join_spph_spr(), spph_location_clauses),
             group_by=SourcePackageName.id,
-            having=Count(SourcePackagePublishingHistory.id) > 1)
+            having=having_multiple_active_publications)
         sources = IStore(SourcePackagePublishingHistory).find(
             SourcePackagePublishingHistory,
-            SourcePackageRelease.id ==
-                SourcePackagePublishingHistory.sourcepackagereleaseID,
+            join_spph_spr(),
             SourcePackageRelease.sourcepackagenameID.is_in(
                 candidate_source_names),
             spph_location_clauses)
+
         self.logger.debug("Dominating sources...")
         self._dominatePublications(self._sortPackages(sources))
         flush_database_updates()
