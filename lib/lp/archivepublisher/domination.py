@@ -53,8 +53,6 @@ __metaclass__ = type
 __all__ = ['Dominator']
 
 from datetime import timedelta
-import functools
-import operator
 
 import apt_pkg
 from storm.expr import (
@@ -68,7 +66,7 @@ from canonical.database.sqlbase import (
     flush_database_updates,
     sqlvalues,
     )
-from canonical.launchpad.interfaces.lpstorm import IMasterStore
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.enums import (
     BinaryPackageFormat,
@@ -87,17 +85,89 @@ STAY_OF_EXECUTION = 1
 apt_pkg.InitSystem()
 
 
-def _compare_packages_by_version_and_date(get_release, p1, p2):
-    """Compare publications p1 and p2 by their version; using Debian rules.
+def join_spr_spn():
+    """Join condition: SourcePackageRelease/SourcePackageName."""
+    return (
+        SourcePackageName.id == SourcePackageRelease.sourcepackagenameID)
 
-    If the publications are for the same package, compare by datecreated
-    instead. This lets newer records win.
+
+def join_spph_spr():
+    """Join condition: SourcePackageRelease/SourcePackagePublishingHistory.
     """
-    if get_release(p1).id == get_release(p2).id:
-        return cmp(p1.datecreated, p2.datecreated)
+    # Avoid circular imports.
+    from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
-    return apt_pkg.VersionCompare(get_release(p1).version,
-                                  get_release(p2).version)
+    return (
+        SourcePackageRelease.id ==
+            SourcePackagePublishingHistory.sourcepackagereleaseID)
+
+
+class SourcePublicationTraits:
+    """Basic generalized attributes for `SourcePackagePublishingHistory`.
+
+    Used by `GeneralizedPublication` to hide the differences from
+    `BinaryPackagePublishingHistory`.
+    """
+    @staticmethod
+    def getPackageName(spph):
+        """Return the name of this publication's source package."""
+        return spph.sourcepackagerelease.sourcepackagename.name
+
+    @staticmethod
+    def getPackageRelease(spph):
+        """Return this publication's `SourcePackageRelease`."""
+        return spph.sourcepackagerelease
+
+
+class BinaryPublicationTraits:
+    """Basic generalized attributes for `BinaryPackagePublishingHistory`.
+
+    Used by `GeneralizedPublication` to hide the differences from
+    `SourcePackagePublishingHistory`.
+    """
+    @staticmethod
+    def getPackageName(bpph):
+        """Return the name of this publication's binary package."""
+        return bpph.binarypackagerelease.binarypackagename.name
+
+    @staticmethod
+    def getPackageRelease(bpph):
+        """Return this publication's `BinaryPackageRelease`."""
+        return bpph.binarypackagerelease
+
+
+class GeneralizedPublication:
+    """Generalize handling of publication records.
+
+    This allows us to write code that can be dealing with either
+    `SourcePackagePublishingHistory`s or `BinaryPackagePublishingHistory`s
+    without caring which.  Differences are abstracted away in a traits
+    class.
+    """
+    def __init__(self, is_source=True):
+        if is_source:
+            self.traits = SourcePublicationTraits
+        else:
+            self.traits = BinaryPublicationTraits
+
+    def getPackageVersion(self, pub):
+        """Obtain the version string for a publicaiton record."""
+        return self.traits.getPackageRelease(pub).version
+
+    def compare(self, pub1, pub2):
+        """Compare publications by version.
+
+        If both publications are for the same version, their creation dates
+        break the tie.
+        """
+        version_comparison = apt_pkg.VersionCompare(
+            self.getPackageVersion(pub1), self.getPackageVersion(pub2))
+
+        if version_comparison == 0:
+            # Use dates as tie breaker.
+            return cmp(pub1.datecreated, pub2.datecreated)
+        else:
+            return version_comparison
 
 
 class Dominator:
@@ -125,11 +195,10 @@ class Dominator:
         """
         self.logger.debug("Dominating packages...")
 
-        for name in pubs.keys():
-            assert pubs[name], (
-                "Empty list of publications for %s" % name)
-            for pubrec in pubs[name][1:]:
-                pubrec.supersede(pubs[name][0], logger=self.logger)
+        for name, publications in pubs.iteritems():
+            assert publications, "Empty list of publications for %s." % name
+            for pubrec in publications[1:]:
+                pubrec.supersede(publications[0], logger=self.logger)
 
     def _sortPackages(self, pkglist, is_source=True):
         """Map out packages by name, and sort by descending version.
@@ -139,27 +208,20 @@ class Dominator:
         :param is_source: Whether this call involves source package
             publications.  If so, work with `SourcePackagePublishingHistory`.
             If not, work with `BinaryPackagepublishingHistory`.
-        :return: A dict mapping each package name (as UTF-8 encoded string)
-            to a list of publications from `pkglist`, newest first.
+        :return: A dict mapping each package name to a list of publications
+            from `pkglist`, newest first.
         """
         self.logger.debug("Sorting packages...")
 
-        if is_source:
-            get_release = operator.attrgetter("sourcepackagerelease")
-            get_name = operator.attrgetter("sourcepackagename")
-        else:
-            get_release = operator.attrgetter("binarypackagerelease")
-            get_name = operator.attrgetter("binarypackagename")
+        generalization = GeneralizedPublication(is_source)
 
         outpkgs = {}
         for inpkg in pkglist:
-            key = get_name(get_release(inpkg)).name.encode('utf-8')
+            key = generalization.getPackageName(inpkg)
             outpkgs.setdefault(key, []).append(inpkg)
 
-        sort_order = functools.partial(
-            _compare_packages_by_version_and_date, get_release)
         for package_pubs in outpkgs.itervalues():
-            package_pubs.sort(cmp=sort_order, reverse=True)
+            package_pubs.sort(cmp=generalization.compare, reverse=True)
 
         return outpkgs
 
@@ -312,7 +374,7 @@ class Dominator:
                 ),
                 group_by=BinaryPackageName.id,
                 having=Count(BinaryPackagePublishingHistory.id) > 1)
-            binaries = IMasterStore(BinaryPackagePublishingHistory).find(
+            binaries = IStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
                 BinaryPackageRelease.id ==
                     BinaryPackagePublishingHistory.binarypackagereleaseID,
@@ -323,6 +385,19 @@ class Dominator:
                 bpph_location_clauses)
             self.logger.debug("Dominating binaries...")
             self._dominatePublications(self._sortPackages(binaries, False))
+
+    def _composeActiveSourcePubsCondition(self, distroseries, pocket):
+        """Compose ORM condition for restricting relevant source pubs."""
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+
+        return And(
+            SourcePackagePublishingHistory.status ==
+                PackagePublishingStatus.PUBLISHED,
+            SourcePackagePublishingHistory.distroseries == distroseries,
+            SourcePackagePublishingHistory.archive == self.archive,
+            SourcePackagePublishingHistory.pocket == pocket,
+            )
 
     def dominateSources(self, distroseries, pocket):
         """Perform domination on source package publications.
@@ -353,7 +428,7 @@ class Dominator:
             ),
             group_by=SourcePackageName.id,
             having=Count(SourcePackagePublishingHistory.id) > 1)
-        sources = IMasterStore(SourcePackagePublishingHistory).find(
+        sources = IStore(SourcePackagePublishingHistory).find(
             SourcePackagePublishingHistory,
             SourcePackageRelease.id ==
                 SourcePackagePublishingHistory.sourcepackagereleaseID,
