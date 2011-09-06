@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -17,12 +17,12 @@ from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
-from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.launchpad.testing.pages import (
     extract_text,
     find_tag_by_id,
     )
+from canonical.launchpad.webapp.interfaces import BrowserNotificationLevel
+from canonical.launchpad.webapp.servers import StepsToGo
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.tales import format_link
 from lp.blueprints.browser import specification
@@ -37,6 +37,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.views import create_initialized_view
+
 
 class TestSpecificationSearch(TestCaseWithFactory):
 
@@ -167,9 +168,15 @@ class TestSpecificationView(TestCaseWithFactory):
             owner=self.factory.makePerson(displayname="Some Person"))
         html = create_initialized_view(
                 spec, '+index')()
-        self.assertThat(extract_text(html), DocTestMatches(extract_text(
-            "... Registered by Some Person a moment ago ..."), doctest.ELLIPSIS
-            | doctest.NORMALIZE_WHITESPACE | doctest.REPORT_NDIFF))
+        self.assertThat(
+            extract_text(html), DocTestMatches(
+                extract_text(
+                    "... Registered by Some Person a moment ago ..."),
+                (
+                    doctest.ELLIPSIS |
+                    doctest.NORMALIZE_WHITESPACE |
+                    doctest.REPORT_NDIFF)))
+
 
 class TestSpecificationEditStatusView(TestCaseWithFactory):
     """Test the SpecificationEditStatusView."""

@@ -249,7 +249,7 @@ class TestTranslationTemplatesBuildJobSource(TestCaseWithFactory):
     def test_private_branch(self):
         # We don't generate templates for private branches.
         branch = self._makeTranslationBranch(fake_pottery_compatible=True)
-        removeSecurityProxy(branch).private = True
+        removeSecurityProxy(branch).explicitly_private = True
         self.assertFalse(self.jobsource.generatesTemplates(branch))
 
     def test_scheduleTranslationTemplatesBuild_subscribed(self):

@@ -974,7 +974,9 @@ class IArchiveView(IHasBuildRecords):
         :param created_since_date: Only return results whose `date_created`
             is greater than or equal to this date.
 
-        :return: SelectResults containing `ISourcePackagePublishingHistory`.
+        :return: SelectResults containing `ISourcePackagePublishingHistory`,
+            ordered by name. If there are multiple results for the same
+            name then they are sub-ordered newest first.
         """
 
     @rename_parameters_as(
@@ -1243,7 +1245,7 @@ class IArchiveView(IHasBuildRecords):
     @operation_for_version('devel')
     def copyPackages(source_names, from_archive, to_pocket, person,
                      to_series=None, include_binaries=False):
-        """Atomically copy multiple named sources into this archive from another.
+        """Atomically copy named sources into this archive from another.
 
         Asynchronously copy the most recent PUBLISHED versions of the named
         sources to the destination archive if necessary.  Calls to this
