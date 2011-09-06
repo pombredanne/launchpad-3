@@ -38,6 +38,10 @@ be stripped)
     ...     'Hide my email addresses from other Launchpad users').click()
     >>> browser.getControl('Save').click()
 
+Hit Save again to accept the OpenID warning.
+
+    >>> browser.getControl('Save').click()
+
     >>> browser.url
     'http://launchpad.dev/~rayjay'
     >>> ('The changes to your personal details have been saved.'
