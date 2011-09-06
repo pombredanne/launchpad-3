@@ -291,34 +291,9 @@ class ZopelessTransactionManager(object):
                              "directly instantiated.")
 
     @classmethod
-    def _get_zopeless_connection_config(self, dbname, dbhost):
-        # This method exists for testability.
-
-        # This is only used by scripts, so we must connect to the read-write
-        # DB here -- that's why we use rw_main_master directly.
+    def initZopeless(cls, dbuser=None, isolation=ISOLATION_LEVEL_DEFAULT):
         from canonical.database.postgresql import ConnectionString
         main_connection_string = ConnectionString(dbconfig.rw_main_master)
-
-        # Override dbname and dbhost in the connection string if they
-        # have been passed in.
-        if dbname is None:
-            dbname = main_connection_string.dbname
-        else:
-            main_connection_string.dbname = dbname
-
-        if dbhost is None:
-            dbhost = main_connection_string.host
-        else:
-            main_connection_string.host = dbhost
-
-        return str(main_connection_string), dbname, dbhost
-
-    @classmethod
-    def initZopeless(cls, dbname=None, dbhost=None, dbuser=None,
-                     isolation=ISOLATION_LEVEL_DEFAULT):
-
-        main_connection_string, dbname, dbhost = (
-            cls._get_zopeless_connection_config(dbname, dbhost))
 
         assert dbuser is not None, '''
             dbuser is now required. All scripts must connect as unique
@@ -357,8 +332,6 @@ class ZopelessTransactionManager(object):
         else:
             config.push(cls._CONFIG_OVERLAY_NAME, overlay)
             cls._config_overlay = overlay
-            cls._dbname = dbname
-            cls._dbhost = dbhost
             cls._dbuser = dbuser
             cls._isolation = isolation
             cls._reset_stores()
@@ -419,7 +392,7 @@ class ZopelessTransactionManager(object):
         assert cls._installed is not None, (
             "ZopelessTransactionManager not installed")
         cls.uninstall()
-        cls.initZopeless(cls._dbname, cls._dbhost, cls._dbuser, isolation)
+        cls.initZopeless(cls._dbuser, isolation)
 
     @staticmethod
     def conn():

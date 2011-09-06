@@ -28,12 +28,11 @@ def isZopeless():
     return ZopelessTransactionManager._installed is not None
 
 
-def initZopeless(dbname=None, dbhost=None, dbuser=None,
-                 isolation=ISOLATION_LEVEL_DEFAULT):
+def initZopeless(dbuser=None, isolation=ISOLATION_LEVEL_DEFAULT):
     """Initialize the Zopeless environment."""
     if dbuser is None:
         dbuser = (
             ConnectionString(dbconfig.main_master).user or dbconfig.dbuser)
 
     return ZopelessTransactionManager.initZopeless(
-        dbname=dbname, dbhost=dbhost, dbuser=dbuser, isolation=isolation)
+        dbuser=dbuser, isolation=isolation)

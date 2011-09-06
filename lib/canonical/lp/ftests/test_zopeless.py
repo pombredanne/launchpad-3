@@ -13,12 +13,14 @@ import warnings
 import psycopg2
 from sqlobject import StringCol, IntCol
 
-from canonical.database.sqlbase import SQLBase, alreadyInstalledMsg, cursor
-from canonical.lp import initZopeless
-from canonical.testing.layers import (
-    DatabaseLayer,
-    LaunchpadScriptLayer,
+from canonical.database.sqlbase import (
+    alreadyInstalledMsg,
+    connect,
+    cursor,
+    SQLBase,
     )
+from canonical.lp import initZopeless
+from canonical.testing.layers import LaunchpadScriptLayer
 
 
 class MoreBeer(SQLBase):
@@ -50,11 +52,8 @@ class TestInitZopeless(unittest.TestCase):
             # Calling initZopeless with the same arguments twice should return
             # the exact same object twice, but also emit a warning.
             try:
-                dbname = DatabaseLayer._db_fixture.dbname
-                tm1 = initZopeless(
-                    dbname=dbname, dbhost='', dbuser='launchpad')
-                tm2 = initZopeless(
-                    dbname=dbname, dbhost='', dbuser='launchpad')
+                tm1 = initZopeless(dbuser='launchpad')
+                tm2 = initZopeless(dbuser='launchpad')
                 self.failUnless(tm1 is tm2)
                 self.failUnless(self.warned)
             finally:
@@ -73,8 +72,7 @@ class TestZopeless(unittest.TestCase):
     layer = LaunchpadScriptLayer
 
     def setUp(self):
-        self.tm = initZopeless(dbname=DatabaseLayer._db_fixture.dbname,
-                               dbuser='launchpad')
+        self.tm = initZopeless(dbuser='launchpad')
 
         c = cursor()
         c.execute("CREATE TABLE morebeer ("
@@ -187,7 +185,7 @@ class TestZopeless(unittest.TestCase):
         self.tm.commit()
 
         # Make another change from a non-SQLObject connection, and commit that
-        conn = psycopg2.connect('dbname=' + DatabaseLayer._db_fixture.dbname)
+        conn = connect()
         cur = conn.cursor()
         cur.execute("BEGIN TRANSACTION;")
         cur.execute("UPDATE MoreBeer SET rating=4 "
@@ -207,8 +205,7 @@ def test_isZopeless():
     >>> isZopeless()
     False
 
-    >>> tm = initZopeless(dbname=DatabaseLayer._db_fixture.dbname,
-    ...     dbhost='', dbuser='launchpad')
+    >>> tm = initZopeless(dbuser='launchpad')
     >>> isZopeless()
     True
 
@@ -217,6 +214,7 @@ def test_isZopeless():
     False
 
     """
+
 
 def test_suite():
     suite = unittest.TestSuite()
