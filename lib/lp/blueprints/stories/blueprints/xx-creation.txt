@@ -633,8 +633,8 @@ an error:
     ...      print message.renderContents()
     There is 1 error...already in use by another blueprint...
 
-Attempting to register a duplicate blueprint from a non-target context produces
-the same error:
+Attempting to register a duplicate blueprint from a non-target context
+produces the same error:
 
     >>> url = 'http://blueprints.launchpad.dev/sprints/rome/+addspec'
     >>> user_browser.open(url)
@@ -702,7 +702,8 @@ blueprint:
     'http://blueprints.launchpad.dev/ubuntu/+addspec'
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...      print message.renderContents()
-    There is 1 error...already registered by another blueprint...
+    There is 1 error...is already registered by...
+    ...Network Magic: Auto Network Detection...
 
 
 Registering blueprints from other locations

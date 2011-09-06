@@ -334,10 +334,8 @@ class ArchivePublisherBase:
 
     def setDeleted(self, removed_by, removal_comment=None):
         """Set to DELETED status."""
-        self.status = PackagePublishingStatus.DELETED
-        self.datesuperseded = UTC_NOW
-        self.removed_by = removed_by
-        self.removal_comment = removal_comment
+        getUtility(IPublishingSet).setMultipleDeleted(
+            self.__class__, [self.id], removed_by, removal_comment)
 
     def requestObsolescence(self):
         """See `IArchivePublisher`."""
@@ -1966,28 +1964,19 @@ class PublishingSet:
         if len(ids) == 0:
             return
 
-        table = publication_class.__name__
-        permitted_tables = [
-            'BinaryPackagePublishingHistory',
-            'SourcePackagePublishingHistory',
+        permitted_classes = [
+            BinaryPackagePublishingHistory,
+            SourcePackagePublishingHistory,
             ]
-        assert table in permitted_tables, "Deleting wrong type."
+        assert publication_class in permitted_classes, "Deleting wrong type."
 
-        params = sqlvalues(
-            deleted=PackagePublishingStatus.DELETED, now=UTC_NOW,
-            removal_comment=removal_comment, removed_by=removed_by)
-
-        IMasterStore(publication_class).execute("\n".join([
-            "UPDATE %s" % table,
-            """
-            SET
-                status = %(deleted)s,
-                datesuperseded = %(now)s,
-                removed_by = %(removed_by)s,
-                removal_comment = %(removal_comment)s
-            """ % params,
-            "WHERE id IN %s" % sqlvalues(ids),
-            ]))
+        affected_pubs = IMasterStore(publication_class).find(
+            publication_class, publication_class.id.is_in(ids))
+        affected_pubs.set(
+            status=PackagePublishingStatus.DELETED,
+            datesuperseded=UTC_NOW,
+            removed_byID=removed_by.id,
+            removal_comment=removal_comment)
 
     def requestDeletion(self, sources, removed_by, removal_comment=None):
         """See `IPublishingSet`."""

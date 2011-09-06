@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'find_team_participations',
     'TeamMembership',
     'TeamMembershipSet',
     'TeamParticipation',
@@ -20,6 +21,7 @@ from sqlobject import (
     ForeignKey,
     StringCol,
     )
+from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
@@ -655,3 +657,64 @@ def _fillTeamParticipation(member, accepting_team):
 
     store = Store.of(member)
     store.execute(query)
+
+
+def find_team_participations(people, teams=None):
+    """Find the teams the given people participate in.
+
+    :param people: The people for which to query team participation.
+    :param teams: Optionally, limit the participation check to these teams.
+
+    This method performs its work with at most a single database query.
+    It first does similar checks to those performed by IPerson.in_team() and
+    it may turn out that no database query is required at all.
+    """
+
+    teams_to_query = []
+    people_teams = {}
+
+    def add_team_to_result(person, team):
+        teams = people_teams.get(person)
+        if teams is None:
+            teams = set()
+            people_teams[person] = teams
+        teams.add(team)
+
+    # Check for the simple cases - self membership etc.
+    if teams:
+        for team in teams:
+            if team is None:
+                continue
+            for person in people:
+                if team.id == person.id:
+                    add_team_to_result(person, team)
+                    continue
+            if not team.is_team:
+                continue
+            teams_to_query.append(team)
+
+    # Avoid circular imports
+    from lp.registry.model.person import Person
+
+    # We are either checking for membership of any team or didn't eliminate
+    # all the specific team participation checks above.
+    if teams_to_query or not teams:
+        Team = ClassAlias(Person, 'Team')
+        person_ids = [person.id for person in people]
+        conditions = [
+            TeamParticipation.personID == Person.id,
+            TeamParticipation.teamID == Team.id,
+            Person.id.is_in(person_ids)
+        ]
+        team_ids = [team.id for team in teams_to_query]
+        if team_ids:
+            conditions.append(Team.id.is_in(team_ids))
+
+        store = IStore(Person)
+        rs = store.find(
+            (Person, Team),
+            *conditions)
+
+        for (person, team) in rs:
+            add_team_to_result(person, team)
+    return people_teams
