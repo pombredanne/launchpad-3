@@ -800,20 +800,12 @@ def connect_string(user=None, dbname=None):
     Allows you to pass the generated connection details to external
     programs like pg_dump or embed in slonik scripts.
     """
-    from canonical import lp
-
     # We must connect to the read-write DB here, so we use rw_main_master
     # directly.
     from canonical.database.postgresql import ConnectionString
     con_str = ConnectionString(dbconfig.rw_main_master)
     if user is not None:
         con_str.user = user
-    if lp.dbhost is not None:
-        con_str.host = lp.dbhost
-    if lp.dbport is not None:
-        con_str.port = lp.dbport
-    if dbname is None:
-        dbname = lp.dbname  # Note that lp.dbname may be None
     if dbname is not None:
         con_str.dbname = dbname
     return str(con_str)

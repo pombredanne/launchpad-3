@@ -49,11 +49,12 @@ def initZopeless(dbname=None, dbhost=None, dbuser=None,
         #        )
         pass  # Disabled. Bug #3050
     if dbname is None:
-        dbname = globals()['dbname']
+        dbname = ConnectionString(dbconfig.main_master).dbname
     if dbhost is None:
-        dbhost = globals()['dbhost']
+        dbhost = ConnectionString(dbconfig.main_master).host
     if dbuser is None:
-        dbuser = globals()['dbuser']
+        dbuser = (
+            ConnectionString(dbconfig.main_master).user or dbconfig.dbuser)
 
     return ZopelessTransactionManager.initZopeless(
         dbname=dbname, dbhost=dbhost, dbuser=dbuser, isolation=isolation)

@@ -27,7 +27,6 @@ from zope.security.simplepolicies import PermissiveSecurityPolicy
 import zope.sendmail.delivery
 import zope.site.hooks
 
-from canonical import lp
 from canonical.config import config
 # these are intentional re-exports, apparently, used by *many* files.
 from canonical.launchpad.scripts.logger import (
@@ -127,15 +126,8 @@ def db_options(parser):
     maintenance tools cannot do this however.
 
     dbname and dbhost are also propagated to config.database.dbname and
-    config.database.dbhost. dbname, dbhost and dbuser are also propagated to
-    lp.dbname, lp.dbhost and lp.dbuser. This ensures that all systems
-    will be using the requested connection details.
-
-    To test, we first need to store the current values so we can reset them
-    later.
-
-    >>> dbname, dbhost, dbport, dbuser = (
-    ...     lp.dbname, lp.dbhost, lp.dbport, lp.dbuser)
+    config.database.dbhost. This ensures that all systems will be using
+    the requested connection details.
 
     Ensure that command line options propagate to where we say they do
 
@@ -144,14 +136,14 @@ def db_options(parser):
     >>> db_options(parser)
     >>> options, args = parser.parse_args(
     ...     ['--dbname=foo', '--host=bar', '--user=baz', '--port=6432'])
-    >>> (options.dbname, lp.dbname)
-    ('foo', 'foo')
-    >>> (options.dbhost, lp.dbhost)
-    ('bar', 'bar')
-    >>> (options.dbuser, lp.dbuser)
-    ('baz', 'baz')
-    >>> (options.dbport, lp.dbport)
-    (6432, 6432)
+    >>> options.dbname
+    'foo'
+    >>> options.dbhost
+    'bar'
+    >>> options.dbuser
+    'baz'
+    >>> options.dbport
+    6432
     >>> config.database.rw_main_master
     'dbname=foo user=baz host=bar port=6432'
     >>> config.database.rw_main_slave
@@ -166,15 +158,10 @@ def db_options(parser):
     >>> parser = OptionParser()
     >>> db_options(parser)
     >>> options, args = parser.parse_args([])
-    >>> options.dbuser, lp.dbuser
-    (None, None)
-
-    Reset config
-
-    >>> lp.dbhost, lp.dbport, lp.dbuser = dbhost, dbport, dbuser
+    >>> print options.dbuser
+    None
     """
-    startup_connection_string = ConnectionString(
-        config.database.rw_main_master)
+    conn_string = ConnectionString(config.database.rw_main_master)
 
     def update_db_config(**kw):
         connection_string_keys = [
@@ -194,23 +181,20 @@ def db_options(parser):
     def dbname_callback(option, opt_str, value, parser):
         parser.values.dbname = value
         update_db_config(dbname=value)
-        lp.dbname = value
 
     parser.add_option(
             "-d", "--dbname", action="callback", callback=dbname_callback,
-            type="string", dest="dbname",
-            default=config.database.rw_main_master,
+            type="string", dest="dbname", default=conn_string.dbname,
             help="PostgreSQL database to connect to."
             )
 
     def dbhost_callback(options, opt_str, value, parser):
         parser.values.dbhost = value
         update_db_config(host=value)
-        lp.dbhost = value
 
     parser.add_option(
              "-H", "--host", action="callback", callback=dbhost_callback,
-             type="string", dest="dbhost", default=lp.dbhost,
+             type="string", dest="dbhost", default=conn_string.host,
              help="Hostname or IP address of PostgreSQL server."
              )
 
@@ -218,29 +202,19 @@ def db_options(parser):
         value = int(value)
         parser.values.dbport = value
         update_db_config(port=value)
-        lp.dbport = value
 
     parser.add_option(
         "-p", "--port", action="callback", callback=dbport_callback,
-        type=int, dest="dbport", default=lp.dbport,
+        type=int, dest="dbport", default=conn_string.port,
         help="Port PostgreSQL server is listening on."
         )
 
     def dbuser_callback(options, opt_str, value, parser):
         parser.values.dbuser = value
         update_db_config(user=value)
-        lp.dbuser = value
 
     parser.add_option(
              "-U", "--user", action="callback", callback=dbuser_callback,
              type="string", dest="dbuser", default=None,
              help="PostgreSQL user to connect as."
              )
-
-    # The default user is None for scripts (which translates to 'connect
-    # as a PostgreSQL user named the same as the current Unix user').
-    # If the -U option was not given on the command line, our callback is
-    # never called so we need to set this different default here.
-    lp.dbuser = None
-    lp.dbhost = startup_connection_string.host
-    lp.dbport = startup_connection_string.port
