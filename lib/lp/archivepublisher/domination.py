@@ -422,7 +422,7 @@ class Dominator:
             Count(SourcePackagePublishingHistory.id) > 1)
         candidate_source_names = Select(
             SourcePackageName.id,
-            And(join_spr_spn(), join_spph_spr(), spph_location_clauses),
+            And(join_spph_spr(), join_spr_spn(), spph_location_clauses),
             group_by=SourcePackageName.id,
             having=having_multiple_active_publications)
         sources = IStore(SourcePackagePublishingHistory).find(
