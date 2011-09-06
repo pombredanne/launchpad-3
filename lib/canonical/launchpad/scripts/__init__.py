@@ -128,14 +128,14 @@ def db_options(parser):
 
     dbname and dbhost are also propagated to config.database.dbname and
     config.database.dbhost. dbname, dbhost and dbuser are also propagated to
-    lp.get_dbname(), lp.dbhost and lp.dbuser. This ensures that all systems
+    lp.dbname, lp.dbhost and lp.dbuser. This ensures that all systems
     will be using the requested connection details.
 
     To test, we first need to store the current values so we can reset them
     later.
 
     >>> dbname, dbhost, dbport, dbuser = (
-    ...     lp.get_dbname(), lp.dbhost, lp.dbport, lp.dbuser)
+    ...     lp.dbname, lp.dbhost, lp.dbport, lp.dbuser)
 
     Ensure that command line options propagate to where we say they do
 
@@ -144,7 +144,7 @@ def db_options(parser):
     >>> db_options(parser)
     >>> options, args = parser.parse_args(
     ...     ['--dbname=foo', '--host=bar', '--user=baz', '--port=6432'])
-    >>> options.dbname, lp.get_dbname()
+    >>> (options.dbname, lp.dbname)
     ('foo', 'foo')
     >>> (options.dbhost, lp.dbhost)
     ('bar', 'bar')
@@ -194,7 +194,7 @@ def db_options(parser):
     def dbname_callback(option, opt_str, value, parser):
         parser.values.dbname = value
         update_db_config(dbname=value)
-        lp.dbname_override = value
+        lp.dbname = value
 
     parser.add_option(
             "-d", "--dbname", action="callback", callback=dbname_callback,

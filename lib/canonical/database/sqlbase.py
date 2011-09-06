@@ -813,7 +813,7 @@ def connect_string(user=None, dbname=None):
     if lp.dbport is not None:
         con_str.port = lp.dbport
     if dbname is None:
-        dbname = lp.get_dbname()  # Note that lp.dbname may be None
+        dbname = lp.dbname  # Note that lp.dbname may be None
     if dbname is not None:
         con_str.dbname = dbname
     return str(con_str)
