@@ -18,8 +18,9 @@ import subprocess
 import sys
 import time
 import traceback
-
+from datetime import datetime
 from bzrlib.errors import BzrCommandError
+from devscripts.ec2test.account import VALID_AMI_OWNERS
 from devscripts.ec2test.session import EC2SessionName
 import paramiko
 
@@ -575,11 +576,14 @@ class EC2Instance:
         env = os.environ.copy()
         if 'JAVA_HOME' not in os.environ:
             env['JAVA_HOME'] = '/usr/lib/jvm/default-java'
+        now = datetime.strftime(datetime.utcnow(), "%Y-%m-%d %H:%M:%S UTC")
+        description = "Created %s" % now
         cmd = [
             'ec2-register',
             '--private-key=%s' % self.local_pk,
             '--cert=%s' % self.local_cert,
             '--name=%s' % (name,),
+            '--description=%s' % description,
             manifest_path,
             ]
         self.log("Executing command: %s" % ' '.join(cmd))
