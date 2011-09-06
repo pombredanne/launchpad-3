@@ -1179,8 +1179,6 @@ class TestPublishingSetLite(TestCaseWithFactory):
         spph = self.factory.makeSourcePackagePublishingHistory()
         getUtility(IPublishingSet).requestDeletion(
             [spph], self.factory.makePerson())
-        # XXX JeroenVermeulen 2011-08-25, bug=834388: obviate commit.
-        transaction.commit()
         self.assertEqual(PackagePublishingStatus.DELETED, spph.status)
 
     def test_requestDeletion_leaves_other_SPPHs_alone(self):
@@ -1188,8 +1186,6 @@ class TestPublishingSetLite(TestCaseWithFactory):
         other_spph = self.factory.makeSourcePackagePublishingHistory()
         getUtility(IPublishingSet).requestDeletion(
             [other_spph], self.factory.makePerson())
-        # XXX JeroenVermeulen 2011-08-25, bug=834388: obviate commit.
-        transaction.commit()
         self.assertEqual(PackagePublishingStatus.PENDING, spph.status)
 
     def test_requestDeletion_marks_attached_BPPHs_deleted(self):
@@ -1197,8 +1193,6 @@ class TestPublishingSetLite(TestCaseWithFactory):
         spph = self.factory.makeSPPHForBPPH(bpph)
         getUtility(IPublishingSet).requestDeletion(
             [spph], self.factory.makePerson())
-        # XXX JeroenVermeulen 2011-08-25, bug=834388: obviate commit.
-        transaction.commit()
         self.assertEqual(PackagePublishingStatus.DELETED, spph.status)
 
     def test_requestDeletion_leaves_other_BPPHs_alone(self):
@@ -1206,8 +1200,6 @@ class TestPublishingSetLite(TestCaseWithFactory):
         unrelated_spph = self.factory.makeSourcePackagePublishingHistory()
         getUtility(IPublishingSet).requestDeletion(
             [unrelated_spph], self.factory.makePerson())
-        # XXX JeroenVermeulen 2011-08-25, bug=834388: obviate commit.
-        transaction.commit()
         self.assertEqual(PackagePublishingStatus.PENDING, bpph.status)
 
     def test_requestDeletion_accepts_empty_sources_list(self):

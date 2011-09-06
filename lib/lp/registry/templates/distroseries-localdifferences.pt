@@ -39,6 +39,11 @@
       tal:define="differences view/cached_differences;
                   series_name context/displayname;
                   can_perform_sync view/canPerformSync;">
+
+      <div class="beta">
+        <img src="/@@/beta" alt="[BETA]" />
+      </div>
+
       <p><tal:replace replace="structure view/explanation/escapedtext" /></p>
 
       <metal:package_filter_form
