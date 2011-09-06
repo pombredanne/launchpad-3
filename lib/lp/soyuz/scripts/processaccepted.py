@@ -165,7 +165,7 @@ def close_bugs_for_sourcepublication(source_publication, since_version=None):
 
     close_bugs_for_sourcepackagerelease(
         sourcepackagerelease, changesfile_object, since_version,
-        upload_distroseries=source_publication.distroseries.distribution)
+        upload_distroseries=source_publication.distroseries)
 
 
 def close_bugs_for_sourcepackagerelease(source_release, changesfile_object,
