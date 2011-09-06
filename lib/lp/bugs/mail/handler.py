@@ -99,7 +99,20 @@ class BugCommandGroup(BugTaskCommandGroup):
 
     @property
     def groups(self):
-        "Return the `BugTaskCommandGroup` in the order they were added."
+        "Return the `BugTaskCommandGroup`s."
+        is_new_bug = (
+            len(self.commands) > 0
+            and self.commands[0].RANK == 0
+            and self.commands[0].string_args == ['new'])
+        has_split_affects = (
+            len(self._groups) == 2
+            and self._groups[0].commands[0].RANK != 0
+            and self._groups[1].commands[0].RANK == 0)
+        if is_new_bug and has_split_affects:
+            # The affects line was in the wrong position and this
+            # exact case can be fixed.
+            self._groups[0]._commands += self._groups[1]._commands
+            del self._groups[1]
         return list(self._groups)
 
     def add(self, command_or_group):
@@ -139,6 +152,14 @@ class BugCommandGroups(BugCommandGroup):
                 this_bugtask.add(command)
         this_bug.add(this_bugtask)
         self.add(this_bug)
+
+    def __iter__(self):
+        for bug_group in self.groups:
+            for command in bug_group.commands:
+                yield command
+            for bugtask_group in bug_group.groups:
+                for command in bugtask_group.commands:
+                    yield command
 
     def add(self, command_or_group):
         """Add a `BugCommandGroup` to the groups of commands.
@@ -217,7 +238,8 @@ class MaloneHandler:
         elif to_user.lower() != 'edit':
             # Indicate that we didn't handle the mail.
             return False, False, None
-        return None, add_comment_to_bug, commands
+        bug_commands = list(BugCommandGroups(commands))
+        return None, add_comment_to_bug, bug_commands
 
     def process(self, signed_msg, to_addr, filealias=None, log=None):
         """See IMailHandler."""
