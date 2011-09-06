@@ -27,7 +27,7 @@ class CheckScriptTestCase(TestCase):
             log_file = '/dev/null'
             loglevel = 1000
             verbose = False
-        self.con = connect(lp.dbuser)
+        self.con = connect(lp.dbuser)  # XXX: Was ist das
         self.log = logger(FakeOptions())
 
     def tearDown(self):

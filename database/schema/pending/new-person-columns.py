@@ -16,6 +16,7 @@ from canonical.database.sqlbase import connect, ISOLATION_LEVEL_AUTOCOMMIT
 from canonical.launchpad.scripts import db_options
 from canonical.launchpad.scripts.logger import log, logger_options
 
+
 def update_until_done(con, table, query, vacuum_every=100):
     log.info("Running %s" % query)
     loops = 0
@@ -39,7 +40,7 @@ logger_options(parser)
 db_options(parser)
 options, args = parser.parse_args()
 
-con = connect(options.dbuser, isolation=ISOLATION_LEVEL_AUTOCOMMIT)
+con = connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
 update_until_done(con, 'person', """
     UPDATE Person
@@ -53,4 +54,3 @@ update_until_done(con, 'person', """
         LIMIT 200
         )
     """)
-

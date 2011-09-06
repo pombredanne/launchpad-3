@@ -314,7 +314,7 @@ def preamble(con=None):
     """Return the preable needed at the start of all slonik scripts."""
 
     if con is None:
-        con = connect('slony')
+        con = connect(user='slony')
 
     master_node = get_master_node(con)
     nodes = get_all_cluster_nodes(con)

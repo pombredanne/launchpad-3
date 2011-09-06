@@ -158,7 +158,7 @@ def main(options):
     configfile_name = os.path.join(os.path.dirname(__file__), 'security.cfg')
     config.read([configfile_name])
 
-    con = connect(options.dbuser)
+    con = connect()
 
     if options.cluster:
         nodes = replication.helpers.get_nodes(con, 1)

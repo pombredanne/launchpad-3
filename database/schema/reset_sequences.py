@@ -31,7 +31,8 @@ if __name__ == '__main__':
         parser.error("Too many options given")
     if not options.dbname:
         parser.error("Required option --dbname not given")
-    con = connect(None, options.dbname)
+    # XXX: Use db_options
+    con = connect(dbname=options.dbname)
     resetSequences(con.cursor())
     con.commit()
 
