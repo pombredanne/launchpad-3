@@ -2845,6 +2845,18 @@ class TestMergeQueue(TestCaseWithFactory):
                 config)
 
 
+class TestTransitiveBranchPrivacyQuery(TestCaseWithFactory):
+    """Test query to find transitively private branches."""
+    def test_public(self):
+        pass
+
+    def test_explicitly_private(self):
+        pass
+
+    def test_transitively_private(self):
+        pass
+
+
 class TestWebservice(TestCaseWithFactory):
     """Tests for the webservice."""
 

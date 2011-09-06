@@ -58,7 +58,10 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.code.enums import BranchMergeProposalStatus
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import LAUNCHPAD_SERVICES
-from lp.code.model.branch import Branch
+from lp.code.model.branch import (
+    Branch,
+    transitive_branch_visibility_query,
+    )
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.branchsubscription import BranchSubscription
 from lp.code.model.codeimport import CodeImport
@@ -719,7 +722,8 @@ class AnonymousBranchCollection(GenericBranchCollection):
 
     def _getBranchVisibilityExpression(self, branch_class=Branch):
         """Return the where clauses for visibility."""
-        return [branch_class.explicitly_private == False]
+        public_id_query = transitive_branch_visibility_query(is_private=False)
+        return [branch_class.id.is_in(public_id_query)]
 
     def _getCandidateBranchesWith(self):
         """Return WITH clauses defining candidate branches.
@@ -728,9 +732,13 @@ class AnonymousBranchCollection(GenericBranchCollection):
         separately calculated.
         """
         # Anonymous users get public branches only.
+        branch_select = transitive_branch_visibility_query(is_private=False)
+        ScopeBranches = ClassAlias(Branch, "scope_branches")
         return [
             With("candidate_branches",
-                SQL("select id from scope_branches where not private"))
+                Select(ScopeBranches.id,
+                     ScopeBranches.id.is_in(branch_select),
+                     tables="scope_branches"))
             ]
 
 
@@ -801,6 +809,8 @@ class VisibleBranchCollection(GenericBranchCollection):
             # Anonymous users can only see the public branches.
             return None
 
+        private_id_query = transitive_branch_visibility_query(is_private=True)
+
         # A union is used here rather than the more simplistic simple joins
         # due to the query plans generated.  If we just have a simple query
         # then we are joining across TeamParticipation and BranchSubscription.
@@ -810,7 +820,7 @@ class VisibleBranchCollection(GenericBranchCollection):
             Select(Branch.id,
                    And(Branch.owner == TeamParticipation.teamID,
                        TeamParticipation.person == person,
-                       Branch.explicitly_private == True)),
+                       Branch.id.is_in(private_id_query))),
             # Private branches the person is subscribed to, either directly or
             # indirectly.
             Select(Branch.id,
@@ -818,7 +828,7 @@ class VisibleBranchCollection(GenericBranchCollection):
                        BranchSubscription.person ==
                        TeamParticipation.teamID,
                        TeamParticipation.person == person,
-                       Branch.explicitly_private == True)))
+                       Branch.id.is_in(private_id_query))))
         return private_branches
 
     def _getBranchVisibilityExpression(self, branch_class=Branch):
@@ -827,7 +837,8 @@ class VisibleBranchCollection(GenericBranchCollection):
         :param branch_class: The Branch class to use - permits using
             ClassAliases.
         """
-        public_branches = branch_class.explicitly_private == False
+        public_id_query = transitive_branch_visibility_query(is_private=False)
+        public_branches = branch_class.id.is_in(public_id_query)
         if self._private_branch_ids is None:
             # Public only.
             return [public_branches]
@@ -844,25 +855,45 @@ class VisibleBranchCollection(GenericBranchCollection):
         separately calculated.
         """
         person = self._user
+        ScopeBranches = ClassAlias(Branch, "scope_branches")
+        public_branch_subselect = transitive_branch_visibility_query(
+            is_private=False)
         if person is None:
             # Really an anonymous sitation
             return [
                 With("candidate_branches",
-                    SQL("select id from scope_branches where not private"))
+                    Select(ScopeBranches.id,
+                         ScopeBranches.id.is_in(public_branch_subselect),
+                         tables="scope_branches"))
                 ]
+
+        private_branch_subselect = transitive_branch_visibility_query(
+            is_private=True)
+        private_branch_select = Select(ScopeBranches.id,
+                        And(
+                            ScopeBranches.id.is_in(private_branch_subselect),
+                            SQL("""
+                                (scope_branches.owner in
+                                    (select team from teams) OR
+                                    EXISTS(SELECT true from
+                                        BranchSubscription, teams WHERE
+                                        branchsubscription.branch =
+                                            scope_branches.id AND
+                                        branchsubscription.person =
+                                            teams.team))
+                            """)),
+                        tables="scope_branches")
+
         return [
             With("teams", self.store.find(TeamParticipation.teamID,
                 TeamParticipation.personID == person.id)._get_select()),
-            With("private_branches", SQL("""
-                SELECT scope_branches.id FROM scope_branches WHERE
-                scope_branches.private AND (
-                    (scope_branches.owner in (select team from teams) OR
-                     EXISTS(SELECT true from BranchSubscription, teams WHERE
-                         branchsubscription.branch = scope_branches.id AND
-                         branchsubscription.person = teams.team)))""")),
-            With("candidate_branches", SQL("""
-                (SELECT id FROM private_branches) UNION
-                (select id FROM scope_branches WHERE not private)"""))
+            With("private_branches", private_branch_select),
+            With("candidate_branches",
+                Union(
+                    SQL("SELECT id FROM private_branches"),
+                    Select(ScopeBranches.id,
+                         ScopeBranches.id.is_in(public_branch_subselect),
+                         tables="scope_branches")))
             ]
 
     def visibleByUser(self, person):

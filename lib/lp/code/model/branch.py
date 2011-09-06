@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'Branch',
     'BranchSet',
+    'transitive_branch_visibility_query',
     ]
 
 from datetime import datetime
@@ -24,6 +25,7 @@ from sqlobject import (
     SQLRelatedJoin,
     StringCol,
     )
+from storm import Undef
 from storm.expr import (
     And,
     Count,
@@ -32,7 +34,9 @@ from storm.expr import (
     Not,
     Or,
     Select,
+    SQL,
     )
+from storm.info import ClassAlias
 from storm.locals import (
     AutoReload,
     Int,
@@ -1430,3 +1434,31 @@ def branch_modified_subscriber(branch, event):
     """
     update_trigger_modified_fields(branch)
     send_branch_modified_notifications(branch, event)
+
+
+def transitive_branch_visibility_query(is_private):
+    """Construct a query returning the ids of public or private branches.
+
+    A branch is private even if it is itself public if it is stacked on a
+    private branch - this rule is transitive so we need to use SQL
+    recursion to perform the id lookup.
+    """
+    with_stmt = SQL("""
+        recursive stacked_branches as (
+            select branch.id, cast(private as int) as private from branch
+            union all
+            select branch.id,
+            cast(stacked_branches.private as int) as private
+            from stacked_branches, branch
+            where branch.stacked_on = stacked_branches.id
+        )
+    """)
+    privacy_term = SQL("Sum(private) %s 0" % ('>' if is_private else '='))
+    StackedBranches = ClassAlias(Branch, "stacked_branches")
+    return Select(
+        StackedBranches.id,
+        tables=["stacked_branches"],
+        group_by=StackedBranches.id,
+        having=privacy_term,
+        with_=with_stmt
+    )

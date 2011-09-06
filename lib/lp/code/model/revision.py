@@ -162,7 +162,12 @@ class Revision(SQLBase):
             self.id == BranchRevision.revision_id,
             BranchRevision.branch_id == Branch.id)
         if not allow_private:
-            query = And(query, Not(Branch.explicitly_private))
+            # Avoid circular imports
+            from lp.code.model.branch import transitive_branch_visibility_query
+            query = And(query,
+                        Branch.id.is_in(
+                            transitive_branch_visibility_query(
+                                is_private=False)))
         if not allow_junk:
             query = And(
                 query,
@@ -474,11 +479,14 @@ class RevisionSet:
         else:
             person_condition = RevisionAuthor.person == person
 
+        # Avoid circular imports
+        from lp.code.model.branch import transitive_branch_visibility_query
         result_set = store.using(*origin).find(
             Revision,
             And(revision_time_limit(day_limit),
                 person_condition,
-                Not(Branch.explicitly_private)))
+                Branch.id.is_in(
+                    transitive_branch_visibility_query(is_private=False))))
         result_set.config(distinct=True)
         return result_set.order_by(Desc(Revision.revision_date))
 
@@ -496,8 +504,11 @@ class RevisionSet:
             Join(Branch, BranchRevision.branch == Branch.id),
             ]
 
+        # Avoid circular imports
+        from lp.code.model.branch import transitive_branch_visibility_query
         conditions = And(revision_time_limit(day_limit),
-                         Not(Branch.explicitly_private))
+                    Branch.id.is_in(
+                        transitive_branch_visibility_query(is_private=False)))
 
         if IProduct.providedBy(obj):
             conditions = And(conditions, Branch.product == obj)
