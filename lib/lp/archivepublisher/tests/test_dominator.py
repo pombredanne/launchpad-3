@@ -19,6 +19,7 @@ from lp.archivepublisher.domination import (
 from lp.archivepublisher.publishing import Publisher
 from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 from lp.testing import TestCaseWithFactory
 
@@ -58,6 +59,8 @@ class TestDominator(TestNativePublishingBase):
                 foo_10_source, foo_10_binaries[0])
 
     def dominateAndCheck(self, dominant, dominated, supersededby):
+        generalization = GeneralizedPublication(
+            is_source=ISourcePackagePublishingHistory.providedBy(dominant))
         dominator = Dominator(self.logger, self.ubuntutest.main_archive)
 
         # The _dominate* test methods require a dictionary where the
@@ -66,7 +69,7 @@ class TestDominator(TestNativePublishingBase):
         # and dominated, the subsequents.
         pubs = {'foo': [dominant, dominated]}
 
-        dominator._dominatePublications(pubs)
+        dominator._dominatePublications(pubs, generalization)
         flush_database_updates()
 
         # The dominant version remains correctly published.
@@ -153,7 +156,9 @@ class TestDominator(TestNativePublishingBase):
         # This isn't a really good exception. It should probably be
         # something more indicative of bad input.
         self.assertRaises(
-            AssertionError, dominator._dominatePublications, pubs)
+            AssertionError,
+            dominator._dominatePublications,
+            pubs, GeneralizedPublication(True))
 
 
 class TestDomination(TestNativePublishingBase):

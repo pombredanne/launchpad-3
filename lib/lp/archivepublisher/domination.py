@@ -190,34 +190,66 @@ class Dominator:
         self.logger = logger
         self.archive = archive
 
-    def _dominatePublications(self, pubs):
+    def dominatePackage(self, publications, live_versions, generalization):
+        """Dominate publications for a single package.
+
+        :param publications: Iterable of publications for the same package,
+            in the same archive, series, and pocket, all with status
+            `PackagePublishingStatus.PUBLISHED`.
+        :param live_versions: Iterable of version strings that are still
+            considered live for this package.  The given publications will
+            remain active insofar as they represent any of these versions;
+            the other publications will be marked superseded.
+        :param generalization: A `GeneralizedPublication` helper representing
+            the kind of publications these are--source or binary.
+        """
+        # Go through publications from latest version to oldest.  This
+        # makes it easy to figure out which release superseded which:
+        # the dominant is always the oldest live release that is newer
+        # than the one being superseded.
+        publications = sorted(
+            publications, cmp=generalization.compare, reverse=True)
+
+        current_dominant = None
+        for pub in publications:
+            if generalization.getPackageVersion(pub) in live_versions:
+                # This publication stays active; if any publications
+                # that follow right after this are to be superseded,
+                # this is the release that they are superseded by.
+                current_dominant = pub
+            else:
+                # This publication is superseded.  This is what we're
+                # here to do.
+                pub.supersede(current_dominant, logger=self.logger)
+
+    def _dominatePublications(self, pubs, generalization):
         """Perform dominations for the given publications.
 
         :param pubs: A dict mapping names to a list of publications. Every
             publication must be PUBLISHED or PENDING, and the first in each
             list will be treated as dominant (so should be the latest).
+        :param generalization: A `GeneralizedPublication` helper representing
+            the kind of publications these are--source or binary.
         """
         self.logger.debug("Dominating packages...")
 
         for name, publications in pubs.iteritems():
             assert publications, "Empty list of publications for %s." % name
-            for pubrec in publications[1:]:
-                pubrec.supersede(publications[0], logger=self.logger)
+            latest_version = generalization.getPackageVersion(publications[0])
+            self.dominatePackage(
+                publications, [latest_version], generalization)
 
-    def _sortPackages(self, pkglist, is_source=True):
+    def _sortPackages(self, pkglist, generalization):
         """Map out packages by name, and sort by descending version.
 
         :param pkglist: An iterable of `SourcePackagePublishingHistory` or
             `BinaryPackagePublishingHistory`.
-        :param is_source: Whether this call involves source package
-            publications.  If so, work with `SourcePackagePublishingHistory`.
-            If not, work with `BinaryPackagepublishingHistory`.
+        :param generalization: A `GeneralizedPublication` helper representing
+            the kind of publications these are--source or binary.
         :return: A dict mapping each package name to a list of publications
             from `pkglist`, newest first.
         """
         self.logger.debug("Sorting packages...")
-
-        generalization = GeneralizedPublication(is_source)
 
         outpkgs = {}
         for inpkg in pkglist:
@@ -353,6 +385,8 @@ class Dominator:
         # Avoid circular imports.
         from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
+        generalization = GeneralizedPublication(is_source=False)
+
         for distroarchseries in distroseries.architectures:
             self.logger.debug(
                 "Performing domination across %s/%s (%s)",
@@ -388,7 +422,8 @@ class Dominator:
                     BinaryPackageFormat.DDEB,
                 bpph_location_clauses)
             self.logger.debug("Dominating binaries...")
-            self._dominatePublications(self._sortPackages(binaries, False))
+            self._dominatePublications(
+                self._sortPackages(binaries, generalization), generalization)
 
     def _composeActiveSourcePubsCondition(self, distroseries, pocket):
         """Compose ORM condition for restricting relevant source pubs."""
@@ -412,6 +447,8 @@ class Dominator:
         # Avoid circular imports.
         from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 
+        generalization = GeneralizedPublication(is_source=True)
+
         self.logger.debug(
             "Performing domination across %s/%s (Source)",
             distroseries.name, pocket.title)
@@ -433,8 +470,41 @@ class Dominator:
             spph_location_clauses)
 
         self.logger.debug("Dominating sources...")
-        self._dominatePublications(self._sortPackages(sources))
+        self._dominatePublications(
+            self._sortPackages(sources, generalization), generalization)
         flush_database_updates()
+
+    def dominateRemovedSourceVersions(self, distroseries, pocket,
+                                      package_name, live_versions):
+        """Dominate source publications based on a set of "live" versions.
+
+        Active publications for the "live" versions will remain active.  All
+        other active publications for the same package (and the same archive,
+        distroseries, and pocket) are marked superseded.
+
+        Unlike traditional domination, this allows multiple versions of a
+        package to stay active in the same distroseries, archive, and pocket.
+
+        :param distroseries: `DistroSeries` to dominate.
+        :param pocket: `PackagePublishingPocket` to dominate.
+        :param package_name: Source package name, as text.
+        :param live_versions: Iterable of all version strings that are to
+            remain active.
+        """
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+
+        generalization = GeneralizedPublication(is_source=True)
+
+        live_versions = set(live_versions)
+        package_pubs = IStore(SourcePackagePublishingHistory).find(
+            SourcePackagePublishingHistory,
+            join_spph_spr(),
+            join_spr_spn(),
+            SourcePackageName.name == package_name,
+            self._composeActiveSourcePubsCondition(distroseries, pocket))
+
+        self.dominatePackage(package_pubs, live_versions, generalization)
 
     def judge(self, distroseries, pocket):
         """Judge superseded sources and binaries."""
