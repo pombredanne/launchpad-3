@@ -280,7 +280,7 @@ def liverebuild(con):
             except psycopg2.Error:
                 # No commit - we are in autocommit mode
                 log.exception('psycopg error')
-                con = connect(lp.dbuser)
+                con = connect()
                 con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
 
@@ -661,7 +661,7 @@ def main():
     global log
     log = logger(options)
 
-    con = connect(lp.dbuser)
+    con = connect()
 
     is_replicated_db = replication.helpers.slony_installed(con)
 
