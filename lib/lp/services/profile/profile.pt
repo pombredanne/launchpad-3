@@ -47,7 +47,7 @@ a.clicktext {font-weight: normal;}
                  multiple_profiles options/multiple_profiles|nothing;
                  inline_ignored actions/inline_ignored|nothing;
                  inline actions/inline|nothing;
-                 sqltrace actions/sqltrace|nothing;
+                 sqltrace actions/sql|nothing;
                  sqltrace_steps options/sqltrace|nothing;
                  ">
   <div class="hide_reveal_profiling" id="hide_profiling">
@@ -64,15 +64,21 @@ a.clicktext {font-weight: normal;}
     get immediate profiling results in the browser, use
     <code>++profile++show</code>.</tal:block> <tal:block condition="not:
     always_log">In order to get profiling results, you need to ask for an HTML
-    view (<code>++profile++show</code>), a KCacheGrind-friendly log on the
+    view of the profile and OOPS data including SQL calls
+    (<code>++profile++show</code>), a KCacheGrind-friendly log on the
     filesystem (<code>++profile++callgrind</code>), a PStats-friendly log
     (Python standard library) on the filesystem
-    (<code>++profile++pstats</code>), or an HTML view of the SQL and the
+    (<code>++profile++pstats</code>), an HTML view of the SQL and the
     Python stacktrace when each SQL call was made
-    (<code>++profile++sqltrace</code>). You can also combine these
-    (<code>++profile++show,callgrind</code> or
-    <code>++profile++show,pstats</code> or others,
-    with each action separated with commas).</tal:block></p>
+    (<code>++profile++sqltrace</code>), or an HTML view of only the SQL
+    (<code>++profile++sql</code>). You can also combine these
+    (<code>++profile++show&callgrind</code> or
+    <code>++profile++show&pstats</code> or others, with each action separated
+    with ampersands).</tal:block></p>
+    <p>The <code>++profile++sqltrace</code> can take too much time to let a
+    page practically render, especially on qastaging and staging.  You can
+    filter to only get the stacktraces you want in this case; see information
+    in the &quot;SQL trace&quot; section below on how to do this.</p>
     <p>The "++profile++" path segment can usually go anywhere in the URL
     (e.g., <code>http://launchpad.dev/++profile++show</code> or
     <code>http://launchpad.dev/++profile++show/Firefox</code> or
@@ -119,8 +125,8 @@ with profiling():
     as in <code>++profile++pstats</code>.  Profiles are logged to <tal:block
     replace="dump_path" />.</p>
     <p> You can see both the log information and immediate results with
-    <code>++profile++callgrind,show</code> or
-    <code>++profile++pstats,show</code>.</p>
+    <code>++profile++callgrind&show</code> or
+    <code>++profile++pstats&show</code>.</p>
   </tal:block>
   <tal:block condition="log">
     <p tal:condition="always_log"><strong>You have configured every
@@ -144,11 +150,72 @@ with profiling():
   <tal:block condition="not:sqltrace">
     <p>Use <code>++profile++sqltrace</code> in your URL to see the SQL that
     the page runs, along with start and stop times, the database used, and the
-    stacktrace for when each sql call is made.</p> <p>Note that if you do not
-    want the tracebacks, <code>++profile++show</code> will include OOPS data
-    at the end of the profiling information, which has what what you want.</p>
+    stacktrace for when each sql call is made.</p>
+    <p>If you only want SQL and not the tracebacks,
+    <code>++profile++sql</code> will give you what you want, or
+    <code>++profile++show</code> will include OOPS data at the end of the
+    profiling information.</p>
+    <p>If you want stacktraces only for certain SQL statements, you can do
+    that too.  You can use <code>startswith</code>, <code>endswith</code>
+    or <code>includes</code> to specify parts of the SQL that you want to use
+    as triggers.  Note that this is whitespace and case normalized, so you
+    just need to get the spelling right.  Here are some examples.</p>
+    <dl>
+    <dt><code>/++profile++sqltrace: includes Product.blueprints_usage/</code>
+    </dt>
+    <dd>This will get a stacktrace for any SQL statement that has the
+    string &quot;Product.blueprints_usage&quot; in it.</dd>
+    <dt><code>/++profile++sqltrace:startswith SELECT
+    Distribution.answers_usage/</code> </dt>
+    <dd>This will get a stacktrace for any SQL statement that starts with the
+    string &quot;SELECT Distribution.answers_usage&quot; in it.</dd>
+    <dt><code>/++profile++sqltrace:endswith WHERE Project.id = 5 LIMIT
+    1/</code> </dt>
+    <dd>This will get a stacktrace for any SQL statement that ends with the
+    string given.  Note that it does not end in a semicolon, and note that
+    parameters are filled in.</dd>
+    </dl>
+    <p>You can also combine requests with the <code>|</code> mark (the
+    pipe).  Here's an example:
+    <code>/++profile++sqltrace:startswith SELECT Distribution.answers_usage |
+    includes Product.blueprints_usage/</code>.</p>
   </tal:block>
   <tal:block condition="sqltrace">
+    <p tal:condition="options/sql_traceback_all|nothing">You have requested
+    tracebacks for all SQL statements.  You can filter these with conditions
+    like <code>startswith</code>, <code>endswith</code> or
+    <code>includes</code>. Here's a simple example:
+    <code>/++profile++sqltrace: includes Product.blueprints_usage/</code>.</p>
+    <p tal:condition="options/sql_traceback_none|nothing">You have requested no
+    tracebacks.  Use <code>++profile++sqltrace</code> to get tracebacks.</p>
+    <tal:block condition="options/sql_traceback_conditions|nothing">
+      <p>You have requested tracebacks for statements that match only certain
+      conditions.</p>
+      <tal:block
+      condition="not:options/sql_traceback_conditions/included">
+      <p><strong> You had no valid conditions, so no tracebacks were
+      included.</strong> The available conditions are <code>startswith</code>,
+      <code>endswith</code> or <code>includes</code>. Here's a simple
+      example.</p>
+      <pre>++profile++sqltrace: includes Product.blueprints_usage/</pre>
+      </tal:block>
+      <ul>
+      <li tal:repeat="condition options/sql_traceback_conditions/included">
+        <em tal:content="condition/constraint">CONSTRAINT</em>
+        <span tal:replace="condition/value">VALUE</span>
+      </li>
+      </ul>
+      <tal:block condition="options/sql_traceback_conditions/ignored">
+        <p><strong>Warning</strong>: these conditions were not understood, and
+        so ignored.</p>
+        <ul>
+        <li tal:repeat="condition options/sql_traceback_conditions/ignored">
+          <em tal:content="condition/constraint">CONSTRAINT</em>
+          <span tal:replace="condition/value">VALUE</span>
+        </li>
+        </ul>
+      </tal:block>
+    </tal:block>
     <h3>Top 10 SQL times</h3>
     <ol>
       <li tal:repeat="info options/top_sql" tal:attributes="class info/cls">
@@ -158,6 +225,14 @@ with profiling():
       </li>
     </ol>
     <h3>Top 10 Python times</h3>
+    <p tal:condition="options/sql_traceback_all|nothing">Note that generating
+    stacktraces can add significantly to these numbers, and skew results.  Use
+    <code>++profile++sql</code> for a more accurate view.</p>
+    <p tal:condition="options/sql_traceback_conditions|nothing">Note that
+    generating stacktraces can add significantly to these numbers, and
+    selectively choosing when to generate stacktraces will produce so much
+    skew as to potentially make these values meaningless.  Use
+    <code>++profile++sql</code> for the most accurate view.</p>
     <ol>
       <li tal:repeat="info options/top_python" tal:attributes="class info/cls">
         <a tal:attributes="href string:#pythonstep-${info/ix}">Before query
@@ -165,32 +240,37 @@ with profiling():
         replace="info/value"></tal:block> milliseconds)
       </li>
     </ol>
-    <h3>Repeated Python SQL Triggers</h3>
-    <p tal:condition="not: options/top_triggers">None.</p>
-    <div tal:condition="options/top_triggers">
-      <p>Typically, these show loops.  The traceback may show extra
-      information, such as from page templates, that indicate the variable
-      within the loop.  If you want to add more information to identify the
-      variables in the loop, in your Python add either an informational string
-      with the variable name <code>__traceback_info__</code>, or add a
-      <code>__traceback_supplement__</code> as used in
-      lp.services.stacktrace.</p>
-      <div tal:repeat="trigger options/top_triggers">
-        <div>File &quot;<tal:block replace="trigger/filename"></tal:block>&quot;,
-              line <tal:block replace="trigger/lineno"></tal:block></div>
-        <div class="querylinks">
-          <tal:block replace="trigger/count"></tal:block> related queries (<a
-          href="#" class="expandall">expand all tracebacks</a>): <span
-          tal:repeat="ix trigger/indexes"> <a tal:attributes="href
-          string:#sqlstep-${ix}" tal:content="ix"></a> </span>
+    <tal:block condition="not: options/sql_traceback_none|nothing">
+      <h3>Repeated Python SQL Triggers</h3>
+      <p tal:condition="options/sql_traceback_conditions|nothing">These are
+      only calculated for the stacktraces that were collected.</p>
+      <p tal:condition="not: options/top_triggers">None.</p>
+      <div tal:condition="options/top_triggers">
+        <p>Typically, these show loops.  The traceback may show extra
+        information, such as from page templates, that indicate the variable
+        within the loop.  If you want to add more information to identify the
+        variables in the loop, in your Python add either an informational
+        string with the variable name <code>__traceback_info__</code>, or add
+        a <code>__traceback_supplement__</code> as used in
+        lp.services.stacktrace.</p>
+        <div tal:repeat="trigger options/top_triggers">
+          <div>File &quot;<tal:block
+          replace="trigger/filename"></tal:block>&quot;, line <tal:block
+          replace="trigger/lineno"></tal:block></div>
+          <div class="querylinks"> <tal:block
+          replace="trigger/count"></tal:block> related queries (<a href="#"
+          class="expandall">expand all tracebacks</a>): <span tal:repeat="ix
+          trigger/indexes"> <a tal:attributes="href string:#sqlstep-${ix}"
+          tal:content="ix"></a> </span> </div>
         </div>
       </div>
-    </div>
+    </tal:block>
     <h3>SQL (<tal:block replace="options/sql_count"></tal:block> queries)</h3>
     <p>Each sql line begins with the start time and the stop time, along with
     the name of the database on which the query ran.  Times are in
     milliseconds since request start.</p>
-    <div><a href="#" id="show-all-tracebacks">Show all tracebacks</a> / <a href="#"
+    <div tal:condition="not:options/sql_traceback_none|nothing"><a href="#"
+    id="show-all-tracebacks">Show all tracebacks</a> / <a href="#"
     id="hide-all-tracebacks">Hide all tracebacks</a></div>
     <div tal:repeat="step sqltrace_steps">
       <div tal:condition="step/python_rank|nothing" tal:attributes="class
@@ -210,9 +290,10 @@ with profiling():
           tal:condition="step/sql_rank|nothing"><strong>Top ten (# <tal:block
           replace="step/sql_rank"></tal:block>):</strong> SQL took <span
           tal:replace="step/sql_time" /> milliseconds</span></div> <a href="#"
-          class="clicktext">Click to toggle Python traceback.</a>
+          class="clicktext" tal:condition="step/stack">Click to toggle Python
+          traceback.</a><span tal:condition="not:step/stack">--</span>
         </div>
-        <div class="trace"><div class="inner">
+        <div class="trace" tal:condition="step/stack"><div class="inner">
           <div class="appstack" tal:define="stack step/app_stack">
             <div tal:repeat="frame stack" metal:define-macro="draw-stack">
               <div>File &quot;<tal:block replace="frame/filename"></tal:block>&quot;,
@@ -247,8 +328,8 @@ with profiling():
   <h2>Profile quick view</h2>
   <tal:block condition="not:show">
     <p>Use <code>++profile++show</code> in your URL in order to see immediate
-    profile results (or <code>++profile++callgrind,show</code> or
-    <code>++profile++pstats,show</code> to see both the log information and
+    profile results (or <code>++profile++callgrind&show</code> or
+    <code>++profile++pstats&show</code> to see both the log information and
     immediate results).</p>
   </tal:block>
   <tal:block condition="show">
@@ -275,6 +356,10 @@ LPS.use('node', 'lp', 'transition', function (Y) {
         Y.one('div#profiling_info').setStyle('display', 'none');
         e.preventDefault();
     });
+});
+</script>
+<script tal:condition="not:options/sql_traceback_none|nothing">
+LPS.use('node', 'lp', 'transition', function (Y) {
     function slideIn(target) {
         target.transition({
             easing: 'ease-in',

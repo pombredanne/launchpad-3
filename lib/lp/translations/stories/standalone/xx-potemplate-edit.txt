@@ -48,11 +48,6 @@ The owner of a product has access to edit page for PO templates.
 Owner will not see admin fields, only those fields designated for the
 edit page.
 
-    >>> browser.getControl(name='field.name').value
-    Traceback (most recent call last):
-    ...
-    LookupError:...
-
     >>> browser.getControl(name='field.header').value
     Traceback (most recent call last):
     ...
@@ -123,6 +118,7 @@ after updating the template.
 
 The visible fields can be changed and saved.
 
+    >>> browser.getControl(name='field.name').value = u'evo'
     >>> browser.getControl(name='field.translation_domain').value = u'evo'
     >>> browser.getControl(name='field.priority').value = '100'
     >>> browser.getControl(name='field.iscurrent').value = False
@@ -131,14 +127,17 @@ The visible fields can be changed and saved.
     >>> browser.getControl(name='field.description').value = u'foo'
     >>> browser.getControl('Change').click()
     >>> print browser.url
-    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2
+    http://translations.launchpad.dev/evolution/trunk/+pots/evo
 
 The changed values will be stored and visible by accesing again the edit
 page.
 
     >>> browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
-    ...     'evolution-2.2/+edit')
+    ...     'evo/+edit')
+    >>> browser.getControl(name='field.name').value
+    'evo'
+
     >>> browser.getControl(name='field.translation_domain').value
     'evo'
 
@@ -160,6 +159,11 @@ page.
     >>> previous_date_last_updated != evolution_template.date_last_updated
     True
 
+Restore the template name for further tests.
+
+    >>> browser.getControl(name='field.name').value = u'evolution-2.2'
+    >>> browser.getControl('Change').click()
+
 
 Priority range
 --------------
@@ -173,7 +177,7 @@ about what values are accepted for the priority field.
     ...     'evolution-2.2/+edit')
     >>> admin_browser.getControl(name='field.priority').value = '-1'
     >>> admin_browser.getControl('Change').click()
-    >>> print browser.url
+    >>> print admin_browser.url
     http://translations.../evolution/trunk/+pots/evolution-2.2/+edit
 
     >>> print_feedback_messages(admin_browser.contents)
@@ -185,7 +189,7 @@ about what values are accepted for the priority field.
     ...     'evolution-2.2/+edit')
     >>> admin_browser.getControl(name='field.priority').value = '100001'
     >>> admin_browser.getControl('Change').click()
-    >>> print browser.url
+    >>> print admin_browser.url
     http://translations.../evolution/trunk/+pots/evolution-2.2/+edit
 
     >>> print_feedback_messages(admin_browser.contents)

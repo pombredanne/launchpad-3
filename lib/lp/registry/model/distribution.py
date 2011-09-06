@@ -53,7 +53,6 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet,
     )
-from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon,
@@ -181,9 +180,6 @@ from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.distributionsourcepackagecache import (
-    DistributionSourcePackageCache,
-    )
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease,
     )
@@ -191,10 +187,8 @@ from lp.soyuz.model.distroarchseries import (
     DistroArchSeries,
     DistroArchSeriesSet,
     )
-from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.publishing import (
     BinaryPackagePublishingHistory,
-    SourcePackageFilePublishing,
     SourcePackagePublishingHistory,
     )
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
@@ -282,6 +276,11 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             alsoProvides(self, IBaseDistribution)
         else:
             alsoProvides(self, IDerivativeDistribution)
+
+    @property
+    def pillar_category(self):
+        """See `IPillar`."""
+        return "Distribution"
 
     @property
     def uploaders(self):
@@ -1068,49 +1067,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             DistroSeries.distribution == self,
             DistroSeries.status == status)
 
-    def _findPublishedBinaryFile(self, filename, archive):
-        """Find binary package file of the given name and archive.
-
-        :return: A `LibraryFileAlias`, or None.
-        """
-        search = Store.of(self).find(
-            LibraryFileAlias,
-            BinaryPackageFile.libraryfileID == LibraryFileAlias.id,
-            BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                BinaryPackageFile.binarypackagereleaseID,
-            DistroArchSeries.id ==
-                BinaryPackagePublishingHistory.distroarchseriesID,
-            DistroSeries.id == DistroArchSeries.distroseriesID,
-            BinaryPackagePublishingHistory.dateremoved == None,
-            DistroSeries.distribution == self,
-            BinaryPackagePublishingHistory.archiveID == archive.id,
-            LibraryFileAlias.filename == filename)
-        return search.order_by(Desc(LibraryFileAlias.id)).first()
-
-    def getFileByName(self, filename, archive=None, source=True, binary=True):
-        """See `IDistribution`."""
-        assert (source or binary), "searching in an explicitly empty " \
-               "space is pointless"
-        if archive is None:
-            archive = self.main_archive
-
-        if binary:
-            candidate = self._findPublishedBinaryFile(filename, archive)
-        else:
-            candidate = None
-
-        if source and candidate is None:
-            spfp = SourcePackageFilePublishing.selectFirstBy(
-                distribution=self, libraryfilealiasfilename=filename,
-                archive=archive, orderBy=['id'])
-            if spfp is not None:
-                candidate = spfp.libraryfilealias
-
-        if candidate is None:
-            raise NotFoundError(filename)
-        else:
-            return candidate
-
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
                         arch_tag=None, user=None, binary_only=True):
         """See `IHasBuildRecords`"""
@@ -1129,166 +1085,12 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return getUtility(IBinaryPackageBuildSet).getBuildsByArchIds(
             self, arch_ids, build_state, name, pocket)
 
-    def getSourcePackageCaches(self, archive=None):
-        """See `IDistribution`."""
-        if archive is not None:
-            archives = [archive.id]
-        else:
-            archives = self.all_distro_archive_ids
-
-        caches = DistributionSourcePackageCache.select("""
-            distribution = %s AND
-            archive IN %s
-        """ % sqlvalues(self, archives),
-        orderBy="name",
-        prejoins=['sourcepackagename'])
-
-        return caches
-
-    def removeOldCacheItems(self, archive, log):
-        """See `IDistribution`."""
-
-        # Get the set of source package names to deal with.
-        spns = set(SourcePackageName.select("""
-            SourcePackagePublishingHistory.distroseries =
-                DistroSeries.id AND
-            DistroSeries.distribution = %s AND
-            Archive.id = %s AND
-            SourcePackagePublishingHistory.archive = Archive.id AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename =
-                SourcePackageName.id AND
-            SourcePackagePublishingHistory.dateremoved is NULL AND
-            Archive.enabled = TRUE
-            """ % sqlvalues(self, archive),
-            distinct=True,
-            clauseTables=[
-                'Archive',
-                'DistroSeries',
-                'SourcePackagePublishingHistory',
-                'SourcePackageRelease']))
-
-        # Remove the cache entries for packages we no longer publish.
-        for cache in self.getSourcePackageCaches(archive):
-            if cache.sourcepackagename not in spns:
-                log.debug(
-                    "Removing source cache for '%s' (%s)"
-                    % (cache.name, cache.id))
-                cache.destroySelf()
-
-    def updateCompleteSourcePackageCache(self, archive, log, ztm,
-                                         commit_chunk=500):
-        """See `IDistribution`."""
-        # Do not create cache entries for disabled archives.
-        if not archive.enabled:
-            return
-
-        # Get the set of source package names to deal with.
-        spns = list(SourcePackageName.select("""
-            SourcePackagePublishingHistory.distroseries =
-                DistroSeries.id AND
-            DistroSeries.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename =
-                SourcePackageName.id AND
-            SourcePackagePublishingHistory.dateremoved is NULL
-            """ % sqlvalues(self, archive),
-            distinct=True,
-            orderBy="name",
-            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
-                'SourcePackageRelease']))
-
-        number_of_updates = 0
-        chunk_size = 0
-        for spn in spns:
-            log.debug("Considering source '%s'" % spn.name)
-            self.updateSourcePackageCache(spn, archive, log)
-            chunk_size += 1
-            number_of_updates += 1
-            if chunk_size == commit_chunk:
-                chunk_size = 0
-                log.debug("Committing")
-                ztm.commit()
-
-        return number_of_updates
-
-    def updateSourcePackageCache(self, sourcepackagename, archive, log):
-        """See `IDistribution`."""
-
-        # Get the set of published sourcepackage releases.
-        sprs = list(SourcePackageRelease.select("""
-            SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackageRelease.id =
-                SourcePackagePublishingHistory.sourcepackagerelease AND
-            SourcePackagePublishingHistory.distroseries =
-                DistroSeries.id AND
-            DistroSeries.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
-            SourcePackagePublishingHistory.dateremoved is NULL
-            """ % sqlvalues(sourcepackagename, self, archive),
-            orderBy='id',
-            clauseTables=['SourcePackagePublishingHistory', 'DistroSeries'],
-            distinct=True))
-
-        if len(sprs) == 0:
-            log.debug("No sources releases found.")
-            return
-
-        # Find or create the cache entry.
-        cache = DistributionSourcePackageCache.selectOne("""
-            distribution = %s AND
-            archive = %s AND
-            sourcepackagename = %s
-            """ % sqlvalues(self, archive, sourcepackagename))
-        if cache is None:
-            log.debug("Creating new source cache entry.")
-            cache = DistributionSourcePackageCache(
-                archive=archive,
-                distribution=self,
-                sourcepackagename=sourcepackagename)
-
-        # Make sure the name is correct.
-        cache.name = sourcepackagename.name
-
-        # Get the sets of binary package names, summaries, descriptions.
-
-        # XXX Julian 2007-04-03:
-        # This bit of code needs fixing up, it is doing stuff that
-        # really needs to be done in SQL, such as sorting and uniqueness.
-        # This would also improve the performance.
-        binpkgnames = set()
-        binpkgsummaries = set()
-        binpkgdescriptions = set()
-        sprchangelog = set()
-        for spr in sprs:
-            log.debug("Considering source version %s" % spr.version)
-            # changelog may be empty, in which case we don't want to add it
-            # to the set as the join would fail below.
-            if spr.changelog_entry is not None:
-                sprchangelog.add(spr.changelog_entry)
-            binpkgs = BinaryPackageRelease.select("""
-                BinaryPackageRelease.build = BinaryPackageBuild.id AND
-                BinaryPackageBuild.source_package_release = %s
-                """ % sqlvalues(spr.id),
-                clauseTables=['BinaryPackageBuild'])
-            for binpkg in binpkgs:
-                log.debug("Considering binary '%s'" % binpkg.name)
-                binpkgnames.add(binpkg.name)
-                binpkgsummaries.add(binpkg.summary)
-                binpkgdescriptions.add(binpkg.description)
-
-        # Update the caches.
-        cache.binpkgnames = ' '.join(sorted(binpkgnames))
-        cache.binpkgsummaries = ' '.join(sorted(binpkgsummaries))
-        cache.binpkgdescriptions = ' '.join(sorted(binpkgdescriptions))
-        cache.changelog = ' '.join(sorted(sprchangelog))
-
     def searchSourcePackageCaches(
         self, text, has_packaging=None, publishing_distroseries=None):
         """See `IDistribution`."""
+        from lp.soyuz.model.distributionsourcepackagecache import (
+            DistributionSourcePackageCache,
+            )
         # The query below tries exact matching on the source package
         # name as well; this is because source package names are
         # notoriously bad for fti matching -- they can contain dots, or
@@ -1379,6 +1181,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # This matches all DistributionSourcePackageCache rows that have
         # a source package that generated the BinaryPackageName that
         # we're searching for.
+        from lp.soyuz.model.distributionsourcepackagecache import (
+            DistributionSourcePackageCache,
+            )
         return (
             DistroSeries.distribution == self,
             DistroSeries.status != SeriesStatus.OBSOLETE,
@@ -1395,6 +1200,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def searchBinaryPackages(self, package_name, exact_match=False):
         """See `IDistribution`."""
+        from lp.soyuz.model.distributionsourcepackagecache import (
+            DistributionSourcePackageCache,
+            )
         store = Store.of(self)
 
         select_spec = (DistributionSourcePackageCache,)

@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# NOTE: The first line above must stay first; do not move the copyright
+# notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
+#
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -473,7 +477,7 @@ class ObjectFactory:
             branch_id = self.getUniqueInteger()
         if rcstype is None:
             rcstype = 'svn'
-        if rcstype in ['svn', 'bzr-svn', 'hg']:
+        if rcstype in ['svn', 'bzr-svn', 'hg', 'bzr']:
             assert cvs_root is cvs_module is None
             if url is None:
                 url = self.getUniqueURL()
@@ -754,6 +758,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             address, person, email_status, account)
 
     def makeTeam(self, owner=None, displayname=None, email=None, name=None,
+                 description=None,
                  subscription_policy=TeamSubscriptionPolicy.OPEN,
                  visibility=None, members=None):
         """Create and return a new, arbitrary Team.
@@ -763,6 +768,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :type owner: `IPerson` or string
         :param displayname: The team's display name.  If not given we'll use
             the auto-generated name.
+        :param description: Team team's description.
         :type string:
         :param email: The email address to use as the team's contact address.
         :type email: string
@@ -788,7 +794,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname = SPACE.join(
                 word.capitalize() for word in name.split('-'))
         team = getUtility(IPersonSet).newTeam(
-            owner, name, displayname, subscriptionpolicy=subscription_policy)
+            owner, name, displayname, teamdescription=description,
+            subscriptionpolicy=subscription_policy)
         if visibility is not None:
             # Visibility is normally restricted to launchpad.Commercial, so
             # removing the security proxy as we don't care here.
@@ -1117,7 +1124,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             branch_type=branch_type, name=name, registrant=registrant,
             url=url, **optional_branch_args)
         if private:
-            removeSecurityProxy(branch).private = True
+            removeSecurityProxy(branch).explicitly_private = True
         if stacked_on is not None:
             removeSecurityProxy(branch).stacked_on = stacked_on
         if reviewer is not None:
@@ -2117,7 +2124,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None, target=None, branch_name=None,
-                       git_repo_url=None, hg_repo_url=None, registrant=None,
+                       git_repo_url=None, hg_repo_url=None,
+                       bzr_branch_url=None, registrant=None,
                        rcs_type=None, review_status=None):
         """Create and return a new, arbitrary code import.
 
@@ -2126,7 +2134,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         unique URL.
         """
         if (svn_branch_url is cvs_root is cvs_module is git_repo_url is
-            hg_repo_url is None):
+            hg_repo_url is bzr_branch_url is None):
             svn_branch_url = self.getUniqueURL()
 
         if target is None:
@@ -2143,46 +2151,54 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             else:
                 assert rcs_type in (RevisionControlSystems.SVN,
                                     RevisionControlSystems.BZR_SVN)
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name, rcs_type=rcs_type,
-                url=svn_branch_url)
+                url=svn_branch_url, review_status=review_status)
         elif git_repo_url is not None:
             assert rcs_type in (None, RevisionControlSystems.GIT)
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
-                url=git_repo_url)
+                url=git_repo_url, review_status=review_status)
         elif hg_repo_url is not None:
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.HG,
-                url=hg_repo_url)
+                url=hg_repo_url, review_status=review_status)
+        elif bzr_branch_url is not None:
+            return code_import_set.new(
+                registrant, target, branch_name,
+                rcs_type=RevisionControlSystems.BZR,
+                url=bzr_branch_url, review_status=review_status)
         else:
             assert rcs_type in (None, RevisionControlSystems.CVS)
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.CVS,
-                cvs_root=cvs_root, cvs_module=cvs_module)
-        if review_status:
-            removeSecurityProxy(code_import).review_status = review_status
-        return code_import
+                cvs_root=cvs_root, cvs_module=cvs_module,
+                review_status=review_status)
 
     def makeChangelog(self, spn=None, versions=[]):
-        """Create and return a LFA of a valid Debian-style changelog."""
+        """Create and return a LFA of a valid Debian-style changelog.
+
+        Note that the changelog returned is unicode - this is deliberate
+        so that code is forced to cope with it as utf-8 changelogs are
+        normal.
+        """
         if spn is None:
             spn = self.getUniqueString()
         changelog = ''
         for version in versions:
-            entry = dedent('''
+            entry = dedent(u'''\
             %s (%s) unstable; urgency=low
 
               * %s.
 
-             -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
+             -- Føo Bær <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
 
             ''' % (spn, version, version))
             changelog += entry
-        return self.makeLibraryFileAlias(content=changelog)
+        return self.makeLibraryFileAlias(content=changelog.encode("utf-8"))
 
     def makeCodeImportEvent(self):
         """Create and return a CodeImportEvent."""
@@ -2269,16 +2285,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return bmp.nominateReviewer(candidate, bmp.registrant)
 
     def makeMessage(self, subject=None, content=None, parent=None,
-                    owner=None):
+                    owner=None, datecreated=None):
         if subject is None:
             subject = self.getUniqueString()
         if content is None:
             content = self.getUniqueString()
         if owner is None:
             owner = self.makePerson()
+        if datecreated is None:
+            datecreated = datetime.now(UTC)
         rfc822msgid = self.makeUniqueRFC822MsgId()
         message = Message(rfc822msgid=rfc822msgid, subject=subject,
-            owner=owner, parent=parent)
+            owner=owner, parent=parent, datecreated=datecreated)
         MessageChunk(message=message, sequence=1, content=content)
         return message
 
@@ -3666,8 +3684,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            date_uploaded=UTC_NOW,
                                            scheduleddeletiondate=None,
                                            ancestor=None,
-                                           **kwargs
-                                           ):
+                                           **kwargs):
         """Make a `SourcePackagePublishingHistory`.
 
         :param sourcepackagerelease: The source package release to publish
@@ -3792,6 +3809,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if status == PackagePublishingStatus.PUBLISHED:
             naked_bpph.datepublished = UTC_NOW
         return bpph
+
+    def makeSPPHForBPPH(self, bpph):
+        """Produce a `SourcePackagePublishingHistory` to match `bpph`.
+
+        :param bpph: A `BinaryPackagePublishingHistory`.
+        :return: A `SourcePackagePublishingHistory` stemming from the same
+            source package as `bpph`, published into the same distroseries,
+            pocket, and archive.
+        """
+        # JeroenVermeulen 2011-08-25, bug=834370: Julian says this isn't
+        # very complete, and ignores architectures.  Improve so we can
+        # remove more of our reliance on the SoyuzTestPublisher.
+        bpr = bpph.binarypackagerelease
+        spph = self.makeSourcePackagePublishingHistory(
+            distroseries=bpph.distroarchseries.distroseries,
+            sourcepackagerelease=bpr.build.source_package_release,
+            pocket=bpph.pocket, archive=bpph.archive)
+        return spph
 
     def makeBinaryPackageName(self, name=None):
         """Make an `IBinaryPackageName`."""
@@ -4053,7 +4088,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                          emailaddress=u'test@canonical.com',
                          distroarchseries=None, private=False,
                          contactable=False, system=None,
-                         submission_data=None):
+                         submission_data=None, status=None):
         """Create a new HWSubmission."""
         if date_created is None:
             date_created = datetime.now(pytz.UTC)
@@ -4074,10 +4109,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         format = HWSubmissionFormat.VERSION_1
         submission_set = getUtility(IHWSubmissionSet)
 
-        return submission_set.createSubmission(
+        submission = submission_set.createSubmission(
             date_created, format, private, contactable,
             submission_key, emailaddress, distroarchseries,
             raw_submission, filename, filesize, system)
+
+        if status is not None:
+            removeSecurityProxy(submission).status = status
+        return submission
 
     def makeHWSubmissionDevice(self, submission, device, driver, parent,
                                hal_device_id):

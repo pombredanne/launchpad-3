@@ -18,7 +18,7 @@ from bzrlib.bzrdir import (
     BzrDir,
     BzrDirMetaFormat1,
     )
-from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack6
+from bzrlib.repofmt.knitpack_repo import RepositoryFormatKnitPack6
 from bzrlib.revision import NULL_REVISION
 from bzrlib.transport import get_transport
 import pytz

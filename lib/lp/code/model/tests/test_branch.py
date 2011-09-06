@@ -1510,7 +1510,6 @@ class TestBranchDeletionConsequences(TestCase):
         """break_links allows deleting a code import branch."""
         code_import = self.factory.makeCodeImport()
         code_import_id = code_import.id
-        self.factory.makeCodeImportJob(code_import)
         code_import.branch.destroySelf(break_references=True)
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)
@@ -1575,7 +1574,6 @@ class TestBranchDeletionConsequences(TestCase):
         """DeleteCodeImport.__call__ must delete the CodeImport."""
         code_import = self.factory.makeCodeImport()
         code_import_id = code_import.id
-        self.factory.makeCodeImportJob(code_import)
         DeleteCodeImport(code_import)()
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)
@@ -2226,6 +2224,30 @@ class TestPendingWrites(TestCaseWithFactory):
         transaction.commit()
         branch.startMirroring()
         self.assertEqual(True, branch.pending_writes)
+
+
+class TestBranchPrivacy(TestCaseWithFactory):
+    """Tests for branch privacy."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Use an admin user as we aren't checking edit permissions here.
+        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+
+    def test_public_stacked_on_private_is_private(self):
+        # A public branch stacked on a private branch is private.
+        stacked_on = self.factory.makeBranch(private=True)
+        branch = self.factory.makeBranch(stacked_on=stacked_on, private=False)
+        self.assertTrue(branch.private)
+        self.assertFalse(branch.explicitly_private)
+
+    def test_private_stacked_on_public_is_private(self):
+        # A public branch stacked on a private branch is private.
+        stacked_on = self.factory.makeBranch(private=False)
+        branch = self.factory.makeBranch(stacked_on=stacked_on, private=True)
+        self.assertTrue(branch.private)
+        self.assertTrue(branch.explicitly_private)
 
 
 class TestBranchSetPrivate(TestCaseWithFactory):

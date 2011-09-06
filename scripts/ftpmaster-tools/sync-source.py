@@ -51,7 +51,12 @@ from lp.archiveuploader.utils import (
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.enums import (
+    PackagePublishingStatus,
+    re_bug_numbers,
+    re_closes,
+    re_lp_closes,
+    )
 from lp.soyuz.scripts.ftpmaster import (
     generate_changes,
     SyncSource,
@@ -63,10 +68,6 @@ reject_message = ""
 re_strip_revision = re.compile(r"-([^-]+)$")
 re_changelog_header = re.compile(
     r"^\S+ \((?P<version>.*)\) .*;.*urgency=(?P<urgency>\w+).*")
-re_closes = re.compile(
-    r"closes:\s*(?:bug)?\#?\s?\d+(?:,\s*(?:bug)?\#?\s?\d+)*", re.I)
-re_lp_closes = re.compile(r"lp:\s+\#\d+(?:,\s*\#\d+)*", re.I)
-re_bug_numbers = re.compile(r"\#?\s?(\d+)")
 
 
 Blacklisted = None
