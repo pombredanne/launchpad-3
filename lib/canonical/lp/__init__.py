@@ -18,22 +18,14 @@ from canonical.database.sqlbase import (
 
 
 __all__ = [
-    'dbhost', 'dbname', 'dbport', 'dbuser', 'isZopeless', 'initZopeless',
+    'isZopeless', 'initZopeless',
     ]
-
-dbname = ConnectionString(dbconfig.main_master).dbname
-dbhost = ConnectionString(dbconfig.main_master).host
-dbport = ConnectionString(dbconfig.main_master).port
-dbuser = dbconfig.dbuser
 
 
 def isZopeless():
     """Returns True if we are running in the Zopeless environment"""
     # pylint: disable-msg=W0212
     return ZopelessTransactionManager._installed is not None
-
-
-_IGNORED = object()
 
 
 def initZopeless(dbname=None, dbhost=None, dbuser=None,
