@@ -192,12 +192,16 @@ class TestDistroAddView(TestCaseWithFactory):
             self.distributionset, '+add', principal=self.admin,
             method='POST', form=creation_form)
 
-        self.assertEqual(
+        error_msg = (
             u"This distribution's main archive can not be restricted to "
             "certain architectures unless the archive is also set to build "
-            "on virtualized builders (see 'Require virtualized builders' "
-            "above).",
-            view.widget_errors.get('enabled_restricted_families'))
+            "on virtualized builders.")
+        self.assertEqual(
+           error_msg,
+           view.widget_errors.get('enabled_restricted_families'))
+        self.assertEqual(
+           error_msg,
+           view.widget_errors.get('require_virtualized'))
 
 
 class TestDistroEditView(TestCaseWithFactory):
@@ -288,12 +292,16 @@ class TestDistroEditView(TestCaseWithFactory):
         view = create_initialized_view(
             self.distribution, '+edit', principal=self.admin,
             method='POST', form=edit_form)
-        self.assertEqual(
+        error_msg = (
             u"This distribution's main archive can not be restricted to "
             "certain architectures unless the archive is also set to build "
-            "on virtualized builders (see 'Require virtualized builders' "
-            "above).",
-            view.widget_errors.get('enabled_restricted_families'))
+            "on virtualized builders.")
+        self.assertEqual(
+           error_msg,
+           view.widget_errors.get('enabled_restricted_families'))
+        self.assertEqual(
+           error_msg,
+           view.widget_errors.get('require_virtualized'))
 
 
 class TestDistroReassignView(TestCaseWithFactory):

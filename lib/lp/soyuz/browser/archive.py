@@ -2063,6 +2063,7 @@ class EnableRestrictedFamiliesMixin:
             set(enabled_restricted_families) !=
                 set(proc_family_set.getRestricted())):
             self.setFieldError('enabled_restricted_families', error_msg)
+            self.setFieldError('require_virtualized', error_msg)
 
 
 class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):

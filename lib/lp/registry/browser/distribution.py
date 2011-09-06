@@ -873,8 +873,7 @@ class DistributionAddView(LaunchpadFormView,
 ENABLED_RESTRICTED_FAMILITES_ERROR_MSG = (
     u"This distribution's main archive can not be restricted to "
     'certain architectures unless the archive is also set '
-    'to build on virtualized builders '
-    "(see 'Require virtualized builders' above).")
+    'to build on virtualized builders.')
 
 
 class DistributionEditView(RegistryEditFormView,
