@@ -32,19 +32,6 @@ def initZopeless(dbname=None, dbhost=None, dbuser=None,
                  isolation=ISOLATION_LEVEL_DEFAULT):
     """Initialize the Zopeless environment."""
     if dbuser is None:
-        # Nothing calling initZopeless should be connecting as the
-        # 'launchpad' user, which is the default.
-        # StuartBishop 20050923
-        # warnings.warn(
-        #        "Passing dbuser parameter to initZopeless will soon "
-        #        "be mandatory", DeprecationWarning, stacklevel=2
-        #        )
-        pass  # Disabled. Bug #3050
-    if dbname is None:
-        dbname = ConnectionString(dbconfig.main_master).dbname
-    if dbhost is None:
-        dbhost = ConnectionString(dbconfig.main_master).host
-    if dbuser is None:
         dbuser = (
             ConnectionString(dbconfig.main_master).user or dbconfig.dbuser)
 
