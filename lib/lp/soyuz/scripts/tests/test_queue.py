@@ -78,9 +78,7 @@ class TestQueueBase:
     def setUp(self):
         # Switch database user and set isolation level to READ COMMIITTED
         # to avoid SERIALIZATION exceptions with the Librarian.
-        LaunchpadZopelessLayer.alterConnection(
-                dbuser=self.dbuser,
-                isolation=ISOLATION_LEVEL_READ_COMMITTED)
+        LaunchpadZopelessLayer.switchDbUser(self.dbuser)
 
     def _test_display(self, text):
         """Store output from queue tool for inspection."""
