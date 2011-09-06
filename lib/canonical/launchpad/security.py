@@ -175,6 +175,7 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageReleaseDownloadCount,
     )
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJob
 from lp.soyuz.interfaces.packageset import (
     IPackageset,
@@ -1043,6 +1044,11 @@ class EditProductSeries(EditByOwnersOrAdmins):
             user.in_rosetta_experts):
             return True
         return EditByOwnersOrAdmins.checkAuthenticated(self, user)
+
+
+class ViewDistroArchSeries(AnonymousAuthorization):
+    """Anyone can view a DistroArchSeries."""
+    usedfor = IDistroArchSeries
 
 
 class ViewAnnouncement(AuthorizationBase):

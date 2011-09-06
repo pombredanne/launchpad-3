@@ -162,7 +162,6 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.code.model.diff import (
     Diff,
     PreviewDiff,
-    StaticDiff,
     )
 from lp.code.model.recipebuild import RecipeBuildRecord
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
@@ -1556,11 +1555,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             new_revision = make_revision(old_revision)
         return merge_proposal.generateIncrementalDiff(
             old_revision, new_revision, diff)
-
-    def makeStaticDiff(self):
-        return StaticDiff.acquireFromText(
-            self.getUniqueUnicode(), self.getUniqueUnicode(),
-            self.getUniqueString())
 
     def makeRevision(self, author=None, revision_date=None, parent_ids=None,
                      rev_id=None, log_body=None, date_created=None):
