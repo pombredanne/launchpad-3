@@ -53,6 +53,7 @@ from lp.soyuz.scripts.gina.packages import (
     PoolFileNotFound,
     SourcePackageData,
     )
+from lp.soyuz.scripts.gina.retire import dominate_imported_source_packages
 
 # Set to non-zero if you'd like to be warned every so often
 COUNTDOWN = 0
@@ -151,6 +152,9 @@ def run_gina(options, ztm, target_section):
     import_sourcepackages(
         packages_map, kdb, package_root, keyrings, importer_handler)
     importer_handler.commit()
+
+    dominate_imported_source_packages(
+        log, distro, distroseries, pocket, packages_map)
 
     if source_only:
         log.info('Source only mode... done')
