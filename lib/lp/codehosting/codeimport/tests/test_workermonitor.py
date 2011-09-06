@@ -849,7 +849,9 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    def test_import_bzr(self):
+    # XXX 2011-09-05 wgrant, bug=841556: This test fails
+    # occasionally in buildbot.
+    def DISABLED_test_import_bzr(self):
         # Create a Bazaar CodeImport and import it.
         job = self.getStartedJobForImport(self.makeBzrCodeImport())
         code_import_id = job.code_import.id
