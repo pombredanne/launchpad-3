@@ -24,7 +24,8 @@ import time
 
 import psycopg2.extensions
 
-from canonical import lp
+from canonical.config import config
+from canonical.database.postgresql import ConnectionString
 from canonical.database.sqlbase import (
     connect, ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
     quote, quote_identifier)
@@ -314,11 +315,8 @@ def setup(con, configuration=DEFAULT_CONFIG):
             """
 
         log.debug('Installing tsearch2')
-        cmd = 'psql -f - -d %s' % lp.get_dbname()
-        if lp.dbhost:
-            cmd += ' -h %s' % lp.dbhost
-        if options.dbuser:
-            cmd += ' -U %s' % options.dbuser
+        cmd = 'psql -f - %s' % ConnectionString(
+            config.database.rw_main_master).asPGCommandLineArgs()
         p = subprocess.Popen(
             cmd.split(' '), stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
