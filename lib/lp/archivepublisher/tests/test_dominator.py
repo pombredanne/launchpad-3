@@ -240,10 +240,6 @@ class TestGeneralizedPublication(TestCaseWithFactory):
         """Extract the versions from `spphs` as a list, in the same order."""
         return [spph.sourcepackagerelease.version for spph in spphs]
 
-    def listCreaitonDates(self, spphs):
-        """Extract creation dates from `spphs` into a list."""
-        return [spph.datecreated for spph in spphs]
-
     def alterCreationDates(self, spphs, ages):
         """Set `datecreated` on each of `spphs` according to `ages`.
 
