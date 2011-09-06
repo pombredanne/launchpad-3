@@ -31,6 +31,7 @@ from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
 from lp.translations.utilities.gettext_po_importer import GettextPOImporter
+from lp.translations.utilities.sanitize import MixedNewlineMarkersError
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData,
     )
@@ -246,7 +247,7 @@ class FileImporterTestCase(TestCaseWithFactory):
         message.addTranslation(0, u'')
 
         potmsgset = self.factory.makePOTMsgSet(
-            potemplate = importer.potemplate, sequence=50)
+            potemplate=importer.potemplate, sequence=50)
         translation = importer.storeTranslationsInDatabase(
             message, potmsgset)
         # No TranslationMessage is created.
@@ -352,6 +353,24 @@ class FileImporterTestCase(TestCaseWithFactory):
                 po_importer.pofile.language.displayname,
                 po_importer.potemplate.displayname),
             'Did not create the correct comment for %s' % test_email)
+
+    def test_FileImporter_rejects_mixed_newline_styles(self):
+        # Files with mixed newlines (Mac, Unix, Windows) will generate an
+        # error.  See the Sanitizer tests for comprehensive tests (all
+        # combinations, etc.).
+        pofile_contents = dedent(r"""
+            msgid ""
+            msgstr ""
+            "POT-Creation-Date: 2001-04-07 16:30+0500\n"
+            "Content-Type: text/plain; charset=CHARSET\n"
+            "Language: English\n"
+
+            msgid "bar"
+            msgstr "mixed\rnewlines\n"
+            """)
+
+        pot_importer = self._createPOTFileImporter(pofile_contents, True)
+        self.assertRaises(MixedNewlineMarkersError, pot_importer.importFile)
 
     def test_getPersonByEmail_personless_account(self):
         # An Account without a Person attached is a difficult case for
@@ -566,7 +585,7 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
     def test_not_raises_OutdatedTranslationError_on_upstream_uploads(self):
         queue_entry = self._make_queue_entry(True)
         try:
-            importer = POFileImporter(queue_entry, GettextPOImporter(), None)
+            POFileImporter(queue_entry, GettextPOImporter(), None)
         except OutdatedTranslationError:
             self.fail("OutdatedTranslationError raised.")
 
@@ -574,7 +593,7 @@ class CreateFileImporterTestCase(TestCaseWithFactory):
         queue_entry = self._make_queue_entry(True)
         pofile = queue_entry.pofile
         old_raw_header = pofile.header
-        importer = POFileImporter(queue_entry, GettextPOImporter(), None)
+        POFileImporter(queue_entry, GettextPOImporter(), None)
         self.assertEqual(old_raw_header, pofile.header)
 
 
@@ -762,4 +781,3 @@ class FileImporterSharingTest(TestCaseWithFactory):
         importer = POFileImporter(
             entry, importers[TranslationFileFormat.PO], None)
         self.assertTrue(importer.is_upstream_import_on_sourcepackage)
-

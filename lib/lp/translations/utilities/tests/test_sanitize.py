@@ -158,6 +158,27 @@ class TestSanitizer(TestCase):
                     MixedNewlineMarkersError,
                     sanitizer.normalizeNewlines, translation_text)
 
+    def test_verifyNewlineConsistency_with_consistent_newlines(self):
+        # Consistent newlines in the text will not raise an exception.
+        translation_template = u"Text with %s consistent %s newlines."
+        for translation_newline in self.newline_styles:
+            translation_text = translation_template % (
+                translation_newline, translation_newline)
+            Sanitizer.verifyNewlineConsistency(translation_text)
+
+    def test_verifyNewlineConsistency_with_mixed_newlines(self):
+        # Consistent newlines in the text will not raise an exception.
+        translation_template = u"Text with %s mixed %s newlines."
+        for translation_newline_1 in self.newline_styles:
+            other_newlines = self.newline_styles[:]
+            other_newlines.remove(translation_newline_1)
+            for translation_newline_2 in other_newlines:
+                translation_text = translation_template % (
+                    translation_newline_1, translation_newline_2)
+                self.assertRaises(
+                    MixedNewlineMarkersError,
+                    Sanitizer.verifyNewlineConsistency, translation_text)
+
     def test_sanitize(self):
         # Calling the Sanitizer object will apply all sanitization procedures.
         sanitizer = Sanitizer(u"Text with\nnewline.")
