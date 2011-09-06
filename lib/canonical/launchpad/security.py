@@ -12,6 +12,7 @@ __all__ = [
 from zope.component import (
     getAdapter,
     getUtility,
+    queryAdapter,
     )
 from zope.interface import Interface
 
@@ -2457,8 +2458,8 @@ class ViewSourcePackageRelease(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Verify that the user can view the sourcepackagerelease."""
         for archive in self.obj.published_archives:
-            adapter = getAdapter(archive, IAuthorization, self.permission)
-            if adapter.checkAuthenticated(user):
+            adapter = queryAdapter(archive, IAuthorization, self.permission)
+            if adapter is not None and adapter.checkAuthenticated(user):
                 return True
         return False
 
