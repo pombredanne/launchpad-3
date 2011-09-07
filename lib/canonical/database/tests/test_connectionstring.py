@@ -19,8 +19,8 @@ class TestConnectionString(TestCase):
         self.assertEqual('mode', cs.sslmode)
 
         # and check that str/repr have the same keys and values.
-        self.assertEqual(set(s.split()), set(str(cs).split()))
-        self.assertEqual(set(s.split()), set(repr(cs).split()))
+        self.assertContentEqual(s.split(), str(cs).split())
+        self.assertContentEqual(s.split(), repr(cs).split())
 
     def test_hyphens_in_values(self):
         cs = ConnectionString('user=foo-bar host=foo.bar-baz.quux')
