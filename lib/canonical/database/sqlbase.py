@@ -318,18 +318,13 @@ class ZopelessTransactionManager(object):
         # Construct a config fragment:
         overlay = dedent("""\
             [database]
-            rw_main_master: %(main_connection_string)s
             isolation_level: %(isolation_level)s
-            """ % {
-                'isolation_level': isolation_level,
-                'main_connection_string': main_connection_string,
-                })
 
-        if dbuser:
-            overlay += dedent("""\
-                [launchpad]
-                dbuser: %(dbuser)s
-                """ % {'dbuser': dbuser})
+            [launchpad]
+            dbuser: %(dbuser)s
+            """ % dict(
+                isolation_level=isolation_level,
+                dbuser=dbuser))
 
         if cls._installed is not None:
             if cls._config_overlay != overlay:
