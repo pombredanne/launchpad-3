@@ -11,8 +11,6 @@ __metaclass__ = type
 
 __all__ = [
     'IBranchJob',
-    'IBranchDiffJob',
-    'IBranchDiffJobSource',
     'IBranchScanJob',
     'IBranchScanJobSource',
     'IBranchUpgradeJob',
@@ -67,31 +65,6 @@ class IBranchJob(Interface):
         """Destroy this object."""
 
 
-class IBranchDiffJob(Interface):
-    """A job to create a static diff from a branch."""
-
-    from_revision_spec = TextLine(title=_('The revision spec to diff from.'))
-
-    to_revision_spec = TextLine(title=_('The revision spec to diff to.'))
-
-    def run():
-        """Acquire the static diff this job requires.
-
-        :return: the generated StaticDiff.
-        """
-
-
-class IBranchDiffJobSource(Interface):
-
-    def create(branch, from_revision_spec, to_revision_spec):
-        """Construct a new object that implements IBranchDiffJob.
-
-        :param branch: The database branch to diff.
-        :param from_revision_spec: The revision spec to diff from.
-        :param to_revision_spec: The revision spec to diff to.
-        """
-
-
 class IBranchScanJob(IRunnableJob):
     """ A job to scan branches."""
 
@@ -126,8 +99,6 @@ class IRevisionMailJob(IRunnableJob):
 
     from_address = Bytes(title=u'The address to send mail from.')
 
-    perform_diff = Text(title=u'Determine whether diff should be performed.')
-
     body = Text(title=u'The main text of the email to send.')
 
     subject = Text(title=u'The subject of the email to send.')
@@ -136,7 +107,7 @@ class IRevisionMailJob(IRunnableJob):
 class IRevisionMailJobSource(Interface):
     """A utility to create and retrieve RevisionMailJobs."""
 
-    def create(db_branch, revno, email_from, message, perform_diff, subject):
+    def create(db_branch, revno, email_from, message, subject):
         """Create and return a new object that implements IRevisionMailJob."""
 
     def iterReady():

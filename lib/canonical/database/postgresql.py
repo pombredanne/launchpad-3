@@ -482,6 +482,8 @@ class ConnectionString:
     need the components seperated out (such as pg_dump command line
     arguments). This class allows you to switch easily between formats.
 
+    Quoted or escaped values are not supported.
+
     >>> cs = ConnectionString('user=foo dbname=launchpad_dev')
     >>> cs.dbname
     'launchpad_dev'
@@ -496,6 +498,9 @@ class ConnectionString:
         'dbname', 'user', 'host', 'port', 'connect_timeout', 'sslmode']
 
     def __init__(self, conn_str):
+        if "'" in conn_str or "\\" in conn_str:
+            raise AssertionError("quoted or escaped values are not supported")
+
         if '=' not in conn_str:
             # Just a dbname
             for key in self.CONNECTION_KEYS:
@@ -507,7 +512,7 @@ class ConnectionString:
             # be added after construction or not actually required
             # at all in some instances.
             for key in self.CONNECTION_KEYS:
-                match = re.search(r'%s=(\w+)' % key, conn_str)
+                match = re.search(r'%s=([^ ]+)' % key, conn_str)
                 if match is None:
                     setattr(self, key, None)
                 else:
