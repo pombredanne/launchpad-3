@@ -153,6 +153,7 @@ def run_gina(options, ztm, target_section):
         packages_map, kdb, package_root, keyrings, importer_handler)
     importer_handler.commit()
 
+    # XXX JeroenVermeulen 2011-09-07 bug=843728: Dominate binaries as well.
     dominate_imported_source_packages(
         log, distro, distroseries, pocket, packages_map)
 
