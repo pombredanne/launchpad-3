@@ -2728,7 +2728,7 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         search_params.user = self.user
         try:
             tasks = context.searchTasks(search_params, prejoins=prejoins)
-        except ValueError, e:
+        except ValueError as e:
             self.request.response.addErrorNotification(str(e))
             self.request.response.redirect(canonical_url(
                 self.context, rootsite='bugs', view_name='+bugs'))
