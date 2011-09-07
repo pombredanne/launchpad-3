@@ -175,6 +175,7 @@ from lp.soyuz.interfaces.binarypackagerelease import (
     IBinaryPackageReleaseDownloadCount,
     )
 from lp.soyuz.interfaces.buildfarmbuildjob import IBuildFarmBuildJob
+from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJob
 from lp.soyuz.interfaces.packageset import (
     IPackageset,
@@ -1045,6 +1046,11 @@ class EditProductSeries(EditByOwnersOrAdmins):
         return EditByOwnersOrAdmins.checkAuthenticated(self, user)
 
 
+class ViewDistroArchSeries(AnonymousAuthorization):
+    """Anyone can view a DistroArchSeries."""
+    usedfor = IDistroArchSeries
+
+
 class ViewAnnouncement(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IAnnouncement
@@ -1649,7 +1655,8 @@ class ViewBuildFarmJobOld(AuthorizationBase):
 
     def _checkBuildPermission(self, user=None):
         """Check access to `IPackageBuild` for this job."""
-        permission = ViewBinaryPackageBuild(self.obj.build)
+        permission = getAdapter(
+            self.obj.build, IAuthorization, self.permission)
         if user is None:
             return permission.checkUnauthenticated()
         else:

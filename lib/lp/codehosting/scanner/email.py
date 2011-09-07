@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Email code for the branch scanner."""
@@ -49,7 +49,7 @@ def send_removed_revision_emails(revisions_removed):
     getUtility(IRevisionMailJobSource).create(
         revisions_removed.db_branch, revno='removed',
         from_address=config.canonical.noreply_from_address,
-        body=contents, perform_diff=False, subject=subject)
+        body=contents, subject=subject)
 
 
 def queue_tip_changed_email_jobs(tip_changed):
@@ -68,7 +68,7 @@ def queue_tip_changed_email_jobs(tip_changed):
             tip_changed.db_branch.unique_name, revisions)
         getUtility(IRevisionMailJobSource).create(
             tip_changed.db_branch, 'initial',
-            config.canonical.noreply_from_address, message, False, subject)
+            config.canonical.noreply_from_address, message, subject)
     else:
         getUtility(IRevisionsAddedJobSource).create(
             tip_changed.db_branch, tip_changed.db_branch.last_scanned_id,

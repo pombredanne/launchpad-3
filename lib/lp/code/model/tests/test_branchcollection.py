@@ -8,6 +8,7 @@ __metaclass__ = type
 from datetime import datetime
 
 import pytz
+from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -741,6 +742,28 @@ class TestBranchMergeProposals(TestCaseWithFactory):
     def test_empty_branch_merge_proposals(self):
         proposals = self.all_branches.getMergeProposals()
         self.assertEqual([], list(proposals))
+
+    def test_empty_branches_shortcut(self):
+        # If you explicitly pass an empty collection of branches,
+        # the method shortcuts and gives you an empty result set.  In this
+        # way, for_branches=None (the default) has a very different behavior
+        # than for_branches=[]: the first is no restriction, while the second
+        # excludes everything.
+        mp = self.factory.makeBranchMergeProposal()
+        proposals = self.all_branches.getMergeProposals(for_branches=[])
+        self.assertEqual([], list(proposals))
+        self.assertIsInstance(proposals, EmptyResultSet)
+
+    def test_empty_revisions_shortcut(self):
+        # If you explicitly pass an empty collection of revision numbers,
+        # the method shortcuts and gives you an empty result set.  In this
+        # way, merged_revnos=None (the default) has a very different behavior
+        # than merged_revnos=[]: the first is no restriction, while the second
+        # excludes everything.
+        mp = self.factory.makeBranchMergeProposal()
+        proposals = self.all_branches.getMergeProposals(merged_revnos=[])
+        self.assertEqual([], list(proposals))
+        self.assertIsInstance(proposals, EmptyResultSet)
 
     def test_some_branch_merge_proposals(self):
         mp = self.factory.makeBranchMergeProposal()

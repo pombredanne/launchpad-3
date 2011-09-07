@@ -162,7 +162,6 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.code.model.diff import (
     Diff,
     PreviewDiff,
-    StaticDiff,
     )
 from lp.code.model.recipebuild import RecipeBuildRecord
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
@@ -1557,11 +1556,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return merge_proposal.generateIncrementalDiff(
             old_revision, new_revision, diff)
 
-    def makeStaticDiff(self):
-        return StaticDiff.acquireFromText(
-            self.getUniqueUnicode(), self.getUniqueUnicode(),
-            self.getUniqueString())
-
     def makeRevision(self, author=None, revision_date=None, parent_ids=None,
                      rev_id=None, log_body=None, date_created=None):
         """Create a single `Revision`."""
@@ -2291,16 +2285,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return bmp.nominateReviewer(candidate, bmp.registrant)
 
     def makeMessage(self, subject=None, content=None, parent=None,
-                    owner=None):
+                    owner=None, datecreated=None):
         if subject is None:
             subject = self.getUniqueString()
         if content is None:
             content = self.getUniqueString()
         if owner is None:
             owner = self.makePerson()
+        if datecreated is None:
+            datecreated = datetime.now(UTC)
         rfc822msgid = self.makeUniqueRFC822MsgId()
         message = Message(rfc822msgid=rfc822msgid, subject=subject,
-            owner=owner, parent=parent)
+            owner=owner, parent=parent, datecreated=datecreated)
         MessageChunk(message=message, sequence=1, content=content)
         return message
 
@@ -3688,8 +3684,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            date_uploaded=UTC_NOW,
                                            scheduleddeletiondate=None,
                                            ancestor=None,
-                                           **kwargs
-                                           ):
+                                           **kwargs):
         """Make a `SourcePackagePublishingHistory`.
 
         :param sourcepackagerelease: The source package release to publish
@@ -4093,7 +4088,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                          emailaddress=u'test@canonical.com',
                          distroarchseries=None, private=False,
                          contactable=False, system=None,
-                         submission_data=None):
+                         submission_data=None, status=None):
         """Create a new HWSubmission."""
         if date_created is None:
             date_created = datetime.now(pytz.UTC)
@@ -4114,10 +4109,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         format = HWSubmissionFormat.VERSION_1
         submission_set = getUtility(IHWSubmissionSet)
 
-        return submission_set.createSubmission(
+        submission = submission_set.createSubmission(
             date_created, format, private, contactable,
             submission_key, emailaddress, distroarchseries,
             raw_submission, filename, filesize, system)
+
+        if status is not None:
+            removeSecurityProxy(submission).status = status
+        return submission
 
     def makeHWSubmissionDevice(self, submission, device, driver, parent,
                                hal_device_id):
