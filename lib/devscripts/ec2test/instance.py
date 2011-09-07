@@ -20,7 +20,6 @@ import time
 import traceback
 from datetime import datetime
 from bzrlib.errors import BzrCommandError
-from devscripts.ec2test.account import VALID_AMI_OWNERS
 from devscripts.ec2test.session import EC2SessionName
 import paramiko
 
