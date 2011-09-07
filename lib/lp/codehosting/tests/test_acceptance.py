@@ -11,6 +11,7 @@ import re
 import signal
 import subprocess
 import sys
+import time
 import unittest
 import urllib2
 import xmlrpclib
@@ -79,17 +80,45 @@ class ForkingServerForTests(object):
         #       settings, we have to somehow pass it a new config-on-disk to
         #       use.
         self.socket_path = config.codehosting.forking_daemon_socket
+        command = [sys.executable, bzr_path, 'launchpad-forking-service',
+                   '--path', self.socket_path, '-Derror']
         process = subprocess.Popen(
-            [sys.executable, bzr_path, 'launchpad-forking-service',
-             '--path', self.socket_path,
-            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
         self.process = process
-        # Wait for it to indicate it is running
+        stderr = []
         # The first line should be "Preloading" indicating it is ready
-        process.stderr.readline()
+        stderr.append(process.stderr.readline())
         # The next line is the "Listening on socket" line
-        process.stderr.readline()
-        # Now it is ready
+        stderr.append(process.stderr.readline())
+        # Now it should be ready.  If there were any errors, let's check, and
+        # report them.
+        if (process.poll() is not None or
+            not stderr[1].strip().startswith('Listening on socket')):
+            if process.poll() is None:
+                time.sleep(1)  # Give the traceback a chance to render.
+                os.kill(process.pid, signal.SIGTERM)
+                process.wait()
+                self.process = None
+            # Looks like there was a problem. We cannot use the "addDetail"
+            # method because this class is not a TestCase and does not have
+            # access to one.  It runs as part of a layer. A "print" is the
+            # best we can do.  That should still be visible on buildbot, which
+            # is where we have seen spurious failures so far.
+            print
+            print "stdout:"
+            print process.stdout.read()
+            print "-" * 70
+            print "stderr:"
+            print ''.join(stderr)
+            print process.stderr.read()
+            print "-" * 70
+            raise RuntimeError(
+                'Bzr server did not start correctly.  See stdout and stderr '
+                'reported above. Command was "%s".  PYTHONPATH was "%s".  '
+                'BZR_PLUGIN_PATH was "%s".' %
+                (' '.join(command),
+                 env.get('PYTHONPATH'),
+                 env.get('BZR_PLUGIN_PATH')))
 
     def tearDown(self):
         # SIGTERM is the graceful exit request, potentially we could wait a

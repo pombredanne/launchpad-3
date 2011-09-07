@@ -271,10 +271,10 @@
         permission="launchpad.AnyPerson"/>
     <browser:page
         for="lp.registry.interfaces.person.IPerson"
+        name="+team-bugs-macro"
+        template="../templates/person-team-bugs-macro.pt"
         permission="zope.Public"
-        class="lp.registry.browser.person.PersonView"
-        name="+portlet-team-assignedbugs"
-        template="../templates/person-portlet-team-assignedbugs.pt"/>
+        class="lp.app.browser.launchpad.Macro"/>
     <browser:page
         for="lp.registry.interfaces.person.IPerson"
         name="+portlet-otherpackages"
