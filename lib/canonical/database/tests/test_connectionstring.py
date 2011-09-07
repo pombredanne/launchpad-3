@@ -29,8 +29,9 @@ class TestConnectionString(TestCase):
 
     def test_str_with_changes(self):
         initial = 'dbname=foo host=bar'
-        expected = 'dbname=foo user=baz host=bar'
+        expected = 'dbname=foo user=baz host=blah'
         cs = ConnectionString(initial)
+        cs.host = 'blah'
         cs.user = 'baz'
         self.assertEqual(expected, str(cs))
 
