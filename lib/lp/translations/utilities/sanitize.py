@@ -4,7 +4,6 @@
 __metaclass__ = type
 __all__ = [
     'MixedNewlineMarkersError',
-    'Sanitizer',
     'sanitize_translations_from_webui',
     'sanitize_translations_from_import',
     ]
@@ -48,43 +47,28 @@ class Sanitizer(object):
         self.newline_style = self._getNewlineStyle(
             english_singular, 'Original')
 
-    @classmethod
-    def _getNewlineStyle(cls, text, text_name=None):
+    def _getNewlineStyle(self, text, text_name):
         """Find out which newline style is used in text."""
+        error_message = (
+            "%s text (%r) mixes different newline markers." % (
+                text_name, text))
         style = None
         # To avoid confusing the single-character newline styles for mac and
         # unix with the two-character windows one, remove the windows-style
         # newlines from the text and use that text to search for the other
         # two.
-        stripped_text = text.replace(cls.windows_style, u'')
+        stripped_text = text.replace(self.windows_style, u'')
         if text != stripped_text:
             # Text contains windows style new lines.
-            style = cls.windows_style
+            style = self.windows_style
 
-        for one_char_style in (cls.mac_style, cls.unix_style):
+        for one_char_style in (self.mac_style, self.unix_style):
             if one_char_style in stripped_text:
                 if style is not None:
-                    # If the text has a descriptive name (like "Original"),
-                    # then format it for inclusion in the error message.
-                    if text_name is not None:
-                        text_name += ' '
-                    else:
-                        text_name = ''
-
-                    error_message = (
-                        "%stext (%r) mixes different newline markers." % (
-                            text_name, text))
-
                     raise MixedNewlineMarkersError(error_message)
                 style = one_char_style
 
         return style
-
-    @classmethod
-    def verifyNewlineConsistency(cls, text, text_name=None):
-        """Raise a MixedNewlineMarkersError if the newlines are inconsistent.
-        """
-        cls._getNewlineStyle(text, text_name)
 
     def sanitize(self, translation_text):
         """Return 'translation_text' or None after doing some sanitization.
