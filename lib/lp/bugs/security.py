@@ -111,7 +111,8 @@ class ViewBugAttachment(DelegatedAuthorization):
     usedfor = IBugAttachment
 
     def __init__(self, bugattachment):
-        super(ViewBugAttachment, self).__init__(bugattachment.bug)
+        super(ViewBugAttachment, self).__init__(
+            bugattachment, bugattachment.bug)
 
 
 class EditBugAttachment(DelegatedAuthorization):
@@ -124,7 +125,8 @@ class EditBugAttachment(DelegatedAuthorization):
     usedfor = IBugAttachment
 
     def __init__(self, bugattachment):
-        super(EditBugAttachment, self).__init__(bugattachment.bug)
+        super(EditBugAttachment, self).__init__(
+            bugattachment, bugattachment.bug)
 
 
 class ViewBugSubscription(AnonymousAuthorization):

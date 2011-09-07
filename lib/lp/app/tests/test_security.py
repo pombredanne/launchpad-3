@@ -148,7 +148,7 @@ class TestAuthorizationBase(TestCaseWithFactory):
 class FakeDelegatedAuthorization(DelegatedAuthorization):
     def __init__(self, obj, permission=None):
         super(FakeDelegatedAuthorization, self).__init__(
-            obj.child_obj, permission)
+            obj, obj.child_obj, permission)
 
 
 class FakeForwardedObject:

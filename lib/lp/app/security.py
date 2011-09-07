@@ -109,7 +109,8 @@ class AnonymousAuthorization(AuthorizationBase):
 
 class DelegatedAuthorization(AuthorizationBase):
 
-    def __init__(self, forwarded_object=None, permission=None):
+    def __init__(self, obj, forwarded_object=None, permission=None):
+        super(DelegatedAuthorization, self).__init__(obj)
         self.forwarded_object = forwarded_object
         if permission is not None:
             self.permission = permission

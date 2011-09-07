@@ -1010,7 +1010,7 @@ class EditDistroSeriesDifference(DelegatedAuthorization):
 
     def __init__(self, obj):
         super(EditDistroSeriesDifference, self).__init__(
-            obj.derived_series.distribution, 'launchpad.View')
+            obj, obj.derived_series.distribution, 'launchpad.View')
 
     def checkUnauthenticated(self):
         return False
@@ -1936,7 +1936,7 @@ class AdminDistributionSourcePackageTranslations(DelegatedAuthorization):
 
     def __init__(self, obj):
         super(AdminDistributionSourcePackageTranslations, self).__init__(
-            obj.distribution)
+            obj, obj.distribution)
 
 
 class AdminProductSeriesTranslations(AuthorizationBase):
@@ -1987,7 +1987,7 @@ class PreviewDiffView(DelegatedAuthorization):
     usedfor = IPreviewDiff
 
     def __init__(self, obj):
-        super(PreviewDiffView, self).__init__(obj.branch_merge_proposal)
+        super(PreviewDiffView, self).__init__(obj, obj.branch_merge_proposal)
 
 
 class CodeReviewVoteReferenceEdit(DelegatedAuthorization):
@@ -1996,8 +1996,7 @@ class CodeReviewVoteReferenceEdit(DelegatedAuthorization):
 
     def __init__(self, obj):
         super(CodeReviewVoteReferenceEdit, self).__init__(
-            obj.branch_merge_proposal.target_branch)
-        self.obj = obj
+            obj, obj.branch_merge_proposal.target_branch)
 
     def checkAuthenticated(self, user):
         """Only the affected teams may change the review request.
@@ -2021,7 +2020,7 @@ class CodeReviewCommentView(DelegatedAuthorization):
 
     def __init__(self, obj):
         super(CodeReviewCommentView, self).__init__(
-            obj.branch_merge_proposal)
+            obj, obj.branch_merge_proposal)
 
 
 class CodeReviewCommentDelete(DelegatedAuthorization):
@@ -2030,7 +2029,7 @@ class CodeReviewCommentDelete(DelegatedAuthorization):
 
     def __init__(self, obj):
         super(CodeReviewCommentDelete, self).__init__(
-            obj.branch_merge_proposal)
+            obj, obj.branch_merge_proposal)
 
 
 class BranchMergeProposalEdit(AuthorizationBase):
@@ -2302,7 +2301,7 @@ class EditArchiveAuthToken(DelegatedAuthorization):
 
     def __init__(self, obj):
         super(EditArchiveAuthToken, self).__init__(
-            obj.archive, 'launchpad.Append')
+            obj, obj.archive, 'launchpad.Append')
 
     def checkAuthenticated(self, user):
         return (user.in_admin or
@@ -2320,8 +2319,7 @@ class ViewPersonalArchiveSubscription(DelegatedAuthorization):
 
     def __init__(self, obj):
         super(ViewPersonalArchiveSubscription, self).__init__(
-            obj.archive, 'launchpad.Append')
-        self.obj = obj
+            obj, obj.archive, 'launchpad.Append')
 
     def checkAuthenticated(self, user):
         if user.person == self.obj.subscriber or user.in_admin:
@@ -2333,7 +2331,7 @@ class ViewPersonalArchiveSubscription(DelegatedAuthorization):
 class ViewArchiveSubscriber(DelegatedAuthorization):
     """Restrict viewing of archive subscribers.
 
-    The user should be the subscriber, have append privilege to the
+    The user should be the subscriber, have edit privilege to the
     archive or be an admin.
     """
     permission = "launchpad.View"
@@ -2341,8 +2339,7 @@ class ViewArchiveSubscriber(DelegatedAuthorization):
 
     def __init__(self, obj):
         super(ViewArchiveSubscriber, self).__init__(
-            obj, 'launchpad.Edit')
-        self.obj = obj
+            obj, obj, 'launchpad.Edit')
 
     def checkAuthenticated(self, user):
         return (user.inTeam(self.obj.subscriber) or
@@ -2359,7 +2356,7 @@ class EditArchiveSubscriber(DelegatedAuthorization):
 
     def __init__(self, obj):
         super(EditArchiveSubscriber, self).__init__(
-            obj.archive, 'launchpad.Append')
+            obj, obj.archive, 'launchpad.Append')
 
     def checkAuthenticated(self, user):
         return (user.in_admin or
@@ -2401,7 +2398,8 @@ class EditPublishing(DelegatedAuthorization):
     usedfor = IPublishingEdit
 
     def __init__(self, obj):
-        super(EditPublishing, self).__init__(obj.archive, 'launchpad.Append')
+        super(EditPublishing, self).__init__(
+            obj, obj.archive, 'launchpad.Append')
 
 
 class ViewBinaryPackagePublishingHistory(ViewSourcePackagePublishingHistory):
