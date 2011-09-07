@@ -121,7 +121,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         """
         build_status = self.extractBuildStatus(slave_status)
 
-        logger.debug(
+        logger.info(
             "Templates generation job %s for %s finished with status %s." % (
             queue_item.specific_job.getName(),
             queue_item.specific_job.branch.bzr_identity,
