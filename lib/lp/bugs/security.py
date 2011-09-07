@@ -11,7 +11,7 @@ from lp.services.messages.interfaces.message import IMessage
 from lp.app.security import (
     AnonymousAuthorization,
     AuthorizationBase,
-    ForwardedAuthorization,
+    DelegatedAuthorization,
     )
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugattachment import IBugAttachment
@@ -101,7 +101,7 @@ class EditBugBranch(EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
         super(EditBugBranch, self).__init__(bug_branch.bug)
 
 
-class ViewBugAttachment(ForwardedAuthorization):
+class ViewBugAttachment(DelegatedAuthorization):
     """Security adapter for viewing a bug attachment.
 
     If the user is authorized to view the bug, he's allowed to view the
@@ -114,7 +114,7 @@ class ViewBugAttachment(ForwardedAuthorization):
         super(ViewBugAttachment, self).__init__(bugattachment.bug)
 
 
-class EditBugAttachment(ForwardedAuthorization):
+class EditBugAttachment(DelegatedAuthorization):
     """Security adapter for editing a bug attachment.
 
     If the user is authorized to view the bug, he's allowed to edit the

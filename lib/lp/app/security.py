@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = [
     'AnonymousAuthorization',
     'AuthorizationBase',
-    'ForwardedAuthorization',
+    'DelegatedAuthorization',
     ]
 
 from zope.component import queryAdapter
@@ -107,29 +107,38 @@ class AnonymousAuthorization(AuthorizationBase):
         return True
 
 
-class ForwardedAuthorization(AuthorizationBase):
+class DelegatedAuthorization(AuthorizationBase):
 
-    permission = None
-    usedfor = None
-
-    def __init__(self, forwarded_object, permission=None):
+    def __init__(self, forwarded_object=None, permission=None):
         self.forwarded_object = forwarded_object
         if permission is not None:
             self.permission = permission
 
-    @property
-    def forwarded_adapter(self):
-        return queryAdapter(
-            self.forwarded_object, IAuthorization, self.permission)
+    def iter_objects(self):
+        """Iterator of objects used for authentication checking.
+
+        If an object is provided when the class is instantiated, it will be
+        used.  Otherwise this method must be overridden to provide the objects
+        to be used.
+        """
+        if self.forwarded_object is None:
+            raise ValueError(
+                "Either set forwarded_object or override iter_objects.")
+        yield self.forwarded_object
+
+    def iter_adapters(self):
+        return (
+            queryAdapter(obj, IAuthorization, self.permission)
+            for obj in self.iter_objects())
 
     def checkAuthenticated(self, user):
-        adapter = self.forwarded_adapter
-        if adapter is None:
-            return False
-        return adapter.checkAuthenticated(user)
+        for adapter in self.iter_adapters():
+            if adapter is None or not adapter.checkAuthenticated(user):
+                return False
+        return True
 
     def checkUnauthenticated(self):
-        adapter = self.forwarded_adapter
-        if adapter is None:
-            return False
-        return adapter.checkUnauthenticated()
+        for adapter in self.iter_adapters():
+            if adapter is None or not adapter.checkUnauthenticated():
+                return False
+        return True

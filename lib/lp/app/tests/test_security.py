@@ -16,7 +16,7 @@ from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.app.interfaces.security import IAuthorization
 from lp.app.security import (
     AuthorizationBase,
-    ForwardedAuthorization,
+    DelegatedAuthorization,
     )
 from lp.testing import TestCaseWithFactory
 from lp.testing.fakemethod import FakeMethod
@@ -145,9 +145,9 @@ class TestAuthorizationBase(TestCaseWithFactory):
             adapter.forwardCheckAuthenticated(None, Dummy()))
 
 
-class FakeForwardedAuthorization(ForwardedAuthorization):
+class FakeDelegatedAuthorization(DelegatedAuthorization):
     def __init__(self, obj, permission=None):
-        super(FakeForwardedAuthorization, self).__init__(
+        super(FakeDelegatedAuthorization, self).__init__(
             obj.child_obj, permission)
 
 
@@ -158,15 +158,15 @@ class FakeForwardedObject:
         self.child_obj = Dummy()
 
 
-class TestForwardedAuthorizationBase(TestCaseWithFactory):
+class TestDelegatedAuthorizationBase(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
-    def test_ForwardedAuthorization_same_permissions(self):
+    def test_DelegatedAuthorization_same_permissions(self):
 
         permission = self.factory.getUniqueString()
         fake_obj = FakeForwardedObject()
-        outer_adapter = FakeForwardedAuthorization(fake_obj)
+        outer_adapter = FakeDelegatedAuthorization(fake_obj)
         outer_adapter.permission = permission
 
         inner_adapter = FakeSecurityAdapter()
@@ -179,11 +179,11 @@ class TestForwardedAuthorizationBase(TestCaseWithFactory):
             (1, inner_adapter.checkAuthenticated.call_count),
             (1, inner_adapter.checkUnauthenticated.call_count))
 
-    def test_ForwardedAuthorization_different_permissions(self):
+    def test_DelegatedAuthorization_different_permissions(self):
         perm_inner = 'inner'
         perm_outer = 'outer'
         fake_obj = FakeForwardedObject()
-        outer_adapter = FakeForwardedAuthorization(fake_obj, perm_inner)
+        outer_adapter = FakeDelegatedAuthorization(fake_obj, perm_inner)
         registerFakeSecurityAdapter(IDummy, perm_outer, outer_adapter)
 
         inner_adapter = FakeSecurityAdapter()

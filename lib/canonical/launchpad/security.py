@@ -38,7 +38,7 @@ from lp.app.interfaces.security import IAuthorization
 from lp.app.security import (
     AnonymousAuthorization,
     AuthorizationBase,
-    ForwardedAuthorization,
+    DelegatedAuthorization,
     )
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfig
 from lp.blueprints.interfaces.specification import (
@@ -1003,7 +1003,7 @@ class AdminDistroSeriesDifference(AuthorizationBase):
             archive.getComponentsForQueueAdmin(user.person)) or user.in_admin
 
 
-class EditDistroSeriesDifference(ForwardedAuthorization):
+class EditDistroSeriesDifference(DelegatedAuthorization):
     """Anyone with lp.View on the distribution can edit a DSD."""
     permission = 'launchpad.Edit'
     usedfor = IDistroSeriesDifferenceEdit
@@ -1929,7 +1929,7 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
                 self.forwardCheckAuthenticated(user, self.obj.distribution))
 
 
-class AdminDistributionSourcePackageTranslations(ForwardedAuthorization):
+class AdminDistributionSourcePackageTranslations(DelegatedAuthorization):
     """DistributionSourcePackage objects link to a distribution."""
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistributionSourcePackage
@@ -1982,7 +1982,7 @@ class BranchMergeProposalView(AuthorizationBase):
             self.branches))
 
 
-class PreviewDiffView(ForwardedAuthorization):
+class PreviewDiffView(DelegatedAuthorization):
     permission = 'launchpad.View'
     usedfor = IPreviewDiff
 
@@ -1990,7 +1990,7 @@ class PreviewDiffView(ForwardedAuthorization):
         super(PreviewDiffView, self).__init__(obj.branch_merge_proposal)
 
 
-class CodeReviewVoteReferenceEdit(ForwardedAuthorization):
+class CodeReviewVoteReferenceEdit(DelegatedAuthorization):
     permission = 'launchpad.Edit'
     usedfor = ICodeReviewVoteReference
 
@@ -2015,7 +2015,7 @@ class CodeReviewVoteReferenceEdit(ForwardedAuthorization):
                     user))
 
 
-class CodeReviewCommentView(ForwardedAuthorization):
+class CodeReviewCommentView(DelegatedAuthorization):
     permission = 'launchpad.View'
     usedfor = ICodeReviewComment
 
@@ -2024,7 +2024,7 @@ class CodeReviewCommentView(ForwardedAuthorization):
             obj.branch_merge_proposal)
 
 
-class CodeReviewCommentDelete(ForwardedAuthorization):
+class CodeReviewCommentDelete(DelegatedAuthorization):
     permission = 'launchpad.Edit'
     usedfor = ICodeReviewCommentDeletion
 
@@ -2291,7 +2291,7 @@ class ViewArchiveAuthToken(AuthorizationBase):
         return auth_edit.checkAuthenticated(user)
 
 
-class EditArchiveAuthToken(ForwardedAuthorization):
+class EditArchiveAuthToken(DelegatedAuthorization):
     """Restrict editing of archive tokens.
 
     The user should have append privileges to the context archive, or be an
@@ -2309,7 +2309,7 @@ class EditArchiveAuthToken(ForwardedAuthorization):
                 super(EditArchiveAuthToken, self).checkAuthenticated(user))
 
 
-class ViewPersonalArchiveSubscription(ForwardedAuthorization):
+class ViewPersonalArchiveSubscription(DelegatedAuthorization):
     """Restrict viewing of personal archive subscriptions (non-db class).
 
     The user should be the subscriber, have append privilege to the archive
@@ -2330,7 +2330,7 @@ class ViewPersonalArchiveSubscription(ForwardedAuthorization):
             ViewPersonalArchiveSubscription, self).checkAuthenticated(user)
 
 
-class ViewArchiveSubscriber(ForwardedAuthorization):
+class ViewArchiveSubscriber(DelegatedAuthorization):
     """Restrict viewing of archive subscribers.
 
     The user should be the subscriber, have append privilege to the
@@ -2349,7 +2349,7 @@ class ViewArchiveSubscriber(ForwardedAuthorization):
                 super(ViewArchiveSubscriber, self).checkAuthenticated(user))
 
 
-class EditArchiveSubscriber(ForwardedAuthorization):
+class EditArchiveSubscriber(DelegatedAuthorization):
     """Restrict editing of archive subscribers.
 
     The user should have append privilege to the archive or be an admin.
@@ -2366,34 +2366,7 @@ class EditArchiveSubscriber(ForwardedAuthorization):
                 super(EditArchiveSubscriber, self).checkAuthenticated(user))
 
 
-class DerivedAuthorization(AuthorizationBase):
-    """An Authorization that is based on permissions for other objects.
-
-    Implementations must define permission, usedfor and iter_objects.
-    iter_objects should iterate through the objects to check permission on.
-
-    Failure on the permission check for any object causes an overall failure.
-    """
-
-    def iter_adapters(self):
-        return (
-            getAdapter(obj, IAuthorization, self.permission)
-            for obj in self.iter_objects())
-
-    def checkAuthenticated(self, user):
-        for adapter in self.iter_adapters():
-            if not adapter.checkAuthenticated(user):
-                return False
-        return True
-
-    def checkUnauthenticated(self):
-        for adapter in self.iter_adapters():
-            if not adapter.checkUnauthenticated():
-                return False
-        return True
-
-
-class ViewSourcePackageRecipe(DerivedAuthorization):
+class ViewSourcePackageRecipe(DelegatedAuthorization):
 
     permission = "launchpad.View"
     usedfor = ISourcePackageRecipe
@@ -2402,7 +2375,7 @@ class ViewSourcePackageRecipe(DerivedAuthorization):
         return self.obj.getReferencedBranches()
 
 
-class ViewSourcePackageRecipeBuild(DerivedAuthorization):
+class ViewSourcePackageRecipeBuild(DelegatedAuthorization):
 
     permission = "launchpad.View"
     usedfor = ISourcePackageRecipeBuild
@@ -2422,7 +2395,7 @@ class ViewSourcePackagePublishingHistory(ViewArchive):
         super(ViewSourcePackagePublishingHistory, self).__init__(obj.archive)
 
 
-class EditPublishing(ForwardedAuthorization):
+class EditPublishing(DelegatedAuthorization):
     """Restrict editing of source and binary packages.."""
     permission = "launchpad.Edit"
     usedfor = IPublishingEdit
