@@ -2004,9 +2004,10 @@ class BugTaskSet:
                 distroseries = params.distribution.currentseries
             elif params.distroseries:
                 distroseries = params.distroseries
-            assert distroseries, (
-                "Search by component requires a context with a distribution "
-                "or distroseries.")
+            if distroseries is None:
+                raise ValueError(
+                    "Search by component requires a context with a "
+                    "distribution or distroseries.")
 
             if zope_isinstance(params.component, any):
                 component_ids = sqlvalues(*params.component.query_values)
