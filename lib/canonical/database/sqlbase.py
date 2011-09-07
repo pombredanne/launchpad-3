@@ -293,12 +293,22 @@ class ZopelessTransactionManager(object):
     @classmethod
     def initZopeless(cls, dbuser=None, isolation=ISOLATION_LEVEL_DEFAULT):
         from canonical.database.postgresql import ConnectionString
-        main_connection_string = ConnectionString(dbconfig.rw_main_master)
 
-        assert dbuser is not None, '''
-            dbuser is now required. All scripts must connect as unique
-            database users.
-            '''
+        # The configured connection string should contain a user only if
+        # the db_options() -U option has been used. It looks like none
+        # of those scripts use initZopeless, so this should be safe.
+        # This is a temporary measure until we sort out dbconfig.dbuser
+        # and LaunchpadDatabase.raw_connection's user= settings.
+        main_connection_string = ConnectionString(dbconfig.rw_main_master)
+        if main_connection_string is not None:
+            raise AssertionError(
+                "Can't initZopeless with user in connection string. "
+                "Did you use db_options() and initZopeless() in one script?")
+
+        if dbuser is None:
+            raise AssertionError(
+                "dbuser is now required. All scripts must connect as unique "
+                "database users.")
 
         isolation_level = {
             ISOLATION_LEVEL_AUTOCOMMIT: 'autocommit',
