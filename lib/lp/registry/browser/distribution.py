@@ -791,7 +791,8 @@ class RequireVirtualizedBuildersMixin:
                 required=True))
 
     def updateRequireVirtualized(self, require_virtualized, archive):
-        archive.require_virtualized = require_virtualized
+        if archive.require_virtualized != require_virtualized:
+            archive.require_virtualized = require_virtualized
 
 
 class DistributionAddView(LaunchpadFormView,
@@ -941,8 +942,7 @@ class DistributionEditView(RegistryEditFormView,
             data,
             ENABLED_RESTRICTED_FAMILITES_ERROR_MSG)
 
-    @action("Change", name='change')
-    def change_action(self, action, data):
+    def change_archive_fields(self, data):
         # Update context.main_archive.
         new_require_virtualized = data.get('require_virtualized')
         if new_require_virtualized is not None:
@@ -952,10 +952,15 @@ class DistributionEditView(RegistryEditFormView,
         new_enabled_restricted_families = data.get(
             'enabled_restricted_families')
         if new_enabled_restricted_families is not None:
-            self.context.main_archive.enabled_restricted_families = (
-                new_enabled_restricted_families)
+            if (set(self.context.main_archive.enabled_restricted_families) !=
+                set(new_enabled_restricted_families)):
+                self.context.main_archive.enabled_restricted_families = (
+                    new_enabled_restricted_families)
             del(data['enabled_restricted_families'])
 
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.change_archive_fields(data)
         self.updateContextFromData(data)
 
 
