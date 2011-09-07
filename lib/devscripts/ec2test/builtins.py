@@ -745,7 +745,7 @@ class cmd_list(EC2Command):
         uptime = self.get_uptime(instance)
         if data is None:
             description = instance.id
-            current_status =     'unknown '
+            current_status = 'unknown '
         else:
             description = data['description']
             if data['failed-yet']:
