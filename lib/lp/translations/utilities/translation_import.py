@@ -59,7 +59,6 @@ from lp.translations.utilities.kde_po_importer import KdePOImporter
 from lp.translations.utilities.mozilla_xpi_importer import MozillaXpiImporter
 from lp.translations.utilities.sanitize import (
     sanitize_translations_from_import,
-    Sanitizer,
     )
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData,
@@ -75,19 +74,6 @@ importers = {
     TranslationFileFormat.PO: GettextPOImporter(),
     TranslationFileFormat.XPI: MozillaXpiImporter(),
     }
-
-message_text_attributes = [
-    'msgid_singular', 'msgid_plural', 'singular_text', 'plural_text']
-
-
-def verify_message_newline_consistency(message):
-    for attr_name in message_text_attributes:
-        value = getattr(message, attr_name)
-        if value is not None:
-            Sanitizer.verifyNewlineConsistency(value, attr_name)
-    for index, translation in enumerate(message.translations):
-        Sanitizer.verifyNewlineConsistency(
-            translation, 'translation %d' % index)
 
 
 def is_identical_translation(existing_msg, new_msg):
@@ -387,7 +373,7 @@ class FileImporter(object):
     """
 
     def __init__(self, translation_import_queue_entry,
-                 importer, logger=None):
+                 importer, logger = None):
         """Base constructor to set up common attributes and parse the imported
         file into a member variable (self.translation_file).
 
@@ -592,7 +578,6 @@ class FileImporter(object):
 
         for message in self.translation_file.messages:
             if message.msgid_singular:
-                verify_message_newline_consistency(message)
                 self.importMessage(message)
 
         return self.errors, self.translation_file.syntax_warnings
@@ -695,7 +680,7 @@ class POTFileImporter(FileImporter):
             message._translations = None
 
         if len(message.flags) > 0:
-            flags_comment = u", " + u", ".join(message.flags)
+            flags_comment = u", "+u", ".join(message.flags)
         else:
             flags_comment = u""
 
