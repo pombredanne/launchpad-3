@@ -5,9 +5,9 @@
 
 __metaclass__ = type
 
-import datetime
-
 import apt_pkg
+import datetime
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.testing.layers import ZopelessDatabaseLayer
@@ -17,7 +17,9 @@ from lp.archivepublisher.domination import (
     STAY_OF_EXECUTION,
     )
 from lp.archivepublisher.publishing import Publisher
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
+from lp.services.log.logger import DevNullLogger
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.interfaces.publishing import ISourcePackagePublishingHistory
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
@@ -215,35 +217,40 @@ class TestDominationOfObsoletedSeries(TestDomination):
             SeriesStatus.OBSOLETE)
 
 
+def make_spphs_for_versions(factory, versions):
+    """Create publication records for each of `versions`.
+
+    They records are created in the same order in which they are specified.
+    Make the order irregular to prove that version ordering is not a
+    coincidence of object creation order etc.
+
+    Versions may also be identical; each publication record will still have
+    its own package release.
+    """
+    spn = factory.makeSourcePackageName()
+    distroseries = factory.makeDistroSeries()
+    pocket = factory.getAnyPocket()
+    sprs = [
+        factory.makeSourcePackageRelease(
+            sourcepackagename=spn, version=version)
+        for version in versions]
+    return [
+        factory.makeSourcePackagePublishingHistory(
+            distroseries=distroseries, pocket=pocket,
+            sourcepackagerelease=spr,
+            status=PackagePublishingStatus.PUBLISHED)
+        for spr in sprs]
+
+
+def list_source_versions(spphs):
+    """Extract the versions from `spphs` as a list, in the same order."""
+    return [spph.sourcepackagerelease.version for spph in spphs]
+
+
 class TestGeneralizedPublication(TestCaseWithFactory):
     """Test publication generalization helpers."""
 
     layer = ZopelessDatabaseLayer
-
-    def makeSPPHsForVersions(self, versions):
-        """Create publication records for each of `versions`.
-
-        They records are created in the same order in which they are
-        specified.  Make the order irregular to prove that version ordering
-        is not a coincidence of object creation order etc.
-
-        Versions may also be identical; each publication record will still
-        have its own package release.
-        """
-        distroseries = self.factory.makeDistroSeries()
-        pocket = self.factory.getAnyPocket()
-        sprs = [
-            self.factory.makeSourcePackageRelease(version=version)
-            for version in versions]
-        return [
-            self.factory.makeSourcePackagePublishingHistory(
-                distroseries=distroseries, pocket=pocket,
-                sourcepackagerelease=spr)
-            for spr in sprs]
-
-    def listSourceVersions(self, spphs):
-        """Extract the versions from `spphs` as a list, in the same order."""
-        return [spph.sourcepackagerelease.version for spph in spphs]
 
     def alterCreationDates(self, spphs, ages):
         """Set `datecreated` on each of `spphs` according to `ages`.
@@ -276,11 +283,10 @@ class TestGeneralizedPublication(TestCaseWithFactory):
             '1.1v1',
             '1.1v3',
             ]
-        spphs = self.makeSPPHsForVersions(versions)
+        spphs = make_spphs_for_versions(self.factory, versions)
         sorted_spphs = sorted(spphs, cmp=GeneralizedPublication().compare)
         self.assertEqual(
-            sorted(versions),
-            self.listSourceVersions(sorted_spphs))
+            sorted(versions), list_source_versions(sorted_spphs))
 
     def test_compare_orders_versions_by_debian_rules(self):
         versions = [
@@ -289,7 +295,7 @@ class TestGeneralizedPublication(TestCaseWithFactory):
             '1.1',
             '1.1ubuntu0',
             ]
-        spphs = self.makeSPPHsForVersions(versions)
+        spphs = make_spphs_for_versions(self.factory, versions)
 
         debian_sorted_versions = sorted(versions, cmp=apt_pkg.VersionCompare)
 
@@ -301,7 +307,7 @@ class TestGeneralizedPublication(TestCaseWithFactory):
         sorted_spphs = sorted(spphs, cmp=GeneralizedPublication().compare)
         self.assertEqual(
             sorted(versions, cmp=apt_pkg.VersionCompare),
-            self.listSourceVersions(sorted_spphs))
+            list_source_versions(sorted_spphs))
 
     def test_compare_breaks_tie_with_creation_date(self):
         # When two publications are tied for comparison because they are
@@ -349,3 +355,116 @@ class TestGeneralizedPublication(TestCaseWithFactory):
         self.assertEqual(
             [spphs[2], spphs[0], spphs[1]],
             sorted(spphs, cmp=GeneralizedPublication().compare))
+
+
+class TestDominatorMethods(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def makeDominator(self, publications):
+        if len(publications) == 0:
+            archive = self.factory.makeArchive()
+        else:
+            archive = publications[0].archive
+        return Dominator(DevNullLogger(), archive)
+
+    def test_dominatePackage_survives_empty_publications_list(self):
+        # Nothing explodes when dominatePackage is called with an empty
+        # packages list.
+        self.makeDominator([]).dominatePackage(
+            [], [], GeneralizedPublication(True))
+        # The test is that we get here without error.
+        pass
+
+    def test_dominatePackage_leaves_live_version_untouched(self):
+        # dominatePackage does not supersede live versions.
+        [pub] = make_spphs_for_versions(self.factory, ['3.1'])
+        self.makeDominator([pub]).dominatePackage(
+            [pub], ['3.1'], GeneralizedPublication(True))
+        self.assertEqual(PackagePublishingStatus.PUBLISHED, pub.status)
+
+    def test_dominatePackage_deletes_dead_version_without_successor(self):
+        # dominatePackage marks non-live package versions without
+        # superseding versions as deleted.
+        [pub] = make_spphs_for_versions(self.factory, ['1.1'])
+        self.makeDominator([pub]).dominatePackage(
+            [pub], [], GeneralizedPublication(True))
+        self.assertEqual(PackagePublishingStatus.DELETED, pub.status)
+
+    def test_dominatePackage_supersedes_older_pub_with_newer_live_pub(self):
+        # When marking a package as superseded, dominatePackage
+        # designates a newer live version as the superseding version.
+        pubs = make_spphs_for_versions(self.factory, ['1.0', '1.1'])
+        self.makeDominator(pubs).dominatePackage(
+            pubs, ['1.1'], GeneralizedPublication(True))
+        self.assertEqual(PackagePublishingStatus.SUPERSEDED, pubs[0].status)
+        self.assertEqual(pubs[1].sourcepackagerelease, pubs[0].supersededby)
+        self.assertEqual(PackagePublishingStatus.PUBLISHED, pubs[1].status)
+
+    def test_dominatePackage_only_supersedes_with_live_pub(self):
+        # When marking a package as superseded, dominatePackage will
+        # only pick a live version as the superseding one.
+        pubs = make_spphs_for_versions(
+            self.factory, ['1.0', '2.0', '3.0', '4.0'])
+        self.makeDominator(pubs).dominatePackage(
+            pubs, ['3.0'], GeneralizedPublication(True))
+        self.assertEqual([
+                pubs[2].sourcepackagerelease,
+                pubs[2].sourcepackagerelease,
+                None,
+                None,
+                ],
+            [pub.supersededby for pub in pubs])
+
+    def test_dominatePackage_supersedes_with_oldest_newer_live_pub(self):
+        # When marking a package as superseded, dominatePackage picks
+        # the oldest of the newer, live versions as the superseding one.
+        pubs = make_spphs_for_versions(self.factory, ['2.7', '2.8', '2.9'])
+        self.makeDominator(pubs).dominatePackage(
+            pubs, ['2.8', '2.9'], GeneralizedPublication(True))
+        self.assertEqual(pubs[1].sourcepackagerelease, pubs[0].supersededby)
+
+    def test_dominatePackage_only_supersedes_with_newer_live_pub(self):
+        # When marking a package as superseded, dominatePackage only
+        # considers a newer version as the superseding one.
+        pubs = make_spphs_for_versions(self.factory, ['0.1', '0.2'])
+        self.makeDominator(pubs).dominatePackage(
+            pubs, ['0.1'], GeneralizedPublication(True))
+        self.assertEqual(None, pubs[1].supersededby)
+        self.assertEqual(PackagePublishingStatus.DELETED, pubs[1].status)
+
+    def test_dominateRemovedSourceVersions_dominates_publications(self):
+        # dominateRemovedSourceVersions finds the publications for a
+        # package and calls dominatePackage on them.
+        pubs = make_spphs_for_versions(self.factory, ['0.1', '0.2', '0.3'])
+        package_name = pubs[0].sourcepackagerelease.sourcepackagename.name
+
+        self.makeDominator(pubs).dominateRemovedSourceVersions(
+            pubs[0].distroseries, pubs[0].pocket, package_name, ['0.2'])
+        self.assertEqual([
+                PackagePublishingStatus.SUPERSEDED,
+                PackagePublishingStatus.PUBLISHED,
+                PackagePublishingStatus.DELETED,
+                ],
+            [pub.status for pub in pubs])
+        self.assertEqual(
+            [pubs[1].sourcepackagerelease, None, None],
+            [pub.supersededby for pub in pubs])
+
+    def test_dominateRemovedSourceVersions_ignores_other_pockets(self):
+        # dominateRemovedSourceVersions ignores publications in other
+        # pockets than the one specified.
+        pubs = make_spphs_for_versions(self.factory, ['2.3', '2.4'])
+        package_name = pubs[0].sourcepackagerelease.sourcepackagename.name
+        removeSecurityProxy(pubs[0]).pocket = PackagePublishingPocket.UPDATES
+        removeSecurityProxy(pubs[1]).pocket = PackagePublishingPocket.PROPOSED
+        self.makeDominator(pubs).dominateRemovedSourceVersions(
+            pubs[0].distroseries, pubs[0].pocket, package_name, ['2.3'])
+        self.assertEqual(PackagePublishingStatus.PUBLISHED, pubs[1].status)
+
+    def test_dominateRemovedSourceVersions_ignores_other_packages(self):
+        pubs = make_spphs_for_versions(self.factory, ['1.0', '1.1'])
+        other_package_name = self.factory.makeSourcePackageName().name
+        self.makeDominator(pubs).dominateRemovedSourceVersions(
+            pubs[0].distroseries, pubs[0].pocket, other_package_name, ['1.1'])
+        self.assertEqual(PackagePublishingStatus.PUBLISHED, pubs[0].status)

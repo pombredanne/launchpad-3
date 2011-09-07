@@ -217,6 +217,11 @@ class Dominator:
                 # that follow right after this are to be superseded,
                 # this is the release that they are superseded by.
                 current_dominant = pub
+            elif current_dominant is None:
+                # This publication is no longer live, but there is no
+                # newer version to supersede it either.  Therefore it
+                # must be deleted.
+                pub.requestDeletion(None)
             else:
                 # This publication is superseded.  This is what we're
                 # here to do.
@@ -496,7 +501,6 @@ class Dominator:
 
         generalization = GeneralizedPublication(is_source=True)
 
-        live_versions = set(live_versions)
         package_pubs = IStore(SourcePackagePublishingHistory).find(
             SourcePackagePublishingHistory,
             join_spph_spr(),
