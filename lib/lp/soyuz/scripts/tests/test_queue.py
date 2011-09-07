@@ -18,7 +18,6 @@ from zope.security.interfaces import ForbiddenAttribute
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.database.sqlbase import ISOLATION_LEVEL_READ_COMMITTED
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
