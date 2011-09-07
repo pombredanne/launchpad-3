@@ -41,11 +41,13 @@ __all__ = [
 from collections import defaultdict
 import datetime
 
+from zope.app.form.browser.boolwidgets import CheckBoxWidget
 from zope.component import getUtility
 from zope.event import notify
 from zope.formlib import form
 from zope.interface import implements
 from zope.lifecycleevent import ObjectCreatedEvent
+from zope.schema import Bool
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.browser.feeds import FeedsMixin
@@ -82,6 +84,7 @@ from lp.app.browser.launchpadform import (
     )
 from lp.app.errors import NotFoundError
 from lp.app.widgets.image import ImageChangeWidget
+from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from lp.archivepublisher.interfaces.publisherconfig import (
     IPublisherConfig,
     IPublisherConfigSet,
@@ -104,8 +107,8 @@ from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu,
     RegistryCollectionActionMenuBase,
     )
-from lp.registry.browser.pillar import PillarBugsMenu
 from lp.registry.browser.objectreassignment import ObjectReassignmentView
+from lp.registry.browser.pillar import PillarBugsMenu
 from lp.registry.interfaces.distribution import (
     IDerivativeDistribution,
     IDistribution,
@@ -123,9 +126,11 @@ from lp.services.geoip.helpers import (
     request_country,
     )
 from lp.services.propertycache import cachedproperty
+from lp.soyuz.browser.archive import EnableRestrictedFamiliesMixin
 from lp.soyuz.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.soyuz.interfaces.processor import IProcessorFamilySet
 
 
 class DistributionNavigation(
@@ -772,7 +777,27 @@ class DistributionSetView(LaunchpadView):
         return self.context.count()
 
 
-class DistributionAddView(LaunchpadFormView):
+class RequireVirtualizedBuildersMixin:
+    """A mixin that provides require_virtualized field support"""
+
+    def createRequireVirtualized(self):
+        return form.Fields(
+            Bool(
+                __name__='require_virtualized',
+                title=u"Require virtualized builders",
+                description=(
+                    u"Only build the distribution's packages on virtual "
+                    "builders."),
+                required=True))
+
+    def updateRequireVirtualized(self, require_virtualized, archive):
+        if archive.require_virtualized != require_virtualized:
+            archive.require_virtualized = require_virtualized
+
+
+class DistributionAddView(LaunchpadFormView,
+                          RequireVirtualizedBuildersMixin,
+                          EnableRestrictedFamiliesMixin):
 
     schema = IDistribution
     label = "Register a new distribution"
@@ -789,16 +814,39 @@ class DistributionAddView(LaunchpadFormView):
         "official_rosetta",
         "answers_usage",
         ]
+    custom_widget('require_virtualized', CheckBoxWidget)
+    custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
 
     @property
     def page_title(self):
         """The page title."""
         return self.label
 
+    def validate(self, data):
+        self.validate_enabled_restricted_families(
+            data, ENABLED_RESTRICTED_FAMILITES_ERROR_MSG)
+
+    @property
+    def initial_values(self):
+        proc_family_set = getUtility(IProcessorFamilySet)
+        restricted_families = set(proc_family_set.getRestricted())
+        return {
+            'enabled_restricted_families': restricted_families,
+            'require_virtualized': False,
+            }
+
     @property
     def cancel_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        LaunchpadFormView.setUpFields(self)
+        self.form_fields += self.createRequireVirtualized()
+        self.form_fields += self.createEnabledRestrictedFamilies(
+            u'The restricted architecture families on which the '
+            "distribution's main archive can build.")
 
     @action("Save", name='save')
     def save_action(self, action, data):
@@ -813,11 +861,25 @@ class DistributionAddView(LaunchpadFormView):
             owner=self.user,
             registrant=self.user,
             )
+        archive = distribution.main_archive
+        self.updateRequireVirtualized(data['require_virtualized'], archive)
+        if archive.require_virtualized is True:
+            archive.enabled_restricted_families = (
+                data['enabled_restricted_families'])
+
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
 
 
-class DistributionEditView(RegistryEditFormView):
+ENABLED_RESTRICTED_FAMILITES_ERROR_MSG = (
+    u"This distribution's main archive can not be restricted to "
+    'certain architectures unless the archive is also set '
+    'to build on virtualized builders.')
+
+
+class DistributionEditView(RegistryEditFormView,
+                           RequireVirtualizedBuildersMixin,
+                           EnableRestrictedFamiliesMixin):
 
     schema = IDistribution
     field_names = [
@@ -842,11 +904,30 @@ class DistributionEditView(RegistryEditFormView):
     custom_widget('icon', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('logo', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
     custom_widget('mugshot', ImageChangeWidget, ImageChangeWidget.EDIT_STYLE)
+    custom_widget('require_virtualized', CheckBoxWidget)
+    custom_widget('enabled_restricted_families', LabeledMultiCheckBoxWidget)
 
     @property
     def label(self):
         """See `LaunchpadFormView`."""
         return 'Change %s details' % self.context.displayname
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        RegistryEditFormView.setUpFields(self)
+        self.form_fields += self.createRequireVirtualized()
+        self.form_fields += self.createEnabledRestrictedFamilies(
+            u'The restricted architecture families on which the '
+            "distribution's main archive can build.")
+
+    @property
+    def initial_values(self):
+        return {
+            'require_virtualized':
+                self.context.main_archive.require_virtualized,
+            'enabled_restricted_families':
+                self.context.main_archive.enabled_restricted_families,
+            }
 
     def validate(self, data):
         """Constrain bug expiration to Launchpad Bugs tracker."""
@@ -856,6 +937,32 @@ class DistributionEditView(RegistryEditFormView):
         official_malone = data.get('official_malone', False)
         if not official_malone:
             data['enable_bug_expiration'] = False
+
+        # Validate enabled_restricted_families.
+        self.validate_enabled_restricted_families(
+            data,
+            ENABLED_RESTRICTED_FAMILITES_ERROR_MSG)
+
+    def change_archive_fields(self, data):
+        # Update context.main_archive.
+        new_require_virtualized = data.get('require_virtualized')
+        if new_require_virtualized is not None:
+            self.updateRequireVirtualized(
+                new_require_virtualized, self.context.main_archive)
+            del(data['require_virtualized'])
+        new_enabled_restricted_families = data.get(
+            'enabled_restricted_families')
+        if new_enabled_restricted_families is not None:
+            if (set(self.context.main_archive.enabled_restricted_families) !=
+                set(new_enabled_restricted_families)):
+                self.context.main_archive.enabled_restricted_families = (
+                    new_enabled_restricted_families)
+            del(data['enabled_restricted_families'])
+
+    @action("Change", name='change')
+    def change_action(self, action, data):
+        self.change_archive_fields(data)
+        self.updateContextFromData(data)
 
 
 class DistributionSeriesBaseView(LaunchpadView):
