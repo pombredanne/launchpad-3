@@ -179,6 +179,10 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
     def rebuild(self):
         return self.metadata['rebuild']
 
+    @property
+    def error_description(self):
+        return self.metadata.get("error_description")
+
     def run(self):
         """See `IRunnableJob`."""
         ids = InitializeDistroSeries(

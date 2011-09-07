@@ -99,7 +99,6 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
             repr(job)
         )
 
-
     def test_create_with_existing_pending_job(self):
         parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
@@ -196,6 +195,14 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         job = self.job_source.get(distroseries)
         self.assertIsInstance(job, InitializeDistroSeriesJob)
         self.assertEqual(job.distroseries, distroseries)
+
+    def test_error_description_when_no_error(self):
+        # The InitializeDistroSeriesJob.error property returns None when there
+        # has not been an error.
+        parent = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
+        job = self.job_source.create(distroseries, [parent.id])
+        self.assertIs(None, removeSecurityProxy(job).error_description)
 
 
 class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
