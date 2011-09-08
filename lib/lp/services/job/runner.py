@@ -445,6 +445,10 @@ class TwistedJobRunner(BaseJobRunner):
             RunJobCommand, job_id=job_id, _deadline=deadline)
 
         def update(response):
+            if response is None:
+                self.incomplete_jobs.append(job)
+                self.logger.debug('No response for %r', job)
+                return
             if response['success']:
                 self.completed_jobs.append(job)
                 self.logger.debug('Finished %r', job)
