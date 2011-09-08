@@ -349,6 +349,29 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         self.assertIs(
             None, parser.devices[pci_ethernet_controller_path].sysfs)
 
+    def test_buildUdevDeviceList_no_sysfs_data(self):
+        """Sysfs data is not required (maverick and natty submissions)."""
+        root_device_path = '/devices/LNXSYSTM:00'
+        pci_pci_bridge_path = '/devices/pci0000:00/0000:00:1c.0'
+        pci_ethernet_controller_path = (
+            '/devices/pci0000:00/0000:00:1c.0/0000:02:00.0')
+
+        udev_paths = (
+            root_device_path, pci_pci_bridge_path,
+            pci_ethernet_controller_path)
+
+        sysfs_data = None
+
+        parsed_data = self.makeUdevDeviceParsedData(udev_paths, sysfs_data)
+        parser = SubmissionParser()
+        parser.buildUdevDeviceList(parsed_data)
+
+        self.assertIs(
+            None, parser.devices[pci_pci_bridge_path].sysfs)
+
+        self.assertIs(
+            None, parser.devices[pci_ethernet_controller_path].sysfs)
+
     def test_buildUdevDeviceList_invalid_device_path(self):
         """Test the creation of UdevDevice instances for a submission.
 
@@ -3875,6 +3898,20 @@ class TestUdevDevice(TestCaseHWDB):
         device = UdevDevice(None, self.root_device)
         self.assertFalse(device.is_scsi_device)
 
+    def test_is_scsi_device__no_sysfs_data(self):
+        """Test of UdevDevice.is_scsi_device.
+
+        If there is no sysfs data for a real SCSI device, is it not
+        considered as a real SCSI device.
+
+        Reason: Without sysfs data, we don't know the vendor and
+        model name, making it impossible to store data about the
+        device in the database.
+        """
+        device = UdevDevice(
+            None, self.scsi_scanner_device_data, None)
+        self.assertFalse(device.is_scsi_device)
+
     def test_scsi_vendor(self):
         """Test of UdevDevice.scsi_vendor."""
         device = UdevDevice(
@@ -4406,6 +4443,24 @@ class TestUdevDevice(TestCaseHWDB):
             'A UdevDevice that is supposed to be a real device does not '
             'provide bus, vendor ID, product ID or product name: None None '
             'None None /devices/pci0000:00/0000:00:1d.7/usb1/1-1/1-1:1.0')
+
+    def test_warnings_not_suppressed(self):
+        """Logging of warnings can be allowed."""
+        parser = SubmissionParser(self.log)
+        parser.submission_key = "log_with_warnings"
+        parser._logWarning("This message is logged.")
+        self.assertWarningMessage(
+            parser.submission_key, "This message is logged.")
+
+    def test_warnings_suppressed(self):
+        """Logging of warnings can be suppressed."""
+        number_of_existing_log_messages = len(self.handler.records)
+        parser = SubmissionParser(self.log, record_warnings=False)
+        parser.submission_key = "log_without_warnings"
+        parser._logWarning("This message is not logged.")
+        # No new warnings are recorded
+        self.assertEqual(
+            number_of_existing_log_messages, len(self.handler.records))
 
     def test_device_id(self):
         """Each UdevDevice has a property 'id'."""

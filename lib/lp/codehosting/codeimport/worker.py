@@ -39,8 +39,8 @@ from bzrlib.errors import (
     NotBranchError,
     )
 from bzrlib.transport import get_transport
-import bzrlib.ui
 from bzrlib.upgrade import upgrade
+import bzrlib.ui
 from bzrlib.urlutils import (
     join as urljoin,
     local_path_from_url,
@@ -705,6 +705,9 @@ class PullingImportWorker(ImportWorker):
             except BadUrl, e:
                 self._logger.info("Invalid URL: %s" % e)
                 return CodeImportWorkerExitCode.FAILURE_FORBIDDEN
+            except ConnectionError, e:
+                self._logger.info("Unable to open remote branch: %s" % e)
+                return CodeImportWorkerExitCode.FAILURE_INVALID
             try:
                 remote_branch_tip = remote_branch.last_revision()
                 inter_branch = InterBranch.get(remote_branch, bazaar_branch)

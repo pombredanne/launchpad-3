@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -11,8 +11,6 @@ __all__ = [
     'IDiff',
     'IIncrementalDiff',
     'IPreviewDiff',
-    'IStaticDiff',
-    'IStaticDiffSource',
     ]
 
 from lazr.restful.declarations import (
@@ -80,40 +78,6 @@ class IIncrementalDiff(Interface):
 
     new_revision = Reference(
         IRevision, readonly=True, title=_('The new revision of the diff.'))
-
-
-class IStaticDiff(Interface):
-    """A diff with a fixed value, i.e. between two revisions."""
-
-    from_revision_id = exported(TextLine(readonly=True))
-
-    to_revision_id = exported(TextLine(readonly=True))
-
-    diff = exported(
-        Reference(IDiff, title=_('The Diff object.'), readonly=True))
-
-    def destroySelf():
-        """Destroy this object."""
-
-
-class IStaticDiffSource(Interface):
-    """Component that can acquire StaticDiffs."""
-
-    def acquire(from_revision_id, to_revision_id, repository, filename=None):
-        """Get or create a StaticDiff."""
-
-    def acquireFromText(from_revision_id, to_revision_id, text,
-                        filename=None):
-        """Get or create a StaticDiff from a string.
-
-        If a StaticDiff exists for this revision_id pair, the text is ignored.
-
-        :param from_revision_id: The id of the old revision.
-        :param to_revision_id: The id of the new revision.
-        :param text: The text of the diff, as bytes.
-        :param filename: The filename to store for the diff.  Randomly
-            generated if not supplied.
-        """
 
 
 class IPreviewDiff(IDiff):

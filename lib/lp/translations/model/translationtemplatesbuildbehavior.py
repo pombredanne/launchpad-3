@@ -46,6 +46,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         chroot = self._getChroot()
         chroot_sha1 = chroot.content.sha1
         d = self._builder.slave.cacheFile(logger, chroot)
+
         def got_cache_file(ignored):
             cookie = self.buildfarmjob.generateSlaveBuildCookie()
 
@@ -121,7 +122,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         """
         build_status = self.extractBuildStatus(slave_status)
 
-        logger.debug(
+        logger.info(
             "Templates generation job %s for %s finished with status %s." % (
             queue_item.specific_job.getName(),
             queue_item.specific_job.branch.bzr_identity,
@@ -163,4 +164,3 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             return d
 
         return clean_slave(None)
-

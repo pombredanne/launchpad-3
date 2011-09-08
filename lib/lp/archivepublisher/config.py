@@ -13,8 +13,8 @@ from zope.component import getUtility
 from canonical.config import config
 from lp.archivepublisher.interfaces.publisherconfig import IPublisherConfigSet
 from lp.soyuz.enums import (
-    ArchivePurpose,
     archive_suffixes,
+    ArchivePurpose,
     )
 
 
@@ -32,6 +32,8 @@ def getPubConfig(archive):
     ppa_config = config.personalpackagearchive
     db_pubconf = getUtility(
         IPublisherConfigSet).getByDistribution(archive.distribution)
+    if db_pubconf is None:
+        return None
 
     pubconf.temproot = os.path.join(
         db_pubconf.root_dir, '%s-temp' % archive.distribution.name)
