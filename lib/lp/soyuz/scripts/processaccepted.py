@@ -164,11 +164,13 @@ def close_bugs_for_sourcepublication(source_publication, since_version=None):
     changesfile_object = sourcepackagerelease.upload_changesfile
 
     close_bugs_for_sourcepackagerelease(
-        sourcepackagerelease, changesfile_object, since_version)
+        sourcepackagerelease, changesfile_object, since_version,
+        upload_distroseries=source_publication.distroseries)
 
 
 def close_bugs_for_sourcepackagerelease(source_release, changesfile_object,
-                                        since_version=None):
+                                        since_version=None,
+                                        upload_distroseries=None):
     """Close bugs for a given source.
 
     Given a `ISourcePackageRelease` and a corresponding changesfile object,
@@ -203,10 +205,13 @@ def close_bugs_for_sourcepackagerelease(source_release, changesfile_object,
         # here, BE CAREFUL with the unproxied bug object and look at
         # what you're doing with it that might violate security.
         bug = removeSecurityProxy(bug)
+        if upload_distroseries is not None:
+            target = upload_distroseries.getSourcePackage(
+                source_release.sourcepackagename)
+        else:
+            target = source_release.sourcepackage
         edited_task = bug.setStatus(
-            target=source_release.sourcepackage,
-            status=BugTaskStatus.FIXRELEASED,
-            user=janitor)
+            target=target, status=BugTaskStatus.FIXRELEASED, user=janitor)
         if edited_task is not None:
             assert source_release.changelog_entry is not None, (
                 "New source uploads should have a changelog.")
