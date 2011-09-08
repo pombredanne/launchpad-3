@@ -453,7 +453,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         default=None)
     creator = ForeignKey(
         dbName='creator', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_public_person, notNull=False, default=None)
 
     @property
     def package_creator(self):
