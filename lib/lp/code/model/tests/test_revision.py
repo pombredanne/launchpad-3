@@ -909,7 +909,7 @@ class TestUpdateRevisionCacheForBranch(RevisionCacheTestCase):
         # But the privacy flags are different.
         self.assertNotEqual(rev1.private, rev2.private)
 
-    def test_existing_private_revisions_with_public_branch(self):
+    def test_existing_transitive_private_revisions_with_public_branch(self):
         # If a revision is in both public and private branches, there is a
         # revision cache row for both public and private. A branch is private
         # if it is stacked on a private branch.
