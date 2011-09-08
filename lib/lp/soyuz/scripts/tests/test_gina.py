@@ -10,6 +10,14 @@ from lp.services.log.logger import DevNullLogger
 from lp.soyuz.enums import PackagePublishingStatus
 from lp.soyuz.scripts.gina.dominate import dominate_imported_source_packages
 import lp.soyuz.scripts.gina.handlers
+from lp.soyuz.scripts.gina.handlers import (
+    BinaryPackagePublisher,
+    SourcePackagePublisher,
+    )
+from lp.soyuz.scripts.gina.packages import (
+    BinaryPackageData,
+    SourcePackageData,
+    )
 from lp.testing import TestCaseWithFactory
 
 
@@ -68,6 +76,50 @@ class TestGina(TestCaseWithFactory):
             PackagePublishingStatus.PUBLISHED,
             ],
             [pub.status for pub in pubs])
+
+
+class TestSourcePackagePublisher(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_publish_creates_published_publication(self):
+        maintainer = self.factory.makePerson()
+        series = self.factory.makeDistroSeries()
+        section = self.factory.makeSection()
+        pocket = PackagePublishingPocket.RELEASE
+        spr = self.factory.makeSourcePackageRelease()
+
+        publisher = SourcePackagePublisher(series, pocket, None)
+        publisher.publish(spr, SourcePackageData(
+            component='main', section=section.name, version='1.0',
+            maintainer=maintainer.preferredemail, architecture='all',
+            files='foo.py', binaries='foo.py'))
+
+        [spph] = series.main_archive.getPublishedSources()
+        self.assertEqual(PackagePublishingStatus.PUBLISHED, spph.status)
+
+
+class TestBinaryPackagePublisher(TestCaseWithFactory):
+
+    layer = ZopelessDatabaseLayer
+
+    def test_publish_creates_published_publication(self):
+        maintainer = self.factory.makePerson()
+        series = self.factory.makeDistroArchSeries()
+        section = self.factory.makeSection()
+        pocket = PackagePublishingPocket.RELEASE
+        bpr = self.factory.makeBinaryPackageRelease()
+
+        publisher = BinaryPackagePublisher(series, pocket, None)
+        publisher.publish(bpr, BinaryPackageData(
+            component='main', section=section.name, version='1.0',
+            maintainer=maintainer.preferredemail, architecture='all',
+            files='foo.py', binaries='foo.py', size=128, installed_size=1024,
+            md5sum='e83b5dd68079d727a494a469d40dc8db', description='test',
+            summary='Test!'))
+
+        [bpph] = series.main_archive.getAllPublishedBinaries()
+        self.assertEqual(PackagePublishingStatus.PUBLISHED, bpph.status)
 
 
 def test_suite():
