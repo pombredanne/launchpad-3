@@ -392,7 +392,6 @@ And this is for a person:
 >>> check("/~name16/+codesofconduct", auth=True)
 >>> check("/~name16/+edithomepage", auth=True)
 >>> check("/~name16/+review", auth=True)
->>> check("/~name16/+portlet-team-assignedbugs")
 >>> check("/~name16/+specworkload")
 >>> check("/~name16/+imports", host='translations.launchpad.dev')
 
