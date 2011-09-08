@@ -193,13 +193,24 @@ class Dominator:
     def dominatePackage(self, publications, live_versions, generalization):
         """Dominate publications for a single package.
 
+        Active publications for versions in `live_versions` stay active.
+        Any older versions are marked as superseded by the respective
+        oldest live versions that are newer than the superseded ones.
+
+        Any versions that are newer than anything in `live_versions` are
+        marked as deleted.  This should not be possible in Soyuz-native
+        archives, but it can happen during archive imports when the
+        previous latest version of a package has disappeared from the Sources
+        list we import.
+
         :param publications: Iterable of publications for the same package,
             in the same archive, series, and pocket, all with status
             `PackagePublishingStatus.PUBLISHED`.
         :param live_versions: Iterable of version strings that are still
             considered live for this package.  The given publications will
             remain active insofar as they represent any of these versions;
-            the other publications will be marked superseded.
+            older publications will be marked as superseded and newer ones
+            as deleted.
         :param generalization: A `GeneralizedPublication` helper representing
             the kind of publications these are--source or binary.
         """
@@ -230,6 +241,9 @@ class Dominator:
     def _dominatePublications(self, pubs, generalization):
         """Perform dominations for the given publications.
 
+        Keep the latest published version for each package active,
+        superseding older versions.
+
         :param pubs: A dict mapping names to a list of publications. Every
             publication must be PUBLISHED or PENDING, and the first in each
             list will be treated as dominant (so should be the latest).
@@ -237,9 +251,11 @@ class Dominator:
             the kind of publications these are--source or binary.
         """
         self.logger.debug("Dominating packages...")
-
         for name, publications in pubs.iteritems():
             assert publications, "Empty list of publications for %s." % name
+            # Since this always picks the latest version as the live
+            # one, this dominatePackage call will never result in a
+            # deletion.
             latest_version = generalization.getPackageVersion(publications[0])
             self.dominatePackage(
                 publications, [latest_version], generalization)
