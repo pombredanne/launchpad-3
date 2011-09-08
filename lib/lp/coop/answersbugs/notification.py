@@ -59,15 +59,6 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
 
     def getBody(self):
         """See QuestionNotification."""
-        if self.bugtask.statusexplanation:
-            wrapper = MailWrapper()
-            statusexplanation = (
-                'Status change explanation given by %s:\n\n%s\n' % (
-                    self.user.displayname,
-                    wrapper.format(self.bugtask.statusexplanation)))
-        else:
-            statusexplanation = ''
-
         return get_email_template(
             'question-linked-bug-status-updated.txt') % {
                 'bugtask_target_name': self.bugtask.target.displayname,
@@ -78,6 +69,5 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
                 'bug_id': self.bugtask.bug.id,
                 'bugtask_title': self.bugtask.bug.title,
                 'old_status': self.old_bugtask.status.title,
-                'new_status': self.bugtask.status.title,
-                'statusexplanation': statusexplanation}
+                'new_status': self.bugtask.status.title}
 
