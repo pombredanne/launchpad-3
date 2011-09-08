@@ -132,11 +132,14 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
             personpicker_affiliation_enabled=True)
         self.assertEqual(3, len(entry.badges))
         self.assertEqual('/@@/product-badge', entry.badges[0]['url'])
-        self.assertEqual('Fnord maintainer', entry.badges[0]['alt'])
+        self.assertEqual('Fnord', entry.badges[0]['label'])
+        self.assertEqual('maintainer', entry.badges[0]['role'])
         self.assertEqual('/@@/product-badge', entry.badges[1]['url'])
-        self.assertEqual('Fnord driver', entry.badges[1]['alt'])
+        self.assertEqual('Fnord', entry.badges[1]['label'])
+        self.assertEqual('driver', entry.badges[1]['role'])
         self.assertEqual('/@@/product-badge', entry.badges[2]['url'])
-        self.assertEqual('Fnord bug supervisor', entry.badges[2]['alt'])
+        self.assertEqual('Fnord', entry.badges[2]['label'])
+        self.assertEqual('bug supervisor', entry.badges[2]['role'])
 
     def test_PersonPickerEntryAdapter_badges_without_IHasAffiliation(self):
         # The enhanced person picker handles objects that do not support
@@ -320,9 +323,11 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
             "alt_title_link": "http://launchpad.dev/~%s" % team.name,
             "api_uri": "/~%s" % team.name,
             "badges":
-                [{"alt": "%s maintainer" % product.displayname,
+                [{"label": product.displayname,
+                  "role": "maintainer",
                   "url": "/@@/product-badge"},
-                {"alt": "%s driver" % product.displayname,
+                {"label": product.displayname,
+                 "role": "driver",
                   "url": "/@@/product-badge"}],
             "css": "sprite team",
             "details": ['Team members: 1'],
