@@ -187,7 +187,7 @@ class BaseJobRunner(object):
         try:
             job.acquireLease()
         except LeaseHeld:
-            self.logger.debug(
+            self.logger.info(
                 'Could not acquire lease for %s' % self.job_str(job))
             self.incomplete_jobs.append(job)
             return False
