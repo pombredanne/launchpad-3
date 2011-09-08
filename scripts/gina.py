@@ -38,6 +38,7 @@ from lp.soyuz.scripts.gina.archive import (
     MangledArchiveError,
     PackagesMap,
     )
+from lp.soyuz.scripts.gina.dominate import dominate_imported_source_packages
 from lp.soyuz.scripts.gina.handlers import (
     DataSetupError,
     ImporterHandler,
@@ -53,7 +54,6 @@ from lp.soyuz.scripts.gina.packages import (
     PoolFileNotFound,
     SourcePackageData,
     )
-from lp.soyuz.scripts.gina.retire import dominate_imported_source_packages
 
 # Set to non-zero if you'd like to be warned every so often
 COUNTDOWN = 0

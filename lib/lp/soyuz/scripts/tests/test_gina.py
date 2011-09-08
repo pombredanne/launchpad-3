@@ -8,8 +8,8 @@ from canonical.testing.layers import ZopelessDatabaseLayer
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.log.logger import DevNullLogger
 from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.scripts.gina.dominate import dominate_imported_source_packages
 import lp.soyuz.scripts.gina.handlers
-from lp.soyuz.scripts.gina.retire import dominate_imported_source_packages
 from lp.testing import TestCaseWithFactory
 
 
