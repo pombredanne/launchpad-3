@@ -114,10 +114,6 @@ from lp.soyuz.pas import determineArchitecturesToBuild
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 
 
-PENDING = PackagePublishingStatus.PENDING
-PUBLISHED = PackagePublishingStatus.PUBLISHED
-
-
 # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
 
 def makePoolPath(source_name, component_name):
@@ -1083,7 +1079,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return IMasterStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
                 BinaryPackagePublishingHistory.status.is_in(
-                    [PUBLISHED, PENDING]),
+                    active_publishing_status),
                 BinaryPackagePublishingHistory.distroarchseriesID.is_in(
                     available_architectures),
                 binarypackagerelease=self.binarypackagerelease,
@@ -1103,7 +1099,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return IMasterStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
                 BinaryPackagePublishingHistory.status.is_in(
-                    [PUBLISHED, PENDING]),
+                    active_publishing_status),
                 BinaryPackagePublishingHistory.distroarchseries ==
                     self.distroarchseries,
                 binarypackagerelease=self.binarypackagerelease.debug_package,

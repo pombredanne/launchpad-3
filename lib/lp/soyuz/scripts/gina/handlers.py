@@ -726,8 +726,6 @@ class SourcePackagePublisher:
                          source_publishinghistory.status.title)
                 return
 
-        # Create the Publishing entry, with status PENDING so that we
-        # can republish this later into a Soyuz archive.
         entry = getUtility(IPublishingSet).newSourcePublication(
             distroseries=self.distroseries,
             sourcepackagerelease=sourcepackagerelease,
@@ -735,6 +733,7 @@ class SourcePackagePublisher:
             section=section,
             pocket=self.pocket,
             archive=archive)
+        entry.setPublished()
         log.info('Source package %s (%s) published' % (
             entry.sourcepackagerelease.sourcepackagename.name,
             entry.sourcepackagerelease.version))
@@ -975,14 +974,13 @@ class BinaryPackagePublisher:
                          binpkg_publishinghistory.status.title)
                 return
 
-        # Create the Publishing entry with status PENDING.
         BinaryPackagePublishingHistory(
             binarypackagerelease=binarypackage.id,
             component=component.id,
             section=section.id,
             priority=priority,
             distroarchseries=self.distroarchseries.id,
-            status=PackagePublishingStatus.PENDING,
+            status=PackagePublishingStatus.PUBLISHED,
             datecreated=UTC_NOW,
             datepublished=UTC_NOW,
             pocket=self.pocket,
