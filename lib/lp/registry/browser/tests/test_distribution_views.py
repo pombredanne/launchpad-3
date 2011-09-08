@@ -304,25 +304,16 @@ class TestDistroEditView(TestCaseWithFactory):
            error_msg,
            view.widget_errors.get('require_virtualized'))
 
-
-class TestDistroEditView(TestCaseWithFactory):
-    """Test the +edit page for a distro."""
-
-    layer = DatabaseFunctionalLayer
-
     def test_package_derivatives_email(self):
         # Test that the edit form allows changing package_derivatives_email
-        distro = self.factory.makeDistribution()
+        edit_form = self.getDefaultEditDict()
         email = '{package_name}_thing@foo.com'
-        form = {
-            'field.package_derivatives_email': email,
-            'field.actions.change': 'Change',
-            }
-        with person_logged_in(distro.owner):
-            create_initialized_view(
-                distro, '+edit', principal=distro.owner, method="POST",
-                form=form)
-        self.assertEqual(distro.package_derivatives_email, email)
+        edit_form['field.package_derivatives_email'] = email
+
+        create_initialized_view(
+            self.distribution, '+edit', principal=self.distribution.owner,
+            method="POST", form=edit_form)
+        self.assertEqual(self.distribution.package_derivatives_email, email)
 
 
 class TestDistroReassignView(TestCaseWithFactory):
