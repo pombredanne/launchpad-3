@@ -3121,13 +3121,6 @@ ALTER TABLE previewdiff DISABLE TRIGGER ALL;
 ALTER TABLE previewdiff ENABLE TRIGGER ALL;
 
 
-ALTER TABLE staticdiff DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE staticdiff ENABLE TRIGGER ALL;
-
-
 ALTER TABLE branchmergeproposal DISABLE TRIGGER ALL;
 
 
@@ -6345,25 +6338,6 @@ INSERT INTO openididentifier (identifier, account, date_created) VALUES ('zRtPxw
 
 ALTER TABLE openididentifier ENABLE TRIGGER ALL;
 
-
-ALTER TABLE openidrpconfig DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE openidrpconfig ENABLE TRIGGER ALL;
-
-
-ALTER TABLE openidrpsummary DISABLE TRIGGER ALL;
-
-INSERT INTO openidrpsummary (id, account, openid_identifier, trust_root, date_created, date_last_used, total_logins) VALUES (1, 521, 'http://openid.launchpad.dev/+id/no-priv_old_oid', 'https://shop.canonical.com', '2008-01-01 13:01:01.000001', '2008-01-01 13:01:01.000001', 1);
-INSERT INTO openidrpsummary (id, account, openid_identifier, trust_root, date_created, date_last_used, total_logins) VALUES (2, 701, 'http://openid.launchpad.dev/+id/former-user_oid', 'https://shop.canonical.com', '2008-01-05 14:01:01.000001', '2008-01-05 14:01:01.000001', 1);
-INSERT INTO openidrpsummary (id, account, openid_identifier, trust_root, date_created, date_last_used, total_logins) VALUES (3, 521, 'http://openid.launchpad.dev/+id/no-priv_oid', 'https://shop.canonical.com', '2008-02-01 13:01:01.000001', '2008-04-01 18:01:01.000001', 3);
-INSERT INTO openidrpsummary (id, account, openid_identifier, trust_root, date_created, date_last_used, total_logins) VALUES (4, 521, 'http://openid.launchpad.dev/+id/no-priv_oid', 'http://moodle.org', '2008-02-02 14:01:01.000001', '2008-02-02 14:01:01.000001', 1);
-INSERT INTO openidrpsummary (id, account, openid_identifier, trust_root, date_created, date_last_used, total_logins) VALUES (5, 121, 'http://openid.launchpad.dev/+id/name12_oid', 'https://shop.canonical.com', '2008-02-04 13:01:01.000001', '2008-02-04 13:01:01.000001', 1);
-INSERT INTO openidrpsummary (id, account, openid_identifier, trust_root, date_created, date_last_used, total_logins) VALUES (6, 551, 'http://openid.launchpad.dev/+id/marilize_oid', 'https://shop.canonical.com', '2008-01-12 13:01:01.000001', '2008-01-12 13:01:01.000001', 1);
-
-
-ALTER TABLE openidrpsummary ENABLE TRIGGER ALL;
 
 
 ALTER TABLE packagebugsupervisor DISABLE TRIGGER ALL;

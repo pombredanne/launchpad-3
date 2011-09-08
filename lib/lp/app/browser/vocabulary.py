@@ -161,7 +161,9 @@ class PersonPickerEntrySourceAdapter(DefaultPickerEntrySourceAdapter):
                 picker_entry.badges = []
                 for badge_info in badges:
                     picker_entry.badges.append(
-                        dict(url=badge_info.url, alt=badge_info.alt_text))
+                        dict(url=badge_info.url,
+                             label=badge_info.label,
+                             role=badge_info.role))
 
         picker_expander_enabled = kwarg.get('picker_expander_enabled', False)
         for person, picker_entry in izip(term_values, picker_entries):

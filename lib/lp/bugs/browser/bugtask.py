@@ -2726,7 +2726,13 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         search_params = self.buildSearchParams(
             searchtext=searchtext, extra_params=extra_params)
         search_params.user = self.user
-        tasks = context.searchTasks(search_params, prejoins=prejoins)
+        try:
+            tasks = context.searchTasks(search_params, prejoins=prejoins)
+        except ValueError as e:
+            self.request.response.addErrorNotification(str(e))
+            self.request.response.redirect(canonical_url(
+                self.context, rootsite='bugs', view_name='+bugs'))
+            tasks = None
         return tasks
 
     def getWidgetValues(
@@ -3734,7 +3740,7 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
             self._redirectToSearchContext()
 
     def _redirectToSearchContext(self):
-        """Check wether a target was given and redirect to it.
+        """Check whether a target was given and redirect to it.
 
         All the URL parameters will be passed on to the target's +bugs
         page.
