@@ -808,8 +808,6 @@ def connect_string(user, dbname=None):
     # directly.
     from canonical.database.postgresql import ConnectionString
     con_str = ConnectionString(dbconfig.rw_main_master)
-    assert con_str.user is None, (
-        'Connection string already contains username')
     if user is not None:
         con_str.user = user
     if lp.dbhost is not None:
