@@ -309,7 +309,6 @@ from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin,
     )
 from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
-from lp.services.openid.interfaces.openidrpsummary import IOpenIDRPSummarySet
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -4002,9 +4001,7 @@ class PersonEditView(BasePersonEditView):
         new_name = data.get('name')
         bypass_check = self.request.form_ng.getOne(
             'i_know_this_is_an_openid_security_issue', 0)
-        if (new_name and new_name != self.context.name and
-            len(self.unknown_trust_roots_user_logged_in) > 0
-            and not bypass_check):
+        if (new_name and new_name != self.context.name and not bypass_check):
             # Warn the user that they might shoot themselves in the foot.
             self.setFieldError('name', structured(dedent('''
             <div class="inline-warning">
@@ -4017,34 +4014,15 @@ class PersonEditView(BasePersonEditView):
                     >https://help.launchpad.net/OpenID#rename-account</a>
                   for more information.
               </p>
-              <p> You may have used your identifier on the following
-                  sites:<br> %s.
-              </p>
               <p>If you click 'Save' again, we will rename your account
                  anyway.
               </p>
-            </div>'''),
-             ", ".join(self.unknown_trust_roots_user_logged_in)))
+            </div>'''),))
             self.i_know_this_is_an_openid_security_issue_input = dedent("""\
                 <input type="hidden"
                        id="i_know_this_is_an_openid_security_issue"
                        name="i_know_this_is_an_openid_security_issue"
                        value="1">""")
-
-    @cachedproperty
-    def unknown_trust_roots_user_logged_in(self):
-        """The unknown trust roots the user has logged in using OpenID.
-
-        We assume that they logged in using their delegated profile OpenID,
-        since that's the one we advertise.
-        """
-        identifier = IOpenIDPersistentIdentity(self.context)
-        unknown_trust_root_login_records = list(
-            getUtility(IOpenIDRPSummarySet).getByIdentifier(
-                identifier.openid_identity_url, True))
-        return sorted([
-            record.trust_root
-            for record in unknown_trust_root_login_records])
 
     @action(_("Save Changes"), name="save")
     def action_save(self, action, data):
