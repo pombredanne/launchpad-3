@@ -1129,7 +1129,6 @@ COMMENT ON COLUMN Distribution.reviewer_whiteboard IS 'A whiteboard for Launchpa
 COMMENT ON COLUMN Distribution.max_bug_heat IS 'The highest heat value across bugs for this distribution.';
 COMMENT ON COLUMN Distribution.bug_reported_acknowledgement IS 'A message of acknowledgement to display to a bug reporter after they\'ve reported a new bug.';
 COMMENT ON COLUMN Distribution.registrant IS 'The person in launchpad who registered this distribution.';
-COMMENT ON COLUMN Distribution.package_derivatives_email IS 'The optional email address template to use when sending emails about package updates in a distributrion. The string {package_name} in the template will be replaced with the actual package name being updated.';
 
 -- DistroSeries
 
@@ -1213,7 +1212,6 @@ COMMENT ON COLUMN BinaryPackageName.name IS
 
 -- BinaryPackagePublishingHistory
 COMMENT ON TABLE BinaryPackagePublishingHistory IS 'PackagePublishingHistory: The history of a BinaryPackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
-COMMENT ON COLUMN BinaryPackagePublishingHistory.binarypackagename IS 'Reference to a BinaryPackageName.';
 COMMENT ON COLUMN BinaryPackagePublishingHistory.binarypackagerelease IS 'The binarypackage being published.';
 COMMENT ON COLUMN BinaryPackagePublishingHistory.distroarchseries IS 'The distroarchseries into which the binarypackage is being published.';
 COMMENT ON COLUMN BinaryPackagePublishingHistory.status IS 'The current status of the publishing.';
@@ -1678,7 +1676,6 @@ COMMENT ON COLUMN DistroSeries.registrant IS 'The user who registered this distr
 COMMENT ON COLUMN DistroSeries.driver IS 'This is a person or team who can act as a driver for this specific release - note that the distribution drivers can also set goals for any release.';
 COMMENT ON COLUMN DistroSeries.changeslist IS 'The email address (name name) of the changes announcement list for this distroseries. If NULL, no announcement mail will be sent.';
 COMMENT ON COLUMN DistroSeries.defer_translation_imports IS 'Don''t accept PO imports for this release just now.';
-COMMENT ON COLUMN DistroSeries.include_long_descriptions IS 'Include long descriptions in Packages rather than in Translation-en.';
 
 
 -- DistroArchSeries
@@ -1842,7 +1839,6 @@ COMMENT ON COLUMN MirrorSourceContent.component IS 'What component of the distro
 -- SourcePackagePublishingHistory
 
 COMMENT ON TABLE SourcePackagePublishingHistory IS 'SourcePackagePublishingHistory: The history of a SourcePackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.sourcepackagename IS 'Reference to a SourcePackageName.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.sourcepackagerelease IS 'The sourcepackagerelease being published.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.distroseries IS 'The distroseries into which the sourcepackagerelease is being published.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.status IS 'The current status of the publishing.';
@@ -1860,6 +1856,7 @@ COMMENT ON COLUMN SourcePackagePublishingHistory.removed_by IS 'Person responsib
 COMMENT ON COLUMN SourcePackagePublishingHistory.removal_comment IS 'Reason why the publication was removed.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.archive IS 'The target archive for this publishing record.';
 COMMENT ON COLUMN SourcePackagePublishingHistory.ancestor IS 'The source package record published immediately before this one.';
+COMMENT ON COLUMN SourcePackagePublishingHistory.creator IS 'The creator of this publishing record.';
 
 -- Packaging
 COMMENT ON TABLE Packaging IS 'DO NOT JOIN THROUGH THIS TABLE. This is a set
@@ -1904,7 +1901,6 @@ COMMENT ON COLUMN PackagingJob.job_type IS 'An enumeration specifying the type o
 COMMENT ON COLUMN PackagingJob.productseries IS 'The productseries of the Packaging.';
 COMMENT ON COLUMN PackagingJob.sourcepackagename IS 'The sourcepackage of the Packaging.';
 COMMENT ON COLUMN PackagingJob.distroseries IS 'The distroseries of the Packaging.';
-COMMENT ON COLUMN PackagingJob.potemplate IS 'A POTemplate to restrict the job to or NULL if all templates need to be handled.';
 
 -- Translator / TranslationGroup
 
