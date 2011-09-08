@@ -495,6 +495,27 @@ class Dominator:
             self._sortPackages(sources, generalization), generalization)
         flush_database_updates()
 
+    def findPublishedSourcePackageNames(self, distroseries, pocket):
+        """Find names of currently published source packages."""
+        result = IStore(SourcePackageName).find(
+            SourcePackageName.name,
+            join_spph_spr(),
+            join_spr_spn(),
+            self._composeActiveSourcePubsCondition(distroseries, pocket))
+        return result.config(distinct=True)
+
+    def findPublishedSPPHs(self, distroseries, pocket, package_name):
+        """Find currently published source publications for given package."""
+        # Avoid circular imports.
+        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+
+        return IStore(SourcePackagePublishingHistory).find(
+            SourcePackagePublishingHistory,
+            join_spph_spr(),
+            join_spr_spn(),
+            SourcePackageName.name == package_name,
+            self._composeActiveSourcePubsCondition(distroseries, pocket))
+
     def dominateRemovedSourceVersions(self, distroseries, pocket,
                                       package_name, live_versions):
         """Dominate source publications based on a set of "live" versions.
@@ -512,19 +533,9 @@ class Dominator:
         :param live_versions: Iterable of all version strings that are to
             remain active.
         """
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import SourcePackagePublishingHistory
-
         generalization = GeneralizedPublication(is_source=True)
-
-        package_pubs = IStore(SourcePackagePublishingHistory).find(
-            SourcePackagePublishingHistory,
-            join_spph_spr(),
-            join_spr_spn(),
-            SourcePackageName.name == package_name,
-            self._composeActiveSourcePubsCondition(distroseries, pocket))
-
-        self.dominatePackage(package_pubs, live_versions, generalization)
+        pubs = self.findPublishedSPPHs(distroseries, pocket, package_name)
+        self.dominatePackage(pubs, live_versions, generalization)
 
     def judge(self, distroseries, pocket):
         """Judge superseded sources and binaries."""
