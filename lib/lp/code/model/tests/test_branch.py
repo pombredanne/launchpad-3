@@ -18,6 +18,7 @@ from bzrlib.revision import NULL_REVISION
 from pytz import UTC
 import simplejson
 from sqlobject import SQLObjectNotFound
+from storm.expr import Join
 from storm.locals import Store
 from testtools import ExpectedException
 import transaction
@@ -28,6 +29,9 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.launchpad.testing.databasehelpers import (
+    remove_all_sample_data_branches,
+    )
 from canonical.launchpad.webapp.interfaces import IOpenLaunchBag
 from canonical.testing.layers import (
     AppServerLayer,
@@ -96,7 +100,7 @@ from lp.code.model.branch import (
     DeletionCallable,
     DeletionOperation,
     update_trigger_modified_fields,
-    )
+    transitive_branch_visibility_query, Branch)
 from lp.code.model.branchjob import (
     BranchDiffJob,
     BranchJob,
@@ -114,6 +118,7 @@ from lp.code.model.revision import Revision
 from lp.code.tests.helpers import add_revision_to_branch
 from lp.codehosting.safe_open import BadUrl
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.model.product import Product
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.services.osutils import override_environ
 from lp.services.propertycache import clear_property_cache
@@ -2846,15 +2851,97 @@ class TestMergeQueue(TestCaseWithFactory):
 
 
 class TestTransitiveBranchPrivacyQuery(TestCaseWithFactory):
-    """Test query to find transitively private branches."""
-    def test_public(self):
-        pass
+    """Test query to find transitively private/public branches."""
 
-    def test_explicitly_private(self):
-        pass
+    layer = DatabaseFunctionalLayer
 
-    def test_transitively_private(self):
-        pass
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        remove_all_sample_data_branches()
+
+    def test_public_branches(self):
+        # The branch visibility query only returns public branches.
+        public_branch = self.factory.makeBranch()
+        self.factory.makeBranch(private=True)
+        stacked_on = self.factory.makeBranch(private=True)
+        self.factory.makeBranch(stacked_on=stacked_on)
+        branch_query = transitive_branch_visibility_query(is_private=False)
+        branches = IStore(Branch).find(
+            Branch,
+            Branch.id.is_in(branch_query)
+        )
+        self.assertEquals([public_branch], list(branches))
+
+    def test_private_branches(self):
+        # The branch visibility query only returns private branches.
+        self.factory.makeBranch()
+        private_branch = self.factory.makeBranch(private=True)
+        stacked_on = self.factory.makeBranch(private=True)
+        transitively_private_branch = self.factory.makeBranch(
+            stacked_on=stacked_on)
+        branch_query = transitive_branch_visibility_query(is_private=True)
+        branches = IStore(Branch).find(
+            Branch,
+            Branch.id.is_in(branch_query)
+        )
+        self.assertContentEqual(
+            [private_branch, stacked_on, transitively_private_branch],
+            list(branches))
+
+    def test_branch_filter(self):
+        # The branch visibility query works with a filter term.
+        self.factory.makeBranch()
+        private_branch = self.factory.makeBranch(private=True, name='foo')
+        stacked_on = self.factory.makeBranch(private=True)
+        transitively_private_branch = self.factory.makeBranch(
+            stacked_on=stacked_on, name='foobar')
+        branch_query = transitive_branch_visibility_query(
+            is_private=True,
+            branch_filter=Branch.name.is_in(['foo', 'foobar']))
+        branches = IStore(Branch).find(
+            Branch,
+            Branch.id.is_in(branch_query)
+        )
+        self.assertContentEqual(
+            [private_branch, transitively_private_branch], list(branches))
+
+    def test_branch_filter_multiple_terms(self):
+        # The branch visibility query works with a list of filter terms.
+        self.factory.makeBranch()
+        product = self.factory.makeProduct()
+        private_branch = self.factory.makeProductBranch(
+            product=product, private=True, name='foo')
+        stacked_on = self.factory.makeBranch(private=True)
+        self.factory.makeBranch(stacked_on=stacked_on, name='foobar')
+        filter = [Branch.name.is_in(['foo', 'foobar']),
+                  Branch.product == product]
+        branch_query = transitive_branch_visibility_query(
+            is_private=True, branch_filter=filter)
+        branches = IStore(Branch).find(
+            Branch,
+            Branch.id.is_in(branch_query)
+        )
+        self.assertEqual([private_branch], list(branches))
+
+    def test_branch_filter_with_extra_tables(self):
+        # The branch visibility query works when the filter terms require
+        # extra tables to be in the initial branch query.
+        self.factory.makeBranch()
+        product = self.factory.makeProduct(name='bar')
+        private_branch = self.factory.makeProductBranch(
+            product=product, private=True, name='foo')
+        stacked_on = self.factory.makeBranch(private=True)
+        self.factory.makeBranch(stacked_on=stacked_on, name='foobar')
+        filter = [Branch.name.is_in(['foo', 'foobar']),
+                  Product.name == 'bar']
+        extra_tables = [Join(Product, Branch.product == Product.id)]
+        branch_query = transitive_branch_visibility_query(
+            is_private=True, branch_filter=filter, extra_tables=extra_tables)
+        branches = IStore(Branch).find(
+            Branch,
+            Branch.id.is_in(branch_query)
+        )
+        self.assertEqual([private_branch], list(branches))
 
 
 class TestWebservice(TestCaseWithFactory):

@@ -300,7 +300,8 @@ class BranchLookup:
             (Branch.id),
             Branch.id == branch_id,
             Branch.id.is_in(
-                transitive_branch_visibility_query(is_private=False))
+                transitive_branch_visibility_query(
+                    is_private=False, branch_filter=(Branch.id == branch_id)))
         ).one()
         if result is None:
             return None, None
@@ -319,7 +320,9 @@ class BranchLookup:
             (Branch.id, Branch.unique_name),
             Branch.unique_name.is_in(prefixes),
             Branch.id.is_in(
-                transitive_branch_visibility_query(is_private=False))
+                transitive_branch_visibility_query(
+                    is_private=False,
+                    branch_filter=Branch.unique_name.is_in(prefixes)))
         ).one()
         if result is None:
             return None, None

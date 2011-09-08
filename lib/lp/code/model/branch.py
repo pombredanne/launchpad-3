@@ -27,7 +27,9 @@ from sqlobject import (
     )
 from storm import Undef
 from storm.expr import (
+    Alias,
     And,
+    Cast,
     Count,
     Desc,
     NamedFunc,
@@ -35,6 +37,8 @@ from storm.expr import (
     Or,
     Select,
     SQL,
+    Union,
+    With,
     )
 from storm.info import ClassAlias
 from storm.locals import (
@@ -1436,23 +1440,50 @@ def branch_modified_subscriber(branch, event):
     send_branch_modified_notifications(branch, event)
 
 
-def transitive_branch_visibility_query(is_private):
+def transitive_branch_visibility_query(is_private, branch_filter=None,
+                                       extra_tables=None):
     """Construct a query returning the ids of public or private branches.
 
     A branch is private even if it is itself public if it is stacked on a
     private branch - this rule is transitive so we need to use SQL
     recursion to perform the id lookup.
     """
-    with_stmt = SQL("""
-        recursive stacked_branches as (
-            select branch.id, cast(private as int) as private from branch
-            union all
-            select branch.id,
-            cast(stacked_branches.private as int) as private
-            from stacked_branches, branch
-            where branch.stacked_on = stacked_branches.id
-        )
-    """)
+
+    # If we want public branches, we can immediately filter out those that are
+    # private from the initial query. This makes the subsequent iteration more
+    # efficient.
+    privacy_short_circuit = None
+    if not is_private:
+        privacy_short_circuit = Branch.explicitly_private == False
+    if branch_filter:
+        if isinstance(branch_filter, list):
+            if privacy_short_circuit:
+                branch_filter.append(privacy_short_circuit)
+            branch_filter = And(*branch_filter)
+    else:
+        branch_filter = privacy_short_circuit or Undef
+
+    branch_tables = [Branch]
+    if extra_tables:
+        branch_tables.extend(extra_tables)
+    StackedBranches = ClassAlias(Branch, "stacked_branches")
+    with_sql = Union(
+        Select(
+            [Branch.id,
+             Branch.stacked_onID,
+             Alias(Cast(Branch.explicitly_private, "INT"), "private")],
+            branch_filter,
+            branch_tables
+        ),
+        Select(
+            [StackedBranches.id,
+             Branch.stacked_onID,
+             Alias(
+                 Cast(Branch.explicitly_private, "INT"), "private")],
+            StackedBranches.stacked_onID == Branch.id,
+            tables=[Branch, "stacked_branches"]
+        ), all=False
+    )
     privacy_term = SQL("Sum(private) %s 0" % ('>' if is_private else '='))
     StackedBranches = ClassAlias(Branch, "stacked_branches")
     return Select(
@@ -1460,5 +1491,5 @@ def transitive_branch_visibility_query(is_private):
         tables=["stacked_branches"],
         group_by=StackedBranches.id,
         having=privacy_term,
-        with_=with_stmt
+        with_=With('stacked_branches', with_sql, recursive=True)
     )
