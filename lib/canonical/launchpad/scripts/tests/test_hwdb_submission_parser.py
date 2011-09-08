@@ -925,7 +925,7 @@ invalid line
         All "method substitutes" return a valid result.
         """
 
-        def __init__(self, logger=None):
+        def __init__(self, logger=None, record_warnings=True):
             super(self.__class__, self).__init__(logger)
             self.hal_result = 'parsed HAL data'
             self.processors_result = 'parsed processor data'
@@ -1346,7 +1346,7 @@ invalid line
         All "method substitutes" return a valid result.
         """
 
-        def __init__(self, logger=None):
+        def __init__(self, logger=None, record_warnings=True):
             SubmissionParser.__init__(self, logger)
             self.summary_result = 'parsed summary'
             self.hardware_result = 'parsed hardware'

@@ -14,6 +14,7 @@ __all__ = [
     'BugNavigation',
     'BugSecrecyEditView',
     'BugSetNavigation',
+    'BugSubscriptionPortletDetails',
     'BugTextView',
     'BugURL',
     'BugView',
@@ -37,8 +38,14 @@ from lazr.enum import (
     )
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful import (
+    EntryResource,
+    ResourceJSONEncoder,
+    )
+from lazr.restful.interface import copy_field
 from lazr.restful.interfaces import IJSONRequestCache
 import pytz
+from simplejson import dumps
 from zope import formlib
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
@@ -48,10 +55,7 @@ from zope.interface import (
     Interface,
     providedBy,
     )
-from zope.schema import (
-    Bool,
-    Choice,
-    )
+from zope.schema import Choice
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
@@ -580,32 +584,10 @@ class BugView(LaunchpadView, BugViewMixin):
             attachment.libraryfile, attachment).http_url
 
 
-class BugSubscriptionPortletView(LaunchpadView, BugViewMixin):
-    """View class for the subscription portlet."""
+class BugSubscriptionPortletDetails:
+    """A mixin used to collate bug subscription details for a view."""
 
-    # We want these strings to be available for the template and for the
-    # JavaScript.
-    notifications_text = {
-        'not_only_other_subscription': _('You are'),
-        'only_other_subscription': _(
-            'You have subscriptions that may cause you to receive '
-            'notifications, but you are'),
-        'direct_all': _('subscribed to all notifications for this bug.'),
-        'direct_metadata': _(
-            'subscribed to all notifications except comments for this bug.'),
-        'direct_lifecycle': _(
-            'subscribed to notifications when this bug is closed or '
-            'reopened.'),
-        'not_direct': _(
-            "not directly subscribed to this bug's notifications."),
-        'muted': _(
-            'Your personal email notifications from this bug are muted.'),
-        }
-
-    def initialize(self):
-        """Initialize the view to handle the request."""
-        LaunchpadView.initialize(self)
-        user = self.user
+    def extractBugSubscriptionDetails(self, user, bug, cache):
         # We are using "direct" to represent both direct and personal
         # (not team).
         self.direct_notifications = False
@@ -617,11 +599,8 @@ class BugSubscriptionPortletView(LaunchpadView, BugViewMixin):
         self.any_subscription_notifications = False
         self.muted = False
         if user is not None:
-            bug = self.context
             has_structural_subscriptions = not (
                 get_structural_subscriptions_for_bug(bug, user).is_empty())
-            cache = IJSONRequestCache(self.request).objects
-            cache['notifications_text'] = self.notifications_text
             self.muted = bug.isMuted(user)
             psi = PersonSubscriptions(user, bug)
             if psi.direct.personal:
@@ -653,6 +632,38 @@ class BugSubscriptionPortletView(LaunchpadView, BugViewMixin):
                 self.direct_notifications)
         self.user_should_see_mute_link = (
             self.any_subscription_notifications or self.muted)
+
+
+class BugSubscriptionPortletView(LaunchpadView,
+                                 BugSubscriptionPortletDetails, BugViewMixin):
+    """View class for the subscription portlet."""
+
+    # We want these strings to be available for the template and for the
+    # JavaScript.
+    notifications_text = {
+        'not_only_other_subscription': _('You are'),
+        'only_other_subscription': _(
+            'You have subscriptions that may cause you to receive '
+            'notifications, but you are'),
+        'direct_all': _('subscribed to all notifications for this bug.'),
+        'direct_metadata': _(
+            'subscribed to all notifications except comments for this bug.'),
+        'direct_lifecycle': _(
+            'subscribed to notifications when this bug is closed or '
+            'reopened.'),
+        'not_direct': _(
+            "not directly subscribed to this bug's notifications."),
+        'muted': _(
+            'Your personal email notifications from this bug are muted.'),
+        }
+
+    def initialize(self):
+        """Initialize the view to handle the request."""
+        LaunchpadView.initialize(self)
+        cache = IJSONRequestCache(self.request).objects
+        self.extractBugSubscriptionDetails(self.user, self.context, cache)
+        if self.user:
+            cache['notifications_text'] = self.notifications_text
 
 
 class BugWithoutContextView:
@@ -801,10 +812,8 @@ class BugMarkAsDuplicateView(BugEditViewBase):
         self.updateBugFromData(data)
 
 
-class BugSecrecyEditView(BugEditViewBase):
-    """Page for marking a bug as a private/public."""
-
-    field_names = ['private', 'security_related']
+class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
+    """Form for marking a bug as a private/public."""
 
     @property
     def label(self):
@@ -812,26 +821,18 @@ class BugSecrecyEditView(BugEditViewBase):
 
     page_title = label
 
-    def setUpFields(self):
-        """Make the read-only version of the form fields writable."""
-        private_field = Bool(
-            __name__='private',
-            title=_("This bug report should be private"),
-            required=False,
-            description=_("Private bug reports are visible only to "
-                          "their subscribers."),
-            default=False)
-        security_related_field = Bool(
-            __name__='security_related',
-            title=_("This bug is a security vulnerability"),
-            required=False, default=False)
+    class schema(Interface):
+        """Schema for editing secrecy info."""
+        private_field = copy_field(IBug['private'], readonly=False)
+        security_related_field = copy_field(
+            IBug['security_related'], readonly=False)
 
-        super(BugSecrecyEditView, self).setUpFields()
-        self.form_fields = self.form_fields.omit('private')
-        self.form_fields = self.form_fields.omit('security_related')
-        self.form_fields = (
-            formlib.form.Fields(private_field) +
-            formlib.form.Fields(security_related_field))
+    @property
+    def next_url(self):
+        """Return the next URL to call when this call completes."""
+        if not self.request.is_ajax:
+            return canonical_url(self.context)
+        return None
 
     @property
     def initial_values(self):
@@ -867,9 +868,18 @@ class BugSecrecyEditView(BugEditViewBase):
                 changed_fields.append('security_related')
             notify(ObjectModifiedEvent(
                     bug, bug_before_modification, changed_fields))
+        if self.request.is_ajax:
+            if private_changed:
+                return self._getSubscriptionDetails()
+            else:
+                return ''
 
-        # Apply other changes.
-        self.updateBugFromData(data)
+    def _getSubscriptionDetails(self):
+        cache = dict()
+        self.extractBugSubscriptionDetails(self.user, self.context.bug, cache)
+        return dumps(
+            cache, cls=ResourceJSONEncoder,
+            media_type=EntryResource.JSON_TYPE)
 
     def _handlePrivacyChanged(self, user_will_be_subscribed):
         """Handle the case where the privacy of the bug has been changed.

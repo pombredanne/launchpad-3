@@ -19,6 +19,7 @@ __all__ = [
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+import simplejson
 import transaction
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import (
@@ -47,6 +48,7 @@ from canonical.launchpad.webapp.interfaces import (
     IAlwaysSubmittedWidget,
     ICheckBoxWidgetLayout,
     IMultiLineWidgetLayout,
+    INotificationResponse,
     UnsafeFormGetSubmissionError,
     )
 from canonical.launchpad.webapp.menu import escape
@@ -133,7 +135,22 @@ class LaunchpadFormView(LaunchpadView):
             self.form_result = action.success(data)
             if self.next_url:
                 self.request.response.redirect(self.next_url)
+        if self.request.is_ajax:
+            self._processNotifications(self.request)
         self.action_taken = action
+
+    def _processNotifications(self, request):
+        """Add any notification messages to the response headers."""
+        if not INotificationResponse.providedBy(request.response):
+            return
+        notifications = ([(notification.level, notification.message)
+             for notification in request.response.notifications])
+        if notifications:
+            json_notifications = simplejson.dumps(notifications)
+        else:
+            json_notifications = simplejson.dumps(None)
+        request.response.setHeader(
+            'X-Lazr-Notifications', json_notifications)
 
     def render(self):
         """Return the body of the response.

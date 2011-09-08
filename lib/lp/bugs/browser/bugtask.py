@@ -247,6 +247,7 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -910,10 +911,14 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @cachedproperty
     def linked_branches(self):
         """Filter out the bug_branch links to non-visible private branches."""
-        linked_branches = []
-        for linked_branch in self.context.bug.linked_branches:
-            if check_permission('launchpad.View', linked_branch.branch):
-                linked_branches.append(linked_branch)
+        linked_branches = list(
+            self.context.bug.getVisibleLinkedBranches(
+                self.user, eager_load=True))
+        # This is an optimization for when we look at the merge proposals.
+        if linked_branches:
+            list(getUtility(IAllBranches).getMergeProposals(
+                for_branches=[link.branch for link in linked_branches],
+                eager_load=True))
         return linked_branches
 
     @property
@@ -2721,7 +2726,13 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         search_params = self.buildSearchParams(
             searchtext=searchtext, extra_params=extra_params)
         search_params.user = self.user
-        tasks = context.searchTasks(search_params, prejoins=prejoins)
+        try:
+            tasks = context.searchTasks(search_params, prejoins=prejoins)
+        except ValueError as e:
+            self.request.response.addErrorNotification(str(e))
+            self.request.response.redirect(canonical_url(
+                self.context, rootsite='bugs', view_name='+bugs'))
+            tasks = None
         return tasks
 
     def getWidgetValues(
@@ -2819,6 +2830,10 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         return self.isUpstreamProduct or not (
             IProduct.providedBy(self.context) or
             IProjectGroup.providedBy(self.context))
+
+    def shouldShowTeamPortlet(self):
+        """Should the User's Teams portlet me shown in the results?"""
+        return False
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""
@@ -3725,7 +3740,7 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
             self._redirectToSearchContext()
 
     def _redirectToSearchContext(self):
-        """Check wether a target was given and redirect to it.
+        """Check whether a target was given and redirect to it.
 
         All the URL parameters will be passed on to the target's +bugs
         page.
