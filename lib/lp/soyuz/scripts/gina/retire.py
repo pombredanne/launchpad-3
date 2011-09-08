@@ -10,7 +10,14 @@ __all__ = [
 
 from zope.component import getUtility
 
-from lp.archivepublisher.domination import Dominator
+# XXX JeroenVermeulen 2011-09-08, bug=844550: The GeneralizedPublication
+# import violates import policy and elicits a warning from the test
+# suite.  The warning helps remind us to retire this code as soon as
+# possible.
+from lp.archivepublisher.domination import (
+    Dominator,
+    GeneralizedPublication,
+    )
 from lp.registry.interfaces.distribution import IDistributionSet
 
 
@@ -19,9 +26,39 @@ def dominate_imported_source_packages(logger, distro_name, series_name,
     """Perform domination."""
     series = getUtility(IDistributionSet)[distro_name].getSeries(series_name)
     dominator = Dominator(logger, series.main_archive)
-    for package_name, entries in packages_map.src_map.iteritems():
-        live_versions = [
-            entry['Version']
-            for entry in entries if 'Version' in entry]
+
+    # Dominate packages found in the Sources list we're importing.
+    package_names = dominator.findPublishedSourcePackageNames(series, pocket)
+    for package_name in package_names:
+        entries = packages_map.src_map.get(package_name)
+
+        if entries is None:
+            # XXX JeroenVermeulen 2011-09-08, bug=844550: This is a
+            # transitional hack.  The database is full of "Published"
+            # Debian SPPHs whose packages have actually been deleted.
+            # In the future such publications should simply be marked
+            # Deleted, but for the legacy baggage we currently carry
+            # around we'll just do traditional domination first: pick
+            # the latest Published version, and mark the rest of the
+            # SPPHs as superseded by that version.  The latest version
+            # will then, finally, be marked appropriately Deleted once
+            # we remove this transitional hack.
+            # To remove the transitional hack, just let live_versions
+            # default to the empty list instead of doing this:
+            pubs = dominator.findPublishedSPPHs(series, pocket, package_name)
+            generalization = GeneralizedPublication(is_source=True)
+            pubs_dict = dominator._sortPackages(pubs, generalization)
+            sorted_pubs = pubs_dict[package_name]
+            if len(sorted_pubs) <= 1:
+                # If there's only one published SPPH, the transitional
+                # code will just leave it Published.  Don't bother; the
+                # migration will be costly enough as it is.
+                continue
+            live_versions = [sorted_pubs[0].sourcepackagerelease.version]
+        else:
+            live_versions = [
+                entry['Version']
+                for entry in entries if 'Version' in entry]
+
         dominator.dominateRemovedSourceVersions(
             series, pocket, package_name, live_versions)
