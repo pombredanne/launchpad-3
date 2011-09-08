@@ -11,7 +11,7 @@ ALTER TABLE SourcePackagePublishingHistory
 
 -- We create a partial index because:
 -- - we are only interested in non-null creators;
--- - the index creation will be quick (spph has ~1.6M rows atm).
+-- - the index creation needs to be quick (spph has ~1.6M rows atm).
 CREATE INDEX sourcepackagepublishinghistory__creator__idx
     ON SourcePackagePublishingHistory(creator)
         WHERE creator is not Null;
