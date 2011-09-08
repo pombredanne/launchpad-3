@@ -39,7 +39,7 @@ The activity log itself is presented as a table.
     Date | Who | What changed | Old value | New value | Message
     2005-08-10 16:30:32 | Sample Person | bug |  |  | assigned to source ...
     2005-08-10 16:30:47 | Sample Person | bug |  |  | assigned to source ...
-    2006-02-24 21:34:52 | Foo Bar | mozilla-    firefox: statusexplanation |  |  |
+    2006-02-24 21:34:52 | Foo Bar | mozilla-firefox: statusexplanation |  |  |
 
 The bug page contains a link to the activity log.
 

@@ -13,7 +13,6 @@ from lazr.lifecycle.interfaces import IObjectModifiedEvent
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.answers.notification import QuestionNotification
 from lp.bugs.interfaces.bugtask import IBugTask
-from lp.services.mail.mailwrapper import MailWrapper
 
 
 def get_email_template(filename):
@@ -63,11 +62,10 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
             'question-linked-bug-status-updated.txt') % {
                 'bugtask_target_name': self.bugtask.target.displayname,
                 'question_id': self.question.id,
-                'question_title':self.question.title,
+                'question_title': self.question.title,
                 'question_url': canonical_url(self.question),
-                'bugtask_url':canonical_url(self.bugtask),
+                'bugtask_url': canonical_url(self.bugtask),
                 'bug_id': self.bugtask.bug.id,
                 'bugtask_title': self.bugtask.bug.title,
                 'old_status': self.old_bugtask.status.title,
                 'new_status': self.bugtask.status.title}
-
