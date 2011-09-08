@@ -43,10 +43,14 @@ from twisted.internet import (
     reactor,
     )
 from twisted.internet.defer import (
+    inlineCallbacks,
     succeed,
     )
 from twisted.protocols import amp
-from twisted.python import log
+from twisted.python import (
+    failure,
+    log,
+    )
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -475,18 +479,17 @@ class TwistedJobRunner(BaseJobRunner):
             oops = self._doOops(job, sys.exc_info())
             self._logOopsId(oops['id'])
 
+    @inlineCallbacks
     def runAll(self):
         """Run all ready jobs."""
         self.pool.start()
         try:
-            jobs = list(self.job_source.iterReady())
-            if len(jobs) == 0:
+            try:
+                for job in self.job_source.iterReady():
+                    yield self.runJobInSubprocess(job)
                 self.terminated()
-                return
-            d = self.runJobInSubprocess(jobs[0])
-            for job in jobs[1:]:
-                d.addCallback(lambda ignored: self.runJobInSubprocess(job))
-            d.addCallbacks(self.terminated, self.failed)
+            except:
+                self.failed(failure.Failure())
         except:
             self.terminated()
             raise
