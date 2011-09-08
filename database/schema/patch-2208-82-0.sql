@@ -16,4 +16,4 @@ CREATE INDEX sourcepackagepublishinghistory__creator__idx
     ON SourcePackagePublishingHistory(creator)
         WHERE creator is not Null;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 82, 0);
