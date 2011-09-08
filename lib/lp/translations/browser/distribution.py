@@ -146,4 +146,5 @@ class DistributionSettingsView(TranslationsMixin, DistributionEditView):
 
     @action('Change', name='change')
     def edit(self, action, data):
+        self.change_archive_fields(data)
         self.updateContextFromData(data)

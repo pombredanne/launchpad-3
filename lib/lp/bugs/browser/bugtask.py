@@ -674,7 +674,14 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     def initialize(self):
         """Set up the needed widgets."""
         bug = self.context.bug
-        IJSONRequestCache(self.request).objects['bug'] = bug
+        cache = IJSONRequestCache(self.request)
+        cache.objects['bug'] = bug
+        cache.objects['total_comments_and_activity'] = (
+            self.total_comments + self.total_activity)
+        cache.objects['initial_comment_batch_offset'] = (
+            self.visible_initial_comments)
+        cache.objects['first visible_recent_comment'] = (
+            self.total_comments - self.visible_recent_comments)
 
         # See render() for how this flag is used.
         self._redirecting_to_bug_list = False
@@ -740,21 +747,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             for activity in self.context.bug.activity
             if interesting_match(activity.whatchanged) is not None)
 
-    @cachedproperty
-    def activity_and_comments(self):
-        """Build list of comments interleaved with activities
-
-        When activities occur on the same day a comment was posted,
-        encapsulate them with that comment.  For the remainder, group
-        then as if owned by the person who posted the first action
-        that day.
-
-        If the number of comments exceeds the configured maximum limit, the
-        list will be truncated to just the first and last sets of comments.
-
-        The division between the most recent and oldest is marked by an entry
-        in the list with the key 'num_hidden' defined.
-        """
+    def _getEventGroups(self, batch_size=None, offset=None):
         # Ensure truncation results in < max_length comments as expected
         assert(config.malone.comments_list_truncate_oldest_to
                + config.malone.comments_list_truncate_newest_to
@@ -781,7 +774,37 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
         event_groups = group_comments_with_activity(
             comments=visible_comments,
-            activities=self.interesting_activity)
+            activities=self.interesting_activity,
+            batch_size=batch_size, offset=offset)
+        return event_groups
+
+    @cachedproperty
+    def _event_groups(self):
+        """Return a sorted list of event groups for the current BugTask.
+
+        This is a @cachedproperty wrapper around _getEventGroups(). It's
+        here so that we can override it in descendant views, passing
+        batch size parameters and suchlike to _getEventGroups() as we
+        go.
+        """
+        return self._getEventGroups()
+
+    @cachedproperty
+    def activity_and_comments(self):
+        """Build list of comments interleaved with activities
+
+        When activities occur on the same day a comment was posted,
+        encapsulate them with that comment.  For the remainder, group
+        then as if owned by the person who posted the first action
+        that day.
+
+        If the number of comments exceeds the configured maximum limit, the
+        list will be truncated to just the first and last sets of comments.
+
+        The division between the most recent and oldest is marked by an entry
+        in the list with the key 'num_hidden' defined.
+        """
+        event_groups = self._event_groups
 
         def group_activities_by_target(activities):
             activities = sorted(
@@ -874,6 +897,11 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         """We count all comments because the db cannot do visibility yet."""
         return self.context.bug.bug_messages.count() - 1
 
+    @cachedproperty
+    def total_activity(self):
+        """Return the count of all activity items for the bug."""
+        return self.context.bug.activity.count()
+
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""
         return (self.context.bug._indexed_messages(
@@ -887,13 +915,10 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             self.context.bug.getVisibleLinkedBranches(
                 self.user, eager_load=True))
         # This is an optimization for when we look at the merge proposals.
-        # Note that, like all of these sorts of Storm cache optimizations, it
-        # only helps if [launchpad] storm_cache_size in launchpad-lazr.conf is
-        # pretty big--and as of this writing, it isn't for developer
-        # instances.
-        list(getUtility(IAllBranches).getMergeProposals(
-            for_branches=[link.branch for link in linked_branches],
-            eager_load=True))
+        if linked_branches:
+            list(getUtility(IAllBranches).getMergeProposals(
+                for_branches=[link.branch for link in linked_branches],
+                eager_load=True))
         return linked_branches
 
     @property
@@ -1025,6 +1050,54 @@ def bugtask_heat_html(bugtask, target=None):
         '</span>'
         % {'ratio': heat_ratio, 'heat': bugtask.bug.heat})
     return html
+
+
+class BugTaskBatchedCommentsAndActivityView(BugTaskView):
+    """A view for displaying batches of bug comments and activity."""
+
+    # We never truncate comments in this view; there would be no point.
+    visible_comments_truncated_for_display = False
+
+    @property
+    def offset(self):
+        try:
+            return int(self.request.form_ng.getOne('offset'))
+        except TypeError:
+            # We return visible_initial_comments, since otherwise we'd
+            # end up repeating comments that are already visible on the
+            # page.
+            return self.visible_initial_comments
+
+    @property
+    def batch_size(self):
+        try:
+            return int(self.request.form_ng.getOne('batch_size'))
+        except TypeError:
+            return config.malone.comments_list_default_batch_size
+
+    @property
+    def next_batch_url(self):
+        return "%s?offset=%s&batch_size=%s" % (
+            canonical_url(self.context, view_name='+batched-comments'),
+            self.next_offset, self.batch_size)
+
+    @property
+    def next_offset(self):
+        return self.offset + self.batch_size
+
+    @cachedproperty
+    def _event_groups(self):
+        """See `BugTaskView`."""
+        return self._getEventGroups(
+            batch_size=self.batch_size,
+            offset=self.offset)
+
+    @cachedproperty
+    def has_more_comments_and_activity(self):
+        """Return True if there are more camments and activity to load."""
+        return (
+            len(self.activity_and_comments) > 0 and
+            self.next_offset < (self.total_comments + self.total_activity))
 
 
 class BugTaskPortletView:
@@ -2653,7 +2726,13 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         search_params = self.buildSearchParams(
             searchtext=searchtext, extra_params=extra_params)
         search_params.user = self.user
-        tasks = context.searchTasks(search_params, prejoins=prejoins)
+        try:
+            tasks = context.searchTasks(search_params, prejoins=prejoins)
+        except ValueError as e:
+            self.request.response.addErrorNotification(str(e))
+            self.request.response.redirect(canonical_url(
+                self.context, rootsite='bugs', view_name='+bugs'))
+            tasks = None
         return tasks
 
     def getWidgetValues(
@@ -2751,6 +2830,10 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         return self.isUpstreamProduct or not (
             IProduct.providedBy(self.context) or
             IProjectGroup.providedBy(self.context))
+
+    def shouldShowTeamPortlet(self):
+        """Should the User's Teams portlet me shown in the results?"""
+        return False
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""
@@ -3657,7 +3740,7 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
             self._redirectToSearchContext()
 
     def _redirectToSearchContext(self):
-        """Check wether a target was given and redirect to it.
+        """Check whether a target was given and redirect to it.
 
         All the URL parameters will be passed on to the target's +bugs
         page.

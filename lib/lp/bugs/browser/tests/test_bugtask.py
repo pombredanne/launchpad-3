@@ -5,7 +5,10 @@ __metaclass__ = type
 
 import transaction
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
@@ -20,6 +23,7 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
@@ -33,6 +37,7 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.bugs.adapters.bugchange import BugTaskStatusChange
 from lp.bugs.browser.bugtask import (
     BugActivityItem,
     BugTaskEditView,
@@ -109,7 +114,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                78, self.factory.makePerson())
+                79, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -124,45 +129,42 @@ class TestBugTaskView(TestCaseWithFactory):
                 self.factory.makeBugAttachment(bug=task.bug)
         self.assertThat(task, browses_under_limit)
 
+    def makeLinkedBranchMergeProposal(self, sourcepackage, bug, owner):
+        with person_logged_in(owner):
+            f = self.factory
+            target_branch = f.makePackageBranch(
+                sourcepackage=sourcepackage, owner=owner)
+            source_branch = f.makeBranchTargetBranch(
+                target_branch.target, owner=owner)
+            bug.linkBranch(source_branch, owner)
+            return f.makeBranchMergeProposal(
+                target_branch=target_branch,
+                registrant=owner,
+                source_branch=source_branch)
+
     def test_rendered_query_counts_reduced_with_branches(self):
         f = self.factory
         owner = f.makePerson()
         ds = f.makeDistroSeries()
-        sourcepackagenames = [
-            f.makeSourcePackageName('testsourcepackagename%d' % i)
-            for i in range(10)]
-        sourcepackages = [
-            f.makeSourcePackage(
-                sourcepackagename=name, distroseries=ds, publish=True)
-            for name in sourcepackagenames]
         bug = f.makeBug()
-        bugtasks = []
+        sourcepackages = [
+            f.makeSourcePackage(distroseries=ds, publish=True)
+            for i in range(5)]
         for sp in sourcepackages:
             bugtask = f.makeBugTask(bug=bug, owner=owner, target=sp)
-            bugtasks.append(bugtask)
-        task = bugtasks[0]
-        url = canonical_url(task)
+        url = canonical_url(bug.default_bugtask)
         recorder = QueryCollector()
         recorder.register()
         self.addCleanup(recorder.unregister)
-        self.invalidate_caches(task)
+        self.invalidate_caches(bug.default_bugtask)
         self.getUserBrowser(url, owner)
         # At least 20 of these should be removed.
         self.assertThat(recorder, HasQueryCount(LessThan(100)))
         count_with_no_branches = recorder.count
-        self.invalidate_caches(task)
-        with person_logged_in(owner):
-            for sp in sourcepackages:
-                target_branch = f.makePackageBranch(
-                    sourcepackage=sp, owner=owner)
-                source_branch = f.makeBranchTargetBranch(
-                    target_branch.target, owner=owner)
-                bug.linkBranch(source_branch, owner)
-                f.makeBranchMergeProposal(
-                    target_branch=target_branch,
-                    registrant=owner,
-                    source_branch=source_branch)
-        self.getUserBrowser(url, owner)
+        for sp in sourcepackages:
+            self.makeLinkedBranchMergeProposal(sp, bug, owner)
+        self.invalidate_caches(bug.default_bugtask)
+        self.getUserBrowser(url, owner)  # This triggers the query recorder.
         # Ideally this should be much fewer, but this tries to keep a win of
         # removing more than half of these.
         self.assertThat(recorder, HasQueryCount(
@@ -1037,3 +1039,90 @@ class TestBugActivityItem(TestCaseWithFactory):
         self.assertEquals(
             "- foo<br />+ bar &amp;&lt;&gt;",
             BugActivityItem(bug.activity[-1]).change_details)
+
+
+class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
+    """Tests for the BugTaskBatchedCommentsAndActivityView class."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def _makeNoisyBug(self, comments_only=False):
+        """Create and return a bug with a lot of comments and activity."""
+        bug = self.factory.makeBug(
+            date_created=datetime.now(UTC) - timedelta(days=30))
+        with person_logged_in(bug.owner):
+            if not comments_only:
+                for i in range(10):
+                    task = self.factory.makeBugTask(bug=bug)
+                    change = BugTaskStatusChange(
+                        task, datetime.now(UTC), task.product.owner, 'status',
+                        BugTaskStatus.NEW, BugTaskStatus.TRIAGED)
+                    bug.addChange(change)
+            for i in range (10):
+                msg = self.factory.makeMessage(
+                    owner=bug.owner, content="Message %i." % i,
+                    datecreated=datetime.now(UTC) - timedelta(days=20-i))
+                bug.linkMessage(msg, user=bug.owner)
+        return bug
+
+    def test_offset(self):
+        # BugTaskBatchedCommentsAndActivityView.offset returns the
+        # current offset being used to select a batch of bug comments
+        # and activity. If one is not specified, the view's
+        # visible_initial_comments count will be returned (so that
+        # comments already shown on the page won't appear twice).
+        bug_task = self.factory.makeBugTask()
+        view = create_initialized_view(bug_task, '+batched-comments')
+        self.assertEqual(view.visible_initial_comments, view.offset)
+        view = create_initialized_view(
+            bug_task, '+batched-comments', form={'offset': 100})
+        self.assertEqual(100, view.offset)
+
+    def test_batch_size(self):
+        # BugTaskBatchedCommentsAndActivityView.batch_size returns the
+        # current batch_size being used to select a batch of bug comments
+        # and activity or the default configured batch size if one has
+        # not been specified.
+        bug_task = self.factory.makeBugTask()
+        view = create_initialized_view(bug_task, '+batched-comments')
+        self.assertEqual(
+            config.malone.comments_list_default_batch_size,
+            view.batch_size)
+        view = create_initialized_view(
+            bug_task, '+batched-comments', form={'batch_size': 20})
+        self.assertEqual(20, view.batch_size)
+
+    def test_event_groups_only_returns_batch_size_results(self):
+        # BugTaskBatchedCommentsAndActivityView._event_groups will
+        # return only batch_size results.
+        bug = self._makeNoisyBug()
+        view = create_initialized_view(
+            bug.default_bugtask, '+batched-comments',
+            form={'batch_size': 10})
+        self.assertEqual(10, len([group for group in view._event_groups]))
+
+    def test_activity_and_comments_matches_unbatched_version(self):
+        # BugTaskBatchedCommentsAndActivityView extends BugTaskView in
+        # order to add the batching logic and reduce rendering
+        # overheads. The results of activity_and_comments is the same
+        # for both.
+        # We create a bug with comments only so that we can test the
+        # contents of activity_and_comments properly. Trying to test it
+        # with multiply different datatypes is fragile at best.
+        bug = self._makeNoisyBug(comments_only=True)
+        # We create a batched view with an offset of 0 so that all the
+        # comments are returned.
+        batched_view = create_initialized_view(
+            bug.default_bugtask, '+batched-comments',
+            form={'offset': 0})
+        unbatched_view = create_initialized_view(
+            bug.default_bugtask, '+index')
+        self.assertEqual(
+            len(unbatched_view.activity_and_comments),
+            len(batched_view.activity_and_comments))
+        for i in range(len(unbatched_view.activity_and_comments)):
+            unbatched_item = unbatched_view.activity_and_comments[i]
+            batched_item = batched_view.activity_and_comments[i]
+            self.assertEqual(
+                unbatched_item['comment'].text_for_display,
+                batched_item['comment'].text_for_display)

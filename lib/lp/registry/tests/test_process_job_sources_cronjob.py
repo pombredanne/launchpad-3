@@ -8,6 +8,7 @@ __metaclass__ = type
 import transaction
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import LaunchpadScriptLayer
 from lp.registry.interfaces.teammembership import (
@@ -18,6 +19,7 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+from lp.testing.matchers import DocTestMatches
 
 
 class ProcessJobSourceTest(TestCaseWithFactory):
@@ -72,6 +74,16 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
     layer = LaunchpadScriptLayer
     script = 'cronscripts/process-job-source-groups.py'
 
+    def getJobSources(self, *groups):
+        sources = config['process-job-source-groups'].job_sources
+        sources = (source.strip() for source in sources.split(','))
+        sources = (source for source in sources if source in config)
+        if len(groups) != 0:
+            sources = (
+                source for source in sources
+                if config[source].crontab_group in groups)
+        return sorted(set(sources))
+
     def tearDown(self):
         super(ProcessJobSourceGroupsTest, self).tearDown()
         self.layer.force_dirty_database()
@@ -119,3 +131,25 @@ class ProcessJobSourceGroupsTest(TestCaseWithFactory):
             error)
         self.assertIn('DEBUG   MembershipNotificationJob sent email', error)
         self.assertIn('Ran 1 MembershipNotificationJob jobs.', error)
+
+    def test_exclude(self):
+        # Job sources can be excluded with a --exclude switch.
+        args = ["MAIN"]
+        for source in self.getJobSources("MAIN"):
+            args.extend(("--exclude", source))
+        returncode, output, error = run_script(self.script, args)
+        expected = "INFO    Creating lockfile: ...\n"
+        self.assertThat(error, DocTestMatches(expected))
+
+    def test_exclude_non_existing_group(self):
+        # If a job source specified by --exclude does not exist the script
+        # continues, logging a short info message about it.
+        args = ["MAIN"]
+        for source in self.getJobSources("MAIN"):
+            args.extend(("--exclude", source))
+        args.extend(("--exclude", "BobbyDazzler"))
+        returncode, output, error = run_script(self.script, args)
+        expected = (
+            "INFO    Creating lockfile: ...\n"
+            "INFO    'BobbyDazzler' is not in MAIN\n")
+        self.assertThat(error, DocTestMatches(expected))
