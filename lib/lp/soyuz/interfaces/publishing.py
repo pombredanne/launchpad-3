@@ -488,7 +488,7 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             IPerson,
             title=_('Publication Creator'),
             description=_('The IPerson who created this publication.'),
-            required=False,
+            required=False, readonly=True
         ))
 
     # Really IBinaryPackagePublishingHistory, see below.
