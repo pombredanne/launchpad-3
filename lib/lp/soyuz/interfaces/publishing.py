@@ -483,7 +483,13 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
         description=_('The previous release of this source package.'),
         required=False, readonly=True)
 
-    creator = Attribute("Person that created this publication.")
+    creator = exported(
+        Reference(
+            IPerson,
+            title=_('Publication Creator'),
+            description=_('The IPerson who created this publication.'),
+            required=False,
+        ))
 
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)
