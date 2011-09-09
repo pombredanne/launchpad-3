@@ -797,6 +797,10 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertEqual(self.parent.sourcecount, child.sourcecount)
         self.assertEqual(child.binarycount, 0)
         self.assertEqual(builds.count(), self.parent.sourcecount)
+        for build in builds:
+            # Normally scored at 1760 but 1760 - COPY_ARCHIVE_SCORE_PENALTY
+            # is -840.
+            self.assertEqual(-840, build.api_score)
 
     def test_limit_packagesets_rebuild_and_one_das(self):
         # We can limit the source packages copied, and only builds
