@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """FTPMaster utilities."""
@@ -52,6 +52,7 @@ from lp.registry.interfaces.pocket import (
     )
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.services.browser_helpers import get_plural_text
 from lp.services.scripts.base import (
     LaunchpadScript,
     LaunchpadScriptFailure,
@@ -198,7 +199,6 @@ class ArchiveCruftChecker:
                 while parsed_sources.Step():
                     source = parsed_sources.Section.Find("Package")
                     source_version = parsed_sources.Section.Find("Version")
-                    architecture = parsed_sources.Section.Find("Architecture")
                     binaries = parsed_sources.Section.Find("Binary")
                     for binary in [
                         item.strip() for item in binaries.split(',')]:
@@ -868,8 +868,8 @@ class SyncSource:
         if it wasn't.
         """
         try:
-            libraryfilealias = self.todistro.getFileByName(
-                filename, source=True, binary=False)
+            libraryfilealias = self.todistro.main_archive.getFileByName(
+                filename)
         except NotFoundError:
             return None
 
@@ -896,10 +896,13 @@ class SyncSource:
             file_type = determine_source_file_type(filename)
             # set the return code if an orig was, in fact,
             # fetched from Librarian
-            if not file_type in (SourcePackageFileType.ORIG_TARBALL,
-                                 SourcePackageFileType.COMPONENT_ORIG_TARBALL):
+            orig_types = (
+                SourcePackageFileType.ORIG_TARBALL,
+                SourcePackageFileType.COMPONENT_ORIG_TARBALL)
+            if file_type not in orig_types:
                 raise SyncSourceError(
-                    'Oops, only orig tarball can be retrieved from librarian.')
+                    'Oops, only orig tarball can be retrieved from '
+                    'librarian.')
             retrieved.append(filename)
 
         return retrieved
@@ -1254,10 +1257,10 @@ class PackageRemover(SoyuzScript):
 
         self.logger.info("Removing candidates:")
         for removable in removables:
-            self.logger.info('\t%s' % removable.displayname)
+            self.logger.info('\t%s', removable.displayname)
 
-        self.logger.info("Removed-by: %s" % removed_by.displayname)
-        self.logger.info("Comment: %s" % self.options.removal_comment)
+        self.logger.info("Removed-by: %s", removed_by.displayname)
+        self.logger.info("Comment: %s", self.options.removal_comment)
 
         removals = []
         for removable in removables:
@@ -1266,14 +1269,12 @@ class PackageRemover(SoyuzScript):
                 removal_comment=self.options.removal_comment)
             removals.append(removable)
 
-        if len(removals) == 1:
-            self.logger.info(
-                "%s package successfully removed." % len(removals))
-        elif len(removals) > 1:
-            self.logger.info(
-                "%s packages successfully removed." % len(removals))
-        else:
+        if len(removals) == 0:
             self.logger.info("No package removed (bug ?!?).")
+        else:
+            self.logger.info(
+                "%d %s successfully removed.", len(removals),
+                get_plural_text(len(removals), "package", "packages"))
 
         # Information returned mainly for the benefit of the test harness.
         return removals
@@ -1385,7 +1386,6 @@ class ManageChrootScript(SoyuzScript):
 
         [action] = self.args
 
-        distribution = self.location.distribution
         series = self.location.distroseries
 
         try:

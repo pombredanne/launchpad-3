@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
@@ -39,7 +39,6 @@ from canonical.database.constants import (
     UTC_NOW,
     )
 from canonical.launchpad.database.librarian import TimeLimitedToken
-from lp.services.messages.model.message import Message
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken,
     OAuthNonce,
@@ -61,7 +60,6 @@ from canonical.testing.layers import (
     ZopelessDatabaseLayer,
     )
 from lp.answers.model.answercontact import AnswerContact
-from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
@@ -91,8 +89,9 @@ from lp.scripts.garbo import (
     OpenIDConsumerAssociationPruner,
     UnusedSessionPruner,
     )
-from lp.services.log.logger import NullHandler
 from lp.services.job.model.job import Job
+from lp.services.log.logger import NullHandler
+from lp.services.messages.model.message import Message
 from lp.services.session.model import (
     SessionData,
     SessionPkgData,
@@ -848,7 +847,8 @@ class TestGarbo(TestCaseWithFactory):
         db_branch.branch_format = BranchFormat.BZR_BRANCH_5
         db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
         Store.of(db_branch).flush()
-        branch_job = BranchUpgradeJob.create(db_branch)
+        branch_job = BranchUpgradeJob.create(
+            db_branch, self.factory.makePerson())
         branch_job.job.date_finished = THIRTY_DAYS_AGO
 
         self.assertEqual(
@@ -876,13 +876,14 @@ class TestGarbo(TestCaseWithFactory):
             branch_format=BranchFormat.BZR_BRANCH_5,
             repository_format=RepositoryFormat.BZR_KNIT_1)
 
-        branch_job = BranchUpgradeJob.create(db_branch)
+        branch_job = BranchUpgradeJob.create(
+            db_branch, self.factory.makePerson())
         branch_job.job.date_finished = THIRTY_DAYS_AGO
 
         db_branch2 = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_5,
             repository_format=RepositoryFormat.BZR_KNIT_1)
-        BranchUpgradeJob.create(db_branch2)
+        BranchUpgradeJob.create(db_branch2, self.factory.makePerson())
 
         self.runDaily()
 

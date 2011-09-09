@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212
@@ -86,7 +86,7 @@ class CodeImport(SQLBase):
         storm_validator=validate_public_person, notNull=False, default=None)
 
     review_status = EnumCol(schema=CodeImportReviewStatus, notNull=True,
-        default=CodeImportReviewStatus.NEW)
+        default=CodeImportReviewStatus.REVIEWED)
 
     rcs_type = EnumCol(schema=RevisionControlSystems,
         notNull=False, default=None)
@@ -116,6 +116,8 @@ class CodeImport(SQLBase):
                 config.codeimport.default_interval_git,
             RevisionControlSystems.HG:
                 config.codeimport.default_interval_hg,
+            RevisionControlSystems.BZR:
+                config.codeimport.default_interval_bzr,
             }
         seconds = default_interval_dict[self.rcs_type]
         return timedelta(seconds=seconds)
@@ -133,11 +135,12 @@ class CodeImport(SQLBase):
             RevisionControlSystems.SVN,
             RevisionControlSystems.GIT,
             RevisionControlSystems.BZR_SVN,
-            RevisionControlSystems.HG):
+            RevisionControlSystems.HG,
+            RevisionControlSystems.BZR):
             return self.url
         else:
             raise AssertionError(
-                'Unknown rcs type: %s'% self.rcs_type.title)
+                "Unknown rcs type: %s" % self.rcs_type.title)
 
     def _removeJob(self):
         """If there is a pending job, remove it."""
@@ -195,7 +198,8 @@ class CodeImport(SQLBase):
             setattr(self, name, value)
         if 'review_status' in data:
             if data['review_status'] == CodeImportReviewStatus.REVIEWED:
-                CodeImportJobWorkflow().newJob(self)
+                if self.import_job is None:
+                    CodeImportJobWorkflow().newJob(self)
             else:
                 self._removeJob()
         event = event_set.newModify(self, user, token)
@@ -217,15 +221,16 @@ class CodeImport(SQLBase):
 
     def requestImport(self, requester, error_if_already_requested=False):
         """See `ICodeImport`."""
-        if self.import_job is None: # not in automatic mode
-            raise CodeImportNotInReviewedState("This code import is %s, and "
-                "must be Reviewed for you to call requestImport."
+        if self.import_job is None:
+            # Not in automatic mode.
+            raise CodeImportNotInReviewedState(
+                "This code import is %s, and must be Reviewed for you to "
+                "call requestImport."
                 % self.review_status.name)
-        if (self.import_job.state != CodeImportJobState.PENDING):
-            assert (self.import_job.state == CodeImportJobState.RUNNING)
-            # Already running
-            raise CodeImportAlreadyRunning("This code import is already "
-                    "running.")
+        if self.import_job.state != CodeImportJobState.PENDING:
+            assert self.import_job.state == CodeImportJobState.RUNNING
+            raise CodeImportAlreadyRunning(
+                "This code import is already running.")
         elif self.import_job.requesting_user is not None:
             if error_if_already_requested:
                 raise CodeImportAlreadyRequested("This code import has "
@@ -252,20 +257,17 @@ class CodeImportSet:
         elif rcs_type in (RevisionControlSystems.SVN,
                           RevisionControlSystems.BZR_SVN,
                           RevisionControlSystems.GIT,
-                          RevisionControlSystems.HG):
+                          RevisionControlSystems.HG,
+                          RevisionControlSystems.BZR):
             assert cvs_root is None and cvs_module is None
             assert url is not None
         else:
             raise AssertionError(
                 "Don't know how to sanity check source details for unknown "
-                "rcs_type %s"%rcs_type)
+                "rcs_type %s" % rcs_type)
         if review_status is None:
-            # Auto approve git and hg imports.
-            if rcs_type in (
-                RevisionControlSystems.GIT, RevisionControlSystems.HG):
-                review_status = CodeImportReviewStatus.REVIEWED
-            else:
-                review_status = CodeImportReviewStatus.NEW
+            # Auto approve imports.
+            review_status = CodeImportReviewStatus.REVIEWED
         if not target.supports_code_imports:
             raise AssertionError("%r doesn't support code imports" % target)
         if owner is None:

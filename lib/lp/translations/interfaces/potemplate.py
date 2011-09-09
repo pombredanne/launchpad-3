@@ -33,6 +33,7 @@ from zope.schema import (
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.app.errors import NotFoundError
+from lp.app.validators.name import valid_name
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
@@ -112,7 +113,7 @@ class IPOTemplate(IRosettaStats):
             "unique name in its package. It's important to get this "
             "correct, because Launchpad will recommend alternative "
             "translations based on the name."),
-        required=True))
+        constraint=valid_name, required=True))
 
     translation_domain = exported(TextLine(
         title=_("Translation domain"),

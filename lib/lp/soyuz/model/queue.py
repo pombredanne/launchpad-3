@@ -1121,13 +1121,11 @@ class PackageUploadSource(SQLBase):
 
     def verifyBeforePublish(self):
         """See `IPackageUploadSource`."""
-        distribution = self.packageupload.distroseries.distribution
         # Check for duplicate filenames currently present in the archive.
         for source_file in self.sourcepackagerelease.files:
             try:
-                published_file = distribution.getFileByName(
-                    source_file.libraryfile.filename, binary=False,
-                    archive=self.packageupload.archive)
+                published_file = self.packageupload.archive.getFileByName(
+                    source_file.libraryfile.filename)
             except NotFoundError:
                 # NEW files are *OK*.
                 continue
@@ -1446,13 +1444,12 @@ class PackageUploadSet:
                             names=None):
         """See `IPackageUploadSet`."""
         # Avoiding circular imports.
-        from lp.registry.model.distroseries import DistroSeries
         from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
         from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
         archives = distroseries.distribution.getArchiveIDList()
         clauses = [
-            DistroSeries.id == PackageUpload.distroseriesID,
+            PackageUpload.distroseries == distroseries,
             PackageUpload.archiveID.is_in(archives),
             PackageUploadBuild.packageuploadID == PackageUpload.id,
             ]

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
@@ -87,14 +87,18 @@ from lp.code.enums import (
     BranchType,
     )
 from lp.code.errors import (
+    AlreadyLatestFormat,
     BranchCannotBePrivate,
     BranchCannotBePublic,
     BranchMergeProposalExists,
     BranchTargetError,
     BranchTypeError,
     CannotDeleteBranch,
+    CannotUpgradeBranch,
+    CannotUpgradeNonHosted,
     InvalidBranchMergeProposal,
     InvalidMergeQueueConfig,
+    UpgradePending,
     )
 from lp.code.event.branchmergeproposal import (
     BranchMergeProposalNeedsReviewEvent,
@@ -167,11 +171,30 @@ class Branch(SQLBase, BzrIdentityMixin):
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
 
-    private = BoolCol(default=False, notNull=True)
+    # This attribute signifies whether *this* branch is private, irrespective
+    # of the state of any stacked on branches.
+    explicitly_private = BoolCol(
+        default=False, notNull=True, dbName='private')
+
+    @property
+    def private(self):
+        return self.explicitly_private or self._isStackedOnPrivate()
+
+    def _isStackedOnPrivate(self, checked_branches=None):
+        # Return True if any of this branch's stacked_on branches is private.
+        is_stacked_on_private = False
+        if self.stacked_on is not None:
+            checked_branches = checked_branches or []
+            checked_branches.append(self)
+            if self.stacked_on not in checked_branches:
+                is_stacked_on_private = (
+                    self.stacked_on.explicitly_private or
+                    self.stacked_on._isStackedOnPrivate(checked_branches))
+        return is_stacked_on_private
 
     def setPrivate(self, private, user):
         """See `IBranch`."""
-        if private == self.private:
+        if private == self.explicitly_private:
             return
         # Only check the privacy policy if the user is not special.
         if (not user_has_special_branch_access(user)):
@@ -181,7 +204,7 @@ class Branch(SQLBase, BzrIdentityMixin):
                 raise BranchCannotBePrivate()
             if not private and not policy.canBranchesBePublic():
                 raise BranchCannotBePublic()
-        self.private = private
+        self.explicitly_private = private
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
@@ -358,10 +381,10 @@ class Branch(SQLBase, BzrIdentityMixin):
     @property
     def landing_candidates(self):
         """See `IBranch`."""
-        non_final = tuple(
-            set(BranchMergeProposalStatus.items) -
-            set(BRANCH_MERGE_PROPOSAL_FINAL_STATES))
-        return self.getMergeProposals(status=non_final)
+        return BranchMergeProposal.select("""
+            BranchMergeProposal.target_branch = %s AND
+            BranchMergeProposal.queue_status NOT IN %s
+            """ % sqlvalues(self, BRANCH_MERGE_PROPOSAL_FINAL_STATES))
 
     @property
     def dependent_branches(self):
@@ -1127,16 +1150,25 @@ class Branch(SQLBase, BzrIdentityMixin):
             DateTrunc(u'day', Revision.revision_date))
         return sorted(results)
 
+    def checkUpgrade(self):
+        if self.branch_type is not BranchType.HOSTED:
+            raise CannotUpgradeNonHosted(self)
+        if self.upgrade_pending:
+            raise UpgradePending(self)
+        if (
+            self.branch_format in CURRENT_BRANCH_FORMATS and
+            self.repository_format in CURRENT_REPOSITORY_FORMATS):
+            raise AlreadyLatestFormat(self)
+
     @property
     def needs_upgrading(self):
         """See `IBranch`."""
-        if self.branch_type is not BranchType.HOSTED:
+        try:
+            self.checkUpgrade()
+        except CannotUpgradeBranch:
             return False
-        if self.upgrade_pending:
-            return False
-        return not (
-            self.branch_format in CURRENT_BRANCH_FORMATS and
-            self.repository_format in CURRENT_REPOSITORY_FORMATS)
+        else:
+            return True
 
     @property
     def upgrade_pending(self):
@@ -1152,10 +1184,10 @@ class Branch(SQLBase, BzrIdentityMixin):
             BranchJob.job_type == BranchJobType.UPGRADE_BRANCH)
         return jobs.count() > 0
 
-    def requestUpgrade(self):
+    def requestUpgrade(self, requester):
         """See `IBranch`."""
         from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
-        return getUtility(IBranchUpgradeJobSource).create(self)
+        return getUtility(IBranchUpgradeJobSource).create(self, requester)
 
     def _checkBranchVisibleByUser(self, user):
         """Is *this* branch visible by the user.
@@ -1163,7 +1195,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         This method doesn't check the stacked upon branch.  That is handled by
         the `visibleByUser` method.
         """
-        if not self.private:
+        if not self.explicitly_private:
             return True
         if user is None:
             return False

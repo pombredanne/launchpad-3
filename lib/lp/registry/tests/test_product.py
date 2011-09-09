@@ -5,7 +5,6 @@ __metaclass__ = type
 
 from cStringIO import StringIO
 import datetime
-import unittest
 
 from lazr.lifecycle.snapshot import Snapshot
 import pytz
@@ -35,6 +34,7 @@ from lp.registry.model.productlicense import ProductLicense
 from lp.testing import (
     login,
     login_person,
+    TestCase,
     TestCaseWithFactory,
     WebServiceTestCase,
     )
@@ -45,6 +45,11 @@ class TestProduct(TestCaseWithFactory):
     """Tests product object."""
 
     layer = DatabaseFunctionalLayer
+
+    def test_pillar_category(self):
+        # Products are really called Projects
+        product = self.factory.makeProduct()
+        self.assertEqual("Project", product.pillar_category)
 
     def test_deactivation_failure(self):
         # Ensure that a product cannot be deactivated if
@@ -97,7 +102,7 @@ class TestProduct(TestCaseWithFactory):
         # milestones should be included.
         product = self.factory.makeProduct(name='foo')
         for i in range(25):
-            milestone_list = self.factory.makeMilestone(
+            self.factory.makeMilestone(
                 product=product,
                 productseries=product.development_focus,
                 name=str(i))
@@ -181,7 +186,7 @@ class TestProduct(TestCaseWithFactory):
             [series.name for series in active_series])
 
 
-class TestProductFiles(unittest.TestCase):
+class TestProductFiles(TestCase):
     """Tests for downloadable product files."""
 
     layer = LaunchpadFunctionalLayer
@@ -201,7 +206,7 @@ class TestProductFiles(unittest.TestCase):
             foo_file, 'text/plain', filename)
         firefox_owner.getControl(name='field.signature').add_file(
             foo_signature, 'text/plain', '%s.asc' % filename)
-        firefox_owner.getControl('Description').value="Foo installer"
+        firefox_owner.getControl('Description').value = "Foo installer"
         firefox_owner.getControl(name="field.contenttype").displayValue = \
            ["Installer file"]
         firefox_owner.getControl("Upload").click()
@@ -235,20 +240,20 @@ class TestProductFiles(unittest.TestCase):
         self.assertEqual(a_element.contents[0].strip(), u'sig')
 
 
-class ProductAttributeCacheTestCase(unittest.TestCase):
+class ProductAttributeCacheTestCase(TestCase):
     """Cached attributes must be cleared at the end of a transaction."""
 
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
+        super(ProductAttributeCacheTestCase, self).setUp()
         self.product = Product.selectOneBy(name='tomcat')
 
     def testLicensesCache(self):
         """License cache should be cleared automatically."""
         self.assertEqual(self.product.licenses,
                          (License.ACADEMIC, License.AFFERO))
-        product_license = ProductLicense(
-            product=self.product, license=License.PYTHON)
+        ProductLicense(product=self.product, license=License.PYTHON)
         # Cache doesn't see new value.
         self.assertEqual(self.product.licenses,
                          (License.ACADEMIC, License.AFFERO))
@@ -258,8 +263,7 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
         # Cache is cleared and it sees database changes that occur
         # before the cache is populated.
         transaction.abort()
-        product_license = ProductLicense(
-            product=self.product, license=License.MIT)
+        ProductLicense(product=self.product, license=License.MIT)
         self.assertEqual(self.product.licenses,
                          (License.ACADEMIC, License.AFFERO, License.MIT))
 
@@ -267,7 +271,7 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
         """commercial_subscription cache should not traverse transactions."""
         self.assertEqual(self.product.commercial_subscription, None)
         now = datetime.datetime.now(pytz.UTC)
-        subscription = CommercialSubscription(
+        CommercialSubscription(
             product=self.product,
             date_starts=now,
             date_expires=now,
@@ -286,7 +290,7 @@ class ProductAttributeCacheTestCase(unittest.TestCase):
 
         # Cache is cleared again.
         transaction.abort()
-        subscription = CommercialSubscription(
+        CommercialSubscription(
             product=self.product,
             date_starts=now,
             date_expires=now,
@@ -378,7 +382,3 @@ class TestWebService(WebServiceTestCase):
         ws_group = self.wsObject(group)
         ws_product.translationgroup = ws_group
         ws_product.lp_save()
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -13,6 +13,10 @@
       <h2>Derived from <tal:name replace="view/number_of_parents"/> parents</h2>
     </tal:multiple_parents>
 
+    <div class="beta">
+      <img src="/@@/beta" alt="[BETA]" />
+    </div>
+
       <tal:diffs define="nb_diffs view/num_version_differences;
                          nb_diffs_in_parent view/num_differences_in_parent;
                          nb_diffs_in_child view/num_differences_in_child;">
@@ -45,10 +49,10 @@
             </a>
           </li>
           <li class="sprite info" tal:condition="nb_diffs_in_child">
+            <tal:differences_count replace="view/wordDifferencesInChild">
+              345 packages
+            </tal:differences_count>
             <a tal:attributes="href view/link_to_differences_in_child">
-              <tal:differences_count replace="view/wordDifferencesInChild">
-                345 packages
-              </tal:differences_count>
               only in
               <tal:child replace="context/displayname">
                 Natty
