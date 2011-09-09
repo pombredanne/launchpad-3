@@ -5,9 +5,9 @@
 
 __metaclass__ = type
 
-import datetime
-
 import apt_pkg
+import datetime
+from operator import attrgetter
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import flush_database_updates
@@ -359,6 +359,20 @@ class TestGeneralizedPublication(TestCaseWithFactory):
             sorted(spphs, cmp=GeneralizedPublication().compare))
 
 
+def jumble(ordered_list):
+    """Jumple the elements of `ordered_list` into a weird order.
+
+    Ordering is very important in domination.  We jumble some of our lists to
+    insure against "lucky coincidences" that might give our tests the right
+    answers for the wrong reasons.
+    """
+    even = [
+        item for offset, item in enumerate(ordered_list) if offset % 2 == 0]
+    odd = [
+        item for offset, item in enumerate(ordered_list) if offset % 2 != 0]
+    return list(reversed(odd)) + even
+
+
 class TestDominatorMethods(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
@@ -464,6 +478,97 @@ class TestDominatorMethods(TestCaseWithFactory):
             [pub.status for pub in pubs])
         self.assertEqual(
             [spr, spr, None], [pub.supersededby for pub in pubs])
+
+    def test_dominatePackage_advanced_scenario(self):
+        # Put dominatePackage through its paces with complex combined
+        # data.
+        # This test should be redundant in theory (which in theory
+        # equates practice but in practice does not).  If this fails,
+        # don't just patch up the code or this test.  Create unit tests
+        # that specifically cover the difference, then change the code
+        # and/or adapt this test to return to harmony.
+        series = self.factory.makeDistroSeries()
+        package = self.factory.makeSourcePackageName()
+        pocket = PackagePublishingPocket.RELEASE
+
+        versions = ["1.%d" % number for number in xrange(4)]
+
+        # We have one package releases for each version.
+        relevant_releases = dict(
+            (version, self.factory.makeSourcePackageRelease(
+                sourcepackagename=package, version=version))
+            for version in jumble(versions))
+
+        # Each of those releases is subsequently published in
+        # different components.
+        components = jumble(
+            [self.factory.makeComponent() for version in versions])
+
+        # Map versions to lists of publications for that version, from
+        # oldest to newest.  Each re-publishing into a different
+        # component is meant to supersede publication into the previous
+        # component.
+        pubs_by_version = dict(
+            (version, [
+                self.factory.makeSourcePackagePublishingHistory(
+                    archive=series.main_archive, distroseries=series,
+                    pocket=pocket, status=PackagePublishingStatus.PUBLISHED,
+                    sourcepackagerelease=relevant_releases[version],
+                    component=component)
+                for component in components])
+            for version in jumble(versions))
+
+        ages = jumble(
+            [datetime.timedelta(age) for age in xrange(len(versions))])
+
+        # Actually the "oldest to newest" order on the publications only
+        # applies to their creation dates.  Their creation orders are
+        # irrelevant.
+        for pubs_list in pubs_by_version.itervalues():
+            alter_creation_dates(pubs_list, ages)
+            pubs_list.sort(key=attrgetter('datecreated'))
+
+        live_versions = ["1.1", "1.2"]
+        last_version_alive = sorted(live_versions)[-1]
+
+        all_pubs = sum(pubs_by_version.itervalues(), [])
+        Dominator(DevNullLogger(), series.main_archive).dominatePackage(
+            all_pubs, live_versions, GeneralizedPublication(True))
+
+        for version in reversed(versions):
+            pubs = pubs_by_version[version]
+
+            if version in live_versions:
+                # Beware: loop-carried variable.  Used locally as well,
+                # but tells later iterations what the highest-versioned
+                # release so far was.  This is used in tracking
+                # supersededby links.
+                superseding_release = pubs[-1].sourcepackagerelease
+
+            if version in live_versions:
+                # The live versions' latest publications are Published,
+                # their older ones Superseded.
+                expected_status = (
+                    [PackagePublishingStatus.SUPERSEDED] * (len(pubs) - 1) +
+                    [PackagePublishingStatus.PUBLISHED])
+                expected_supersededby = (
+                    [superseding_release] * (len(pubs) - 1) + [None])
+            elif version < last_version_alive:
+                # The superseded versions older than the last live
+                # version have all been superseded.
+                expected_status = (
+                    [PackagePublishingStatus.SUPERSEDED] * len(pubs))
+                expected_supersededby = [superseding_release] * len(pubs)
+            else:
+                # Versions that are newer than any live release have
+                # been deleted.
+                expected_status = (
+                    [PackagePublishingStatus.DELETED] * len(pubs))
+                expected_supersededby = [None] * len(pubs)
+
+            self.assertEqual(expected_status, [pub.status for pub in pubs])
+            self.assertEqual(
+                expected_supersededby, [pub.supersededby for pub in pubs])
 
     def test_dominateRemovedSourceVersions_dominates_publications(self):
         # dominateRemovedSourceVersions finds the publications for a
