@@ -13,8 +13,8 @@ import simplejson
 from storm.locals import (
     And,
     Int,
+    JSON,
     Reference,
-    Unicode,
     )
 from zope.interface import implements
 
@@ -52,7 +52,7 @@ class DistributionJob(StormBase):
 
     job_type = EnumCol(enum=DistributionJobType, notNull=True)
 
-    _json_data = Unicode('json_data')
+    metadata = JSON('json_data')
 
     def __init__(self, distribution, distroseries, job_type, metadata):
         super(DistributionJob, self).__init__()
@@ -60,16 +60,12 @@ class DistributionJob(StormBase):
         self.distribution = distribution
         self.distroseries = distroseries
         self.job_type = job_type
-        self._json_data = self.serializeMetadata(metadata)
+        self.metadata = metadata
 
     @classmethod
     def serializeMetadata(cls, metadata_dict):
         """Serialize a dict of metadata into a unicode string."""
         return simplejson.dumps(metadata_dict).decode('utf-8')
-
-    @property
-    def metadata(self):
-        return simplejson.loads(self._json_data)
 
 
 class DistributionJobDerived(BaseRunnableJob):

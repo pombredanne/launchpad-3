@@ -70,8 +70,8 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         packageset2 = self.factory.makePackageset()
 
         overlays = (True, False)
-        overlay_pockets = (('Updates',), ('Release',))
-        overlay_components = (("main",), ("universe",))
+        overlay_pockets = (u'Updates', u'Release')
+        overlay_components = (u"main", u"universe")
         arches = (u'i386', u'amd64')
         packagesets = (packageset1.id, packageset2.id)
         rebuild = False
@@ -84,8 +84,8 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
             "distribution: {distroseries.distribution.name}, "
             "distroseries: {distroseries.name}, "
             "parent[overlay?/pockets/components]: "
-            "{parent1.name}[True/[u'Updates']/[u'main']],"
-            "{parent2.name}[False/[u'Release']/[u'universe']], "
+            "{parent1.name}[True/Updates/main],"
+            "{parent2.name}[False/Release/universe], "
             "architectures: (u'i386', u'amd64'), "
             "packagesets: [u'{packageset1.name}', u'{packageset2.name}'], "
             "rebuild: False>".format(
