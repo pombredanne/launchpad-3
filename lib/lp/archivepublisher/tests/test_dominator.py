@@ -360,7 +360,7 @@ class TestGeneralizedPublication(TestCaseWithFactory):
 
 
 def jumble(ordered_list):
-    """Jumple the elements of `ordered_list` into a weird order.
+    """Jumble the elements of `ordered_list` into a weird order.
 
     Ordering is very important in domination.  We jumble some of our lists to
     insure against "lucky coincidences" that might give our tests the right
