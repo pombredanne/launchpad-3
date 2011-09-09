@@ -7,6 +7,7 @@ __all__ = [
     "InitializeDistroSeriesJob",
 ]
 
+import simplejson
 from zope.interface import (
     classProvides,
     implements,
@@ -205,7 +206,8 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
         # This method is called when error is an instance of
         # self.user_error_types.
         super(InitializeDistroSeriesJob, self).notifyUserError(error)
-        self.metadata = dict(self.metadata, error_description=unicode(error))
+        metadata = dict(self.metadata, error_description=unicode(error))
+        self.context._json_data = simplejson.dumps(metadata).decode("utf-8")
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
