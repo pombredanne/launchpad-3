@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'AnonymousAuthorization',
     'AuthorizationBase',
+    'DelegatedAuthorization',
     ]
 
 from zope.component import queryAdapter
@@ -103,4 +104,42 @@ class AnonymousAuthorization(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """Any authorized user can see this object."""
+        return True
+
+
+class DelegatedAuthorization(AuthorizationBase):
+
+    def __init__(self, obj, forwarded_object=None, permission=None):
+        super(DelegatedAuthorization, self).__init__(obj)
+        self.forwarded_object = forwarded_object
+        if permission is not None:
+            self.permission = permission
+
+    def iter_objects(self):
+        """Iterator of objects used for authentication checking.
+
+        If an object is provided when the class is instantiated, it will be
+        used.  Otherwise this method must be overridden to provide the objects
+        to be used.
+        """
+        if self.forwarded_object is None:
+            raise ValueError(
+                "Either set forwarded_object or override iter_objects.")
+        yield self.forwarded_object
+
+    def iter_adapters(self):
+        return (
+            queryAdapter(obj, IAuthorization, self.permission)
+            for obj in self.iter_objects())
+
+    def checkAuthenticated(self, user):
+        for adapter in self.iter_adapters():
+            if adapter is None or not adapter.checkAuthenticated(user):
+                return False
+        return True
+
+    def checkUnauthenticated(self):
+        for adapter in self.iter_adapters():
+            if adapter is None or not adapter.checkUnauthenticated():
+                return False
         return True

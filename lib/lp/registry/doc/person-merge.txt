@@ -98,18 +98,6 @@ Person' will be an active member of that team.
     >>> marilize in ubuntu_translators.activemembers
     True
 
-Marilize has used OpenID to Login. The OpenIDRPSummaries will be
-transferred to Sample Person.
-
-    >>> from lp.services.openid.interfaces.openidrpsummary import (
-    ...     IOpenIDRPSummarySet)
-    >>> openidrpsummaryset = getUtility(IOpenIDRPSummarySet)
-    >>> summaries = openidrpsummaryset.getByIdentifier(
-    ...     'http://openid.launchpad.dev/+id/marilize_oid')
-    >>> summaries[0].account.displayname
-    u'Marilize Coetzee'
-
-
 Do the merge!
 -------------
 
