@@ -193,9 +193,11 @@ class Dominator:
     def dominatePackage(self, publications, live_versions, generalization):
         """Dominate publications for a single package.
 
-        Active publications for versions in `live_versions` stay active.
-        Any older versions are marked as superseded by the respective
-        oldest live versions that are newer than the superseded ones.
+        The latest publication for any version in `live_versions` stays
+        active.  Any older publications (including older publications for
+        live versions with multiple publications) are marked as superseded by
+        the respective oldest live releases that are newer than the superseded
+        ones.
 
         Any versions that are newer than anything in `live_versions` are
         marked as deleted.  This should not be possible in Soyuz-native
@@ -222,12 +224,21 @@ class Dominator:
             publications, cmp=generalization.compare, reverse=True)
 
         current_dominant = None
+        dominant_version = None
+
         for pub in publications:
-            if generalization.getPackageVersion(pub) in live_versions:
+            version = generalization.getPackageVersion(pub)
+            if version == dominant_version:
+                # This publication is for a live version, but has been
+                # superseded by a newer publication of the same version.
+                # Supersede it.
+                pub.supersede(current_dominant, logger=self.logger)
+            elif version in live_versions:
                 # This publication stays active; if any publications
                 # that follow right after this are to be superseded,
                 # this is the release that they are superseded by.
                 current_dominant = pub
+                dominant_version = version
             elif current_dominant is None:
                 # This publication is no longer live, but there is no
                 # newer version to supersede it either.  Therefore it
