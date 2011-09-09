@@ -488,8 +488,11 @@ class TwistedJobRunner(BaseJobRunner):
         self.pool.start()
         try:
             try:
+                job = None
                 for job in self.job_source.iterReady():
                     yield self.runJobInSubprocess(job)
+                if job is None:
+                    self.logger.info('No jobs to run.')
                 self.terminated()
             except:
                 self.failed(failure.Failure())
