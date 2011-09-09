@@ -64,7 +64,6 @@ from canonical.testing.layers import (
     ZopelessDatabaseLayer,
     )
 from lp.answers.model.answercontact import AnswerContact
-from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnotification import (
     BugNotification,
     BugNotificationRecipient,
