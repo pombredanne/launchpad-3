@@ -228,6 +228,10 @@ class Dominator:
 
         for pub in publications:
             version = generalization.getPackageVersion(pub)
+            # There should never be two published releases with the same
+            # version.  So this comparison is really a string
+            # comparison, not a version comparison: if the versions are
+            # equal by either measure, they're from the same release.
             if dominant_version is not None and version == dominant_version:
                 # This publication is for a live version, but has been
                 # superseded by a newer publication of the same version.
