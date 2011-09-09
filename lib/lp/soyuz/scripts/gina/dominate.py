@@ -36,7 +36,8 @@ def dominate_imported_source_packages(logger, distro_name, series_name,
     from lp.soyuz.enums import PackagePublishingStatus
     from lp.soyuz.model.publishing import SourcePackagePublishingHistory
     SPPH = SourcePackagePublishingHistory
-    spphs = IStore(SPPH).find(
+    store = IStore(SPPH)
+    spphs = store.find(
         SPPH,
         SPPH.archive == series.main_archive,
         SPPH.distroseries == series,

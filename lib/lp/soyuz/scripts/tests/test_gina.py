@@ -77,6 +77,59 @@ class TestGina(TestCaseWithFactory):
             ],
             [pub.status for pub in pubs])
 
+    def test_dominate_imported_source_packages_cleans_up_pending_spphs(self):
+        # XXX JeroenVermeulen 2011-09-08, bug=844550: For transition to
+        # Gina domination, dominate_imported_source_packages turns any
+        # remaining Pending SPPHS into Published ones.
+        series = self.factory.makeDistroSeries()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series, archive=series.main_archive,
+            status=PackagePublishingStatus.PENDING)
+        spr = spph.sourcepackagerelease
+        package_name = spr.sourcepackagename.name
+        logger = DevNullLogger()
+        dominate_imported_source_packages(
+            logger, series.distribution.name, series.name, spph.pocket,
+            FakePackagesMap({package_name: [{"Version": spr.version}]}))
+        self.assertEqual(PackagePublishingStatus.PUBLISHED, spph.status)
+
+    def test_dominate_imported_source_packages_cleans_up_first(self):
+        # XXX JeroenVermeulen 2011-09-08, bug=844550: For transition to
+        # Gina domination, dominate_imported_source_packages turns any
+        # remaining Pending SPPHS into Published ones.  It does this
+        # *before* dominating, so no domination happens while some of
+        # the SPPHs are still mistakenly Pending (which would result in
+        # mistaken deletions).
+        series = self.factory.makeDistroSeries()
+        package = self.factory.makeSourcePackageName()
+        pocket = PackagePublishingPocket.RELEASE
+        versions = ['1.0', '1.1']
+        statuses_before = [
+            PackagePublishingStatus.PUBLISHED,
+            PackagePublishingStatus.PENDING,
+            ]
+        statuses_after = [
+            PackagePublishingStatus.SUPERSEDED,
+            PackagePublishingStatus.PUBLISHED,
+            ]
+        live_version = versions[-1]
+        sprs = [
+            self.factory.makeSourcePackageRelease(
+                sourcepackagename=package, version=version)
+            for version in versions]
+        spphs = [
+            self.factory.makeSourcePackagePublishingHistory(
+                archive=series.main_archive, distroseries=series,
+                sourcepackagerelease=spr, pocket=pocket, status=status)
+            for spr, status in zip(sprs, statuses_before)]
+
+        logger = DevNullLogger()
+        dominate_imported_source_packages(
+            logger, series.distribution.name, series.name, pocket,
+            FakePackagesMap({package.name: [{"Version": live_version}]}))
+
+        self.assertEqual(statuses_after, [spph.status for spph in spphs])
+
 
 class TestSourcePackagePublisher(TestCaseWithFactory):
 
