@@ -451,9 +451,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     ancestor = ForeignKey(
         dbName="ancestor", foreignKey="SourcePackagePublishingHistory",
         default=None)
-    creator = ForeignKey(
-        dbName='creator', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=False, default=None)
 
     @property
     def package_creator(self):
@@ -798,7 +795,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             archive=current.archive)
 
     def copyTo(self, distroseries, pocket, archive, override=None,
-               create_dsd_job=True, creator=None):
+               create_dsd_job=True):
         """See `ISourcePackagePublishingHistory`."""
         component = self.component
         section = self.section
@@ -815,8 +812,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             section,
             pocket,
             ancestor=None,
-            create_dsd_job=create_dsd_job,
-            creator=creator)
+            create_dsd_job=create_dsd_job)
 
     def getStatusSummaryForBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -1483,15 +1479,11 @@ class PublishingSet:
 
     def newSourcePublication(self, archive, sourcepackagerelease,
                              distroseries, component, section, pocket,
-                             ancestor=None, create_dsd_job=True,
-                             creator=None):
+                             ancestor=None, create_dsd_job=True):
         """See `IPublishingSet`."""
         # Avoid circular import.
         from lp.registry.model.distributionsourcepackage import (
             DistributionSourcePackage)
-
-        if creator is None:
-            creator = sourcepackagerelease.creator
 
         pub = SourcePackagePublishingHistory(
             distroseries=distroseries,
@@ -1502,8 +1494,7 @@ class PublishingSet:
             section=section,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
-            ancestor=ancestor,
-            creator=creator)
+            ancestor=ancestor)
         DistributionSourcePackage.ensure(pub)
 
         if create_dsd_job:
