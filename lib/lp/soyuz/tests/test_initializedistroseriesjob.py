@@ -197,12 +197,21 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         self.assertEqual(job.distroseries, distroseries)
 
     def test_error_description_when_no_error(self):
-        # The InitializeDistroSeriesJob.error property returns None when there
-        # has not been an error.
+        # The InitializeDistroSeriesJob.error_description property returns
+        # None when no error description is recorded.
         parent = self.factory.makeDistroSeries()
         distroseries = self.factory.makeDistroSeries()
         job = self.job_source.create(distroseries, [parent.id])
         self.assertIs(None, removeSecurityProxy(job).error_description)
+
+    def test_error_description_set_when_notifying_about_user_errors(self):
+        # error_description is set by notifyUserError().
+        parent = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
+        job = self.job_source.create(distroseries, [parent.id])
+        message = "This is an example message."
+        job.notifyUserError(InitializationError(message))
+        self.assertEqual(message, removeSecurityProxy(job).error_description)
 
 
 class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
