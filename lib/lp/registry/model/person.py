@@ -2663,6 +2663,10 @@ class Person(
         cur.execute(query)
         spph_ids = map(itemgetter(0), cur.fetchall())
 
+        # is_in(x) does not behave if x is [].
+        if len(spph_ids) == 0:
+            return EmptyResultSet()
+
         rset = SourcePackagePublishingHistory.select(
             SourcePackagePublishingHistory.id.is_in(spph_ids),
             orderBy=[
