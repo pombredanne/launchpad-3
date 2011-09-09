@@ -1,5 +1,4 @@
 /* Copyright (c) 2011, Canonical Ltd. All rights reserved. */
-
 YUI({
     base: '../../../../canonical/launchpad/icing/yui/',
     filter: 'raw',
@@ -14,38 +13,48 @@ YUI({
 // Local aliases
 var Assert = Y.Assert,
     ArrayAssert = Y.ArrayAssert;
-
-var suite = new Y.Test.Suite("YOUR TEST SUITE NAME");
+var mynamespace = Y.lp.mynamespace;
+var suite = new Y.Test.Suite("mynamespace Tests");
 
 suite.add(new Y.Test.Case({
+    // Test the setup method.
+    name: 'setup',
 
-    name: 'A TEST CASE NAME',
+    _should: {
+        error: {
+            test_config_undefined: true,
+            }
+        },
 
     setUp: function() {
-        // Monkeypatch LP to avoid network traffic and to make
-        // some things work as expected.
-        Y.lp.client.Launchpad.prototype.named_post =
-          function(url, func, config) {
-            config.on.success();
-          };
-        LP = {
-          'cache': {
-            'bug': {
-              self_link: "http://bugs.example.com/bugs/1234"
-          }}};
-    },
+        this.tbody = Y.get('#milestone-rows');
+        },
 
     tearDown: function() {
-    },
+        delete this.tbody;
+        mynamespace._milestone_row_uri_template = null;
+        mynamespace._tbody = null;
+        },
 
-    /**
-     * The choice edit should be displayed inline.
-     */
-    test_something: function() {
-        // Test something
-    },
+    test_good_config: function() {
+        // Verify the config data is stored.
+        var config = {
+            milestone_row_uri_template: '/uri',
+            milestone_rows_id:  '#milestone-rows'
+            };
+        mynamespace.setup(config);
+        Y.Assert.areSame(
+            config.milestone_row_uri_template,
+            mynamespace._milestone_row_uri_template);
+        Y.Assert.areSame(this.tbody, mynamespace._tbody);
+        },
 
+    test_config_undefined: function() {
+        // Verify an error is thrown if there is no config.
+        mynamespace.setup();
+        },
 }));
+
 
 var handle_complete = function(data) {
     window.status = '::::' + JSON.stringify(data);
