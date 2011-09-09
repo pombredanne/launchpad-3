@@ -37,10 +37,6 @@ of changes to the bug status:
     <BLANKLINE>
         New => Confirmed
     <BLANKLINE>
-    Status change explanation given by No Privileges Person:
-    <BLANKLINE>
-    This bug really happened to me.
-    <BLANKLINE>
     http://.../ubuntu/+bug/...
     "Installer fails on a Mac PPC"
     <BLANKLINE>
