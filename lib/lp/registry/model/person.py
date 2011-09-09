@@ -33,7 +33,10 @@ from datetime import (
     datetime,
     timedelta,
     )
-from operator import attrgetter
+from operator import (
+    attrgetter,
+    itemgetter,
+    )
 import random
 import re
 import subprocess
@@ -297,7 +300,7 @@ from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.soyuz.interfaces.archivesubscriber import IArchiveSubscriberSet
 from lp.soyuz.model.archive import Archive
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.translations.model.hastranslationimports import (
     HasTranslationImportsMixin,
     )
@@ -2598,16 +2601,17 @@ class Person(
             uploader_only=True, ppa_only=True)
 
     def _latestSeriesQuery(self, uploader_only=False, ppa_only=False):
-        """Return the sourcepackagereleases (SPRs) related to this person.
+        """Return the sourcepackagepublishinghistory (SPPHs) related to this
+        person.
 
-        :param uploader_only: controls if we are interested in SPRs where
-            the person in question is only the uploader (creator) and not the
-            maintainer (debian-syncs) if the `ppa_only` parameter is also
-            False, or, if the flag is False, it returns all SPR maintained
-            by this person.
+        :param uploader_only: controls if we are interested in SPPHs related
+            to SPRs where the person in question is only the uploader
+            (creator) and not the maintainer (debian-syncs) if the `ppa_only`
+            parameter is also False, or, if the flag is False, it returns
+            SPPHs related to SPRs maintained by this person.
 
         :param ppa_only: controls if we are interested only in source
-            package releases targeted to any PPAs or, if False, sources
+            package publishings targeted to any PPAs or, if False, sources
             targeted to primary archives.
 
         Active 'ppa_only' flag is usually associated with active
@@ -2639,11 +2643,10 @@ class Person(
 
         query_clauses = " AND ".join(clauses)
         query = """
-            SourcePackageRelease.id IN (
                 SELECT DISTINCT ON (upload_distroseries,
                                     sourcepackagerelease.sourcepackagename,
                                     upload_archive)
-                    sourcepackagerelease.id
+                    spph.id
                 FROM sourcepackagerelease, archive,
                     sourcepackagepublishinghistory as spph
                 WHERE
@@ -2652,15 +2655,24 @@ class Person(
                     %(more_query_clauses)s
                 ORDER BY upload_distroseries,
                     sourcepackagerelease.sourcepackagename,
-                    upload_archive, dateuploaded DESC
-              )
+                    upload_archive,
+                    dateuploaded DESC, spph.datecreated DESC
               """ % dict(more_query_clauses=query_clauses)
 
-        rset = SourcePackageRelease.select(
-            query,
-            orderBy=['-SourcePackageRelease.dateuploaded',
-                     'SourcePackageRelease.id'],
-            prejoins=['sourcepackagename', 'maintainer', 'upload_archive'])
+        cur = cursor()
+        cur.execute(query)
+        spph_ids = map(itemgetter(0), cur.fetchall())
+
+        rset = SourcePackagePublishingHistory.select(
+            SourcePackagePublishingHistory.id.is_in(spph_ids),
+            orderBy=[
+                '-datecreated',
+                ],
+            prejoins=[
+                'sourcepackagerelease.sourcepackagename',
+                'sourcepackagerelease.maintainer',
+                'sourcepackagerelease.upload_archive',
+                ])
 
         return rset
 

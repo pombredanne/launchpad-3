@@ -25,9 +25,9 @@
        replace="structure view/batchnav/@@+navigation-links-upper" />
 
   <tal:ppa-packages
-    define="sourcepackagereleases view/batch">
+    define="spphs view/batch">
 
-  <table class="listing" condition="sourcepackagereleases">
+  <table class="listing" condition="spphs">
     <thead>
       <tr>
         <th>Name</th>
@@ -38,14 +38,14 @@
       </tr>
     </thead>
     <tbody>
-      <div metal:use-macro="template/macros/sourcepackagerelease-ppa-rows" />
+      <div metal:use-macro="template/macros/spph-ppa-rows" />
     </tbody>
   </table>
 
   <tal:navigation_bottom
        replace="structure view/batchnav/@@+navigation-links-lower" />
 
-  <tal:no_packages condition="not: sourcepackagereleases">
+  <tal:no_packages condition="not: spphs">
     <tal:name replace="context/fmt:displayname"/> has no related PPA packages.
   </tal:no_packages>
 
@@ -55,14 +55,14 @@
 </div>
 
 <metal:macros fill-slot="bogus">
-<metal:macro define-macro="sourcepackagerelease-ppa-rows">
+<metal:macro define-macro="spph-ppa-rows">
   <tal:comment replace="nothing">
     This macro expects the following variables defined:
-    :sourcepackagereleases: A list of SourcePackageRelease objects
+    :spphs: A list of SourcePackagePublishingHistory objects
   </tal:comment>
-  <tr tal:repeat="sourcepackagerelease sourcepackagereleases"
+  <tr tal:repeat="spph spphs"
       class="ppa_row">
-  <tal:block define="spr sourcepackagerelease;
+  <tal:block define="spr spph/sourcepackagerelease;
                      distroseries spr/upload_distroseries;
                      ppa spr/upload_archive">
     <td tal:content="spr/sourcepackagename/name">
@@ -82,15 +82,15 @@
       2005-10-24
     </td>
     <td>
-      <tal:block condition="spr/needs_building">
+      <tal:block condition="spph/needs_building">
           Not yet built
       </tal:block>
-      <tal:block condition="not: spr/needs_building">
-          <tal:block repeat="build spr/failed_builds">
+      <tal:block condition="not: spph/needs_building">
+          <tal:block repeat="build spph/failed_builds">
              <a tal:attributes="href build/fmt:url"
                 tal:content="build/distro_arch_series/architecturetag" />
           </tal:block>
-          <tal:block condition="not: spr/failed_builds">
+          <tal:block condition="not: spph/failed_builds">
              None
           </tal:block>
       </tal:block>
