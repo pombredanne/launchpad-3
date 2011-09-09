@@ -282,7 +282,8 @@ class SoyuzTestPublisher:
             datepublished=datepublished,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
-            archive=archive)
+            archive=archive,
+            creator=creator)
 
         return spph
 
