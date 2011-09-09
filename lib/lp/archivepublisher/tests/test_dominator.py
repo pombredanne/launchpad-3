@@ -248,23 +248,24 @@ def list_source_versions(spphs):
     return [spph.sourcepackagerelease.version for spph in spphs]
 
 
+def alter_creation_dates(spphs, ages):
+    """Set `datecreated` on each of `spphs` according to `ages`.
+
+    :param spphs: Iterable of `SourcePackagePublishingHistory`.  Their
+        respective creation dates will be offset by the respective ages found
+        in `ages` (with the two being matched up in the same order).
+    :param ages: Iterable of ages.  Must provide the same number of items as
+        `spphs`.  Ages are `timedelta` objects that will be subtracted from
+        the creation dates on the respective records in `spph`.
+    """
+    for spph, age in zip(spphs, ages):
+        spph.datecreated -= age
+
+
 class TestGeneralizedPublication(TestCaseWithFactory):
     """Test publication generalization helpers."""
 
     layer = ZopelessDatabaseLayer
-
-    def alterCreationDates(self, spphs, ages):
-        """Set `datecreated` on each of `spphs` according to `ages`.
-
-        :param spphs: Iterable of `SourcePackagePublishingHistory`.  Their
-            respective creation dates will be offset by the respective ages
-            found in `ages` (with the two being matched up in the same order).
-        :param ages: Iterable of ages.  Must provide the same number of items
-            as `spphs`.  Ages are `timedelta` objects that will be subtracted
-            from the creation dates on the respective records in `spph`.
-        """
-        for spph, age in zip(spphs, ages):
-            spph.datecreated -= age
 
     def test_getPackageVersion_gets_source_version(self):
         spph = self.factory.makeSourcePackagePublishingHistory()
@@ -327,7 +328,7 @@ class TestGeneralizedPublication(TestCaseWithFactory):
                 sourcepackagerelease=spr, distroseries=distroseries,
                 pocket=pocket)
             for counter in xrange(len(ages))]
-        self.alterCreationDates(spphs, ages)
+        alter_creation_dates(spphs, ages)
 
         self.assertEqual(
             [spphs[2], spphs[0], spphs[1]],
@@ -351,7 +352,7 @@ class TestGeneralizedPublication(TestCaseWithFactory):
                 sourcepackagerelease=self.factory.makeSourcePackageRelease(
                     version=version))
             for counter in xrange(len(ages))]
-        self.alterCreationDates(spphs, ages)
+        alter_creation_dates(spphs, ages)
 
         self.assertEqual(
             [spphs[2], spphs[0], spphs[1]],
@@ -434,6 +435,35 @@ class TestDominatorMethods(TestCaseWithFactory):
             pubs, ['0.1'], GeneralizedPublication(True))
         self.assertEqual(None, pubs[1].supersededby)
         self.assertEqual(PackagePublishingStatus.DELETED, pubs[1].status)
+
+    def test_dominatePackage_supersedes_replaced_pub_for_live_version(self):
+        # Even if a publication record is for a live version, a newer
+        # one for the same version supersedes it.
+        spr = self.factory.makeSourcePackageRelease()
+        series = self.factory.makeDistroSeries()
+        pocket = PackagePublishingPocket.RELEASE
+        pubs = [
+            self.factory.makeSourcePackagePublishingHistory(
+                archive=series.main_archive, distroseries=series,
+                pocket=pocket, status=PackagePublishingStatus.PUBLISHED,
+                sourcepackagerelease=spr)
+            for counter in xrange(3)]
+        alter_creation_dates(pubs, [
+            datetime.timedelta(3),
+            datetime.timedelta(2),
+            datetime.timedelta(1),
+            ])
+
+        self.makeDominator(pubs).dominatePackage(
+            pubs, [spr.version], GeneralizedPublication(True))
+        self.assertEqual([
+            PackagePublishingStatus.SUPERSEDED,
+            PackagePublishingStatus.SUPERSEDED,
+            PackagePublishingStatus.PUBLISHED,
+            ],
+            [pub.status for pub in pubs])
+        self.assertEqual(
+            [spr, spr, None], [pub.supersededby for pub in pubs])
 
     def test_dominateRemovedSourceVersions_dominates_publications(self):
         # dominateRemovedSourceVersions finds the publications for a
