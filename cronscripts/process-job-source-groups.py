@@ -16,6 +16,7 @@ import textwrap
 import _pythonpath
 
 from canonical.config import config
+from canonical.launchpad.helpers import english_list
 from lp.services.propertycache import cachedproperty
 from lp.services.scripts.base import LaunchpadCronScript
 
@@ -68,8 +69,9 @@ class ProcessJobSourceGroups(LaunchpadCronScript):
         # Then, exclude job sources.
         for source in self.options.excluded_job_sources:
             if source not in selected_job_sources:
-                self.logger.info('%r is not in job source groups %s'
-                                  % (source, self.options.groups))
+                self.logger.info(
+                    '%r is not in %s' % (
+                        source, english_list(selected_groups, "or")))
             else:
                 selected_job_sources.remove(source)
         # Process job sources.

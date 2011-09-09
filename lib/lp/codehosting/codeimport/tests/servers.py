@@ -1,9 +1,10 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Server classes that know how to create various kinds of foreign archive."""
 
 __all__ = [
+    'BzrServer',
     'CVSServer',
     'GitServer',
     'MercurialServer',
@@ -13,15 +14,23 @@ __all__ = [
 __metaclass__ = type
 
 from cStringIO import StringIO
+import errno
 import os
 import shutil
 import signal
 import stat
 import subprocess
 import tempfile
-import time
 import threading
+import time
 
+from bzrlib.branch import Branch
+from bzrlib.branchbuilder import BranchBuilder
+from bzrlib.bzrdir import BzrDir
+from bzrlib.tests.test_server import (
+    ReadonlySmartTCPServer_for_testing,
+    TestServer,
+    )
 from bzrlib.tests.treeshape import build_tree_contents
 from bzrlib.transport import Server
 from bzrlib.urlutils import (
@@ -36,16 +45,14 @@ from dulwich.server import (
     DictBackend,
     TCPGitServer,
     )
-from mercurial.ui import (
-    ui as hg_ui,
-    )
 from mercurial.hgweb import (
     hgweb,
     server as hgweb_server,
     )
 from mercurial.localrepo import localrepository
+from mercurial.ui import ui as hg_ui
 import subvertpy.ra
-import svn_oo
+import subvertpy.repos
 
 from lp.services.log.logger import BufferLogger
 
@@ -96,7 +103,7 @@ class SubversionServer(Server):
 
     def createRepository(self, path):
         """Create a Subversion repository at `path`."""
-        svn_oo.Repository.Create(path, BufferLogger())
+        subvertpy.repos.create(path)
 
     def get_url(self):
         """Return a URL to the Subversion repository."""
@@ -111,31 +118,35 @@ class SubversionServer(Server):
         if self._use_svn_serve:
             conf_path = os.path.join(
                 self.repository_path, 'conf/svnserve.conf')
-            with open(conf_path , 'w') as conf_file:
+            with open(conf_path, 'w') as conf_file:
                 conf_file.write('[general]\nanon-access = write\n')
             self._svnserve = subprocess.Popen(
-                ['svnserve', '--daemon', '--foreground', '--root',
-                 self.repository_path])
+                ['svnserve', '--daemon', '--foreground', '--threads',
+                 '--root', self.repository_path])
             delay = 0.1
             for i in range(10):
                 try:
-                    ra = self._get_ra(self.get_url())
-                except subvertpy.SubversionException, e:
-                    if 'Connection refused' in str(e):
+                    self._get_ra(self.get_url())
+                except OSError, e:
+                    if e.errno == errno.ECONNREFUSED:
                         time.sleep(delay)
                         delay *= 1.5
                         continue
                 else:
                     break
             else:
+                self._kill_svnserve()
                 raise AssertionError(
                     "svnserve didn't start accepting connections")
+
+    def _kill_svnserve(self):
+        os.kill(self._svnserve.pid, signal.SIGINT)
+        self._svnserve.communicate()
 
     def stop_server(self):
         super(SubversionServer, self).stop_server()
         if self._use_svn_serve:
-            os.kill(self._svnserve.pid, signal.SIGINT)
-            self._svnserve.communicate()
+            self._kill_svnserve()
 
     def makeBranch(self, branch_name, tree_contents):
         """Create a branch on the Subversion server called `branch_name`.
@@ -342,4 +353,58 @@ class MercurialServer(Server):
             finally:
                 f.close()
             repo[None].add([filename])
-        repo.commit(text='<The commit message>', user='jane Foo <joe@foo.com>')
+        repo.commit(
+            text='<The commit message>', user='jane Foo <joe@foo.com>')
+
+
+class BzrServer(Server):
+
+    def __init__(self, repository_path, use_server=False):
+        super(BzrServer, self).__init__()
+        self.repository_path = repository_path
+        self._use_server = use_server
+
+    def createRepository(self, path):
+        BzrDir.create_branch_convenience(path)
+
+    def makeRepo(self, tree_contents):
+        branch = Branch.open(self.repository_path)
+        branch.get_config().set_user_option("create_signatures", "never")
+        builder = BranchBuilder(branch=branch)
+        actions = [('add', ('', 'tree-root', 'directory', None))]
+        actions += [
+            ('add', (path, path + '-id', 'file', content))
+            for (path, content) in tree_contents]
+        builder.build_snapshot(
+            None, None, actions, committer='Joe Foo <joe@foo.com>',
+                message=u'<The commit message>')
+
+    def get_url(self):
+        if self._use_server:
+            return self._bzrserver.get_url()
+        else:
+            return local_path_to_url(self.repository_path)
+
+    def start_server(self):
+        super(BzrServer, self).start_server()
+        self.createRepository(self.repository_path)
+
+        class LocalURLServer(TestServer):
+            def __init__(self, repository_path):
+                self.repository_path = repository_path
+
+            def start_server(self):
+                pass
+
+            def get_url(self):
+                return local_path_to_url(self.repository_path)
+
+        if self._use_server:
+            self._bzrserver = ReadonlySmartTCPServer_for_testing()
+            self._bzrserver.start_server(
+                LocalURLServer(self.repository_path))
+
+    def stop_server(self):
+        super(BzrServer, self).stop_server()
+        if self._use_server:
+            self._bzrserver.stop_server()

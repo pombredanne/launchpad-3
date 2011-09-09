@@ -1,6 +1,4 @@
-#! /usr/bin/python
-#
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the sendbranchmail script"""
@@ -48,7 +46,7 @@ class TestSendbranchmail(TestCaseWithFactory):
         self.useBzrBranches()
         branch, tree = self.createBranch()
         mail_job = RevisionMailJob.create(
-            branch, 1, 'from@example.org', 'body', True, 'foo')
+            branch, 1, 'from@example.org', 'body', 'foo')
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/sendbranchmail.py', [])
@@ -63,8 +61,8 @@ class TestSendbranchmail(TestCaseWithFactory):
         """Ensure sendbranchmail runs and sends email."""
         self.useTempBzrHome()
         branch = self.factory.makeBranch()
-        RevisionMailJob.create(
-            branch, 1, 'from@example.org', 'body', True, 'foo')
+        RevisionsAddedJob.create(
+            branch, 'rev1', 'rev2', 'from@example.org')
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/sendbranchmail.py', [])

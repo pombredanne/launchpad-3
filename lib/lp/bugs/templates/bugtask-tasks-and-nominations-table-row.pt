@@ -1,44 +1,30 @@
 <tal:bugtask
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  define="expandable view/expandable;
-          indent_task view/shouldIndentTask;
-          is_conjoined_slave view/is_conjoined_slave;
-          tasklink view/taskLink;
-          row_id string:tasksummary${context/id};
-          form_row_id string:task${context/id}">
-  <tr tal:define="editstatus_url string:${context/fmt:url}/+editstatus"
-      tal:attributes="class view/getTaskRowCSSClass; id row_id">
+  define="data view/data">
+  <tr tal:attributes="class data/row_css_class; id data/row_id">
     <td>
-      <metal:expander
-          metal:define-macro="expander"
-          tal:define="expander_link_text expander_link_text|nothing">
-        <a tal:condition="expandable"
-           tal:attributes="href tasklink" class="bugtask-expander">
-          <tal:link_text tal:replace="expander_link_text" />
-          &#8203;
-        </a>
-        <tal:no_expander tal:condition="not: expandable"
-                         tal:replace="expander_link_text" />
-      </metal:expander>
+      <a tal:condition="data/expandable"
+         tal:attributes="href data/task_link" class="bugtask-expander">
+        &#8203;
+      </a>
     </td>
     <td style="padding: 0.3em 0em 0.3em 1.5em"
-        tal:condition="indent_task"
-        tal:define="series_targetname view/getSeriesTargetName">
+        tal:condition="data/indent_task">
       <span class="sprite milestone"></span>
-      <tal:not-conjoined-task condition="not: is_conjoined_slave">
+      <tal:not-conjoined-task condition="not: data/is_conjoined_slave">
         <a
-          tal:attributes="href context/target/fmt:url"
-          tal:content="series_targetname"
+          tal:attributes="href data/target_link"
+          tal:content="view/getSeriesTargetName"
         />
       </tal:not-conjoined-task>
     </td>
-    <td tal:condition="not:indent_task">
-      <span tal:attributes="id string:bugtarget-picker-${row_id}">
+    <td tal:condition="not:data/indent_task">
+      <span tal:attributes="id string:bugtarget-picker-${data/row_id}">
         <span class="yui3-activator-data-box">
           <span title="This project&rsquo;s license has not been specified.">
-            <a tal:attributes="href context/target/fmt:url;
-                               title view/target_link_title;
+            <a tal:attributes="href data/target_link;
+                               title data/target_link_title;
                                class context/target/image:sprite_css"
                tal:content="context/bugtargetdisplayname" />
           </span>
@@ -50,7 +36,7 @@
       </span>
     </td>
 
-    <tal:conjoined-task condition="is_conjoined_slave">
+    <tal:conjoined-task condition="data/is_conjoined_slave">
     <td colspan="5" style="vertical-align: middle">
       <span class="discreet lesser" style="font-size: 100%">
         Status tracked in
@@ -61,79 +47,85 @@
     </td>
     </tal:conjoined-task>
 
-    <tal:not-conjoined-task condition="not:is_conjoined_slave">
+    <tal:not-conjoined-task condition="not:data/is_conjoined_slave">
     <td style="width: 20%; vertical-align: middle">
       <div class="status-content"
-           style="width: 100%; float: left">
+           style="width: 100%; float: left"
+           tal:define="status context/status">
         <a href="+editstatus"
-           tal:attributes="class string:value status${context/status/name};
-                           href editstatus_url"
+           tal:attributes="class string:value status${status/name};
+                           href data/edit_link"
            style="float: left"
-           tal:content="context/status/title" />
+           tal:content="status/title" />
         <a href="+editstatus" style="margin-left: 3px"
-           tal:attributes="href editstatus_url">
+           tal:attributes="href data/edit_link">
           <img class="editicon" src="/@@/edit" />
         </a>
       </div>
     </td>
 
-    <td tal:condition="view/user_can_edit_importance"
+    <td tal:condition="data/user_can_edit_importance"
         style="width: 20%; vertical-align: middle">
       <div class="importance-content"
            style="width: 100%; float: left">
         <a href="+editstatus"
-           tal:attributes="class string:value importance${context/importance/name};
-                           href editstatus_url"
+           tal:attributes="class string:value ${data/importance_css_class};
+                           href data/edit_link"
            style="float: left"
-           tal:content="context/importance/title" />
+           tal:content="data/importance_title" />
         <a href="+editstatus" style="margin-left: 3px"
-           tal:attributes="href editstatus_url">
+           tal:attributes="href data/edit_link">
           <img class="editicon" src="/@@/edit" />
         </a>
       </div>
     </td>
-    <td tal:condition="not: view/user_can_edit_importance"
+    <td tal:condition="not: data/user_can_edit_importance"
         style="width: 15em; vertical-align: middle">
       <div class="importance-content"
            style="width: 100%; float: left">
         <span
-           tal:attributes="class string:value importance${context/importance/name}"
+           tal:attributes="class string:value ${data/importance_css_class}"
            style="float: left"
-           tal:content="context/importance/title" />
+           tal:content="data/importance_title" />
       </div>
     </td>
 
     <td style="width:20%; margin: 0; padding: 0;
-               vertical-align: middle; padding-left: 0.5em">
-      <tal:has_watch condition="context/bugwatch">
-        <div style="text-decoration: none; padding: 0.25em">
-          <tal:bugtracker-active
-              condition="context/bugwatch/bugtracker/active">
-            <span tal:condition="not:context/bugwatch/last_error_type"
-                  class="sprite bug-remote"></span>
-            <a tal:condition="context/bugwatch/last_error_type"
-                tal:attributes="href view/bug_watch_error_message/help_url"
-                target="help"
-                class="icon help">
-              <span class="sprite warning-icon"
-                    tal:attributes="title view/bug_watch_error_message/message"
-                    id="bugwatch-error-sprite"></span>
-            </a>
+               vertical-align: middle; padding-left: 0.5em"
+        tal:define="bugwatch context/bugwatch;">
+      <tal:has_watch condition="bugwatch">
+        <div style="text-decoration: none; padding: 0.25em"
+             tal:define="active_bugtracker bugwatch/bugtracker/active;">
+          <tal:bugtracker-active condition="active_bugtracker">
+            <tal:block define="last_error_type bugwatch/last_error_type;">
+              <span tal:condition="not:last_error_type"
+                    class="sprite bug-remote"></span>
+              <a tal:condition="last_error_type"
+                  tal:attributes="href view/bug_watch_error_message/help_url"
+                  target="help"
+                  class="icon help">
+                <span class="sprite warning-icon"
+                      tal:attributes=
+                            "title view/bug_watch_error_message/message"
+                      id="bugwatch-error-sprite"></span>
+              </a>
+            </tal:block>
           </tal:bugtracker-active>
-          <span tal:condition="not:context/bugwatch/bugtracker/active"
+          <span tal:condition="not:active_bugtracker"
                 class="sprite warning-icon"></span>
-          <a tal:replace="structure context/bugwatch/fmt:external-link" />
+          <a tal:replace="structure bugwatch/fmt:external-link" />
         </div>
       </tal:has_watch>
 
-      <tal:has_no_watch condition="not: context/bugwatch">
-        <span tal:attributes="id string:assignee-picker-${row_id}">
+      <tal:has_no_watch condition="not: bugwatch">
+        <span tal:attributes="id string:assignee-picker-${data/row_id}"
+              tal:define="assignee context/assignee">
           <span class="yui3-activator-data-box">
-            <a tal:condition="context/assignee"
-               tal:attributes="href context/assignee/fmt:url;
-                               class context/assignee/image:sprite_css"
-               tal:content="context/assignee/fmt:displayname" />
-            <tal:unassigned condition="not: context/assignee">
+            <a tal:condition="assignee"
+               tal:attributes="href assignee/fmt:url;
+                               class assignee/image:sprite_css"
+               tal:content="assignee/fmt:displayname" />
+            <tal:unassigned condition="not: assignee">
               Unassigned
             </tal:unassigned>
           </span>
@@ -147,11 +139,11 @@
 
     <td style="width: 20%; vertical-align: middle">
       <div class="milestone-content"
-           tal:condition="view/target_has_milestones"
+           tal:condition="data/target_has_milestones"
            style="width: 100%; float: left">
         <a tal:condition="view/user_can_edit_milestone"
            class="nulltext addicon js-action sprite add"
-           tal:attributes="href editstatus_url;
+           tal:attributes="href data/edit_link;
                            style view/style_for_add_milestone">
           Target to milestone
         </a>
@@ -159,7 +151,7 @@
            tal:attributes="href context/milestone/fmt:url | nothing"
            tal:content="context/milestone/title | nothing" />
         <a tal:condition="view/user_can_edit_milestone"
-           tal:attributes="href editstatus_url"
+           tal:attributes="href data/edit_link"
           ><img class="editicon" src="/@@/edit"
                 tal:attributes="style view/style_for_edit_milestone"
           /></a>
@@ -178,8 +170,8 @@
           Y.lp.bugs.bugtask_index.setup_bugtask_row(${view/js_config});
 
           // Set-up the expander on the bug task summary row.
-          var icon_node = Y.one('tr#${row_id} a.bugtask-expander');
-          var row_node = Y.one('tr#${form_row_id}');
+          var icon_node = Y.one('tr#${data/row_id} a.bugtask-expander');
+          var row_node = Y.one('tr#${data/form_row_id}');
           if (Y.Lang.isValue(row_node)) {
             // When no row is present, this is bug task on a project with
             // multiple per-series tasks, so we do not need to set
@@ -195,8 +187,8 @@
 
   <tal:form condition="view/displayEditForm">
     <tr
-      tal:attributes="id form_row_id"
-      tal:condition="expandable"
+      tal:attributes="id data/form_row_id"
+      tal:condition="data/expandable"
       class="bugtask-collapsible-content unseen"
     >
      <td colspan="7" tal:content="structure view/edit_view" />

@@ -20,38 +20,38 @@ import lp.codehosting
 
 from bzrlib.branch import (
     BranchReferenceFormat,
-    BzrBranchFormat4,
     BzrBranchFormat5,
     BzrBranchFormat6,
     BzrBranchFormat7,
     )
-from bzrlib.bzrdir import (
-    BzrDirFormat4,
-    BzrDirFormat5,
-    BzrDirFormat6,
-    BzrDirMetaFormat1,
-    )
+from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.plugins.loom.branch import (
     BzrBranchLoomFormat1,
     BzrBranchLoomFormat6,
     )
-from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2a
-from bzrlib.repofmt.knitrepo import (
-    RepositoryFormatKnit1,
-    RepositoryFormatKnit3,
-    RepositoryFormatKnit4,
+from bzrlib.plugins.weave_fmt.branch import BzrBranchFormat4
+from bzrlib.plugins.weave_fmt.bzrdir import (
+    BzrDirFormat4,
+    BzrDirFormat5,
+    BzrDirFormat6,
     )
-from bzrlib.repofmt.pack_repo import (
+from bzrlib.plugins.weave_fmt.repository import (
+    RepositoryFormat4,
+    RepositoryFormat5,
+    RepositoryFormat6,
+    RepositoryFormat7,
+    )
+from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2a
+from bzrlib.repofmt.knitpack_repo import (
     RepositoryFormatKnitPack1,
     RepositoryFormatKnitPack3,
     RepositoryFormatKnitPack4,
     RepositoryFormatKnitPack5,
     )
-from bzrlib.repofmt.weaverepo import (
-    RepositoryFormat4,
-    RepositoryFormat5,
-    RepositoryFormat6,
-    RepositoryFormat7,
+from bzrlib.repofmt.knitrepo import (
+    RepositoryFormatKnit1,
+    RepositoryFormatKnit3,
+    RepositoryFormatKnit4,
     )
 from lazr.enum import (
     DBEnumeratedType,

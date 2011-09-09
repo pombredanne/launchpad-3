@@ -9,6 +9,7 @@ from datetime import (
     )
 import re
 import subprocess
+from testtools.matchers import Equals
 from unittest import (
     TestCase,
     TestLoader,
@@ -52,7 +53,8 @@ from lp.registry.interfaces.teammembership import (
     ITeamMembershipSet,
     TeamMembershipStatus,
     )
-from lp.registry.model.teammembership import (
+from lp.registry.model.teammembership import (\
+    find_team_participations,
     TeamMembership,
     TeamParticipation,
     )
@@ -60,8 +62,9 @@ from lp.testing import (
     login_celebrity,
     person_logged_in,
     TestCaseWithFactory,
-    )
+    StormStatementRecorder)
 from lp.testing.mail_helpers import pop_notifications
+from lp.testing.matchers import HasQueryCount
 from lp.testing.storm import reload_object
 
 
@@ -261,6 +264,53 @@ class TeamParticipationTestCase(TestCaseWithFactory):
         return IStore(TeamParticipation).find(TeamParticipation).count()
 
 
+class TestTeamParticipationQuery(TeamParticipationTestCase):
+    """A test case for teammembership.test_find_team_participations."""
+
+    def test_find_team_participations(self):
+        # The correct team participations are found and the query count is 1.
+        self.team1.addMember(self.no_priv, self.foo_bar)
+        self.team2.addMember(self.no_priv, self.foo_bar)
+        self.team1.addMember(self.team2, self.foo_bar, force_team_add=True)
+
+        people = [self.team1, self.team2]
+        with StormStatementRecorder() as recorder:
+            people_teams = find_team_participations(people)
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertContentEqual([self.team1, self.team2], people_teams.keys())
+        self.assertContentEqual([self.team1], people_teams[self.team1])
+        self.assertContentEqual(
+            [self.team1, self.team2], people_teams[self.team2])
+
+    def test_find_team_participations_limited_teams(self):
+        # The correct team participations are found and the query count is 1.
+        self.team1.addMember(self.no_priv, self.foo_bar)
+        self.team2.addMember(self.no_priv, self.foo_bar)
+        self.team1.addMember(self.team2, self.foo_bar, force_team_add=True)
+
+        people = [self.foo_bar, self.team2]
+        teams = [self.team1, self.team2]
+        with StormStatementRecorder() as recorder:
+            people_teams = find_team_participations(people, teams)
+        self.assertThat(recorder, HasQueryCount(Equals(1)))
+        self.assertContentEqual(
+            [self.foo_bar, self.team2], people_teams.keys())
+        self.assertContentEqual(
+            [self.team1, self.team2], people_teams[self.foo_bar])
+        self.assertContentEqual(
+            [self.team1, self.team2], people_teams[self.team2])
+
+    def test_find_team_participations_no_query(self):
+        # Check that no database query is made unless necessary.
+        people = [self.foo_bar, self.team2]
+        teams = [self.foo_bar]
+        with StormStatementRecorder() as recorder:
+            people_teams = find_team_participations(people, teams)
+        self.assertThat(recorder, HasQueryCount(Equals(0)))
+        self.assertContentEqual([self.foo_bar], people_teams.keys())
+        self.assertContentEqual([self.foo_bar], people_teams[self.foo_bar])
+
+
 class TestTeamParticipationHierarchy(TeamParticipationTestCase):
     """Participation management tests using 5 nested teams.
 
@@ -315,7 +365,7 @@ class TestTeamParticipationHierarchy(TeamParticipationTestCase):
             ['name16', 'no-priv', 'team5'], self.team4)
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
         self.assertEqual(
-            previous_count-8,
+            previous_count - 8,
             self.getTeamParticipationCount())
 
     def testRemovingLeafTeam(self):
@@ -333,7 +383,7 @@ class TestTeamParticipationHierarchy(TeamParticipationTestCase):
         self.assertParticipantsEquals(['name16'], self.team4)
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
         self.assertEqual(
-            previous_count-8,
+            previous_count - 8,
             self.getTeamParticipationCount())
 
 
@@ -393,7 +443,7 @@ class TestTeamParticipationTree(TeamParticipationTestCase):
             ['name16', 'no-priv', 'team5'], self.team4)
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
         self.assertEqual(
-            previous_count-4,
+            previous_count - 4,
             self.getTeamParticipationCount())
 
     def testRemoveTeam5FromTeam4(self):
@@ -410,7 +460,7 @@ class TestTeamParticipationTree(TeamParticipationTestCase):
         self.assertParticipantsEquals(['name16'], self.team4)
         self.assertParticipantsEquals(['name16', 'no-priv'], self.team5)
         self.assertEqual(
-            previous_count-4,
+            previous_count - 4,
             self.getTeamParticipationCount())
 
 
@@ -512,7 +562,7 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
         self.assertParticipantsEquals(
             ['name16', 'no-priv', 'team2', 'team4', 'team5'], self.team6)
         self.assertEqual(
-            previous_count-3,
+            previous_count - 3,
             self.getTeamParticipationCount())
 
     def testRemoveTeam5FromTeam4(self):
@@ -529,7 +579,7 @@ class TestTeamParticipationMesh(TeamParticipationTestCase):
         self.assertParticipantsEquals(
             ['name16', 'team2', 'team3', 'team4'], self.team6)
         self.assertEqual(
-            previous_count-10,
+            previous_count - 10,
             self.getTeamParticipationCount())
 
     def testTeam3_deactivateActiveMemberships(self):
@@ -576,7 +626,7 @@ class TestTeamMembership(TestCaseWithFactory):
         """
         login('test@canonical.com')
         person = self.factory.makePerson()
-        login_person(person) # Now login with the future owner of the teams.
+        login_person(person)  # Now login with the future owner of the teams.
         teamA = self.factory.makeTeam(
             person, subscription_policy=TeamSubscriptionPolicy.MODERATED)
         teamB = self.factory.makeTeam(
@@ -836,6 +886,62 @@ class TestTeamMembershipSetStatus(TestCaseWithFactory):
         tm.setStatus(
             TeamMembershipStatus.INVITATION_DECLINED, self.team2.teamowner)
         self.assertEqual(TeamMembershipStatus.INVITATION_DECLINED, tm.status)
+
+    def test_declined_member_can_be_invited(self):
+        # A team can re-invite a declined member.
+        self.team2.addMember(
+            self.team1, self.no_priv, status=TeamMembershipStatus.PROPOSED,
+            force_team_add=True)
+        tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.team1, self.team2)
+        tm.setStatus(
+            TeamMembershipStatus.DECLINED, self.team1.teamowner)
+        tm.setStatus(
+            TeamMembershipStatus.INVITED, self.team1.teamowner)
+        self.assertEqual(TeamMembershipStatus.INVITED, tm.status)
+
+    def test_add_approved(self):
+        # Adding an approved team is a no-op.
+        member_team = self.factory.makeTeam()
+        self.team1.addMember(
+            member_team, self.team1.teamowner)
+        with person_logged_in(member_team.teamowner):
+            member_team.acceptInvitationToBeMemberOf(self.team1, 'alright')
+        self.team1.addMember(
+            member_team, self.team1.teamowner)
+        tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            member_team, self.team1)
+        self.assertEqual(TeamMembershipStatus.APPROVED, tm.status)
+        self.team1.addMember(
+            member_team, member_team.teamowner)
+        self.assertEqual(TeamMembershipStatus.APPROVED, tm.status)
+
+    def test_add_admin(self):
+        # Adding an admin team is a no-op.
+        member_team = self.factory.makeTeam()
+        self.team1.addMember(
+            member_team, self.team1.teamowner,
+            status=TeamMembershipStatus.ADMIN, force_team_add=True)
+        self.team1.addMember(
+            member_team, self.team1.teamowner)
+        tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            member_team, self.team1)
+        self.assertEqual(TeamMembershipStatus.ADMIN, tm.status)
+        self.team1.addMember(
+            member_team, member_team.teamowner)
+        self.assertEqual(TeamMembershipStatus.ADMIN, tm.status)
+
+    def test_implicit_approval(self):
+        # Inviting a proposed person is an implicit approval.
+        member_team = self.factory.makeTeam()
+        self.team1.addMember(
+            member_team, self.team1.teamowner,
+            status=TeamMembershipStatus.PROPOSED, force_team_add=True)
+        self.team1.addMember(
+            member_team, self.team1.teamowner)
+        tm = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            member_team, self.team1)
+        self.assertEqual(TeamMembershipStatus.APPROVED, tm.status)
 
     def test_retractTeamMembership_invited(self):
         # A team can retract a membership invitation.
