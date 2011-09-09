@@ -9,7 +9,6 @@ __all__ = [
 ]
 
 from lazr.delegates import delegates
-import simplejson
 from storm.locals import (
     And,
     Int,
@@ -61,11 +60,6 @@ class DistributionJob(StormBase):
         self.distroseries = distroseries
         self.job_type = job_type
         self.metadata = metadata
-
-    @classmethod
-    def serializeMetadata(cls, metadata_dict):
-        """Serialize a dict of metadata into a unicode string."""
-        return simplejson.dumps(metadata_dict).decode('utf-8')
 
 
 class DistributionJobDerived(BaseRunnableJob):
