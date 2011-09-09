@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """
@@ -14,14 +14,12 @@ import pytz
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
-from lp.archivepublisher import ELIGIBLE_DOMINATION_STATES
-from lp.archivepublisher.config import (
-    getPubConfig,
-    )
+from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.diskpool import DiskPool
 from lp.soyuz.enums import ArchivePurpose
 from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory,
+    inactive_publishing_status,
     ISourcePackagePublishingHistory,
     MissingSymlinkInPool,
     NotInPool,
@@ -122,7 +120,7 @@ class DeathRow:
                   spph.archive = %s AND
                   spph.status NOT IN %s)
         """ % sqlvalues(self.archive, UTC_NOW, self.archive,
-                        ELIGIBLE_DOMINATION_STATES), orderBy="id")
+                        inactive_publishing_status), orderBy="id")
         self.logger.debug("%d Sources" % sources.count())
 
         binaries = BinaryPackagePublishingHistory.select("""
@@ -137,7 +135,7 @@ class DeathRow:
                   bpph.archive = %s AND
                   bpph.status NOT IN %s)
         """ % sqlvalues(self.archive, UTC_NOW, self.archive,
-                        ELIGIBLE_DOMINATION_STATES), orderBy="id")
+                        inactive_publishing_status), orderBy="id")
         self.logger.debug("%d Binaries" % binaries.count())
 
         return (sources, binaries)
@@ -191,7 +189,7 @@ class DeathRow:
         right_now = datetime.datetime.now(pytz.timezone('UTC'))
         for pub in all_publications:
             # Deny removal if any reference is still active.
-            if pub.status not in ELIGIBLE_DOMINATION_STATES:
+            if pub.status not in inactive_publishing_status:
                 return False
             # Deny removal if any reference wasn't dominated yet.
             if pub.scheduleddeletiondate is None:

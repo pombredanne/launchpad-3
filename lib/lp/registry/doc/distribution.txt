@@ -70,8 +70,10 @@ have a SourcePackageName object for it.
 
     >>> from lp.registry.model.sourcepackagename import (
     ...                                          SourcePackageName)
-    >>> from lp.registry.interfaces.distributionsourcepackage import IDistributionSourcePackage
-    >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import IDistributionSourcePackageRelease
+    >>> from lp.registry.interfaces.distributionsourcepackage import (
+    ...     IDistributionSourcePackage)
+    >>> from lp.soyuz.interfaces.distributionsourcepackagerelease import (
+    ...     IDistributionSourcePackageRelease)
 
     >>> evo = SourcePackageName.byName("evolution")
     >>> evo_ubuntu = ubuntu.getSourcePackage(evo)
@@ -250,13 +252,10 @@ SourcePackagePublishingHistory table for the given distroseries.
 Searching for binary packages
 .............................
 
-There are two useful functions for searching binary packages related
-to the distribution, searchBinaryPackages() and searchBinaryPackagesFTI().
-The former only does binary package name matches (optionally a substring
-match) and the latter uses the PostgreSQL Full Text Index searches.
-
-Both functions return DistributionSourcePackageCache objects, which
-makes it very easy to associate the binary name with its source.
+searchBinaryPackages() does a name substring match to find binary
+packages related to the distribution. It returns
+DistributionSourcePackageCache objects, which makes it very easy to
+associate the binary name with its source.
 
 Searching for an exact match on a valid binary name returns the
 expected results:
@@ -292,19 +291,6 @@ for the moment until we have a better FTI rank to order with.
     ...     print result.name
     mozilla-firefox
     pmount
-
-We can do an FTI search:
-
-    >>> fti_results = ubuntu.searchBinaryPackagesFTI("rubbish")
-    >>> fti_results.count()
-    0
-
-    >>> fti_results = ubuntu.searchBinaryPackagesFTI("browser")
-    >>> print results[0]
-    <...DistributionSourcePackageCache instance ...
-
-    >>> print [result.name for result in fti_results]
-    [u'mozilla-firefox']
 
 
 Finding distroseriess and pockets from distribution names
@@ -374,23 +360,6 @@ what component is uploadable to by what person or group of people.
     Ubuntu Team
     partner
     Canonical Partner Developers
-
-When processing an upload we may want to find a file (E.g. if an
-incomplete source is uploaded).
-
-    >>> ubuntu.getFileByName('mozilla-firefox_0.9_i386.deb').getURL()
-    'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb'
-    >>> ubuntu.getFileByName(
-    ...     'mozilla-firefox_0.9_i386.deb', source=False).getURL()
-    'http://localhost:58000/40/mozilla-firefox_0.9_i386.deb'
-    >>> ubuntu.getFileByName('mozilla-firefox_0.9_i386.deb', binary=False)
-    Traceback (most recent call last):
-    ...
-    NotFoundError: 'mozilla-firefox_0.9_i386.deb'
-    >>> ubuntu.getFileByName('', source=False, binary=False)
-    Traceback (most recent call last):
-    ...
-    AssertionError: searching in an explicitly empty space is pointless
 
 
 Launchpad Usage
@@ -591,9 +560,11 @@ We can get only valid specs (those that are not obsolete or superseded):
     ...     # raised.
     ...     owner = spec.owner
     ...     if spec.name in ['cluster-installation', 'revu']:
-    ...         spec.definition_status = SpecificationDefinitionStatus.OBSOLETE
+    ...         spec.definition_status = (
+    ...             SpecificationDefinitionStatus.OBSOLETE)
     ...     if spec.name in ['krunch-desktop-plan']:
-    ...         spec.definition_status = SpecificationDefinitionStatus.SUPERSEDED
+    ...         spec.definition_status = (
+    ...             SpecificationDefinitionStatus.SUPERSEDED)
     ...     shim = spec.updateLifecycleStatus(owner)
     >>> for spec in kubuntu.valid_specifications:
     ...     print spec.name

@@ -3,7 +3,6 @@
 
 """Initialize a distroseries from its parent distroseries."""
 
-
 __metaclass__ = type
 __all__ = [
     'InitializationError',
@@ -33,6 +32,7 @@ from lp.soyuz.interfaces.archive import (
     CannotCopy,
     IArchiveSet,
     )
+from lp.soyuz.interfaces.buildpackagejob import COPY_ARCHIVE_SCORE_PENALTY
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distributionjob import (
     IDistroSeriesDifferenceJobSource,
@@ -156,11 +156,9 @@ class InitializeDistroSeries:
                     child=self.distroseries))
         self._checkParents()
         for parent in self.derivation_parents:
-            if self.distroseries.distribution.id == parent.distribution.id:
-                self._checkBuilds(parent)
+            self._checkBuilds(parent)
             self._checkQueue(parent)
         self._checkSeries()
-        return True
 
     def _checkParents(self):
         """If self.first_derivation, the parents list cannot be empty."""
@@ -190,7 +188,7 @@ class InitializeDistroSeries:
         # spns=None means no packagesets selected so we need to consider
         # all sources.
 
-        arch_tags = self.arches if self.arches is not () else None
+        arch_tags = self.arches if len(self.arches) != 0 else None
         pending_builds = parent.getBuildRecords(
             BuildStatus.NEEDSBUILD, pocket=INIT_POCKETS,
             arch_tag=arch_tags, name=spns)
@@ -502,11 +500,21 @@ class InitializeDistroSeries:
                             check_permissions=False, strict_binaries=False,
                             close_bugs=False, create_dsd_job=False)
                         if self.rebuild:
+                            rebuilds = []
                             for pubrec in sources_published:
-                                pubrec.createMissingBuilds(
+                                builds = pubrec.createMissingBuilds(
                                    list(self.distroseries.architectures))
+                                rebuilds.extend(builds)
+                            self._rescore_rebuilds(rebuilds)
                     except CannotCopy, error:
                         raise InitializationError(error)
+
+    def _rescore_rebuilds(self, builds):
+        """Rescore the passed builds so that they have an appropriately low
+         score.
+        """
+        for build in builds:
+            build.buildqueue_record.lastscore -= COPY_ARCHIVE_SCORE_PENALTY
 
     def _copy_component_section_and_format_selections(self):
         """Copy the section, component and format selections from the parents

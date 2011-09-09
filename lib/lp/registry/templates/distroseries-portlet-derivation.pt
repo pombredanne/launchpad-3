@@ -13,6 +13,10 @@
       <h2>Derived from <tal:name replace="view/number_of_parents"/> parents</h2>
     </tal:multiple_parents>
 
+    <div class="beta">
+      <img src="/@@/beta" alt="[BETA]" />
+    </div>
+
       <tal:diffs define="nb_diffs view/num_version_differences;
                          nb_diffs_in_parent view/num_differences_in_parent;
                          nb_diffs_in_child view/num_differences_in_child;">

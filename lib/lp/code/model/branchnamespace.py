@@ -112,7 +112,7 @@ class _BaseNamespace:
             registrant=registrant,
             name=name, owner=self.owner, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
-            whiteboard=whiteboard, private=private,
+            whiteboard=whiteboard, explicitly_private=private,
             date_created=date_created, branch_type=branch_type,
             date_last_modified=date_created, branch_format=branch_format,
             repository_format=repository_format,

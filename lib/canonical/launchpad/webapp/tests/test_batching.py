@@ -66,6 +66,17 @@ class TestStormRangeFactory(TestCaseWithFactory):
         range_factory = StormRangeFactory(resultset)
         self.assertTrue(verifyObject(IRangeFactory, range_factory))
 
+    def test_StormRangeFactory_needs__ordered_result_set(self):
+        # If a result set is not ordered, it cannot be used with a
+        # StormRangeFactory.
+        resultset = self.makeStormResultSet()
+        resultset.order_by()
+        exception = self.assertRaises(
+            StormRangeFactoryError, StormRangeFactory, resultset)
+        self.assertEqual(
+            "StormRangeFactory requires a sorted result set.",
+            str(exception))
+
     def test_getOrderValuesFor__one_sort_column(self):
         # StormRangeFactory.getOrderValuesFor() returns the values
         # of the fields used in order_by expresssions for a given
@@ -109,19 +120,6 @@ class TestStormRangeFactory(TestCaseWithFactory):
             str(exception).startswith(
                 'StormRangeFactory only supports sorting by PropertyColumn, '
                 'not by <storm.expr.SQL object at'))
-
-    def test_getOrderValuesFor__unordered_result_set(self):
-        # If a result set is not ordered, it cannot be used with a
-        # StormRangeFactory.
-        resultset = self.makeStormResultSet()
-        resultset.order_by()
-        range_factory = StormRangeFactory(resultset)
-        exception = self.assertRaises(
-            StormRangeFactoryError, range_factory.getOrderValuesFor,
-            resultset[0])
-        self.assertEqual(
-            "StormRangeFactory requires a sorted result set.",
-            str(exception))
 
     def test_getOrderValuesFor__decorated_result_set(self):
         # getOrderValuesFor() knows how to retrieve SQL sort values
@@ -389,7 +387,8 @@ class TestStormRangeFactory(TestCaseWithFactory):
         # ORDER BY expressions which either are all instances of
         # PropertyColumn, or are all instances of Desc(PropertyColumn).
         # memos are the related limit values.
-        range_factory = StormRangeFactory(None, self.logError)
+        resultset = self.makeStormResultSet()
+        range_factory = StormRangeFactory(resultset, self.logError)
         order_by = [
             Person.id, Person.datecreated, Person.name, Person.displayname]
         limits = [1, datetime(2011, 07, 25, 0, 0, 0), 'foo', 'bar']
@@ -410,7 +409,8 @@ class TestStormRangeFactory(TestCaseWithFactory):
     def test_lessThanOrGreaterThanExpression__asc(self):
         # beforeOrAfterExpression() returns an expression
         # (col1, col2,..) > (memo1, memo2...) for ascending sort order.
-        range_factory = StormRangeFactory(None, self.logError)
+        resultset = self.makeStormResultSet()
+        range_factory = StormRangeFactory(resultset, self.logError)
         expressions = [Person.id, Person.name]
         limits = [1, 'foo']
         limit_expression = range_factory.lessThanOrGreaterThanExpression(
@@ -422,7 +422,8 @@ class TestStormRangeFactory(TestCaseWithFactory):
     def test_lessThanOrGreaterThanExpression__desc(self):
         # beforeOrAfterExpression() returns an expression
         # (col1, col2,..) < (memo1, memo2...) for descending sort order.
-        range_factory = StormRangeFactory(None, self.logError)
+        resultset = self.makeStormResultSet()
+        range_factory = StormRangeFactory(resultset, self.logError)
         expressions = [Desc(Person.id), Desc(Person.name)]
         limits = [1, 'foo']
         limit_expression = range_factory.lessThanOrGreaterThanExpression(
@@ -432,7 +433,8 @@ class TestStormRangeFactory(TestCaseWithFactory):
             compile(limit_expression))
 
     def test_equalsExpressionsFromLimits(self):
-        range_factory = StormRangeFactory(None, self.logError)
+        resultset = self.makeStormResultSet()
+        range_factory = StormRangeFactory(resultset, self.logError)
         order_by = [
             Person.id, Person.datecreated, Desc(Person.name),
             Desc(Person.displayname)]
@@ -609,6 +611,21 @@ class TestStormRangeFactory(TestCaseWithFactory):
         sliced_result = range_factory.getSlice(3)
         self.assertIsInstance(sliced_result, ShadowedList)
 
+    def test_getSlice__backwards_then_forwards(self):
+        # A slice can be retrieved in both directions from one factory.
+        resultset = self.makeStormResultSet()
+        resultset.order_by(Person.id)
+        all_results = list(resultset)
+        memo = simplejson.dumps([all_results[2].id])
+        range_factory = StormRangeFactory(resultset)
+        backward_slice = range_factory.getSlice(
+            size=2, endpoint_memo=memo, forwards=False)
+        backward_slice.reverse()
+        self.assertEqual(all_results[:2], list(backward_slice))
+        forward_slice = range_factory.getSlice(
+            size=2, endpoint_memo=memo, forwards=True)
+        self.assertEqual(all_results[3:5], list(forward_slice))
+
     def makeStringSequence(self, sequence):
         return [str(elem) for elem in sequence]
 
@@ -687,3 +704,14 @@ class TestStormRangeFactory(TestCaseWithFactory):
         self.assertEqual(last1, shadow_list[0])
         self.assertEqual(first2, shadow_list.shadow_values[-1])
         self.assertEqual(last2, shadow_list.shadow_values[0])
+
+    def test_ShadowedList__reverse__values_and_shadow_values_identical(self):
+        # ShadowList.reverse() works also when passed the same
+        # sequence as values and as shadow_values.
+        list_ = range(3)
+        shadow_list = ShadowedList(list_, list_)
+        shadow_list.reverse()
+        self.assertEqual(0, shadow_list[-1])
+        self.assertEqual(2, shadow_list[0])
+        self.assertEqual(0, shadow_list.shadow_values[-1])
+        self.assertEqual(2, shadow_list.shadow_values[0])
