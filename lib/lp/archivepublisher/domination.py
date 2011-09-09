@@ -228,7 +228,7 @@ class Dominator:
 
         for pub in publications:
             version = generalization.getPackageVersion(pub)
-            if version == dominant_version:
+            if dominant_version is not None and version == dominant_version:
                 # This publication is for a live version, but has been
                 # superseded by a newer publication of the same version.
                 # Supersede it.
