@@ -10,11 +10,14 @@
 # as this script. This lets you do `bin/with-xvfb iharness` for
 # example.
 #
+# Follows sinzui's advice to the launchpad-dev list:
+#   https://lists.launchpad.net/launchpad-dev/msg07879.html
+#
 
 set -eu
 
-# Look for $1 - i.e. the command to run - in the current directory if
-# it's not found along the default PATH.
+# Look for $1 - i.e. the command to run - in this script's directory
+# if it's not found along the default PATH.
 if [ $# -ge 1 ] && ! type -P "$1" > /dev/null
 then
     if command="$(PATH="$(dirname "$0")" type -P "$1")"
