@@ -15,7 +15,7 @@ __all__ = [
 
 from datetime import timedelta
 from optparse import OptionParser
-import sys
+import time
 
 import psycopg2
 
@@ -226,7 +226,7 @@ class DatabasePreflight:
         cluster to be quiescent.
         """
         if self.is_replicated:
-            success = replication.helpers.sync(30)
+            success = replication.helpers.sync(30, exit_on_fail=False)
             if success:
                 self.log.info(
                     "Replication events are being propagated.")
@@ -282,21 +282,40 @@ class KillConnectionsPreflight(DatabasePreflight):
 
         System users are defined by SYSTEM_USERS.
         """
-        for node in self.lpmain_nodes:
-            cur = node.con.cursor()
-            cur.execute("""
-                SELECT
-                    procpid, datname, usename, pg_terminate_backend(procpid)
-                FROM pg_stat_activity
-                WHERE
-                    datname=current_database()
-                    AND procpid <> pg_backend_pid()
-                    AND usename NOT IN %s
-                """ % sqlvalues(SYSTEM_USERS))
-            for procpid, datname, usename, ignored in cur.fetchall():
-                self.log.warning(
-                    "Killed %s [%s] on %s", usename, procpid, datname)
-        return True
+        # We keep trying to terminate connections every 0.5 seconds for
+        # up to 10 seconds.
+        num_tries = 20
+        seconds_to_pause = 0.5
+        for loop_count in range(num_tries):
+            all_clear = True
+            for node in self.lpmain_nodes:
+                cur = node.con.cursor()
+                cur.execute("""
+                    SELECT
+                        procpid, datname, usename,
+                        pg_terminate_backend(procpid)
+                    FROM pg_stat_activity
+                    WHERE
+                        datname=current_database()
+                        AND procpid <> pg_backend_pid()
+                        AND usename NOT IN %s
+                    """ % sqlvalues(SYSTEM_USERS))
+                for procpid, datname, usename, ignored in cur.fetchall():
+                    all_clear = False
+                    if loop_count == num_tries - 1:
+                        self.log.fatal(
+                            "Unable to kill %s [%s] on %s",
+                            usename, procpid, datname)
+                    else:
+                        self.log.warning(
+                            "Killed %s [%s] on %s", usename, procpid, datname)
+            if all_clear:
+                break
+
+            # Wait a little for any terminated connections to actually
+            # terminate.
+            time.sleep(seconds_to_pause)
+        return all_clear
 
 
 def main():
@@ -337,4 +356,4 @@ def main():
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    raise SystemExit(main())

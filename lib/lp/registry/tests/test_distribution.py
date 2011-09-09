@@ -7,12 +7,14 @@ __metaclass__ = type
 
 from lazr.lifecycle.snapshot import Snapshot
 import soupmatchers
+from storm.store import Store
 from testtools import ExpectedException
 from testtools.matchers import (
     MatchesAny,
     Not,
     )
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.constants import UTC_NOW
@@ -40,6 +42,7 @@ from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     )
 from lp.testing import (
     login_person,
+    person_logged_in,
     TestCaseWithFactory,
     )
 from lp.testing.matchers import Provides
@@ -190,6 +193,23 @@ class TestDistribution(TestCaseWithFactory):
             'my-package',
             sourcepackage.distribution.guessPublishedSourcePackageName(
                 'my-package').name)
+
+    def test_derivatives_email(self):
+        # Make sure the package_derivatives_email column stores data
+        # correctly.
+        email = "thingy@foo.com"
+        distro = self.factory.makeDistribution()
+        with person_logged_in(distro.owner):
+            distro.package_derivatives_email = email
+        Store.of(distro).flush()
+        self.assertEqual(email, distro.package_derivatives_email)
+
+    def test_derivatives_email_permissions(self):
+        # package_derivatives_email requires lp.edit to set/change.
+        distro = self.factory.makeDistribution()
+        self.assertRaises(
+            Unauthorized,
+            setattr, distro, "package_derivatives_email", "foo")
 
 
 class TestDistributionCurrentSourceReleases(
