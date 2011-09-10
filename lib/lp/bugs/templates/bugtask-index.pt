@@ -326,12 +326,15 @@
                 view_all_href">add a comment</a>.
             </tal:what-next>
           </div>
-          <tal:logged-in condition="view/user">
-            <div id="add-comment-form-container" class="hidden">
-              <metal:comment-form
-                  metal:use-macro="context/@@bugcomment-macros/comment-form" />
-            </div>
-          </tal:logged-in>
+          <tal:if
+            condition="request/features/bugs.batched_comment_loading.enabled">
+              <tal:logged-in condition="view/user">
+                <div id="add-comment-form-container" class="hidden">
+                  <metal:comment-form
+                      metal:use-macro="context/@@bugcomment-macros/comment-form" />
+                </div>
+              </tal:logged-in>
+          </tal:if>
         </tal:comment-list-truncated>
       </tal:comments>
 
