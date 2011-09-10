@@ -312,8 +312,7 @@ class BugTaskDelta:
     implements(IBugTaskDelta)
 
     def __init__(self, bugtask, status=None, importance=None,
-                 assignee=None, milestone=None, statusexplanation=None,
-                 bugwatch=None, target=None):
+                 assignee=None, milestone=None, bugwatch=None, target=None):
         self.bugtask = bugtask
 
         self.assignee = assignee
@@ -321,7 +320,6 @@ class BugTaskDelta:
         self.importance = importance
         self.milestone = milestone
         self.status = status
-        self.statusexplanation = statusexplanation
         self.target = target
 
 
@@ -482,7 +480,6 @@ class BugTask(SQLBase):
         schema=BugTaskStatus,
         default=BugTaskStatus.NEW,
         storm_validator=validate_status)
-    statusexplanation = StringCol(dbName='statusexplanation', default=None)
     importance = EnumCol(
         dbName='importance', notNull=True,
         schema=BugTaskImportance,

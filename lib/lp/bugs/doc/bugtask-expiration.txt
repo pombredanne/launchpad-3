@@ -511,13 +511,6 @@ was expired. The remaining bugtasks are unchanged.
     recent           False    31  Incomplete  False     False  False  False
     no_expire        False    61  Incomplete  False     False  False  False
 
-The bugtasks statusexplanation was updated to explain the change in
-status.
-
-    >>> hoary_bugtask = BugTask.get(hoary_bugtask.id)
-    >>> print hoary_bugtask.statusexplanation
-    [Expired for Ubuntu Hoary because there has been no activity for 60 days.]
-
 The message explaining the reason for the expiration was posted by the
 Launchpad Janitor celebrity. Only one message was created for when the
 master and slave bugtasks were expired.
