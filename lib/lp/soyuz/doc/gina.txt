@@ -8,6 +8,7 @@ quiet mode over it.
 Get the current counts of stuff in the database:
 
     >>> from canonical.launchpad.database.emailaddress import EmailAddress
+    >>> from lp.soyuz.interfaces.publishing import active_publishing_status
     >>> from lp.soyuz.model.publishing import (
     ...     BinaryPackagePublishingHistory,
     ...     SourcePackagePublishingHistory)
@@ -564,35 +565,34 @@ because, of course, there may be multiple rows published for that package --
 that's what overrides actually do.
 
     >>> from canonical.database.sqlbase import sqlvalues
-    >>> from lp.soyuz.enums import PackagePublishingStatus
-    >>> x11_pub = SSPPH.select("""sourcepackagerelease = %s
-    ...                           AND distroseries = %s
-    ...                           AND status in (%s, %s)""" %
-    ...                         sqlvalues(x11p, breezy,
-    ...                          PackagePublishingStatus.PUBLISHED,
-    ...                          PackagePublishingStatus.PENDING),
-    ...                          orderBy=["-datecreated"])[0]
+    >>> x11_pub = SSPPH.select("""
+    ...     sourcepackagerelease = %s AND
+    ...     distroseries = %s AND
+    ...     status in %s
+    ...     """ % sqlvalues(
+    ...         x11p, breezy, active_publishing_status),
+    ...     orderBy=["-datecreated"])[0]
     >>> print x11_pub.section.name
     net
-    >>> ed_pub = SBPPH.select("""binarypackagerelease = %s
-    ...                           AND distroarchseries = %s
-    ...                           AND status in (%s, %s)""" %
-    ...                         sqlvalues(ed, breezy_i386,
-    ...                          PackagePublishingStatus.PUBLISHED,
-    ...                          PackagePublishingStatus.PENDING),
-    ...                          orderBy=["-datecreated"])[0]
+    >>> ed_pub = SBPPH.select("""
+    ...     binarypackagerelease = %s AND
+    ...     distroarchseries = %s AND
+    ...     status in %s
+    ...     """ % sqlvalues(
+    ...         ed, breezy_i386, active_publishing_status),
+    ...     orderBy=["-datecreated"])[0]
     >>> print ed_pub.priority
     Extra
     >>> n = SourcePackageName.selectOneBy(name="archive-copier")
     >>> ac = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
     ...         version="0.3.6")
-    >>> ac_pub = SSPPH.select("""sourcepackagerelease = %s
-    ...                          AND distroseries = %s
-    ...                          AND status in (%s, %s)""" %
-    ...                        sqlvalues(ac, breezy,
-    ...                         PackagePublishingStatus.PUBLISHED,
-    ...                         PackagePublishingStatus.PENDING),
-    ...                         orderBy=["-datecreated"])[0]
+    >>> ac_pub = SSPPH.select("""
+    ...     sourcepackagerelease = %s AND
+    ...     distroseries = %s AND
+    ...     status in %s
+    ...     """ % sqlvalues(
+    ...         ac, breezy, active_publishing_status),
+    ...     orderBy=["-datecreated"])[0]
     >>> print ac_pub.component.name
     universe
 
@@ -720,7 +720,7 @@ Commit the changes and run the importer script.
 
     >>> transaction.commit()
 
-There is now a number of source publications in PENDING status for the
+There is now a number of source publications in PUBLISHED status for the
 targetted distroseries, 'lenny'.
 
     >>> lenny_sources = SSPPH.select("distroseries = %s" % sqlvalues(lenny))
@@ -728,7 +728,7 @@ targetted distroseries, 'lenny'.
     12
 
     >>> print set([pub.status.name for pub in lenny_sources])
-    set(['PENDING'])
+    set(['PUBLISHED'])
 
 As mentioned before, lenny/i386 is empty, no binaries were imported.
 Also, the number of binaries published in the whole debian distribution
