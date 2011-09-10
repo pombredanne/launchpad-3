@@ -101,7 +101,7 @@ check: clean build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY) $(TESTOPTS)
-	bzr status
+	bzr status --no-pending
 
 check_mailman: build
 	# Run all tests, including the Mailman integration
