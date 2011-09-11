@@ -84,7 +84,7 @@ Marking a bug as private also gives it an extra 150 heat points.
 
 Setting the bug as security related adds another 250 heat points.
 
-    >>> changed = bug.setSecurityRelated(True)
+    >>> changed = bug.setSecurityRelated(True, bug_owner)
     >>> bug.heat
     406
 
@@ -96,7 +96,7 @@ Marking the bug public removes 150 heat points.
 
 And marking it not security-related removes 250 points.
 
-    >>> changed = bug.setSecurityRelated(False)
+    >>> changed = bug.setSecurityRelated(False, bug_owner)
     >>> bug.heat
     6
 

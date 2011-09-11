@@ -811,7 +811,7 @@ BugMessage""" % sqlvalues(self.id))
         self.updateHeat()
         return sub
 
-    def unsubscribe(self, person, unsubscribed_by):
+    def unsubscribe(self, person, unsubscribed_by, **kwargs):
         """See `IBug`."""
         # Drop cached subscription info.
         clear_property_cache(self)
@@ -821,9 +821,11 @@ BugMessage""" % sqlvalues(self.id))
         if person is None:
             person = unsubscribed_by
 
+        ignore_permissions = kwargs.get('ignore_permissions', False)
         for sub in self.subscriptions:
             if sub.person.id == person.id:
-                if not sub.canBeUnsubscribedByUser(unsubscribed_by):
+                if (not ignore_permissions
+                        and not sub.canBeUnsubscribedByUser(unsubscribed_by)):
                     raise UserCannotUnsubscribePerson(
                         '%s does not have permission to unsubscribe %s.' % (
                             unsubscribed_by.displayname,
@@ -1644,28 +1646,20 @@ BugMessage""" % sqlvalues(self.id))
 
         return bugtask
 
-    def setPrivate(self, private, who):
-        """See `IBug`.
+    def setPrivacyAndSecurityRelated(self, private, security_related, who):
+        """ See `IBug`."""
+        private_changed = False
+        security_related_changed = False
 
-        We also record who made the change and when the change took
-        place.
-        """
+        # Before we update the privacy or security_related status, we need to
+        # reconcile the subscribers to avoid leaking private information.
+        if (self.private != private
+                or self.security_related != security_related):
+            if private or security_related:
+                self.reconcileSubscribers(private, security_related, who)
+
         if self.private != private:
-            if private:
-                # Change indirect subscribers into direct subscribers
-                # *before* setting private because
-                # getIndirectSubscribers() behaves differently when
-                # the bug is private.
-                for person in self.getIndirectSubscribers():
-                    self.subscribe(person, who)
-                subscribers_for_who = self.getSubscribersForPerson(who)
-                if subscribers_for_who.is_empty():
-                    # We also add `who` as a subscriber, if they're not
-                    # already directly subscribed or part of a team
-                    # that's directly subscribed, so that they can
-                    # see the bug they've just marked private.
-                    self.subscribe(who, who)
-
+            private_changed = True
             self.private = private
 
             if private:
@@ -1680,25 +1674,86 @@ BugMessage""" % sqlvalues(self.id))
             for attachment in self.attachments_unpopulated:
                 attachment.libraryfile.restricted = private
 
-            # Correct the heat for the bug immediately, so that we don't have
-            # to wait for the next calculation job for the adjusted heat.
-            self.updateHeat()
-            return True  # Changed.
-        else:
-            return False  # Not changed.
-
-    def setSecurityRelated(self, security_related):
-        """Setter for the `security_related` property."""
         if self.security_related != security_related:
+            security_related_changed = True
             self.security_related = security_related
 
+        if private_changed or security_related_changed:
             # Correct the heat for the bug immediately, so that we don't have
             # to wait for the next calculation job for the adjusted heat.
             self.updateHeat()
 
-            return True  # Changed
-        else:
-            return False  # Unchanged
+        return private_changed, security_related_changed
+
+    def setPrivate(self, private, who):
+        """See `IBug`.
+
+        We also record who made the change and when the change took
+        place.
+        """
+        return self.setPrivacyAndSecurityRelated(
+            private, self.security_related, who)[0]
+
+    def setSecurityRelated(self, security_related, who):
+        """Setter for the `security_related` property."""
+        return self.setPrivacyAndSecurityRelated(
+            self.private, security_related, who)[1]
+
+    def getRequiredSubscribers(self, for_private, for_security_related, who):
+        """
+Bug.setPrivate() converts indirect subscriptions to direct ones without
+consideration of the policy rules for subscribing bug supervisors.
+The Bug.setSecurityReleated() has similar issues.
+
+  (bug, security=true, private=true) = set(the reporter + the security contact for each task)
+  (bug, security=true, private=false) = set(the reporter + the security contact for each task)
+  (bug, security=false, private=true) = set(the reporter + the bug supervisor for each task)
+  (bug, security=false, private=false) = set(the reporter)
+  Always fallback to the owner when the contact or supervisor is unset, as is what happens now.
+        """
+
+        result = set()
+        for bugtask in self.bugtasks:
+            result.add(bugtask.owner)
+            if for_security_related:
+                result.add(bugtask.pillar.security_contact or bugtask.owner)
+            elif for_private:
+                result.add(bugtask.pillar.bug_supervisor or bugtask.owner)
+        if for_private:
+            subscribers_for_who = self.getSubscribersForPerson(who)
+            if subscribers_for_who.is_empty():
+                result.add(who)
+        return result
+
+    def reconcileSubscribers(self, for_private, for_security_related, who):
+        """ Ensure only appropriate people are subscribed to private bugs.
+
+        When a bug is marked as either private = True or security_related =
+        True, we need to ensure that only people who are authorised to know
+        about the priviliged contents of the bug remain directly subscribed
+        to it. So we:
+          1. Get the required subscribers depending on the bug status.
+          2. Get the allowed subscribers = required subscribers
+                                            + bugtask owners
+          3. Remove any current direct subscribers who are not allowed.
+          4. Add any subscribers who are required.
+        """
+        current_direct_subscribers = (
+            self.getSubscriptionInfo().direct_subscribers)
+        required_subscribers = self.getRequiredSubscribers(
+            for_private, for_security_related, who)
+        allowed_subscribers = required_subscribers.union(set(
+            [bugtask.owner for bugtask in self.bugtasks]))
+
+        subscribers_to_remove = (
+            current_direct_subscribers.difference(allowed_subscribers))
+        for subscriber in subscribers_to_remove:
+            self.unsubscribe(subscriber, who, ignore_permissions=True)
+
+        subscribers_to_add = (
+            required_subscribers.difference(current_direct_subscribers))
+        for subscriber in subscribers_to_add:
+            self.subscribe(subscriber, who)
 
     def getBugTask(self, target):
         """See `IBug`."""
