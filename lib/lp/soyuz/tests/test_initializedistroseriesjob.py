@@ -70,8 +70,8 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         packageset2 = self.factory.makePackageset()
 
         overlays = (True, False)
-        overlay_pockets = (('Updates',), ('Release',))
-        overlay_components = (("main",), ("universe",))
+        overlay_pockets = (u'Updates', u'Release')
+        overlay_components = (u"main", u"universe")
         arches = (u'i386', u'amd64')
         packagesets = (packageset1.id, packageset2.id)
         rebuild = False
@@ -84,8 +84,8 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
             "distribution: {distroseries.distribution.name}, "
             "distroseries: {distroseries.name}, "
             "parent[overlay?/pockets/components]: "
-            "{parent1.name}[True/[u'Updates']/[u'main']],"
-            "{parent2.name}[False/[u'Release']/[u'universe']], "
+            "{parent1.name}[True/Updates/main],"
+            "{parent2.name}[False/Release/universe], "
             "architectures: (u'i386', u'amd64'), "
             "packagesets: [u'{packageset1.name}', u'{packageset2.name}'], "
             "rebuild: False>".format(
@@ -98,7 +98,6 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
             expected,
             repr(job)
         )
-
 
     def test_create_with_existing_pending_job(self):
         parent = self.factory.makeDistroSeries()
@@ -196,6 +195,23 @@ class InitializeDistroSeriesJobTests(TestCaseWithFactory):
         job = self.job_source.get(distroseries)
         self.assertIsInstance(job, InitializeDistroSeriesJob)
         self.assertEqual(job.distroseries, distroseries)
+
+    def test_error_description_when_no_error(self):
+        # The InitializeDistroSeriesJob.error_description property returns
+        # None when no error description is recorded.
+        parent = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
+        job = self.job_source.create(distroseries, [parent.id])
+        self.assertIs(None, removeSecurityProxy(job).error_description)
+
+    def test_error_description_set_when_notifying_about_user_errors(self):
+        # error_description is set by notifyUserError().
+        parent = self.factory.makeDistroSeries()
+        distroseries = self.factory.makeDistroSeries()
+        job = self.job_source.create(distroseries, [parent.id])
+        message = "This is an example message."
+        job.notifyUserError(InitializationError(message))
+        self.assertEqual(message, removeSecurityProxy(job).error_description)
 
 
 class InitializeDistroSeriesJobTestsWithPackages(TestCaseWithFactory):
