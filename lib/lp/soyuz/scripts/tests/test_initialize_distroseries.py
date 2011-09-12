@@ -183,7 +183,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertRaisesWithContent(
             InitializationError,
             ("Cannot copy distroarchseries from parent; there are already "
-             "one or more distroarchseries initialized for this series."),
+             "one or more distroarchseries initialised for this series."),
             ids.check)
 
     def test_failure_when_previous_series_none(self):
@@ -201,7 +201,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertRaisesWithContent(
             InitializationError,
             ("Series series has no previous series and the "
-             "distribution already has initialized series"
+             "distribution already has initialised series"
              ".").format(child=child),
             ids.check)
 
@@ -1145,7 +1145,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         ids = InitializeDistroSeries(child, [])
         self.assertRaisesWithContent(
             InitializationError,
-            ("No other series in the distribution is initialized "
+            ("No other series in the distribution is initialised "
              "and a parent was not explicitly specified."),
             ids.check)
 

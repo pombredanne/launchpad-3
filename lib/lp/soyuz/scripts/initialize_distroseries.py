@@ -144,14 +144,14 @@ class InitializeDistroSeries:
     def check(self):
         if self.distroseries.isDerivedSeries():
             raise InitializationError(
-                ("Series {child.name} has already been initialized"
+                ("Series {child.name} has already been initialised"
                  ".").format(
                     child=self.distroseries))
         if (self.distroseries.distribution.has_published_sources and
             self.distroseries.previous_series is None):
             raise InitializationError(
                 ("Series {child.name} has no previous series and "
-                 "the distribution already has initialized series"
+                 "the distribution already has initialised series"
                  ".").format(
                     child=self.distroseries))
         self._checkParents()
@@ -166,7 +166,7 @@ class InitializeDistroSeries:
             # Use-case #1.
             if len(self.parent_ids) == 0:
                 raise InitializationError(
-                    "No other series in the distribution is initialized "
+                    "No other series in the distribution is initialised "
                     "and a parent was not explicitly specified.")
 
     def _checkBuilds(self, parent):
@@ -225,7 +225,7 @@ class InitializeDistroSeries:
     def _checkSeries(self):
         error = (
             "Cannot copy distroarchseries from parent; there are "
-            "already one or more distroarchseries initialized for "
+            "already one or more distroarchseries initialised for "
             "this series.")
         sources = self.distroseries.getAllPublishedSources()
         binaries = self.distroseries.getAllPublishedBinaries()
