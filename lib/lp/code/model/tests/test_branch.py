@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401,E1002
@@ -98,7 +98,6 @@ from lp.code.model.branch import (
     update_trigger_modified_fields,
     )
 from lp.code.model.branchjob import (
-    BranchDiffJob,
     BranchJob,
     BranchJobType,
     ReclaimBranchSpaceJob,
@@ -1228,8 +1227,9 @@ class TestBranchDeletion(TestCaseWithFactory):
 
     def test_relatedBranchJobsDeleted(self):
         # A branch with an associated branch job will delete those jobs.
-        branch = self.factory.makeAnyBranch()
-        BranchDiffJob.create(branch, 'from-spec', 'to-spec')
+        branch = self.factory.makeBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        removeSecurityProxy(branch).requestUpgrade(branch.owner)
         branch.destroySelf()
         # Need to commit the transaction to fire off the constraint checks.
         transaction.commit()
@@ -1510,7 +1510,6 @@ class TestBranchDeletionConsequences(TestCase):
         """break_links allows deleting a code import branch."""
         code_import = self.factory.makeCodeImport()
         code_import_id = code_import.id
-        self.factory.makeCodeImportJob(code_import)
         code_import.branch.destroySelf(break_references=True)
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)
@@ -1575,7 +1574,6 @@ class TestBranchDeletionConsequences(TestCase):
         """DeleteCodeImport.__call__ must delete the CodeImport."""
         code_import = self.factory.makeCodeImport()
         code_import_id = code_import.id
-        self.factory.makeCodeImportJob(code_import)
         DeleteCodeImport(code_import)()
         self.assertRaises(
             SQLObjectNotFound, CodeImport.get, code_import_id)

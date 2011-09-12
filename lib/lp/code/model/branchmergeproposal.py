@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,F0401
@@ -192,9 +192,6 @@ class BranchMergeProposal(SQLBase):
         dbName='reviewer', foreignKey='Person',
         storm_validator=validate_public_person, notNull=False,
         default=None)
-
-    review_diff = ForeignKey(
-        foreignKey='StaticDiff', notNull=False, default=None)
 
     @property
     def next_preview_diff_job(self):

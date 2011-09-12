@@ -672,13 +672,15 @@ class cmd_images(EC2Command):
         credentials = EC2Credentials.load_from_file()
         session_name = EC2SessionName.make(EC2TestRunner.name)
         account = credentials.connect(session_name)
-        format = "%5s  %-12s  %-12s  %s\n"
-        self.outf.write(format % ("Rev", "AMI", "Owner ID", "Owner"))
+        format = "%5s  %-12s  %-12s  %-12s %s\n"
+        self.outf.write(
+            format % ("Rev", "AMI", "Owner ID", "Owner", "Description"))
         for revision, images in account.find_images():
             for image in images:
                 self.outf.write(format % (
-                        revision, image.id, image.ownerId,
-                        VALID_AMI_OWNERS.get(image.ownerId, "unknown")))
+                    revision, image.id, image.ownerId,
+                    VALID_AMI_OWNERS.get(image.ownerId, "unknown"),
+                    image.description or ''))
 
 
 class cmd_list(EC2Command):
@@ -743,7 +745,7 @@ class cmd_list(EC2Command):
         uptime = self.get_uptime(instance)
         if data is None:
             description = instance.id
-            current_status =     'unknown '
+            current_status = 'unknown '
         else:
             description = data['description']
             if data['failed-yet']:

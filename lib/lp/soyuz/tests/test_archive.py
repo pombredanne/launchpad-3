@@ -77,7 +77,10 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packagecopyjob import IPlainPackageCopyJobSource
 from lp.soyuz.interfaces.processor import IProcessorFamilySet
 from lp.soyuz.model.archive import Archive
-from lp.soyuz.model.archivepermission import ArchivePermission
+from lp.soyuz.model.archivepermission import (
+    ArchivePermission,
+    ArchivePermissionSet,
+    )
 from lp.soyuz.model.binarypackagerelease import (
     BinaryPackageReleaseDownloadCount,
     )
@@ -978,14 +981,17 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
 
     def test_main_archive_can_use_restricted(self):
         # Main archives for distributions can always use restricted
-        # architectures.
+        # architectures if they are not using virtual builders.
         distro = self.factory.makeDistribution()
+        distro.main_archive.require_virtualized = False
         self.assertContentEqual([self.arm],
             distro.main_archive.enabled_restricted_families)
 
-    def test_main_archive_can_not_be_restricted(self):
-        # A main archive can not be restricted to certain architectures.
+    def test_main_archive_can_not_be_restricted_not_virtualized(self):
+        # A main archive can not be restricted to certain architectures
+        # (unless it's set to build on virtualized builders).
         distro = self.factory.makeDistribution()
+        distro.main_archive.require_virtualized = False
         # Restricting to all restricted architectures is fine
         distro.main_archive.enabled_restricted_families = [self.arm]
 
@@ -993,6 +999,16 @@ class TestEnabledRestrictedBuilds(TestCaseWithFactory):
             distro.main_archive.enabled_restricted_families = []
 
         self.assertRaises(CannotRestrictArchitectures, restrict)
+
+    def test_main_virtualized_archive_can_be_restricted(self):
+        # A main archive can be restricted to certain architectures
+        # if it's set to build on virtualized builders.
+        distro = self.factory.makeDistribution()
+        distro.main_archive.require_virtualized = True
+
+        # Restricting to architectures is fine.
+        distro.main_archive.enabled_restricted_families = [self.arm]
+        distro.main_archive.enabled_restricted_families = []
 
     def test_default(self):
         """By default, ARM builds are not allowed as ARM is restricted."""
@@ -2269,3 +2285,15 @@ class TestSyncSource(TestCaseWithFactory):
             target_archive.copyPackages, [source_name], source_archive,
             to_pocket.name, to_series=to_series.name, include_binaries=False,
             person=person)
+
+
+class TestRemovingPermissions(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_remove_permission_is_none(self):
+        # Several API functions remove permissions if they are not already
+        # removed.  This verifies that the underlying utility function does
+        # not generate an error if the permission is None.
+        ap_set = ArchivePermissionSet()
+        ap_set._remove_permission(None)

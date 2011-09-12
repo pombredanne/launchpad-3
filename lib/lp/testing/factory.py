@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# NOTE: The first line above must stay first; do not move the copyright
+# notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
+#
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -158,7 +162,6 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.code.model.diff import (
     Diff,
     PreviewDiff,
-    StaticDiff,
     )
 from lp.code.model.recipebuild import RecipeBuildRecord
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
@@ -1553,11 +1556,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return merge_proposal.generateIncrementalDiff(
             old_revision, new_revision, diff)
 
-    def makeStaticDiff(self):
-        return StaticDiff.acquireFromText(
-            self.getUniqueUnicode(), self.getUniqueUnicode(),
-            self.getUniqueString())
-
     def makeRevision(self, author=None, revision_date=None, parent_ids=None,
                      rev_id=None, log_body=None, date_created=None):
         """Create a single `Revision`."""
@@ -2153,51 +2151,54 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             else:
                 assert rcs_type in (RevisionControlSystems.SVN,
                                     RevisionControlSystems.BZR_SVN)
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name, rcs_type=rcs_type,
-                url=svn_branch_url)
+                url=svn_branch_url, review_status=review_status)
         elif git_repo_url is not None:
             assert rcs_type in (None, RevisionControlSystems.GIT)
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
-                url=git_repo_url)
+                url=git_repo_url, review_status=review_status)
         elif hg_repo_url is not None:
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.HG,
-                url=hg_repo_url)
+                url=hg_repo_url, review_status=review_status)
         elif bzr_branch_url is not None:
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.BZR,
-                url=bzr_branch_url)
+                url=bzr_branch_url, review_status=review_status)
         else:
             assert rcs_type in (None, RevisionControlSystems.CVS)
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.CVS,
-                cvs_root=cvs_root, cvs_module=cvs_module)
-        if review_status:
-            removeSecurityProxy(code_import).review_status = review_status
-        return code_import
+                cvs_root=cvs_root, cvs_module=cvs_module,
+                review_status=review_status)
 
     def makeChangelog(self, spn=None, versions=[]):
-        """Create and return a LFA of a valid Debian-style changelog."""
+        """Create and return a LFA of a valid Debian-style changelog.
+
+        Note that the changelog returned is unicode - this is deliberate
+        so that code is forced to cope with it as utf-8 changelogs are
+        normal.
+        """
         if spn is None:
             spn = self.getUniqueString()
         changelog = ''
         for version in versions:
-            entry = dedent('''
+            entry = dedent(u'''\
             %s (%s) unstable; urgency=low
 
               * %s.
 
-             -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
+             -- Føo Bær <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
 
             ''' % (spn, version, version))
             changelog += entry
-        return self.makeLibraryFileAlias(content=changelog)
+        return self.makeLibraryFileAlias(content=changelog.encode("utf-8"))
 
     def makeCodeImportEvent(self):
         """Create and return a CodeImportEvent."""
@@ -2284,16 +2285,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return bmp.nominateReviewer(candidate, bmp.registrant)
 
     def makeMessage(self, subject=None, content=None, parent=None,
-                    owner=None):
+                    owner=None, datecreated=None):
         if subject is None:
             subject = self.getUniqueString()
         if content is None:
             content = self.getUniqueString()
         if owner is None:
             owner = self.makePerson()
+        if datecreated is None:
+            datecreated = datetime.now(UTC)
         rfc822msgid = self.makeUniqueRFC822MsgId()
         message = Message(rfc822msgid=rfc822msgid, subject=subject,
-            owner=owner, parent=parent)
+            owner=owner, parent=parent, datecreated=datecreated)
         MessageChunk(message=message, sequence=1, content=content)
         return message
 
@@ -3678,8 +3681,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            date_uploaded=UTC_NOW,
                                            scheduleddeletiondate=None,
                                            ancestor=None,
-                                           **kwargs
-                                           ):
+                                           **kwargs):
         """Make a `SourcePackagePublishingHistory`.
 
         :param sourcepackagerelease: The source package release to publish
@@ -4083,7 +4085,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                          emailaddress=u'test@canonical.com',
                          distroarchseries=None, private=False,
                          contactable=False, system=None,
-                         submission_data=None):
+                         submission_data=None, status=None):
         """Create a new HWSubmission."""
         if date_created is None:
             date_created = datetime.now(pytz.UTC)
@@ -4104,10 +4106,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         format = HWSubmissionFormat.VERSION_1
         submission_set = getUtility(IHWSubmissionSet)
 
-        return submission_set.createSubmission(
+        submission = submission_set.createSubmission(
             date_created, format, private, contactable,
             submission_key, emailaddress, distroarchseries,
             raw_submission, filename, filesize, system)
+
+        if status is not None:
+            removeSecurityProxy(submission).status = status
+        return submission
 
     def makeHWSubmissionDevice(self, submission, device, driver, parent,
                                hal_device_id):

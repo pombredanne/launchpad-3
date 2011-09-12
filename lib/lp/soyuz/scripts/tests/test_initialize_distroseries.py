@@ -88,6 +88,7 @@ class InitializationHelperTestCase(TestCaseWithFactory):
         if existing_format_selection is None:
             spfss_utility.add(parent, format_selection)
         parent.backports_not_automatic = True
+        parent.include_long_descriptions = False
         self._populate_parent(parent, parent_das, packages, pocket)
         return parent, parent_das
 
@@ -582,6 +583,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             SourcePackageFormat.FORMAT_1_0))
         # Other configuration bits are copied too.
         self.assertTrue(child.backports_not_automatic)
+        self.assertFalse(child.include_long_descriptions)
 
     def test_initialize(self):
         # Test a full initialize with no errors.
@@ -797,6 +799,10 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertEqual(self.parent.sourcecount, child.sourcecount)
         self.assertEqual(child.binarycount, 0)
         self.assertEqual(builds.count(), self.parent.sourcecount)
+        for build in builds:
+            # Normally scored at 1760 but 1760 - COPY_ARCHIVE_SCORE_PENALTY
+            # is -840.
+            self.assertEqual(-840, build.api_score)
 
     def test_limit_packagesets_rebuild_and_one_das(self):
         # We can limit the source packages copied, and only builds

@@ -114,10 +114,6 @@ from lp.soyuz.pas import determineArchitecturesToBuild
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 
 
-PENDING = PackagePublishingStatus.PENDING
-PUBLISHED = PackagePublishingStatus.PUBLISHED
-
-
 # XXX cprov 2006-08-18: move it away, perhaps archivepublisher/pool.py
 
 def makePoolPath(source_name, component_name):
@@ -327,17 +323,15 @@ class ArchivePublisherBase:
         fields = self.buildIndexStanzaFields()
         return fields.makeOutput()
 
-    def supersede(self):
-        """See `IPublishing`."""
+    def setSuperseded(self):
+        """Set to SUPERSEDED status."""
         self.status = PackagePublishingStatus.SUPERSEDED
         self.datesuperseded = UTC_NOW
 
     def setDeleted(self, removed_by, removal_comment=None):
         """Set to DELETED status."""
-        self.status = PackagePublishingStatus.DELETED
-        self.datesuperseded = UTC_NOW
-        self.removed_by = removed_by
-        self.removal_comment = removal_comment
+        getUtility(IPublishingSet).setMultipleDeleted(
+            self.__class__, [self.id], removed_by, removal_comment)
 
     def requestObsolescence(self):
         """See `IArchivePublisher`."""
@@ -740,11 +734,11 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def supersede(self, dominant=None, logger=None):
         """See `ISourcePackagePublishingHistory`."""
-        assert self.status in [PUBLISHED, PENDING], (
+        assert self.status in active_publishing_status, (
             "Should not dominate unpublished source %s" %
             self.sourcepackagerelease.title)
 
-        super(SourcePackagePublishingHistory, self).supersede()
+        self.setSuperseded()
 
         if dominant is not None:
             if logger is not None:
@@ -1083,7 +1077,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return IMasterStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
                 BinaryPackagePublishingHistory.status.is_in(
-                    [PUBLISHED, PENDING]),
+                    active_publishing_status),
                 BinaryPackagePublishingHistory.distroarchseriesID.is_in(
                     available_architectures),
                 binarypackagerelease=self.binarypackagerelease,
@@ -1103,7 +1097,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return IMasterStore(BinaryPackagePublishingHistory).find(
                 BinaryPackagePublishingHistory,
                 BinaryPackagePublishingHistory.status.is_in(
-                    [PUBLISHED, PENDING]),
+                    active_publishing_status),
                 BinaryPackagePublishingHistory.distroarchseries ==
                     self.distroarchseries,
                 binarypackagerelease=self.binarypackagerelease.debug_package,
@@ -1120,7 +1114,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # tolerate SUPERSEDED architecture-independent binaries, because
         # they are dominated automatically once the first publication is
         # processed.
-        if self.status not in [PUBLISHED, PENDING]:
+        if self.status not in active_publishing_status:
             assert not self.binarypackagerelease.architecturespecific, (
                 "Should not dominate unpublished architecture specific "
                 "binary %s (%s)" % (
@@ -1128,7 +1122,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 self.distroarchseries.architecturetag))
             return
 
-        super(BinaryPackagePublishingHistory, self).supersede()
+        self.setSuperseded()
 
         if dominant is not None:
             # DDEBs cannot themselves be dominant; they are always dominated
@@ -1966,28 +1960,24 @@ class PublishingSet:
         if len(ids) == 0:
             return
 
-        table = publication_class.__name__
-        permitted_tables = [
-            'BinaryPackagePublishingHistory',
-            'SourcePackagePublishingHistory',
+        permitted_classes = [
+            BinaryPackagePublishingHistory,
+            SourcePackagePublishingHistory,
             ]
-        assert table in permitted_tables, "Deleting wrong type."
+        assert publication_class in permitted_classes, "Deleting wrong type."
 
-        params = sqlvalues(
-            deleted=PackagePublishingStatus.DELETED, now=UTC_NOW,
-            removal_comment=removal_comment, removed_by=removed_by)
+        if removed_by is None:
+            removed_by_id = None
+        else:
+            removed_by_id = removed_by.id
 
-        IMasterStore(publication_class).execute("\n".join([
-            "UPDATE %s" % table,
-            """
-            SET
-                status = %(deleted)s,
-                datesuperseded = %(now)s,
-                removed_by = %(removed_by)s,
-                removal_comment = %(removal_comment)s
-            """ % params,
-            "WHERE id IN %s" % sqlvalues(ids),
-            ]))
+        affected_pubs = IMasterStore(publication_class).find(
+            publication_class, publication_class.id.is_in(ids))
+        affected_pubs.set(
+            status=PackagePublishingStatus.DELETED,
+            datesuperseded=UTC_NOW,
+            removed_byID=removed_by_id,
+            removal_comment=removal_comment)
 
     def requestDeletion(self, sources, removed_by, removal_comment=None):
         """See `IPublishingSet`."""
