@@ -22,6 +22,7 @@ ALTER TABLE posubscription DROP CONSTRAINT "$1";
 ALTER TABLE pushmirroraccess DROP CONSTRAINT "$1";
 ALTER TABLE webserviceban DROP CONSTRAINT webserviceban_person_fkey;
 ALTER TABLE openidrpsummary DROP CONSTRAINT openidrpsummary_account_fkey;
+ALTER TABLE pocomment DROP CONSTRAINT "$5";
 
 -- Remove LFA FKs.
 ALTER TABLE shipitreport DROP CONSTRAINT "$1";
