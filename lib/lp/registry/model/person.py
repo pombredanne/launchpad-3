@@ -2072,9 +2072,7 @@ class Person(
             ('BranchSubscription', 'person'),
             ('BugSubscription', 'person'),
             ('QuestionSubscription', 'person'),
-            ('POSubscription', 'person'),
             ('SpecificationSubscription', 'person'),
-            ('PackageBugSupervisor', 'bug_supervisor'),
             ('AnswerContact', 'person')]
         cur = cursor()
         for table, person_id_column in removals:
@@ -3500,28 +3498,6 @@ class PersonSet:
             DELETE FROM BranchSubscription WHERE person=%(from_id)d
             ''' % vars())
 
-    def _mergeBountySubscriptions(self, cur, from_id, to_id):
-        # XXX: JonathanLange 2009-08-31: Even though all of the other bounty
-        # code has been removed from Launchpad, the merging code has to stay
-        # until the tables themselves are removed. Otherwise, the person
-        # merging code raises consistency errors (and rightly so).
-        #
-        # Update only the BountySubscriptions that will not conflict.
-        cur.execute('''
-            UPDATE BountySubscription
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d AND bounty NOT IN
-                (
-                SELECT bounty
-                FROM BountySubscription
-                WHERE person = %(to_id)d
-                )
-            ''' % vars())
-        # and delete those left over.
-        cur.execute('''
-            DELETE FROM BountySubscription WHERE person=%(from_id)d
-            ''' % vars())
-
     def _mergeBugAffectsPerson(self, cur, from_id, to_id):
         # Update only the BugAffectsPerson that will not conflict
         cur.execute('''
@@ -3599,13 +3575,6 @@ class PersonSet:
         cur.execute('''
             DELETE FROM BugNotificationRecipient
             WHERE person=%(from_id)d
-            ''' % vars())
-
-    def _mergePackageBugSupervisor(self, cur, from_id, to_id):
-        # Update PackageBugSupervisor entries.
-        cur.execute('''
-            UPDATE PackageBugSupervisor SET bug_supervisor=%(to_id)d
-            WHERE bug_supervisor=%(from_id)d
             ''' % vars())
 
     def _mergeStructuralSubscriptions(self, cur, from_id, to_id):
@@ -3730,20 +3699,6 @@ class PersonSet:
             DELETE FROM SprintAttendance WHERE attendee=%(from_id)d
             ''' % vars())
 
-    def _mergePOSubscription(self, cur, from_id, to_id):
-        # Update only the POSubscriptions that will not conflict
-        cur.execute('''
-            UPDATE POSubscription
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d AND id NOT IN (
-                SELECT a.id
-                    FROM POSubscription AS a, POSubscription AS b
-                    WHERE a.person = %(from_id)d AND b.person = %(to_id)d
-                    AND a.language = b.language
-                    AND a.potemplate = b.potemplate
-                    )
-            ''' % vars())
-
     def _mergePOExportRequest(self, cur, from_id, to_id):
         # Update only the POExportRequests that will not conflict
         # and trash the rest
@@ -3807,22 +3762,6 @@ class PersonSet:
                 WHERE a.reviewer = %(from_id)d AND b.reviewer = %(to_id)d
                 AND a.branch_merge_proposal = b.branch_merge_proposal
                 )
-            ''' % vars())
-
-    def _mergeWebServiceBan(self, cur, from_id, to_id):
-        # Update only the WebServiceBan that will not conflict
-        cur.execute('''
-            UPDATE WebServiceBan
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d AND id NOT IN (
-                SELECT a.id FROM WebServiceBan AS a, WebServiceBan AS b
-                WHERE a.person = %(from_id)d AND b.person = %(to_id)d
-                AND ( (a.ip IS NULL AND b.ip IS NULL) OR (a.ip = b.ip) )
-                )
-            ''' % vars())
-        # And delete the rest
-        cur.execute('''
-            DELETE FROM WebServiceBan WHERE person=%(from_id)d
             ''' % vars())
 
     def _mergeTeamMembership(self, cur, from_id, to_id):
@@ -4082,18 +4021,11 @@ class PersonSet:
         self._mergeBugAffectsPerson(cur, from_id, to_id)
         skip.append(('bugaffectsperson', 'person'))
 
-        self._mergeBountySubscriptions(cur, from_id, to_id)
-        skip.append(('bountysubscription', 'person'))
-
         self._mergeAnswerContact(cur, from_id, to_id)
         skip.append(('answercontact', 'person'))
 
         self._mergeQuestionSubscription(cur, from_id, to_id)
         skip.append(('questionsubscription', 'person'))
-
-        # DELETE when the mentoring table is deleted.
-        skip.append(('mentoringoffer', 'owner'))
-        skip.append(('mentoringoffer', 'team'))
 
         self._mergeBugNotificationRecipient(cur, from_id, to_id)
         skip.append(('bugnotificationrecipient', 'person'))
@@ -4103,9 +4035,6 @@ class PersonSet:
 
         # We ignore BugMutes.
         skip.append(('bugmute', 'person'))
-
-        self._mergePackageBugSupervisor(cur, from_id, to_id)
-        skip.append(('packagebugsupervisor', 'bug_supervisor'))
 
         self._mergeStructuralSubscriptions(cur, from_id, to_id)
         skip.append(('structuralsubscription', 'subscriber'))
@@ -4119,9 +4048,6 @@ class PersonSet:
 
         self._mergeSprintAttendance(cur, from_id, to_id)
         skip.append(('sprintattendance', 'attendee'))
-
-        self._mergePOSubscription(cur, from_id, to_id)
-        skip.append(('posubscription', 'person'))
 
         self._mergePOExportRequest(cur, from_id, to_id)
         skip.append(('poexportrequest', 'person'))
@@ -4148,9 +4074,6 @@ class PersonSet:
 
         self._mergeCodeReviewVote(cur, from_id, to_id)
         skip.append(('codereviewvote', 'reviewer'))
-
-        self._mergeWebServiceBan(cur, from_id, to_id)
-        skip.append(('webserviceban', 'person'))
 
         self._mergeKarmaCache(cur, from_id, to_id, from_person.karma)
         skip.append(('karmacache', 'person'))
