@@ -54,6 +54,7 @@ from lp.services.job.interfaces.job import (
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
+from lp.services.jsoncol import JSON
 from lp.soyuz.adapters.overrides import (
     FromExistingOverridePolicy,
     SourceOverride,
@@ -103,7 +104,7 @@ class PackageCopyJob(StormBase):
 
     job_type = EnumCol(enum=PackageCopyJobType, notNull=True)
 
-    _json_data = Unicode('json_data')
+    metadata = JSON('json_data')
 
     # Derived concrete classes.  The entire class gets one dict for
     # this; it's not meant to be on an instance.
@@ -145,16 +146,7 @@ class PackageCopyJob(StormBase):
         self.target_distroseries = target_distroseries
         self.package_name = unicode(package_name)
         self.copy_policy = copy_policy
-        self._json_data = self.serializeMetadata(metadata)
-
-    @classmethod
-    def serializeMetadata(cls, metadata_dict):
-        """Serialize a dict of metadata into a unicode string."""
-        return simplejson.dumps(metadata_dict).decode('utf-8')
-
-    @property
-    def metadata(self):
-        return simplejson.loads(self._json_data)
+        self.metadata = metadata
 
     @property
     def package_version(self):
@@ -164,7 +156,7 @@ class PackageCopyJob(StormBase):
         """Add metadata_dict to the existing metadata."""
         existing = self.metadata
         existing.update(metadata_dict)
-        self._json_data = self.serializeMetadata(existing)
+        self.metadata = existing
 
     @property
     def component_name(self):
@@ -294,7 +286,7 @@ class PlainPackageCopyJob(PackageCopyJobDerived):
         data = (
             cls.class_job_type, target_distroseries, copy_policy,
             source_archive, target_archive, package_name, job_id,
-            PackageCopyJob.serializeMetadata(metadata))
+            simplejson.dumps(metadata, ensure_ascii=False))
         format_string = "(%s)" % ", ".join(["%s"] * len(data))
         return format_string % sqlvalues(*data)
 
