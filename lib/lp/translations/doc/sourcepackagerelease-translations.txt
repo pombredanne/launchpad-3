@@ -65,7 +65,7 @@ ones, to the testing source package.
 
     >>> spr_test.attachTranslationFiles(restricted_translation, True, katie)
 
-And the queue should have 2 entries, which exactly the same contents.
+And the queue should have 2 entries, with exactly the same contents.
 
     >>> queue_entries = translation_import_queue.getAllEntries(
     ...     target=spr_test.sourcepackage)
@@ -78,7 +78,7 @@ And the queue should have 2 entries, which exactly the same contents.
     something/en-US.xpi  katie
     po/es.po             katie
 
-Commit, so the uploaded traslations become available to the scripts.
+Commit, so the uploaded translations become available to the scripts.
 
     >>> transaction.commit()
 
