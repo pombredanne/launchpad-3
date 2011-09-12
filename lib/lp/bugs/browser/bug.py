@@ -847,7 +847,7 @@ class BugSecrecyEditView(LaunchpadFormView, BugSubscriptionPortletDetails):
         data = dict(data)
 
         # We handle privacy changes by hand instead of leaving it to
-        # the usual machinery because we must use 
+        # the usual machinery because we must use
         # bug.setPrivacyAndSecurityRelated() to ensure auditing information is
         # recorded.
         bug = self.context.bug
