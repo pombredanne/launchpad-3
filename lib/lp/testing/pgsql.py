@@ -402,7 +402,11 @@ rw_main_slave:  dbname=%s host=localhost
                 # always having this is a problem.
                 try:
                     cur = con.cursor()
-                    cur.execute('SELECT _killall_backends(%s)', [self.dbname])
+                    cur.execute("""
+                        SELECT pg_terminate_backend(procpid)
+                        FROM pg_stat_activity
+                        WHERE procpid <> pg_backend_pid() AND datname=%s
+                        """, [self.dbname])
                 except psycopg2.DatabaseError:
                     pass
 
