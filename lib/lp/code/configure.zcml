@@ -245,7 +245,6 @@
                     date_created
                     date_review_requested
                     date_reviewed
-                    review_diff
                     next_preview_diff_job
                     preview_diff
                     getIncrementalDiffs
@@ -267,7 +266,7 @@
     <require
         permission="launchpad.Edit"
         set_attributes="description whiteboard merged_revno commit_message
-                        root_message_id review_diff prerequisite_branch"
+                        root_message_id prerequisite_branch"
         attributes="
                     deleteProposal
                     setStatus

@@ -119,16 +119,6 @@
             </table>
           </div>
 
-          <div class="field" tal:condition="context/statusexplanation">
-            <div>
-              <label tal:attributes="for view/statusexplanation_widget/name"
-                     tal:content="view/statusexplanation_widget/label" />
-            </div>
-            <div>
-              <tal:block replace="structure view/statusexplanation_widget" />
-            </div>
-          </div>
-
           <tal:user condition="view/user">
             <tal:description
               define="global description context/bug/description/fmt:text-to-html" />

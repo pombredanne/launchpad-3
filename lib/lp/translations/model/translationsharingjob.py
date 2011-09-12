@@ -37,6 +37,7 @@ from lp.services.job.model.job import Job
 from lp.translations.interfaces.translationsharingjob import (
     ITranslationSharingJob,
     )
+from lp.translations.model.potemplate import POTemplate
 
 
 class TranslationSharingJobType(DBEnumeratedType):
@@ -52,6 +53,12 @@ class TranslationSharingJobType(DBEnumeratedType):
         Split translations between productseries and sourcepackage.
 
         Split translations between productseries and sourcepackage.
+        """)
+
+    TEMPLATE_CHANGE = DBItem(2, """
+        Split/merge translations for a single translation template.
+
+        Split/merge translations for a single translation template.
         """)
 
 
@@ -82,8 +89,12 @@ class TranslationSharingJob(StormBase):
 
     sourcepackagename = Reference(sourcepackagename_id, SourcePackageName.id)
 
+    potemplate_id = Int('potemplate')
+
+    potemplate = Reference(potemplate_id, POTemplate.id)
+
     def __init__(self, job, job_type, productseries, distroseries,
-                 sourcepackagename):
+                 sourcepackagename, potemplate=None):
         """"Constructor.
 
         :param job: The `Job` to use for storing basic job state.
@@ -96,6 +107,7 @@ class TranslationSharingJob(StormBase):
         self.distroseries = distroseries
         self.sourcepackagename = sourcepackagename
         self.productseries = productseries
+        self.potemplate = potemplate
 
 
 class RegisteredSubclass(type):
@@ -143,16 +155,18 @@ class TranslationSharingJobDerived:
         self.job = job
 
     @classmethod
-    def create(cls, productseries, distroseries, sourcepackagename):
+    def create(cls, productseries=None, distroseries=None,
+               sourcepackagename=None, potemplate=None):
         """"Create a TranslationPackagingJob backed by TranslationSharingJob.
 
         :param productseries: The ProductSeries side of the Packaging.
         :param distroseries: The distroseries of the Packaging sourcepackage.
         :param sourcepackagename: The name of the Packaging sourcepackage.
+        :param potemplate: POTemplate to restrict to (if any).
         """
         context = TranslationSharingJob(
             Job(), cls.class_job_type, productseries,
-            distroseries, sourcepackagename)
+            distroseries, sourcepackagename, potemplate)
         return cls(context)
 
     @classmethod
@@ -168,6 +182,27 @@ class TranslationSharingJobDerived:
                 continue
             for job_class in job_classes:
                 job_class.forPackaging(packaging)
+
+    @classmethod
+    def schedulePOTemplateJob(cls, potemplate, event):
+        """Event subscriber to create a TranslationSharingJob on events.
+
+        :param potemplate: The `POTemplate` to create
+            a `TranslationSharingJob` for.
+        :param event: The event itself.
+        """
+        if ('name' not in event.edited_fields and
+            'productseries' not in event.edited_fields and
+            'distroseries' not in event.edited_fields and
+            'sourcepackagename' not in event.edited_fields):
+            # Ignore changes to POTemplates that are neither renames,
+            # nor moves to a different package/project.
+            return
+        for event_type, job_classes in cls._event_types.iteritems():
+            if not event_type.providedBy(event):
+                continue
+            for job_class in job_classes:
+                job_class.forPOTemplate(potemplate)
 
     @classmethod
     def iterReady(cls, extra_clauses):
@@ -207,3 +242,4 @@ class TranslationSharingJobDerived:
 
 #make accessible to zcml
 schedule_packaging_job = TranslationSharingJobDerived.schedulePackagingJob
+schedule_potemplate_job = TranslationSharingJobDerived.schedulePOTemplateJob
