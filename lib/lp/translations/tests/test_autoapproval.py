@@ -1183,7 +1183,6 @@ class TestAutoBlocking(TestCaseWithFactory):
 
         translations = self._makeTranslationEntry(
             'de.po', same_target_as=blocked_template)
-
         self.assertTrue(self.queue._isBlockable(translations, blocklist))
 
     def test_isBlockable_multiple_blocked(self):
