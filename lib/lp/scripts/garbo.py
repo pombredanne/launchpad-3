@@ -200,9 +200,7 @@ class POTranslationPruner(BulkPruner):
     ids_to_prune_query = """
         SELECT POTranslation.id AS id FROM POTranslation
         EXCEPT (
-            SELECT potranslation FROM POComment
-
-            UNION ALL SELECT msgstr0 FROM TranslationMessage
+            SELECT msgstr0 FROM TranslationMessage
                 WHERE msgstr0 IS NOT NULL
 
             UNION ALL SELECT msgstr1 FROM TranslationMessage
