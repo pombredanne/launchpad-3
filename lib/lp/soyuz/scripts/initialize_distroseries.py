@@ -144,13 +144,13 @@ class InitializeDistroSeries:
     def check(self):
         if self.distroseries.isDerivedSeries():
             raise InitializationError(
-                ("DistroSeries {child.name} has already been initialized"
+                ("Series {child.name} has already been initialized"
                  ".").format(
                     child=self.distroseries))
         if (self.distroseries.distribution.has_published_sources and
             self.distroseries.previous_series is None):
             raise InitializationError(
-                ("DistroSeries {child.name} has no previous series and "
+                ("Series {child.name} has no previous series and "
                  "the distribution already has initialized series"
                  ".").format(
                     child=self.distroseries))
@@ -166,11 +166,8 @@ class InitializeDistroSeries:
             # Use-case #1.
             if len(self.parent_ids) == 0:
                 raise InitializationError(
-                    ("Distroseries {child.name} cannot be initialized: "
-                     "No other series in the distribution is initialized "
-                     "and no parent was passed to the initilization method"
-                     ".").format(
-                        child=self.distroseries))
+                    "No other series in the distribution is initialized "
+                    "and a parent was not explicitly specified.")
 
     def _checkBuilds(self, parent):
         """Assert there are no pending builds for the given parent series.
@@ -195,8 +192,8 @@ class InitializeDistroSeries:
 
         if not pending_builds.is_empty():
             raise InitializationError(
-                "Parent series has pending builds for selected sources, "
-                "see help text for more information.")
+                "The parent series has pending builds "
+                "for selected sources.")
 
     def _checkQueue(self, parent):
         """Assert upload queue is empty on the given parent series.
@@ -222,14 +219,14 @@ class InitializeDistroSeries:
             parent, statuses, INIT_POCKETS, spns)
         if not items.is_empty():
             raise InitializationError(
-                "Parent series has sources waiting in its upload queues "
-                "that match your selection, see help text for more "
-                "information.")
+                "The parent series has sources waiting in its upload "
+                "queues that match your selection.")
 
     def _checkSeries(self):
         error = (
-            "Can not copy distroarchseries from parent, there are "
-            "already distroarchseries(s) initialized for this series.")
+            "Cannot copy distroarchseries from parent; there are "
+            "already one or more distroarchseries initialized for "
+            "this series.")
         sources = self.distroseries.getAllPublishedSources()
         binaries = self.distroseries.getAllPublishedBinaries()
         if not all(
