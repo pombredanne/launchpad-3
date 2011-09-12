@@ -1962,6 +1962,14 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         view.hasPendingDSDUpdate = FakeMethod(result=True)
         self.assertTrue(view.canRequestSync(dsd))
 
+    def test_canRequestSync_returns_False_if_DSD_is_resolved(self):
+        dsd = self.factory.makeDistroSeriesDifference(
+            versions=dict(base='1.0', parent='1.1', derived='1.1'),
+            status=DistroSeriesDifferenceStatus.RESOLVED)
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        self.assertFalse(view.canRequestSync(dsd))
+
     def test_describeJobs_returns_None_if_no_jobs(self):
         dsd = self.factory.makeDistroSeriesDifference()
         view = create_initialized_view(
