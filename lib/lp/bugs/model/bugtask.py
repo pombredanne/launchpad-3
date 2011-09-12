@@ -848,7 +848,8 @@ class BugTask(SQLBase):
                 self, providing=providedBy(self))
             # Create a bug message explaining why the janitor auto-confirmed
             # the bugtask.
-            msg = "Auto-confirmed because the bug affects multiple users."
+            msg = ("Status changed to 'Confirmed' because the bug "
+                   "affects multiple users.")
             self.bug.newMessage(owner=janitor, content=msg)
             self.transitionToStatus(BugTaskStatus.CONFIRMED, janitor)
             notify(ObjectModifiedEvent(
