@@ -131,10 +131,6 @@ ALL_FTI = [
             ('description', D),
             ]),
 
-    ('shippingrequest', [
-            ('recipientdisplayname', A),
-            ]),
-
     ('specification', [
             ('name', A),
             ('title', A),
