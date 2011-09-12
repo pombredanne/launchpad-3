@@ -312,8 +312,7 @@ class BugTaskDelta:
     implements(IBugTaskDelta)
 
     def __init__(self, bugtask, status=None, importance=None,
-                 assignee=None, milestone=None, statusexplanation=None,
-                 bugwatch=None, target=None):
+                 assignee=None, milestone=None, bugwatch=None, target=None):
         self.bugtask = bugtask
 
         self.assignee = assignee
@@ -321,7 +320,6 @@ class BugTaskDelta:
         self.importance = importance
         self.milestone = milestone
         self.status = status
-        self.statusexplanation = statusexplanation
         self.target = target
 
 
@@ -482,7 +480,6 @@ class BugTask(SQLBase):
         schema=BugTaskStatus,
         default=BugTaskStatus.NEW,
         storm_validator=validate_status)
-    statusexplanation = StringCol(dbName='statusexplanation', default=None)
     importance = EnumCol(
         dbName='importance', notNull=True,
         schema=BugTaskImportance,
@@ -2079,25 +2076,10 @@ class BugTaskSet:
             extra_clauses.append(bug_reporter_clause)
 
         if params.bug_commenter:
-            bugmessage_owner = bool(features.getFeatureFlag(
-                'malone.bugmessage_owner'))
-            bug_commenter_old_clause = """
-            BugTask.id IN (
-                SELECT DISTINCT BugTask.id FROM BugTask, BugMessage, Message
-                WHERE Message.owner = %(bug_commenter)s
-                    AND Message.id = BugMessage.message
-                    AND BugTask.bug = BugMessage.bug
-                    AND BugMessage.index > 0
-            )
-            """ % sqlvalues(bug_commenter=params.bug_commenter)
-            bug_commenter_new_clause = """
+            bug_commenter_clause = """
             Bug.id IN (SELECT DISTINCT bug FROM Bugmessage WHERE
             BugMessage.index > 0 AND BugMessage.owner = %(bug_commenter)s)
             """ % sqlvalues(bug_commenter=params.bug_commenter)
-            if bugmessage_owner:
-                bug_commenter_clause = bug_commenter_new_clause
-            else:
-                bug_commenter_clause = bug_commenter_old_clause
             extra_clauses.append(bug_commenter_clause)
 
         if params.affects_me:
