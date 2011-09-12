@@ -103,7 +103,6 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-from lp.bugs.enum import BugAutoConfirmReason
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
@@ -832,13 +831,12 @@ class BugTask(SQLBase):
         return True
     # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 
-    def maybeConfirm(self, reason):
+    def maybeConfirm(self):
         """Maybe confirm this bugtask.
         Only call this if the bug._shouldConfirmBugtasks().
         This adds the further constraint that the bugtask needs to be NEW,
         and not imported from an external bug tracker.
         """
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
         if (self.status == BugTaskStatus.NEW
             and self.bugwatch is None
             # START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
@@ -854,8 +852,7 @@ class BugTask(SQLBase):
             # maybe do at the call site
             # Create a bug message explaining why the janitor auto-confirmed
             # the bugtask.
-            msg = "Auto-confirmed because the bug %s." % (
-                reason.description.strip())
+            msg = "Auto-confirmed because the bug affects multiple users."
             self.bug.newMessage(owner=janitor, content=msg)
             self.transitionToStatus(BugTaskStatus.CONFIRMED, janitor)
             notify(ObjectModifiedEvent(
@@ -1157,7 +1154,6 @@ class BugTask(SQLBase):
         name in this distribution will have their names updated to
         match. This should only be used by _syncSourcePackages.
         """
-        import pdb; pdb.set_trace(); # DO NOT COMMIT
         if self.target == target:
             return
 
@@ -1194,7 +1190,7 @@ class BugTask(SQLBase):
             # We also should see if we ought to auto-transition to the
             # CONFIRMED status.
             if self.bug.shouldConfirmBugtasks():
-                self.maybeConfirm(BugAutoConfirmReason.AFFECTS_MULTIPLE_USERS)
+                self.maybeConfirm()
             # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 
     def updateTargetNameCache(self, newtarget=None):

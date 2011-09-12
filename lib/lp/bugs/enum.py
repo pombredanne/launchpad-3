@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'BugAutoConfirmReason',
     'BugNotificationLevel',
     'BugNotificationStatus',
     ]
@@ -13,8 +12,6 @@ __all__ = [
 from lazr.enum import (
     DBEnumeratedType,
     DBItem,
-    EnumeratedType,
-    Item,
     )
 
 
@@ -78,19 +75,3 @@ class BugNotificationStatus(DBEnumeratedType):
         The notification is deferred.  The recipient list was not calculated
         at creation time but is done when processed.
         """)
-
-
-class BugAutoConfirmReason(EnumeratedType):
-    """The reason why a bug was auto-confirmed."""
-
-    AFFECTS_MULTIPLE_USERS = Item("""
-    affects multiple users
-
-    affects multiple users
-    """)
-
-    HAS_DUPLICATE = Item("""
-    has duplicate
-
-    has a duplicate bug
-    """)
