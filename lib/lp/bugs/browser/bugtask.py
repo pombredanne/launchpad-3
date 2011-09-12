@@ -1214,7 +1214,7 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     # depending on the current context and the permissions of the user viewing
     # the form.
     default_field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
-                           'status', 'statusexplanation']
+                           'status']
     custom_widget('target', LaunchpadTargetWidget)
     custom_widget('sourcepackagename', BugTaskSourcePackageNameWidget)
     custom_widget('bugwatch', BugTaskBugWatchWidget)
@@ -1646,14 +1646,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                 bugtask.transitionToAssignee(None)
 
         if changed:
-            # We only set the statusexplanation field to the value of the
-            # change comment if the BugTask has actually been changed in some
-            # way. Otherwise, we just leave it as a comment on the bug.
-            if comment_on_change:
-                bugtask.statusexplanation = comment_on_change
-            else:
-                bugtask.statusexplanation = ""
-
             notify(
                 ObjectModifiedEvent(
                     object=bugtask,
@@ -1703,7 +1695,7 @@ class BugTaskStatusView(LaunchpadView):
         task or not.
         """
         field_names = [
-            'status', 'importance', 'assignee', 'statusexplanation']
+            'status', 'importance', 'assignee']
         if not self.context.target_uses_malone:
             field_names += ['bugwatch']
             self.milestone_widget = None
@@ -2726,7 +2718,13 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         search_params = self.buildSearchParams(
             searchtext=searchtext, extra_params=extra_params)
         search_params.user = self.user
-        tasks = context.searchTasks(search_params, prejoins=prejoins)
+        try:
+            tasks = context.searchTasks(search_params, prejoins=prejoins)
+        except ValueError as e:
+            self.request.response.addErrorNotification(str(e))
+            self.request.response.redirect(canonical_url(
+                self.context, rootsite='bugs', view_name='+bugs'))
+            tasks = None
         return tasks
 
     def getWidgetValues(
@@ -3734,7 +3732,7 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
             self._redirectToSearchContext()
 
     def _redirectToSearchContext(self):
-        """Check wether a target was given and redirect to it.
+        """Check whether a target was given and redirect to it.
 
         All the URL parameters will be passed on to the target's +bugs
         page.

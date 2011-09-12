@@ -38,6 +38,7 @@ from lp.soyuz.scripts.gina.archive import (
     MangledArchiveError,
     PackagesMap,
     )
+from lp.soyuz.scripts.gina.dominate import dominate_imported_source_packages
 from lp.soyuz.scripts.gina.handlers import (
     DataSetupError,
     ImporterHandler,
@@ -152,6 +153,10 @@ def run_gina(options, ztm, target_section):
         packages_map, kdb, package_root, keyrings, importer_handler)
     importer_handler.commit()
 
+    # XXX JeroenVermeulen 2011-09-07 bug=843728: Dominate binaries as well.
+    dominate_imported_source_packages(
+        log, distro, distroseries, pocket, packages_map)
+
     if source_only:
         log.info('Source only mode... done')
         return
@@ -209,9 +214,8 @@ def import_sourcepackages(packages_map, kdb, package_root,
     npacks = len(packages_map.src_map)
     log.info('%i Source Packages to be imported', npacks)
 
-    for list_source in sorted(
-        packages_map.src_map.values(), key=lambda x: x[0].get("Package")):
-        for source in list_source:
+    for package in sorted(packages_map.src_map.iterkeys()):
+        for source in packages_map.src_map[package]:
             count += 1
             attempt_source_package_import(
                 source, kdb, package_root, keyrings, importer_handler)
@@ -244,10 +248,9 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
         log.info(
             '%i Binary Packages to be imported for %s', npacks, archtag)
         # Go over binarypackages importing them for this architecture
-        for binary in sorted(packages_map.bin_map[archtag].values(),
-                             key=lambda x: x.get("Package")):
+        for package_name in sorted(packages_map.bin_map[archtag].iterkeys()):
+            binary = packages_map.bin_map[archtag][package_name]
             count += 1
-            package_name = binary.get("Package", "unknown")
             try:
                 try:
                     do_one_binarypackage(binary, archtag, kdb, package_root,
