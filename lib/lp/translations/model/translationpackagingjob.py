@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'TranslationMergeJob',
     'TranslationSplitJob',
+    'TranslationTemplateChangeJob',
     ]
 
 import logging
@@ -17,6 +18,7 @@ import logging
 from lazr.lifecycle.interfaces import (
     IObjectCreatedEvent,
     IObjectDeletedEvent,
+    IObjectModifiedEvent,
     )
 import transaction
 from zope.interface import (
@@ -40,7 +42,10 @@ from lp.translations.translationmerger import (
     TransactionManager,
     TranslationMerger,
     )
-from lp.translations.utilities.translationsplitter import TranslationSplitter
+from lp.translations.utilities.translationsplitter import (
+    TranslationSplitter,
+    TranslationTemplateSplitter,
+    )
 
 
 class TranslationPackagingJob(TranslationSharingJobDerived, BaseRunnableJob):
@@ -117,3 +122,31 @@ class TranslationSplitJob(TranslationPackagingJob):
             'Splitting %s and %s', self.productseries.displayname,
             self.sourcepackage.displayname)
         TranslationSplitter(self.productseries, self.sourcepackage).split()
+
+
+class TranslationTemplateChangeJob(TranslationPackagingJob):
+    """Job for merging/splitting translations when template is changed."""
+
+    implements(IRunnableJob)
+
+    class_job_type = TranslationSharingJobType.TEMPLATE_CHANGE
+
+    create_on_event = IObjectModifiedEvent
+
+    @classmethod
+    def forPOTemplate(cls, potemplate):
+        """Create a TranslationTemplateChangeJob for a POTemplate.
+
+        :param potemplate: The `POTemplate` to create the job for.
+        :return: A `TranslationTemplateChangeJob`.
+        """
+        return cls.create(potemplate=potemplate)
+
+    def run(self):
+        """See `IRunnableJob`."""
+        logger = logging.getLogger()
+        logger.info("Sanitizing translations for '%s'" % (
+                self.potemplate.displayname))
+        TranslationTemplateSplitter(self.potemplate).split()
+        tm = TransactionManager(transaction.manager, False)
+        TranslationMerger.mergeModifiedTemplates(self.potemplate, tm)
