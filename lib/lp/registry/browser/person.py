@@ -5368,9 +5368,13 @@ class PersonRelatedSoftwareView(LaunchpadView):
 
     def _addStatsToPackages(self, spphs):
         """Add stats to the given package releases, and return them."""
-        distro_packages = [
-            spph.sourcepackagerelease.distrosourcepackage
-            for spph in spphs]
+        distro_packages = []
+        for spph in spphs:
+            distribution = spph.distroseries.distribution
+            sourcepackagename = spph.sourcepackagerelease.sourcepackagename
+            distrosourcepackage = distribution.getSourcePackage(
+                sourcepackagename)
+            distro_packages.append(distrosourcepackage)
         package_bug_counts = getUtility(IBugTaskSet).getBugCountsForPackages(
             self.user, distro_packages)
         open_bugs = {}
@@ -5385,15 +5389,20 @@ class PersonRelatedSoftwareView(LaunchpadView):
         builds_by_package, needs_build_by_package = self._calculateBuildStats(
             spphs)
 
-        return [
-            SourcePackagePublishingHistoryWithStats(
+        spph_with_stats = []
+        for spph in spphs:
+            distribution = spph.distroseries.distribution
+            sourcepackagename = spph.sourcepackagerelease.sourcepackagename
+            distrosourcepackage = distribution.getSourcePackage(
+                sourcepackagename)
+
+            spph_with_stats.append(SourcePackagePublishingHistoryWithStats(
                 spph,
-                open_bugs[spph.sourcepackagerelease.distrosourcepackage],
-                package_question_counts[
-                    spph.sourcepackagerelease.distrosourcepackage],
+                open_bugs[distrosourcepackage],
+                package_question_counts[distrosourcepackage],
                 builds_by_package[spph.sourcepackagerelease],
-                needs_build_by_package[spph.sourcepackagerelease])
-            for spph in spphs]
+                needs_build_by_package[spph.sourcepackagerelease]))
+        return spph_with_stats
 
     def setUpBatch(self, packages):
         """Set up the batch navigation for the page being viewed.

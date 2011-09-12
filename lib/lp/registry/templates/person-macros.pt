@@ -129,7 +129,7 @@
 
   <tr tal:repeat="spph spphs">
   <tal:define define="spr spph/sourcepackagerelease;
-                     distroseries spr/upload_distroseries">
+                     distroseries spph/distroseries">
     <td>
       <a tal:attributes="href string:${distroseries/distribution/fmt:url}/+source/${spr/name}"
          class="distrosrcpackage"
@@ -149,8 +149,8 @@
       </a>
     </td>
     <td
-      tal:attributes="title spr/dateuploaded/fmt:datetime"
-      tal:content="spr/dateuploaded/fmt:approximatedate">
+      tal:attributes="title spph/datecreated/fmt:datetime"
+      tal:content="spph/datecreated/fmt:approximatedate">
       2005-10-24
     </td>
     <td>

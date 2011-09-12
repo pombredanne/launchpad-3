@@ -161,7 +161,7 @@
   <tr tal:repeat="spph spphs"
       class="ppa_row">
   <tal:block define="spr spph/sourcepackagerelease;
-                     distroseries spr/upload_distroseries;
+                     distroseries spph/distroseries;
                      ppa spr/upload_archive">
     <td tal:content="spr/sourcepackagename/name">
       iceweasel
@@ -175,8 +175,8 @@
       1.0
     </td>
     <td
-      tal:attributes="title spr/dateuploaded/fmt:datetime"
-      tal:content="spr/dateuploaded/fmt:approximatedate">
+      tal:attributes="title spph/datecreated/fmt:datetime"
+      tal:content="spph/datecreated/fmt:approximatedate">
       2005-10-24
     </td>
     <td>

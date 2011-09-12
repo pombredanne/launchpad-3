@@ -2641,7 +2641,6 @@ class Person(
             clauses.append(
                 'archive.purpose != %s' % quote(ArchivePurpose.PPA))
 
-        query_clauses = " AND ".join(clauses)
         query = """
                 SELECT DISTINCT ON (upload_distroseries,
                                     sourcepackagerelease.sourcepackagename,
@@ -2657,11 +2656,34 @@ class Person(
                     sourcepackagerelease.sourcepackagename,
                     upload_archive,
                     dateuploaded DESC, spph.datecreated DESC
-              """ % dict(more_query_clauses=query_clauses)
+              """ % dict(more_query_clauses=" AND ".join(clauses))
 
         cur = cursor()
         cur.execute(query)
-        spph_ids = map(itemgetter(0), cur.fetchall())
+        spph_ids = set(map(itemgetter(0), cur.fetchall()))
+
+        # If uploader_only=True and ppa_only=False, we also want to
+        # fetch the spphs which where copied over cross distro or from
+        # a ppa (so, destination archive != source archive and
+        # destination archive is not a ppa).
+        if uploader_only and not ppa_only:
+            query = """
+                SELECT spph.id
+                FROM
+                    sourcepackagepublishinghistory as spph,
+                    sourcepackagepublishinghistory as ancestor_spph,
+                    archive
+                WHERE
+                    spph.ancestor = ancestor_spph.id AND
+                    spph.archive = archive.id AND
+                    ancestor_spph.archive != spph.archive AND
+                    archive.purpose = %(archive_purpose)s
+                """ % dict(archive_purpose=quote(ArchivePurpose.PRIMARY))
+
+            cur = cursor()
+            cur.execute(query)
+            spph_ids = spph_ids.union(
+                set(map(itemgetter(0), cur.fetchall())))
 
         # is_in(x) does not behave if x is [].
         if len(spph_ids) == 0:
