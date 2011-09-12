@@ -1207,7 +1207,7 @@ class TranslationImportQueue:
             entry.path, entry.importer, potemplate, pofile,
             entry.sourcepackagename, entry.distroseries, entry.productseries)
 
-        if existing_entry is None:
+        if existing_entry is None or existing_entry == entry:
             entry.potemplate = potemplate
             entry.pofile = pofile
 
