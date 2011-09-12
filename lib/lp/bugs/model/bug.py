@@ -1700,16 +1700,20 @@ BugMessage""" % sqlvalues(self.id))
             self.private, security_related, who)[1]
 
     def getRequiredSubscribers(self, for_private, for_security_related, who):
-        """
-Bug.setPrivate() converts indirect subscriptions to direct ones without
-consideration of the policy rules for subscribing bug supervisors.
-The Bug.setSecurityReleated() has similar issues.
+        """Return the mandatory subscribers for a bug with given attributes.
 
-  (bug, security=true, private=true) = set(the reporter + the security contact for each task)
-  (bug, security=true, private=false) = set(the reporter + the security contact for each task)
-  (bug, security=false, private=true) = set(the reporter + the bug supervisor for each task)
-  (bug, security=false, private=false) = set(the reporter)
-  Always fallback to the owner when the contact or supervisor is unset, as is what happens now.
+        When a bug is marked as private or security related, it is required
+        that certain people be subscribed so they can access details about the
+        bug. The rules are:
+            security=true, private=true/false ->
+                subscribers = the reporter + security contact for each task
+            security=false, private=true ->
+                subscribers = the reporter + bug supervisor for each task
+            security=false, private=false ->
+                subscribers = the reporter
+
+        If bug supervisor or security contact is unset, fallback to bugtask
+        reporter/owner.
         """
 
         result = set()
@@ -1730,25 +1734,33 @@ The Bug.setSecurityReleated() has similar issues.
 
         When a bug is marked as either private = True or security_related =
         True, we need to ensure that only people who are authorised to know
-        about the priviliged contents of the bug remain directly subscribed
+        about the privileged contents of the bug remain directly subscribed
         to it. So we:
           1. Get the required subscribers depending on the bug status.
           2. Get the allowed subscribers = required subscribers
                                             + bugtask owners
-          3. Remove any current direct subscribers who are not allowed.
+          3. Remove any current direct subscribers who are not allowed. This
+          includes removing security contacts when a bug is updated to
+          security related = false.
           4. Add any subscribers who are required.
         """
         current_direct_subscribers = (
             self.getSubscriptionInfo().direct_subscribers)
         required_subscribers = self.getRequiredSubscribers(
             for_private, for_security_related, who)
-        allowed_subscribers = required_subscribers.union(set(
-            [bugtask.owner for bugtask in self.bugtasks]))
+        allowed_subscribers = set()
+        allowed_subscribers.add(self.owner)
+        for bugtask in self.bugtasks:
+            allowed_subscribers.add(bugtask.owner)
+            allowed_subscribers.add(bugtask.pillar.owner)
+            allowed_subscribers.update(set(bugtask.pillar.drivers))
+        allowed_subscribers = required_subscribers.union(allowed_subscribers)
 
-        subscribers_to_remove = (
-            current_direct_subscribers.difference(allowed_subscribers))
-        for subscriber in subscribers_to_remove:
-            self.unsubscribe(subscriber, who, ignore_permissions=True)
+        if for_private or for_security_related:
+            subscribers_to_remove = (
+                current_direct_subscribers.difference(allowed_subscribers))
+            for subscriber in subscribers_to_remove:
+                self.unsubscribe(subscriber, who, ignore_permissions=True)
 
         subscribers_to_add = (
             required_subscribers.difference(current_direct_subscribers))

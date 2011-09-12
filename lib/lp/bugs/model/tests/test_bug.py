@@ -434,27 +434,6 @@ class TestBug(TestCaseWithFactory):
             info = bug.getSubscriptionInfo(BugNotificationLevel.METADATA)
         self.assertEqual(BugNotificationLevel.METADATA, info.level)
 
-    def test_setPrivate_subscribes_person_who_makes_bug_private(self):
-        # When setPrivate(True) is called on a bug, the person who is
-        # marking the bug private is subscribed to the bug.
-        bug = self.factory.makeBug()
-        person = self.factory.makePerson()
-        with person_logged_in(person):
-            bug.setPrivate(True, person)
-            self.assertTrue(bug.personIsDirectSubscriber(person))
-
-    def test_setPrivate_does_not_subscribe_member_of_subscribed_team(self):
-        # When setPrivate(True) is called on a bug, the person who is
-        # marking the bug private will not be subscribed if they're
-        # already a member of a team which is a direct subscriber.
-        bug = self.factory.makeBug()
-        team = self.factory.makeTeam()
-        person = team.teamowner
-        with person_logged_in(person):
-            bug.subscribe(team, person)
-            bug.setPrivate(True, person)
-            self.assertFalse(bug.personIsDirectSubscriber(person))
-
     def test_getVisibleLinkedBranches_doesnt_rtn_inaccessible_branches(self):
         # If a Bug has branches linked to it that the current user
         # cannot access, those branches will not be returned in its
@@ -483,6 +462,153 @@ class TestBug(TestCaseWithFactory):
             self.assertThat(recorder, HasQueryCount(LessThan(7)))
         self.assertContentEqual(public_branches, linked_branches)
         self.assertNotIn(private_branch, linked_branches)
+
+
+class TestBugPrivateAndSecurityRelatedUpdates(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_setPrivate_subscribes_person_who_makes_bug_private(self):
+        # When setPrivate(True) is called on a bug, the person who is
+        # marking the bug private is subscribed to the bug.
+        bug = self.factory.makeBug()
+        person = self.factory.makePerson()
+        with person_logged_in(person):
+            bug.setPrivate(True, person)
+            self.assertTrue(bug.personIsDirectSubscriber(person))
+
+    def test_setPrivate_does_not_subscribe_member_of_subscribed_team(self):
+        # When setPrivate(True) is called on a bug, the person who is
+        # marking the bug private will not be subscribed if they're
+        # already a member of a team which is a direct subscriber.
+        bug = self.factory.makeBug()
+        team = self.factory.makeTeam()
+        person = team.teamowner
+        with person_logged_in(person):
+            bug.subscribe(team, person)
+            bug.setPrivate(True, person)
+            self.assertFalse(bug.personIsDirectSubscriber(person))
+
+    def createBugTasksAndSubscribers(self):
+        # Used with the various setPrivateAndSecurityRelated tests to create
+        # a bug and add some initial subscribers.
+        bug = self.factory.makeBug()
+        security_contact_a = self.factory.makePerson()
+        bug_supervisor_a = self.factory.makePerson()
+        driver_a = self.factory.makePerson()
+        product_a = self.factory.makeProduct(
+            security_contact=security_contact_a,
+            bug_supervisor=bug_supervisor_a,
+            driver=driver_a)
+        security_contact_b = self.factory.makePerson()
+        product_b = self.factory.makeProduct(
+            security_contact=security_contact_b)
+        bugtask_a = self.factory.makeBugTask(bug=bug, target=product_a)
+        bugtask_b = self.factory.makeBugTask(bug=bug, target=product_b)
+        return bug, bugtask_a, bugtask_b
+
+    def test_setPrivateTrueAndSecurityRelatedTrue(self):
+        # When a bug is marked as private=true and security_related=true, the
+        # only direct subscribers should be:
+        # - the bugtask reporters
+        # - the bugtask pillar security contacts (if set)
+        # - the person changing the state
+        # - and bug/pillar owners, drivers if they are already subscribed
+
+        (bug, bugtask_a, bugtask_b) = self.createBugTasksAndSubscribers()
+        initial_subscribers = set(
+            (self.factory.makePerson(),  bug.owner,
+                bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
+
+        with person_logged_in(bug.owner):
+            for subscriber in initial_subscribers:
+                bug.subscribe(subscriber, bug.owner)
+            who = self.factory.makePerson()
+            bug.setPrivacyAndSecurityRelated(
+                private=True, security_related=True, who=who)
+            subscribers = bug.getDirectSubscribers()
+            self.assertContentEqual(
+                set((bugtask_a.pillar.security_contact,
+                     bugtask_a.pillar.driver,
+                     bugtask_b.pillar.security_contact,
+                     bugtask_a.owner, bugtask_b.owner,
+                     bug.owner, who)),
+                subscribers
+            )
+
+    def test_setPrivateTrueAndSecurityRelatedFalse(self):
+        # When a bug is marked as private=true and security_related=false, the
+        # only direct subscribers should be:
+        # - the bugtask reporters
+        # - the bugtask pillar bug supervisors (if set)
+        # - the person changing the state
+        # - and bug/pillar owners, drivers if they are already subscribed
+
+        (bug, bugtask_a, bugtask_b) = self.createBugTasksAndSubscribers()
+        initial_subscribers = set(
+            (self.factory.makePerson(),  bug.owner,
+                bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
+
+        with person_logged_in(bug.owner):
+            for subscriber in initial_subscribers:
+                bug.subscribe(subscriber, bug.owner)
+            who = self.factory.makePerson()
+            bug.setPrivacyAndSecurityRelated(
+                private=True, security_related=False, who=who)
+            subscribers = bug.getDirectSubscribers()
+            self.assertContentEqual(
+                set((bugtask_a.pillar.bug_supervisor,
+                     bugtask_a.pillar.driver,
+                     bugtask_a.owner, bugtask_b.owner,
+                     bug.owner, who)),
+                subscribers
+            )
+
+    def test_setPrivateFalseAndSecurityRelatedTrue(self):
+        # When a bug is marked as private=false and security_related=true, the
+        # only direct subscribers should be:
+        # - the bugtask reporters
+        # - the bugtask pillar security contacts (if set)
+        # - and bug/pillar owners, drivers if they are already subscribed
+
+        (bug, bugtask_a, bugtask_b) = self.createBugTasksAndSubscribers()
+        initial_subscribers = set(
+            (self.factory.makePerson(),  bug.owner,
+                bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
+
+        with person_logged_in(bug.owner):
+            for subscriber in initial_subscribers:
+                bug.subscribe(subscriber, bug.owner)
+            who = self.factory.makePerson()
+            bug.setPrivacyAndSecurityRelated(
+                private=False, security_related=True, who=who)
+            subscribers = bug.getDirectSubscribers()
+            self.assertContentEqual(
+                set((bugtask_a.pillar.security_contact,
+                     bugtask_a.pillar.driver,
+                     bugtask_b.pillar.security_contact,
+                     bugtask_a.owner, bugtask_b.owner,
+                     bug.owner)),
+                subscribers
+            )
+
+    def test_setPrivateFalseAndSecurityRelatedFalse(self):
+        # When a bug is marked as private=false and security_related=false,
+        # any existing subscriptions are left alone.
+
+        (bug, bugtask_a, bugtask_b) = self.createBugTasksAndSubscribers()
+        initial_subscribers = set(
+            (self.factory.makePerson(),  bug.owner,
+                bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
+
+        with person_logged_in(bug.owner):
+            for subscriber in initial_subscribers:
+                bug.subscribe(subscriber, bug.owner)
+            who = self.factory.makePerson()
+            bug.setPrivacyAndSecurityRelated(
+                private=False, security_related=False, who=who)
+            subscribers = bug.getDirectSubscribers()
+            self.assertContentEqual(initial_subscribers, subscribers)
 
 
 class TestBugAutoConfirmation(TestCaseWithFactory):

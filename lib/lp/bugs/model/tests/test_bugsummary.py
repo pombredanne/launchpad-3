@@ -245,11 +245,11 @@ class TestBugSummary(TestCaseWithFactory):
                 3 - count)
 
     def test_makePrivate(self):
-        product = self.factory.makeProduct()
-        bug = self.factory.makeBug(product=product)
-
         person_a = self.factory.makePerson()
         person_b = self.factory.makePerson()
+        product = self.factory.makeProduct()
+        bug = self.factory.makeBug(product=product, owner=person_b)
+
         bug.subscribe(person=person_a, subscribed_by=person_a)
 
         # Make the bug private. We have to use the Python API to ensure
@@ -263,10 +263,10 @@ class TestBugSummary(TestCaseWithFactory):
             0)
         self.assertEqual(
             self.getCount(person_a, BugSummary.product == product),
-            1)
+            0)
         self.assertEqual(
             self.getCount(person_b, BugSummary.product == product),
-            0)
+            1)
         # Confirm implicit subscriptions work too.
         self.assertEqual(
             self.getCount(bug.owner, BugSummary.product == product),
