@@ -1118,8 +1118,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
             self.bazaar_store, logging.getLogger(),
             opener_policy=opener_policy)
 
-    def makeForeignCommit(self, source_details, message=None,
-            ref="refs/heads/master"):
+    def makeForeignCommit(self, source_details, message=None, ref="HEAD"):
         """Change the foreign tree, generating exactly one commit."""
         repo = GitRepo(local_path_from_url(source_details.url))
         if message is None:
