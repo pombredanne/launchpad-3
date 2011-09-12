@@ -233,7 +233,8 @@
         <require
             permission="launchpad.Edit"
             set_attributes="displayname title summary description driver
-                            backports_not_automatic"/>
+                            backports_not_automatic
+                            include_long_descriptions"/>
 
         <!-- NB: check with SABDFL before modifying these, there is potential to
                                  make a huge mess if these get changed and Soyuz has to republish
