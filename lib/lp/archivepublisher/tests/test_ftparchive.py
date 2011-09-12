@@ -286,6 +286,13 @@ class TestFTPArchive(TestCaseWithFactory):
         self._addRepositoryFile('main', 'foo', 'foo_1.dsc')
         self._addRepositoryFile('main', 'foo', 'foo_1_i386.deb')
 
+        # When include_long_descriptions is set, apt.conf has
+        # LongDescription "true" for that series.
+        hoary_test = self._distribution.getSeries('hoary-test')
+        self.assertTrue(hoary_test.include_long_descriptions)
+        breezy_autotest = self._distribution.getSeries('breezy-autotest')
+        breezy_autotest.include_long_descriptions = False
+
         # XXX cprov 2007-03-21: Relying on byte-to-byte configuration file
         # comparing is weak. We should improve this methodology to avoid
         # wasting time on test failures due to irrelevant format changes.

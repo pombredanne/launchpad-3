@@ -17,10 +17,9 @@ of changes to the bug status:
     >>> bugtask = get_bugtask_linked_to_question()
     >>> original_bugtask = Snapshot(bugtask, providing=providedBy(bugtask))
     >>> bugtask.transitionToStatus(BugTaskStatus.CONFIRMED, no_priv)
-    >>> bugtask.statusexplanation = 'This bug really happened to me.'
     >>> ignore = pop_questionemailjobs()
     >>> notify(ObjectModifiedEvent(
-    ...     bugtask, original_bugtask, ['status', 'statusexplanation'],
+    ...     bugtask, original_bugtask, ['status'],
     ...     user=no_priv))
 
     >>> notifications = pop_questionemailjobs()
@@ -37,10 +36,6 @@ of changes to the bug status:
     Bug #... status changed in Ubuntu:
     <BLANKLINE>
         New => Confirmed
-    <BLANKLINE>
-    Status change explanation given by No Privileges Person:
-    <BLANKLINE>
-    This bug really happened to me.
     <BLANKLINE>
     http://.../ubuntu/+bug/...
     "Installer fails on a Mac PPC"

@@ -39,7 +39,10 @@ from lp.soyuz.enums import (
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease,
     )
-from lp.testing import TestCaseWithFactory
+from lp.testing import (
+    person_logged_in,
+    TestCaseWithFactory,
+    )
 from lp.testing.mail_helpers import pop_notifications
 
 
@@ -83,6 +86,23 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
             None, [], [customfile], archive, distroseries, pocket,
             'accepted')
         self.assertEqual(expected_subject, subject)
+
+    def _setup_notification(self, from_person=None, distroseries=None,
+                            spr=None):
+        if spr is None:
+            spr = self.factory.makeSourcePackageRelease()
+        self.factory.makeSourcePackageReleaseFile(sourcepackagerelease=spr)
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        pocket = PackagePublishingPocket.RELEASE
+        if distroseries is None:
+            distroseries = self.factory.makeDistroSeries()
+        distroseries.changeslist = "blah@example.com"
+        blamer = self.factory.makePerson()
+        if from_person is None:
+            from_person = self.factory.makePerson()
+        notify(
+            blamer, spr, [], [], archive, distroseries, pocket,
+            action='accepted', announce_from_person=from_person)
 
     def test_notify_from_person_override(self):
         # notify() takes an optional from_person to override the calculated
@@ -132,6 +152,22 @@ class TestNotificationRequiringLibrarian(TestCaseWithFactory):
         self.assertEqual(
             "=?utf-8?q?Lo=C3=AFc_Mot=C3=B6rhead?= <loic@example.com>",
             notifications[1]["From"])
+
+    def test_notify_bcc_to_derivatives_list(self):
+        # notify() will BCC the announcement email to the address defined in
+        # Distribution.package_derivatives_email if it's defined.
+        email = "{package_name}_thing@foo.com"
+        distroseries = self.factory.makeDistroSeries()
+        with person_logged_in(distroseries.distribution.owner):
+            distroseries.distribution.package_derivatives_email = email
+        spr = self.factory.makeSourcePackageRelease()
+        self._setup_notification(distroseries=distroseries, spr=spr)
+
+        notifications = pop_notifications()
+        self.assertEqual(2, len(notifications))
+        bcc_address = notifications[1]["Bcc"]
+        expected_email = email.format(package_name=spr.sourcepackagename.name)
+        self.assertIn(expected_email, bcc_address)
 
     def test_fetch_information_spr_multiple_changelogs(self):
         # If previous_version is passed the "changelog" entry in the

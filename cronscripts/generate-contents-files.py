@@ -7,7 +7,6 @@
 
 import _pythonpath
 
-from canonical.config import config
 from lp.archivepublisher.scripts.generate_contents_files import (
     GenerateContentsFiles,
     )
@@ -15,5 +14,5 @@ from lp.archivepublisher.scripts.generate_contents_files import (
 
 if __name__ == '__main__':
     script = GenerateContentsFiles(
-        "generate-contents", dbuser=config.archivepublisher.dbuser)
+        "generate-contents", dbuser='generate_contents_files')
     script.lock_and_run()
