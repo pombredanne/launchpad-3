@@ -4,6 +4,6 @@
 SET client_min_messages=ERROR;
 
 ALTER TABLE branch
-    ADD COLUMN transitively_private bool NOT NULL DEFAULT FALSE;
+    ADD COLUMN transitively_private bool;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 85, 1);
