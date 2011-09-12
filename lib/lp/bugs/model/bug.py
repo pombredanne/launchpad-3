@@ -1655,8 +1655,7 @@ BugMessage""" % sqlvalues(self.id))
         # reconcile the subscribers to avoid leaking private information.
         if (self.private != private
                 or self.security_related != security_related):
-            if private or security_related:
-                self.reconcileSubscribers(private, security_related, who)
+            self.reconcileSubscribers(private, security_related, who)
 
         if self.private != private:
             private_changed = True
@@ -1715,7 +1714,6 @@ BugMessage""" % sqlvalues(self.id))
         If bug supervisor or security contact is unset, fallback to bugtask
         reporter/owner.
         """
-
         if not for_private and not for_security_related:
             return set()
         result = set()
@@ -1731,6 +1729,23 @@ BugMessage""" % sqlvalues(self.id))
                 result.add(who)
         return result
 
+    def getAutoRemovedSubscribers(self, for_private, for_security_related):
+        """Return the to be removed subscribers for bug with given attributes.
+
+        When a bug's privacy or security related attributes change, some
+        existing subscribers may need to be automatically removed.
+        The rules are:
+            security=false, private=false ->
+                auto removed subscribers = (bugtask security contacts)
+
+        """
+        result = set()
+        for bugtask in self.bugtasks:
+            if not for_private and not for_security_related:
+                if bugtask.pillar.security_contact:
+                    result.add(bugtask.pillar.security_contact)
+        return result
+
     def reconcileSubscribers(self, for_private, for_security_related, who):
         """ Ensure only appropriate people are subscribed to private bugs.
 
@@ -1739,17 +1754,21 @@ BugMessage""" % sqlvalues(self.id))
         about the privileged contents of the bug remain directly subscribed
         to it. So we:
           1. Get the required subscribers depending on the bug status.
-          2. Get the allowed subscribers = required subscribers
+          2. Get the auto removed subscribers depending on the bug status.
+             eg security contacts when a bug is updated to security related =
+             false.
+          3. Get the allowed subscribers = required subscribers
                                             + bugtask owners
-          3. Remove any current direct subscribers who are not allowed. This
-          includes removing security contacts when a bug is updated to
-          security related = false.
-          4. Add any subscribers who are required.
+          4. Remove any current direct subscribers who are not allowed or are
+             to be auto removed.
+          5. Add any subscribers who are required.
         """
         current_direct_subscribers = (
             self.getSubscriptionInfo().direct_subscribers)
         required_subscribers = self.getRequiredSubscribers(
             for_private, for_security_related, who)
+        auto_removed_subscribers = self.getAutoRemovedSubscribers(
+            for_private, for_security_related)
         allowed_subscribers = set()
         allowed_subscribers.add(self.owner)
         for bugtask in self.bugtasks:
@@ -1758,11 +1777,12 @@ BugMessage""" % sqlvalues(self.id))
             allowed_subscribers.update(set(bugtask.pillar.drivers))
         allowed_subscribers = required_subscribers.union(allowed_subscribers)
 
+        subscribers_to_remove = auto_removed_subscribers
         if for_private or for_security_related:
-            subscribers_to_remove = (
+            subscribers_to_remove = auto_removed_subscribers.union(
                 current_direct_subscribers.difference(allowed_subscribers))
-            for subscriber in subscribers_to_remove:
-                self.unsubscribe(subscriber, who, ignore_permissions=True)
+        for subscriber in subscribers_to_remove:
+            self.unsubscribe(subscriber, who, ignore_permissions=True)
 
         subscribers_to_add = (
             required_subscribers.difference(current_direct_subscribers))

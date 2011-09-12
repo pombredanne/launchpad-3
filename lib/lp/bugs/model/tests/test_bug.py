@@ -6,6 +6,7 @@ __metaclass__ = type
 from storm.store import Store
 from testtools.testcase import ExpectedException
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.bugs.enum import (
@@ -489,23 +490,33 @@ class TestBugPrivateAndSecurityRelatedUpdates(TestCaseWithFactory):
             bug.setPrivate(True, person)
             self.assertFalse(bug.personIsDirectSubscriber(person))
 
-    def createBugTasksAndSubscribers(self):
+    def createBugTasksAndSubscribers(self, private_security_related=False):
         # Used with the various setPrivateAndSecurityRelated tests to create
         # a bug and add some initial subscribers.
-        bug = self.factory.makeBug()
-        security_contact_a = self.factory.makePerson()
-        bug_supervisor_a = self.factory.makePerson()
-        driver_a = self.factory.makePerson()
+        bug_owner = self.factory.makePerson(name='bugowner')
+        bug = self.factory.makeBug(
+            owner=bug_owner,
+            private=private_security_related,
+            security_related=private_security_related)
+        owner_a = self.factory.makePerson(name='ownera')
+        security_contact_a = self.factory.makePerson(name='securitycontacta')
+        bug_supervisor_a = self.factory.makePerson(name='bugsupervisora')
+        driver_a = self.factory.makePerson(name='drivera')
         product_a = self.factory.makeProduct(
+            owner=owner_a,
             security_contact=security_contact_a,
             bug_supervisor=bug_supervisor_a,
             driver=driver_a)
-        security_contact_b = self.factory.makePerson()
+        owner_b = self.factory.makePerson(name='ownerb')
+        security_contact_b = self.factory.makePerson(name='securitycontactb')
         product_b = self.factory.makeProduct(
+            owner=owner_b,
             security_contact=security_contact_b)
         bugtask_a = self.factory.makeBugTask(bug=bug, target=product_a)
         bugtask_b = self.factory.makeBugTask(bug=bug, target=product_b)
-        return bug, bugtask_a, bugtask_b
+        naked_bugtask_a = removeSecurityProxy(bugtask_a)
+        naked_bugtask_b = removeSecurityProxy(bugtask_b)
+        return bug, bug_owner, naked_bugtask_a, naked_bugtask_b
 
     def test_setPrivateTrueAndSecurityRelatedTrue(self):
         # When a bug is marked as private=true and security_related=true, the
@@ -515,26 +526,27 @@ class TestBugPrivateAndSecurityRelatedUpdates(TestCaseWithFactory):
         # - the person changing the state
         # - and bug/pillar owners, drivers if they are already subscribed
 
-        (bug, bugtask_a, bugtask_b) = self.createBugTasksAndSubscribers()
+        (bug, bug_owner,  bugtask_a, bugtask_b) = (
+            self.createBugTasksAndSubscribers())
         initial_subscribers = set(
-            (self.factory.makePerson(),  bug.owner,
+            (self.factory.makePerson(),  bug_owner,
                 bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
 
-        with person_logged_in(bug.owner):
+        with person_logged_in(bug_owner):
             for subscriber in initial_subscribers:
-                bug.subscribe(subscriber, bug.owner)
+                bug.subscribe(subscriber, bug_owner)
             who = self.factory.makePerson()
             bug.setPrivacyAndSecurityRelated(
                 private=True, security_related=True, who=who)
             subscribers = bug.getDirectSubscribers()
-            self.assertContentEqual(
-                set((bugtask_a.pillar.security_contact,
-                     bugtask_a.pillar.driver,
-                     bugtask_b.pillar.security_contact,
-                     bugtask_a.owner, bugtask_b.owner,
-                     bug.owner, who)),
-                subscribers
-            )
+        self.assertContentEqual(
+            set((bugtask_a.pillar.security_contact,
+                 bugtask_a.pillar.driver,
+                 bugtask_b.pillar.security_contact,
+                 bugtask_a.owner, bugtask_b.owner,
+                 bug_owner, who)),
+            subscribers
+        )
 
     def test_setPrivateTrueAndSecurityRelatedFalse(self):
         # When a bug is marked as private=true and security_related=false, the
@@ -544,25 +556,26 @@ class TestBugPrivateAndSecurityRelatedUpdates(TestCaseWithFactory):
         # - the person changing the state
         # - and bug/pillar owners, drivers if they are already subscribed
 
-        (bug, bugtask_a, bugtask_b) = self.createBugTasksAndSubscribers()
+        (bug, bug_owner,  bugtask_a, bugtask_b) = (
+            self.createBugTasksAndSubscribers())
         initial_subscribers = set(
-            (self.factory.makePerson(),  bug.owner,
+            (self.factory.makePerson(),  bug_owner,
                 bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
 
-        with person_logged_in(bug.owner):
+        with person_logged_in(bug_owner):
             for subscriber in initial_subscribers:
-                bug.subscribe(subscriber, bug.owner)
+                bug.subscribe(subscriber, bug_owner)
             who = self.factory.makePerson()
             bug.setPrivacyAndSecurityRelated(
                 private=True, security_related=False, who=who)
             subscribers = bug.getDirectSubscribers()
-            self.assertContentEqual(
-                set((bugtask_a.pillar.bug_supervisor,
-                     bugtask_a.pillar.driver,
-                     bugtask_a.owner, bugtask_b.owner,
-                     bug.owner, who)),
-                subscribers
-            )
+        self.assertContentEqual(
+            set((bugtask_a.pillar.bug_supervisor,
+                 bugtask_a.pillar.driver,
+                 bugtask_a.owner, bugtask_b.owner,
+                 bug_owner, who)),
+            subscribers
+        )
 
     def test_setPrivateFalseAndSecurityRelatedTrue(self):
         # When a bug is marked as private=false and security_related=true, the
@@ -571,44 +584,50 @@ class TestBugPrivateAndSecurityRelatedUpdates(TestCaseWithFactory):
         # - the bugtask pillar security contacts (if set)
         # - and bug/pillar owners, drivers if they are already subscribed
 
-        (bug, bugtask_a, bugtask_b) = self.createBugTasksAndSubscribers()
+        (bug, bug_owner,  bugtask_a, bugtask_b) = (
+            self.createBugTasksAndSubscribers())
         initial_subscribers = set(
-            (self.factory.makePerson(),  bug.owner,
+            (self.factory.makePerson(),  bug_owner,
                 bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
 
-        with person_logged_in(bug.owner):
+        with person_logged_in(bug_owner):
             for subscriber in initial_subscribers:
-                bug.subscribe(subscriber, bug.owner)
+                bug.subscribe(subscriber, bug_owner)
             who = self.factory.makePerson()
             bug.setPrivacyAndSecurityRelated(
                 private=False, security_related=True, who=who)
             subscribers = bug.getDirectSubscribers()
-            self.assertContentEqual(
-                set((bugtask_a.pillar.security_contact,
-                     bugtask_a.pillar.driver,
-                     bugtask_b.pillar.security_contact,
-                     bugtask_a.owner, bugtask_b.owner,
-                     bug.owner)),
-                subscribers
-            )
+        self.assertContentEqual(
+            set((bugtask_a.pillar.security_contact,
+                 bugtask_a.pillar.driver,
+                 bugtask_b.pillar.security_contact,
+                 bugtask_a.owner, bugtask_b.owner,
+                 bug_owner)),
+            subscribers
+        )
 
     def test_setPrivateFalseAndSecurityRelatedFalse(self):
         # When a bug is marked as private=false and security_related=false,
-        # any existing subscriptions are left alone.
+        # any existing subscriptions are left alone apart from any security
+        # contacts being unsubscribed.
 
-        (bug, bugtask_a, bugtask_b) = self.createBugTasksAndSubscribers()
+        (bug, bug_owner,  bugtask_a, bugtask_b) = (
+            self.createBugTasksAndSubscribers(private_security_related=True))
         initial_subscribers = set(
-            (self.factory.makePerson(),  bug.owner,
+            (self.factory.makePerson(), bug_owner,
                 bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
 
-        with person_logged_in(bug.owner):
+        with person_logged_in(bug_owner):
             for subscriber in initial_subscribers:
-                bug.subscribe(subscriber, bug.owner)
+                bug.subscribe(subscriber, bug_owner)
             who = self.factory.makePerson()
+            expected_direct_subscribers = set(bug.getDirectSubscribers())
             bug.setPrivacyAndSecurityRelated(
                 private=False, security_related=False, who=who)
-            subscribers = bug.getDirectSubscribers()
-            self.assertContentEqual(initial_subscribers, subscribers)
+        subscribers = bug.getDirectSubscribers()
+        expected_direct_subscribers.remove(bugtask_a.pillar.security_contact)
+        for subscriber in expected_direct_subscribers:
+            self.assertTrue(subscriber in subscribers)
 
 
 class TestBugAutoConfirmation(TestCaseWithFactory):
