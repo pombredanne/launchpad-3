@@ -781,22 +781,20 @@ def commit():
     transaction.commit()
 
 
-def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
+def connect(user=None, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
     """Return a fresh DB-API connection to the MAIN MASTER database.
 
-    DEPRECATED - if needed, this should become a method on the Store.
-
-    Use None for the user to connect as the default PostgreSQL user.
-    This is not the default because the option should be rarely used.
+    Can be used without first setting up the Component Architecture,
+    unlike the usual stores.
 
     Default database name is the one specified in the main configuration file.
     """
-    con = psycopg2.connect(connect_string(user, dbname))
+    con = psycopg2.connect(connect_string(user=user, dbname=dbname))
     con.set_isolation_level(isolation)
     return con
 
 
-def connect_string(user, dbname=None):
+def connect_string(user=None, dbname=None):
     """Return a PostgreSQL connection string.
 
     Allows you to pass the generated connection details to external

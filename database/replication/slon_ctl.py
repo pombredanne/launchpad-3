@@ -73,7 +73,8 @@ def main():
     if explicit is not None:
         nodes = [explicit]
     else:
-        nodes = replication.helpers.get_all_cluster_nodes(connect('slony'))
+        nodes = replication.helpers.get_all_cluster_nodes(
+            connect(user='slony'))
 
     if command == 'start':
         return start(log, nodes, options.lag)

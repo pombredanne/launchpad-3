@@ -29,7 +29,6 @@ from canonical.launchpad.scripts import (
     logger,
     logger_options,
     )
-from canonical import lp
 import replication.helpers
 
 
@@ -49,8 +48,7 @@ MAX_LAG = timedelta(seconds=60)
 
 class DatabasePreflight:
     def __init__(self, log):
-        master_con = connect(lp.dbuser)
-        master_con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        master_con = connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
         self.log = log
         self.is_replicated = replication.helpers.slony_installed(master_con)
