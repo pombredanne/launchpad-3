@@ -1710,12 +1710,14 @@ BugMessage""" % sqlvalues(self.id))
             security=false, private=true ->
                 subscribers = the reporter + bug supervisor for each task
             security=false, private=false ->
-                subscribers = the reporter
+                subscribers = ()
 
         If bug supervisor or security contact is unset, fallback to bugtask
         reporter/owner.
         """
 
+        if not for_private and not for_security_related:
+            return set()
         result = set()
         for bugtask in self.bugtasks:
             result.add(bugtask.owner)
