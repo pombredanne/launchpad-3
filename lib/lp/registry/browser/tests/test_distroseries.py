@@ -631,7 +631,8 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
             job, InitializationError(
                 "You cannot be serious. That's really going "
                 "to hurt. Put it away."))
-        # Load series again because the connection was closed in failJob().
+        # Load series again because the connection was closed in
+        # fail_job_with_error().
         series = self.load_afresh(series)
         with person_logged_in(series.owner):
             view = create_initialized_view(series, '+portlet-derivation')
