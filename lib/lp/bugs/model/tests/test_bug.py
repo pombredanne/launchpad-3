@@ -588,7 +588,8 @@ class TestBugPrivateAndSecurityRelatedUpdates(TestCaseWithFactory):
             self.createBugTasksAndSubscribers())
         initial_subscribers = set(
             (self.factory.makePerson(),  bug_owner,
-                bugtask_a.pillar.security_contact, bugtask_a.pillar.driver))
+                bugtask_a.pillar.security_contact, bugtask_a.pillar.driver,
+                bugtask_a.pillar.bug_supervisor))
 
         with person_logged_in(bug_owner):
             for subscriber in initial_subscribers:
