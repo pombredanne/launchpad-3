@@ -51,5 +51,6 @@ ALTER TABLE webserviceban SET SCHEMA todrop;
 ALTER TABLE openidrpconfig SET SCHEMA todrop;
 ALTER TABLE openidrpsummary SET SCHEMA todrop;
 ALTER TABLE staticdiff SET SCHEMA todrop;
+ALTER TABLE pocomment SET SCHEMA todrop;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2208, 83, 2);

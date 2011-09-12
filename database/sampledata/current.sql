@@ -747,9 +747,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -6225,6 +6222,618 @@ ALTER TABLE pocketchroot DISABLE TRIGGER ALL;
 ALTER TABLE pocketchroot ENABLE TRIGGER ALL;
 
 
+ALTER TABLE pofile DISABLE TRIGGER ALL;
+
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (1, 1, 387, 'Spanish translation for evolution in hoary', ' traducción de es.po al Spanish
+ translation of es.po to Spanish
+ translation of evolution.HEAD to Spanish
+ Copyright © 2000-2002 Free Software Foundation, Inc.
+ This file is distributed under the same license as the evolution package.
+ Carlos Perelló Marín <carlos@gnome-db.org>, 2000-2001.
+ Héctor García Álvarez <hector@scouts-es.org>, 2000-2002.
+ Ismael Olea <Ismael@olea.org>, 2001, (revisiones) 2003.
+ Eneko Lacunza <enlar@iname.com>, 2001-2002.
+ Héctor García Álvarez <hector@scouts-es.org>, 2002.
+ Pablo Gonzalo del Campo <pablodc@bigfoot.com>,2003 (revisión).
+ Francisco Javier F. Serrador <serrador@cvs.gnome.org>, 2003, 2004.
+
+
+', 'Project-Id-Version: es
+POT-Creation-Date: 2004-08-17 11:10+0200
+PO-Revision-Date: 2005-04-07 13:22+0000
+Last-Translator: Carlos Perelló Marín <carlos@canonical.com>
+Language-Team: Spanish <traductores@es.gnome.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Report-Msgid-Bugs-To: serrador@hispalinux.es
+Plural-Forms: nplurals=2; plural=(n != 1);
+', true, 13, 7, 0, 1, NULL, 12, 'es.po', '2005-06-06 08:59:54.24073', NULL, 2, '2007-01-04 11:02:02.844658');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (3, 2, 560, NULL, ' Spanish (Spain) translation for mount removable devices as normal user
+ Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
+ This file is distributed under the same license as the mount removable devices as normal user package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
+', 'Project-Id-Version: mount removable devices as normal user
+Report-Msgid-Bugs-To: martin.pitt@canonical.com
+POT-Creation-Date: 2005-04-04 17:31+0200
+PO-Revision-Date: 2005-03-15 21:19+0000
+Last-Translator: Daniel Aguayo <danner@mixmail.com>
+Language-Team: Spanish (Spain) <es_ES@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n != 1
+', true, 37, 63, 0, 0, NULL, 31, 'es.po', '2005-06-06 08:59:54.236824', NULL, 0, '2005-05-06 20:11:16.591589');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (4, 2, 143, NULL, ' German translations for PACKAGE package
+ German messages for PACKAGE.
+ Copyright (C) 2004 Martin Pitt
+ This file is distributed under the same license as the PACKAGE package.
+ Martin Pitt <martin.pitt@canonical.com>, 2004.
+
+', 'Project-Id-Version: pmount 0.5
+Report-Msgid-Bugs-To: martin.pitt@canonical.com
+POT-Creation-Date: 2005-04-04 17:31+0200
+PO-Revision-Date: 2004-12-29 17:56+0100
+Last-Translator: Martin Pitt <martin.pitt@canonical.com>
+Language-Team: German <de@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=(n != 1);
+', true, 38, 63, 0, 0, NULL, 31, 'de.po', '2005-06-06 08:59:54.238198', NULL, 0, '2005-05-06 20:11:41.773683');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (5, 2, 68, NULL, ' Catalan translation for mount removable devices as normal user
+ Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
+ This file is distributed under the same license as the mount removable devices as normal user package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
+', 'Project-Id-Version: mount removable devices as normal user
+Report-Msgid-Bugs-To: martin.pitt@canonical.com
+POT-Creation-Date: 2005-04-04 17:31+0200
+PO-Revision-Date: 2005-02-12 01:18+0000
+Last-Translator: Jordi Vilalta <jvprat@wanadoo.es>
+Language-Team: Catalan <ca@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n != 1
+', true, 34, 62, 0, 0, NULL, 31, 'ca.po', '2005-06-06 08:59:54.254523', NULL, 0, '2005-05-06 20:09:51.386766');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (6, 2, 132, NULL, ' French translation for mount removable devices as normal user
+ Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
+ This file is distributed under the same license as the mount removable devices as normal user package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
+
+', 'Project-Id-Version: mount removable devices as normal user
+Report-Msgid-Bugs-To: martin.pitt@canonical.com
+POT-Creation-Date: 2005-04-04 17:31+0200
+PO-Revision-Date: 2005-04-02 22:34+0000
+Last-Translator: Nicolas Velin <nsv@fr.st>
+Language-Team: French <fr@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n > 1
+', true, 39, 57, 0, 0, NULL, 31, 'fr.po', '2005-06-06 08:59:54.256914', NULL, 0, '2005-05-06 20:12:08.283113');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (7, 2, 360, NULL, ' Croatian translation for pmount
+ Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
+ This file is distributed under the same license as the pmount package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
+
+', 'Project-Id-Version: pmount
+Report-Msgid-Bugs-To: martin.pitt@canonical.com
+POT-Creation-Date: 2005-04-04 17:31+0200
+PO-Revision-Date: 2005-03-16 14:51+0000
+Last-Translator: Edgar Bursic <edgar@monteparadiso.hr>
+Language-Team: Croatian <hr@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
+', true, 33, 63, 0, 0, NULL, 31, 'hr.po', '2005-06-06 08:59:54.255734', NULL, 0, '2005-05-06 20:09:31.825695');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (8, 2, 527, NULL, ' Italian (Italy) translation for pmount
+ Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
+ This file is distributed under the same license as the pmount package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
+
+', 'Project-Id-Version: pmount
+Report-Msgid-Bugs-To: martin.pitt@canonical.com
+POT-Creation-Date: 2005-04-04 17:31+0200
+PO-Revision-Date: 2005-03-16 23:54+0000
+Last-Translator: Francesco Accattapà <callipeo@libero.it>
+Language-Team: Italian (Italy) <it_IT@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n != 1
+', true, 40, 49, 0, 0, NULL, 31, 'it_IT.po', '2005-06-06 08:59:54.259358', NULL, 0, '2005-05-06 20:12:35.976807');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (9, 2, 98, NULL, ' Czech translation for mount removable devices as normal user
+ Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
+ This file is distributed under the same license as the mount removable devices as normal user package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
+
+', 'Project-Id-Version: mount removable devices as normal user
+Report-Msgid-Bugs-To: martin.pitt@canonical.com
+POT-Creation-Date: 2005-04-04 17:31+0200
+PO-Revision-Date: 2005-02-10 15:15+0000
+Last-Translator: Vlastimil Skacel <skacel@svtech.cz>
+Language-Team: Czech <cs@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
+', true, 36, 35, 0, 0, NULL, 31, 'cs.po', '2005-06-06 08:59:54.249601', NULL, 0, '2005-05-06 20:10:41.732277');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (10, 2, 302, NULL, ' Bokmål, Norwegian translation for pmount
+ Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
+ This file is distributed under the same license as the pmount package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
+
+', 'Project-Id-Version: pmount
+Report-Msgid-Bugs-To: martin.pitt@canonical.com
+POT-Creation-Date: 2005-04-04 17:31+0200
+PO-Revision-Date: 2005-03-31 10:35+0000
+Last-Translator: Sigurd Gartmann <sigurd-ubuntu@brogar.org>
+Language-Team: Bokmål, Norwegian <nb@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n != 1
+', true, 35, 63, 0, 0, NULL, 31, 'nb.po', '2005-06-06 08:59:54.248418', NULL, 0, '2005-05-06 20:10:18.431259');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (11, 2, 387, NULL, ' Spanish translation for mount removable devices as normal user
+ Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
+ This file is distributed under the same license as the mount removable devices as normal user package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
+
+', 'Project-Id-Version: mount removable devices as normal user
+Report-Msgid-Bugs-To: martin.pitt@canonical.com
+POT-Creation-Date: 2005-04-04 17:31+0200
+PO-Revision-Date: 2005-02-21 17:57+0000
+Last-Translator: Aloriel <jorge.gonzalez.gonzalez@hispalinux.es>
+Language-Team: Spanish <es@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n != 1
+', true, 41, 54, 0, 0, NULL, 31, 'po/es.po', '2005-06-06 08:59:54.229882', NULL, 0, '2005-05-06 20:13:10.405056');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (12, 4, 387, NULL, ' traducción de es.po al Spanish
+ translation of es.po to Spanish
+ translation of evolution.HEAD to Spanish
+ Copyright © 2000-2002 Free Software Foundation, Inc.
+ This file is distributed under the same license as the evolution package.
+ Carlos Perelló Marín <carlos@gnome-db.org>, 2000-2001.
+ Héctor García Álvarez <hector@scouts-es.org>, 2000-2002.
+ Ismael Olea <Ismael@olea.org>, 2001, (revisiones) 2003.
+ Eneko Lacunza <enlar@iname.com>, 2001-2002.
+ Héctor García Álvarez <hector@scouts-es.org>, 2002.
+ Pablo Gonzalo del Campo <pablodc@bigfoot.com>,2003 (revisión).
+ Francisco Javier F. Serrador <serrador@cvs.gnome.org>, 2003, 2004.
+
+
+', 'Project-Id-Version: es
+POT-Creation-Date: 2004-08-17 11:10+0200
+PO-Revision-Date: 2005-04-07 13:22+0000
+Last-Translator: Carlos Perelló Marín <carlos@canonical.com>
+Language-Team: Spanish <traductores@es.gnome.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Report-Msgid-Bugs-To: serrador@hispalinux.es
+Plural-Forms: nplurals=2; plural=(n != 1);
+', true, 50, 6, 1, 1, NULL, 31, 'es.po', '2005-06-06 08:59:54.235169', NULL, 1, '2005-06-06 20:05:03.244905');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (13, 5, 132, NULL, '
+    Translators, if you are not familiar with the PO format, gettext
+    documentation is worth reading, especially sections dedicated to
+    this format, e.g. by running:
+         info -n ''(gettext)PO Files''
+         info -n ''(gettext)Header Entry''
+
+    Some information specific to po-debconf are available at
+            /usr/share/doc/po-debconf/README-trans
+         or http://www.debian.org/intl/l10n/po-debconf/README-trans
+
+    Developers do not need to manually edit POT or PO files.
+
+', 'Project-Id-Version: mozilla 2:1.7.4-1
+Report-Msgid-Bugs-To:
+POT-Creation-Date: 2004-07-11 16:16+0900
+PO-Revision-Date: 2004-08-02 00:08+0200
+Last-Translator: Denis Barbier <barbier@linuxfr.org>
+Language-Team: French <debian-l10n-french@lists.debian.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n > 1
+', true, 42, 9, 0, 0, NULL, 31, 'fr.po', '2005-06-06 08:59:54.243358', NULL, 0, '2005-05-06 21:12:18.833057');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (14, 5, 112, NULL, '
+    Translators, if you are not familiar with the PO format, gettext
+    documentation is worth reading, especially sections dedicated to
+    this format, e.g. by running:
+         info -n ''(gettext)PO Files''
+         info -n ''(gettext)Header Entry''
+
+    Some information specific to po-debconf are available at
+            /usr/share/doc/po-debconf/README-trans
+         or http://www.debian.org/intl/l10n/po-debconf/README-trans
+
+    Developers do not need to manually edit POT or PO files.
+
+', 'Project-Id-Version: mozilla 2:1.6-3
+POT-Creation-Date: 2004-07-11 16:16+0900
+PO-Revision-Date: 2004-09-09 11:37+0100
+Last-Translator: Luk Claes <luk.claes@ugent.be>
+Language-Team: Debian l10n Dutch <debian-l10n-dutch@lists.debian.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n != 1
+', true, 45, 9, 0, 0, NULL, 31, 'nl.po', '2005-06-06 08:59:54.260522', NULL, 0, '2005-05-06 21:12:27.602384');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (15, 5, 521, NULL, '
+    Translators, if you are not familiar with the PO format, gettext
+    documentation is worth reading, especially sections dedicated to
+    this format, e.g. by running:
+         info -n ''(gettext)PO Files''
+         info -n ''(gettext)Header Entry''
+
+    Some information specific to po-debconf are available at
+            /usr/share/doc/po-debconf/README-trans
+         or http://www.debian.org/intl/l10n/po-debconf/README-trans
+
+    Developers do not need to manually edit POT or PO files.
+
+', 'Project-Id-Version: mozilla
+Report-Msgid-Bugs-To:
+POT-Creation-Date: 2004-07-11 16:16+0900
+PO-Revision-Date: 2004-07-25 16:17-0300
+Last-Translator: André Luís Lopes <andrelop@debian.org>
+Language-Team: Debian-BR Porject <debian-l10n-portuguese@lists.debian.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n > 1
+', true, 43, 9, 0, 0, NULL, 31, 'pt_BR.po', '2005-06-06 08:59:54.24721', NULL, 0, '2005-05-06 21:12:20.874654');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (16, 5, 143, NULL, '
+    Translators, if you are not familiar with the PO format, gettext
+    documentation is worth reading, especially sections dedicated to
+    this format, e.g. by running:
+         info -n ''(gettext)PO Files''
+         info -n ''(gettext)Header Entry''
+
+    Some information specific to po-debconf are available at
+            /usr/share/doc/po-debconf/README-trans
+         or http://www.debian.org/intl/l10n/po-debconf/README-trans
+
+    Developers do not need to manually edit POT or PO files.
+
+', 'Project-Id-Version: PACKAGE VERSION
+Report-Msgid-Bugs-To:
+POT-Creation-Date: 2004-07-11 16:16+0900
+PO-Revision-Date: 2004-07-24 15:24+0200
+Last-Translator: Helge Kreutzmann <kreutzm@itp.uni-hannover.de>
+Language-Team: de <debian-l10n-german@lists.debian.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n != 1
+', true, 51, 9, 0, 0, NULL, 31, 'de.po', '2005-06-06 08:59:54.253299', NULL, 0, '2005-05-06 21:12:42.747648');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (17, 5, 427, NULL, ' Turkish translation of mozilla.
+ This file is distributed under the same license as the mozilla package.
+ Mehmet Türker <mturker@innova.com.tr>, 2004.
+
+', 'Project-Id-Version: mozilla
+Report-Msgid-Bugs-To:
+POT-Creation-Date: 2004-07-11 16:16+0900
+PO-Revision-Date: 2004-04-25 14:47+0300
+Last-Translator: Mehmet Türker <EMAIL>
+Language-Team: Turkish <debian-l10n-turkish@lists.debian.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms:  nplurals=1; plural=0;
+', true, 30, 6, 0, 0, NULL, 31, 'tr.po', '2005-06-06 08:59:54.250735', NULL, 0, '2005-05-06 21:12:40.937835');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (18, 5, 193, NULL, ' Italian translation of debconf for mozilla.
+ This file is distributed under the same license as the mozilla package.
+ Copyright 2004 by Valentina Commissari <ayor@quaqua.net>.
+', 'Project-Id-Version: mozilla 1.7.3-5
+POT-Creation-Date: 2004-07-11 16:16+0900
+PO-Revision-Date: 2004-11-01 13:30+0100
+Last-Translator: Valentina Commissari <tsukimi@quaqua.net>
+Language-Team: Italian <debian-l10n-italian@lists.debian.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Poedit-Language: Italian
+X-Poedit-Country: ITALY
+Plural-Forms: nplurals=2; plural=n != 1
+', true, 50, 9, 0, 0, NULL, 31, 'it.po', '2005-06-06 08:59:54.246003', NULL, 0, '2005-05-06 21:12:39.082421');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (19, 5, 100, NULL, '
+    Translators, if you are not familiar with the PO format, gettext
+    documentation is worth reading, especially sections dedicated to
+    this format, e.g. by running:
+         info -n ''(gettext)PO Files''
+         info -n ''(gettext)Header Entry''
+
+    Some information specific to po-debconf are available at
+            /usr/share/doc/po-debconf/README-trans
+         or http://www.debian.org/intl/l10n/po-debconf/README-trans
+
+    Developers do not need to manually edit POT or PO files.
+
+', 'Project-Id-Version: mozilla 2:1.7.1-4
+Report-Msgid-Bugs-To:
+POT-Creation-Date: 2004-07-11 16:16+0900
+PO-Revision-Date: 2004-07-31 22:49+0200
+Last-Translator: Morten Brix Pedersen <morten@wtf.dk>
+Language-Team: debian-l10n-danish <debian-l10n-danish@lists.debian.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Poedit-Language: Italian
+X-Poedit-Country: ITALY
+Plural-Forms: nplurals=2; plural=n != 1
+', true, 47, 9, 0, 0, NULL, 31, 'da.po', '2005-06-06 08:59:54.24466', NULL, 0, '2005-05-06 21:12:31.382429');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (20, 5, 241, NULL, ' Lithuanian translation of mozilla.
+ This file is distributed under the same license as the mozilla package.
+ Kęstutis Biliūnas <kebil@kaunas.init.lt>, 2004.
+
+', 'Project-Id-Version: mozilla
+Report-Msgid-Bugs-To:
+POT-Creation-Date: 2004-07-11 16:16+0900
+PO-Revision-Date: 2004-10-24 14:14+0300
+Last-Translator: Kęstutis Biliūnas <kebil@kaunas.init.lt>
+Language-Team: Lithuanian <komp_lt@konferencijos.lt>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Generator: KBabel 1.3.1
+Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2
+', true, 49, 9, 0, 0, NULL, 31, 'lt.po', '2005-06-06 08:59:54.232379', NULL, 0, '2005-05-06 21:12:37.221421');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (21, 5, 98, NULL, '
+    Translators, if you are not familiar with the PO format, gettext
+    documentation is worth reading, especially sections dedicated to
+    this format, e.g. by running:
+         info -n ''(gettext)PO Files''
+         info -n ''(gettext)Header Entry''
+
+    Some information specific to po-debconf are available at
+            /usr/share/doc/po-debconf/README-trans
+         or http://www.debian.org/intl/l10n/po-debconf/README-trans
+
+    Developers do not need to manually edit POT or PO files.
+
+', 'Project-Id-Version: mozilla
+Report-Msgid-Bugs-To:
+POT-Creation-Date: 2004-07-11 16:16+0900
+PO-Revision-Date: 2004-07-22 17:49+0200
+Last-Translator: Miroslav Kure <kurem@debian.cz>
+Language-Team: Czech <provoz@debian.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
+', true, 46, 9, 0, 0, NULL, 31, 'cs.po', '2005-06-06 08:59:54.2394', NULL, 0, '2005-05-06 21:12:29.45271');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (22, 5, 129, NULL, '  translation of fi.po to Finnish
+  mozilla translation
+
+    Translators, if you are not familiar with the PO format, gettext
+    documentation is worth reading, especially sections dedicated to
+    this format, e.g. by running:
+         info -n ''(gettext)PO Files''
+         info -n ''(gettext)Header Entry''
+
+    Some information specific to po-debconf are available at
+            /usr/share/doc/po-debconf/README-trans
+         or http://www.debian.org/intl/l10n/po-debconf/README-trans
+
+    Developers do not need to manually edit POT or PO files.
+
+ Matti Pöllä <mpo@iki.fi>, 2004.
+', 'Project-Id-Version: mozilla
+Report-Msgid-Bugs-To:
+POT-Creation-Date: 2004-07-11 16:16+0900
+PO-Revision-Date: 2004-08-15 22:41+0300
+Last-Translator: Matti Pöllä <mpo@iki.fi>
+Language-Team: Finnish <debian-l10n-finnish@lists.debian.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n != 1
+', true, 48, 9, 0, 0, NULL, 31, 'fi.po', '2005-06-06 08:59:54.242018', NULL, 0, '2005-05-06 21:12:33.238579');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (23, 5, 148, NULL, '
+    Translators, if you are not familiar with the PO format, gettext
+    documentation is worth reading, especially sections dedicated to
+    this format, e.g. by running:
+         info -n ''(gettext)PO Files''
+         info -n ''(gettext)Header Entry''
+
+    Some information specific to po-debconf are available at
+            /usr/share/doc/po-debconf/README-trans
+         or http://www.debian.org/intl/l10n/po-debconf/README-trans
+
+    Developers do not need to manually edit POT or PO files.
+
+', 'Project-Id-Version: PACKAGE VERSION
+Report-Msgid-Bugs-To:
+POT-Creation-Date: 2004-07-11 16:16+0900
+PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+Last-Translator: FULL NAME <EMAIL@ADDRESS>
+Language-Team: LANGUAGE <LL@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=1; plural=0
+', true, 30, 3, 0, 0, NULL, 31, 'gl.po', '2005-06-06 08:59:54.258136', NULL, 0, '2005-05-06 21:12:35.766036');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (24, 5, 196, NULL, '
+    Translators, if you are not familiar with the PO format, gettext
+    documentation is worth reading, especially sections dedicated to
+    this format, e.g. by running:
+         info -n ''(gettext)PO Files''
+         info -n ''(gettext)Header Entry''
+
+    Some information specific to po-debconf are available at
+            /usr/share/doc/po-debconf/README-trans
+         or http://www.debian.org/intl/l10n/po-debconf/README-trans
+
+    Developers do not need to manually edit POT or PO files.
+
+', 'Project-Id-Version: PACKAGE VERSION
+Report-Msgid-Bugs-To:
+POT-Creation-Date: 2004-07-11 16:16+0900
+PO-Revision-Date: 2004-07-20 02:46+0900
+Last-Translator: FULL NAME <EMAIL@ADDRESS>
+Language-Team: LANGUAGE <LL@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=EUC-JP
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=1; plural=0
+', true, 30, 9, 0, 0, NULL, 31, 'ja.po', '2005-06-06 08:59:54.233769', NULL, 0, '2005-05-06 21:12:23.441015');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (25, 5, 387, NULL, '
+    Translators, if you are not familiar with the PO format, gettext
+    documentation is worth reading, especially sections dedicated to
+    this format, e.g. by running:
+         info -n ''(gettext)PO Files''
+         info -n ''(gettext)Header Entry''
+
+    Some information specific to po-debconf are available at
+            /usr/share/doc/po-debconf/README-trans
+         or http://www.debian.org/intl/l10n/po-debconf/README-trans
+
+    Developers do not need to manually edit POT or PO files.
+
+ Carlos Valdivia Yagüe <valyag@dat.etsit.upm.es>, 2003
+
+', 'Project-Id-Version: mozilla-browser 1.4-4
+Report-Msgid-Bugs-To:
+POT-Creation-Date: 2004-07-11 16:16+0900
+PO-Revision-Date: 2003-09-20 20:00+0200
+Last-Translator: Carlos Valdivia Yagüe <valyag@dat.etsit.upm.es>
+Language-Team: Debian L10n Spanish <debian-l10n-spanish@lists.debian.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n != 1
+', true, 44, 6, 0, 0, NULL, 31, 'es.po', '2005-06-06 08:59:54.251898', NULL, 0, '2005-05-06 21:12:25.930403');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (28, 4, 454, NULL, ' Xhosa translation for evolution
+ Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
+ This file is distributed under the same license as the evolution package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
+
+', 'Project-Id-Version: evolution
+Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
+POT-Creation-Date: 2005-05-06 20:39:27+00:00
+PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+Last-Translator: FULL NAME <EMAIL@ADDRESS>
+Language-Team: Xhosa <xh@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n != 1
+', true, NULL, 0, 0, 0, NULL, 31, 'xh.po', '2005-06-15 19:26:21.919196', NULL, 0, '2005-06-15 19:26:21.919196');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (29, 4, 196, NULL, ' Japanese translation for evolution
+ Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
+ This file is distributed under the same license as the evolution package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
+
+', 'Project-Id-Version: evolution
+Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
+POT-Creation-Date: 2005-05-06 20:39:27.778946+00:00
+PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+Last-Translator: FULL NAME <EMAIL@ADDRESS>
+Language-Team: Japanese <ja@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=1; plural=0
+', true, 13, 0, 0, 1, NULL, 13, 'ja.po', '2005-10-11 23:08:01.899322', NULL, 0, '2005-10-11 23:08:01.899322');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (30, 6, 521, NULL, ' Spanish translation for wammu
+ Copyright (c) (c) 2006 Canonical Ltd, and Rosetta Contributors 2006
+ This file is distributed under the same license as the wammu package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2006.
+
+', 'Project-Id-Version: wammu
+Report-Msgid-Bugs-To: michal@cihar.com
+POT-Creation-Date: 2006-11-10 23:24+0100
+PO-Revision-Date: 2006-12-04 19:50+0000
+Last-Translator: Diogo Matsubara <matsubara@async.com.br>
+Language-Team: Spanish <es@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Rosetta-Export-Date: 2006-12-04 19:58+0000
+Plural-Forms: nplurals=2; plural=n > 1
+', true, 66, 5, 0, 0, NULL, 16, 'po/pt_BR.po', '2006-12-13 21:18:28.796588', NULL, 0, '2006-12-13 21:19:06.369142');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (31, 9, 387, NULL, ' Spanish translation for evolution
+ Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
+ This file is distributed under the same license as the evolution package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2007.
+
+', 'Project-Id-Version: evolution
+Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
+POT-Creation-Date: 2007-01-05 10:22:21.410795+00:00
+PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+Last-Translator: FULL NAME <EMAIL@ADDRESS>
+Language-Team: Spanish <es@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n != 1
+', true, 56, 0, 0, 1, NULL, 56, 'po-disabled/disabled-template-es.po', '2007-01-05 13:04:20.092506', NULL, 0, '2007-01-05 13:04:20.092506');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (32, 7, 387, NULL, ' Spanish translation for evolution
+ Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
+ This file is distributed under the same license as the evolution package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2007.
+
+', 'Project-Id-Version: evolution
+Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
+POT-Creation-Date: 2006-08-14 18:41:07.274661+00:00
+PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+Last-Translator: FULL NAME <EMAIL@ADDRESS>
+Language-Team: Spanish <es@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n != 1
+', true, 12, 0, 0, 1, NULL, 12, '/man-es.po', '2007-01-19 13:00:41.049464', NULL, 0, '2007-01-24 19:16:06.386519');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (33, 10, 387, NULL, ' Spanish translation for alsa-utils
+ Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
+ This file is distributed under the same license as the alsa-utils package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2007.
+
+', 'Project-Id-Version: alsa-utils
+Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
+POT-Creation-Date: 2006-08-14 18:41:07.274661+00:00
+PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+Last-Translator: FULL NAME <EMAIL@ADDRESS>
+Language-Team: Spanish <es@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n != 1
+', true, 13, 0, 0, 0, NULL, 13, 'po/alsa-utils-es.po', '2007-04-07 10:14:36.267119', NULL, 0, '2007-04-07 10:14:36.267119');
+INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (34, 5, 119, NULL, ' English translation for mozilla
+ Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
+ This file is distributed under the same license as the mozilla package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2007.
+
+', 'Project-Id-Version: mozilla
+Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
+POT-Creation-Date: 2005-05-06 21:10:17.367605+00:00
+PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+Last-Translator: FULL NAME <EMAIL@ADDRESS>
+Language-Team: English <en@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n != 1
+', true, 13, 0, 0, 3, NULL, 13, 'debian/po/pkgconf-mozilla-en.po', '2007-07-12 03:42:48.848044', NULL, 0, '2007-07-12 03:42:48.848044');
+
+
+ALTER TABLE pofile ENABLE TRIGGER ALL;
+
+
+ALTER TABLE poexportrequest DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE poexportrequest ENABLE TRIGGER ALL;
+
+
 ALTER TABLE pomsgid DISABLE TRIGGER ALL;
 
 INSERT INTO pomsgid (id, msgid) VALUES (1, 'evolution addressbook');
@@ -6537,6 +7146,232 @@ Your names');
 
 
 ALTER TABLE pomsgid ENABLE TRIGGER ALL;
+
+
+ALTER TABLE potmsgset DISABLE TRIGGER ALL;
+
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (1, 1, 1, 1, '', 'a11y/addressbook/ea-addressbook-view.c:94
+a11y/addressbook/ea-addressbook-view.c:103
+a11y/addressbook/ea-minicard-view.c:119', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (2, 2, 2, 1, '', 'a11y/addressbook/ea-minicard-view.c:101', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (3, 3, 3, 1, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (4, 4, 4, 1, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (5, 5, 5, 1, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (6, 6, 6, 1, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (7, 7, 7, 1, '', 'a11y/addressbook/ea-minicard-view.c:105', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (8, 8, 8, 1, '', 'a11y/addressbook/ea-minicard.c:166', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (9, 9, 9, 1, '', 'addressbook/addressbook-errors.xml.h:2', 'addressbook:ldap-init primary', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (10, 10, 10, 1, '', 'addressbook/addressbook-errors.xml.h:4', 'addressbook:ldap-init secondary', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (11, 11, 11, 1, '', 'addressbook/addressbook-errors.xml.h:6', 'addressbook:ldap-auth primary', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (12, 12, 12, 1, '', 'addressbook/addressbook-errors.xml.h:8', 'addressbook:ldap-auth secondary', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (13, 13, 13, 1, '', 'addressbook/gui/component/addressbook-migrate.c:124
+calendar/gui/migration.c:188 mail/em-migrate.c:1201', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (14, 14, 14, 1, '', 'addressbook/gui/component/addressbook-migrate.c:1123', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (15, 15, 15, 1, '', 'addressbook/gui/widgets/e-addressbook-model.c:151', '', 'c-format', NULL, 16);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (16, 17, 16, 1, '', 'addressbook/gui/widgets/eab-gui-util.c:275', '', 'c-format', NULL, 18);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (17, 19, 17, 1, '', 'addressbook/gui/widgets/foo.c:345', '', 'c-format', NULL, 20);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (18, 21, 18, 1, ' start po-group: common', 'encfs/FileUtils.cpp:1044', 'xgroup(common)', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (19, 22, 19, 1, '', 'encfs/main.cpp:340', 'xgroup(usage)', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (20, 23, 20, 1, '', 'encfs/FileUtils.cpp:535', 'xgroup(setup)', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (21, 24, 0, 1, '', 'encfs/encfsctl.cpp:346', '', 'c-format', NULL, 25);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (22, 26, 22, 1, '', 'modules/aggregator.module:15', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (23, 27, 0, 1, NULL, 'foo.c:123', 'This is a comment...', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (24, 28, 1, 3, '', 'src/netapplet.c:131', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (25, 29, 2, 3, '', 'src/netapplet.c:133', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (26, 30, 3, 3, '', 'src/netapplet.c:135', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (27, 31, 4, 3, '', 'src/netapplet.c:139', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (28, 32, 5, 3, '', 'src/netapplet.c:141', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (29, 33, 6, 3, '', 'src/netapplet.c:291 src/netapplet.c:312', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (30, 34, 7, 3, '', 'src/netapplet.c:359', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (31, 35, 8, 3, '', 'src/netapplet.c:391', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (32, 36, 9, 3, '', 'src/netapplet.c:410', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (33, 37, 10, 3, '', 'src/netapplet.c:427', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (34, 38, 11, 3, '', 'src/netapplet.c:479', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (35, 39, 12, 3, '', 'src/netapplet.c:496', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (36, 40, 13, 3, '', 'src/netapplet.c:732', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (37, 41, 14, 3, '', 'src/netapplet.c:747', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (38, 42, 15, 3, '', 'src/netapplet.c:768', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (39, 43, 16, 3, '', 'src/netapplet.c:870', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (40, 44, 17, 3, '', 'src/netapplet.c:955', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (41, 45, 18, 3, '', 'src/netapplet.c:958', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (42, 46, 19, 3, '', 'src/netapplet.c:970', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (43, 47, 20, 3, '', 'src/netapplet.c:1015', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (44, 48, 21, 3, '', 'src/netapplet.c:1018', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (45, 49, 22, 3, '', 'src/netapplet.c:1021', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (46, 50, 23, 3, '', 'src/netapplet.c:1032', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (47, 51, 24, 3, '', 'src/netapplet.c:1072', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (48, 52, 25, 3, '', 'src/netapplet.c:1082', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (49, 53, 26, 3, '', 'src/netapplet.c:1093', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (50, 54, 27, 3, '', 'src/netapplet.c:1526', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (51, 55, 28, 3, '', 'src/netapplet.glade.h:1', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (52, 56, 29, 3, '', 'src/netapplet.glade.h:2', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (53, 57, 30, 3, '', 'src/netapplet.glade.h:3', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (54, 58, 31, 3, '', 'src/netapplet.glade.h:4', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (55, 59, 32, 3, '', 'src/netapplet.glade.h:5', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (56, 60, 33, 3, '', 'src/netapplet.glade.h:6', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (57, 61, 34, 3, '', 'src/netapplet.glade.h:7', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (58, 62, 35, 3, '', 'src/netapplet.glade.h:8', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (59, 63, 36, 3, '', 'src/netapplet.glade.h:9', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (60, 64, 37, 3, '', 'src/netapplet.glade.h:10', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (61, 65, 38, 3, '', 'src/netapplet.glade.h:11', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (62, 66, 39, 3, '', 'src/netapplet.glade.h:12', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (63, 67, 40, 3, '', 'src/netapplet.glade.h:13', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (64, 68, 41, 3, '', 'src/netapplet.glade.h:14', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (65, 69, 42, 3, '', 'src/netapplet.glade.h:15', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (66, 70, 43, 3, '', 'src/netapplet.glade.h:16', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (67, 71, 1, 2, '', 'pmount.c:50', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (68, 72, 2, 2, '', 'pmount.c:57', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (69, 73, 3, 2, '', 'pmount.c:64', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (70, 74, 4, 2, '', 'pmount.c:67', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (71, 75, 5, 2, '', 'pmount.c:120', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (72, 76, 6, 2, '', 'pmount.c:126', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (73, 77, 7, 2, '', 'pmount.c:130', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (74, 78, 8, 2, '', 'pmount.c:134', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (75, 79, 9, 2, '', 'pmount.c:141', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (76, 80, 10, 2, '', 'pmount.c:171 pumount.c:98', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (77, 81, 11, 2, '', 'pmount.c:176 pmount.c:270', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (78, 82, 12, 2, '', 'pmount.c:212', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (79, 83, 13, 2, '', 'pmount.c:218', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (80, 84, 14, 2, '', 'pmount.c:242', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (81, 85, 15, 2, '', 'pmount.c:258 pumount.c:124', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (82, 86, 16, 2, '', 'pmount.c:274', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (83, 87, 17, 2, '', 'pmount.c:347', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (84, 88, 18, 2, '', 'pmount.c:361', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (85, 89, 19, 2, '', 'pmount.c:401', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (86, 90, 20, 2, '', 'pmount.c:417', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (87, 91, 21, 2, '', 'pmount.c:509 pumount.c:181', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (88, 92, 22, 2, '', 'pmount.c:542 pumount.c:201', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (89, 93, 23, 2, '', 'pmount.c:580', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (90, 94, 24, 2, '', 'pmount.c:589 pumount.c:237', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (91, 95, 25, 2, '', 'pmount.c:595 pumount.c:243', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (92, 96, 26, 2, '', 'pmount.c:635', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (93, 97, 27, 2, '', 'pmount.c:656', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (94, 98, 28, 2, '', 'pmount-hal.c:29', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (95, 99, 29, 2, '', 'pmount-hal.c:140', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (96, 100, 30, 2, '', 'pmount-hal.c:169', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (97, 101, 31, 2, '', 'pmount-hal.c:175', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (98, 102, 32, 2, '', 'pmount-hal.c:182', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (99, 103, 33, 2, '', 'policy.c:79', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (100, 104, 34, 2, '', 'policy.c:90', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (101, 105, 35, 2, '', 'policy.c:97', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (102, 106, 36, 2, '', 'policy.c:128', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (103, 107, 37, 2, '', 'policy.c:228', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (104, 108, 38, 2, '', 'policy.c:233', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (105, 109, 39, 2, '', 'policy.c:251 policy.c:307', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (106, 110, 40, 2, '', 'policy.c:338', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (107, 111, 41, 2, '', 'policy.c:340', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (108, 112, 42, 2, '', 'policy.c:342', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (109, 113, 43, 2, '', 'policy.c:378', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (110, 114, 44, 2, '', 'policy.c:393', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (111, 115, 45, 2, '', 'policy.c:411', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (112, 116, 46, 2, '', 'policy.c:413', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (113, 117, 47, 2, '', 'pumount.c:42', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (114, 118, 48, 2, '', 'pumount.c:72', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (115, 119, 49, 2, '', 'pumount.c:78', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (116, 120, 50, 2, '', 'pumount.c:108 pumount.c:136', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (117, 121, 51, 2, '', 'pumount.c:140', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (118, 122, 52, 2, '', 'pumount.c:148', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (119, 123, 53, 2, '', 'utils.c:51', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (120, 124, 54, 2, '', 'utils.c:107', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (121, 125, 55, 2, '', 'utils.c:122', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (122, 126, 56, 2, '', 'utils.c:129', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (123, 127, 57, 2, '', 'utils.c:149', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (124, 128, 58, 2, '', 'utils.c:158', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (125, 129, 59, 2, '', 'utils.c:210', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (126, 130, 60, 2, '', 'utils.c:252', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (127, 131, 61, 2, '', 'utils.c:261', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (128, 132, 62, 2, '', 'utils.c:270', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (129, 133, 63, 2, '', 'utils.c:279', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (130, 1, 1, 4, '', 'a11y/addressbook/ea-addressbook-view.c:94
+a11y/addressbook/ea-addressbook-view.c:103
+a11y/addressbook/ea-minicard-view.c:119', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (131, 2, 2, 4, '', 'a11y/addressbook/ea-minicard-view.c:101', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (132, 3, 3, 4, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (133, 4, 4, 4, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (134, 5, 5, 4, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (135, 6, 6, 4, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (136, 7, 7, 4, '', 'a11y/addressbook/ea-minicard-view.c:105', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (137, 8, 8, 4, '', 'a11y/addressbook/ea-minicard.c:166', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (138, 9, 9, 4, '', 'addressbook/addressbook-errors.xml.h:2', 'addressbook:ldap-init primary', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (139, 10, 10, 4, '', 'addressbook/addressbook-errors.xml.h:4', 'addressbook:ldap-init secondary', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (140, 11, 11, 4, '', 'addressbook/addressbook-errors.xml.h:6', 'addressbook:ldap-auth primary', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (141, 12, 12, 4, '', 'addressbook/addressbook-errors.xml.h:8', 'addressbook:ldap-auth secondary', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (142, 13, 13, 4, '', 'addressbook/gui/component/addressbook-migrate.c:124
+calendar/gui/migration.c:188 mail/em-migrate.c:1201', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (143, 14, 14, 4, '', 'addressbook/gui/component/addressbook-migrate.c:1123', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (144, 15, 15, 4, '', 'addressbook/gui/widgets/e-addressbook-model.c:151', '', 'c-format', NULL, 16);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (145, 17, 16, 4, '', 'addressbook/gui/widgets/eab-gui-util.c:275', '', 'c-format', NULL, 18);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (146, 19, 17, 4, '', 'addressbook/gui/widgets/foo.c:345', '', 'c-format', NULL, 20);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (147, 21, 18, 4, ' start po-group: common', 'encfs/FileUtils.cpp:1044', 'xgroup(common)', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (148, 22, 19, 4, '', 'encfs/main.cpp:340', 'xgroup(usage)', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (149, 23, 20, 4, '', 'encfs/FileUtils.cpp:535', 'xgroup(setup)', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (150, 24, 21, 4, '', 'encfs/encfsctl.cpp:346', '', 'c-format', NULL, 25);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (151, 26, 22, 4, '', 'modules/aggregator.module:15', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (152, 134, 1, 5, '', '../mozilla-browser.templates:3', 'Type: note
+Description', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (153, 135, 2, 5, '', '../mozilla-browser.templates:3', 'Type: note
+Description', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (154, 136, 3, 5, '', '../mozilla-browser.templates:3', 'Type: note
+Description', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (155, 137, 4, 5, '', '../mozilla-browser.templates:11', 'Type: select
+Choices', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (156, 138, 5, 5, '', '../mozilla-browser.templates:13', 'Type: select
+Description', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (157, 139, 6, 5, '', '../mozilla-browser.templates:13', 'Type: select
+Description', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (158, 140, 7, 5, '', '../mozilla-browser.templates:24', 'Type: boolean
+Description', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (159, 141, 8, 5, '', '../mozilla-browser.templates:24', 'Type: boolean
+Description', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (160, 142, 9, 5, '', '../mozilla-browser.templates:24', 'Type: boolean
+Description', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (161, 27, 0, 4, NULL, 'foo.c:123', 'This is a comment...', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (162, 143, 0, 5, NULL, '', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (163, 144, 0, 5, NULL, '', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (164, 145, 0, 5, NULL, '', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (165, 146, 23, 1, '', 'lib/getopt.c:629 lib/getopt.c:641', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (166, 147, 1, 7, '', 'test_browserwidget.py:34', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (167, 147, 1, 8, '', 'test_browserwidget.py:34', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (168, 148, 1, 6, '', 'Wammu/Main.py:469', '', 'python-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (169, 149, 2, 6, '', 'Wammu/Error.py:82', '', 'python-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (170, 150, 3, 6, '', 'Wammu/PhoneSearch.py:127 Wammu/PhoneSearch.py:157', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (171, 151, 4, 6, '', 'Wammu/Data.py:652', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (172, 152, 5, 6, '', 'Wammu/Main.py:276', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (173, 153, 6, 6, '', '', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (174, 154, 7, 6, '', '', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (175, 155, 8, 6, '', '', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (176, 1, 1, 9, '', 'a11y/addressbook/ea-addressbook-view.c:94
+a11y/addressbook/ea-addressbook-view.c:103
+a11y/addressbook/ea-minicard-view.c:119', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (177, 2, 2, 9, '', 'a11y/addressbook/ea-minicard-view.c:101', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (178, 3, 3, 9, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (179, 4, 4, 9, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (180, 5, 5, 9, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (181, 6, 6, 9, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (182, 7, 7, 9, '', 'a11y/addressbook/ea-minicard-view.c:105', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (183, 8, 8, 9, '', 'a11y/addressbook/ea-minicard.c:166', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (184, 9, 9, 9, '', 'addressbook/addressbook-errors.xml.h:2', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (185, 10, 10, 9, '', 'addressbook/addressbook-errors.xml.h:4', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (186, 11, 11, 9, '', 'addressbook/addressbook-errors.xml.h:6', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (187, 12, 12, 9, '', 'addressbook/addressbook-errors.xml.h:8', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (188, 13, 13, 9, '', 'addressbook/gui/component/addressbook-migrate.c:124
+calendar/gui/migration.c:188 mail/em-migrate.c:1201', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (189, 14, 14, 9, '', 'addressbook/gui/component/addressbook-migrate.c:1123', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (190, 15, 15, 9, '', 'addressbook/gui/widgets/e-addressbook-model.c:151', '', 'c-format', NULL, 16);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (191, 17, 16, 9, '', 'addressbook/gui/widgets/eab-gui-util.c:275', '', 'c-format', NULL, 18);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (192, 19, 17, 9, '', 'addressbook/gui/widgets/foo.c:345', '', 'c-format', NULL, 20);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (193, 21, 18, 9, '', 'encfs/FileUtils.cpp:1044', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (194, 22, 19, 9, '', 'encfs/main.cpp:340', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (195, 23, 20, 9, '', 'encfs/FileUtils.cpp:535', '', 'c-format', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (196, 24, 21, 9, '', 'encfs/encfsctl.cpp:346', '', 'c-format', NULL, 25);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (197, 26, 22, 9, '', 'modules/aggregator.module:15', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (198, 147, 1, 10, '', 'test_browserwidget.py:34', '', '', 'Something', NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (199, 156, 2, 10, '', '', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (200, 157, 3, 10, '', '', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (201, 158, 4, 10, '', '', '', '', NULL, NULL);
+
+
+ALTER TABLE potmsgset ENABLE TRIGGER ALL;
 
 
 ALTER TABLE potranslation DISABLE TRIGGER ALL;
@@ -7897,851 +8732,6 @@ INSERT INTO potranslation (id, translation) VALUES (668, 'auto, esddsp, artsdsp,
 
 
 ALTER TABLE potranslation ENABLE TRIGGER ALL;
-
-
-ALTER TABLE pocomment DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE pocomment ENABLE TRIGGER ALL;
-
-
-ALTER TABLE pofile DISABLE TRIGGER ALL;
-
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (1, 1, 387, 'Spanish translation for evolution in hoary', ' traducción de es.po al Spanish
- translation of es.po to Spanish
- translation of evolution.HEAD to Spanish
- Copyright © 2000-2002 Free Software Foundation, Inc.
- This file is distributed under the same license as the evolution package.
- Carlos Perelló Marín <carlos@gnome-db.org>, 2000-2001.
- Héctor García Álvarez <hector@scouts-es.org>, 2000-2002.
- Ismael Olea <Ismael@olea.org>, 2001, (revisiones) 2003.
- Eneko Lacunza <enlar@iname.com>, 2001-2002.
- Héctor García Álvarez <hector@scouts-es.org>, 2002.
- Pablo Gonzalo del Campo <pablodc@bigfoot.com>,2003 (revisión).
- Francisco Javier F. Serrador <serrador@cvs.gnome.org>, 2003, 2004.
-
-
-', 'Project-Id-Version: es
-POT-Creation-Date: 2004-08-17 11:10+0200
-PO-Revision-Date: 2005-04-07 13:22+0000
-Last-Translator: Carlos Perelló Marín <carlos@canonical.com>
-Language-Team: Spanish <traductores@es.gnome.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Report-Msgid-Bugs-To: serrador@hispalinux.es
-Plural-Forms: nplurals=2; plural=(n != 1);
-', true, 13, 7, 0, 1, NULL, 12, 'es.po', '2005-06-06 08:59:54.24073', NULL, 2, '2007-01-04 11:02:02.844658');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (3, 2, 560, NULL, ' Spanish (Spain) translation for mount removable devices as normal user
- Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
- This file is distributed under the same license as the mount removable devices as normal user package.
- FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
-', 'Project-Id-Version: mount removable devices as normal user
-Report-Msgid-Bugs-To: martin.pitt@canonical.com
-POT-Creation-Date: 2005-04-04 17:31+0200
-PO-Revision-Date: 2005-03-15 21:19+0000
-Last-Translator: Daniel Aguayo <danner@mixmail.com>
-Language-Team: Spanish (Spain) <es_ES@li.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=2; plural=n != 1
-', true, 37, 63, 0, 0, NULL, 31, 'es.po', '2005-06-06 08:59:54.236824', NULL, 0, '2005-05-06 20:11:16.591589');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (4, 2, 143, NULL, ' German translations for PACKAGE package
- German messages for PACKAGE.
- Copyright (C) 2004 Martin Pitt
- This file is distributed under the same license as the PACKAGE package.
- Martin Pitt <martin.pitt@canonical.com>, 2004.
-
-', 'Project-Id-Version: pmount 0.5
-Report-Msgid-Bugs-To: martin.pitt@canonical.com
-POT-Creation-Date: 2005-04-04 17:31+0200
-PO-Revision-Date: 2004-12-29 17:56+0100
-Last-Translator: Martin Pitt <martin.pitt@canonical.com>
-Language-Team: German <de@li.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=2; plural=(n != 1);
-', true, 38, 63, 0, 0, NULL, 31, 'de.po', '2005-06-06 08:59:54.238198', NULL, 0, '2005-05-06 20:11:41.773683');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (5, 2, 68, NULL, ' Catalan translation for mount removable devices as normal user
- Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
- This file is distributed under the same license as the mount removable devices as normal user package.
- FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
-', 'Project-Id-Version: mount removable devices as normal user
-Report-Msgid-Bugs-To: martin.pitt@canonical.com
-POT-Creation-Date: 2005-04-04 17:31+0200
-PO-Revision-Date: 2005-02-12 01:18+0000
-Last-Translator: Jordi Vilalta <jvprat@wanadoo.es>
-Language-Team: Catalan <ca@li.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=2; plural=n != 1
-', true, 34, 62, 0, 0, NULL, 31, 'ca.po', '2005-06-06 08:59:54.254523', NULL, 0, '2005-05-06 20:09:51.386766');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (6, 2, 132, NULL, ' French translation for mount removable devices as normal user
- Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
- This file is distributed under the same license as the mount removable devices as normal user package.
- FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
-
-', 'Project-Id-Version: mount removable devices as normal user
-Report-Msgid-Bugs-To: martin.pitt@canonical.com
-POT-Creation-Date: 2005-04-04 17:31+0200
-PO-Revision-Date: 2005-04-02 22:34+0000
-Last-Translator: Nicolas Velin <nsv@fr.st>
-Language-Team: French <fr@li.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=2; plural=n > 1
-', true, 39, 57, 0, 0, NULL, 31, 'fr.po', '2005-06-06 08:59:54.256914', NULL, 0, '2005-05-06 20:12:08.283113');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (7, 2, 360, NULL, ' Croatian translation for pmount
- Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
- This file is distributed under the same license as the pmount package.
- FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
-
-', 'Project-Id-Version: pmount
-Report-Msgid-Bugs-To: martin.pitt@canonical.com
-POT-Creation-Date: 2005-04-04 17:31+0200
-PO-Revision-Date: 2005-03-16 14:51+0000
-Last-Translator: Edgar Bursic <edgar@monteparadiso.hr>
-Language-Team: Croatian <hr@li.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
-', true, 33, 63, 0, 0, NULL, 31, 'hr.po', '2005-06-06 08:59:54.255734', NULL, 0, '2005-05-06 20:09:31.825695');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (8, 2, 527, NULL, ' Italian (Italy) translation for pmount
- Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
- This file is distributed under the same license as the pmount package.
- FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
-
-', 'Project-Id-Version: pmount
-Report-Msgid-Bugs-To: martin.pitt@canonical.com
-POT-Creation-Date: 2005-04-04 17:31+0200
-PO-Revision-Date: 2005-03-16 23:54+0000
-Last-Translator: Francesco Accattapà <callipeo@libero.it>
-Language-Team: Italian (Italy) <it_IT@li.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=2; plural=n != 1
-', true, 40, 49, 0, 0, NULL, 31, 'it_IT.po', '2005-06-06 08:59:54.259358', NULL, 0, '2005-05-06 20:12:35.976807');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (9, 2, 98, NULL, ' Czech translation for mount removable devices as normal user
- Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
- This file is distributed under the same license as the mount removable devices as normal user package.
- FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
-
-', 'Project-Id-Version: mount removable devices as normal user
-Report-Msgid-Bugs-To: martin.pitt@canonical.com
-POT-Creation-Date: 2005-04-04 17:31+0200
-PO-Revision-Date: 2005-02-10 15:15+0000
-Last-Translator: Vlastimil Skacel <skacel@svtech.cz>
-Language-Team: Czech <cs@li.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
-', true, 36, 35, 0, 0, NULL, 31, 'cs.po', '2005-06-06 08:59:54.249601', NULL, 0, '2005-05-06 20:10:41.732277');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (10, 2, 302, NULL, ' Bokmål, Norwegian translation for pmount
- Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
- This file is distributed under the same license as the pmount package.
- FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
-
-', 'Project-Id-Version: pmount
-Report-Msgid-Bugs-To: martin.pitt@canonical.com
-POT-Creation-Date: 2005-04-04 17:31+0200
-PO-Revision-Date: 2005-03-31 10:35+0000
-Last-Translator: Sigurd Gartmann <sigurd-ubuntu@brogar.org>
-Language-Team: Bokmål, Norwegian <nb@li.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=2; plural=n != 1
-', true, 35, 63, 0, 0, NULL, 31, 'nb.po', '2005-06-06 08:59:54.248418', NULL, 0, '2005-05-06 20:10:18.431259');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (11, 2, 387, NULL, ' Spanish translation for mount removable devices as normal user
- Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
- This file is distributed under the same license as the mount removable devices as normal user package.
- FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
-
-', 'Project-Id-Version: mount removable devices as normal user
-Report-Msgid-Bugs-To: martin.pitt@canonical.com
-POT-Creation-Date: 2005-04-04 17:31+0200
-PO-Revision-Date: 2005-02-21 17:57+0000
-Last-Translator: Aloriel <jorge.gonzalez.gonzalez@hispalinux.es>
-Language-Team: Spanish <es@li.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=2; plural=n != 1
-', true, 41, 54, 0, 0, NULL, 31, 'po/es.po', '2005-06-06 08:59:54.229882', NULL, 0, '2005-05-06 20:13:10.405056');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (12, 4, 387, NULL, ' traducción de es.po al Spanish
- translation of es.po to Spanish
- translation of evolution.HEAD to Spanish
- Copyright © 2000-2002 Free Software Foundation, Inc.
- This file is distributed under the same license as the evolution package.
- Carlos Perelló Marín <carlos@gnome-db.org>, 2000-2001.
- Héctor García Álvarez <hector@scouts-es.org>, 2000-2002.
- Ismael Olea <Ismael@olea.org>, 2001, (revisiones) 2003.
- Eneko Lacunza <enlar@iname.com>, 2001-2002.
- Héctor García Álvarez <hector@scouts-es.org>, 2002.
- Pablo Gonzalo del Campo <pablodc@bigfoot.com>,2003 (revisión).
- Francisco Javier F. Serrador <serrador@cvs.gnome.org>, 2003, 2004.
-
-
-', 'Project-Id-Version: es
-POT-Creation-Date: 2004-08-17 11:10+0200
-PO-Revision-Date: 2005-04-07 13:22+0000
-Last-Translator: Carlos Perelló Marín <carlos@canonical.com>
-Language-Team: Spanish <traductores@es.gnome.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Report-Msgid-Bugs-To: serrador@hispalinux.es
-Plural-Forms: nplurals=2; plural=(n != 1);
-', true, 50, 6, 1, 1, NULL, 31, 'es.po', '2005-06-06 08:59:54.235169', NULL, 1, '2005-06-06 20:05:03.244905');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (13, 5, 132, NULL, '
-    Translators, if you are not familiar with the PO format, gettext
-    documentation is worth reading, especially sections dedicated to
-    this format, e.g. by running:
-         info -n ''(gettext)PO Files''
-         info -n ''(gettext)Header Entry''
-
-    Some information specific to po-debconf are available at
-            /usr/share/doc/po-debconf/README-trans
-         or http://www.debian.org/intl/l10n/po-debconf/README-trans
-
-    Developers do not need to manually edit POT or PO files.
-
-', 'Project-Id-Version: mozilla 2:1.7.4-1
-Report-Msgid-Bugs-To:
-POT-Creation-Date: 2004-07-11 16:16+0900
-PO-Revision-Date: 2004-08-02 00:08+0200
-Last-Translator: Denis Barbier <barbier@linuxfr.org>
-Language-Team: French <debian-l10n-french@lists.debian.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=2; plural=n > 1
-', true, 42, 9, 0, 0, NULL, 31, 'fr.po', '2005-06-06 08:59:54.243358', NULL, 0, '2005-05-06 21:12:18.833057');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (14, 5, 112, NULL, '
-    Translators, if you are not familiar with the PO format, gettext
-    documentation is worth reading, especially sections dedicated to
-    this format, e.g. by running:
-         info -n ''(gettext)PO Files''
-         info -n ''(gettext)Header Entry''
-
-    Some information specific to po-debconf are available at
-            /usr/share/doc/po-debconf/README-trans
-         or http://www.debian.org/intl/l10n/po-debconf/README-trans
-
-    Developers do not need to manually edit POT or PO files.
-
-', 'Project-Id-Version: mozilla 2:1.6-3
-POT-Creation-Date: 2004-07-11 16:16+0900
-PO-Revision-Date: 2004-09-09 11:37+0100
-Last-Translator: Luk Claes <luk.claes@ugent.be>
-Language-Team: Debian l10n Dutch <debian-l10n-dutch@lists.debian.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=2; plural=n != 1
-', true, 45, 9, 0, 0, NULL, 31, 'nl.po', '2005-06-06 08:59:54.260522', NULL, 0, '2005-05-06 21:12:27.602384');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (15, 5, 521, NULL, '
-    Translators, if you are not familiar with the PO format, gettext
-    documentation is worth reading, especially sections dedicated to
-    this format, e.g. by running:
-         info -n ''(gettext)PO Files''
-         info -n ''(gettext)Header Entry''
-
-    Some information specific to po-debconf are available at
-            /usr/share/doc/po-debconf/README-trans
-         or http://www.debian.org/intl/l10n/po-debconf/README-trans
-
-    Developers do not need to manually edit POT or PO files.
-
-', 'Project-Id-Version: mozilla
-Report-Msgid-Bugs-To:
-POT-Creation-Date: 2004-07-11 16:16+0900
-PO-Revision-Date: 2004-07-25 16:17-0300
-Last-Translator: André Luís Lopes <andrelop@debian.org>
-Language-Team: Debian-BR Porject <debian-l10n-portuguese@lists.debian.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=2; plural=n > 1
-', true, 43, 9, 0, 0, NULL, 31, 'pt_BR.po', '2005-06-06 08:59:54.24721', NULL, 0, '2005-05-06 21:12:20.874654');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (16, 5, 143, NULL, '
-    Translators, if you are not familiar with the PO format, gettext
-    documentation is worth reading, especially sections dedicated to
-    this format, e.g. by running:
-         info -n ''(gettext)PO Files''
-         info -n ''(gettext)Header Entry''
-
-    Some information specific to po-debconf are available at
-            /usr/share/doc/po-debconf/README-trans
-         or http://www.debian.org/intl/l10n/po-debconf/README-trans
-
-    Developers do not need to manually edit POT or PO files.
-
-', 'Project-Id-Version: PACKAGE VERSION
-Report-Msgid-Bugs-To:
-POT-Creation-Date: 2004-07-11 16:16+0900
-PO-Revision-Date: 2004-07-24 15:24+0200
-Last-Translator: Helge Kreutzmann <kreutzm@itp.uni-hannover.de>
-Language-Team: de <debian-l10n-german@lists.debian.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=2; plural=n != 1
-', true, 51, 9, 0, 0, NULL, 31, 'de.po', '2005-06-06 08:59:54.253299', NULL, 0, '2005-05-06 21:12:42.747648');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (17, 5, 427, NULL, ' Turkish translation of mozilla.
- This file is distributed under the same license as the mozilla package.
- Mehmet Türker <mturker@innova.com.tr>, 2004.
-
-', 'Project-Id-Version: mozilla
-Report-Msgid-Bugs-To:
-POT-Creation-Date: 2004-07-11 16:16+0900
-PO-Revision-Date: 2004-04-25 14:47+0300
-Last-Translator: Mehmet Türker <EMAIL>
-Language-Team: Turkish <debian-l10n-turkish@lists.debian.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Plural-Forms:  nplurals=1; plural=0;
-', true, 30, 6, 0, 0, NULL, 31, 'tr.po', '2005-06-06 08:59:54.250735', NULL, 0, '2005-05-06 21:12:40.937835');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (18, 5, 193, NULL, ' Italian translation of debconf for mozilla.
- This file is distributed under the same license as the mozilla package.
- Copyright 2004 by Valentina Commissari <ayor@quaqua.net>.
-', 'Project-Id-Version: mozilla 1.7.3-5
-POT-Creation-Date: 2004-07-11 16:16+0900
-PO-Revision-Date: 2004-11-01 13:30+0100
-Last-Translator: Valentina Commissari <tsukimi@quaqua.net>
-Language-Team: Italian <debian-l10n-italian@lists.debian.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Poedit-Language: Italian
-X-Poedit-Country: ITALY
-Plural-Forms: nplurals=2; plural=n != 1
-', true, 50, 9, 0, 0, NULL, 31, 'it.po', '2005-06-06 08:59:54.246003', NULL, 0, '2005-05-06 21:12:39.082421');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (19, 5, 100, NULL, '
-    Translators, if you are not familiar with the PO format, gettext
-    documentation is worth reading, especially sections dedicated to
-    this format, e.g. by running:
-         info -n ''(gettext)PO Files''
-         info -n ''(gettext)Header Entry''
-
-    Some information specific to po-debconf are available at
-            /usr/share/doc/po-debconf/README-trans
-         or http://www.debian.org/intl/l10n/po-debconf/README-trans
-
-    Developers do not need to manually edit POT or PO files.
-
-', 'Project-Id-Version: mozilla 2:1.7.1-4
-Report-Msgid-Bugs-To:
-POT-Creation-Date: 2004-07-11 16:16+0900
-PO-Revision-Date: 2004-07-31 22:49+0200
-Last-Translator: Morten Brix Pedersen <morten@wtf.dk>
-Language-Team: debian-l10n-danish <debian-l10n-danish@lists.debian.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Poedit-Language: Italian
-X-Poedit-Country: ITALY
-Plural-Forms: nplurals=2; plural=n != 1
-', true, 47, 9, 0, 0, NULL, 31, 'da.po', '2005-06-06 08:59:54.24466', NULL, 0, '2005-05-06 21:12:31.382429');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (20, 5, 241, NULL, ' Lithuanian translation of mozilla.
- This file is distributed under the same license as the mozilla package.
- Kęstutis Biliūnas <kebil@kaunas.init.lt>, 2004.
-
-', 'Project-Id-Version: mozilla
-Report-Msgid-Bugs-To:
-POT-Creation-Date: 2004-07-11 16:16+0900
-PO-Revision-Date: 2004-10-24 14:14+0300
-Last-Translator: Kęstutis Biliūnas <kebil@kaunas.init.lt>
-Language-Team: Lithuanian <komp_lt@konferencijos.lt>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Generator: KBabel 1.3.1
-Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2
-', true, 49, 9, 0, 0, NULL, 31, 'lt.po', '2005-06-06 08:59:54.232379', NULL, 0, '2005-05-06 21:12:37.221421');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (21, 5, 98, NULL, '
-    Translators, if you are not familiar with the PO format, gettext
-    documentation is worth reading, especially sections dedicated to
-    this format, e.g. by running:
-         info -n ''(gettext)PO Files''
-         info -n ''(gettext)Header Entry''
-
-    Some information specific to po-debconf are available at
-            /usr/share/doc/po-debconf/README-trans
-         or http://www.debian.org/intl/l10n/po-debconf/README-trans
-
-    Developers do not need to manually edit POT or PO files.
-
-', 'Project-Id-Version: mozilla
-Report-Msgid-Bugs-To:
-POT-Creation-Date: 2004-07-11 16:16+0900
-PO-Revision-Date: 2004-07-22 17:49+0200
-Last-Translator: Miroslav Kure <kurem@debian.cz>
-Language-Team: Czech <provoz@debian.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
-', true, 46, 9, 0, 0, NULL, 31, 'cs.po', '2005-06-06 08:59:54.2394', NULL, 0, '2005-05-06 21:12:29.45271');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (22, 5, 129, NULL, '  translation of fi.po to Finnish
-  mozilla translation
-
-    Translators, if you are not familiar with the PO format, gettext
-    documentation is worth reading, especially sections dedicated to
-    this format, e.g. by running:
-         info -n ''(gettext)PO Files''
-         info -n ''(gettext)Header Entry''
-
-    Some information specific to po-debconf are available at
-            /usr/share/doc/po-debconf/README-trans
-         or http://www.debian.org/intl/l10n/po-debconf/README-trans
-
-    Developers do not need to manually edit POT or PO files.
-
- Matti Pöllä <mpo@iki.fi>, 2004.
-', 'Project-Id-Version: mozilla
-Report-Msgid-Bugs-To:
-POT-Creation-Date: 2004-07-11 16:16+0900
-PO-Revision-Date: 2004-08-15 22:41+0300
-Last-Translator: Matti Pöllä <mpo@iki.fi>
-Language-Team: Finnish <debian-l10n-finnish@lists.debian.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=2; plural=n != 1
-', true, 48, 9, 0, 0, NULL, 31, 'fi.po', '2005-06-06 08:59:54.242018', NULL, 0, '2005-05-06 21:12:33.238579');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (23, 5, 148, NULL, '
-    Translators, if you are not familiar with the PO format, gettext
-    documentation is worth reading, especially sections dedicated to
-    this format, e.g. by running:
-         info -n ''(gettext)PO Files''
-         info -n ''(gettext)Header Entry''
-
-    Some information specific to po-debconf are available at
-            /usr/share/doc/po-debconf/README-trans
-         or http://www.debian.org/intl/l10n/po-debconf/README-trans
-
-    Developers do not need to manually edit POT or PO files.
-
-', 'Project-Id-Version: PACKAGE VERSION
-Report-Msgid-Bugs-To:
-POT-Creation-Date: 2004-07-11 16:16+0900
-PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
-Last-Translator: FULL NAME <EMAIL@ADDRESS>
-Language-Team: LANGUAGE <LL@li.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=1; plural=0
-', true, 30, 3, 0, 0, NULL, 31, 'gl.po', '2005-06-06 08:59:54.258136', NULL, 0, '2005-05-06 21:12:35.766036');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (24, 5, 196, NULL, '
-    Translators, if you are not familiar with the PO format, gettext
-    documentation is worth reading, especially sections dedicated to
-    this format, e.g. by running:
-         info -n ''(gettext)PO Files''
-         info -n ''(gettext)Header Entry''
-
-    Some information specific to po-debconf are available at
-            /usr/share/doc/po-debconf/README-trans
-         or http://www.debian.org/intl/l10n/po-debconf/README-trans
-
-    Developers do not need to manually edit POT or PO files.
-
-', 'Project-Id-Version: PACKAGE VERSION
-Report-Msgid-Bugs-To:
-POT-Creation-Date: 2004-07-11 16:16+0900
-PO-Revision-Date: 2004-07-20 02:46+0900
-Last-Translator: FULL NAME <EMAIL@ADDRESS>
-Language-Team: LANGUAGE <LL@li.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=EUC-JP
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=1; plural=0
-', true, 30, 9, 0, 0, NULL, 31, 'ja.po', '2005-06-06 08:59:54.233769', NULL, 0, '2005-05-06 21:12:23.441015');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (25, 5, 387, NULL, '
-    Translators, if you are not familiar with the PO format, gettext
-    documentation is worth reading, especially sections dedicated to
-    this format, e.g. by running:
-         info -n ''(gettext)PO Files''
-         info -n ''(gettext)Header Entry''
-
-    Some information specific to po-debconf are available at
-            /usr/share/doc/po-debconf/README-trans
-         or http://www.debian.org/intl/l10n/po-debconf/README-trans
-
-    Developers do not need to manually edit POT or PO files.
-
- Carlos Valdivia Yagüe <valyag@dat.etsit.upm.es>, 2003
-
-', 'Project-Id-Version: mozilla-browser 1.4-4
-Report-Msgid-Bugs-To:
-POT-Creation-Date: 2004-07-11 16:16+0900
-PO-Revision-Date: 2003-09-20 20:00+0200
-Last-Translator: Carlos Valdivia Yagüe <valyag@dat.etsit.upm.es>
-Language-Team: Debian L10n Spanish <debian-l10n-spanish@lists.debian.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=2; plural=n != 1
-', true, 44, 6, 0, 0, NULL, 31, 'es.po', '2005-06-06 08:59:54.251898', NULL, 0, '2005-05-06 21:12:25.930403');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (28, 4, 454, NULL, ' Xhosa translation for evolution
- Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
- This file is distributed under the same license as the evolution package.
- FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
-
-', 'Project-Id-Version: evolution
-Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
-POT-Creation-Date: 2005-05-06 20:39:27+00:00
-PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
-Last-Translator: FULL NAME <EMAIL@ADDRESS>
-Language-Team: Xhosa <xh@li.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=2; plural=n != 1
-', true, NULL, 0, 0, 0, NULL, 31, 'xh.po', '2005-06-15 19:26:21.919196', NULL, 0, '2005-06-15 19:26:21.919196');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (29, 4, 196, NULL, ' Japanese translation for evolution
- Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
- This file is distributed under the same license as the evolution package.
- FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
-
-', 'Project-Id-Version: evolution
-Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
-POT-Creation-Date: 2005-05-06 20:39:27.778946+00:00
-PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
-Last-Translator: FULL NAME <EMAIL@ADDRESS>
-Language-Team: Japanese <ja@li.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=1; plural=0
-', true, 13, 0, 0, 1, NULL, 13, 'ja.po', '2005-10-11 23:08:01.899322', NULL, 0, '2005-10-11 23:08:01.899322');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (30, 6, 521, NULL, ' Spanish translation for wammu
- Copyright (c) (c) 2006 Canonical Ltd, and Rosetta Contributors 2006
- This file is distributed under the same license as the wammu package.
- FIRST AUTHOR <EMAIL@ADDRESS>, 2006.
-
-', 'Project-Id-Version: wammu
-Report-Msgid-Bugs-To: michal@cihar.com
-POT-Creation-Date: 2006-11-10 23:24+0100
-PO-Revision-Date: 2006-12-04 19:50+0000
-Last-Translator: Diogo Matsubara <matsubara@async.com.br>
-Language-Team: Spanish <es@li.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Rosetta-Export-Date: 2006-12-04 19:58+0000
-Plural-Forms: nplurals=2; plural=n > 1
-', true, 66, 5, 0, 0, NULL, 16, 'po/pt_BR.po', '2006-12-13 21:18:28.796588', NULL, 0, '2006-12-13 21:19:06.369142');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (31, 9, 387, NULL, ' Spanish translation for evolution
- Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
- This file is distributed under the same license as the evolution package.
- FIRST AUTHOR <EMAIL@ADDRESS>, 2007.
-
-', 'Project-Id-Version: evolution
-Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
-POT-Creation-Date: 2007-01-05 10:22:21.410795+00:00
-PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
-Last-Translator: FULL NAME <EMAIL@ADDRESS>
-Language-Team: Spanish <es@li.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=2; plural=n != 1
-', true, 56, 0, 0, 1, NULL, 56, 'po-disabled/disabled-template-es.po', '2007-01-05 13:04:20.092506', NULL, 0, '2007-01-05 13:04:20.092506');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (32, 7, 387, NULL, ' Spanish translation for evolution
- Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
- This file is distributed under the same license as the evolution package.
- FIRST AUTHOR <EMAIL@ADDRESS>, 2007.
-
-', 'Project-Id-Version: evolution
-Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
-POT-Creation-Date: 2006-08-14 18:41:07.274661+00:00
-PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
-Last-Translator: FULL NAME <EMAIL@ADDRESS>
-Language-Team: Spanish <es@li.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=2; plural=n != 1
-', true, 12, 0, 0, 1, NULL, 12, '/man-es.po', '2007-01-19 13:00:41.049464', NULL, 0, '2007-01-24 19:16:06.386519');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (33, 10, 387, NULL, ' Spanish translation for alsa-utils
- Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
- This file is distributed under the same license as the alsa-utils package.
- FIRST AUTHOR <EMAIL@ADDRESS>, 2007.
-
-', 'Project-Id-Version: alsa-utils
-Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
-POT-Creation-Date: 2006-08-14 18:41:07.274661+00:00
-PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
-Last-Translator: FULL NAME <EMAIL@ADDRESS>
-Language-Team: Spanish <es@li.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=2; plural=n != 1
-', true, 13, 0, 0, 0, NULL, 13, 'po/alsa-utils-es.po', '2007-04-07 10:14:36.267119', NULL, 0, '2007-04-07 10:14:36.267119');
-INSERT INTO pofile (id, potemplate, language, description, topcomment, header, fuzzyheader, lasttranslator, currentcount, updatescount, rosettacount, lastparsed, owner, path, datecreated, from_sourcepackagename, unreviewed_count, date_changed) VALUES (34, 5, 119, NULL, ' English translation for mozilla
- Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
- This file is distributed under the same license as the mozilla package.
- FIRST AUTHOR <EMAIL@ADDRESS>, 2007.
-
-', 'Project-Id-Version: mozilla
-Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
-POT-Creation-Date: 2005-05-06 21:10:17.367605+00:00
-PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
-Last-Translator: FULL NAME <EMAIL@ADDRESS>
-Language-Team: English <en@li.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Plural-Forms: nplurals=2; plural=n != 1
-', true, 13, 0, 0, 3, NULL, 13, 'debian/po/pkgconf-mozilla-en.po', '2007-07-12 03:42:48.848044', NULL, 0, '2007-07-12 03:42:48.848044');
-
-
-ALTER TABLE pofile ENABLE TRIGGER ALL;
-
-
-ALTER TABLE poexportrequest DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE poexportrequest ENABLE TRIGGER ALL;
-
-
-ALTER TABLE potmsgset DISABLE TRIGGER ALL;
-
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (1, 1, 1, 1, '', 'a11y/addressbook/ea-addressbook-view.c:94
-a11y/addressbook/ea-addressbook-view.c:103
-a11y/addressbook/ea-minicard-view.c:119', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (2, 2, 2, 1, '', 'a11y/addressbook/ea-minicard-view.c:101', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (3, 3, 3, 1, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (4, 4, 4, 1, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (5, 5, 5, 1, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (6, 6, 6, 1, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (7, 7, 7, 1, '', 'a11y/addressbook/ea-minicard-view.c:105', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (8, 8, 8, 1, '', 'a11y/addressbook/ea-minicard.c:166', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (9, 9, 9, 1, '', 'addressbook/addressbook-errors.xml.h:2', 'addressbook:ldap-init primary', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (10, 10, 10, 1, '', 'addressbook/addressbook-errors.xml.h:4', 'addressbook:ldap-init secondary', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (11, 11, 11, 1, '', 'addressbook/addressbook-errors.xml.h:6', 'addressbook:ldap-auth primary', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (12, 12, 12, 1, '', 'addressbook/addressbook-errors.xml.h:8', 'addressbook:ldap-auth secondary', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (13, 13, 13, 1, '', 'addressbook/gui/component/addressbook-migrate.c:124
-calendar/gui/migration.c:188 mail/em-migrate.c:1201', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (14, 14, 14, 1, '', 'addressbook/gui/component/addressbook-migrate.c:1123', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (15, 15, 15, 1, '', 'addressbook/gui/widgets/e-addressbook-model.c:151', '', 'c-format', NULL, 16);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (16, 17, 16, 1, '', 'addressbook/gui/widgets/eab-gui-util.c:275', '', 'c-format', NULL, 18);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (17, 19, 17, 1, '', 'addressbook/gui/widgets/foo.c:345', '', 'c-format', NULL, 20);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (18, 21, 18, 1, ' start po-group: common', 'encfs/FileUtils.cpp:1044', 'xgroup(common)', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (19, 22, 19, 1, '', 'encfs/main.cpp:340', 'xgroup(usage)', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (20, 23, 20, 1, '', 'encfs/FileUtils.cpp:535', 'xgroup(setup)', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (21, 24, 0, 1, '', 'encfs/encfsctl.cpp:346', '', 'c-format', NULL, 25);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (22, 26, 22, 1, '', 'modules/aggregator.module:15', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (23, 27, 0, 1, NULL, 'foo.c:123', 'This is a comment...', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (24, 28, 1, 3, '', 'src/netapplet.c:131', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (25, 29, 2, 3, '', 'src/netapplet.c:133', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (26, 30, 3, 3, '', 'src/netapplet.c:135', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (27, 31, 4, 3, '', 'src/netapplet.c:139', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (28, 32, 5, 3, '', 'src/netapplet.c:141', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (29, 33, 6, 3, '', 'src/netapplet.c:291 src/netapplet.c:312', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (30, 34, 7, 3, '', 'src/netapplet.c:359', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (31, 35, 8, 3, '', 'src/netapplet.c:391', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (32, 36, 9, 3, '', 'src/netapplet.c:410', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (33, 37, 10, 3, '', 'src/netapplet.c:427', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (34, 38, 11, 3, '', 'src/netapplet.c:479', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (35, 39, 12, 3, '', 'src/netapplet.c:496', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (36, 40, 13, 3, '', 'src/netapplet.c:732', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (37, 41, 14, 3, '', 'src/netapplet.c:747', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (38, 42, 15, 3, '', 'src/netapplet.c:768', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (39, 43, 16, 3, '', 'src/netapplet.c:870', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (40, 44, 17, 3, '', 'src/netapplet.c:955', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (41, 45, 18, 3, '', 'src/netapplet.c:958', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (42, 46, 19, 3, '', 'src/netapplet.c:970', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (43, 47, 20, 3, '', 'src/netapplet.c:1015', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (44, 48, 21, 3, '', 'src/netapplet.c:1018', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (45, 49, 22, 3, '', 'src/netapplet.c:1021', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (46, 50, 23, 3, '', 'src/netapplet.c:1032', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (47, 51, 24, 3, '', 'src/netapplet.c:1072', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (48, 52, 25, 3, '', 'src/netapplet.c:1082', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (49, 53, 26, 3, '', 'src/netapplet.c:1093', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (50, 54, 27, 3, '', 'src/netapplet.c:1526', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (51, 55, 28, 3, '', 'src/netapplet.glade.h:1', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (52, 56, 29, 3, '', 'src/netapplet.glade.h:2', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (53, 57, 30, 3, '', 'src/netapplet.glade.h:3', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (54, 58, 31, 3, '', 'src/netapplet.glade.h:4', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (55, 59, 32, 3, '', 'src/netapplet.glade.h:5', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (56, 60, 33, 3, '', 'src/netapplet.glade.h:6', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (57, 61, 34, 3, '', 'src/netapplet.glade.h:7', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (58, 62, 35, 3, '', 'src/netapplet.glade.h:8', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (59, 63, 36, 3, '', 'src/netapplet.glade.h:9', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (60, 64, 37, 3, '', 'src/netapplet.glade.h:10', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (61, 65, 38, 3, '', 'src/netapplet.glade.h:11', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (62, 66, 39, 3, '', 'src/netapplet.glade.h:12', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (63, 67, 40, 3, '', 'src/netapplet.glade.h:13', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (64, 68, 41, 3, '', 'src/netapplet.glade.h:14', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (65, 69, 42, 3, '', 'src/netapplet.glade.h:15', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (66, 70, 43, 3, '', 'src/netapplet.glade.h:16', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (67, 71, 1, 2, '', 'pmount.c:50', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (68, 72, 2, 2, '', 'pmount.c:57', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (69, 73, 3, 2, '', 'pmount.c:64', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (70, 74, 4, 2, '', 'pmount.c:67', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (71, 75, 5, 2, '', 'pmount.c:120', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (72, 76, 6, 2, '', 'pmount.c:126', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (73, 77, 7, 2, '', 'pmount.c:130', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (74, 78, 8, 2, '', 'pmount.c:134', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (75, 79, 9, 2, '', 'pmount.c:141', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (76, 80, 10, 2, '', 'pmount.c:171 pumount.c:98', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (77, 81, 11, 2, '', 'pmount.c:176 pmount.c:270', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (78, 82, 12, 2, '', 'pmount.c:212', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (79, 83, 13, 2, '', 'pmount.c:218', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (80, 84, 14, 2, '', 'pmount.c:242', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (81, 85, 15, 2, '', 'pmount.c:258 pumount.c:124', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (82, 86, 16, 2, '', 'pmount.c:274', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (83, 87, 17, 2, '', 'pmount.c:347', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (84, 88, 18, 2, '', 'pmount.c:361', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (85, 89, 19, 2, '', 'pmount.c:401', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (86, 90, 20, 2, '', 'pmount.c:417', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (87, 91, 21, 2, '', 'pmount.c:509 pumount.c:181', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (88, 92, 22, 2, '', 'pmount.c:542 pumount.c:201', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (89, 93, 23, 2, '', 'pmount.c:580', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (90, 94, 24, 2, '', 'pmount.c:589 pumount.c:237', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (91, 95, 25, 2, '', 'pmount.c:595 pumount.c:243', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (92, 96, 26, 2, '', 'pmount.c:635', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (93, 97, 27, 2, '', 'pmount.c:656', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (94, 98, 28, 2, '', 'pmount-hal.c:29', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (95, 99, 29, 2, '', 'pmount-hal.c:140', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (96, 100, 30, 2, '', 'pmount-hal.c:169', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (97, 101, 31, 2, '', 'pmount-hal.c:175', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (98, 102, 32, 2, '', 'pmount-hal.c:182', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (99, 103, 33, 2, '', 'policy.c:79', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (100, 104, 34, 2, '', 'policy.c:90', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (101, 105, 35, 2, '', 'policy.c:97', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (102, 106, 36, 2, '', 'policy.c:128', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (103, 107, 37, 2, '', 'policy.c:228', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (104, 108, 38, 2, '', 'policy.c:233', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (105, 109, 39, 2, '', 'policy.c:251 policy.c:307', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (106, 110, 40, 2, '', 'policy.c:338', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (107, 111, 41, 2, '', 'policy.c:340', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (108, 112, 42, 2, '', 'policy.c:342', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (109, 113, 43, 2, '', 'policy.c:378', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (110, 114, 44, 2, '', 'policy.c:393', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (111, 115, 45, 2, '', 'policy.c:411', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (112, 116, 46, 2, '', 'policy.c:413', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (113, 117, 47, 2, '', 'pumount.c:42', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (114, 118, 48, 2, '', 'pumount.c:72', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (115, 119, 49, 2, '', 'pumount.c:78', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (116, 120, 50, 2, '', 'pumount.c:108 pumount.c:136', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (117, 121, 51, 2, '', 'pumount.c:140', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (118, 122, 52, 2, '', 'pumount.c:148', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (119, 123, 53, 2, '', 'utils.c:51', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (120, 124, 54, 2, '', 'utils.c:107', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (121, 125, 55, 2, '', 'utils.c:122', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (122, 126, 56, 2, '', 'utils.c:129', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (123, 127, 57, 2, '', 'utils.c:149', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (124, 128, 58, 2, '', 'utils.c:158', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (125, 129, 59, 2, '', 'utils.c:210', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (126, 130, 60, 2, '', 'utils.c:252', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (127, 131, 61, 2, '', 'utils.c:261', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (128, 132, 62, 2, '', 'utils.c:270', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (129, 133, 63, 2, '', 'utils.c:279', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (130, 1, 1, 4, '', 'a11y/addressbook/ea-addressbook-view.c:94
-a11y/addressbook/ea-addressbook-view.c:103
-a11y/addressbook/ea-minicard-view.c:119', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (131, 2, 2, 4, '', 'a11y/addressbook/ea-minicard-view.c:101', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (132, 3, 3, 4, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (133, 4, 4, 4, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (134, 5, 5, 4, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (135, 6, 6, 4, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (136, 7, 7, 4, '', 'a11y/addressbook/ea-minicard-view.c:105', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (137, 8, 8, 4, '', 'a11y/addressbook/ea-minicard.c:166', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (138, 9, 9, 4, '', 'addressbook/addressbook-errors.xml.h:2', 'addressbook:ldap-init primary', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (139, 10, 10, 4, '', 'addressbook/addressbook-errors.xml.h:4', 'addressbook:ldap-init secondary', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (140, 11, 11, 4, '', 'addressbook/addressbook-errors.xml.h:6', 'addressbook:ldap-auth primary', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (141, 12, 12, 4, '', 'addressbook/addressbook-errors.xml.h:8', 'addressbook:ldap-auth secondary', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (142, 13, 13, 4, '', 'addressbook/gui/component/addressbook-migrate.c:124
-calendar/gui/migration.c:188 mail/em-migrate.c:1201', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (143, 14, 14, 4, '', 'addressbook/gui/component/addressbook-migrate.c:1123', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (144, 15, 15, 4, '', 'addressbook/gui/widgets/e-addressbook-model.c:151', '', 'c-format', NULL, 16);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (145, 17, 16, 4, '', 'addressbook/gui/widgets/eab-gui-util.c:275', '', 'c-format', NULL, 18);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (146, 19, 17, 4, '', 'addressbook/gui/widgets/foo.c:345', '', 'c-format', NULL, 20);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (147, 21, 18, 4, ' start po-group: common', 'encfs/FileUtils.cpp:1044', 'xgroup(common)', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (148, 22, 19, 4, '', 'encfs/main.cpp:340', 'xgroup(usage)', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (149, 23, 20, 4, '', 'encfs/FileUtils.cpp:535', 'xgroup(setup)', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (150, 24, 21, 4, '', 'encfs/encfsctl.cpp:346', '', 'c-format', NULL, 25);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (151, 26, 22, 4, '', 'modules/aggregator.module:15', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (152, 134, 1, 5, '', '../mozilla-browser.templates:3', 'Type: note
-Description', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (153, 135, 2, 5, '', '../mozilla-browser.templates:3', 'Type: note
-Description', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (154, 136, 3, 5, '', '../mozilla-browser.templates:3', 'Type: note
-Description', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (155, 137, 4, 5, '', '../mozilla-browser.templates:11', 'Type: select
-Choices', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (156, 138, 5, 5, '', '../mozilla-browser.templates:13', 'Type: select
-Description', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (157, 139, 6, 5, '', '../mozilla-browser.templates:13', 'Type: select
-Description', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (158, 140, 7, 5, '', '../mozilla-browser.templates:24', 'Type: boolean
-Description', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (159, 141, 8, 5, '', '../mozilla-browser.templates:24', 'Type: boolean
-Description', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (160, 142, 9, 5, '', '../mozilla-browser.templates:24', 'Type: boolean
-Description', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (161, 27, 0, 4, NULL, 'foo.c:123', 'This is a comment...', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (162, 143, 0, 5, NULL, '', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (163, 144, 0, 5, NULL, '', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (164, 145, 0, 5, NULL, '', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (165, 146, 23, 1, '', 'lib/getopt.c:629 lib/getopt.c:641', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (166, 147, 1, 7, '', 'test_browserwidget.py:34', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (167, 147, 1, 8, '', 'test_browserwidget.py:34', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (168, 148, 1, 6, '', 'Wammu/Main.py:469', '', 'python-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (169, 149, 2, 6, '', 'Wammu/Error.py:82', '', 'python-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (170, 150, 3, 6, '', 'Wammu/PhoneSearch.py:127 Wammu/PhoneSearch.py:157', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (171, 151, 4, 6, '', 'Wammu/Data.py:652', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (172, 152, 5, 6, '', 'Wammu/Main.py:276', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (173, 153, 6, 6, '', '', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (174, 154, 7, 6, '', '', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (175, 155, 8, 6, '', '', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (176, 1, 1, 9, '', 'a11y/addressbook/ea-addressbook-view.c:94
-a11y/addressbook/ea-addressbook-view.c:103
-a11y/addressbook/ea-minicard-view.c:119', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (177, 2, 2, 9, '', 'a11y/addressbook/ea-minicard-view.c:101', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (178, 3, 3, 9, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (179, 4, 4, 9, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (180, 5, 5, 9, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (181, 6, 6, 9, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (182, 7, 7, 9, '', 'a11y/addressbook/ea-minicard-view.c:105', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (183, 8, 8, 9, '', 'a11y/addressbook/ea-minicard.c:166', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (184, 9, 9, 9, '', 'addressbook/addressbook-errors.xml.h:2', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (185, 10, 10, 9, '', 'addressbook/addressbook-errors.xml.h:4', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (186, 11, 11, 9, '', 'addressbook/addressbook-errors.xml.h:6', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (187, 12, 12, 9, '', 'addressbook/addressbook-errors.xml.h:8', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (188, 13, 13, 9, '', 'addressbook/gui/component/addressbook-migrate.c:124
-calendar/gui/migration.c:188 mail/em-migrate.c:1201', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (189, 14, 14, 9, '', 'addressbook/gui/component/addressbook-migrate.c:1123', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (190, 15, 15, 9, '', 'addressbook/gui/widgets/e-addressbook-model.c:151', '', 'c-format', NULL, 16);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (191, 17, 16, 9, '', 'addressbook/gui/widgets/eab-gui-util.c:275', '', 'c-format', NULL, 18);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (192, 19, 17, 9, '', 'addressbook/gui/widgets/foo.c:345', '', 'c-format', NULL, 20);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (193, 21, 18, 9, '', 'encfs/FileUtils.cpp:1044', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (194, 22, 19, 9, '', 'encfs/main.cpp:340', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (195, 23, 20, 9, '', 'encfs/FileUtils.cpp:535', '', 'c-format', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (196, 24, 21, 9, '', 'encfs/encfsctl.cpp:346', '', 'c-format', NULL, 25);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (197, 26, 22, 9, '', 'modules/aggregator.module:15', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (198, 147, 1, 10, '', 'test_browserwidget.py:34', '', '', 'Something', NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (199, 156, 2, 10, '', '', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (200, 157, 3, 10, '', '', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, msgid_singular, sequence, potemplate, commenttext, filereferences, sourcecomment, flagscomment, context, msgid_plural) VALUES (201, 158, 4, 10, '', '', '', '', NULL, NULL);
-
-
-ALTER TABLE potmsgset ENABLE TRIGGER ALL;
 
 
 ALTER TABLE translationmessage DISABLE TRIGGER ALL;
