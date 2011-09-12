@@ -750,108 +750,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 SET SESSION AUTHORIZATION DEFAULT;
 
 ALTER TABLE account DISABLE TRIGGER ALL;
@@ -2252,13 +2150,6 @@ ALTER TABLE archivesubscriber DISABLE TRIGGER ALL;
 ALTER TABLE archivesubscriber ENABLE TRIGGER ALL;
 
 
-ALTER TABLE authtoken DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE authtoken ENABLE TRIGGER ALL;
-
-
 ALTER TABLE processor DISABLE TRIGGER ALL;
 
 INSERT INTO processor (id, family, name, title, description) VALUES (1, 1, '386', 'Intel 386', 'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family');
@@ -2932,122 +2823,6 @@ ALTER TABLE binarypackagereleasedownloadcount DISABLE TRIGGER ALL;
 ALTER TABLE binarypackagereleasedownloadcount ENABLE TRIGGER ALL;
 
 
-ALTER TABLE bounty DISABLE TRIGGER ALL;
-
-INSERT INTO bounty (id, name, title, summary, description, usdvalue, difficulty, reviewer, datecreated, owner, deadline, claimant, dateclaimed, bountystatus) VALUES (1, 'foomatic-widgets', 'Make foomatic have better widgets.', 'Foomatic needs to have way better widgets. The current ones are SO WinXP. Eeewww. Maybe we can get some of that K-Bling that I saw in Kubuntu?', 'The widgets need to be particularly polished, since foomatic is going to be the default foomaster on the desktop for the planet.', 453.44, 50, 16, '2005-03-11 09:17:40.585397', 16, NULL, NULL, NULL, 1);
-INSERT INTO bounty (id, name, title, summary, description, usdvalue, difficulty, reviewer, datecreated, owner, deadline, claimant, dateclaimed, bountystatus) VALUES (2, 'test-bounty', 'This is a Test Bounty', 'The test bounty summary would be compact, not more than 70 words. I would expect to see this displayed in bold at the top of the bounty page, and in listings of bounties.', 'This is a challenging bounty. Dolorem ipsum dominum nostrum. Quanto quando magno farto.  kjds hfslhf kdszhfskdj dsfvgdfvg ghjgsdfgsdfj hgsdkjsdg vsvgckjvcxvg xcIn some cases the bounty may have been offered in a variety of currencies, so this USD value iIn some cases the bounty may have been offered in a variety of currencies, so this USD value is an estimate based on recent currency rates.s an estimate based on recent currency rates.In some cases the bounty may have been offered in a variety of currencies, so this USD value is an estimate based on recent currency rates.
-
-In some cases the bounty may have been offered in a variety of currencies, so this USD value is an estimate based on recent currency rates.
-
-In some cases the bounty may have been offered in a variety ofIn some cases the bounty may have been offered in a variety of currencies, so this USD value is an estimate based on recent currency rates. currencies, so this USD value is an estimate based on recent currency rates.', 657.00, 50, 16, '2005-08-19 14:33:13.38112', 16, NULL, NULL, NULL, 1);
-INSERT INTO bounty (id, name, title, summary, description, usdvalue, difficulty, reviewer, datecreated, owner, deadline, claimant, dateclaimed, bountystatus) VALUES (3, 'mozilla-svg', 'Support SVG in Mozilla', 'SVG is emerging as a well-supported and well-defined standard for classy vector images. Mozilla should support SVG images natively, without plugins as currently required. In addition, it would be great to be able to address SVG images using the DOM, since they are made up of XML just like XHTML.', ' Since you have come this far, you probably already know that SVG stands for Scalable Vector Graphics, and that it is an XML language for sophisticated 2-dimensional graphics. SVG is to graphics what XHTML is to text, MathML is to mathematical equations and CML is to the description of chemical molecules.
-
-SVG is similar in scope to Macromedia''s proprietary Flash technology: among other things it offers anti-aliased rendering, pattern and gradient fills, sophisticated filter-effects, clipping to arbitrary paths, text and animations. What distinguishes SVG from Flash, is that it is a W3 recommendation (i.e. a standard for all intents and purposes) and that it is XML-based as opposed to a closed binary format. It is explicitly designed to work with other W3C standards such as CSS, DOM and SMIL.
-', 877.00, 50, 16, '2005-08-19 14:37:20.144375', 16, NULL, NULL, NULL, 1);
-INSERT INTO bounty (id, name, title, summary, description, usdvalue, difficulty, reviewer, datecreated, owner, deadline, claimant, dateclaimed, bountystatus) VALUES (4, 'evo-vcard', 'Comprehensive support for VCARD in Evolution', 'The VCARD standard, as irritating and silly as it is, should be better supported in Evolution. This bounty is for support for the creation, parsing, import and export of VCARDS in Evolution.', 'NOTE: (You MUST have python installed to do this)
-
-1. Copy the script below to an empty ascii file and save it as:
-''evol2tbird-addressbook.py''
-
-2. Put it in an empty folder you create for this process.
-
-3. Make the file executable:
-
-chmod +x evol2tbird-addressbook.py
-
-4. Run the program to export the addressbook file from Evolution:
-
-./evol2tbird-addressbook.py --db [path to evolution''s addressbook.db]
-
-ex.: ./evol2tbird-addressbook.py --db ~/evolution/local/Contacts/addressbook.db > adbook.txt
-
-5. Now open the addressbook in Thunderbird and select ''Tools/Import''
-
-6. Work through the dialogs until you point to the file the script created ... ''adbook.txt''
-
-7. Select that file and click ''OK'' - then select what info you want imported and select ''OK'' again.
-
-8. Your Evolution Addressbook is now imported into Thunderbird.', 300.00, 50, 16, '2005-08-19 14:40:02.046826', 16, NULL, NULL, NULL, 1);
-
-
-ALTER TABLE bounty ENABLE TRIGGER ALL;
-
-
-ALTER TABLE message DISABLE TRIGGER ALL;
-
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (1, '2004-09-24 20:58:04.684057', 'PEBCAK', 16, NULL, NULL, 'foo@example.com-332342--1231', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (3, '2004-09-24 21:17:17.153792', 'Reproduced on AIX', 12, NULL, NULL, 'sdsdfsfd', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (4, '2004-09-24 21:24:03.922564', 'Re: Reproduced on AIX', 12, NULL, NULL, 'sdfssfdfsd', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (5, '2004-09-24 21:29:27.407354', 'Fantastic idea, I''d really like to see this', 12, NULL, NULL, 'dxssdfsdgf', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (6, '2004-09-24 21:35:20.125564', 'Strange bug with duplicate messages.', 12, NULL, NULL, 'sdfsfwew', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (7, '2005-01-14 17:20:12.820778', 'Reflow problems with complex page layouts', 12, NULL, NULL, '<20050114172012.6687.51124.malonedeb@localhost.localdomain>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (8, '2005-01-14 17:27:03.702622', 'Firefox install instructions should be complete', 12, NULL, NULL, '<20050114172703.6687.71983.malonedeb@localhost.localdomain>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (9, '2005-01-14 17:35:39.548665', 'Firefox crashes when Save As dialog for a nonexistent window is closed', 12, NULL, NULL, '<20050114173539.6687.81610.malonedeb@localhost.localdomain>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (10, '2004-10-05 00:00:00', 'Re: Bug Title Test', 12, NULL, NULL, '<20050831114528.7616.78129.malone@localhost.localdomain>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (11, '2005-10-14 15:12:29.602117', 'A test bug', 16, NULL, NULL, '<20051014151229.28962.1536.malonedeb@localhost.localdomain>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (12, '2005-10-14 12:25:21.508923', 'Re: Newly installed plug-in doesn''t seem to be used', 16, NULL, NULL, '<20051014122521.14276.39260.lptickets@localhost.localdomain>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (13, '2005-10-14 13:28:11.554476', 'Re: Slow system', 12, NULL, NULL, '<20051014132811.14276.65873.lptickets@localhost.localdomain>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (14, '2005-10-28 09:10:17.13237', 'Printing doesn''t work', 12, NULL, 3, '<20051028091017.6690.9505.malonedeb@localhost.localdomain>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (15, '2006-02-23 16:42:14.080227', 'Thunderbird crashes', 16, NULL, 1, '<20060223164214.9126.7558.malonedeb@localhost.localdomain>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (16, '2006-06-16 17:12:54', 'Unicode™', 16, NULL, NULL, '<20060616141252.22134.71562@localhost.localdomain>', NULL, 51, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (17, '2006-02-22 19:42:21.890299', 'another test bug', 16, NULL, 1, '<20060222194221.25842.69665.malonedeb@banzai.async.com.br>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (18, '2006-07-20 20:48:24.975495', 'Re: Continue playing after shutdown', 16, NULL, NULL, '<20060720204825.13277.37433.lptickets@Bourdieu.Contre.COM>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (19, '2006-07-20 20:49:47.551344', 'Re: mailto: problem in webpage', 16, NULL, NULL, '<20060720204947.13277.79684.lptickets@Bourdieu.Contre.COM>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (20, '2006-07-20 20:52:07.054216', 'Re: Installation of Java Runtime Environment for Mozilla', 16, NULL, NULL, '<20060720205207.13277.68582.lptickets@Bourdieu.Contre.COM>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (21, '2006-07-20 20:53:53.684848', 'Re: Play DVDs in Totem', 16, NULL, NULL, '<20060720205354.13277.37000.lptickets@Bourdieu.Contre.COM>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (22, '2006-07-20 20:56:35.442839', 'Re: mailto: problem in webpage', 12, NULL, NULL, '<20060720205635.13277.87295.lptickets@Bourdieu.Contre.COM>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (23, '2006-07-20 23:11:24.975495', 'Re: Continue playing after shutdown', 12, NULL, NULL, '<20061201222020.597.97888.lptickets@Huxley.Contre.COM>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (24, '2007-03-15 20:33:56.67893', 'Make Jokosher use autoaudiosink', 26, NULL, NULL, '<20070315203356.12919.76581.malonedeb@localhost>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (25, '2007-03-15 20:34:26.518114', 'Re: Make Jokosher use autoaudiosink', 50, NULL, NULL, '<20070315203426.12919.54628.malone@localhost>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (26, '2007-03-15 20:35:10.133383', 'Re: Make Jokosher use autoaudiosink', 66, NULL, NULL, '<20070315203510.12919.22697.malone@localhost>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (27, '2007-03-15 20:36:01.779544', 'Autoaudiosink is no longer under development', 63, NULL, NULL, '<20070315203601.12919.29640.malone@localhost>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (28, '2007-03-15 20:36:57.133832', 'Re: Autoaudiosink is no longer under development', 27, NULL, NULL, '<20070315203657.12919.48585.malone@localhost>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (29, '2007-03-15 20:37:27.991571', 'This is a really new title', 33, NULL, NULL, '<20070315203728.12919.76787.malone@localhost>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (30, '2007-03-15 20:37:51.544376', 'Re: Make Jokosher use autoaudiosink', 3, NULL, NULL, '<20070315203751.12919.49072.malone@localhost>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (31, '2007-03-15 20:41:18.635493', 'Copy, Cut and Delete operations should work on selections', 8, NULL, NULL, '<20070315204118.14326.61124.malonedeb@localhost>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (32, '2007-03-15 20:41:42.154264', 'Re: Copy, Cut and Delete operations should work on selections', 16, NULL, NULL, '<20070315204142.14326.82988.launchpad@localhost>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (33, '2007-03-15 20:43:14.981111', 'Re: Copy, Cut and Delete operations should work on selections', 45, NULL, NULL, '<20070315204315.14326.75272.malone@localhost>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (34, '2007-03-15 20:45:15.852052', 'Re: Copy, Cut and Delete operations should work on selections', 13, NULL, NULL, '<20070315204515.14326.38817.malone@localhost>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (35, '2007-03-15 20:45:51.817826', 'Re: Copy, Cut and Delete operations should work on selections', 9, NULL, NULL, '<20070315204551.14326.36994.malone@localhost>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (36, '2007-03-15 20:46:49.83307', 'Re: Copy, Cut and Delete operations should work on selections', 6, NULL, NULL, '<20070315204649.14326.69581.malone@localhost>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (37, '2007-07-27 20:00:58.299796', 'Launchpad CSS and JS is not testible', 12, NULL, NULL, '<20070727200058.25131.76173.malonedeb@autumn.annrky-sinzui.local>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (38, '2007-07-27 20:29:46.25854', 'Re: Launchpad CSS and JS is not testible', 12, NULL, NULL, '<20070727202946.25131.16206.malone@autumn.annrky-sinzui.local>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (39, '2007-08-09 11:39:16.836856', 'jokosher exposes personal details in its actions portlet', 63, NULL, NULL, '<20070809113916.26819.83859.malonedeb@localhost.localdomain>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (40, '2004-12-18 16:30:19.103679', 'Nonsensical bugs are useless', 16, NULL, NULL, '<20071218163019.18924.87555.malonedeb@localhost>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (41, '2007-12-18 16:30:47.889614', 'Re: Nonsensical bugs are useless', 16, NULL, NULL, '<20071218163048.18924.13348.launchpad@localhost>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (42, '2007-12-18 16:30:47.889614', 'Re: Nonsensical bugs are useless', 16, NULL, NULL, '<20071218163048.18924.86681.launchpad@localhost>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (43, '2007-12-18 16:31:34.790641', 'Re: Nonsensical bugs are useless', 62, NULL, NULL, '<20071218163134.18996.53651.launchpad@localhost>', NULL, NULL, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (44, '2005-05-13 16:37:37', 'gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243614, NULL, NULL, '<4284D7D1.6010208@gmx.de>', NULL, 75, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (45, '2005-05-17 18:54:29', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243615, 44, NULL, '<20050517185429.GB20786@spring.luon.net>', NULL, 76, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (46, '2005-05-17 19:24:25', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243614, 45, NULL, '<428A44E9.6090802@gmx.de>', NULL, 77, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (47, '2005-05-17 20:20:44', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243615, 46, NULL, '<20050517202044.GA23231@spring.luon.net>', NULL, 78, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (48, '2005-06-17 14:00:11', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243616, 46, NULL, '<20050617140011.GA15638@piware.de>', NULL, 79, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (49, '2005-06-25 10:13:10', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243614, NULL, NULL, '<42BD2E36.9090809@gmx.de>', NULL, 81, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (50, '2010-06-25 10:13:10', 'Sample comment 1', 1, NULL, NULL, '<42BD2E36.9090810@zz.de>', NULL, 81, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (51, '2010-06-26 10:13:10', 'Sample comment 2', 1, NULL, NULL, '<42BD2E36.9090810@zz.de>', NULL, 81, true);
-INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (52, '2010-06-27 10:13:10', 'Sample comment 3', 1, NULL, NULL, '<42BD2E36.9090810@zz.de>', NULL, 81, true);
-
-
-ALTER TABLE message ENABLE TRIGGER ALL;
-
-
-ALTER TABLE bountymessage DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE bountymessage ENABLE TRIGGER ALL;
-
-
-ALTER TABLE bountysubscription DISABLE TRIGGER ALL;
-
-INSERT INTO bountysubscription (id, bounty, person) VALUES (1, 1, 9);
-INSERT INTO bountysubscription (id, bounty, person) VALUES (2, 1, 6);
-INSERT INTO bountysubscription (id, bounty, person) VALUES (3, 1, 1);
-
-
-ALTER TABLE bountysubscription ENABLE TRIGGER ALL;
-
-
 ALTER TABLE branchmergequeue DISABLE TRIGGER ALL;
 
 
@@ -3119,13 +2894,6 @@ ALTER TABLE previewdiff DISABLE TRIGGER ALL;
 
 
 ALTER TABLE previewdiff ENABLE TRIGGER ALL;
-
-
-ALTER TABLE staticdiff DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE staticdiff ENABLE TRIGGER ALL;
 
 
 ALTER TABLE branchmergeproposal DISABLE TRIGGER ALL;
@@ -3350,6 +3118,64 @@ ALTER TABLE bugaffectsperson DISABLE TRIGGER ALL;
 
 
 ALTER TABLE bugaffectsperson ENABLE TRIGGER ALL;
+
+
+ALTER TABLE message DISABLE TRIGGER ALL;
+
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (1, '2004-09-24 20:58:04.684057', 'PEBCAK', 16, NULL, NULL, 'foo@example.com-332342--1231', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (3, '2004-09-24 21:17:17.153792', 'Reproduced on AIX', 12, NULL, NULL, 'sdsdfsfd', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (4, '2004-09-24 21:24:03.922564', 'Re: Reproduced on AIX', 12, NULL, NULL, 'sdfssfdfsd', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (5, '2004-09-24 21:29:27.407354', 'Fantastic idea, I''d really like to see this', 12, NULL, NULL, 'dxssdfsdgf', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (6, '2004-09-24 21:35:20.125564', 'Strange bug with duplicate messages.', 12, NULL, NULL, 'sdfsfwew', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (7, '2005-01-14 17:20:12.820778', 'Reflow problems with complex page layouts', 12, NULL, NULL, '<20050114172012.6687.51124.malonedeb@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (8, '2005-01-14 17:27:03.702622', 'Firefox install instructions should be complete', 12, NULL, NULL, '<20050114172703.6687.71983.malonedeb@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (9, '2005-01-14 17:35:39.548665', 'Firefox crashes when Save As dialog for a nonexistent window is closed', 12, NULL, NULL, '<20050114173539.6687.81610.malonedeb@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (10, '2004-10-05 00:00:00', 'Re: Bug Title Test', 12, NULL, NULL, '<20050831114528.7616.78129.malone@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (11, '2005-10-14 15:12:29.602117', 'A test bug', 16, NULL, NULL, '<20051014151229.28962.1536.malonedeb@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (12, '2005-10-14 12:25:21.508923', 'Re: Newly installed plug-in doesn''t seem to be used', 16, NULL, NULL, '<20051014122521.14276.39260.lptickets@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (13, '2005-10-14 13:28:11.554476', 'Re: Slow system', 12, NULL, NULL, '<20051014132811.14276.65873.lptickets@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (14, '2005-10-28 09:10:17.13237', 'Printing doesn''t work', 12, NULL, 3, '<20051028091017.6690.9505.malonedeb@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (15, '2006-02-23 16:42:14.080227', 'Thunderbird crashes', 16, NULL, 1, '<20060223164214.9126.7558.malonedeb@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (16, '2006-06-16 17:12:54', 'Unicode™', 16, NULL, NULL, '<20060616141252.22134.71562@localhost.localdomain>', NULL, 51, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (17, '2006-02-22 19:42:21.890299', 'another test bug', 16, NULL, 1, '<20060222194221.25842.69665.malonedeb@banzai.async.com.br>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (18, '2006-07-20 20:48:24.975495', 'Re: Continue playing after shutdown', 16, NULL, NULL, '<20060720204825.13277.37433.lptickets@Bourdieu.Contre.COM>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (19, '2006-07-20 20:49:47.551344', 'Re: mailto: problem in webpage', 16, NULL, NULL, '<20060720204947.13277.79684.lptickets@Bourdieu.Contre.COM>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (20, '2006-07-20 20:52:07.054216', 'Re: Installation of Java Runtime Environment for Mozilla', 16, NULL, NULL, '<20060720205207.13277.68582.lptickets@Bourdieu.Contre.COM>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (21, '2006-07-20 20:53:53.684848', 'Re: Play DVDs in Totem', 16, NULL, NULL, '<20060720205354.13277.37000.lptickets@Bourdieu.Contre.COM>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (22, '2006-07-20 20:56:35.442839', 'Re: mailto: problem in webpage', 12, NULL, NULL, '<20060720205635.13277.87295.lptickets@Bourdieu.Contre.COM>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (23, '2006-07-20 23:11:24.975495', 'Re: Continue playing after shutdown', 12, NULL, NULL, '<20061201222020.597.97888.lptickets@Huxley.Contre.COM>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (24, '2007-03-15 20:33:56.67893', 'Make Jokosher use autoaudiosink', 26, NULL, NULL, '<20070315203356.12919.76581.malonedeb@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (25, '2007-03-15 20:34:26.518114', 'Re: Make Jokosher use autoaudiosink', 50, NULL, NULL, '<20070315203426.12919.54628.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (26, '2007-03-15 20:35:10.133383', 'Re: Make Jokosher use autoaudiosink', 66, NULL, NULL, '<20070315203510.12919.22697.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (27, '2007-03-15 20:36:01.779544', 'Autoaudiosink is no longer under development', 63, NULL, NULL, '<20070315203601.12919.29640.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (28, '2007-03-15 20:36:57.133832', 'Re: Autoaudiosink is no longer under development', 27, NULL, NULL, '<20070315203657.12919.48585.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (29, '2007-03-15 20:37:27.991571', 'This is a really new title', 33, NULL, NULL, '<20070315203728.12919.76787.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (30, '2007-03-15 20:37:51.544376', 'Re: Make Jokosher use autoaudiosink', 3, NULL, NULL, '<20070315203751.12919.49072.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (31, '2007-03-15 20:41:18.635493', 'Copy, Cut and Delete operations should work on selections', 8, NULL, NULL, '<20070315204118.14326.61124.malonedeb@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (32, '2007-03-15 20:41:42.154264', 'Re: Copy, Cut and Delete operations should work on selections', 16, NULL, NULL, '<20070315204142.14326.82988.launchpad@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (33, '2007-03-15 20:43:14.981111', 'Re: Copy, Cut and Delete operations should work on selections', 45, NULL, NULL, '<20070315204315.14326.75272.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (34, '2007-03-15 20:45:15.852052', 'Re: Copy, Cut and Delete operations should work on selections', 13, NULL, NULL, '<20070315204515.14326.38817.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (35, '2007-03-15 20:45:51.817826', 'Re: Copy, Cut and Delete operations should work on selections', 9, NULL, NULL, '<20070315204551.14326.36994.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (36, '2007-03-15 20:46:49.83307', 'Re: Copy, Cut and Delete operations should work on selections', 6, NULL, NULL, '<20070315204649.14326.69581.malone@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (37, '2007-07-27 20:00:58.299796', 'Launchpad CSS and JS is not testible', 12, NULL, NULL, '<20070727200058.25131.76173.malonedeb@autumn.annrky-sinzui.local>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (38, '2007-07-27 20:29:46.25854', 'Re: Launchpad CSS and JS is not testible', 12, NULL, NULL, '<20070727202946.25131.16206.malone@autumn.annrky-sinzui.local>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (39, '2007-08-09 11:39:16.836856', 'jokosher exposes personal details in its actions portlet', 63, NULL, NULL, '<20070809113916.26819.83859.malonedeb@localhost.localdomain>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (40, '2004-12-18 16:30:19.103679', 'Nonsensical bugs are useless', 16, NULL, NULL, '<20071218163019.18924.87555.malonedeb@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (41, '2007-12-18 16:30:47.889614', 'Re: Nonsensical bugs are useless', 16, NULL, NULL, '<20071218163048.18924.13348.launchpad@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (42, '2007-12-18 16:30:47.889614', 'Re: Nonsensical bugs are useless', 16, NULL, NULL, '<20071218163048.18924.86681.launchpad@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (43, '2007-12-18 16:31:34.790641', 'Re: Nonsensical bugs are useless', 62, NULL, NULL, '<20071218163134.18996.53651.launchpad@localhost>', NULL, NULL, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (44, '2005-05-13 16:37:37', 'gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243614, NULL, NULL, '<4284D7D1.6010208@gmx.de>', NULL, 75, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (45, '2005-05-17 18:54:29', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243615, 44, NULL, '<20050517185429.GB20786@spring.luon.net>', NULL, 76, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (46, '2005-05-17 19:24:25', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243614, 45, NULL, '<428A44E9.6090802@gmx.de>', NULL, 77, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (47, '2005-05-17 20:20:44', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243615, 46, NULL, '<20050517202044.GA23231@spring.luon.net>', NULL, 78, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (48, '2005-06-17 14:00:11', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243616, 46, NULL, '<20050617140011.GA15638@piware.de>', NULL, 79, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (49, '2005-06-25 10:13:10', 'Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write', 243614, NULL, NULL, '<42BD2E36.9090809@gmx.de>', NULL, 81, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (50, '2010-06-25 10:13:10', 'Sample comment 1', 1, NULL, NULL, '<42BD2E36.9090810@zz.de>', NULL, 81, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (51, '2010-06-26 10:13:10', 'Sample comment 2', 1, NULL, NULL, '<42BD2E36.9090810@zz.de>', NULL, 81, true);
+INSERT INTO message (id, datecreated, subject, owner, parent, distribution, rfc822msgid, fti, raw, visible) VALUES (52, '2010-06-27 10:13:10', 'Sample comment 3', 1, NULL, NULL, '<42BD2E36.9090810@zz.de>', NULL, 81, true);
+
+
+ALTER TABLE message ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugattachment DISABLE TRIGGER ALL;
@@ -3608,192 +3434,6 @@ ALTER TABLE bugnotificationrecipientarchive DISABLE TRIGGER ALL;
 
 
 ALTER TABLE bugnotificationrecipientarchive ENABLE TRIGGER ALL;
-
-
-ALTER TABLE bugpackageinfestation DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE bugpackageinfestation ENABLE TRIGGER ALL;
-
-
-ALTER TABLE productrelease DISABLE TRIGGER ALL;
-
-INSERT INTO productrelease (id, datereleased, release_notes, changelog, owner, datecreated, milestone) VALUES (1, '2004-06-28 00:00:00', '', '', 12, '2005-06-06 08:59:51.930201', 7);
-INSERT INTO productrelease (id, datereleased, release_notes, changelog, owner, datecreated, milestone) VALUES (2, '2004-06-28 00:00:00', NULL, NULL, 12, '2005-06-06 08:59:51.924844', 9);
-INSERT INTO productrelease (id, datereleased, release_notes, changelog, owner, datecreated, milestone) VALUES (3, '2004-10-15 18:27:09.878302', 'What''s New
-
-Here''s what''s new in this release of Firefox:
-
-    * New Default Theme
-
-      An updated Default Theme now presents a uniform appearance across all three platforms - a new crisp, clear look for Windows users. Finetuning for GNOME will follow in future releases.
-    * Comprehensive Data Migration
-
-      Switching to Firefox has never been easier now that Firefox imports data like Favorites, History, Settings, Cookies and Passwords from Internet Explorer. Firefox can also import from Mozilla 1.x, Netscape 4.x, 6.x and 7.x, and Opera. MacOS X and Linux migrators for browsers like Safari, OmniWeb, Konqueror etc. will arrive in future releases.
-    * Extension/Theme Manager
-
-      New Extension and Theme Managers provide a convenient way to manage and update your add-ons. SmartUpdate also notifies you of updates to Firefox.
-    * Smaller Download
-
-      Windows users will find Firefox is now only 4.7MB to download.
-    * Help
-
-      A new online help system is available.
-    * Lots of bug fixes and improvements
-
-      Copy Image, the ability to delete individual items from Autocomplete lists, SMB/SFTP support on GNOME via gnome-vfs, better Bookmarks, Search and many other refinements fine tune the browsing experience.
-
-For Linux/GTK2 Users
-
-    * Installer
-
-      Firefox now comes with an installer for Linux/GTK2 users. The new installer makes the installation process much simpler.
-    * Look and Feel Updates
-
-      Ongoing improvements have been made to improve the way Firefox adheres to your GTK2 themes, such as menus.
-    * Talkback for GTK2
-
-      Help us nail down crashes by submitting talkback reports with this crash reporting tool.
-
-', NULL, 16, '2005-06-06 08:59:51.929023', 6);
-INSERT INTO productrelease (id, datereleased, release_notes, changelog, owner, datecreated, milestone) VALUES (4, '2004-10-15 18:31:19.164989', '', NULL, 16, '2005-06-06 08:59:51.927785', 5);
-INSERT INTO productrelease (id, datereleased, release_notes, changelog, owner, datecreated, milestone) VALUES (5, '2004-10-15 18:32:35.717695', 'Security fixes
-
-    * 250180 - [Windows] Disallow access to insecure shell: protocol.
-', NULL, 16, '2005-06-06 08:59:51.926792', 4);
-INSERT INTO productrelease (id, datereleased, release_notes, changelog, owner, datecreated, milestone) VALUES (6, '2005-02-28 00:00:00', NULL, 'Bugzilla bugs fixed (see http://bugzilla.ximian.com/show_bug.cgi):
-
- * Addressbook
-   #73005 - Cannot cancel ''Contact List Editor'' (Siva)
-   #73005 - offline - setting/unsetting folder offline property is not working (Sushma)
-   #70371 - Evolution crashes when adding contact list (Siva)
-   #67724 - When unix user name, callendar points to old username (Siva)
-   #54825 - Freeze on .vcf import from MacOS X AddressBook (Christophe Fergeau)
-   #73013 - ''Right'' click on a ''Contact'' cannot select ''Cut'' (Siva)
-
- * Calendar
-   #72958 - Unable to send delayed meeting (Chen)
-   #72006 - Opened existing appointments with attachment - press cancel - popup info with save / discard / cancel changes (Chen)
-   #63866 - Same name can be entered twice in invitations tab (JP)
-   #67714 - Invitations Tab Allows Entry Of Empty Line (JP)
-   #62089 - adding contact lists to meetings impossible (JP)
-   #47747 - Changes to attendee not updated until click on different row (JP)
-   #61495 - Existing text is placed off screen when editing attendee field (JP)
-   #28947 - adding contact list to attendee list should expand it (JP)
-   #67724 - When unix user name, callendar points to old username (Siva)
-   #72038 - Changes meeting to appoinment after throwing warning invalid mail id (Rodrigo)
-   #69556 - Crash attaching mime parts to calendar events (Harish)
-
- * Mail
-   #66126 - attach File Chooser is modal (Michael)
-   #68549 - Answering to Usenet article doesn''t consider the "Followup-To:" field (Michael)
-   #71003 - threads still running at exit (Michael)
-   #62109 - Inconsistent ways of determining 8-bit Subject: and From: header charsets (Jeff)
-   #34153 - Confusing Outbox semantics for deleted outgoing messages (Michael)
-   #71528 - Search Selection Widget Has Repeated Items (Michael)
-   #71967 - Evolution delete mail from POP3 server even is checked the option "leave the mail on server" (Michael)
-   #40515 - Signature scripts do not allow switches (Michael)
-   #68866 - Forward button doesn''t put newline between headers and body (Michael)
-   #35219 - flag-for-followup crufting (Michael)
-   #64987 - Go to next unread message doesn''t work when multiple messages are selected (Michael)
-   #72337 - Evolution crashes if I click OK/Cancel on the password dialog after disabling the IMAP account (Michael)
-   #70718 - Next and previous buttons don''t realize there''s new mail (Michael)
-   #61363 - Setup wizard, IMAP for receiving server, sending default GW (Michael)
-   #70795 - Next/Previous Message Should Only Display Listed Emails (Michael)
-   #23822 - no copy text option when right-clicking on marked mail text (Rodney)
-   #72266 - You shouldn''t be able to open more than one ''Select Folder'' dialog in the mail filters (Michael)
-   #71429 - on NLD, menus in wrong order (Michae)l
-   #72228 - cannot store into groupwise sent folder (Michael)
-   #72209 - Evolution is crashing when you move a VFolder to a folder ''on this computer'' (Michael)
-   #72275 - Can''t use Shift+F10 to popup context menu for link in message (Harry Lu)
-   #54503 - "New" dropdown menu on toolbar has wrong widget style (Rodney)
-   #72676 - Saved filter rule can''t be modified if it is selected with GOK. (Harry Lu)
-
- * SMIME
-   #68592 - "Backup" buttons in certificate settings does nothing - work around (Michael)
-
- * Shell
-   #33287 - "send/receive" button not greyed out when starting offline (JP)
-   #48868 - Status bar changes its height when fonts are large (William Jon McCann)
-
- * Plugins
-   #71527 - Save Calendar widget mixup between directory and file (Rodrigo)
-
-Other bugs
-
- * Addressbook
-   - Use new categories dialog in contact editor (Rodrigo)
-   - HIG spacing fixes (Rodney)
-   - Display warning dialog when GW server is old (Vivek)
-
- * Calendar
-   - Always ensure default sources are available (Siva)
-   - Don''t look up free/busy unless we need to (Harish)
-   - Make sure new events don''t display twice (Chen)
-   - Make sure double click opens attachments (Chen)
-
- * Mail
-   - a11y fixes for composer (Harry Lu)
-   - Use gnome-vfs API to launch external applications (Marco Pesenti Gritti)
-   - New mailer context menus for messages (Rodney)
-
- * Shell
-   - Fix leak (JP)
-   - Use gnome-vfs API to open quick reference (Marco Pesenti Gritti)
-
- * Plugins
-   - Make e-popup more robust (Michael)
-   - Cleanup authors/descriptions (Björn Torkelsson)
-   - out of office exchange fixes (Sushma)
-   - retry send options if invalid session string (Chen)
-   - set proper default port for shared folders (Vivek)
-
- * Miscellaneous
-   - BSD runtime linking fixes (Hans)
-   - distclean fixes (Björn Torkelsson)
-
-Updated translations:
-   - et (Priit Laes)
-   - el (Kostas Papadimas, Nikos Charonitakis)
-   - sv (Christian Rose)
-   - es (Francisco Javier F. Serrador)
-   - it (Luca Ferretti, Marco Ciampa)
-   - da (Martin Willemoes Hansen)
-   - ca (Josep Puigdemont, Xavi Conde)
-   - nb (Kjartan Maraas)
-   - no (Kjartan Maraas)
-   - ru (Leonid Kanter)
-   - gu (Ankit Patel)
-   - cs (Miloslav Trmac)
-   - nl (Vincent van Adrighem)
-   - fi (Ilkka Tuohela)
-   - pt (Duarte Loreto)
-   - uk (Maxim Dziumanenko)
-   - ko (Changwoo Ryu)
-   - de (Frank Arnold)
-   - fr (Vincent Carriere)
-   - en_CA (Adam Weinberger)
-   - cs (Miloslav Trmac)
-   - pl (Artur Flinta)
-   - bg (Vladimir Petkov)
-   - ja (Takeshi AIHANA)
-   - en_GB (David Lodge)
-   - en_CA (Adam Weinberger)
-   - lt (Zygimantas Berucka)', 12, '2005-06-06 08:59:51.919766', 8);
-INSERT INTO productrelease (id, datereleased, release_notes, changelog, owner, datecreated, milestone) VALUES (7, '2005-03-10 16:20:00', NULL, NULL, 12, '2005-06-06 08:59:51.925908', 10);
-INSERT INTO productrelease (id, datereleased, release_notes, changelog, owner, datecreated, milestone) VALUES (8, '2005-02-03 08:50:00', NULL, NULL, 1, '2005-09-15 09:15:49.327457', 12);
-INSERT INTO productrelease (id, datereleased, release_notes, changelog, owner, datecreated, milestone) VALUES (9, '2005-06-10 10:40:00', NULL, NULL, 1, '2005-09-15 09:16:00.235886', 11);
-
-
-ALTER TABLE productrelease ENABLE TRIGGER ALL;
-
-
-ALTER TABLE bugproductinfestation DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE bugproductinfestation ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugsubscription DISABLE TRIGGER ALL;
@@ -4201,14 +3841,6 @@ ALTER TABLE databasetablestats DISABLE TRIGGER ALL;
 ALTER TABLE databasetablestats ENABLE TRIGGER ALL;
 
 
-ALTER TABLE distributionbounty DISABLE TRIGGER ALL;
-
-INSERT INTO distributionbounty (id, bounty, distribution, date_created) VALUES (1, 1, 1, '2006-10-16 18:31:43.430161');
-
-
-ALTER TABLE distributionbounty ENABLE TRIGGER ALL;
-
-
 ALTER TABLE distributionjob DISABLE TRIGGER ALL;
 
 
@@ -4266,18 +3898,6 @@ INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename,
 
 
 ALTER TABLE distributionsourcepackagecache ENABLE TRIGGER ALL;
-
-
-ALTER TABLE distrocomponentuploader DISABLE TRIGGER ALL;
-
-INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date_created) VALUES (1, 1, 1, 17, '2006-10-16 18:31:43.463125');
-INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date_created) VALUES (3, 1, 2, 17, '2006-10-16 18:31:43.46438');
-INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date_created) VALUES (4, 1, 3, 17, '2006-10-16 18:31:43.464753');
-INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date_created) VALUES (5, 8, 1, 17, '2006-10-16 18:31:43.465111');
-INSERT INTO distrocomponentuploader (id, distribution, component, uploader, date_created) VALUES (6, 8, 3, 17, '2006-10-16 18:31:43.464753');
-
-
-ALTER TABLE distrocomponentuploader ENABLE TRIGGER ALL;
 
 
 ALTER TABLE packagediff DISABLE TRIGGER ALL;
@@ -5622,52 +5242,11 @@ ALTER TABLE mailinglist DISABLE TRIGGER ALL;
 ALTER TABLE mailinglist ENABLE TRIGGER ALL;
 
 
-ALTER TABLE mailinglistban DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE mailinglistban ENABLE TRIGGER ALL;
-
-
 ALTER TABLE mailinglistsubscription DISABLE TRIGGER ALL;
 
 
 
 ALTER TABLE mailinglistsubscription ENABLE TRIGGER ALL;
-
-
-ALTER TABLE specification DISABLE TRIGGER ALL;
-
-INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (1, 'extension-manager-upgrades', 'Extension Manager Upgrades', 'Simplify the way extensions are installed and registered so that: 1. third party applications can easily register and deregister extensions that live with their code. 2. developers can easily register extensions that they are developing out of a location apart from their build (e.g. their home directory), and  3. developers can easily install extensions for testing.', 16, 13, NULL, 1, '2005-08-24 16:03:46.479655', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://wiki.mozilla.org/Firefox:1.1_Product_Team', NULL, NULL, false, NULL, 95, 30, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
-INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (2, 'canvas', 'Support <canvas> Objects', 'With the Firefox 1.1 Developer Preview Release, Firefox includes a new HTML element for programmable graphics. <canvas> is based on the WhatWG canvas specification (http://www.whatwg.org/specs/web-apps/current-work/#graphics), which itself is based on Apple''s <canvas> implemented in Safari. It can be used for rendering graphs, UI elements, and other custom graphics on the client.', 16, NULL, NULL, NULL, '2005-08-24 16:05:03.406307', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://developer.mozilla.org/en/docs/Drawing_Graphics_with_Canvas', NULL, NULL, false, NULL, 0, 30, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
-INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (3, 'svg-support', 'Support Native SVG Objects', 'Scalable Vector Graphics (SVG) is an XML markup language for describing two-dimensional vector graphics. Mozilla should natively support embedded SVG images in HTML documents, or SVG served directly, much as PNG or JPEG images can be served.', 16, 13, 2, 28, '2005-08-24 16:10:05.078543', 4, NULL, NULL, NULL, NULL, 10, 70, 'http://developer.mozilla.org/en/docs/SVG', NULL, NULL, true, NULL, 75, 30, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 13, '2006-08-10 22:04:23.681392', false);
-INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (4, 'e4x', 'Support E4X in EcmaScript', 'E4X adds native XML datatypes to the ECMAScript language, extends the semantics of familiar ECMAScript operators for manipulating XML objects and adds a small set of new operators for common XML operations, such as searching and filtering. It also adds support for XML literals, namespaces, qualified names and other mechanisms to facilitate XML processing.', 16, 14, 28, NULL, '2005-08-24 16:11:37.431981', 4, NULL, NULL, NULL, 1, 20, 0, 'http://www.ecma-international.org/publications/standards/Ecma-357.htm', 'This is the status whiteboard. Dig it?', NULL, false, NULL, 0, 30, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
-INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (5, 'mergewin', 'Merge Open Browser Windows with "Consolidate Windows"', 'It should be possible to merge multiple open browser windows with a "Consolidate Windows" menu option.', 16, NULL, NULL, NULL, '2005-10-19 18:03:59.900723', 4, NULL, NULL, NULL, NULL, 40, 50, NULL, NULL, NULL, false, NULL, 0, 30, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
-INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (6, 'media-integrity-check', 'CD Media Integrity Check', 'Sometimes, problems installing Ubuntu from CD are caused by bad sectors on the CD media itself. It should be easy to check the quality of the CD directly from within the installer.', 12, NULL, NULL, NULL, '2005-11-02 15:14:22.177596', NULL, NULL, 1, NULL, NULL, 35, 5, 'https://wiki.ubuntu.com/MediaIntegrityCheck', NULL, NULL, false, NULL, 0, 30, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
-INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (7, 'cluster-installation', 'Facilitate mass installs  of Ubuntu using Netboot configuration', 'We want to enable users to easily perform mass installations of Ubuntu on a pool of machines. We develop a console tool to intelligently manage dhcpd and syslinux configuration, and provide a GUI frontend for easy point and click configuration.
-
-N.B. We use the term ''cluster'' to mean ''a pool of machines''. While this could be a pool of cluster compute nodes, it doesn''t have to be. Because the mass-install infrastructure also provides generic netboot management, a more accurate name for this specification would be NetbootManagement.', 1, 8, 6, 33, '2006-04-12 07:34:37.765691', NULL, NULL, 5, 12, NULL, 10, 90, 'https://wiki.ubuntu.com/NetbootManagement', NULL, NULL, false, NULL, 65, 10, NULL, 1, '2006-08-06 16:11:59.8599', 1, '2006-04-12 07:34:37.765691', NULL, NULL, 1, '2006-08-10 22:04:23.681392', false);
-INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (8, 'revu', 'The REVU Review Tracking System', 'Revu2 is a tool for assisting MOTUs to review packages. Packages are created mainly be contributors, but also by other tools.
-
-In future, REVU functionality will be integrated directly into Launchpad, to ensure a tight integration of both social and technical processes in the distribution.', 1, 14, NULL, 37, '2006-04-12 07:38:20.162251', NULL, NULL, 5, 12, NULL, 10, 70, 'https://wiki.ubuntu.com/REVU2Spec', NULL, NULL, false, NULL, 75, 10, NULL, 1, '2006-08-06 16:11:59.8599', 1, '2006-04-12 07:38:20.162251', NULL, NULL, 1, '2006-08-10 22:04:23.681392', false);
-INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (9, 'usplash-on-hibernation', 'Activating Usplash during Hibernation', 'In order to conceal scary kernel messages, and provide some instruction and indication of progress to the user, usplash could be activated during the hibernation process.
-
-Progress indication is likely to be limited with the current swsusp implementation, and the question of when to power off the display should be considered.', 1, 14, NULL, 33, '2006-04-12 07:40:52.80865', NULL, NULL, 5, 12, NULL, 10, 10, 'http://wiki.ubuntu.com/UsplashHibernation', 'mark: mjg59 may want to be involved in the implementation too.', NULL, false, NULL, 95, 10, NULL, 1, '2006-08-06 16:11:59.8599', 1, '2006-04-12 07:40:52.80865', 1, '2006-08-07 22:52:08.419316', 1, '2006-08-10 22:04:23.681392', false);
-INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (10, 'thinclient-local-devices', 'Support for local devices on Ubuntu thin clients', 'Provide support for locally-attached devices on thin clients, such as USB devices and floppy drives.', 1, 8, NULL, 6, '2006-04-12 07:44:42.314166', NULL, NULL, 5, 12, NULL, 10, 50, 'http://wiki.ubuntu.com/ThinClientLocalDevices', NULL, NULL, false, NULL, 90, 10, NULL, 1, '2006-08-06 16:11:59.8599', 1, '2006-04-12 07:44:42.314166', 1, '2006-08-07 22:52:08.419316', 1, '2006-08-10 22:04:23.681392', false);
-INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (11, 'kde-desktopfile-langpacks', 'KDE Desktop File Language Packs', 'As of Kubuntu 5.10, language packs cannot provide updated translations for .desktop and .directory files (used for menu entries). We should make this possible.
-
-This spec deals with the KDE side; there is a separate spec for Gnome.', 1, 8, NULL, NULL, '2006-04-12 07:55:03.711218', NULL, NULL, 5, 12, NULL, 20, 5, 'https://wiki.ubuntu.com/LangpacksDesktopfilesKDE', 'mark - Do you think we can get this in for Krunch?', NULL, true, NULL, 0, 30, NULL, 1, '2006-08-06 16:11:59.8599', NULL, NULL, NULL, NULL, NULL, NULL, false);
-INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (12, 'krunch-desktop-plan', 'The Krunch Desktop Plan', 'This specification describes the plan for the Krunch Desktop. It will identify specific areas where additional polish will be added to ensure that Kapper is, in fact, krunchy.', 1, 33, NULL, NULL, '2006-04-12 07:57:24.675444', NULL, NULL, 5, 12, NULL, 35, 0, 'https://wiki.ubuntu.com/KrunchDesktopPlan', NULL, NULL, false, NULL, 0, 20, NULL, 1, '2006-08-06 16:11:59.8599', 1, '2006-04-12 07:57:24.675444', NULL, NULL, NULL, NULL, false);
-
-
-ALTER TABLE specification ENABLE TRIGGER ALL;
-
-
-ALTER TABLE mentoringoffer DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE mentoringoffer ENABLE TRIGGER ALL;
 
 
 ALTER TABLE mergedirectivejob DISABLE TRIGGER ALL;
@@ -6250,13 +5829,6 @@ ALTER TABLE officialbugtag DISABLE TRIGGER ALL;
 ALTER TABLE officialbugtag ENABLE TRIGGER ALL;
 
 
-ALTER TABLE openidassociation DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE openidassociation ENABLE TRIGGER ALL;
-
-
 ALTER TABLE openidconsumerassociation DISABLE TRIGGER ALL;
 
 
@@ -6346,27 +5918,6 @@ INSERT INTO openididentifier (identifier, account, date_created) VALUES ('zRtPxw
 ALTER TABLE openididentifier ENABLE TRIGGER ALL;
 
 
-ALTER TABLE openidrpconfig DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE openidrpconfig ENABLE TRIGGER ALL;
-
-
-ALTER TABLE openidrpsummary DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE openidrpsummary ENABLE TRIGGER ALL;
-
-
-ALTER TABLE packagebugsupervisor DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE packagebugsupervisor ENABLE TRIGGER ALL;
-
-
 ALTER TABLE packagecopyjob DISABLE TRIGGER ALL;
 
 
@@ -6379,13 +5930,6 @@ ALTER TABLE packagecopyrequest DISABLE TRIGGER ALL;
 
 
 ALTER TABLE packagecopyrequest ENABLE TRIGGER ALL;
-
-
-ALTER TABLE packageselection DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE packageselection ENABLE TRIGGER ALL;
 
 
 ALTER TABLE packagesetinclusion DISABLE TRIGGER ALL;
@@ -10017,29 +9561,6 @@ INSERT INTO polloption (id, poll, name, title, active, date_created) VALUES (24,
 ALTER TABLE polloption ENABLE TRIGGER ALL;
 
 
-ALTER TABLE posubscription DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE posubscription ENABLE TRIGGER ALL;
-
-
-ALTER TABLE productbounty DISABLE TRIGGER ALL;
-
-INSERT INTO productbounty (id, bounty, product, date_created) VALUES (1, 1, 4, '2006-10-16 18:31:52.323331');
-INSERT INTO productbounty (id, bounty, product, date_created) VALUES (2, 4, 5, '2006-10-16 18:31:52.325019');
-
-
-ALTER TABLE productbounty ENABLE TRIGGER ALL;
-
-
-ALTER TABLE productcvsmodule DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE productcvsmodule ENABLE TRIGGER ALL;
-
-
 ALTER TABLE productlicense DISABLE TRIGGER ALL;
 
 INSERT INTO productlicense (id, product, license) VALUES (1, 1, 10);
@@ -10050,6 +9571,178 @@ INSERT INTO productlicense (id, product, license) VALUES (5, 26, 1010);
 
 
 ALTER TABLE productlicense ENABLE TRIGGER ALL;
+
+
+ALTER TABLE productrelease DISABLE TRIGGER ALL;
+
+INSERT INTO productrelease (id, datereleased, release_notes, changelog, owner, datecreated, milestone) VALUES (1, '2004-06-28 00:00:00', '', '', 12, '2005-06-06 08:59:51.930201', 7);
+INSERT INTO productrelease (id, datereleased, release_notes, changelog, owner, datecreated, milestone) VALUES (2, '2004-06-28 00:00:00', NULL, NULL, 12, '2005-06-06 08:59:51.924844', 9);
+INSERT INTO productrelease (id, datereleased, release_notes, changelog, owner, datecreated, milestone) VALUES (3, '2004-10-15 18:27:09.878302', 'What''s New
+
+Here''s what''s new in this release of Firefox:
+
+    * New Default Theme
+
+      An updated Default Theme now presents a uniform appearance across all three platforms - a new crisp, clear look for Windows users. Finetuning for GNOME will follow in future releases.
+    * Comprehensive Data Migration
+
+      Switching to Firefox has never been easier now that Firefox imports data like Favorites, History, Settings, Cookies and Passwords from Internet Explorer. Firefox can also import from Mozilla 1.x, Netscape 4.x, 6.x and 7.x, and Opera. MacOS X and Linux migrators for browsers like Safari, OmniWeb, Konqueror etc. will arrive in future releases.
+    * Extension/Theme Manager
+
+      New Extension and Theme Managers provide a convenient way to manage and update your add-ons. SmartUpdate also notifies you of updates to Firefox.
+    * Smaller Download
+
+      Windows users will find Firefox is now only 4.7MB to download.
+    * Help
+
+      A new online help system is available.
+    * Lots of bug fixes and improvements
+
+      Copy Image, the ability to delete individual items from Autocomplete lists, SMB/SFTP support on GNOME via gnome-vfs, better Bookmarks, Search and many other refinements fine tune the browsing experience.
+
+For Linux/GTK2 Users
+
+    * Installer
+
+      Firefox now comes with an installer for Linux/GTK2 users. The new installer makes the installation process much simpler.
+    * Look and Feel Updates
+
+      Ongoing improvements have been made to improve the way Firefox adheres to your GTK2 themes, such as menus.
+    * Talkback for GTK2
+
+      Help us nail down crashes by submitting talkback reports with this crash reporting tool.
+
+', NULL, 16, '2005-06-06 08:59:51.929023', 6);
+INSERT INTO productrelease (id, datereleased, release_notes, changelog, owner, datecreated, milestone) VALUES (4, '2004-10-15 18:31:19.164989', '', NULL, 16, '2005-06-06 08:59:51.927785', 5);
+INSERT INTO productrelease (id, datereleased, release_notes, changelog, owner, datecreated, milestone) VALUES (5, '2004-10-15 18:32:35.717695', 'Security fixes
+
+    * 250180 - [Windows] Disallow access to insecure shell: protocol.
+', NULL, 16, '2005-06-06 08:59:51.926792', 4);
+INSERT INTO productrelease (id, datereleased, release_notes, changelog, owner, datecreated, milestone) VALUES (6, '2005-02-28 00:00:00', NULL, 'Bugzilla bugs fixed (see http://bugzilla.ximian.com/show_bug.cgi):
+
+ * Addressbook
+   #73005 - Cannot cancel ''Contact List Editor'' (Siva)
+   #73005 - offline - setting/unsetting folder offline property is not working (Sushma)
+   #70371 - Evolution crashes when adding contact list (Siva)
+   #67724 - When unix user name, callendar points to old username (Siva)
+   #54825 - Freeze on .vcf import from MacOS X AddressBook (Christophe Fergeau)
+   #73013 - ''Right'' click on a ''Contact'' cannot select ''Cut'' (Siva)
+
+ * Calendar
+   #72958 - Unable to send delayed meeting (Chen)
+   #72006 - Opened existing appointments with attachment - press cancel - popup info with save / discard / cancel changes (Chen)
+   #63866 - Same name can be entered twice in invitations tab (JP)
+   #67714 - Invitations Tab Allows Entry Of Empty Line (JP)
+   #62089 - adding contact lists to meetings impossible (JP)
+   #47747 - Changes to attendee not updated until click on different row (JP)
+   #61495 - Existing text is placed off screen when editing attendee field (JP)
+   #28947 - adding contact list to attendee list should expand it (JP)
+   #67724 - When unix user name, callendar points to old username (Siva)
+   #72038 - Changes meeting to appoinment after throwing warning invalid mail id (Rodrigo)
+   #69556 - Crash attaching mime parts to calendar events (Harish)
+
+ * Mail
+   #66126 - attach File Chooser is modal (Michael)
+   #68549 - Answering to Usenet article doesn''t consider the "Followup-To:" field (Michael)
+   #71003 - threads still running at exit (Michael)
+   #62109 - Inconsistent ways of determining 8-bit Subject: and From: header charsets (Jeff)
+   #34153 - Confusing Outbox semantics for deleted outgoing messages (Michael)
+   #71528 - Search Selection Widget Has Repeated Items (Michael)
+   #71967 - Evolution delete mail from POP3 server even is checked the option "leave the mail on server" (Michael)
+   #40515 - Signature scripts do not allow switches (Michael)
+   #68866 - Forward button doesn''t put newline between headers and body (Michael)
+   #35219 - flag-for-followup crufting (Michael)
+   #64987 - Go to next unread message doesn''t work when multiple messages are selected (Michael)
+   #72337 - Evolution crashes if I click OK/Cancel on the password dialog after disabling the IMAP account (Michael)
+   #70718 - Next and previous buttons don''t realize there''s new mail (Michael)
+   #61363 - Setup wizard, IMAP for receiving server, sending default GW (Michael)
+   #70795 - Next/Previous Message Should Only Display Listed Emails (Michael)
+   #23822 - no copy text option when right-clicking on marked mail text (Rodney)
+   #72266 - You shouldn''t be able to open more than one ''Select Folder'' dialog in the mail filters (Michael)
+   #71429 - on NLD, menus in wrong order (Michae)l
+   #72228 - cannot store into groupwise sent folder (Michael)
+   #72209 - Evolution is crashing when you move a VFolder to a folder ''on this computer'' (Michael)
+   #72275 - Can''t use Shift+F10 to popup context menu for link in message (Harry Lu)
+   #54503 - "New" dropdown menu on toolbar has wrong widget style (Rodney)
+   #72676 - Saved filter rule can''t be modified if it is selected with GOK. (Harry Lu)
+
+ * SMIME
+   #68592 - "Backup" buttons in certificate settings does nothing - work around (Michael)
+
+ * Shell
+   #33287 - "send/receive" button not greyed out when starting offline (JP)
+   #48868 - Status bar changes its height when fonts are large (William Jon McCann)
+
+ * Plugins
+   #71527 - Save Calendar widget mixup between directory and file (Rodrigo)
+
+Other bugs
+
+ * Addressbook
+   - Use new categories dialog in contact editor (Rodrigo)
+   - HIG spacing fixes (Rodney)
+   - Display warning dialog when GW server is old (Vivek)
+
+ * Calendar
+   - Always ensure default sources are available (Siva)
+   - Don''t look up free/busy unless we need to (Harish)
+   - Make sure new events don''t display twice (Chen)
+   - Make sure double click opens attachments (Chen)
+
+ * Mail
+   - a11y fixes for composer (Harry Lu)
+   - Use gnome-vfs API to launch external applications (Marco Pesenti Gritti)
+   - New mailer context menus for messages (Rodney)
+
+ * Shell
+   - Fix leak (JP)
+   - Use gnome-vfs API to open quick reference (Marco Pesenti Gritti)
+
+ * Plugins
+   - Make e-popup more robust (Michael)
+   - Cleanup authors/descriptions (Björn Torkelsson)
+   - out of office exchange fixes (Sushma)
+   - retry send options if invalid session string (Chen)
+   - set proper default port for shared folders (Vivek)
+
+ * Miscellaneous
+   - BSD runtime linking fixes (Hans)
+   - distclean fixes (Björn Torkelsson)
+
+Updated translations:
+   - et (Priit Laes)
+   - el (Kostas Papadimas, Nikos Charonitakis)
+   - sv (Christian Rose)
+   - es (Francisco Javier F. Serrador)
+   - it (Luca Ferretti, Marco Ciampa)
+   - da (Martin Willemoes Hansen)
+   - ca (Josep Puigdemont, Xavi Conde)
+   - nb (Kjartan Maraas)
+   - no (Kjartan Maraas)
+   - ru (Leonid Kanter)
+   - gu (Ankit Patel)
+   - cs (Miloslav Trmac)
+   - nl (Vincent van Adrighem)
+   - fi (Ilkka Tuohela)
+   - pt (Duarte Loreto)
+   - uk (Maxim Dziumanenko)
+   - ko (Changwoo Ryu)
+   - de (Frank Arnold)
+   - fr (Vincent Carriere)
+   - en_CA (Adam Weinberger)
+   - cs (Miloslav Trmac)
+   - pl (Artur Flinta)
+   - bg (Vladimir Petkov)
+   - ja (Takeshi AIHANA)
+   - en_GB (David Lodge)
+   - en_CA (Adam Weinberger)
+   - lt (Zygimantas Berucka)', 12, '2005-06-06 08:59:51.919766', 8);
+INSERT INTO productrelease (id, datereleased, release_notes, changelog, owner, datecreated, milestone) VALUES (7, '2005-03-10 16:20:00', NULL, NULL, 12, '2005-06-06 08:59:51.925908', 10);
+INSERT INTO productrelease (id, datereleased, release_notes, changelog, owner, datecreated, milestone) VALUES (8, '2005-02-03 08:50:00', NULL, NULL, 1, '2005-09-15 09:15:49.327457', 12);
+INSERT INTO productrelease (id, datereleased, release_notes, changelog, owner, datecreated, milestone) VALUES (9, '2005-06-10 10:40:00', NULL, NULL, 1, '2005-09-15 09:16:00.235886', 11);
+
+
+ALTER TABLE productrelease ENABLE TRIGGER ALL;
 
 
 ALTER TABLE productreleasefile DISABLE TRIGGER ALL;
@@ -10069,35 +9762,6 @@ INSERT INTO productreleasefile (productrelease, libraryfile, filetype, id, descr
 ALTER TABLE productreleasefile ENABLE TRIGGER ALL;
 
 
-ALTER TABLE productseriescodeimport DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE productseriescodeimport ENABLE TRIGGER ALL;
-
-
-ALTER TABLE productsvnmodule DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE productsvnmodule ENABLE TRIGGER ALL;
-
-
-ALTER TABLE projectbounty DISABLE TRIGGER ALL;
-
-INSERT INTO projectbounty (id, bounty, project, date_created) VALUES (1, 1, 4, '2006-10-16 18:31:52.432002');
-
-
-ALTER TABLE projectbounty ENABLE TRIGGER ALL;
-
-
-ALTER TABLE projectrelationship DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE projectrelationship ENABLE TRIGGER ALL;
-
-
 ALTER TABLE publisherconfig DISABLE TRIGGER ALL;
 
 INSERT INTO publisherconfig (id, distribution, root_dir, base_url, copy_base_url) VALUES (1, 1, '/var/tmp/archive', 'http://archive.launchpad.dev/', 'http://rebuild-test.internal/');
@@ -10105,13 +9769,6 @@ INSERT INTO publisherconfig (id, distribution, root_dir, base_url, copy_base_url
 
 
 ALTER TABLE publisherconfig ENABLE TRIGGER ALL;
-
-
-ALTER TABLE pushmirroraccess DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE pushmirroraccess ENABLE TRIGGER ALL;
 
 
 ALTER TABLE question DISABLE TRIGGER ALL;
@@ -10204,93 +9861,6 @@ INSERT INTO questionsubscription (id, question, person, date_created) VALUES (9,
 
 
 ALTER TABLE questionsubscription ENABLE TRIGGER ALL;
-
-
-ALTER TABLE shippingrun DISABLE TRIGGER ALL;
-
-INSERT INTO shippingrun (id, datecreated, sentforshipping, csvfile, requests_count) VALUES (1, '2005-08-01 18:38:24.526648', false, 35, 2);
-INSERT INTO shippingrun (id, datecreated, sentforshipping, csvfile, requests_count) VALUES (2, '2006-04-01 18:38:24.526648', false, 44, 2);
-
-
-ALTER TABLE shippingrun ENABLE TRIGGER ALL;
-
-
-ALTER TABLE shipment DISABLE TRIGGER ALL;
-
-INSERT INTO shipment (id, logintoken, shippingrun, dateshipped, shippingservice, trackingcode) VALUES (1, 'fdsa78fdsa78f', 1, '2005-08-01 18:38:24.526648', 1, NULL);
-INSERT INTO shipment (id, logintoken, shippingrun, dateshipped, shippingservice, trackingcode) VALUES (2, 'cdsb78fdsa78f', 1, '2005-08-01 18:38:24.526648', 1, NULL);
-INSERT INTO shipment (id, logintoken, shippingrun, dateshipped, shippingservice, trackingcode) VALUES (3, 'bds078fdsa78f', 2, '2006-08-01 18:38:24.526648', 1, NULL);
-INSERT INTO shipment (id, logintoken, shippingrun, dateshipped, shippingservice, trackingcode) VALUES (4, 'ads978fdsa78f', 2, '2006-08-01 18:38:24.526648', 1, NULL);
-
-
-ALTER TABLE shipment ENABLE TRIGGER ALL;
-
-
-ALTER TABLE shippingrequest DISABLE TRIGGER ALL;
-
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, type, is_admin_request) VALUES (1, 521, 551, NULL, '2006-02-01 18:38:24.526648', NULL, false, 'No Privileges Person', 'Rue de Rivoli', '1345', NULL, 'Paris', NULL, 25, '999432423', '+55 16 3374-2027', NULL, NULL, 1, 'ruederivoli1345paris', NULL, false);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, type, is_admin_request) VALUES (2, 221, NULL, NULL, '2006-04-01 18:38:24.526648', NULL, false, 'Stuart Bishop', 'Rua das Assembleias', 'n. 10', NULL, 'Rio de Janeiro', 'RJ', 95, '999432423', '+55 16 3374-2027', NULL, NULL, 1, 'ruadasassembleiasn10riodejaneiro', NULL, false);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, type, is_admin_request) VALUES (3, 511, NULL, NULL, '2006-03-01 18:38:24.526648', NULL, false, 'Helge Kreutzmann', 'Av. Paulista', NULL, NULL, 'Sao Paulo', 'SP', 35, '999432423', '+55 16 3374-2027', NULL, NULL, 1, 'avpaulistasaopaulo', NULL, false);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, type, is_admin_request) VALUES (4, 21, NULL, NULL, '2006-01-01 18:38:24.526648', NULL, false, 'Robert Collins', 'Orlando Damiano', '2212', NULL, 'Sao Carlos', 'SP', 45, '999432423', '+55 16 3374- 2027', NULL, NULL, 1, 'orlandodamiano2212saocarlos', NULL, false);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, type, is_admin_request) VALUES (5, 231, NULL, NULL, '2006-03-01 18:38:24.526648', NULL, false, 'David Allouche', 'Fifth Avenue 1456', NULL, NULL, 'New York', 'NY', 32, '999432423', '+55 16 3374- 2027', NULL, NULL, 1, 'fifthavenue1456newyork', NULL, false);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, type, is_admin_request) VALUES (6, 281, NULL, 551, '2006-02-01 18:38:24.526648', NULL, false, 'Celso Providelo', 'Rua das Laranjeiras 134', NULL, NULL, 'Rio de Janeiro', 'RJ', 19, '999432423', '+55 16 3374-2027', NULL, NULL, 3, 'ruadaslaranjeiras134riodejaneiro', NULL, false);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, type, is_admin_request) VALUES (7, 271, NULL, NULL, '2006-03-01 18:38:24.526648', NULL, false, 'Daniel Debonzi', 'Cinder Bluff Bank 98', NULL, NULL, 'Cape Town', NULL, 32, '999432423', '+55 16 3374- 2027', NULL, NULL, 1, 'cinderbluffbank98capetown', NULL, false);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, type, is_admin_request) VALUES (12, 61, NULL, NULL, '2006-03-08 18:38:24.526648', 'I want 100 more CDs.', false, 'Jeff Waugh', 'Hidden Lagoon Gardens', '5423', NULL, 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', NULL, NULL, 0, 'hiddenlagoongardens5423whatever', NULL, false);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, type, is_admin_request) VALUES (13, 291, NULL, NULL, '2006-03-09 18:38:24.526648', 'I need 50 more CDs to give away to my friends.', false, 'Marilize Coetzee', 'Somewhere', '5423', NULL, 'whatever', 'not mandatory', 198, '999432423', '+55 16 3374-2027', NULL, NULL, 0, 'somewhere5423whatever', NULL, true);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, type, is_admin_request) VALUES (14, 81, 551, NULL, '2005-05-19 18:38:24.526648', NULL, false, 'James Blackwell', 'Misty Oak Jetty', '5423', NULL, 'whatever', 'not mandatory', 226, '999432423', '+55 16 3374-2027', NULL, 1, 4, 'mistyoakjetty5423whatever', NULL, false);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, type, is_admin_request) VALUES (15, 231, 551, NULL, '2005-05-01 18:38:24.526648', NULL, false, 'David Allouche', 'Pleasant Pond Ledge', '5423', NULL, 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', NULL, 2, 4, 'pleasantpondledge5423whatever', NULL, false);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, type, is_admin_request) VALUES (16, 561, 551, NULL, '2006-03-01 19:38:24.526648', NULL, true, 'Jordi Mallach', 'Ridge Rustic Park', 'in "this" world', 'Some Organization', 'whatever', 'not mandatory', 32, '04277', '+55 16 3374-2027', NULL, NULL, 1, 'ridgerusticparkinthisworldwhatever', NULL, false);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, type, is_admin_request) VALUES (17, 81, 551, NULL, '2006-03-19 18:38:24.526648', NULL, true, 'James Blackwell', 'Tawny View Vista', '5423', NULL, 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', NULL, 3, 4, 'tawnyviewvista5423whatever', NULL, false);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, type, is_admin_request) VALUES (18, 231, 551, NULL, '2006-03-01 18:38:24.526648', NULL, false, 'David Allouche', 'Velvet Zephyr Woods', '5423', NULL, 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', NULL, 4, 4, 'velvetzephyrwoods5423whatever', NULL, false);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, type, is_admin_request) VALUES (19, 291, NULL, NULL, '2006-10-17 20:53:11.714301', NULL, false, 'Marilize Coetzee', 'Somewhere around here', NULL, NULL, 'fdas fd as fa', NULL, 9, '43243242', '432432', NULL, NULL, 1, 'somewherearoundherefdasfdasfa', NULL, true);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, type, is_admin_request) VALUES (20, 11, NULL, NULL, '2006-02-01 18:38:24.526648', NULL, false, 'Somebody Else', 'Rue de Rivoli', '1345', NULL, 'Paris', NULL, 25, '999432423', '+55 16 3374-2027', NULL, NULL, 6, 'ruederivoli1345paris', NULL, false);
-INSERT INTO shippingrequest (id, recipient, whoapproved, whocancelled, daterequested, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti, shipment, status, normalized_address, type, is_admin_request) VALUES (21, 631, NULL, NULL, '2008-04-22 14:57:32.037998', NULL, false, 'fdsafdsa fdsafdsa', 'fdsafdsaf', NULL, 'fdsafdfda', 'fdsafdsafd', 'fdsafdsa', 16, '43214321421', '43124321', NULL, NULL, 1, 'fdsafdsaffdsafdsafd', 2, false);
-
-
-ALTER TABLE shippingrequest ENABLE TRIGGER ALL;
-
-
-ALTER TABLE requestedcds DISABLE TRIGGER ALL;
-
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (1, 1, 8, 1, 4, 1, 8);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (2, 1, 1, 1, 4, 2, 1);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (3, 1, 1, 1, 4, 3, 1);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (4, 2, 5, 1, 4, 1, 5);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (7, 3, 10, 1, 4, 1, 10);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (11, 4, 1, 1, 4, 2, 1);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (13, 5, 1, 1, 4, 3, 1);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (14, 5, 1, 2, 4, 1, 1);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (16, 6, 10, 2, 4, 1, 10);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (19, 7, 5, 2, 4, 2, 5);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (36, 12, 10, 1, 4, 1, 10);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (37, 13, 5, 3, 4, 1, 5);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (40, 14, 9, 1, 1, 1, 9);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (41, 14, 6, 1, 1, 2, 6);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (42, 14, 9, 1, 1, 3, 9);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (43, 15, 9, 1, 1, 1, 9);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (44, 15, 6, 1, 1, 2, 6);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (45, 15, 9, 1, 1, 3, 9);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (136, 16, 5, 3, 4, 1, 5);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (137, 16, 5, 2, 4, 1, 5);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (145, 17, 8, 2, 4, 1, 8);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (146, 17, 2, 2, 4, 2, 2);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (154, 18, 1, 3, 4, 1, 1);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (155, 19, 50, 1, 3, 1, 50);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (156, 19, 0, 1, 3, 2, 0);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (157, 19, 0, 1, 3, 3, 0);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (158, 19, 50, 2, 3, 1, 50);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (159, 19, 0, 2, 3, 2, 0);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (160, 19, 50, 3, 3, 1, 50);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (161, 20, 8, 1, 4, 1, 0);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (166, 21, 1, 1, 6, 1, 1);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (167, 21, 0, 1, 6, 2, 0);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (168, 21, 0, 1, 6, 3, 0);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (169, 21, 5, 2, 6, 1, 5);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (170, 21, 0, 2, 6, 2, 0);
-INSERT INTO requestedcds (id, request, quantity, flavour, distroseries, architecture, quantityapproved) VALUES (171, 21, 0, 2, 6, 3, 0);
-
-
-ALTER TABLE requestedcds ENABLE TRIGGER ALL;
 
 
 ALTER TABLE revisioncache DISABLE TRIGGER ALL;
@@ -10432,41 +10002,6 @@ ALTER TABLE seriessourcepackagebranch DISABLE TRIGGER ALL;
 ALTER TABLE seriessourcepackagebranch ENABLE TRIGGER ALL;
 
 
-ALTER TABLE shipitreport DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE shipitreport ENABLE TRIGGER ALL;
-
-
-ALTER TABLE shipitsurvey DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE shipitsurvey ENABLE TRIGGER ALL;
-
-
-ALTER TABLE shipitsurveyanswer DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE shipitsurveyanswer ENABLE TRIGGER ALL;
-
-
-ALTER TABLE shipitsurveyquestion DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE shipitsurveyquestion ENABLE TRIGGER ALL;
-
-
-ALTER TABLE shipitsurveyresult DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE shipitsurveyresult ENABLE TRIGGER ALL;
-
-
 ALTER TABLE signedcodeofconduct DISABLE TRIGGER ALL;
 
 INSERT INTO signedcodeofconduct (id, owner, signingkey, datecreated, signedcode, recipient, active, admincomment) VALUES (1, 16, 1, '2005-09-27 10:01:13', 'Sampledata signedcode', NULL, true, NULL);
@@ -10583,6 +10118,33 @@ INSERT INTO sourcepackagereleasefile (sourcepackagerelease, libraryfile, filetyp
 
 
 ALTER TABLE sourcepackagereleasefile ENABLE TRIGGER ALL;
+
+
+ALTER TABLE specification DISABLE TRIGGER ALL;
+
+INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (1, 'extension-manager-upgrades', 'Extension Manager Upgrades', 'Simplify the way extensions are installed and registered so that: 1. third party applications can easily register and deregister extensions that live with their code. 2. developers can easily register extensions that they are developing out of a location apart from their build (e.g. their home directory), and  3. developers can easily install extensions for testing.', 16, 13, NULL, 1, '2005-08-24 16:03:46.479655', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://wiki.mozilla.org/Firefox:1.1_Product_Team', NULL, NULL, false, NULL, 95, 30, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (2, 'canvas', 'Support <canvas> Objects', 'With the Firefox 1.1 Developer Preview Release, Firefox includes a new HTML element for programmable graphics. <canvas> is based on the WhatWG canvas specification (http://www.whatwg.org/specs/web-apps/current-work/#graphics), which itself is based on Apple''s <canvas> implemented in Safari. It can be used for rendering graphs, UI elements, and other custom graphics on the client.', 16, NULL, NULL, NULL, '2005-08-24 16:05:03.406307', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://developer.mozilla.org/en/docs/Drawing_Graphics_with_Canvas', NULL, NULL, false, NULL, 0, 30, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (3, 'svg-support', 'Support Native SVG Objects', 'Scalable Vector Graphics (SVG) is an XML markup language for describing two-dimensional vector graphics. Mozilla should natively support embedded SVG images in HTML documents, or SVG served directly, much as PNG or JPEG images can be served.', 16, 13, 2, 28, '2005-08-24 16:10:05.078543', 4, NULL, NULL, NULL, NULL, 10, 70, 'http://developer.mozilla.org/en/docs/SVG', NULL, NULL, true, NULL, 75, 30, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 13, '2006-08-10 22:04:23.681392', false);
+INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (4, 'e4x', 'Support E4X in EcmaScript', 'E4X adds native XML datatypes to the ECMAScript language, extends the semantics of familiar ECMAScript operators for manipulating XML objects and adds a small set of new operators for common XML operations, such as searching and filtering. It also adds support for XML literals, namespaces, qualified names and other mechanisms to facilitate XML processing.', 16, 14, 28, NULL, '2005-08-24 16:11:37.431981', 4, NULL, NULL, NULL, 1, 20, 0, 'http://www.ecma-international.org/publications/standards/Ecma-357.htm', 'This is the status whiteboard. Dig it?', NULL, false, NULL, 0, 30, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (5, 'mergewin', 'Merge Open Browser Windows with "Consolidate Windows"', 'It should be possible to merge multiple open browser windows with a "Consolidate Windows" menu option.', 16, NULL, NULL, NULL, '2005-10-19 18:03:59.900723', 4, NULL, NULL, NULL, NULL, 40, 50, NULL, NULL, NULL, false, NULL, 0, 30, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (6, 'media-integrity-check', 'CD Media Integrity Check', 'Sometimes, problems installing Ubuntu from CD are caused by bad sectors on the CD media itself. It should be easy to check the quality of the CD directly from within the installer.', 12, NULL, NULL, NULL, '2005-11-02 15:14:22.177596', NULL, NULL, 1, NULL, NULL, 35, 5, 'https://wiki.ubuntu.com/MediaIntegrityCheck', NULL, NULL, false, NULL, 0, 30, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (7, 'cluster-installation', 'Facilitate mass installs  of Ubuntu using Netboot configuration', 'We want to enable users to easily perform mass installations of Ubuntu on a pool of machines. We develop a console tool to intelligently manage dhcpd and syslinux configuration, and provide a GUI frontend for easy point and click configuration.
+
+N.B. We use the term ''cluster'' to mean ''a pool of machines''. While this could be a pool of cluster compute nodes, it doesn''t have to be. Because the mass-install infrastructure also provides generic netboot management, a more accurate name for this specification would be NetbootManagement.', 1, 8, 6, 33, '2006-04-12 07:34:37.765691', NULL, NULL, 5, 12, NULL, 10, 90, 'https://wiki.ubuntu.com/NetbootManagement', NULL, NULL, false, NULL, 65, 10, NULL, 1, '2006-08-06 16:11:59.8599', 1, '2006-04-12 07:34:37.765691', NULL, NULL, 1, '2006-08-10 22:04:23.681392', false);
+INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (8, 'revu', 'The REVU Review Tracking System', 'Revu2 is a tool for assisting MOTUs to review packages. Packages are created mainly be contributors, but also by other tools.
+
+In future, REVU functionality will be integrated directly into Launchpad, to ensure a tight integration of both social and technical processes in the distribution.', 1, 14, NULL, 37, '2006-04-12 07:38:20.162251', NULL, NULL, 5, 12, NULL, 10, 70, 'https://wiki.ubuntu.com/REVU2Spec', NULL, NULL, false, NULL, 75, 10, NULL, 1, '2006-08-06 16:11:59.8599', 1, '2006-04-12 07:38:20.162251', NULL, NULL, 1, '2006-08-10 22:04:23.681392', false);
+INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (9, 'usplash-on-hibernation', 'Activating Usplash during Hibernation', 'In order to conceal scary kernel messages, and provide some instruction and indication of progress to the user, usplash could be activated during the hibernation process.
+
+Progress indication is likely to be limited with the current swsusp implementation, and the question of when to power off the display should be considered.', 1, 14, NULL, 33, '2006-04-12 07:40:52.80865', NULL, NULL, 5, 12, NULL, 10, 10, 'http://wiki.ubuntu.com/UsplashHibernation', 'mark: mjg59 may want to be involved in the implementation too.', NULL, false, NULL, 95, 10, NULL, 1, '2006-08-06 16:11:59.8599', 1, '2006-04-12 07:40:52.80865', 1, '2006-08-07 22:52:08.419316', 1, '2006-08-10 22:04:23.681392', false);
+INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (10, 'thinclient-local-devices', 'Support for local devices on Ubuntu thin clients', 'Provide support for locally-attached devices on thin clients, such as USB devices and floppy drives.', 1, 8, NULL, 6, '2006-04-12 07:44:42.314166', NULL, NULL, 5, 12, NULL, 10, 50, 'http://wiki.ubuntu.com/ThinClientLocalDevices', NULL, NULL, false, NULL, 90, 10, NULL, 1, '2006-08-06 16:11:59.8599', 1, '2006-04-12 07:44:42.314166', 1, '2006-08-07 22:52:08.419316', 1, '2006-08-10 22:04:23.681392', false);
+INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (11, 'kde-desktopfile-langpacks', 'KDE Desktop File Language Packs', 'As of Kubuntu 5.10, language packs cannot provide updated translations for .desktop and .directory files (used for menu entries). We should make this possible.
+
+This spec deals with the KDE side; there is a separate spec for Gnome.', 1, 8, NULL, NULL, '2006-04-12 07:55:03.711218', NULL, NULL, 5, 12, NULL, 20, 5, 'https://wiki.ubuntu.com/LangpacksDesktopfilesKDE', 'mark - Do you think we can get this in for Krunch?', NULL, true, NULL, 0, 30, NULL, 1, '2006-08-06 16:11:59.8599', NULL, NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO specification (id, name, title, summary, owner, assignee, drafter, approver, datecreated, product, productseries, distribution, distroseries, milestone, definition_status, priority, specurl, whiteboard, superseded_by, direction_approved, man_days, implementation_status, goalstatus, fti, goal_proposer, date_goal_proposed, goal_decider, date_goal_decided, completer, date_completed, starter, date_started, private) VALUES (12, 'krunch-desktop-plan', 'The Krunch Desktop Plan', 'This specification describes the plan for the Krunch Desktop. It will identify specific areas where additional polish will be added to ensure that Kapper is, in fact, krunchy.', 1, 33, NULL, NULL, '2006-04-12 07:57:24.675444', NULL, NULL, 5, 12, NULL, 35, 0, 'https://wiki.ubuntu.com/KrunchDesktopPlan', NULL, NULL, false, NULL, 0, 20, NULL, 1, '2006-08-06 16:11:59.8599', 1, '2006-04-12 07:57:24.675444', NULL, NULL, NULL, NULL, false);
+
+
+ALTER TABLE specification ENABLE TRIGGER ALL;
 
 
 ALTER TABLE specificationbranch DISABLE TRIGGER ALL;
@@ -10963,29 +10525,6 @@ INSERT INTO sshkey (id, person, keytype, keytext, comment, date_created) VALUES 
 
 
 ALTER TABLE sshkey ENABLE TRIGGER ALL;
-
-
-ALTER TABLE standardshipitrequest DISABLE TRIGGER ALL;
-
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (1, 8, 1, 1, false, 1, NULL);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (2, 5, 0, 0, true, 1, NULL);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (3, 0, 0, 1, false, 1, NULL);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (4, 10, 0, 0, false, 1, NULL);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (5, 0, 1, 0, false, 1, NULL);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (6, 1, 0, 0, false, 1, NULL);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (7, 1, 0, 0, true, 2, NULL);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (8, 5, 0, 0, false, 2, NULL);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (9, 10, 0, 0, false, 2, NULL);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (10, 0, 0, 1, false, 2, NULL);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (11, 0, 0, 5, false, 2, NULL);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (12, 8, 0, 2, false, 2, NULL);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (13, 5, 0, 0, true, 3, NULL);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (14, 1, 0, 0, false, 3, NULL);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (15, 3, 0, 2, false, 4, NULL);
-INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, isdefault, flavour, description) VALUES (16, 1, 0, 1, false, 4, NULL);
-
-
-ALTER TABLE standardshipitrequest ENABLE TRIGGER ALL;
 
 
 ALTER TABLE subunitstream DISABLE TRIGGER ALL;
@@ -11665,13 +11204,6 @@ INSERT INTO votecast (id, person, poll) VALUES (10, 16, 5);
 
 
 ALTER TABLE votecast ENABLE TRIGGER ALL;
-
-
-ALTER TABLE webserviceban DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE webserviceban ENABLE TRIGGER ALL;
 
 
 ALTER TABLE wikiname DISABLE TRIGGER ALL;
