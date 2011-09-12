@@ -3248,6 +3248,9 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if status is None:
             status = RosettaImportStatus.NEEDS_REVIEW
 
+        if type(content) == unicode:
+            content = content.encode('utf-8')
+
         entry = getUtility(ITranslationImportQueue).addOrUpdateEntry(
             path=path, content=content, by_maintainer=by_maintainer,
             importer=uploader, productseries=productseries,
