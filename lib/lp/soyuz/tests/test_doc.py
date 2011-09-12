@@ -10,10 +10,7 @@ import os
 import unittest
 
 from canonical.config import config
-from canonical.database.sqlbase import (
-    commit,
-    ISOLATION_LEVEL_READ_COMMITTED,
-    )
+from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import logout
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
@@ -63,8 +60,7 @@ def builddmasterSetUp(test):
     """Setup the connection for the build master tests."""
     test_dbuser = config.builddmaster.dbuser
     test.globs['test_dbuser'] = test_dbuser
-    LaunchpadZopelessLayer.alterConnection(
-        dbuser=test_dbuser, isolation=ISOLATION_LEVEL_READ_COMMITTED)
+    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     setGlobs(test)
 
 
