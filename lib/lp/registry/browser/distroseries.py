@@ -1071,7 +1071,7 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
         # is newer than the parent's version, or if there is already a sync
         # pending.
         return (
-            not dsd.status == DistroSeriesDifferenceStatus.RESOLVED and
+            dsd.status != DistroSeriesDifferenceStatus.RESOLVED and
             not self.isNewerThanParent(dsd) and not self.pendingSync(dsd))
 
     def describeJobs(self, dsd):
