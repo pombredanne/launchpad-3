@@ -17,7 +17,6 @@ import sys
 from optparse import OptionParser
 
 from canonical.config import config
-from canonical.database.postgresql import ConnectionString
 from canonical.database.sqlbase import connect
 from canonical.launchpad.scripts import logger, logger_options
 import replication.helpers
