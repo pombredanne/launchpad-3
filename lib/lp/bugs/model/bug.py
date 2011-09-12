@@ -1850,7 +1850,8 @@ BugMessage""" % sqlvalues(self.id))
             # to 0 (since it's a duplicate, it shouldn't have any heat
             # at all).
             self.setHeat(0, affected_targets=affected_targets)
-            # Maybe confirm bug tasks, now that it has a duplicate.
+            # Maybe confirm bug tasks, now that more people might be affected
+            # by this bug from the duplicates.
             duplicate_of.maybeConfirmBugtasks()
         else:
             # Otherwise, recalculate this bug's heat, since it will be 0

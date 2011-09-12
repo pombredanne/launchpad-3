@@ -846,10 +846,6 @@ class BugTask(SQLBase):
             janitor = getUtility(ILaunchpadCelebrities).janitor
             bugtask_before_modification = Snapshot(
                 self, providing=providedBy(self))
-            # Bug 831991:
-            # Add a comment as to what the hell is going on around here.
-            # self.bug.newMessage()
-            # maybe do at the call site
             # Create a bug message explaining why the janitor auto-confirmed
             # the bugtask.
             msg = "Auto-confirmed because the bug affects multiple users."
