@@ -559,7 +559,6 @@ class TestCodeHandler(TestCaseWithFactory):
         bmp = code_handler.processMergeProposal(message)
         self.assertEqual(source, bmp.source_branch)
         self.assertEqual(target, bmp.target_branch)
-        self.assertIs(None, bmp.review_diff)
         self.assertEqual('Hi!', bmp.description)
         # No emails are sent.
         messages = pop_notifications()
