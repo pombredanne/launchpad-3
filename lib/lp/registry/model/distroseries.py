@@ -256,6 +256,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         notNull=False, default=None)
     language_pack_full_export_requested = BoolCol(notNull=True, default=False)
     backports_not_automatic = BoolCol(notNull=True, default=False)
+    include_long_descriptions = BoolCol(notNull=True, default=True)
 
     language_packs = SQLMultipleJoin(
         'LanguagePack', joinColumn='distroseries', orderBy='-date_exported')

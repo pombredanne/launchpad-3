@@ -261,6 +261,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
     active = True
     max_bug_heat = Int()
+    package_derivatives_email = StringCol(notNull=False, default=None)
 
     def __repr__(self):
         displayname = self.displayname.encode('ASCII', 'backslashreplace')

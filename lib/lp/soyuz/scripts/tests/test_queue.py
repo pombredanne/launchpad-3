@@ -407,6 +407,10 @@ class TestQueueTool(TestQueueBase, TestCase):
             bug_status, 'FIXRELEASED',
             'Bug status is %s, expected FIXRELEASED')
 
+        # Clean up.
+        upload_data = datadir('suite/bar_1.0-2')
+        os.remove(os.path.join(upload_data, 'bar_1.0.orig.tar.gz'))
+
     def testAcceptActionWithMultipleIDs(self):
         """Check if accepting multiple items at once works.
 

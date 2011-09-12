@@ -9,6 +9,7 @@ from datetime import datetime
 import hashlib
 import os
 import shutil
+import tempfile
 
 from storm.store import Store
 from zope.component import getUtility
@@ -309,8 +310,7 @@ class TestHandleStatusMixin:
         builder.setSlaveForTesting(self.slave)
 
         # We overwrite the buildmaster root to use a temp directory.
-        tempdir = self.mktemp()
-        os.mkdir(tempdir)
+        tempdir = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, tempdir)
         self.upload_root = tempdir
         tmp_builddmaster_root = """

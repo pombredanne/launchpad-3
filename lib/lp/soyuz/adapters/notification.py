@@ -255,7 +255,9 @@ def notify(blamer, spr, bprs, customfiles, archive, distroseries, pocket,
         elif bprs:
             name = bprs[0].build.source_package_release.name
         if name:
-            bcc_addr = '%s_derivatives@packages.qa.debian.org' % name
+            email_base = distroseries.distribution.package_derivatives_email
+            if email_base:
+                bcc_addr = email_base.format(package_name=name)
 
         build_and_send_mail(
             'announcement', [str(distroseries.changeslist)], from_addr,
