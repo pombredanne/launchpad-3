@@ -3248,11 +3248,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if status is None:
             status = RosettaImportStatus.NEEDS_REVIEW
 
-        return getUtility(ITranslationImportQueue).addOrUpdateEntry(
+        entry = getUtility(ITranslationImportQueue).addOrUpdateEntry(
             path=path, content=content, by_maintainer=by_maintainer,
             importer=uploader, productseries=productseries,
             distroseries=distroseries, sourcepackagename=sourcepackagename,
             potemplate=potemplate, pofile=pofile, format=format)
+        entry.setStatus(
+            status, getUtility(ILaunchpadCelebrities).rosetta_experts)
+        return entry
 
     def makeMailingList(self, team, owner):
         """Create a mailing list for the team."""

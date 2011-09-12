@@ -1116,8 +1116,9 @@ class TestAutoBlocking(TestCaseWithFactory):
 
         target = self._copyTargetFromEntry(same_target_as)
 
-        return self.factory.makeTranslationImportQueueEntry(
-            path=path, status=status, **target)
+        return removeSecurityProxy(
+            self.factory.makeTranslationImportQueueEntry(
+                path=path, status=status, **target))
 
     def _makeTranslationEntry(self, path, status=None, same_target_as=None):
         """Create an import queue entry for a translation file.
