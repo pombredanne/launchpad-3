@@ -607,15 +607,12 @@ class TestDistroSeriesDerivationPortlet(TestCaseWithFactory):
 
     def fail_job_with_error(self, job, error):
         # We need to switch to the initializedistroseries user to set the
-        # error_description on the given job. Which is a major PITA.
+        # error_description on the given job. Which is a PITA.
+        distroseries = job.distroseries
         transaction.commit()
         starting_database_config_section = dbconfig.getSectionName()
         reconnect_stores("initializedistroseries")
-        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        naked_db_job = removeSecurityProxy(job).context
-        naked_db_job = store.get(naked_db_job.__class__, naked_db_job.id)
-        naked_job = InitializeDistroSeriesJob(naked_db_job)
-        job = ProxyFactory(naked_job)
+        job = self.job_source.get(distroseries)
         job.start()
         job.fail()
         job.notifyUserError(error)
