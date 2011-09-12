@@ -1066,10 +1066,12 @@ class DistroSeriesDifferenceBaseView(LaunchpadFormView,
 
     def canRequestSync(self, dsd):
         """Does it make sense to request a sync for this difference?"""
-        # There are two conditions for this: it doesn't make sense to
-        # sync if the child's version of the package is newer than the
-        # parent's version, or if there is already a sync pending.
+        # There are three conditions for this: it doesn't make sense to
+        # sync if the dsd is resolved, if the child's version of the package
+        # is newer than the parent's version, or if there is already a sync
+        # pending.
         return (
+            not dsd.status == DistroSeriesDifferenceStatus.RESOLVED and
             not self.isNewerThanParent(dsd) and not self.pendingSync(dsd))
 
     def describeJobs(self, dsd):
