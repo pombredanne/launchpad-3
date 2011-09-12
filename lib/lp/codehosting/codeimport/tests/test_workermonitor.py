@@ -831,7 +831,9 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    def test_import_git(self):
+    # XXX 2011-09-09 gary, bug=841556: This test fails
+    # occasionally in buildbot.
+    def DISABLED_test_import_git(self):
         # Create a Git CodeImport and import it.
         job = self.getStartedJobForImport(self.makeGitCodeImport())
         code_import_id = job.code_import.id
@@ -840,7 +842,9 @@ class TestWorkerMonitorIntegration(BzrTestCase):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
-    def test_import_hg(self):
+    # XXX 2011-09-09 gary, bug=841556: This test fails
+    # occasionally in buildbot.
+    def DISABLED_test_import_hg(self):
         # Create a Mercurial CodeImport and import it.
         job = self.getStartedJobForImport(self.makeHgCodeImport())
         code_import_id = job.code_import.id

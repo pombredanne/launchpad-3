@@ -164,7 +164,7 @@ class DatabasePreflight:
                 % ', '.join(FRAGILE_USERS))
         return success
 
-    def check_long_running_transactions(self, max_secs=10):
+    def check_long_running_transactions(self, max_secs=60):
         """Return False if any nodes have long running transactions open.
 
         max_secs defines what is long running. For database rollouts,
