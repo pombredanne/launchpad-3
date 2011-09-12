@@ -1919,7 +1919,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertFalse(view.isNewerThanParent(dsd))
 
     def test_isNewerThanParent_is_False_for_equivalent_updates(self):
-        # Some non-identical version numbers compare as "equal."  If the
+        # Some non-identical version numbers compare as "equal".  If the
         # child and parent versions compare as equal, the child version
         # is not considered newer.
         dsd = self.factory.makeDistroSeriesDifference(
