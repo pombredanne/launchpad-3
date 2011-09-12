@@ -26,6 +26,7 @@ from canonical.testing.layers import (
     )
 from lp.app.enums import ServiceUsage
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.bugs.enum import BugAutoConfirmReason
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtarget import IBugTarget
 from lp.bugs.interfaces.bugtask import (
@@ -1564,7 +1565,8 @@ class TestAutoConfirmBugTasksTransitionToTarget(TestCaseWithFactory):
             bug_task = self.factory.makeBugTask(
                 target=no_autoconfirm_product, owner=person)
             with person_logged_in(person):
-                bug_task.maybeConfirm()
+                bug_task.maybeConfirm(
+                    BugAutoConfirmReason.AFFECTS_MULTIPLE_USERS)
                 self.assertEqual(BugTaskStatus.NEW, bug_task.status)
                 bug_task.transitionToTarget(autoconfirm_product)
                 self.assertEqual(BugTaskStatus.NEW, bug_task.status)
@@ -1583,7 +1585,8 @@ class TestAutoConfirmBugTasksTransitionToTarget(TestCaseWithFactory):
             with person_logged_in(another_person):
                 bug_task.bug.markUserAffected(another_person)
             with person_logged_in(person):
-                bug_task.maybeConfirm()
+                bug_task.maybeConfirm(
+                    reason=BugAutoConfirmReason.AFFECTS_MULTIPLE_USERS)
                 self.assertEqual(BugTaskStatus.NEW, bug_task.status)
                 bug_task.transitionToTarget(autoconfirm_product)
                 self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
@@ -1597,24 +1600,63 @@ class TestAutoConfirmBugTasks(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_auto_confirm(self):
-        # A typical new bugtask auto-confirms.
+        # A typical new bugtask auto-confirms.  Doing so changes the status of
+        # the bug task, creates a status event, and creates a new comment
+        # indicating the reason the Janitor auto-confirmed.
         # When feature flag code is removed, remove the next two lines and
         # dedent the rest.
         with feature_flags():
             set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
             bug_task = self.factory.makeBugTask()
+            bug = bug_task.bug
             self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+            original_comment_count = bug.messages.count()
             with EventRecorder() as recorder:
-                bug_task.maybeConfirm()
+                bug_task.maybeConfirm(
+                    reason=BugAutoConfirmReason.AFFECTS_MULTIPLE_USERS)
                 self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
-                self.assertEqual(1, len(recorder.events))
-                event = recorder.events[0]
+                self.assertEqual(2, len(recorder.events))
+                msg_event, mod_event = recorder.events
                 self.assertEqual(getUtility(ILaunchpadCelebrities).janitor,
-                                 event.user)
-                self.assertEqual(['status'], event.edited_fields)
+                                 mod_event.user)
+                self.assertEqual(['status'], mod_event.edited_fields)
                 self.assertEqual(BugTaskStatus.NEW,
-                                 event.object_before_modification.status)
-                self.assertEqual(bug_task, event.object)
+                                 mod_event.object_before_modification.status)
+                self.assertEqual(bug_task, mod_event.object)
+                # A new comment is recorded.
+                self.assertEqual(
+                    original_comment_count + 1, bug.messages.count())
+                self.assertEqual(
+                    u"Auto-confirmed because the bug affects multiple users.",
+                    bug.messages[-1].text_contents)
+
+    def test_auto_confirm_duplicates(self):
+        # A typical new bugtask auto-confirms.  This time with it
+        # auto-confirms due to having duplicates.
+        with feature_flags():
+            set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
+            bug_task = self.factory.makeBugTask()
+            bug = bug_task.bug
+            self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+            original_comment_count = bug.messages.count()
+            with EventRecorder() as recorder:
+                bug_task.maybeConfirm(
+                    reason=BugAutoConfirmReason.HAS_DUPLICATE)
+                self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
+                self.assertEqual(2, len(recorder.events))
+                msg_event, mod_event = recorder.events
+                self.assertEqual(getUtility(ILaunchpadCelebrities).janitor,
+                                 mod_event.user)
+                self.assertEqual(['status'], mod_event.edited_fields)
+                self.assertEqual(BugTaskStatus.NEW,
+                                 mod_event.object_before_modification.status)
+                self.assertEqual(bug_task, mod_event.object)
+                # A new comment is recorded.
+                self.assertEqual(
+                    original_comment_count + 1, bug.messages.count())
+                self.assertEqual(
+                    u"Auto-confirmed because the bug has a duplicate bug.",
+                    bug.messages[-1].text_contents)
 
     def test_do_not_confirm_bugwatch_tasks(self):
         # A bugwatch bugtask does not auto-confirm.
@@ -1631,7 +1673,8 @@ class TestAutoConfirmBugTasks(TestCaseWithFactory):
                 bug_task.bugwatch = watch
             self.assertEqual(BugTaskStatus.NEW, bug_task.status)
             with EventRecorder() as recorder:
-                bug_task.maybeConfirm()
+                bug_task.maybeConfirm(
+                    reason=BugAutoConfirmReason.AFFECTS_MULTIPLE_USERS)
                 self.assertEqual(BugTaskStatus.NEW, bug_task.status)
                 self.assertEqual(0, len(recorder.events))
 
@@ -1646,7 +1689,8 @@ class TestAutoConfirmBugTasks(TestCaseWithFactory):
                 BugTaskStatus.CONFIRMED, bug_task.bug.owner)
             self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
             with EventRecorder() as recorder:
-                bug_task.maybeConfirm()
+                bug_task.maybeConfirm(
+                    reason=BugAutoConfirmReason.AFFECTS_MULTIPLE_USERS)
                 self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
                 self.assertEqual(0, len(recorder.events))
 

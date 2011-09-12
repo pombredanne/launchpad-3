@@ -103,6 +103,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lp.app.enums import ServiceUsage
 from lp.app.errors import NotFoundError
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.bugs.enum import BugAutoConfirmReason
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugnomination import BugNominationStatus
@@ -831,24 +832,34 @@ class BugTask(SQLBase):
         return True
     # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 
-    def maybeConfirm(self):
+    def maybeConfirm(self, reason):
         """Maybe confirm this bugtask.
         Only call this if the bug._shouldConfirmBugtasks().
         This adds the further constraint that the bugtask needs to be NEW,
         and not imported from an external bug tracker.
         """
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
         if (self.status == BugTaskStatus.NEW
             and self.bugwatch is None
             # START TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
             and self._checkAutoconfirmFeatureFlag()
             # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
             ):
-            user = getUtility(ILaunchpadCelebrities).janitor
+            janitor = getUtility(ILaunchpadCelebrities).janitor
             bugtask_before_modification = Snapshot(
                 self, providing=providedBy(self))
-            self.transitionToStatus(BugTaskStatus.CONFIRMED, user)
+            # Bug 831991:
+            # Add a comment as to what the hell is going on around here.
+            # self.bug.newMessage()
+            # maybe do at the call site
+            # Create a bug message explaining why the janitor auto-confirmed
+            # the bugtask.
+            msg = "Auto-confirmed because the bug %s." % (
+                reason.description.strip())
+            self.bug.newMessage(owner=janitor, content=msg)
+            self.transitionToStatus(BugTaskStatus.CONFIRMED, janitor)
             notify(ObjectModifiedEvent(
-                self, bugtask_before_modification, ['status'], user=user))
+                self, bugtask_before_modification, ['status'], user=janitor))
 
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
@@ -1146,7 +1157,7 @@ class BugTask(SQLBase):
         name in this distribution will have their names updated to
         match. This should only be used by _syncSourcePackages.
         """
-
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
         if self.target == target:
             return
 
@@ -1183,7 +1194,7 @@ class BugTask(SQLBase):
             # We also should see if we ought to auto-transition to the
             # CONFIRMED status.
             if self.bug.shouldConfirmBugtasks():
-                self.maybeConfirm()
+                self.maybeConfirm(BugAutoConfirmReason.AFFECTS_MULTIPLE_USERS)
             # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
 
     def updateTargetNameCache(self, newtarget=None):

@@ -128,7 +128,10 @@ from lp.bugs.adapters.bugchange import (
     SeriesNominated,
     UnsubscribedFromBug,
     )
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enum import (
+    BugAutoConfirmReason,
+    BugNotificationLevel,
+    )
 from lp.bugs.errors import InvalidDuplicateValue
 from lp.bugs.interfaces.bug import (
     IBug,
@@ -1779,11 +1782,11 @@ BugMessage""" % sqlvalues(self.id))
         # step, but we will make some unnecessary comparisons.
         return self.users_affected_count_with_dupes > 1
 
-    def maybeConfirmBugtasks(self):
+    def maybeConfirmBugtasks(self, reason):
         """Maybe try to confirm our new bugtasks."""
         if self.shouldConfirmBugtasks():
             for bugtask in self.bugtasks:
-                bugtask.maybeConfirm()
+                bugtask.maybeConfirm(reason)
 
     def markUserAffected(self, user, affected=True):
         """See `IBug`."""
@@ -1802,7 +1805,8 @@ BugMessage""" % sqlvalues(self.id))
                 dupe.markUserAffected(user, affected)
 
         if affected:
-            self.maybeConfirmBugtasks()
+            self.maybeConfirmBugtasks(
+                reason=BugAutoConfirmReason.AFFECTS_MULTIPLE_USERS)
 
         self.updateHeat()
 
@@ -1845,15 +1849,15 @@ BugMessage""" % sqlvalues(self.id))
             self.duplicateof = duplicate_of
         except LaunchpadValidationError, validation_error:
             raise InvalidDuplicateValue(validation_error)
-
+        import pdb; pdb.set_trace(); # DO NOT COMMIT
         if duplicate_of is not None:
             # Update the heat of the master bug and set this bug's heat
             # to 0 (since it's a duplicate, it shouldn't have any heat
             # at all).
             self.setHeat(0, affected_targets=affected_targets)
-            # Maybe confirm bug tasks, now that more people might be affected
-            # by this bug.
-            duplicate_of.maybeConfirmBugtasks()
+            # Maybe confirm bug tasks, now that it has a duplicate.
+            duplicate_of.maybeConfirmBugtasks(
+                reason=BugAutoConfirmReason.HAS_DUPLICATE)
         else:
             # Otherwise, recalculate this bug's heat, since it will be 0
             # from having been a duplicate. We also update the bug that
