@@ -676,7 +676,6 @@ class PullingImportWorker(ImportWorker):
         :return: ControlDir instance
         """
         transport = get_transport(url)
-        self._logger.info("foo: %r", url)
         for prober_kls in self.probers:
             prober = prober_kls()
             try:
