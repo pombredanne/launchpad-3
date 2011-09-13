@@ -26,6 +26,10 @@ from storm.locals import (
     Storm,
     )
 from storm.store import Store
+from testtools.matchers import (
+    Equals,
+    GreaterThan,
+    )
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -85,6 +89,7 @@ from lp.scripts.garbo import (
     BulkPruner,
     DailyDatabaseGarbageCollector,
     DuplicateSessionPruner,
+    FrequentDatabaseGarbageCollector,
     HourlyDatabaseGarbageCollector,
     OpenIDConsumerAssociationPruner,
     UnusedSessionPruner,
@@ -370,11 +375,22 @@ class TestGarbo(TestCaseWithFactory):
         # starting us in a known state.
         self.runDaily()
         self.runHourly()
+        self.runFrequently()
 
         # Capture garbo log output to tests can examine it.
         self.log_buffer = StringIO()
         handler = logging.StreamHandler(self.log_buffer)
         self.log.addHandler(handler)
+
+    def runFrequently(self, maximum_chunk_size=2, test_args=()):
+        transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser('garbo_daily')
+        collector = FrequentDatabaseGarbageCollector(
+            test_args=list(test_args))
+        collector._maximum_chunk_size = maximum_chunk_size
+        collector.logger = self.log
+        collector.main()
+        return collector
 
     def runDaily(self, maximum_chunk_size=2, test_args=()):
         transaction.commit()
@@ -417,7 +433,8 @@ class TestGarbo(TestCaseWithFactory):
         # Make sure we have 4 nonces now.
         self.failUnlessEqual(store.find(OAuthNonce).count(), 4)
 
-        self.runHourly(maximum_chunk_size=60)  # 1 minute maximum chunk size
+        self.runFrequently(
+            maximum_chunk_size=60)  # 1 minute maximum chunk size
 
         store = IMasterStore(OAuthNonce)
 
@@ -460,7 +477,7 @@ class TestGarbo(TestCaseWithFactory):
         self.failUnlessEqual(store.find(OpenIDConsumerNonce).count(), 4)
 
         # Run the garbage collector.
-        self.runHourly(maximum_chunk_size=60)  # 1 minute maximum chunks.
+        self.runFrequently(maximum_chunk_size=60)  # 1 minute maximum chunks.
 
         store = IMasterStore(OpenIDConsumerNonce)
 
@@ -583,7 +600,7 @@ class TestGarbo(TestCaseWithFactory):
 
         # Expire all those expirable rows, and possibly a few more if this
         # test is running slow.
-        self.runHourly()
+        self.runFrequently()
 
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
@@ -946,6 +963,26 @@ class TestGarbo(TestCaseWithFactory):
             """ % sqlbase.quote(template.id)).get_one()
 
         self.assertEqual(1, count)
+
+    def test_BugSummaryJournalRollup(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+        # Generate a load of entries in BugSummaryJournal.
+        store.execute("UPDATE BugTask SET status=42")
+
+        # We only need a few to test.
+        num_rows = store.execute(
+            "SELECT COUNT(*) FROM BugSummaryJournal").get_one()[0]
+        self.assertThat(num_rows, GreaterThan(10))
+
+        self.runFrequently()
+
+        # We just care that the rows have been removed. The bugsummary
+        # tests confirm that the rollup stored method is working correctly.
+        num_rows = store.execute(
+            "SELECT COUNT(*) FROM BugSummaryJournal").get_one()[0]
+        self.assertThat(num_rows, Equals(0))
 
     def test_UnusedPOTMsgSetPruner_removes_obsolete_message_sets(self):
         # UnusedPOTMsgSetPruner removes any POTMsgSet that are
