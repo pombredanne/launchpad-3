@@ -12,6 +12,7 @@ from lazr.delegates import delegates
 from storm.locals import (
     And,
     Int,
+    JSON,
     Reference,
     )
 from zope.interface import implements
@@ -24,7 +25,6 @@ from lp.registry.model.distroseries import DistroSeries
 from lp.services.database.stormbase import StormBase
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.services.jsoncol import JSON
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
     IDistributionJob,

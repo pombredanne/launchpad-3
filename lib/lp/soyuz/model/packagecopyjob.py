@@ -15,6 +15,7 @@ import simplejson
 from storm.locals import (
     And,
     Int,
+    JSON,
     Reference,
     Unicode,
     )
@@ -54,7 +55,6 @@ from lp.services.job.interfaces.job import (
     )
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
-from lp.services.jsoncol import JSON
 from lp.soyuz.adapters.overrides import (
     FromExistingOverridePolicy,
     SourceOverride,
