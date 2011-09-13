@@ -327,17 +327,14 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
             title=_('ID'), required=True, readonly=True,
             )
     sourcepackagenameID = Int(
-        "The DB id for the sourcepackagename.")
-    sourcepackagename = Attribute(
-        title=_('The source package name being published'),
-        required=False, readonly=False,
-        )
-    sourcepackagereleaseID = Attribute(
-        "The DB id for the sourcepackagerelease.")
-    sourcepackagerelease = Int(
-            title=_('The source package release being published'),
-            required=False, readonly=False,
-            )
+        title=_('The DB id for the sourcepackagename.'),
+        required=False, readonly=False)
+    sourcepackagename = Attribute('The source package name being published')
+    sourcepackagereleaseID = Int(
+        title=_('The DB id for the sourcepackagerelease.'),
+        required=False, readonly=False)
+    sourcepackagerelease = Attribute(
+        'The source package release being published')
     status = exported(
         Choice(
             title=_('Package Publishing Status'),
@@ -675,19 +672,15 @@ class IBinaryPackageFilePublishing(IFilePublishing):
 
 class IBinaryPackagePublishingHistoryPublic(IPublishingView):
     """A binary package publishing record."""
-    id = Int(
-            title=_('ID'), required=True, readonly=True,
-            )
+
+    id = Int(title=_('ID'), required=True, readonly=True)
     binarypackagenameID = Int(
-        "The DB id for the binarypackagename.")
-    binarypackagename = Attribute(
-        title=_('The binary package name being published'),
-        required=False, readonly=False,
-        )
+        title=_('The DB id for the binarypackagename.'),
+        required=False, readonly=False)
+    binarypackagename = Attribute('The binary package name being published')
     binarypackagerelease = Int(
             title=_('The binary package being published'), required=False,
-            readonly=False,
-            )
+            readonly=False)
     distroarchseries = exported(
         Reference(
             Interface, #Really IDistroArchSeries, circular import fixed below.
