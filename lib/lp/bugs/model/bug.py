@@ -1717,12 +1717,13 @@ BugMessage""" % sqlvalues(self.id))
         if not for_private and not for_security_related:
             return set()
         result = set()
+        result.add(self.owner)
         for bugtask in self.bugtasks:
-            result.add(bugtask.owner)
+            maintainer = bugtask.pillar.owner
             if for_security_related:
-                result.add(bugtask.pillar.security_contact or bugtask.owner)
-            elif for_private:
-                result.add(bugtask.pillar.bug_supervisor or bugtask.owner)
+                result.add(bugtask.pillar.security_contact or maintainer)
+            if for_private:
+                result.add(bugtask.pillar.bug_supervisor or maintainer)
         if for_private:
             subscribers_for_who = self.getSubscribersForPerson(who)
             if subscribers_for_who.is_empty():
@@ -1735,15 +1736,27 @@ BugMessage""" % sqlvalues(self.id))
         When a bug's privacy or security related attributes change, some
         existing subscribers may need to be automatically removed.
         The rules are:
-            security=false, private=false ->
+            security=false ->
                 auto removed subscribers = (bugtask security contacts)
+            privacy=false ->
+                auto removed subscribers = (bugtask bug supervisors)
 
         """
         result = set()
-        for bugtask in self.bugtasks:
-            if not for_private and not for_security_related:
-                if bugtask.pillar.security_contact:
-                    result.add(bugtask.pillar.security_contact)
+
+        # There has been some discussion as to whether we really want to
+        # automatically unsubscribe the security contact if a bug is marked
+        # as no longer security related or the bug supervisor if a bug is no
+        # longer private.
+        # We want this behaviour for Launchpad but perhaps not Ubuntu.
+        # Until this can be clarified, we will not automatically unsubscribe
+        # anyone.
+
+#        for bugtask in self.bugtasks:
+#            if not for_security_related and bugtask.pillar.security_contact:
+#                result.add(bugtask.pillar.security_contact)
+#            if not for_private and bugtask.pillar.bug_supervisor:
+#                result.add(bugtask.pillar.bug_supervisor)
         return result
 
     def reconcileSubscribers(self, for_private, for_security_related, who):
