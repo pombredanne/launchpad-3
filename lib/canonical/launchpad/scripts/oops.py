@@ -48,9 +48,6 @@ def referenced_oops():
         FROM Bug WHERE title %(posix_oops_match)s
             OR description %(posix_oops_match)s
         UNION ALL
-        SELECT statusexplanation FROM BugTask
-        WHERE statusexplanation %(posix_oops_match)s
-        UNION ALL
         SELECT title || ' ' || description || ' ' || COALESCE(whiteboard,'')
         FROM Question WHERE title %(posix_oops_match)s
             OR description %(posix_oops_match)s

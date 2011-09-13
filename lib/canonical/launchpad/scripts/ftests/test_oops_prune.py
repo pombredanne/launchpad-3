@@ -98,10 +98,6 @@ class TestOopsPrune(unittest.TestCase):
                 description='OOPS-1BugDescription666'
             """)
         cur.execute("""
-            UPDATE BugTask
-                SET statusexplanation='foo OOPS1BugTaskStatusExplanation666'
-            """)
-        cur.execute("""
             UPDATE Question SET
                 title='OOPS - 1TicketTitle666 bar',
                 description='http://foo.com OOPS-1TicketDescription666',
@@ -127,7 +123,6 @@ class TestOopsPrune(unittest.TestCase):
                     '1MESSAGESUBJECT666',
                     '1BUGTITLE666',
                     '1BUGDESCRIPTION666',
-                    '1BUGTASKSTATUSEXPLANATION666',
                     '1TICKETTITLE666',
                     '1TICKETDESCRIPTION666',
                     '1TICKETWHITEBOARD666',
