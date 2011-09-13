@@ -277,8 +277,8 @@ class NewCodeImportForm(Interface):
         allowed_schemes=["http", "https", "bzr"],
         allow_userinfo=False, # Only anonymous access is supported.
         allow_port=True,
-        allow_query=False,    # Query makes no sense in Mercurial
-        allow_fragment=False, # Fragment makes no sense in Mercurial
+        allow_query=False,    # Query makes no sense in Bazaar
+        allow_fragment=False, # Fragment makes no sense in Bazaar
         trailing_slash=False)
 
     branch_name = copy_field(
