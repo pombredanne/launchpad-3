@@ -107,7 +107,7 @@ class TestProcessingLoops(TestCaseWithFactory):
         submissions = loop.getUnprocessedSubmissions(1)
         self.assertEqual(1, len(submissions))
 
-    # Disabled due to bug 849056.
+    # XXX 2011-09-13, Abel Deuring: Disabled due to bug 849056.
     def xxx_test_BadSubmissions_respects_start(self):
         # It is possible to request a start id. Previous entries are ignored.
         submission1 = self.factory.makeHWSubmission(
@@ -120,7 +120,7 @@ class TestProcessingLoops(TestCaseWithFactory):
         submissions = loop.getUnprocessedSubmissions(2)
         self.assertEqual([submission2], submissions)
 
-    # Disabled due to bug 849056.
+    # XXX 2011-09-13, Abel Deuring: Disabled due to bug 849056.
     def xxx_test_run_reprocessing_script_no_params(self):
         # cronscripts/reprocess-hwdb-submissions.py needs at least the
         # parameter --start-file
@@ -129,7 +129,7 @@ class TestProcessingLoops(TestCaseWithFactory):
         self.assertThat(
             stderr, Contains('Option --start-file not specified.'))
 
-    # Disabled due to bug 849056.
+    # XXX 2011-09-13, Abel Deuring: Disabled due to bug 849056.
     def xxx_test_run_reprocessing_script_startfile_does_not_exist(self):
         # If the specified start file does not exist,
         # cronscripts/reprocess-hwdb-submissions.py reports an error.
@@ -140,7 +140,7 @@ class TestProcessingLoops(TestCaseWithFactory):
         self.assertThat(
             stderr, Contains('Cannot access file %s' % does_not_exist))
 
-    # Disabled due to bug 849056.
+    # XXX 2011-09-13, Abel Deuring: Disabled due to bug 849056.
     def xxx_test_run_reprocessing_script_startfile_without_integer(self):
         # If the specified start file contains any non-integer string,
         # cronscripts/reprocess-hwdb-submissions.py reports an error.
@@ -155,7 +155,7 @@ class TestProcessingLoops(TestCaseWithFactory):
             stderr,
             Contains('%s must contain only an integer' % start_file_name))
 
-    # Disabled due to bug 849056.
+    # XXX 2011-09-13, Abel Deuring: Disabled due to bug 849056.
     def xxx_test_run_reprocessing_script_startfile_with_negative_integer(self):
         # If the specified start file contains any non-integer string,
         # cronscripts/reprocess-hwdb-submissions.py reports an error.
@@ -170,7 +170,7 @@ class TestProcessingLoops(TestCaseWithFactory):
             stderr,
             Contains('%s must contain a positive integer' % start_file_name))
 
-    # Disabled due to bug 849056.
+    # XXX 2011-09-13, Abel Deuring: Disabled due to bug 849056.
     def xxx_test_run_reprocessing_script_max_submission_not_integer(self):
         # If the parameter --max-submissions is not an integer,
         # cronscripts/reprocess-hwdb-submissions.py reports an error.
