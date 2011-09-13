@@ -843,12 +843,17 @@ class BugTask(SQLBase):
             and self._checkAutoconfirmFeatureFlag()
             # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
             ):
-            user = getUtility(ILaunchpadCelebrities).janitor
+            janitor = getUtility(ILaunchpadCelebrities).janitor
             bugtask_before_modification = Snapshot(
                 self, providing=providedBy(self))
-            self.transitionToStatus(BugTaskStatus.CONFIRMED, user)
+            # Create a bug message explaining why the janitor auto-confirmed
+            # the bugtask.
+            msg = ("Status changed to 'Confirmed' because the bug "
+                   "affects multiple users.")
+            self.bug.newMessage(owner=janitor, content=msg)
+            self.transitionToStatus(BugTaskStatus.CONFIRMED, janitor)
             notify(ObjectModifiedEvent(
-                self, bugtask_before_modification, ['status'], user=user))
+                self, bugtask_before_modification, ['status'], user=janitor))
 
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
@@ -1146,7 +1151,6 @@ class BugTask(SQLBase):
         name in this distribution will have their names updated to
         match. This should only be used by _syncSourcePackages.
         """
-
         if self.target == target:
             return
 
