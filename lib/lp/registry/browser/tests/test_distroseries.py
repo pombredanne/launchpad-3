@@ -1919,7 +1919,7 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
         self.assertFalse(view.isNewerThanParent(dsd))
 
     def test_isNewerThanParent_is_False_for_equivalent_updates(self):
-        # Some non-identical version numbers compare as "equal."  If the
+        # Some non-identical version numbers compare as "equal".  If the
         # child and parent versions compare as equal, the child version
         # is not considered newer.
         dsd = self.factory.makeDistroSeriesDifference(
@@ -1961,6 +1961,14 @@ class TestDistroSeriesLocalDifferences(TestCaseWithFactory,
             dsd.derived_series, '+localpackagediffs')
         view.hasPendingDSDUpdate = FakeMethod(result=True)
         self.assertTrue(view.canRequestSync(dsd))
+
+    def test_canRequestSync_returns_False_if_DSD_is_resolved(self):
+        dsd = self.factory.makeDistroSeriesDifference(
+            versions=dict(base='1.0', parent='1.1', derived='1.1'),
+            status=DistroSeriesDifferenceStatus.RESOLVED)
+        view = create_initialized_view(
+            dsd.derived_series, '+localpackagediffs')
+        self.assertFalse(view.canRequestSync(dsd))
 
     def test_describeJobs_returns_None_if_no_jobs(self):
         dsd = self.factory.makeDistroSeriesDifference()

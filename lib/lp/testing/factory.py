@@ -306,6 +306,9 @@ from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    )
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     )
@@ -314,9 +317,6 @@ from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
     )
 from lp.translations.interfaces.translator import ITranslatorSet
-from lp.translations.model.translationimportqueue import (
-    TranslationImportQueueEntry,
-    )
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
     )
@@ -1432,10 +1432,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, prerequisite_branch=None,
-                                product=None, review_diff=None,
-                                initial_comment=None, source_branch=None,
-                                preview_diff=None, date_created=None,
-                                description=None, reviewer=None):
+                                product=None, initial_comment=None,
+                                source_branch=None, preview_diff=None,
+                                date_created=None, description=None,
+                                reviewer=None):
         """Create a proposal to merge based on anonymous branches."""
         if target_branch is not None:
             target = target_branch.target
@@ -1465,8 +1465,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             review_requests.append((reviewer, None))
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, review_requests=review_requests,
-            prerequisite_branch=prerequisite_branch, review_diff=review_diff,
-            description=description, date_created=date_created)
+            prerequisite_branch=prerequisite_branch, description=description,
+            date_created=date_created)
 
         unsafe_proposal = removeSecurityProxy(proposal)
         if preview_diff is not None:
@@ -3241,9 +3241,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if content is None:
             content = self.getUniqueString()
-        content_reference = getUtility(ILibraryFileAliasSet).create(
-            name=os.path.basename(path), size=len(content),
-            file=StringIO(content), contentType='text/plain')
 
         if format is None:
             format = TranslationFileFormat.PO
@@ -3251,11 +3248,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if status is None:
             status = RosettaImportStatus.NEEDS_REVIEW
 
-        return TranslationImportQueueEntry(
-            path=path, productseries=productseries, distroseries=distroseries,
-            sourcepackagename=sourcepackagename, importer=uploader,
-            content=content_reference, status=status, format=format,
-            by_maintainer=by_maintainer)
+        if type(content) == unicode:
+            content = content.encode('utf-8')
+
+        entry = getUtility(ITranslationImportQueue).addOrUpdateEntry(
+            path=path, content=content, by_maintainer=by_maintainer,
+            importer=uploader, productseries=productseries,
+            distroseries=distroseries, sourcepackagename=sourcepackagename,
+            potemplate=potemplate, pofile=pofile, format=format)
+        entry.setStatus(
+            status, getUtility(ILaunchpadCelebrities).rosetta_experts)
+        return entry
 
     def makeMailingList(self, team, owner):
         """Create a mailing list for the team."""

@@ -592,7 +592,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def addLandingTarget(registrant, target_branch, prerequisite_branch=None,
                          date_created=None, needs_review=False,
                          description=None, review_requests=None,
-                         review_diff=None, commit_message=None):
+                         commit_message=None):
         """Create a new BranchMergeProposal with this branch as the source.
 
         Both the target_branch and the prerequisite_branch, if it is there,
