@@ -15,10 +15,9 @@ from canonical.launchpad.scripts import log
 
 
 class Katie:
-    def __init__(self, dbname, suite, dry_run):
+    def __init__(self, dbname, suite):
         self.suite = suite
         self.dbname = dbname
-        self.dry_run = dry_run
         log.info("Connecting to %s as %s" % (dbname, config.gina.dbuser))
         self.db = connect(user=config.gina.dbuser, dbname=dbname)
 
@@ -39,10 +38,6 @@ class Katie:
             return s
 
     def commit(self):
-        if self.dry_run:
-            # Not committing -- we're on a dry run
-            log.debug("Not committing (dry run)")
-            return
         log.debug("Committing")
         return self.db.commit()
 
