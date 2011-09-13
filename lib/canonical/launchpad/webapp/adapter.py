@@ -18,6 +18,7 @@ from time import time
 import traceback
 import warnings
 
+from lazr.restful.utils import get_current_browser_request, safe_hasattr
 import psycopg2
 from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT,
@@ -72,7 +73,6 @@ from canonical.launchpad.webapp.interfaces import (
     SLAVE_FLAVOR,
     )
 from canonical.launchpad.webapp.opstats import OpStats
-from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 from canonical.lazr.timeout import set_default_timeout_function
 from lp.services import features
 from lp.services.log.loglevels import DEBUG2

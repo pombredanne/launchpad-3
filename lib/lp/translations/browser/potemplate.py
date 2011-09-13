@@ -30,6 +30,7 @@ import datetime
 import operator
 import os.path
 
+from lazr.restful.utils import smartquote
 from storm.info import ClassAlias
 from storm.expr import (
     And,
@@ -64,7 +65,6 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag,
     )
 from canonical.launchpad.webapp.menu import structured
-from canonical.lazr.utils import smartquote
 from lp.app.browser.launchpadform import ReturnToReferrerMixin
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.enums import (

@@ -40,6 +40,7 @@ import subprocess
 import weakref
 
 from lazr.delegates import delegates
+from lazr.restful.utils import get_current_browser_request
 import pytz
 from sqlobject import (
     BoolCol,
@@ -168,7 +169,6 @@ from canonical.launchpad.interfaces.lpstorm import (
     )
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from canonical.lazr.utils import get_current_browser_request
 from lp.answers.model.questionsperson import QuestionsPersonMixin
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.app.validators.email import valid_email

@@ -45,6 +45,7 @@ from lazr.restful.interface import (
     copy_field,
     use_template,
     )
+from lazr.restful.utils import smartquote
 from lazr.uri import URI
 import pytz
 from zope.app.form import CustomWidgetFactory
@@ -98,7 +99,6 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.menu import structured
-from canonical.lazr.utils import smartquote
 from lp.app.browser.launchpad import Hierarchy
 from lp.app.browser.launchpadform import (
     action,

@@ -19,6 +19,7 @@ import cgi
 import mimetypes
 
 from lazr.restful.interface import copy_field
+from lazr.restful.utils import smartquote
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import (
     TextAreaWidget,
@@ -43,7 +44,6 @@ from canonical.launchpad.webapp import (
     Navigation,
     stepthrough,
     )
-from canonical.lazr.utils import smartquote
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

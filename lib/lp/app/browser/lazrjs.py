@@ -18,6 +18,12 @@ __all__ = [
 
 import simplejson
 
+from lazr.enum import IEnumeratedType
+from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
+from lazr.restful.utils import (
+    get_current_browser_request,
+    safe_hasattr,
+    )
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.security.checker import canAccess, canWrite
@@ -26,11 +32,6 @@ from zope.schema.interfaces import (
     IVocabulary,
     )
 from zope.schema.vocabulary import getVocabularyRegistry
-
-from lazr.enum import IEnumeratedType
-from lazr.restful.declarations import LAZR_WEBSERVICE_EXPORTED
-from canonical.lazr.utils import get_current_browser_request
-from canonical.lazr.utils import safe_hasattr
 
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from canonical.launchpad.webapp.publisher import canonical_url
