@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.url import urlappend
 from canonical.testing.layers import DatabaseFunctionalLayer
@@ -28,8 +26,3 @@ class TestPersonProductCanonicalUrl(TestCaseWithFactory):
             urlappend(canonical_url(person),
                       product.name),
             canonical_url(pp))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

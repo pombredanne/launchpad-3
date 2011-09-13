@@ -184,7 +184,3 @@ class PillarNameTriggersTestCase(unittest.TestCase):
         cur.execute("DELETE FROM Project WHERE name='whatever2'")
         cur.execute("SELECT COUNT(*) FROM PillarName WHERE name='whatever2'")
         self.failUnlessEqual(cur.fetchone()[0], 0)
-
-
-def test_suite():
-    return unittest.makeSuite(PillarNameTriggersTestCase)

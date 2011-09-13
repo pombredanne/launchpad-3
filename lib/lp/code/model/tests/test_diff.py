@@ -1,15 +1,13 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for Diff, etc."""
 
 __metaclass__ = type
 
-
 from cStringIO import StringIO
 from difflib import unified_diff
 import logging
-from unittest import TestLoader
 
 from bzrlib import trace
 from bzrlib.patches import (
@@ -31,16 +29,12 @@ from lp.code.interfaces.diff import (
     IDiff,
     IIncrementalDiff,
     IPreviewDiff,
-    IStaticDiff,
-    IStaticDiffSource,
     )
 from lp.code.model.diff import (
     Diff,
     PreviewDiff,
-    StaticDiff,
     )
 from lp.code.model.directbranchcommit import DirectBranchCommit
-from lp.services.osutils import override_environ
 from lp.testing import (
     login,
     login_person,
@@ -288,88 +282,10 @@ class TestDiffInScripts(DiffTestCase):
         diff_bytes = "not a real diff"
         diff = Diff.fromFile(StringIO(diff_bytes), len(diff_bytes))
         oops = self.oopses[0]
-        self.assertEqual('MalformedPatchHeader', oops.type)
+        self.assertEqual('MalformedPatchHeader', oops['type'])
         self.assertIs(None, diff.diffstat)
         self.assertIs(None, diff.added_lines_count)
         self.assertIs(None, diff.removed_lines_count)
-
-
-class TestStaticDiff(TestCaseWithFactory):
-    """Test that StaticDiff objects work."""
-
-    layer = LaunchpadZopelessLayer
-
-    def test_providesInterface(self):
-        verifyObject(IStaticDiff, StaticDiff())
-
-    def test_providesSourceInterface(self):
-        verifyObject(IStaticDiffSource, StaticDiff)
-
-    def test_acquire_existing(self):
-        """Ensure that acquire returns the existing StaticDiff."""
-        self.useBzrBranches(direct_database=True)
-        branch, tree = self.create_branch_and_tree()
-        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
-        # required to generate the revision-id.
-        with override_environ(BZR_EMAIL='me@example.com'):
-            tree.commit('First commit', rev_id='rev1')
-        diff1 = StaticDiff.acquire('null:', 'rev1', tree.branch.repository)
-        diff2 = StaticDiff.acquire('null:', 'rev1', tree.branch.repository)
-        self.assertIs(diff1, diff2)
-
-    def test_acquire_existing_different_repo(self):
-        """The existing object is used even if the repository is different."""
-        self.useBzrBranches(direct_database=True)
-        branch1, tree1 = self.create_branch_and_tree('tree1')
-        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
-        # required to generate the revision-id.
-        with override_environ(BZR_EMAIL='me@example.com'):
-            tree1.commit('First commit', rev_id='rev1')
-        branch2, tree2 = self.create_branch_and_tree('tree2')
-        tree2.pull(tree1.branch)
-        diff1 = StaticDiff.acquire('null:', 'rev1', tree1.branch.repository)
-        diff2 = StaticDiff.acquire('null:', 'rev1', tree2.branch.repository)
-        self.assertTrue(diff1 is diff2)
-
-    def test_acquire_nonexisting(self):
-        """A new object is created if there is no existant matching object."""
-        self.useBzrBranches(direct_database=True)
-        branch, tree = self.create_branch_and_tree()
-        # XXX: AaronBentley 2010-08-06 bug=614404: a bzr username is
-        # required to generate the revision-id.
-        with override_environ(BZR_EMAIL='me@example.com'):
-            tree.commit('First commit', rev_id='rev1')
-            tree.commit('Next commit', rev_id='rev2')
-        diff1 = StaticDiff.acquire('null:', 'rev1', tree.branch.repository)
-        diff2 = StaticDiff.acquire('rev1', 'rev2', tree.branch.repository)
-        self.assertIsNot(diff1, diff2)
-
-    def test_acquireFromText(self):
-        """acquireFromText works as expected.
-
-        It creates a new object if there is none, but uses the existing one
-        if possible.
-        """
-        diff_a = ''.join(unified_diff('', 'a'))
-        diff_b = ''.join(unified_diff('', 'b'))
-        static_diff = StaticDiff.acquireFromText(
-            'rev1', 'rev2', diff_a)
-        self.assertEqual('rev1', static_diff.from_revision_id)
-        self.assertEqual('rev2', static_diff.to_revision_id)
-        static_diff2 = StaticDiff.acquireFromText(
-            'rev1', 'rev2', diff_b)
-        self.assertIs(static_diff, static_diff2)
-
-    def test_acquireFromTextEmpty(self):
-        static_diff = StaticDiff.acquireFromText('rev1', 'rev2', '')
-        self.assertEqual('', static_diff.diff.text)
-
-    def test_acquireFromTextNonEmpty(self):
-        diff_bytes = ''.join(unified_diff('', 'abc'))
-        static_diff = StaticDiff.acquireFromText(
-            'rev1', 'rev2', diff_bytes)
-        transaction.commit()
-        self.assertEqual(diff_bytes, static_diff.diff.text)
 
 
 class TestPreviewDiff(DiffTestCase):
@@ -469,8 +385,8 @@ class TestPreviewDiff(DiffTestCase):
         bzr_target = self.createBzrBranch(bmp.target_branch)
         commit_file(bmp.target_branch, 'foo', 'a\n')
         self.createBzrBranch(bmp.source_branch, bzr_target)
-        source_rev_id = commit_file(bmp.source_branch, 'foo', 'a\nb\n')
-        target_rev_id = commit_file(bmp.target_branch, 'foo', 'c\na\n')
+        commit_file(bmp.source_branch, 'foo', 'a\nb\n')
+        commit_file(bmp.target_branch, 'foo', 'c\na\n')
         diff = PreviewDiff.fromBranchMergeProposal(bmp)
         self.assertEqual('', diff.conflicts)
         self.assertFalse(diff.has_conflicts)
@@ -511,7 +427,7 @@ class TestPreviewDiff(DiffTestCase):
         logger = logging.getLogger('bzr')
         logger.addHandler(handler)
         try:
-            preview = PreviewDiff.fromBranchMergeProposal(bmp)
+            PreviewDiff.fromBranchMergeProposal(bmp)
             self.assertEqual(handler.records, [])
             # check that our handler would normally intercept warnings.
             trace.warning('foo!')
@@ -608,7 +524,3 @@ class TestIncrementalDiff(DiffTestCase):
         inserted, removed = self.diff_changes(incremental_diff.text)
         self.assertEqual(['c\n'], inserted)
         self.assertEqual(['b\n'], removed)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

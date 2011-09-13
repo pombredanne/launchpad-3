@@ -269,7 +269,8 @@ class CodeImportEventSet:
         if code_import.rcs_type in (RevisionControlSystems.SVN,
                                     RevisionControlSystems.BZR_SVN,
                                     RevisionControlSystems.GIT,
-                                    RevisionControlSystems.HG):
+                                    RevisionControlSystems.HG,
+                                    RevisionControlSystems.BZR):
             yield 'URL', code_import.url
         elif code_import.rcs_type == RevisionControlSystems.CVS:
             yield 'CVS_ROOT', code_import.cvs_root

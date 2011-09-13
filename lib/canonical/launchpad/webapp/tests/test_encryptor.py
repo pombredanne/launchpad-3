@@ -61,8 +61,3 @@ class TestSSHADigestEncryptor(PlacelessSetup, unittest.TestCase):
             pass
         else:
             self.fail("uncaught non-ascii text")
-
-
-def test_suite():
-    t = unittest.makeSuite(TestSSHADigestEncryptor)
-    return unittest.TestSuite((t,))

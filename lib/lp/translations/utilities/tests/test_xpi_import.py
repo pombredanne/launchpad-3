@@ -363,7 +363,3 @@ class XpiTestCase(unittest.TestCase):
         self.assertEqual(msgids, [
             ('firststring', 'First translatable string'),
             ('secondstring', 'Second translatable string')])
-
-
-def test_suite():
-    return unittest.defaultTestLoader.loadTestsFromName(__name__)

@@ -26,6 +26,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.features.testing import FeatureFixture
 from lp.soyuz.enums import (
     ArchivePurpose,
+    PackageUploadStatus,
     SourcePackageFormat,
     )
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
@@ -58,25 +59,36 @@ class InitializationHelperTestCase(TestCaseWithFactory):
     # - setup/populate parents with packages;
     # - initialize a child from parents.
 
-    def setupParent(self, packages=None, format_selection=None,
-                    distribution=None,
-                    pocket=PackagePublishingPocket.RELEASE,
-                    ):
-        parent = self.factory.makeDistroSeries(distribution)
-        pf = getUtility(IProcessorFamilySet).getByName('x86')
+    def setupDas(self, parent, proc, arch_tag):
+        pf = getUtility(IProcessorFamilySet).getByName(proc)
         parent_das = self.factory.makeDistroArchSeries(
             distroseries=parent, processorfamily=pf,
-            architecturetag='i386')
+            architecturetag=arch_tag)
         lf = self.factory.makeLibraryFileAlias()
         transaction.commit()
         parent_das.addOrUpdateChroot(lf)
         parent_das.supports_virtualized = True
+        return parent_das
+
+    def setupParent(self, parent=None, packages=None, format_selection=None,
+                    distribution=None,
+                    pocket=PackagePublishingPocket.RELEASE,
+                    proc='x86', arch_tag='i386'
+                    ):
+        if parent is None:
+            parent = self.factory.makeDistroSeries(distribution)
+        parent_das = self.setupDas(parent, proc, arch_tag)
         parent.nominatedarchindep = parent_das
+        # Set a proper source package format if required.
         if format_selection is None:
             format_selection = SourcePackageFormat.FORMAT_1_0
-        getUtility(ISourcePackageFormatSelectionSet).add(
+        spfss_utility = getUtility(ISourcePackageFormatSelectionSet)
+        existing_format_selection = spfss_utility.getBySeriesAndFormat(
             parent, format_selection)
+        if existing_format_selection is None:
+            spfss_utility.add(parent, format_selection)
         parent.backports_not_automatic = True
+        parent.include_long_descriptions = False
         self._populate_parent(parent, parent_das, packages, pocket)
         return parent, parent_das
 
@@ -123,6 +135,39 @@ class InitializationHelperTestCase(TestCaseWithFactory):
         ids.initialize()
         return child
 
+    def createPackageInPackageset(self, distroseries, package_name,
+                                  packageset_name, create_build=False):
+        # Helper method to create a package in a packageset in the given
+        # distroseries, optionaly creating the missing build for this source
+        # package.
+        spn = self.factory.getOrMakeSourcePackageName(package_name)
+        sourcepackagerelease = self.factory.makeSourcePackageRelease(
+            sourcepackagename=spn)
+        source = self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagerelease=sourcepackagerelease,
+            distroseries=distroseries,
+            sourcepackagename=spn,
+            pocket=PackagePublishingPocket.RELEASE)
+        packageset = getUtility(IPackagesetSet).new(
+            packageset_name, packageset_name, distroseries.owner,
+            distroseries=distroseries)
+        packageset.addSources(package_name)
+        if create_build:
+            source.createMissingBuilds()
+        return source, packageset, sourcepackagerelease
+
+    def create2archParentAndSource(self, packages):
+        # Helper to create a parent series with 2 distroarchseries and
+        # a source.
+        parent, parent_das = self.setupParent(packages=packages)
+        unused, parent_das2 = self.setupParent(
+            parent=parent, proc='amd64', arch_tag='amd64',
+            packages=packages)
+        source = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=parent,
+            pocket=PackagePublishingPocket.RELEASE)
+        return parent, parent_das, parent_das2, source
+
 
 class TestInitializeDistroSeries(InitializationHelperTestCase):
 
@@ -137,8 +182,9 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         ids = InitializeDistroSeries(child, [self.parent.id])
         self.assertRaisesWithContent(
             InitializationError,
-            "Can not copy distroarchseries from parent, there are already "
-            "distroarchseries(s) initialized for this series.", ids.check)
+            ("Cannot copy distroarchseries from parent; there are already "
+             "one or more distroarchseries initialised for this series."),
+            ids.check)
 
     def test_failure_when_previous_series_none(self):
         # Initialising a distroseries with no previous_series if the
@@ -154,26 +200,142 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         ids = InitializeDistroSeries(child, [self.parent.id])
         self.assertRaisesWithContent(
             InitializationError,
-            ("DistroSeries series has no previous series and "
-             "the distribution already has initialized series"
+            ("Series series has no previous series and the "
+             "distribution already has initialised series"
              ".").format(child=child),
-             ids.check)
+            ids.check)
 
     def test_failure_with_pending_builds(self):
         # If the parent series has pending builds, and the child is a series
         # of the same distribution (which means they share an archive), we
         # can't initialize.
-        self.parent, self.parent_das = self.setupParent()
-        source = self.factory.makeSourcePackagePublishingHistory(
-            distroseries=self.parent,
-            pocket=PackagePublishingPocket.RELEASE)
-        source.createMissingBuilds()
-        child = self.factory.makeDistroSeries(
-            distribution=self.parent.parent, previous_series=self.parent)
-        ids = InitializeDistroSeries(child, [self.parent.id])
+        pockets = [
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.SECURITY,
+            PackagePublishingPocket.UPDATES,
+            ]
+        for pocket in pockets:
+            self.parent, self.parent_das = self.setupParent()
+            source = self.factory.makeSourcePackagePublishingHistory(
+                distroseries=self.parent,
+                pocket=pocket)
+            source.createMissingBuilds()
+            child = self.factory.makeDistroSeries()
+            ids = InitializeDistroSeries(child, [self.parent.id])
+            self.assertRaisesWithContent(
+                InitializationError,
+                ("The parent series has pending builds for "
+                 "selected sources."),
+                ids.check)
+
+    def test_success_with_builds_in_backports_or_proposed(self):
+        # With pending builds in the BACKPORT or PROPOSED pockets, we
+        # still can initialize.
+        pockets = [
+            PackagePublishingPocket.PROPOSED,
+            PackagePublishingPocket.BACKPORTS,
+            ]
+        for pocket in pockets:
+            self.parent, self.parent_das = self.setupParent()
+            source = self.factory.makeSourcePackagePublishingHistory(
+                distroseries=self.parent,
+                pocket=pocket)
+            source.createMissingBuilds()
+            child = self.factory.makeDistroSeries()
+            ids = InitializeDistroSeries(child, [self.parent.id])
+            # No exception should be raised.
+            ids.check()
+
+    def test_failure_with_pending_builds_specific_arches(self):
+        # We only check for pending builds of the same architectures we're
+        # copying over from the parents. If a build is present in the
+        # architecture we're initializing with, IDS raises an error.
+        res = self.create2archParentAndSource(packages={'p1': '1.1'})
+        parent, parent_das, parent_das2, source = res
+        # Create builds for the architecture of parent_das2.
+        source.createMissingBuilds(architectures_available=[parent_das2])
+        # Initialize only with parent_das2's architecture.
+        child = self.factory.makeDistroSeries()
+        ids = InitializeDistroSeries(
+            child, [parent.id], arches=[parent_das2.architecturetag])
+
         self.assertRaisesWithContent(
-            InitializationError, "Parent series has pending builds.",
+            InitializationError,
+            ("The parent series has pending builds for "
+             "selected sources."),
             ids.check)
+
+    def test_check_success_with_build_in_other_series(self):
+        # Builds in the child's archive but in another series do not
+        # prevent the initialization of child.
+        parent, unused = self.setupParent()
+        other_series, unused = self.setupParent(
+            distribution=parent.distribution)
+        upload = other_series.createQueueEntry(
+            PackagePublishingPocket.RELEASE,
+            other_series.main_archive, 'foo.changes', 'bar')
+        # Create a binary package upload for this upload.
+        upload.addBuild(self.factory.makeBinaryPackageBuild())
+        child = self.factory.makeDistroSeries()
+        ids = InitializeDistroSeries(child, [parent.id])
+
+        # No exception should be raised.
+        ids.check()
+
+    def test_check_success_with_pending_builds_in_other_arches(self):
+        # We only check for pending builds of the same architectures we're
+        # copying over from the parents. If *no* build is present in the
+        # architecture we're initializing with, IDS will succeed.
+        res = self.create2archParentAndSource(packages={'p1': '1.1'})
+        parent, parent_das, parent_das2, source = res
+        # Create builds for the architecture of parent_das2.
+        source.createMissingBuilds(architectures_available=[parent_das2])
+        # Initialize only with parent_das's architecture.
+        child = self.factory.makeDistroSeries(
+            distribution=parent.distribution, previous_series=parent)
+        ids = InitializeDistroSeries(
+            child, arches=[parent_das.architecturetag])
+
+        # No error is raised because we're initializing only the architecture
+        # which has no pending builds in it.
+        ids.check()
+
+    def test_failure_if_build_present_in_selected_packagesets(self):
+        # Pending builds in a parent for source packages included in the
+        # packagesets selected for the copy will make the queue check fail.
+        parent, parent_das = self.setupParent()
+        p1, packageset1, unsed = self.createPackageInPackageset(
+            parent, u'p1', u'packageset1', True)
+        p2, packageset2, unsed = self.createPackageInPackageset(
+            parent, u'p2', u'packageset2', False)
+
+        child = self.factory.makeDistroSeries(
+            distribution=parent.distribution, previous_series=parent)
+        ids = InitializeDistroSeries(
+            child, packagesets=(str(packageset1.id),))
+
+        self.assertRaisesWithContent(
+            InitializationError,
+            ("The parent series has pending builds for "
+             "selected sources."),
+            ids.check)
+
+    def test_check_success_if_build_present_in_non_selected_packagesets(self):
+        # Pending builds in a parent for source packages not included in the
+        # packagesets selected for the copy won't make the queue check fail.
+        parent, parent_das = self.setupParent()
+        p1, packageset1, unused = self.createPackageInPackageset(
+            parent, u'p1', u'packageset1', True)
+        p2, packageset2, unused = self.createPackageInPackageset(
+            parent, u'p2', u'packageset2', False)
+
+        child = self.factory.makeDistroSeries(
+            distribution=parent.distribution, previous_series=parent)
+        ids = InitializeDistroSeries(
+            child, packagesets=(str(packageset2.id),))
+
+        # No exception should be raised.
+        ids.check()
 
     def test_success_with_updates_packages(self):
         # Initialization copies all the package from the UPDATES pocket.
@@ -191,29 +353,192 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertDistroSeriesInitializedCorrectly(
             child, self.parent, self.parent_das)
 
-    def test_success_with_pending_builds(self):
-        # If the parent series has pending builds, and the child's
-        # distribution is different, we can initialize.
+    def test_do_not_copy_superseded_sources(self):
+        # Make sure we don't copy superseded sources from the parent,
+        # we only want (pending, published).
         self.parent, self.parent_das = self.setupParent()
-        source = self.factory.makeSourcePackagePublishingHistory(
+        # Add 2 more sources, pending and superseded.
+        superseded = self.factory.makeSourcePackagePublishingHistory(
             distroseries=self.parent,
-            pocket=PackagePublishingPocket.RELEASE)
-        source.createMissingBuilds()
+            pocket=PackagePublishingPocket.RELEASE,
+            status=PackagePublishingStatus.SUPERSEDED)
+        superseded_source_name = (
+            superseded.sourcepackagerelease.sourcepackagename.name)
+        pending = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=self.parent,
+            pocket=PackagePublishingPocket.RELEASE,
+            status=PackagePublishingStatus.PENDING)
+        pending_source_name = (
+            pending.sourcepackagerelease.sourcepackagename.name)
         child = self._fullInitialize([self.parent])
-        self.assertDistroSeriesInitializedCorrectly(
-            child, self.parent, self.parent_das)
 
-    def test_failure_with_queue_items(self):
-        # If the parent series has items in its queues, such as NEW and
-        # UNAPPROVED, we can't initialize.
-        self.parent, self.parent_das = self.setupParent()
-        self.parent.createQueueEntry(
-            PackagePublishingPocket.RELEASE, self.parent.main_archive,
-            'foo.changes', 'bar')
+        # Check the superseded source is not copied.
+        superseded_child_sources = child.main_archive.getPublishedSources(
+            name=superseded_source_name, distroseries=child,
+            exact_match=True)
+        self.assertEqual(0, superseded_child_sources.count())
+
+        # Check the pending source is copied.
+        pending_child_sources = child.main_archive.getPublishedSources(
+            name=pending_source_name, distroseries=child,
+            exact_match=True)
+        self.assertEqual(1, pending_child_sources.count())
+
+    def test_check_success_with_binary_queue_items_pockets(self):
+        # If the parent series has binary items in pockets PROPOSED or
+        # BACKPORTS, in its queues, we still can initialize because these
+        # pockets are not considered by the initialization process.
+        pockets = [
+            PackagePublishingPocket.PROPOSED,
+            PackagePublishingPocket.BACKPORTS,
+            ]
+        for pocket in pockets:
+            parent, parent_das = self.setupParent()
+            upload = parent.createQueueEntry(
+                pocket, parent.main_archive, 'foo.changes', 'bar')
+            # Create a binary package upload for this upload.
+            upload.addBuild(self.factory.makeBinaryPackageBuild())
+            child = self.factory.makeDistroSeries()
+            ids = InitializeDistroSeries(child, [parent.id])
+
+            # No exception should be raised.
+            ids.check()
+
+    def test_failure_with_binary_queue_items_pockets(self):
+        # If the parent series has binary items in pockets RELEASE,
+        # SECURITY or UPDATES in its queues, we can't initialize.
+        pockets = [
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.SECURITY,
+            PackagePublishingPocket.UPDATES,
+            ]
+        for pocket in pockets:
+            parent, parent_das = self.setupParent()
+            upload = parent.createQueueEntry(
+                pocket, parent.main_archive, 'foo.changes', 'bar')
+            # Create a binary package upload for this upload.
+            upload.addBuild(self.factory.makeBinaryPackageBuild())
+            child = self.factory.makeDistroSeries()
+            ids = InitializeDistroSeries(child, [parent.id])
+
+            self.assertRaisesWithContent(
+                InitializationError,
+                ("The parent series has sources waiting in its upload "
+                 "queues that match your selection."),
+                ids.check)
+
+    def test_failure_with_binary_queue_items_status(self):
+        # If the parent series has binary items with status NEW,
+        # ACCEPTED or UNAPPROVED we can't initialize.
+        statuses = [
+            PackageUploadStatus.NEW,
+            PackageUploadStatus.ACCEPTED,
+            PackageUploadStatus.UNAPPROVED,
+            ]
+        for status in statuses:
+            parent, parent_das = self.setupParent()
+            upload = self.factory.makePackageUpload(
+                distroseries=parent, status=status,
+                archive=parent.main_archive,
+                pocket=PackagePublishingPocket.RELEASE)
+            # Create a binary package upload for this upload.
+            upload.addBuild(self.factory.makeBinaryPackageBuild())
+            child = self.factory.makeDistroSeries()
+            ids = InitializeDistroSeries(child, [parent.id])
+
+            self.assertRaisesWithContent(
+                InitializationError,
+                ("The parent series has sources waiting in its upload "
+                 "queues that match your selection."),
+                ids.check)
+
+    def test_check_success_with_binary_queue_items_status(self):
+        # If the parent series has binary items with status DONE or
+        # REJECTED we still can initialize.
+        statuses = [
+            PackageUploadStatus.DONE,
+            PackageUploadStatus.REJECTED,
+            ]
+        for status in statuses:
+            parent, parent_das = self.setupParent()
+            upload = self.factory.makePackageUpload(
+                distroseries=parent, status=status,
+                archive=parent.main_archive,
+                pocket=PackagePublishingPocket.RELEASE)
+            # Create a binary package upload for this upload.
+            upload.addBuild(self.factory.makeBinaryPackageBuild())
+            child = self.factory.makeDistroSeries()
+            ids = InitializeDistroSeries(child, [parent.id])
+
+            # No exception should be raised.
+            ids.check()
+
+    def test_check_success_with_source_queue_items(self):
+        # If the parent series has *source* items in its queues, we
+        # still can initialize.
+        parent, parent_das = self.setupParent()
+        upload = parent.createQueueEntry(
+            PackagePublishingPocket.RELEASE,
+            parent.main_archive, 'foo.changes', 'bar')
+        # Create a source package upload for this upload.
+        upload.addSource(self.factory.makeSourcePackageRelease())
         child = self.factory.makeDistroSeries()
-        ids = InitializeDistroSeries(child, [self.parent.id])
+        ids = InitializeDistroSeries(child, [parent.id])
+
+        # No exception should be raised.
+        ids.check()
+
+    def test_check_success_with_binary_queue_items_outside_packagesets(self):
+        # If the parent series has binary items in its queues not in the
+        # packagesets selected for the initialization, we still can
+        # initialize.
+        parent, parent_das = self.setupParent()
+        p1, packageset1, spr1 = self.createPackageInPackageset(
+            parent, u'p1', u'packageset1', False)
+        p2, packageset2, spr2 = self.createPackageInPackageset(
+            parent, u'p2', u'packageset2', False)
+
+        # Create a binary package upload for the package 'p2' inside
+        # packageset 'packageset2'.
+        upload = parent.createQueueEntry(
+            PackagePublishingPocket.RELEASE,
+            parent.main_archive, 'foo.changes', 'bar')
+        upload.addBuild(self.factory.makeBinaryPackageBuild(
+            distroarchseries=parent_das,
+            source_package_release=spr2))
+        child = self.factory.makeDistroSeries()
+        # Initialize with packageset1 only.
+        ids = InitializeDistroSeries(
+            child, [parent.id], packagesets=(str(packageset1.id),))
+
+        # No exception should be raised.
+        ids.check()
+
+    def test_failure_with_binary_queue_items_in_packagesets(self):
+        # If the parent series has binary items in its queues in the
+        # packagesets selected for the initialization, we can't
+        # initialize.
+        parent, parent_das = self.setupParent()
+        p1, packageset1, spr1 = self.createPackageInPackageset(
+            parent, u'p1', u'packageset1', False)
+
+        # Create a binary package upload for the package 'p2' inside
+        # packageset 'packageset2'.
+        upload = parent.createQueueEntry(
+            PackagePublishingPocket.RELEASE,
+            parent.main_archive, 'foo.changes', 'bar')
+        upload.addBuild(self.factory.makeBinaryPackageBuild(
+            distroarchseries=parent_das,
+            source_package_release=spr1))
+        child = self.factory.makeDistroSeries()
+        # Initialize with packageset1 only.
+        ids = InitializeDistroSeries(
+            child, [parent.id], packagesets=(str(packageset1.id),))
+
         self.assertRaisesWithContent(
-            InitializationError, "Parent series queues are not empty.",
+            InitializationError,
+            ("The parent series has sources waiting in its upload "
+             "queues that match your selection."),
             ids.check)
 
     def assertDistroSeriesInitializedCorrectly(self, child, parent,
@@ -256,6 +581,7 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
             SourcePackageFormat.FORMAT_1_0))
         # Other configuration bits are copied too.
         self.assertTrue(child.backports_not_automatic)
+        self.assertFalse(child.include_long_descriptions)
 
     def test_initialize(self):
         # Test a full initialize with no errors.
@@ -471,6 +797,10 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         self.assertEqual(self.parent.sourcecount, child.sourcecount)
         self.assertEqual(child.binarycount, 0)
         self.assertEqual(builds.count(), self.parent.sourcecount)
+        for build in builds:
+            # Normally scored at 1760 but 1760 - COPY_ARCHIVE_SCORE_PENALTY
+            # is -840.
+            self.assertEqual(-840, build.api_score)
 
     def test_limit_packagesets_rebuild_and_one_das(self):
         # We can limit the source packages copied, and only builds
@@ -815,11 +1145,9 @@ class TestInitializeDistroSeries(InitializationHelperTestCase):
         ids = InitializeDistroSeries(child, [])
         self.assertRaisesWithContent(
             InitializationError,
-            ("Distroseries {child.name} cannot be initialized: "
-             "No other series in the distribution is initialized "
-             "and no parent was passed to the initilization method"
-             ".").format(child=child),
-             ids.check)
+            ("No other series in the distribution is initialised "
+             "and a parent was not explicitly specified."),
+            ids.check)
 
     def createDistroSeriesWithPublication(self, distribution=None):
         # Create a distroseries with a publication in the DEBUG archive.

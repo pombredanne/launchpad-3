@@ -35,7 +35,6 @@ __all__ = [
 
 
 from datetime import datetime
-import re
 from textwrap import dedent
 import warnings
 
@@ -292,45 +291,11 @@ class ZopelessTransactionManager(object):
                              "directly instantiated.")
 
     @classmethod
-    def _get_zopeless_connection_config(self, dbname, dbhost):
-        # This method exists for testability.
-
-        # This is only used by scripts, so we must connect to the read-write
-        # DB here -- that's why we use rw_main_master directly.
-        main_connection_string = dbconfig.rw_main_master
-
-        # Override dbname and dbhost in the connection string if they
-        # have been passed in.
-        if dbname is not None:
-            main_connection_string = re.sub(
-                r'dbname=\S*', r'dbname=%s' % dbname, main_connection_string)
-        else:
-            match = re.search(r'dbname=(\S*)', main_connection_string)
-            if match is not None:
-                dbname = match.group(1)
-
-        if dbhost is not None:
-            main_connection_string = re.sub(
-                    r'host=\S*', r'host=%s' % dbhost, main_connection_string)
-        else:
-            match = re.search(r'host=(\S*)', main_connection_string)
-            if match is not None:
-                dbhost = match.group(1)
-        return main_connection_string, dbname, dbhost
-
-    @classmethod
-    def initZopeless(cls, dbname=None, dbhost=None, dbuser=None,
-                     isolation=ISOLATION_LEVEL_DEFAULT):
-        # Connect to the auth master store as well, as some scripts might need
-        # to create EmailAddresses and Accounts.
-
-        main_connection_string, dbname, dbhost = (
-            cls._get_zopeless_connection_config(dbname, dbhost))
-
-        assert dbuser is not None, '''
-            dbuser is now required. All scripts must connect as unique
-            database users.
-            '''
+    def initZopeless(cls, dbuser=None, isolation=ISOLATION_LEVEL_DEFAULT):
+        if dbuser is None:
+            raise AssertionError(
+                "dbuser is now required. All scripts must connect as unique "
+                "database users.")
 
         isolation_level = {
             ISOLATION_LEVEL_AUTOCOMMIT: 'autocommit',
@@ -340,21 +305,13 @@ class ZopelessTransactionManager(object):
         # Construct a config fragment:
         overlay = dedent("""\
             [database]
-            rw_main_master: %(main_connection_string)s
             isolation_level: %(isolation_level)s
-            """ % {
-                'isolation_level': isolation_level,
-                'main_connection_string': main_connection_string,
-                })
 
-        if dbuser:
-            # XXX 2009-05-07 stub bug=373252: Scripts should not be connecting
-            # as the launchpad_auth database user.
-            overlay += dedent("""\
-                [launchpad]
-                dbuser: %(dbuser)s
-                auth_dbuser: launchpad_auth
-                """ % {'dbuser': dbuser})
+            [launchpad]
+            dbuser: %(dbuser)s
+            """ % dict(
+                isolation_level=isolation_level,
+                dbuser=dbuser))
 
         if cls._installed is not None:
             if cls._config_overlay != overlay:
@@ -367,8 +324,6 @@ class ZopelessTransactionManager(object):
         else:
             config.push(cls._CONFIG_OVERLAY_NAME, overlay)
             cls._config_overlay = overlay
-            cls._dbname = dbname
-            cls._dbhost = dbhost
             cls._dbuser = dbuser
             cls._isolation = isolation
             cls._reset_stores()
@@ -429,7 +384,7 @@ class ZopelessTransactionManager(object):
         assert cls._installed is not None, (
             "ZopelessTransactionManager not installed")
         cls.uninstall()
-        cls.initZopeless(cls._dbname, cls._dbhost, cls._dbuser, isolation)
+        cls.initZopeless(cls._dbuser, isolation)
 
     @staticmethod
     def conn():
@@ -622,7 +577,7 @@ def sqlvalues(*values, **kwvalues):
     ...
     TypeError: Use either positional or keyword values with sqlvalue.
 
-    """ # ' <- fix syntax highlighting
+    """
     if (values and kwvalues) or (not values and not kwvalues):
         raise TypeError(
             "Use either positional or keyword values with sqlvalue.")
@@ -652,7 +607,7 @@ def quote_identifier(identifier):
     return '"%s"' % identifier.replace('"', '""')
 
 
-quoteIdentifier = quote_identifier # Backwards compatibility for now.
+quoteIdentifier = quote_identifier  # Backwards compatibility for now.
 
 
 def convert_storm_clause_to_string(storm_clause):
@@ -791,50 +746,34 @@ def commit():
     transaction.commit()
 
 
-def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
+def connect(user=None, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
     """Return a fresh DB-API connection to the MAIN MASTER database.
 
-    DEPRECATED - if needed, this should become a method on the Store.
-
-    Use None for the user to connect as the default PostgreSQL user.
-    This is not the default because the option should be rarely used.
+    Can be used without first setting up the Component Architecture,
+    unlike the usual stores.
 
     Default database name is the one specified in the main configuration file.
     """
-    con = psycopg2.connect(connect_string(user, dbname))
+    con = psycopg2.connect(connect_string(user=user, dbname=dbname))
     con.set_isolation_level(isolation)
     return con
 
 
-def connect_string(user, dbname=None):
+def connect_string(user=None, dbname=None):
     """Return a PostgreSQL connection string.
 
     Allows you to pass the generated connection details to external
     programs like pg_dump or embed in slonik scripts.
     """
-    from canonical import lp
-    # We start with the config string from the config file, and overwrite
-    # with the passed in dbname or modifications made by db_options()
-    # command line arguments. This will do until db_options gets an overhaul.
-    con_str_overrides = []
     # We must connect to the read-write DB here, so we use rw_main_master
     # directly.
-    con_str = dbconfig.rw_main_master
-    assert 'user=' not in con_str, (
-            'Connection string already contains username')
+    from canonical.database.postgresql import ConnectionString
+    con_str = ConnectionString(dbconfig.rw_main_master)
     if user is not None:
-        con_str_overrides.append('user=%s' % user)
-    if lp.dbhost is not None:
-        con_str = re.sub(r'host=\S*', '', con_str) # Remove stanza if exists.
-        con_str_overrides.append('host=%s' % lp.dbhost)
-    if dbname is None:
-        dbname = lp.get_dbname() # Note that lp.dbname may be None.
+        con_str.user = user
     if dbname is not None:
-        con_str = re.sub(r'dbname=\S*', '', con_str) # Remove if exists.
-        con_str_overrides.append('dbname=%s' % dbname)
-
-    con_str = ' '.join([con_str] + con_str_overrides)
-    return con_str
+        con_str.dbname = dbname
+    return str(con_str)
 
 
 class cursor:

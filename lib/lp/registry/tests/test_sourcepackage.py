@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from lazr.lifecycle.event import (
     ObjectCreatedEvent,
     ObjectDeletedEvent,
@@ -678,7 +676,3 @@ class TestSourcePackageViews(TestCaseWithFactory):
         self.assertEqual(
             ['trunk', 'current'], options,
             "The obsolete series must NOT be in the vocabulary.")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

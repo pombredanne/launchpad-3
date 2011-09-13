@@ -12,12 +12,12 @@ import sys
 from textwrap import dedent
 import unittest
 
-from canonical.config import config
 from canonical.database.sqlbase import (
     cursor, ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_DEFAULT,
     ISOLATION_LEVEL_READ_COMMITTED, ISOLATION_LEVEL_SERIALIZABLE,
     connect)
 from canonical.testing.layers import LaunchpadZopelessLayer
+
 
 class TestIsolation(unittest.TestCase):
     layer = LaunchpadZopelessLayer
@@ -116,26 +116,20 @@ class TestIsolation(unittest.TestCase):
     def test_connect(self):
         # Ensure connect() method returns a connection with the correct
         # default isolation
-        con = connect(config.launchpad.dbuser)
+        con = connect()
         self.failUnlessEqual(self.getCurrentIsolation(con), 'read committed')
         con.rollback()
         self.failUnlessEqual(self.getCurrentIsolation(con), 'read committed')
 
         # Ensure that changing the isolation sticks.
-        con = connect(
-            config.launchpad.dbuser, isolation=ISOLATION_LEVEL_SERIALIZABLE)
+        con = connect(isolation=ISOLATION_LEVEL_SERIALIZABLE)
         self.failUnlessEqual(self.getCurrentIsolation(con), 'serializable')
         con.rollback()
         self.failUnlessEqual(self.getCurrentIsolation(con), 'serializable')
 
         # But on a fresh connection, it works just fine.
-        con = connect(config.launchpad.dbuser)
+        con = connect()
         con.set_isolation_level(ISOLATION_LEVEL_SERIALIZABLE)
         self.failUnlessEqual(self.getCurrentIsolation(con), 'serializable')
         con.rollback()
         self.failUnlessEqual(self.getCurrentIsolation(con), 'serializable')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

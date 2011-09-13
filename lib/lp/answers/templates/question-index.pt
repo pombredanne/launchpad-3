@@ -34,7 +34,7 @@
     <metal:registering fill-slot="registering">
         Asked by
         <a tal:replace="structure context/owner/fmt:link" />
-        on <span
+        <span
           tal:attributes="title context/datecreated/fmt:datetime"
           tal:content="context/datecreated/fmt:displaydate">2005-10-05</span>
 

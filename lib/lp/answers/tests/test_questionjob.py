@@ -5,16 +5,13 @@
 
 __metaclass__ = type
 
-import transaction
-
 from testtools.content import Content
 from testtools.content_type import UTF8_TEXT
-
+import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.mail import format_address
 from canonical.launchpad.scripts import log
 from canonical.testing import DatabaseFunctionalLayer
 from lp.answers.enums import (
@@ -24,17 +21,20 @@ from lp.answers.enums import (
 from lp.answers.interfaces.questioncollection import IQuestionSet
 from lp.answers.interfaces.questionjob import IQuestionEmailJobSource
 from lp.answers.model.questionjob import (
-    QuestionJob,
     QuestionEmailJob,
+    QuestionJob,
     )
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.log.logger import BufferLogger
 from lp.services.mail import stub
-from lp.services.mail.sendmail import format_address_for_person
+from lp.services.mail.sendmail import (
+    format_address,
+    format_address_for_person,
+    )
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.testing import (
-    run_script,
     person_logged_in,
+    run_script,
     TestCaseWithFactory,
     )
 

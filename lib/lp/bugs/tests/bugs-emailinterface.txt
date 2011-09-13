@@ -396,7 +396,7 @@ associated with the authenticated Person in Launchpad, the principal
 will provide IWeaklyAuthenticatedPrincipal. Let's mark the current
 principal with that.
 
-    >>> from canonical.launchpad.interfaces.mail import (
+    >>> from lp.services.mail.interfaces import (
     ...     IWeaklyAuthenticatedPrincipal,
     ...     )
     >>> from zope.interface import directlyProvides, directlyProvidedBy
@@ -1811,7 +1811,7 @@ signing the mail:
     >>> login(sampledata.USER_EMAIL)
     >>> simulate_receiving_untrusted_mail()
 
-    >>> from canonical.launchpad.mail import signed_message_from_string
+    >>> from lp.services.mail.signedmessage import signed_message_from_string
     >>> msg = signed_message_from_string(submit_mail)
     >>> import email.Utils
     >>> msg['Message-Id'] = email.Utils.make_msgid()
@@ -2347,7 +2347,7 @@ Only mail coming from verified Launchpad users is answered.
 The help text is taken from the Launchpad help wiki as raw text, and
 transformed to be a bit more readable as a plain text document.
 
-    >>> from canonical.launchpad.mail.helpers import reformat_wiki_text
+    >>> from lp.services.mail.helpers import reformat_wiki_text
     >>> wiki_text = """
     ... = Sample Wiki Text =
     ... # A comment line

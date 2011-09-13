@@ -27,7 +27,7 @@ class StubMailer:
         self.rewrite = rewrite
 
     def send(self, from_addr, to_addrs, message):
-        log = getLogger('canonical.launchpad.mail')
+        log = getLogger('lp.services.mail')
         log.info('Email from %s to %s being redirected to %s' % (
             from_addr, ', '.join(to_addrs), ', '.join(self.to_addrs)
             ))

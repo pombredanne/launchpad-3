@@ -13,12 +13,14 @@
         name="+base-layout-macros"
         template="../templates/base-layout-macros.pt"
         permission="zope.Public"
+        class="lp.app.browser.launchpad.Macro"
         />
     <browser:page
         for="*"
         name="+main-template-macros"
         template="../templates/base-layout-macros.pt"
         permission="zope.Public"
+        class="lp.app.browser.launchpad.Macro"
         />
     <browser:page
         for="*"
@@ -26,6 +28,7 @@
         layer="canonical.launchpad.layers.LaunchpadLayer"
         permission="zope.Public"
         template="../templates/launchpad-form.pt"
+        class="lp.app.browser.launchpad.Macro"
         />
     <browser:page
         for="*"
@@ -33,6 +36,7 @@
         layer="canonical.launchpad.layers.LaunchpadLayer"
         permission="zope.Public"
         template="../templates/launchpad-widget-macros.pt"
+        class="lp.app.browser.launchpad.Macro"
         />
     <browser:page
         for="*"
@@ -100,14 +104,14 @@
         permission="zope.Public" />
 
     <browser:page
-        for="*"
+        for="lp.app.browser.root.LaunchpadSearchView"
         name="+search-form"
         class="lp.app.browser.root.LaunchpadSearchFormView"
         template="../templates/launchpad-search-form.pt"
         permission="zope.Public" />
 
     <browser:page
-        for="*"
+        for="lp.app.browser.root.LaunchpadSearchView"
         name="+primary-search-form"
         class="lp.app.browser.root.LaunchpadPrimarySearchFormView"
         template="../templates/launchpad-search-form.pt"
@@ -208,6 +212,7 @@
           name="+forbidden-page-macros"
           template="../templates/launchpad-forbidden-macros.pt"
           permission="zope.Public"
+          class="lp.app.browser.launchpad.Macro"
           />
 
 
@@ -412,6 +417,18 @@
 
   <adapter
     factory="lp.app.browser.vocabulary.SourcePackageNamePickerEntrySourceAdapter"
+    />
+
+  <adapter
+    factory="lp.app.browser.vocabulary.DistributionSourcePackagePickerEntrySourceAdapter"
+    />
+
+  <adapter
+    factory="lp.app.browser.vocabulary.ProductPickerEntrySourceAdapter"
+    />
+
+  <adapter
+    factory="lp.app.browser.vocabulary.DistributionPickerEntrySourceAdapter"
     />
 
   <adapter

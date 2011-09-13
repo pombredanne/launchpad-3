@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Email notifications related to code imports."""
@@ -15,10 +15,6 @@ from canonical.launchpad.helpers import (
     get_contact_email_addresses,
     get_email_template,
     )
-from canonical.launchpad.mail import (
-    format_address,
-    simple_sendmail,
-    )
 from canonical.launchpad.webapp import canonical_url
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
@@ -29,6 +25,10 @@ from lp.code.enums import (
     RevisionControlSystems,
     )
 from lp.registry.interfaces.person import IPerson
+from lp.services.mail.sendmail import (
+    format_address,
+    simple_sendmail,
+    )
 
 
 def new_import(code_import, event):
@@ -51,6 +51,7 @@ def new_import(code_import, event):
         RevisionControlSystems.BZR_SVN: 'subversion',
         RevisionControlSystems.GIT: 'git',
         RevisionControlSystems.HG: 'mercurial',
+        RevisionControlSystems.BZR: 'bazaar',
         }
     body = get_email_template('new-code-import.txt') % {
         'person': code_import.registrant.displayname,
@@ -123,11 +124,12 @@ def make_email_body_for_code_import_update(
     elif code_import.rcs_type in (RevisionControlSystems.SVN,
                                   RevisionControlSystems.BZR_SVN,
                                   RevisionControlSystems.GIT,
-                                  RevisionControlSystems.HG):
+                                  RevisionControlSystems.HG,
+                                  RevisionControlSystems.BZR):
         if CodeImportEventDataType.OLD_URL in event_data:
             old_url = event_data[CodeImportEventDataType.OLD_URL]
             body.append(
-                details_change_prefix + '\n    ' +code_import.url +
+                details_change_prefix + '\n    ' + code_import.url +
                 "\ninstead of:\n    " + old_url)
     else:
         raise AssertionError(

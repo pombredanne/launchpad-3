@@ -13,6 +13,7 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.restful.utils import smartquote
 from storm.locals import (
     And,
     Desc,
@@ -30,7 +31,6 @@ from canonical.database.sqlbase import (
     sqlvalues,
     )
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.lazr.utils import smartquote
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.model.question import (
@@ -187,6 +187,10 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         answer_contacts.update(
             self.distribution.answer_contacts_with_languages)
         return sorted(answer_contacts, key=attrgetter('displayname'))
+
+    @property
+    def owner(self):
+        return self.distribution.owner
 
 
 class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,

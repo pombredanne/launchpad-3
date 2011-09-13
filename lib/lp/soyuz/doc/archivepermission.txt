@@ -266,46 +266,9 @@ Amending Permissions
 ~~~~~~~~~~~~~~~~~~~~
 
 There are some methods that will enable the caller to add and delete
-PackageSet based permissions.  They currently require launchpad.Edit
-permission to use, which enforces the user to be an admin or a member
-of the "techboard" (Ubuntu Technical Board) team.
-
-Set up a helper function to check access:
-
-    >>> from zope.security.checker import canAccess
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> restricted_methods = (
-    ...     'newPackagesetUploader',
-    ...     'deletePackagesetUploader',
-    ... )
-    >>> def checkAccess(true_or_false):
-    ...     for method in restricted_methods:
-    ...         assert(canAccess(permission_set, method) == true_or_false)
-    >>> from lp.app.interfaces.launchpad import ILaunchpadCelebrities
-    >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.registry.interfaces.teammembership import (
-    ...     TeamMembershipStatus)
-    >>> personset = getUtility(IPersonSet)
-    >>> techboard = getUtility(ILaunchpadCelebrities).ubuntu_techboard
-    >>> techboard = removeSecurityProxy(techboard)
-
-Ordinary users have no access:
-
-    >>> login("test@canonical.com")
-    >>> checkAccess(False)
-
-Admins have access:
-
-    >>> login("foo.bar@canonical.com")
-    >>> checkAccess(True)
-
-Now add "test@canonical.com" to the techboard team and log in as him.
-
-    >>> person = personset.getByEmail("test@canonical.com")
-    >>> ignored = techboard.addMember(
-    ...     person, reviewer=person, status=TeamMembershipStatus.APPROVED,
-    ...     force_team_add=True)
-    >>> login_person(person)
+PackageSet based permissions.  They require no special permission to use
+because these methods should only ever be called from inside other security
+proxied objects like IArchive.
 
 newPackageUploader() creates a permission for a person to upload to a
 specific package:

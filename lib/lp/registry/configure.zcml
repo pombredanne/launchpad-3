@@ -233,7 +233,8 @@
         <require
             permission="launchpad.Edit"
             set_attributes="displayname title summary description driver
-                            backports_not_automatic"/>
+                            backports_not_automatic
+                            include_long_descriptions"/>
 
         <!-- NB: check with SABDFL before modifying these, there is potential to
                                  make a huge mess if these get changed and Soyuz has to republish
@@ -487,7 +488,6 @@
                 enable_bugfiling_duplicate_search
                 findRelatedArchivePublications
                 findRelatedArchives
-                getPersonsByEmail
                 getMergeProposals
                 getReleasesAndPublishingHistory
                 getUsedBugTags
@@ -915,7 +915,10 @@
             for="lp.registry.interfaces.productseries.IProductSeries"
             factory="lp.registry.model.pillaraffiliation.ProductSeriesPillarAffiliation"
             />
-
+        <adapter
+            for="lp.code.interfaces.codereviewvote.ICodeReviewVoteReference"
+            factory="lp.registry.model.pillaraffiliation.CodeReviewVotePillarAffiliation"
+            />
         <!-- Using
 
     permission="Public" here causes some tests to fail
@@ -1539,6 +1542,7 @@
                 official_blueprints
                 official_malone
                 owner
+                package_derivatives_email
                 security_contact
                 summary
                 title"/>

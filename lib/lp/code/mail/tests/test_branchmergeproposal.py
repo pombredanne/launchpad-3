@@ -6,7 +6,6 @@
 from difflib import unified_diff
 import operator
 from textwrap import dedent
-from unittest import TestLoader
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
@@ -671,7 +670,3 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         expected_email = '%s <%s>' % (
             candidate.displayname, candidate.preferredemail.email)
         self.assertEmailHeadersEqual(expected_email, mails[0]['To'])
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -415,7 +415,3 @@ class ExtractVersionTestCase(unittest.TestCase):
         self.assertEqual(version, '0.2-rm-zomb-pre1')
         version = extract_version('warzone2100-2.0.5_rc1.tar.bz2')
         self.assertEqual(version, '2.0.5-rc1')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

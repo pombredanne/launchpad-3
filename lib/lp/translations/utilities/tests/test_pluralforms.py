@@ -65,7 +65,3 @@ class PluralFormsTest(unittest.TestCase):
         # Since 'n' can be zero as well, dividing by it won't work.
         self.assertRaises(BadPluralExpression,
                           make_friendly_plural_forms, '(1/n)', 1)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

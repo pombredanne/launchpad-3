@@ -146,6 +146,26 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         self.assertIs(None, ds_diff.source_pub)
         self.assertIs(None, view.binary_summaries)
 
+    def test_binary_summaries_none_no_display(self):
+        # If, for a difference, binary_summaries=None, then the slot to
+        # display binary summaries is not present.
+        ds_diff = self.factory.makeDistroSeriesDifference(
+            difference_type=(
+                DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES))
+        with celebrity_logged_in('admin'):
+            ds_diff.parent_source_pub.status = PackagePublishingStatus.DELETED
+        ds_diff.update()
+
+        view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
+
+        binary_description_matcher = soupmatchers.HTMLContains(
+            soupmatchers.Tag(
+                'Binary descriptions header', 'dt',
+                text=re.compile(
+                    '\s*Binary descriptions:\s*')))
+
+        self.assertThat(view(), Not(binary_description_matcher))
+
     def test_show_edit_options_non_ajax(self):
         # Blacklist options and "Add comment" are not shown for non-ajax
         # requests.
@@ -206,7 +226,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
             'foo', ['0.1-1derived1', '0.1-1'])
         parent_changelog_lfa = self.factory.makeChangelog(
             'foo', ['0.1-2', '0.1-1'])
-        transaction.commit() # Yay, librarian.
+        transaction.commit()  # Yay, librarian.
         ds_diff = self.factory.makeDistroSeriesDifference(versions={
             'derived': '0.1-1derived1',
             'parent': '0.1-2',
@@ -228,7 +248,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         changelog_lfa = self.factory.makeChangelog('foo', ['0.30-1'])
         parent_changelog_lfa = self.factory.makeChangelog(
             'foo', ['0.32-1', '0.30-1'])
-        transaction.commit() # Yay, librarian.
+        transaction.commit()  # Yay, librarian.
         ds_diff = self.factory.makeDistroSeriesDifference(versions={
             'derived': '0.30-1',
             'parent': '0.32-1',
@@ -250,7 +270,7 @@ class DistroSeriesDifferenceTestCase(TestCaseWithFactory):
         changelog_lfa = self.factory.makeChangelog('foo', ['0.30-1'])
         parent_changelog_lfa = self.factory.makeChangelog(
             'foo', ['0.32-1', '0.30-1'])
-        transaction.commit() # Yay, librarian.
+        transaction.commit()  # Yay, librarian.
         ds_diff = self.factory.makeDistroSeriesDifference(versions={
             'derived': '0.32-1',
             'parent': '0.30-1',
@@ -444,9 +464,9 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
     def test_source_diff_rendering_no_source(self):
         # If there is no source pub for this difference, then we don't
         # display even the request for a diff.
+        missing_type = DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES
         ds_diff = self.factory.makeDistroSeriesDifference(
-            difference_type=
-                (DistroSeriesDifferenceType.MISSING_FROM_DERIVED_SERIES))
+            difference_type=missing_type)
 
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
         self.assertEqual(0, self.number_of_request_diff_texts(view()))
@@ -472,9 +492,9 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
     def test_parent_source_diff_rendering_no_source(self):
         # If there is no source pub for this difference, then we don't
         # display even the request for a diff.
+        unique_type = DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES
         ds_diff = self.factory.makeDistroSeriesDifference(
-            difference_type=
-                (DistroSeriesDifferenceType.UNIQUE_TO_DERIVED_SERIES))
+            difference_type=unique_type)
 
         view = create_initialized_view(ds_diff, '+listing-distroseries-extra')
         self.assertEqual(0, self.number_of_request_diff_texts(view()))
@@ -619,7 +639,7 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
         changelog_lfa = self.factory.makeChangelog('foo', ['0.30-1'])
         parent_changelog_lfa = self.factory.makeChangelog(
             'foo', ['0.32-1', '0.30-1'])
-        transaction.commit() # Yay, librarian.
+        transaction.commit()  # Yay, librarian.
         ds_diff = self.factory.makeDistroSeriesDifference(versions={
             'derived': '0.30-1',
             'parent': '0.32-1',
@@ -638,8 +658,8 @@ class DistroSeriesDifferenceTemplateTestCase(TestCaseWithFactory):
     def test_package_diff_no_base_version(self):
         # If diff's base_version is None packages diffs are not displayed
         # and neither is the link to compute them.
-        versions={
-            'base': None, # No base version.
+        versions = {
+            'base': None,  # No base version.
             'derived': '0.1-1derived1',
             'parent': '0.1-2'}
         ds_diff = self.factory.makeDistroSeriesDifference(versions=versions)

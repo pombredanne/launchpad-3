@@ -22,6 +22,7 @@ __all__ = [
     'ArchivePackagesView',
     'ArchiveView',
     'ArchiveViewBase',
+    'EnableRestrictedFamiliesMixin',
     'make_archive_vocabulary',
     'PackageCopyingMixin',
     'traverse_named_ppa',
@@ -34,6 +35,7 @@ from datetime import (
     timedelta,
     )
 
+from lazr.restful.utils import smartquote
 import pytz
 from sqlobject import SQLObjectNotFound
 from storm.expr import Desc
@@ -79,7 +81,6 @@ from canonical.launchpad.webapp.menu import (
     NavigationMenu,
     structured,
     )
-from canonical.lazr.utils import smartquote
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,
@@ -107,7 +108,10 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.services.browser_helpers import get_user_agent_distroseries
+from lp.services.browser_helpers import (
+    get_plural_text,
+    get_user_agent_distroseries,
+    )
 from lp.services.database.bulk import load
 from lp.services.features import getFeatureFlag
 from lp.services.propertycache import cachedproperty
@@ -1287,10 +1291,27 @@ def copy_asynchronously(source_pubs, dest_archive, dest_series, dest_pocket,
             copy_policy=PackageCopyPolicy.INSECURE,
             requester=person)
 
-    return structured("""
-        <p>Requested sync of %s packages.</p>
-        <p>Please allow some time for these to be processed.</p>
-        """, len(source_pubs))
+    return copy_asynchronously_message(len(source_pubs))
+
+
+def copy_asynchronously_message(source_pubs_count):
+    """Return a message detailing the sync action.
+
+    :param source_pubs_count: The number of source pubs requested for syncing.
+    """
+    package_or_packages = get_plural_text(
+        source_pubs_count, "package", "packages")
+    if source_pubs_count == 0:
+        return structured(
+            "Requested sync of %s %s.",
+            source_pubs_count, package_or_packages)
+    else:
+        this_or_these = get_plural_text(
+            source_pubs_count, "this", "these")
+        return structured(
+            "Requested sync of %s %s.<br />"
+            "Please allow some time for %s to be processed.",
+            source_pubs_count, package_or_packages, this_or_these)
 
 
 def render_cannotcopy_as_html(cannotcopy_exception):
@@ -2013,7 +2034,45 @@ class ArchiveEditView(BaseArchiveEditView):
         return 'Edit %s' % self.context.displayname
 
 
-class ArchiveAdminView(BaseArchiveEditView):
+class EnableRestrictedFamiliesMixin:
+    """A mixin that provides enabled_restricted_families field support"""
+
+    def createEnabledRestrictedFamilies(self, description=None):
+        """Creates the 'enabled_restricted_families' field.
+
+        """
+        terms = []
+        for family in getUtility(IProcessorFamilySet).getRestricted():
+            terms.append(SimpleTerm(
+                family, token=family.name, title=family.title))
+        old_field = IArchive['enabled_restricted_families']
+        return form.Fields(
+            List(__name__=old_field.__name__,
+                 title=old_field.title,
+                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
+                 required=False,
+                 description=old_field.description if description is None
+                     else description),
+                 render_context=self.render_context)
+
+    def validate_enabled_restricted_families(self, data, error_msg):
+        enabled_restricted_families = data['enabled_restricted_families']
+        require_virtualized = data.get('require_virtualized', False)
+        proc_family_set = getUtility(IProcessorFamilySet)
+        if (not require_virtualized and
+            set(enabled_restricted_families) !=
+                set(proc_family_set.getRestricted())):
+            self.setFieldError('enabled_restricted_families', error_msg)
+            self.setFieldError('require_virtualized', error_msg)
+
+
+ARCHIVE_ENABLED_RESTRICTED_FAMILITES_ERROR_MSG = (
+    u'Main archives can not be restricted to certain '
+    'architectures unless they are set to build on '
+    'virtualized builders.')
+
+
+class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
 
     field_names = ['enabled', 'private', 'commercial', 'require_virtualized',
                    'build_debug_symbols', 'buildd_secret', 'authorized_size',
@@ -2077,6 +2136,20 @@ class ArchiveAdminView(BaseArchiveEditView):
                 'commercial',
                 'Can only set commericial for private archives.')
 
+        enabled_restricted_families = data.get('enabled_restricted_families')
+        require_virtualized = data.get('require_virtualized')
+        proc_family_set = getUtility(IProcessorFamilySet)
+        if (enabled_restricted_families is not None and
+            not require_virtualized and
+            set(enabled_restricted_families) !=
+                set(proc_family_set.getRestricted())):
+            self.setFieldError(
+                'enabled_restricted_families',
+                ARCHIVE_ENABLED_RESTRICTED_FAMILITES_ERROR_MSG)
+            self.setFieldError(
+                'require_virtualized',
+                ARCHIVE_ENABLED_RESTRICTED_FAMILITES_ERROR_MSG)
+
     @property
     def owner_is_private_team(self):
         """Is the owner a private team?
@@ -2086,6 +2159,13 @@ class ArchiveAdminView(BaseArchiveEditView):
         """
         return self.context.owner.visibility == PersonVisibility.PRIVATE
 
+    @property
+    def initial_values(self):
+        return {
+            'enabled_restricted_families':
+                self.context.enabled_restricted_families,
+            }
+
     def setUpFields(self):
         """Override `LaunchpadEditFormView`.
 
@@ -2093,23 +2173,6 @@ class ArchiveAdminView(BaseArchiveEditView):
         """
         super(ArchiveAdminView, self).setUpFields()
         self.form_fields += self.createEnabledRestrictedFamilies()
-
-    def createEnabledRestrictedFamilies(self):
-        """Creates the 'enabled_restricted_families' field.
-
-        """
-        terms = []
-        for family in getUtility(IProcessorFamilySet).getRestricted():
-            terms.append(SimpleTerm(
-                family, token=family.name, title=family.title))
-        old_field = IArchive['enabled_restricted_families']
-        return form.Fields(
-            List(__name__=old_field.__name__,
-                 title=old_field.title,
-                 value_type=Choice(vocabulary=SimpleVocabulary(terms)),
-                 required=False,
-                 description=old_field.description),
-                 render_context=self.render_context)
 
 
 class ArchiveDeleteView(LaunchpadFormView):

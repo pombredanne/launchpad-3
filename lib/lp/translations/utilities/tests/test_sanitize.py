@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from lp.testing import TestCase
 from lp.translations.utilities.sanitize import (
     MixedNewlineMarkersError,
@@ -270,7 +268,3 @@ class TestSanitizeTranslations(TestCase):
             expected_sanitized,
             sanitize_translations_from_webui(
                 self.english, translations, None))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

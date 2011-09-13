@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import email
-import unittest
 
 from zope.component import getUtility
 from zope.event import notify
@@ -229,7 +228,3 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
         bzrsync = self.makeBzrSync(self.db_branch)
         bzrsync.syncBranchAndClose()
         self.assertNoPendingEmails()
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
