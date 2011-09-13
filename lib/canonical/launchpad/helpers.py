@@ -133,45 +133,6 @@ def shortest(sequence):
     return shortest_list
 
 
-def getRosettaBestBinaryPackageName(sequence):
-    """Return the best binary package name from a list.
-
-    It follows the Rosetta policy:
-
-    We don't need a concrete value from binary package name, we use shortest
-    function as a kind of heuristic to choose the shortest binary package
-    name that we suppose will be the more descriptive one for our needs with
-    PO templates. That's why we get always the first element.
-    """
-    return shortest(sequence)[0]
-
-
-def getRosettaBestDomainPath(sequence):
-    """Return the best path for a concrete .pot file from a list of paths.
-
-    It follows the Rosetta policy for this path:
-
-    We don't need a concrete value from domain_paths list, we use shortest
-    function as a kind of heuristic to choose the shortest path if we have
-    more than one, usually, we will have only one element.
-    """
-    return shortest(sequence)[0]
-
-
-def getValidNameFromString(invalid_name):
-    """Return a valid name based on a string.
-
-    A name in launchpad has a set of restrictions that not all strings follow.
-    This function converts any string in another one that follows our name
-    restriction rules.
-
-    To know more about all restrictions, please, look at valid_name function
-    in the database.
-    """
-    # All chars should be lower case, underscores and spaces become dashes.
-    return text_replaced(invalid_name.lower(), {'_': '-', ' ': '-'})
-
-
 def browserLanguages(request):
     """Return a list of Language objects based on the browser preferences."""
     return IRequestPreferredLanguages(request).getPreferredLanguages()
