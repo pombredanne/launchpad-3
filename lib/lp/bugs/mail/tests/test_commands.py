@@ -1,11 +1,18 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.testing.layers import (
+    DatabaseFunctionalLayer,
+    LaunchpadFunctionalLayer,
+    )
 from lp.bugs.mail.commands import (
     AffectsEmailCommand,
+    BugEmailCommand,
     )
-from lp.services.mail.interfaces import BugTargetNotFound
+from lp.services.mail.interfaces import (
+    BugTargetNotFound,
+    EmailProcessingError,
+    )
 from lp.testing import (
     login_celebrity,
     login_person,
@@ -143,3 +150,29 @@ class AffectsEmailCommandTestCase(TestCaseWithFactory):
         self.assertRaisesWithContent(
             BugTargetNotFound, message,
             AffectsEmailCommand.getBugTarget, 'fnord/pting/snarf/thrup')
+
+
+class BugEmailCommandTestCase(TestCaseWithFactory):
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_execute_bug_id(self):
+        bug = self.factory.makeBug()
+        command = BugEmailCommand('bug', [str(bug.id)])
+        self.assertEqual((bug, None), command.execute(None, None))
+
+    def test_execute_bug_id_wrong_type(self):
+        command = BugEmailCommand('bug', ['nickname'])
+        error = self.assertRaises(
+            EmailProcessingError, command.execute, None, None)
+        message = str(error).split('\n')
+        self.assertEqual(
+            "The 'bug' command expects either 'new' or a bug id.", message[0])
+
+    def test_execute_bug_id_not_found(self):
+        command = BugEmailCommand('bug', ['9999999'])
+        error = self.assertRaises(
+            EmailProcessingError, command.execute, None, None)
+        message = str(error).split('\n')
+        self.assertEqual(
+            "There is no such bug in Launchpad: 9999999", message[0])
