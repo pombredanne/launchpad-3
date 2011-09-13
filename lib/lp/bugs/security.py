@@ -11,11 +11,11 @@ from lp.services.messages.interfaces.message import IMessage
 from lp.app.security import (
     AnonymousAuthorization,
     AuthorizationBase,
+    DelegatedAuthorization,
     )
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugattachment import IBugAttachment
 from lp.bugs.interfaces.bugbranch import IBugBranch
-from lp.bugs.interfaces.bugmessage import IBugMessage
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugsubscription import IBugSubscription
 from lp.bugs.interfaces.bugsubscriptionfilter import IBugSubscriptionFilter
@@ -98,11 +98,10 @@ class EditBugBranch(EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
     def __init__(self, bug_branch):
         # The same permissions as for the BugBranch's bug should apply
         # to the BugBranch itself.
-        EditPublicByLoggedInUserAndPrivateByExplicitSubscribers.__init__(
-            self, bug_branch.bug)
+        super(EditBugBranch, self).__init__(bug_branch.bug)
 
 
-class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):
+class ViewBugAttachment(DelegatedAuthorization):
     """Security adapter for viewing a bug attachment.
 
     If the user is authorized to view the bug, he's allowed to view the
@@ -112,12 +111,11 @@ class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):
     usedfor = IBugAttachment
 
     def __init__(self, bugattachment):
-        PublicToAllOrPrivateToExplicitSubscribersForBug.__init__(
-            self, bugattachment.bug)
+        super(ViewBugAttachment, self).__init__(
+            bugattachment, bugattachment.bug)
 
 
-class EditBugAttachment(
-    EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
+class EditBugAttachment(DelegatedAuthorization):
     """Security adapter for editing a bug attachment.
 
     If the user is authorized to view the bug, he's allowed to edit the
@@ -127,8 +125,8 @@ class EditBugAttachment(
     usedfor = IBugAttachment
 
     def __init__(self, bugattachment):
-        EditPublicByLoggedInUserAndPrivateByExplicitSubscribers.__init__(
-            self, bugattachment.bug)
+        super(EditBugAttachment, self).__init__(
+            bugattachment, bugattachment.bug)
 
 
 class ViewBugSubscription(AnonymousAuthorization):

@@ -97,7 +97,11 @@ will generate another different karma event for the uploader.
 Clean up
 ========
 
-Unregister the event listener to make sure we won't interfere in other tests.
+Unregister the event listener to make sure we won't interfere in other tests,
+and delete a stray uploaded file.
 
+    >>> import os
+    >>> from lp.archiveuploader.tests import datadir
     >>> karma_helper.unregister_listener()
-
+    >>> upload_data = datadir('suite/bar_1.0-2')
+    >>> os.remove(os.path.join(upload_data, 'bar_1.0.orig.tar.gz'))

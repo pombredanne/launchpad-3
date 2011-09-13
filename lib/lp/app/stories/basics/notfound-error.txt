@@ -19,7 +19,8 @@ It also contains instructions specific to broken links.
     >>> main_content = find_main_content(page_with_referer)
     >>> for paragraph in main_content('p'):
     ...     print extract_text(paragraph)
-    There&#8217;s no page with this address in Launchpad.
+    This page does not exist, or you may not have permission to see it.
+    If you have been to this page before, it is possible it has been removed.
     If you got here from a link elsewhere on Launchpad...
     Otherwise, complain to the maintainers of the page that linked here.
     If this is blocking your work...

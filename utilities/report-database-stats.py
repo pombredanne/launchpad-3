@@ -252,7 +252,7 @@ def main():
         parser.error(
             "Only two of --from, --until and --interval may be specified.")
 
-    con = connect(options.dbuser)
+    con = connect()
     cur = con.cursor()
 
     tables = list(get_table_stats(cur, options))

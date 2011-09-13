@@ -9,10 +9,7 @@ import transaction
 
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.services.log.logger import DevNullLogger
-from lp.testing import (
-    TestCase,
-    TestCaseWithFactory,
-    )
+from lp.testing import TestCaseWithFactory
 from lp.testing.matchers import Provides
 from lp.translations.enums import RosettaImportStatus
 from lp.translations.interfaces.translationfileformat import (
@@ -24,15 +21,12 @@ from lp.translations.interfaces.translationimporter import (
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData,
     )
-from lp.translations.utilities.sanitize import MixedNewlineMarkersError
 from lp.translations.utilities.translation_import import (
     importers,
     is_identical_translation,
-    message_text_attributes,
     POFileImporter,
     POTFileImporter,
     TranslationImporter,
-    verify_message_newline_consistency,
     )
 
 
@@ -265,10 +259,8 @@ class TranslationImporterTestCase(TestCaseWithFactory):
         """ % potmsgset2.msgid_singular.msgid
 
         entry = self.factory.makeTranslationImportQueueEntry(
-            'foo.po', potemplate=template,
+            'foo.po', potemplate=template, pofile=pofile,
             status=RosettaImportStatus.APPROVED, content=text)
-        entry.pofile = pofile
-        entry.status = RosettaImportStatus.APPROVED
         transaction.commit()
 
         self.assertTrue(existing_translation.is_current_upstream)
@@ -307,59 +299,3 @@ class TranslationImporterTestCase(TestCaseWithFactory):
         importer = POFileImporter(queue_entry, FakeParser(), DevNullLogger())
         importer.importMessage(message)
         self.assertEqual(old_file_references, potmsgset.filereferences)
-
-
-class FakeMessage:
-    msgid_singular = None
-    msgid_plural = None
-    singular_text = None
-    plural_text = None
-    translations = ()
-
-
-class NewlineVerificationTests(TestCase):
-    def test_attribute_ok(self):
-        # If a message's attributes are None or strings without mixed
-        # newlines, then no exception is raise.
-        for attr_name in message_text_attributes:
-            message = FakeMessage()
-            message.msgid_singular = 'no mixed newlines here'
-            # The next call doesn't raise an exception.
-            verify_message_newline_consistency(message)
-
-    def test_attribute_not_ok(self):
-        # If a message's attributes contain mixed newlines, an exception is
-        # raised.
-        for attr_name in message_text_attributes:
-            message = FakeMessage()
-            setattr(message, attr_name, 'mixed\rnewlines\n')
-            e = self.assertRaises(
-                MixedNewlineMarkersError,
-                verify_message_newline_consistency, message)
-            # The error message mentions the attribute name.
-            self.assertEqual(
-                e.args[0],
-                "%s text ('mixed\\rnewlines\\n') " % attr_name +
-                "mixes different newline markers.")
-
-    def test_translations_ok(self):
-        # If a message's translations are None or strings without mixed
-        # newlines, then no exception is raise.
-        message = FakeMessage()
-        message.translations = ['no mixed newlines here']
-        # The next call doesn't raise an exception.
-        verify_message_newline_consistency(message)
-
-    def test_translations_not_ok(self):
-        # If a message's translations contain mixed newlines, an exception is
-        # raised.
-        message = FakeMessage()
-        message.translations = ['mixed\rnewlines\n']
-        e = self.assertRaises(
-            MixedNewlineMarkersError,
-            verify_message_newline_consistency, message)
-        # The error message mentions the translation index ("0" in this case).
-        self.assertEqual(
-            e.args[0],
-            "translation 0 text ('mixed\\rnewlines\\n') "
-            "mixes different newline markers.")

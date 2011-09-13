@@ -9,11 +9,12 @@ __all__ = [
     'SprintSpecificationDecideView',
     ]
 
+from lazr.restful.utils import smartquote
+
 from canonical.launchpad.webapp import (
     canonical_url,
     LaunchpadView,
     )
-from canonical.lazr.utils import smartquote
 
 
 class SprintSpecificationDecideView(LaunchpadView):
