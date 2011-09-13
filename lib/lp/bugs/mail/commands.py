@@ -181,7 +181,10 @@ class PrivateEmailCommand(EmailCommand):
                     error_templates=error_templates),
                 stop_processing=True)
 
-        # XXX sinzui 2011-09-13: work with params.
+        if isinstance(context, CreateBugParams):
+            context.private = private
+            return context, current_event
+
         # Snapshot.
         edited_fields = set()
         if IObjectModifiedEvent.providedBy(current_event):

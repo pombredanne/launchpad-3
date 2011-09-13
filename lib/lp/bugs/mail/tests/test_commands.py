@@ -1,13 +1,20 @@
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+from lazr.lifecycle.interfaces import (
+    IObjectModifiedEvent,
+    )
+
 from canonical.testing.layers import (
     DatabaseFunctionalLayer,
     LaunchpadFunctionalLayer,
     )
+from lp.bugs.interfaces.bug import CreateBugParams
 from lp.bugs.mail.commands import (
     AffectsEmailCommand,
     BugEmailCommand,
+    PrivateEmailCommand,
+    SecurityEmailCommand,
     )
 from lp.services.mail.interfaces import (
     BugTargetNotFound,
@@ -191,3 +198,27 @@ class BugEmailCommandTestCase(TestCaseWithFactory):
         self.assertEqual(user, params.owner)
         self.assertEqual('title borked', params.title)
         self.assertEqual(message['Message-Id'], params.msg.rfc822msgid)
+
+
+class PrivateEmailCommandTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_execute_bug(self):
+        bug = self.factory.makeBug()
+        login_person(bug.bugtasks[0].target.owner)
+        command = PrivateEmailCommand('private', ['yes'])
+        exec_bug, event = command.execute(bug, None)
+        self.assertEqual(bug, exec_bug)
+        self.assertEqual(True, bug.private)
+        self.assertTrue(IObjectModifiedEvent.providedBy(event))
+
+    def test_execute_bug_params(self):
+        user = self.factory.makePerson()
+        login_person(user)
+        bug_params = CreateBugParams(title='bug title', owner=user)
+        command = PrivateEmailCommand('private', ['yes'])
+        params, event = command.execute(bug_params, None)
+        self.assertEqual(bug_params, params)
+        self.assertEqual(True, bug_params.private)
+        self.assertEqual(None, event)
