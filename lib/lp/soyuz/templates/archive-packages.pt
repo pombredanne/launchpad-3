@@ -10,7 +10,7 @@
     <metal:block fill-slot="head_epilogue">
       <script type="text/javascript" id="repository-size-update"
               tal:condition="view/archive_url">
-LPS.use('io-base', 'lazr.anim', 'node', 'lp.soyuz.base',
+LPS.use('io-base', 'lp.anim', 'node', 'lp.soyuz.base',
           'lp.soyuz.update_archive_build_statuses', function(Y) {
 
 
@@ -38,7 +38,7 @@ function informFailure(transaction_id, response, args) {
     args.container.set('innerHTML', '');
     args.container.appendChild(failure_message);
 
-    var anim = Y.lazr.anim.red_flash({
+    var anim = Y.lp.anim.red_flash({
         node: failure_message
         });
     anim.run();

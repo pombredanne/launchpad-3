@@ -6,34 +6,38 @@
 
 __metaclass__ = type
 
-
-from lp.codehosting.puller.worker import (
-    BranchLoopError,
-    BranchReferenceForbidden,
-    SafeBranchOpener,
-    )
-from lp.codehosting.safe_open import (
-    BadUrl,
-    BlacklistPolicy,
-    WhitelistPolicy,
-    )
-
-from lp.testing import TestCase
-
 from bzrlib.branch import (
+    Branch,
+    BranchReferenceFormat,
     BzrBranchFormat7,
     )
 from bzrlib.bzrdir import (
+    BzrDir,
     BzrDirMetaFormat1,
     )
-from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack1
-from bzrlib.tests import (
-    TestCaseWithTransport,
+from bzrlib.repofmt.knitpack_repo import RepositoryFormatKnitPack1
+from bzrlib.tests import TestCaseWithTransport
+from bzrlib.transport import chroot
+from lazr.uri import URI
+
+from lp.codehosting.safe_open import (
+    BadUrl,
+    BlacklistPolicy,
+    BranchLoopError,
+    BranchReferenceForbidden,
+    safe_open,
+    SafeBranchOpener,
+    WhitelistPolicy,
     )
+from lp.testing import TestCase
 
 
 class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
     """Unit tests for `SafeBranchOpener.checkAndFollowBranchReference`."""
+
+    def setUp(self):
+        super(TestSafeBranchOpenerCheckAndFollowBranchReference, self).setUp()
+        SafeBranchOpener.install_hook()
 
     class StubbedSafeBranchOpener(SafeBranchOpener):
         """SafeBranchOpener that provides canned answers.
@@ -48,10 +52,10 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
             super(parent_cls.StubbedSafeBranchOpener, self).__init__(policy)
             self._reference_values = {}
             for i in range(len(references) - 1):
-                self._reference_values[references[i]] = references[i+1]
+                self._reference_values[references[i]] = references[i + 1]
             self.follow_reference_calls = []
 
-        def followReference(self, url):
+        def followReference(self, url, open_dir=None):
             self.follow_reference_calls.append(url)
             return self._reference_values[url]
 
@@ -120,6 +124,10 @@ class TestSafeBranchOpenerCheckAndFollowBranchReference(TestCase):
 
 
 class TestSafeBranchOpenerStacking(TestCaseWithTransport):
+
+    def setUp(self):
+        super(TestSafeBranchOpenerStacking, self).setUp()
+        SafeBranchOpener.install_hook()
 
     def makeBranchOpener(self, allowed_urls):
         policy = WhitelistPolicy(True, allowed_urls, True)
@@ -221,3 +229,89 @@ class TestSafeBranchOpenerStacking(TestCaseWithTransport):
         opener = self.makeBranchOpener([a.base, b.base])
         self.assertRaises(BranchLoopError, opener.open, a.base)
         self.assertRaises(BranchLoopError, opener.open, b.base)
+
+    def testCustomOpener(self):
+        # A custom function for opening a control dir can be specified.
+        a = self.make_branch('a', format='2a')
+        b = self.make_branch('b', format='2a')
+        b.set_stacked_on_url(a.base)
+        seen_urls = set()
+
+        def open_dir(url):
+            seen_urls.add(url)
+            return BzrDir.open(url)
+
+        opener = self.makeBranchOpener([a.base, b.base])
+        opener.open(b.base, open_dir=open_dir)
+        self.assertEquals(seen_urls, set([b.base, a.base]))
+
+    def testCustomOpenerWithBranchReference(self):
+        # A custom function for opening a control dir can be specified.
+        a = self.make_branch('a', format='2a')
+        b_dir = self.make_bzrdir('b')
+        b = BranchReferenceFormat().initialize(b_dir, target_branch=a)
+        seen_urls = set()
+
+        def open_dir(url):
+            seen_urls.add(url)
+            return BzrDir.open(url)
+
+        opener = self.makeBranchOpener([a.base, b.base])
+        opener.open(b.base, open_dir=open_dir)
+        self.assertEquals(seen_urls, set([b.base, a.base]))
+
+
+class TestSafeOpen(TestCaseWithTransport):
+    """Tests for `safe_open`."""
+
+    def setUp(self):
+        super(TestSafeOpen, self).setUp()
+        SafeBranchOpener.install_hook()
+
+    def test_hook_does_not_interfere(self):
+        # The transform_fallback_location hook does not interfere with regular
+        # stacked branch access outside of safe_open.
+        self.make_branch('stacked')
+        self.make_branch('stacked-on')
+        Branch.open('stacked').set_stacked_on_url('../stacked-on')
+        Branch.open('stacked')
+
+    def get_chrooted_scheme(self, relpath):
+        """Create a server that is chrooted to `relpath`.
+
+        :return: ``(scheme, get_url)`` where ``scheme`` is the scheme of the
+            chroot server and ``get_url`` returns URLs on said server.
+        """
+        transport = self.get_transport(relpath)
+        chroot_server = chroot.ChrootServer(transport)
+        chroot_server.start_server()
+        self.addCleanup(chroot_server.stop_server)
+
+        def get_url(relpath):
+            return chroot_server.get_url() + relpath
+
+        return URI(chroot_server.get_url()).scheme, get_url
+
+    def test_stacked_within_scheme(self):
+        # A branch that is stacked on a URL of the same scheme is safe to
+        # open.
+        self.get_transport().mkdir('inside')
+        self.make_branch('inside/stacked')
+        self.make_branch('inside/stacked-on')
+        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
+        Branch.open(get_chrooted_url('stacked')).set_stacked_on_url(
+            get_chrooted_url('stacked-on'))
+        safe_open(scheme, get_chrooted_url('stacked'))
+
+    def test_stacked_outside_scheme(self):
+        # A branch that is stacked on a URL that is not of the same scheme is
+        # not safe to open.
+        self.get_transport().mkdir('inside')
+        self.get_transport().mkdir('outside')
+        self.make_branch('inside/stacked')
+        self.make_branch('outside/stacked-on')
+        scheme, get_chrooted_url = self.get_chrooted_scheme('inside')
+        Branch.open(get_chrooted_url('stacked')).set_stacked_on_url(
+            self.get_url('outside/stacked-on'))
+        self.assertRaises(
+            BadUrl, safe_open, scheme, get_chrooted_url('stacked'))

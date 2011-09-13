@@ -6,10 +6,7 @@
 __metaclass__ = type
 
 from psycopg2 import ProgrammingError
-from testtools.matchers import (
-    Equals,
-    MatchesStructure,
-    )
+from testtools.matchers import MatchesStructure
 import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
@@ -30,7 +27,10 @@ from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.services.database import bulk
 from lp.services.features.testing import FeatureFixture
 from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.enums import PackagePublishingStatus
+from lp.soyuz.enums import (
+    ArchivePurpose,
+    PackagePublishingStatus,
+    )
 from lp.soyuz.interfaces.distributionjob import (
     DistributionJobType,
     IDistroSeriesDifferenceJobSource,
@@ -101,29 +101,24 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         package = self.factory.makeSourcePackageName()
         parent_series = self.factory.makeDistroSeries()
         self.assertEqual(
-            make_metadata(package, parent_series),
-            make_metadata(package, parent_series))
+            make_metadata(package.id, parent_series.id),
+            make_metadata(package.id, parent_series.id))
 
     def test_make_metadata_distinguishes_packages(self):
         parent_series = self.factory.makeDistroSeries()
         one_package = self.factory.makeSourcePackageName()
         another_package = self.factory.makeSourcePackageName()
         self.assertNotEqual(
-            make_metadata(one_package, parent_series),
-            make_metadata(another_package, parent_series))
+            make_metadata(one_package.id, parent_series.id),
+            make_metadata(another_package.id, parent_series.id))
 
     def test_make_metadata_distinguishes_parents(self):
         package = self.factory.makeSourcePackageName()
         one_parent = self.factory.makeDistroSeries()
         another_parent = self.factory.makeDistroSeries()
         self.assertNotEqual(
-            make_metadata(package, one_parent),
-            make_metadata(package, another_parent))
-
-    def test_may_require_job_accepts_none_derived_series(self):
-        parent_series = self.factory.makeDistroSeriesParent().parent_series
-        package = self.factory.makeSourcePackageName()
-        self.assertFalse(may_require_job(None, package, parent_series))
+            make_metadata(package.id, one_parent.id),
+            make_metadata(package.id, another_parent.id))
 
     def test_may_require_job_allows_new_jobs(self):
         dsp = self.factory.makeDistroSeriesParent()
@@ -137,12 +132,6 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         create_job(dsp.derived_series, package, dsp.parent_series)
         self.assertFalse(
             may_require_job(dsp.derived_series, package, dsp.parent_series))
-
-    def test_may_require_job_forbids_jobs_on_nonderived_series(self):
-        sourcepackage = self.factory.makeSourcePackage()
-        self.assertFalse(may_require_job(
-            sourcepackage.distroseries, sourcepackage.sourcepackagename,
-            None))
 
     def test_may_require_job_forbids_jobs_for_intra_distro_derivation(self):
         package = self.factory.makeSourcePackageName()
@@ -189,11 +178,11 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         expected_metadata = {
             u'sourcepackagename': sourcepackagenameid,
             u'parent_series': dsp.parent_series.id}
-        self.assertThat(job, MatchesStructure(
-            distribution=Equals(dsp.derived_series.distribution),
-            distroseries=Equals(dsp.derived_series),
-            job_type=Equals(DistributionJobType.DISTROSERIESDIFFERENCE),
-            metadata=Equals(expected_metadata)))
+        self.assertThat(job, MatchesStructure.byEquality(
+            distribution=dsp.derived_series.distribution,
+            distroseries=dsp.derived_series,
+            job_type=DistributionJobType.DISTROSERIESDIFFERENCE,
+            metadata=expected_metadata))
 
     def test_create_multiple_jobs_ignore_other_series(self):
         dsp = self.factory.makeDistroSeriesParent()
@@ -225,6 +214,15 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         dsdjob = bulk.load(DistributionJob, job_ids)[0]
 
         self.assertEqual(JobStatus.WAITING, dsdjob.job.status)
+
+    def test_create_multiple_jobs_no_jobs(self):
+        # If no job needs to be created, create_multiple_jobs
+        # returns an empty list.
+        dsp = self.factory.makeDistroSeriesParent()
+        job_ids = create_multiple_jobs(
+            dsp.derived_series, dsp.parent_series)
+
+        self.assertEqual([], job_ids)
 
     def find_waiting_jobs_finds_waiting_jobs(self):
         dsp = self.factory.makeDistroSeriesParent()
@@ -335,6 +333,121 @@ class TestDistroSeriesDifferenceJobSource(TestCaseWithFactory):
         self.assertContentEqual(
             [],
             find_waiting_jobs(dsp.derived_series, package, dsp.parent_series))
+
+    def test_createForSPPHs_creates_job_for_derived_series(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            dsp.parent_series, pocket=PackagePublishingPocket.RELEASE)
+        spn = spph.sourcepackagerelease.sourcepackagename
+
+        self.getJobSource().createForSPPHs([spph])
+
+        self.assertEqual(
+            1, len(find_waiting_jobs(
+                dsp.derived_series, spn, dsp.parent_series)))
+
+    def test_createForSPPHs_creates_job_for_parent_series(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            dsp.derived_series, pocket=PackagePublishingPocket.RELEASE)
+        spn = spph.sourcepackagerelease.sourcepackagename
+
+        self.getJobSource().createForSPPHs([spph])
+
+        self.assertEqual(
+            1, len(find_waiting_jobs(
+                dsp.derived_series, spn, dsp.parent_series)))
+
+    def test_createForSPPHs_obeys_feature_flag(self):
+        self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: ''}))
+        dsp = self.factory.makeDistroSeriesParent()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            dsp.parent_series, pocket=PackagePublishingPocket.RELEASE)
+        spn = spph.sourcepackagerelease.sourcepackagename
+        self.getJobSource().createForSPPHs([spph])
+        self.assertContentEqual(
+            [], find_waiting_jobs(dsp.derived_series, spn, dsp.parent_series))
+
+    def test_createForSPPHs_ignores_backports_and_proposed(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        spr = self.factory.makeSourcePackageRelease()
+        spn = spr.sourcepackagename
+        ignored_pockets = [
+            PackagePublishingPocket.BACKPORTS,
+            PackagePublishingPocket.PROPOSED,
+            ]
+        spphs = [
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries=dsp.parent_series, sourcepackagerelease=spr,
+                pocket=pocket)
+            for pocket in ignored_pockets]
+        self.getJobSource().createForSPPHs(spphs)
+        self.assertContentEqual(
+            [], find_waiting_jobs(dsp.derived_series, spn, dsp.parent_series))
+
+    def test_createForSPPHs_creates_no_jobs_for_unrelated_series(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        other_series = self.factory.makeDistroSeries(
+            distribution=dsp.derived_series.distribution)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            dsp.parent_series, pocket=PackagePublishingPocket.RELEASE)
+        spn = spph.sourcepackagerelease.sourcepackagename
+        self.getJobSource().createForSPPHs([spph])
+        self.assertContentEqual(
+            [], find_waiting_jobs(dsp.derived_series, spn, other_series))
+
+    def test_createForSPPHs_accepts_SPPHs_for_multiple_distroseries(self):
+        derived_distro = self.factory.makeDistribution()
+        spn = self.factory.makeSourcePackageName()
+        series = [
+            self.factory.makeDistroSeries(derived_distro)
+            for counter in xrange(2)]
+        dsps = [
+            self.factory.makeDistroSeriesParent(derived_series=distroseries)
+            for distroseries in series]
+
+        for distroseries in series:
+            self.factory.makeSourcePackagePublishingHistory(
+                distroseries, pocket=PackagePublishingPocket.RELEASE,
+                sourcepackagerelease=self.factory.makeSourcePackageRelease(
+                    sourcepackagename=spn))
+
+        job_counts = dict(
+            (dsp.derived_series, len(find_waiting_jobs(
+                dsp.derived_series, spn, dsp.parent_series)))
+            for dsp in dsps)
+        self.assertEqual(
+            dict((distroseries, 1) for distroseries in series),
+            job_counts)
+
+    def test_createForSPPHs_behaves_sensibly_if_job_already_exists(self):
+        # If a job already existed, createForSPPHs may create a
+        # redundant one but it certainly won't do anything weird like
+        # delete what was there or create too many.
+        dsp = self.factory.makeDistroSeriesParent()
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            dsp.parent_series, pocket=PackagePublishingPocket.RELEASE)
+        spn = spph.sourcepackagerelease.sourcepackagename
+
+        create_jobs = range(1, 3)
+        for counter in create_jobs:
+            self.getJobSource().createForSPPHs([spph])
+
+        job_count = len(find_waiting_jobs(
+            dsp.derived_series, spn, dsp.parent_series))
+        self.assertIn(job_count, create_jobs)
+
+    def test_createForSPPHs_creates_no_jobs_for_ppas(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        series = dsp.parent_series
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            series, pocket=PackagePublishingPocket.RELEASE,
+            archive=self.factory.makeArchive(
+                distribution=series.distribution, purpose=ArchivePurpose.PPA))
+        spn = spph.sourcepackagerelease.sourcepackagename
+        self.getJobSource().createForSPPHs([spph])
+        self.assertContentEqual(
+            [], find_waiting_jobs(dsp.derived_series, spn, dsp.parent_series))
 
     def test_massCreateForSeries_obeys_feature_flag(self):
         self.useFixture(FeatureFixture({FEATURE_FLAG_ENABLE_MODULE: ''}))
@@ -849,3 +962,22 @@ class TestDistroSeriesDifferenceJobPermissions(TestCaseWithFactory):
         for user in script_users:
             self.layer.switchDbUser(user)
             list(dsp.parent_series.getDerivedSeries())
+
+    def test_passesPackagesetFilter(self):
+        dsp = self.factory.makeDistroSeriesParent()
+        self.factory.makePackageset(distroseries=dsp.parent_series)
+        spph = self.factory.makeSourcePackagePublishingHistory(
+            distroseries=dsp.parent_series,
+            archive=dsp.parent_series.main_archive,
+            pocket=PackagePublishingPocket.RELEASE)
+        dsdj = create_job(
+            dsp.derived_series, spph.sourcepackagerelease.sourcepackagename,
+            dsp.parent_series)
+        transaction.commit()
+
+        self.layer.switchDbUser('distroseriesdifferencejob')
+
+        dsdj.passesPackagesetFilter()
+
+        # The test is that we get here without exceptions.
+        pass

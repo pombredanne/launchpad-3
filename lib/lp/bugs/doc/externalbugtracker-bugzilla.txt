@@ -360,6 +360,8 @@ isn't available in which case we map against priority values.
     'Medium'
     >>> external_bugzilla.convertRemoteImportance('NORMAL').title
     'Medium'
+    >>> external_bugzilla.convertRemoteImportance('NOR').title
+    'Medium'
 
     >>> external_bugzilla.convertRemoteImportance('URGENT MINOR').title
     'Low'

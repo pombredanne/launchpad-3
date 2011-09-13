@@ -259,10 +259,9 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
         has_mailing_list = (
             mailing_list is not None and
             mailing_list.status != MailingListStatus.PURGED)
-        is_private = self.context.visibility == PersonVisibility.PRIVATE
         has_ppa = self.context.archive is not None
 
-        block_renaming = (has_mailing_list or is_private or has_ppa)
+        block_renaming = (has_mailing_list or has_ppa)
         if block_renaming:
             # This makes the field's widget display (i.e. read) only.
             self.form_fields['name'].for_display = True
@@ -273,17 +272,12 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
         # read-only mode if necessary.
         if block_renaming:
             # Group the read-only mode reasons in textual form.
-            # Private teams can't be associated with mailing lists
-            # or PPAs yet, so it's a dominant condition.
-            if is_private:
-                reason = 'is private'
-            else:
-                if not has_mailing_list:
-                    reason = 'has a PPA'
-                elif not has_ppa:
-                    reason = 'has a mailing list'
-                else:
-                    reason = 'has a mailing list and a PPA'
+            reasons = []
+            if has_mailing_list:
+                reasons.append('has a mailing list')
+            if has_ppa:
+                reasons.append('has a PPA')
+            reason = ' and '.join(reasons)
             self.widgets['name'].hint = _(
                 'This team cannot be renamed because it %s.' % reason)
 
@@ -549,7 +543,7 @@ class TeamMailingListConfigurationView(MailingListTeamBaseView):
         already been approved or declined. This can only happen
         through bypassing the UI.
         """
-        mailing_list = getUtility(IMailingListSet).get(self.context.name)
+        getUtility(IMailingListSet).get(self.context.name)
         if self.getListInState(MailingListStatus.REGISTERED) is None:
             self.addError("This application can't be cancelled.")
 
@@ -985,7 +979,7 @@ class ProposedTeamMembersEditView(LaunchpadFormView):
             failed_names = [person.displayname for person in failed_joins]
             failed_list = ", ".join(failed_names)
 
-            mapping = dict( this_team=target_team.displayname,
+            mapping = dict(this_team=target_team.displayname,
                 failed_list=failed_list)
 
             if len(failed_joins) == 1:

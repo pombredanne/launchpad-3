@@ -4,10 +4,6 @@
 """Tests for BranchURIField."""
 
 __metaclass__ = type
-__all__ = []
-
-
-import unittest
 
 from canonical.config import config
 from canonical.launchpad.webapp.vhosts import allvhosts
@@ -77,7 +73,3 @@ class TestBranchURIField(TestCase):
             'codehosting', blacklisted_hostnames='localhost,127.0.0.1')
         self.assertInvalid(u'http://localhost/foo/bar')
         self.assertInvalid(u'http://127.0.0.1/foo/bar')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

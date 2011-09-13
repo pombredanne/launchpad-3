@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 import storm
 
 from lp.testing import TestCase
@@ -18,7 +16,3 @@ class TestStorm(TestCase):
         self.assert_(
             storm.has_cextensions,
             'Storm not running with C extensions')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

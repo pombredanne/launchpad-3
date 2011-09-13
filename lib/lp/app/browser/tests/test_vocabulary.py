@@ -26,6 +26,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.launchpad.webapp.vocabulary import (
     CountableIterator,
     IHugeVocabulary,
+    VocabularyFilter,
     )
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.app.browser.vocabulary import (
@@ -119,19 +120,102 @@ class PersonPickerEntrySourceAdapterTestCase(TestCaseWithFactory):
         self.assertEqual('http://launchpad.dev/~fnord', entry.alt_title_link)
         self.assertEqual(['Team members: 1'], entry.details)
 
-    def test_PersonPickerEntrySourceAdapter_affiliation_badges(self):
-        # The person picker with affiliation enabled provides affilliation
-        # information.
+    def test_PersonPickerEntryAdapter_enhanced_picker_enabled_badges(self):
+        # The enhanced person picker provides affiliation information.
         person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
-        project = self.factory.makeProduct(name='fnord', owner=person)
+        project = self.factory.makeProduct(
+            name='fnord', owner=person, bug_supervisor=person)
         bugtask = self.factory.makeBugTask(target=project)
         [entry] = IPickerEntrySource(person).getPickerEntries(
             [person], bugtask, enhanced_picker_enabled=True,
             picker_expander_enabled=True,
             personpicker_affiliation_enabled=True)
-        self.assertEqual(1, len(entry.badges))
+        self.assertEqual(3, len(entry.badges))
         self.assertEqual('/@@/product-badge', entry.badges[0]['url'])
-        self.assertEqual('Fnord maintainer', entry.badges[0]['alt'])
+        self.assertEqual('Fnord', entry.badges[0]['label'])
+        self.assertEqual('maintainer', entry.badges[0]['role'])
+        self.assertEqual('/@@/product-badge', entry.badges[1]['url'])
+        self.assertEqual('Fnord', entry.badges[1]['label'])
+        self.assertEqual('driver', entry.badges[1]['role'])
+        self.assertEqual('/@@/product-badge', entry.badges[2]['url'])
+        self.assertEqual('Fnord', entry.badges[2]['label'])
+        self.assertEqual('bug supervisor', entry.badges[2]['role'])
+
+    def test_PersonPickerEntryAdapter_badges_without_IHasAffiliation(self):
+        # The enhanced person picker handles objects that do not support
+        # IHasAffilliation.
+        person = self.factory.makePerson(email='snarf@eg.dom', name='snarf')
+        thing = object()
+        [entry] = IPickerEntrySource(person).getPickerEntries(
+            [person], thing, enhanced_picker_enabled=True,
+            picker_expander_enabled=True,
+            personpicker_affiliation_enabled=True)
+        self.assertEqual(None, None)
+
+
+class TestDistributionSourcePackagePickerEntrySourceAdapter(
+        TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_dsp_to_picker_entry(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        adapter = IPickerEntrySource(dsp)
+        self.assertTrue(IPickerEntrySource.providedBy(adapter))
+
+    def test_dsp_provides_summary(self):
+        dsp = self.factory.makeDistributionSourcePackage()
+        series = self.factory.makeDistroSeries(distribution=dsp.distribution)
+        release = self.factory.makeSourcePackageRelease(
+            distroseries=series,
+            sourcepackagename=dsp.sourcepackagename)
+        self.factory.makeSourcePackagePublishingHistory(
+            distroseries=series,
+            sourcepackagerelease=release)
+        [entry] = IPickerEntrySource(dsp).getPickerEntries([dsp], object())
+        self.assertEqual(entry.description, 'Not yet built.')
+
+        archseries = self.factory.makeDistroArchSeries(distroseries=series)
+        bpn = self.factory.makeBinaryPackageName(name='fnord')
+        self.factory.makeBinaryPackagePublishingHistory(
+            binarypackagename=bpn,
+            source_package_release=release,
+            sourcepackagename=dsp.sourcepackagename,
+            distroarchseries=archseries)
+        [entry] = IPickerEntrySource(dsp).getPickerEntries([dsp], object())
+        self.assertEqual(entry.description, 'fnord')
+
+
+class TestProductPickerEntrySourceAdapter(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_product_to_picker_entry(self):
+        product = self.factory.makeProduct()
+        adapter = IPickerEntrySource(product)
+        self.assertTrue(IPickerEntrySource.providedBy(adapter))
+
+    def test_product_provides_summary(self):
+        product = self.factory.makeProduct()
+        [entry] = IPickerEntrySource(product).getPickerEntries(
+                [product], object())
+        self.assertEqual(entry.description, product.summary)
+
+
+class TestDistributionPickerEntrySourceAdapter(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_distribution_to_picker_entry(self):
+        distribution = self.factory.makeDistribution()
+        adapter = IPickerEntrySource(distribution)
+        self.assertTrue(IPickerEntrySource.providedBy(adapter))
+
+    def test_distribution_provides_summary(self):
+        distribution = self.factory.makeDistribution()
+        [entry] = IPickerEntrySource(distribution).getPickerEntries(
+                [distribution], object())
+        self.assertEqual(entry.description, distribution.summary)
 
 
 class TestPersonVocabulary:
@@ -148,10 +232,27 @@ class TestPersonVocabulary:
     def toTerm(self, person):
         return SimpleTerm(person, person.name, person.displayname)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
+        if vocab_filter is None:
+            filter_term = ''
+        else:
+            filter_term = vocab_filter.filter_terms[0]
         found = [
-            person for person in self.test_persons if query in person.name]
+            person for person in self.test_persons
+                if query in person.name and filter_term in person.name]
         return CountableIterator(len(found), found, self.toTerm)
+
+
+class TestVocabularyFilter(VocabularyFilter):
+    # A filter returning all objects.
+
+    def __new__(cls):
+        return super(VocabularyFilter, cls).__new__(
+            cls, 'FILTER', 'Test Filter', 'Test')
+
+    @property
+    def filter_terms(self):
+        return ['xpting-person']
 
 
 class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
@@ -222,7 +323,11 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
             "alt_title_link": "http://launchpad.dev/~%s" % team.name,
             "api_uri": "/~%s" % team.name,
             "badges":
-                [{"alt": "%s maintainer" % product.displayname,
+                [{"label": product.displayname,
+                  "role": "maintainer",
+                  "url": "/@@/product-badge"},
+                {"label": product.displayname,
+                 "role": "driver",
                   "url": "/@@/product-badge"}],
             "css": "sprite team",
             "details": ['Team members: 1'],
@@ -248,6 +353,21 @@ class HugeVocabularyJSONViewTestCase(TestCaseWithFactory):
             expected[0].items(), result['entries'][0].items())
         self.assertContentEqual(
             expected[1].items(), result['entries'][1].items())
+
+    def test_vocab_filter(self):
+        # The vocab filter is used to filter results.
+        team = self.factory.makeTeam(name='xpting-team')
+        person = self.factory.makePerson(name='xpting-person')
+        TestPersonVocabulary.test_persons.extend([team, person])
+        product = self.factory.makeProduct(owner=team)
+        vocab_filter = TestVocabularyFilter()
+        form = dict(name='TestPerson',
+                    search_text='xpting', search_filter=vocab_filter)
+        view = self.create_vocabulary_view(form, context=product)
+        result = simplejson.loads(view())
+        entries = result['entries']
+        self.assertEqual(1, len(entries))
+        self.assertEqual('xpting-person', entries[0]['value'])
 
     def test_max_description_size(self):
         # Descriptions over 120 characters are truncated and ellipsised.

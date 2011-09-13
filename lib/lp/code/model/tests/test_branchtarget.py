@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp import canonical_url
@@ -581,7 +579,3 @@ class TestPrimaryContext(TestCaseWithFactory):
     def test_product_branch(self):
         branch = self.factory.makeProductBranch()
         self.assertEqual(branch.target, IPrimaryContext(branch))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

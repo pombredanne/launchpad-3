@@ -5,7 +5,10 @@ __metaclass__ = type
 
 import transaction
 
-from datetime import datetime
+from datetime import (
+    datetime,
+    timedelta,
+    )
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
@@ -20,6 +23,7 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.config import config
 from canonical.launchpad.ftests import (
     ANONYMOUS,
     login,
@@ -33,6 +37,7 @@ from canonical.testing.layers import (
     LaunchpadFunctionalLayer,
     )
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
+from lp.bugs.adapters.bugchange import BugTaskStatusChange
 from lp.bugs.browser.bugtask import (
     BugActivityItem,
     BugTaskEditView,
@@ -109,7 +114,7 @@ class TestBugTaskView(TestCaseWithFactory):
     def test_rendered_query_counts_constant_with_attachments(self):
         with celebrity_logged_in('admin'):
             browses_under_limit = BrowsesWithQueryLimit(
-                78, self.factory.makePerson())
+                79, self.factory.makePerson())
 
             # First test with a single attachment.
             task = self.factory.makeBugTask()
@@ -123,6 +128,48 @@ class TestBugTaskView(TestCaseWithFactory):
             for i in range(10):
                 self.factory.makeBugAttachment(bug=task.bug)
         self.assertThat(task, browses_under_limit)
+
+    def makeLinkedBranchMergeProposal(self, sourcepackage, bug, owner):
+        with person_logged_in(owner):
+            f = self.factory
+            target_branch = f.makePackageBranch(
+                sourcepackage=sourcepackage, owner=owner)
+            source_branch = f.makeBranchTargetBranch(
+                target_branch.target, owner=owner)
+            bug.linkBranch(source_branch, owner)
+            return f.makeBranchMergeProposal(
+                target_branch=target_branch,
+                registrant=owner,
+                source_branch=source_branch)
+
+    def test_rendered_query_counts_reduced_with_branches(self):
+        f = self.factory
+        owner = f.makePerson()
+        ds = f.makeDistroSeries()
+        bug = f.makeBug()
+        sourcepackages = [
+            f.makeSourcePackage(distroseries=ds, publish=True)
+            for i in range(5)]
+        for sp in sourcepackages:
+            bugtask = f.makeBugTask(bug=bug, owner=owner, target=sp)
+        url = canonical_url(bug.default_bugtask)
+        recorder = QueryCollector()
+        recorder.register()
+        self.addCleanup(recorder.unregister)
+        self.invalidate_caches(bug.default_bugtask)
+        self.getUserBrowser(url, owner)
+        # At least 20 of these should be removed.
+        self.assertThat(recorder, HasQueryCount(LessThan(100)))
+        count_with_no_branches = recorder.count
+        for sp in sourcepackages:
+            self.makeLinkedBranchMergeProposal(sp, bug, owner)
+        self.invalidate_caches(bug.default_bugtask)
+        self.getUserBrowser(url, owner)  # This triggers the query recorder.
+        # Ideally this should be much fewer, but this tries to keep a win of
+        # removing more than half of these.
+        self.assertThat(recorder, HasQueryCount(
+            LessThan(count_with_no_branches + 45),
+            ))
 
     def test_interesting_activity(self):
         # The interesting_activity property returns a tuple of interesting
@@ -171,7 +218,8 @@ class TestBugTaskView(TestCaseWithFactory):
         transaction.commit()
         with person_logged_in(person):
             form_data = {
-                '%s.product' % product.name: product_2.name,
+                '%s.target' % product.name: 'product',
+                '%s.target.product' % product.name: product_2.name,
                 '%s.status' % product.name: BugTaskStatus.TRIAGED.title,
                 '%s.actions.save' % product.name: 'Save Changes',
                 }
@@ -722,7 +770,9 @@ class TestBugTaskEditView(TestCaseWithFactory):
             'ubuntu_rabbit.importance': 'High',
             'ubuntu_rabbit.assignee.option':
                 'ubuntu_rabbit.assignee.assign_to_nobody',
-            'ubuntu_rabbit.sourcepackagename': 'mouse',
+            'ubuntu_rabbit.target': 'package',
+            'ubuntu_rabbit.target.distribution': 'ubuntu',
+            'ubuntu_rabbit.target.package': 'mouse',
             }
         view = create_initialized_view(
             bug_task_2, name='+editstatus', form=form, principal=user)
@@ -755,7 +805,8 @@ class TestBugTaskEditView(TestCaseWithFactory):
         form = {
             'bunny.status': 'In Progress',
             'bunny.assignee.option': 'bunny.assignee.assign_to_nobody',
-            'bunny.product': 'duck',
+            'bunny.target': 'product',
+            'bunny.target.product': 'duck',
             'bunny.actions.save': 'Save Changes',
             }
         view = create_initialized_view(
@@ -777,7 +828,8 @@ class TestBugTaskEditView(TestCaseWithFactory):
         form = {
             'bunny.status': 'In Progress',
             'bunny.assignee.option': 'bunny.assignee.assign_to_nobody',
-            'bunny.product': 'duck',
+            'bunny.target': 'product',
+            'bunny.target.product': 'duck',
             'bunny.milestone': milestone_id,
             'bunny.actions.save': 'Save Changes',
             }
@@ -790,6 +842,74 @@ class TestBugTaskEditView(TestCaseWithFactory):
         self.assertEqual(1, len(notifications))
         expected = ('The milestone setting was ignored')
         self.assertTrue(notifications.pop().message.startswith(expected))
+
+    def createNameChangingViewForSourcePackageTask(self, bug_task, new_name):
+        login_person(bug_task.owner)
+        form_prefix = '%s_%s_%s' % (
+            bug_task.target.distroseries.distribution.name,
+            bug_task.target.distroseries.name,
+            bug_task.target.sourcepackagename.name)
+        form = {
+            form_prefix + '.sourcepackagename': new_name,
+            form_prefix + '.actions.save': 'Save Changes',
+            }
+        view = create_initialized_view(
+            bug_task, name='+editstatus', form=form)
+        return view
+
+    def test_retarget_sourcepackage(self):
+        # The sourcepackagename of a SourcePackage task can be changed.
+        ds = self.factory.makeDistroSeries()
+        sp1 = self.factory.makeSourcePackage(distroseries=ds, publish=True)
+        sp2 = self.factory.makeSourcePackage(distroseries=ds, publish=True)
+        bug_task = self.factory.makeBugTask(target=sp1)
+
+        view = self.createNameChangingViewForSourcePackageTask(
+            bug_task, sp2.sourcepackagename.name)
+        self.assertEqual([], view.errors)
+        self.assertEqual(sp2, bug_task.target)
+        notifications = view.request.response.notifications
+        self.assertEqual(0, len(notifications))
+
+    def test_retarget_sourcepackage_to_binary_name(self):
+        # The sourcepackagename of a SourcePackage task can be changed
+        # to a binarypackagename, which gets mapped back to the source.
+        ds = self.factory.makeDistroSeries()
+        das = self.factory.makeDistroArchSeries(distroseries=ds)
+        sp1 = self.factory.makeSourcePackage(distroseries=ds, publish=True)
+        # Now create a binary and its corresponding SourcePackage.
+        bp = self.factory.makeBinaryPackagePublishingHistory(
+            distroarchseries=das)
+        bpr = bp.binarypackagerelease
+        spn = bpr.build.source_package_release.sourcepackagename
+        sp2 = self.factory.makeSourcePackage(
+            distroseries=ds, sourcepackagename=spn, publish=True)
+        bug_task = self.factory.makeBugTask(target=sp1)
+
+        view = self.createNameChangingViewForSourcePackageTask(
+            bug_task, bpr.binarypackagename.name)
+        self.assertEqual([], view.errors)
+        self.assertEqual(sp2, bug_task.target)
+        notifications = view.request.response.notifications
+        self.assertEqual(1, len(notifications))
+        expected = (
+            "'%s' is a binary package. This bug has been assigned to its "
+            "source package '%s' instead."
+            % (bpr.binarypackagename.name, spn.name))
+        self.assertTrue(notifications.pop().message.startswith(expected))
+
+    def test_retarget_sourcepackage_to_distroseries(self):
+        # A SourcePackage task can be changed to a DistroSeries one.
+        ds = self.factory.makeDistroSeries()
+        sp = self.factory.makeSourcePackage(distroseries=ds, publish=True)
+        bug_task = self.factory.makeBugTask(target=sp)
+
+        view = self.createNameChangingViewForSourcePackageTask(
+            bug_task, '')
+        self.assertEqual([], view.errors)
+        self.assertEqual(ds, bug_task.target)
+        notifications = view.request.response.notifications
+        self.assertEqual(0, len(notifications))
 
 
 class TestProjectGroupBugs(TestCaseWithFactory):
@@ -919,3 +1039,90 @@ class TestBugActivityItem(TestCaseWithFactory):
         self.assertEquals(
             "- foo<br />+ bar &amp;&lt;&gt;",
             BugActivityItem(bug.activity[-1]).change_details)
+
+
+class TestBugTaskBatchedCommentsAndActivityView(TestCaseWithFactory):
+    """Tests for the BugTaskBatchedCommentsAndActivityView class."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def _makeNoisyBug(self, comments_only=False):
+        """Create and return a bug with a lot of comments and activity."""
+        bug = self.factory.makeBug(
+            date_created=datetime.now(UTC) - timedelta(days=30))
+        with person_logged_in(bug.owner):
+            if not comments_only:
+                for i in range(10):
+                    task = self.factory.makeBugTask(bug=bug)
+                    change = BugTaskStatusChange(
+                        task, datetime.now(UTC), task.product.owner, 'status',
+                        BugTaskStatus.NEW, BugTaskStatus.TRIAGED)
+                    bug.addChange(change)
+            for i in range (10):
+                msg = self.factory.makeMessage(
+                    owner=bug.owner, content="Message %i." % i,
+                    datecreated=datetime.now(UTC) - timedelta(days=20-i))
+                bug.linkMessage(msg, user=bug.owner)
+        return bug
+
+    def test_offset(self):
+        # BugTaskBatchedCommentsAndActivityView.offset returns the
+        # current offset being used to select a batch of bug comments
+        # and activity. If one is not specified, the view's
+        # visible_initial_comments count will be returned (so that
+        # comments already shown on the page won't appear twice).
+        bug_task = self.factory.makeBugTask()
+        view = create_initialized_view(bug_task, '+batched-comments')
+        self.assertEqual(view.visible_initial_comments, view.offset)
+        view = create_initialized_view(
+            bug_task, '+batched-comments', form={'offset': 100})
+        self.assertEqual(100, view.offset)
+
+    def test_batch_size(self):
+        # BugTaskBatchedCommentsAndActivityView.batch_size returns the
+        # current batch_size being used to select a batch of bug comments
+        # and activity or the default configured batch size if one has
+        # not been specified.
+        bug_task = self.factory.makeBugTask()
+        view = create_initialized_view(bug_task, '+batched-comments')
+        self.assertEqual(
+            config.malone.comments_list_default_batch_size,
+            view.batch_size)
+        view = create_initialized_view(
+            bug_task, '+batched-comments', form={'batch_size': 20})
+        self.assertEqual(20, view.batch_size)
+
+    def test_event_groups_only_returns_batch_size_results(self):
+        # BugTaskBatchedCommentsAndActivityView._event_groups will
+        # return only batch_size results.
+        bug = self._makeNoisyBug()
+        view = create_initialized_view(
+            bug.default_bugtask, '+batched-comments',
+            form={'batch_size': 10})
+        self.assertEqual(10, len([group for group in view._event_groups]))
+
+    def test_activity_and_comments_matches_unbatched_version(self):
+        # BugTaskBatchedCommentsAndActivityView extends BugTaskView in
+        # order to add the batching logic and reduce rendering
+        # overheads. The results of activity_and_comments is the same
+        # for both.
+        # We create a bug with comments only so that we can test the
+        # contents of activity_and_comments properly. Trying to test it
+        # with multiply different datatypes is fragile at best.
+        bug = self._makeNoisyBug(comments_only=True)
+        # We create a batched view with an offset of 0 so that all the
+        # comments are returned.
+        batched_view = create_initialized_view(
+            bug.default_bugtask, '+batched-comments',
+            form={'offset': 0})
+        unbatched_view = create_initialized_view(
+            bug.default_bugtask, '+index')
+        self.assertEqual(
+            len(unbatched_view.activity_and_comments),
+            len(batched_view.activity_and_comments))
+        for i in range(len(unbatched_view.activity_and_comments)):
+            unbatched_item = unbatched_view.activity_and_comments[i]
+            batched_item = batched_view.activity_and_comments[i]
+            self.assertEqual(
+                unbatched_item['comment'].text_for_display,
+                batched_item['comment'].text_for_display)

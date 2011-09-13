@@ -327,7 +327,7 @@ message explaining that the image was not linked.
     to its specs.</p>
 
     >>> oops_report = graph_view.request.oops
-    >>> print oops_report.type, oops_report.value
+    >>> print oops_report['type'], oops_report['value']
     ProblemRenderingGraph (... syntax error in line 1 near 'bad'...)
 
     # Restore the getDotFileText() method.
@@ -363,7 +363,7 @@ page to link the image.
     to its specs. Reload the page to link the image.</p>
 
     >>> oops_report = graph_view.request.oops
-    >>> print oops_report.type, oops_report.value
+    >>> print oops_report['type'], oops_report['value']
     OSError [Errno 12] Cannot allocate memory
 
 If an error occurs during the render of the PNG image, the fail over

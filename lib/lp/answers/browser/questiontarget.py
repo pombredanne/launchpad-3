@@ -17,13 +17,20 @@ __all__ = [
     'QuestionCollectionOpenCountView',
     'QuestionCollectionAnswersMenu',
     'QuestionTargetFacetMixin',
+    'QuestionTargetPortletAnswerContactsWithDetails',
     'QuestionTargetTraversalMixin',
     'QuestionTargetAnswersMenu',
     'UserSupportLanguagesMixin',
     ]
 
 from operator import attrgetter
+from simplejson import dumps
 from urllib import urlencode
+
+from lazr.restful.interfaces import (
+    IJSONRequestCache,
+    IWebServiceClientRequest,
+    )
 
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
@@ -42,6 +49,7 @@ from zope.schema.vocabulary import (
     SimpleTerm,
     SimpleVocabulary,
     )
+from zope.traversing.browser import absoluteURL
 
 from canonical.launchpad import _
 from canonical.launchpad.helpers import (
@@ -60,6 +68,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
+from canonical.launchpad.webapp.publisher import LaunchpadView
 from lp.answers.browser.faqcollection import FAQCollectionMenu
 from lp.answers.enums import QuestionStatus
 from lp.answers.interfaces.faqcollection import IFAQCollection
@@ -808,6 +817,72 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                       'languages: $languages.',
                       mapping={'languages': language_str})
             response.addNotification(structured(msgid))
+
+
+class QuestionTargetPortletAnswerContacts(LaunchpadView):
+    """View sets up the required url data for the answer contacts portlet."""
+
+    @cachedproperty
+    def api_request(self):
+        return IWebServiceClientRequest(self.request)
+
+    def initialize(self):
+        cache = IJSONRequestCache(self.request).objects
+        context_url_data = {
+            'web_link': canonical_url(self.context, rootsite='mainsite'),
+            'self_link': absoluteURL(self.context, self.api_request),
+            }
+        cache[self.context.name + '_answer_portlet_url_data'] = (
+            context_url_data)
+
+
+class QuestionTargetPortletAnswerContactsWithDetails(LaunchpadView):
+    """View returns JSON dump of answer contact details for questiontarget."""
+
+    @cachedproperty
+    def api_request(self):
+        return IWebServiceClientRequest(self.request)
+
+    def answercontact_data(self, questiontarget):
+        """Get the answer contact data.
+
+        This method is isolated from the answercontact_data_js so that query
+        count testing can be done accurately and robustly.
+        """
+        data = []
+        answer_contacts = list(questiontarget.direct_answer_contacts)
+        for person in answer_contacts:
+            can_edit = questiontarget.canUserAlterAnswerContact(
+                person, self.user)
+            if person.private and not can_edit:
+                # Skip private teams user is not a member of.
+                continue
+
+            answer_contact = {
+                'name': person.name,
+                'display_name': person.displayname,
+                'web_link': canonical_url(person, rootsite='mainsite'),
+                'self_link': absoluteURL(person, self.api_request),
+                'is_team': person.is_team,
+                'can_edit': can_edit
+                }
+            record = {
+                'subscriber': answer_contact,
+                }
+            data.append(record)
+        return data
+
+    @property
+    def answercontact_data_js(self):
+        """Return subscriber_ids in a form suitable for JavaScript use."""
+        questiontarget = IQuestionTarget(self.context)
+        data = self.answercontact_data(questiontarget)
+        return dumps(data)
+
+    def render(self):
+        """Override the default render() to return only JSON."""
+        self.request.response.setHeader('content-type', 'application/json')
+        return self.answercontact_data_js
 
 
 class QuestionTargetFacetMixin:

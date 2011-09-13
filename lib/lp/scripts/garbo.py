@@ -62,7 +62,6 @@ from lp.answers.model.answercontact import AnswerContact
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bug import Bug
 from lp.bugs.model.bugattachment import BugAttachment
-from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugnotification import BugNotification
 from lp.bugs.model.bugwatch import BugWatchActivity
 from lp.bugs.scripts.checkwatches.scheduler import (
@@ -300,6 +299,28 @@ class OAuthNoncePruner(BulkPruner):
         WHERE request_timestamp
             < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - CAST('1 day' AS interval)
         """
+
+
+class BugSummaryJournalRollup(TunableLoop):
+    """Rollup BugSummaryJournal rows into BugSummary."""
+    maximum_chunk_size = 5000
+
+    def __init__(self, log, abort_time=None):
+        super(BugSummaryJournalRollup, self).__init__(log, abort_time)
+        self.store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+
+    def isDone(self):
+        has_more = self.store.execute(
+            "SELECT EXISTS (SELECT TRUE FROM BugSummaryJournal LIMIT 1)"
+            ).get_one()[0]
+        return not has_more
+
+    def __call__(self, chunk_size):
+        chunk_size = int(chunk_size + 0.5)
+        self.store.execute(
+            "SELECT bugsummary_rollup_journal(%s)", (chunk_size,),
+            noresult=True)
+        self.store.commit()
 
 
 class OpenIDConsumerNoncePruner(TunableLoop):
@@ -724,36 +745,6 @@ class BranchJobPruner(BulkPruner):
         """
 
 
-class MirrorBugMessageOwner(TunableLoop):
-    """Mirror BugMessage.owner from Message.
-
-    Only needed until they are all set, after that triggers will maintain it.
-    """
-
-    # Test migration did 3M in 2 hours, so 5000 is ~ 10 seconds - and that's
-    # the max we want to hold a DB lock open for.
-    minimum_chunk_size = 1000
-    maximum_chunk_size = 5000
-
-    def __init__(self, log, abort_time=None):
-        super(MirrorBugMessageOwner, self).__init__(log, abort_time)
-        self.store = IMasterStore(BugMessage)
-        self.isDone = IMasterStore(BugMessage).find(
-            BugMessage, BugMessage.ownerID == None).is_empty
-
-    def __call__(self, chunk_size):
-        """See `ITunableLoop`."""
-        transaction.begin()
-        updated = self.store.execute("""update bugmessage set
-            owner=message.owner from message where
-            bugmessage.message=message.id and bugmessage.id in
-                (select id from bugmessage where owner is NULL limit %s);"""
-            % int(chunk_size)
-            ).rowcount
-        self.log.debug("Updated %s bugmessages." % updated)
-        transaction.commit()
-
-
 class BugHeatUpdater(TunableLoop):
     """A `TunableLoop` for bug heat calculations."""
 
@@ -1175,16 +1166,38 @@ class BaseDatabaseGarbageCollector(LaunchpadCronScript):
                 transaction.abort()
 
 
-class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
-    script_name = 'garbo-hourly'
+class FrequentDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
+    """Run every 5 minutes.
+
+    This may become even more frequent in the future.
+
+    Jobs with low overhead can go here to distribute work more evenly.
+    """
+    script_name = 'garbo-frequently'
     tunable_loops = [
-        MirrorBugMessageOwner,
+        BugSummaryJournalRollup,
         OAuthNoncePruner,
         OpenIDConsumerNoncePruner,
         OpenIDConsumerAssociationPruner,
+        AntiqueSessionPruner,
+        ]
+    experimental_tunable_loops = []
+
+    # 5 minmutes minus 20 seconds for cleanup. This helps ensure the
+    # script is fully terminated before the next scheduled hourly run
+    # kicks in.
+    default_abort_script_time = 60 * 5 - 20
+
+
+class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
+    """Run every hour.
+
+    Jobs we want to run fairly often but have noticable overhead go here.
+    """
+    script_name = 'garbo-hourly'
+    tunable_loops = [
         RevisionCachePruner,
         BugWatchScheduler,
-        AntiqueSessionPruner,
         UnusedSessionPruner,
         DuplicateSessionPruner,
         BugHeatUpdater,
@@ -1197,6 +1210,13 @@ class HourlyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
 
 
 class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
+    """Run every day.
+
+    Jobs that don't need to be run frequently.
+
+    If there is low overhead, consider putting these tasks in more
+    frequently invoked lists to distribute the work more evenly.
+    """
     script_name = 'garbo-daily'
     tunable_loops = [
         AnswerContactPruner,

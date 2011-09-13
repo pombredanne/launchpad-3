@@ -24,6 +24,7 @@
         for="*"
         name="form-picker-macros"
         permission="zope.Public"
-        template="templates/form-picker-macros.pt"/>
+        template="templates/form-picker-macros.pt"
+        class="lp.app.browser.launchpad.Macro"/>
 
 </configure>

@@ -67,7 +67,7 @@ change its text slightly to annouce this:
     Project drivers: Jeff Waugh, Mark Shuttleworth
     Release manager: Jeff Waugh
     Status: Pre-release Freeze
-    Derives from: Woody (3.0)
+    Successor to: Woody (3.0)
     Source packages: No sources imported or published.
     Binary packages: No binaries imported or published.
 
@@ -141,7 +141,7 @@ upstream packaging.
     ...     find_tag_by_id(anon_browser.contents, 'series-packaging'))
     Upstream packaging
     5 source packages are linked to registered upstream projects.
-    -2 need linking.
+    3 need linking.
     Recently linked to upstream:
     alsa-utils linked...
     a52dec linked...

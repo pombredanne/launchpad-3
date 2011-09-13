@@ -6,7 +6,6 @@ __metaclass__ = type
 from datetime import timedelta
 import gc
 from logging import ERROR
-from unittest import TestLoader
 
 import transaction
 from zope.component import getUtility
@@ -872,7 +871,3 @@ class TestFindMergablePackagings(TestCaseWithFactory):
         self.factory.makePOTemplate(sourcepackage=packaging.sourcepackage)
         self.assertContentEqual(
             [], TranslationMerger.findMergeablePackagings())
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -61,7 +61,6 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
-from canonical.launchpad.mail import signed_message_from_string
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
@@ -86,9 +85,7 @@ from lp.bugs.interfaces.bugtarget import (
     ISeriesBugTarget,
     )
 from lp.bugs.interfaces.bugtaskfilter import OrderedBugTask
-from lp.bugs.model.bug import (
-    get_bug_tags,
-    )
+from lp.bugs.model.bug import get_bug_tags
 from lp.bugs.model.bugtarget import (
     BugTargetBase,
     HasBugHeatMixin,
@@ -130,6 +127,7 @@ from lp.registry.model.person import Person
 from lp.registry.model.series import SeriesMixin
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
+from lp.services.mail.signedmessage import signed_message_from_string
 from lp.services.propertycache import (
     cachedproperty,
     get_property_cache,
@@ -159,7 +157,6 @@ from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet,
     )
 from lp.soyuz.model.binarypackagename import BinaryPackageName
-from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
     DistroArchSeries,
@@ -259,6 +256,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         notNull=False, default=None)
     language_pack_full_export_requested = BoolCol(notNull=True, default=False)
     backports_not_automatic = BoolCol(notNull=True, default=False)
+    include_long_descriptions = BoolCol(notNull=True, default=True)
 
     language_packs = SQLMultipleJoin(
         'LanguagePack', joinColumn='distroseries', orderBy='-date_exported')
@@ -1343,139 +1341,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return section
         raise NotFoundError(name)
 
-    def getBinaryPackageCaches(self, archive=None):
-        """See `IDistroSeries`."""
-        if archive is not None:
-            archives = [archive.id]
-        else:
-            archives = self.distribution.all_distro_archive_ids
-
-        caches = DistroSeriesPackageCache.select("""
-            distroseries = %s AND
-            archive IN %s
-        """ % sqlvalues(self, archives),
-        orderBy="name")
-
-        return caches
-
-    def removeOldCacheItems(self, archive, log):
-        """See `IDistroSeries`."""
-
-        # get the set of package names that should be there
-        bpns = set(BinaryPackageName.select("""
-            BinaryPackagePublishingHistory.distroarchseries =
-                DistroArchSeries.id AND
-            DistroArchSeries.distroseries = %s AND
-            Archive.id = %s AND
-            BinaryPackagePublishingHistory.archive = Archive.id AND
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.binarypackagename =
-                BinaryPackageName.id AND
-            BinaryPackagePublishingHistory.dateremoved is NULL AND
-            Archive.enabled = TRUE
-            """ % sqlvalues(self, archive),
-            distinct=True,
-            clauseTables=[
-                'Archive',
-                'DistroArchSeries',
-                'BinaryPackagePublishingHistory',
-                'BinaryPackageRelease']))
-
-        # remove the cache entries for binary packages we no longer want
-        for cache in self.getBinaryPackageCaches(archive):
-            if cache.binarypackagename not in bpns:
-                log.debug(
-                    "Removing binary cache for '%s' (%s)"
-                    % (cache.name, cache.id))
-                cache.destroySelf()
-
-    def updateCompletePackageCache(self, archive, log, ztm, commit_chunk=500):
-        """See `IDistroSeries`."""
-        # Do not create cache entries for disabled archives.
-        if not archive.enabled:
-            return
-
-        # Get the set of package names to deal with.
-        bpns = IStore(BinaryPackageName).find(
-            BinaryPackageName,
-            DistroArchSeries.distroseries == self,
-            BinaryPackagePublishingHistory.distroarchseriesID ==
-                DistroArchSeries.id,
-            BinaryPackagePublishingHistory.archive == archive,
-            BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                BinaryPackageRelease.id,
-            BinaryPackageRelease.binarypackagename == BinaryPackageName.id,
-            BinaryPackagePublishingHistory.dateremoved == None).config(
-                distinct=True).order_by(BinaryPackageName.name)
-
-        number_of_updates = 0
-        chunk_size = 0
-        for bpn in bpns:
-            log.debug("Considering binary '%s'" % bpn.name)
-            self.updatePackageCache(bpn, archive, log)
-            number_of_updates += 1
-            chunk_size += 1
-            if chunk_size == commit_chunk:
-                chunk_size = 0
-                log.debug("Committing")
-                ztm.commit()
-
-        return number_of_updates
-
-    def updatePackageCache(self, binarypackagename, archive, log):
-        """See `IDistroSeries`."""
-
-        # get the set of published binarypackagereleases
-        bprs = IStore(BinaryPackageRelease).find(
-            BinaryPackageRelease,
-            BinaryPackageRelease.binarypackagename == binarypackagename,
-            BinaryPackageRelease.id ==
-                BinaryPackagePublishingHistory.binarypackagereleaseID,
-            BinaryPackagePublishingHistory.distroarchseriesID ==
-                DistroArchSeries.id,
-            DistroArchSeries.distroseries == self,
-            BinaryPackagePublishingHistory.archive == archive,
-            BinaryPackagePublishingHistory.dateremoved == None)
-        bprs = bprs.order_by(Desc(BinaryPackageRelease.datecreated))
-        bprs = bprs.config(distinct=True)
-
-        if bprs.count() == 0:
-            log.debug("No binary releases found.")
-            return
-
-        # find or create the cache entry
-        cache = DistroSeriesPackageCache.selectOne("""
-            distroseries = %s AND
-            archive = %s AND
-            binarypackagename = %s
-            """ % sqlvalues(self, archive, binarypackagename))
-        if cache is None:
-            log.debug("Creating new binary cache entry.")
-            cache = DistroSeriesPackageCache(
-                archive=archive,
-                distroseries=self,
-                binarypackagename=binarypackagename)
-
-        # make sure the cached name, summary and description are correct
-        cache.name = binarypackagename.name
-        cache.summary = bprs[0].summary
-        cache.description = bprs[0].description
-
-        # get the sets of binary package summaries, descriptions. there is
-        # likely only one, but just in case...
-
-        summaries = set()
-        descriptions = set()
-        for bpr in bprs:
-            log.debug("Considering binary version %s" % bpr.version)
-            summaries.add(bpr.summary)
-            descriptions.add(bpr.description)
-
-        # and update the caches
-        cache.summaries = ' '.join(sorted(summaries))
-        cache.descriptions = ' '.join(sorted(descriptions))
-
     def searchPackages(self, text):
         """See `IDistroSeries`."""
 
@@ -1587,25 +1452,34 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 get_property_cache(spph).newer_distroseries_version = version
 
     def createQueueEntry(self, pocket, archive, changesfilename=None,
-                         changesfilecontent=None, signing_key=None,
-                         package_copy_job=None):
+                         changesfilecontent=None, changes_file_alias=None,
+                         signing_key=None, package_copy_job=None):
         """See `IDistroSeries`."""
-        # We store the changes file in the librarian to avoid having to
-        # deal with broken encodings in these files; this will allow us
-        # to regenerate these files as necessary.
-        #
-        # The use of StringIO here should be safe: we do not encoding of
-        # the content in the changes file (as doing so would be guessing
-        # at best, causing unpredictable corruption), and simply pass it
-        # off to the librarian.
-
-        if package_copy_job is None and (
-            changesfilename is None or changesfilecontent is None):
+        if (changesfilename is None) != (changesfilecontent is None):
+            raise AssertionError(
+                "Inconsistent changesfilename and changesfilecontent. "
+                "Pass either both, or neither.")
+        if changes_file_alias is not None and changesfilename is not None:
+            raise AssertionError(
+                "Conflicting options: "
+                "Both changesfilename and changes_file_alias were given.")
+        have_changes_file = not (
+            changesfilename is None and changes_file_alias is None)
+        if package_copy_job is None and not have_changes_file:
             raise AssertionError(
                 "changesfilename and changesfilecontent must be supplied "
                 "if there is no package_copy_job")
 
-        if package_copy_job is None:
+        if changesfilename is not None:
+            # We store the changes file in the librarian to avoid having to
+            # deal with broken encodings in these files; this will allow us
+            # to regenerate these files as necessary.
+            #
+            # The use of StringIO here should be safe: we do not encoding of
+            # the content in the changes file (as doing so would be guessing
+            # at best, causing unpredictable corruption), and simply pass it
+            # off to the librarian.
+
             # The PGP signature is stripped from all changesfiles
             # to avoid replay attacks (see bugs 159304 and 451396).
             signed_message = signed_message_from_string(changesfilecontent)
@@ -1616,17 +1490,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 if new_content is not None:
                     changesfilecontent = signed_message.signedContent
 
-            changes_file = getUtility(ILibraryFileAliasSet).create(
+            changes_file_alias = getUtility(ILibraryFileAliasSet).create(
                 changesfilename, len(changesfilecontent),
                 StringIO(changesfilecontent), 'text/plain',
                 restricted=archive.private)
-        else:
-            changes_file = None
 
         return PackageUpload(
             distroseries=self, status=PackageUploadStatus.NEW,
             pocket=pocket, archive=archive,
-            changesfile=changes_file, signing_key=signing_key,
+            changesfile=changes_file_alias, signing_key=signing_key,
             package_copy_job=package_copy_job)
 
     def getPackageUploadQueue(self, state):
@@ -1816,7 +1688,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         if self.isDerivedSeries():
             raise DerivationError(
                 "DistroSeries %s already has parent series." % self.name)
-        initialize_series = InitializeDistroSeries(self, parents)
+        initialize_series = InitializeDistroSeries(
+            self, parents, architectures, packagesets, rebuild, overlays,
+            overlay_pockets, overlay_components)
         try:
             initialize_series.check()
         except InitializationError, e:

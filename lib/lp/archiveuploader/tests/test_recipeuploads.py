@@ -34,6 +34,7 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
         # accepted.
         self.breezy['i386'].supports_virtualized = True
 
+        self.switchToAdmin()
         self.recipe = self.factory.makeSourcePackageRecipe()
         self.build = getUtility(ISourcePackageRecipeBuildSource).new(
             distroseries=self.breezy,
@@ -41,8 +42,8 @@ class TestSourcePackageRecipeBuildUploads(TestUploadProcessorBase):
             archive=self.factory.makeArchive(
                 distribution=self.ubuntu, owner=self.recipe.owner),
             requester=self.recipe.owner)
-
         Store.of(self.build).flush()
+        self.switchToUploader()
         self.options.context = 'buildd'
 
         self.uploadprocessor = self.getUploadProcessor(

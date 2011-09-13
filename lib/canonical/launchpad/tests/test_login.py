@@ -3,7 +3,6 @@
 
 import cgi
 from datetime import datetime
-import unittest
 
 import lazr.uri
 from zope.component import getUtility
@@ -70,9 +69,10 @@ class TestLoginAndLogout(TestCaseWithFactory):
             session['launchpad.authenticateduser']['accountid'],
             self.principal.id)
 
-        # This is so that the authenticate() call below uses cookie auth.
-        self.request.response.setCookie(
-            config.launchpad_session.cookie, 'xxx')
+        # Ensure we are using cookie auth.
+        self.assertIsNotNone(
+            self.request.response.getCookie(config.launchpad_session.cookie)
+            )
 
         principal = getUtility(IPlacelessAuthUtility).authenticate(
             self.request)
@@ -194,15 +194,12 @@ class TestLoggingInWithPersonlessAccount(TestCaseWithFactory):
         # its lack of an associated Person.
         logInPrincipal(self.request, self.principal, 'foo@example.com')
 
-        # This is so that the authenticate() call below uses cookie auth.
-        self.request.response.setCookie(
-            config.launchpad_session.cookie, 'xxx')
+        # Ensure we are using cookie auth.
+        self.assertIsNotNone(
+            self.request.response.getCookie(config.launchpad_session.cookie)
+            )
 
-        principal = getUtility(IPlacelessAuthUtility).authenticate(
-            self.request)
+        placeless_auth_utility = getUtility(IPlacelessAuthUtility)
+        principal = placeless_auth_utility.authenticate(self.request)
         self.failUnless(ILaunchpadPrincipal.providedBy(principal))
         self.failUnless(principal.person is None)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

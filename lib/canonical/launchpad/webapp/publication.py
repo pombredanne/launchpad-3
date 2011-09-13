@@ -623,10 +623,12 @@ class LaunchpadBrowserPublication(
             # the publication, so there's nothing we need to do here.
             pass
 
-        # Log a soft OOPS for DisconnectionErrors as per Bug #373837.
+        # Log an OOPS for DisconnectionErrors: we don't expect to see
+        # disconnections as a routine event, so having information about them
+        # is important. See Bug #373837 for more information.
         # We need to do this before we re-raise the exception as a Retry.
         if isinstance(exc_info[1], DisconnectionError):
-            getUtility(IErrorReportingUtility).handling(exc_info, request)
+            getUtility(IErrorReportingUtility).raising(exc_info, request)
 
         def should_retry(exc_info):
             if not retry_allowed:
@@ -760,7 +762,7 @@ class LaunchpadBrowserPublication(
                 # not happen, as store.rollback() should have been called
                 # by now. Log an OOPS so we know about this. This
                 # is Bug #504291 happening.
-                getUtility(IErrorReportingUtility).handling(
+                getUtility(IErrorReportingUtility).raising(
                     sys.exc_info(), request)
                 # Repair things so the server can remain operational.
                 store.rollback()

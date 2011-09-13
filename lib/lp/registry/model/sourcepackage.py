@@ -188,6 +188,10 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
             self.distribution.answer_contacts_with_languages)
         return sorted(answer_contacts, key=attrgetter('displayname'))
 
+    @property
+    def owner(self):
+        return self.distribution.owner
+
 
 class SourcePackage(BugTargetBase, HasBugHeatMixin, HasCodeImportsMixin,
                     HasTranslationImportsMixin, HasTranslationTemplatesMixin,

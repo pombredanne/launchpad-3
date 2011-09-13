@@ -223,7 +223,6 @@
                     distroseries
                     milestone
                     status
-                    statusexplanation
                     importance
                     assignee
                     bugwatch
@@ -269,20 +268,14 @@
                     age
                     bugwatch
                     datecreated
-                    distribution
-                    distroseries
                     importance
                     milestone
                     owner
-                    product
-                    productseries
                     related_tasks
                     setImportanceFromDebbugs
                     setStatusFromDebbugs
-                    sourcepackagename
                     statusdisplayhtml
                     statuselsewhere
-                    statusexplanation
                     targetname
                     title
                     "/>
@@ -1111,6 +1104,9 @@
         <require
             permission="launchpad.AnyPerson"
             set_schema="lp.bugs.interfaces.bugnotification.IBugNotification"/>
+	<require
+	    permission="launchpad.Edit"
+            attributes="destroySelf" />
     </class>
     <class
         class="lp.bugs.model.bugnotification.BugNotificationRecipient">

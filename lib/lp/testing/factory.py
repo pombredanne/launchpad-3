@@ -1,3 +1,7 @@
+# -*- coding: utf-8 -*-
+# NOTE: The first line above must stay first; do not move the copyright
+# notice to the top.  See http://www.python.org/dev/peps/pep-0263/.
+#
 # Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -158,7 +162,6 @@ from lp.code.interfaces.sourcepackagerecipebuild import (
 from lp.code.model.diff import (
     Diff,
     PreviewDiff,
-    StaticDiff,
     )
 from lp.code.model.recipebuild import RecipeBuildRecord
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
@@ -303,6 +306,9 @@ from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat,
     )
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue,
+    )
 from lp.translations.interfaces.translationmessage import (
     RosettaTranslationOrigin,
     )
@@ -311,9 +317,6 @@ from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource,
     )
 from lp.translations.interfaces.translator import ITranslatorSet
-from lp.translations.model.translationimportqueue import (
-    TranslationImportQueueEntry,
-    )
 from lp.translations.model.translationtemplateitem import (
     TranslationTemplateItem,
     )
@@ -474,7 +477,7 @@ class ObjectFactory:
             branch_id = self.getUniqueInteger()
         if rcstype is None:
             rcstype = 'svn'
-        if rcstype in ['svn', 'bzr-svn', 'hg']:
+        if rcstype in ['svn', 'bzr-svn', 'hg', 'bzr']:
             assert cvs_root is cvs_module is None
             if url is None:
                 url = self.getUniqueURL()
@@ -755,6 +758,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             address, person, email_status, account)
 
     def makeTeam(self, owner=None, displayname=None, email=None, name=None,
+                 description=None,
                  subscription_policy=TeamSubscriptionPolicy.OPEN,
                  visibility=None, members=None):
         """Create and return a new, arbitrary Team.
@@ -764,6 +768,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         :type owner: `IPerson` or string
         :param displayname: The team's display name.  If not given we'll use
             the auto-generated name.
+        :param description: Team team's description.
         :type string:
         :param email: The email address to use as the team's contact address.
         :type email: string
@@ -789,7 +794,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             displayname = SPACE.join(
                 word.capitalize() for word in name.split('-'))
         team = getUtility(IPersonSet).newTeam(
-            owner, name, displayname, subscriptionpolicy=subscription_policy)
+            owner, name, displayname, teamdescription=description,
+            subscriptionpolicy=subscription_policy)
         if visibility is not None:
             # Visibility is normally restricted to launchpad.Commercial, so
             # removing the security proxy as we don't care here.
@@ -1118,7 +1124,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             branch_type=branch_type, name=name, registrant=registrant,
             url=url, **optional_branch_args)
         if private:
-            removeSecurityProxy(branch).private = True
+            removeSecurityProxy(branch).explicitly_private = True
         if stacked_on is not None:
             removeSecurityProxy(branch).stacked_on = stacked_on
         if reviewer is not None:
@@ -1426,10 +1432,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeBranchMergeProposal(self, target_branch=None, registrant=None,
                                 set_state=None, prerequisite_branch=None,
-                                product=None, review_diff=None,
-                                initial_comment=None, source_branch=None,
-                                preview_diff=None, date_created=None,
-                                description=None, reviewer=None):
+                                product=None, initial_comment=None,
+                                source_branch=None, preview_diff=None,
+                                date_created=None, description=None,
+                                reviewer=None):
         """Create a proposal to merge based on anonymous branches."""
         if target_branch is not None:
             target = target_branch.target
@@ -1459,8 +1465,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             review_requests.append((reviewer, None))
         proposal = source_branch.addLandingTarget(
             registrant, target_branch, review_requests=review_requests,
-            prerequisite_branch=prerequisite_branch, review_diff=review_diff,
-            description=description, date_created=date_created)
+            prerequisite_branch=prerequisite_branch, description=description,
+            date_created=date_created)
 
         unsafe_proposal = removeSecurityProxy(proposal)
         if preview_diff is not None:
@@ -1549,11 +1555,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             new_revision = make_revision(old_revision)
         return merge_proposal.generateIncrementalDiff(
             old_revision, new_revision, diff)
-
-    def makeStaticDiff(self):
-        return StaticDiff.acquireFromText(
-            self.getUniqueUnicode(), self.getUniqueUnicode(),
-            self.getUniqueString())
 
     def makeRevision(self, author=None, revision_date=None, parent_ids=None,
                      rev_id=None, log_body=None, date_created=None):
@@ -2123,7 +2124,8 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None, target=None, branch_name=None,
-                       git_repo_url=None, hg_repo_url=None, registrant=None,
+                       git_repo_url=None, hg_repo_url=None,
+                       bzr_branch_url=None, registrant=None,
                        rcs_type=None, review_status=None):
         """Create and return a new, arbitrary code import.
 
@@ -2132,7 +2134,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         unique URL.
         """
         if (svn_branch_url is cvs_root is cvs_module is git_repo_url is
-            hg_repo_url is None):
+            hg_repo_url is bzr_branch_url is None):
             svn_branch_url = self.getUniqueURL()
 
         if target is None:
@@ -2149,46 +2151,54 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             else:
                 assert rcs_type in (RevisionControlSystems.SVN,
                                     RevisionControlSystems.BZR_SVN)
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name, rcs_type=rcs_type,
-                url=svn_branch_url)
+                url=svn_branch_url, review_status=review_status)
         elif git_repo_url is not None:
             assert rcs_type in (None, RevisionControlSystems.GIT)
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
-                url=git_repo_url)
+                url=git_repo_url, review_status=review_status)
         elif hg_repo_url is not None:
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.HG,
-                url=hg_repo_url)
+                url=hg_repo_url, review_status=review_status)
+        elif bzr_branch_url is not None:
+            return code_import_set.new(
+                registrant, target, branch_name,
+                rcs_type=RevisionControlSystems.BZR,
+                url=bzr_branch_url, review_status=review_status)
         else:
             assert rcs_type in (None, RevisionControlSystems.CVS)
-            code_import = code_import_set.new(
+            return code_import_set.new(
                 registrant, target, branch_name,
                 rcs_type=RevisionControlSystems.CVS,
-                cvs_root=cvs_root, cvs_module=cvs_module)
-        if review_status:
-            removeSecurityProxy(code_import).review_status = review_status
-        return code_import
+                cvs_root=cvs_root, cvs_module=cvs_module,
+                review_status=review_status)
 
     def makeChangelog(self, spn=None, versions=[]):
-        """Create and return a LFA of a valid Debian-style changelog."""
+        """Create and return a LFA of a valid Debian-style changelog.
+
+        Note that the changelog returned is unicode - this is deliberate
+        so that code is forced to cope with it as utf-8 changelogs are
+        normal.
+        """
         if spn is None:
             spn = self.getUniqueString()
         changelog = ''
         for version in versions:
-            entry = dedent('''
+            entry = dedent(u'''\
             %s (%s) unstable; urgency=low
 
               * %s.
 
-             -- Foo Bar <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
+             -- Føo Bær <foo@example.com>  Tue, 01 Jan 1970 01:50:41 +0000
 
             ''' % (spn, version, version))
             changelog += entry
-        return self.makeLibraryFileAlias(content=changelog)
+        return self.makeLibraryFileAlias(content=changelog.encode("utf-8"))
 
     def makeCodeImportEvent(self):
         """Create and return a CodeImportEvent."""
@@ -2275,16 +2285,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         return bmp.nominateReviewer(candidate, bmp.registrant)
 
     def makeMessage(self, subject=None, content=None, parent=None,
-                    owner=None):
+                    owner=None, datecreated=None):
         if subject is None:
             subject = self.getUniqueString()
         if content is None:
             content = self.getUniqueString()
         if owner is None:
             owner = self.makePerson()
+        if datecreated is None:
+            datecreated = datetime.now(UTC)
         rfc822msgid = self.makeUniqueRFC822MsgId()
         message = Message(rfc822msgid=rfc822msgid, subject=subject,
-            owner=owner, parent=parent)
+            owner=owner, parent=parent, datecreated=datecreated)
         MessageChunk(message=message, sequence=1, content=content)
         return message
 
@@ -3229,9 +3241,6 @@ class BareLaunchpadObjectFactory(ObjectFactory):
 
         if content is None:
             content = self.getUniqueString()
-        content_reference = getUtility(ILibraryFileAliasSet).create(
-            name=os.path.basename(path), size=len(content),
-            file=StringIO(content), contentType='text/plain')
 
         if format is None:
             format = TranslationFileFormat.PO
@@ -3239,11 +3248,17 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if status is None:
             status = RosettaImportStatus.NEEDS_REVIEW
 
-        return TranslationImportQueueEntry(
-            path=path, productseries=productseries, distroseries=distroseries,
-            sourcepackagename=sourcepackagename, importer=uploader,
-            content=content_reference, status=status, format=format,
-            by_maintainer=by_maintainer)
+        if type(content) == unicode:
+            content = content.encode('utf-8')
+
+        entry = getUtility(ITranslationImportQueue).addOrUpdateEntry(
+            path=path, content=content, by_maintainer=by_maintainer,
+            importer=uploader, productseries=productseries,
+            distroseries=distroseries, sourcepackagename=sourcepackagename,
+            potemplate=potemplate, pofile=pofile, format=format)
+        entry.setStatus(
+            status, getUtility(ILaunchpadCelebrities).rosetta_experts)
+        return entry
 
     def makeMailingList(self, team, owner):
         """Create a mailing list for the team."""
@@ -3372,8 +3387,13 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             return self.makeSourcePackageName()
         return getUtility(ISourcePackageNameSet).getOrCreateByName(name)
 
-    def makeSourcePackage(self, sourcepackagename=None, distroseries=None):
-        """Make an `ISourcePackage`."""
+    def makeSourcePackage(self, sourcepackagename=None, distroseries=None,
+                          publish=False):
+        """Make an `ISourcePackage`.
+
+        :param publish: if true, create a corresponding
+            SourcePackagePublishingHistory.
+        """
         # Make sure we have a real sourcepackagename object.
         if (sourcepackagename is None or
             isinstance(sourcepackagename, basestring)):
@@ -3381,6 +3401,10 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                 sourcepackagename)
         if distroseries is None:
             distroseries = self.makeDistroSeries()
+        if publish:
+            self.makeSourcePackagePublishingHistory(
+                distroseries=distroseries,
+                sourcepackagename=sourcepackagename)
         return distroseries.getSourcePackage(sourcepackagename)
 
     def getAnySourcePackageUrgency(self):
@@ -3406,13 +3430,18 @@ class BareLaunchpadObjectFactory(ObjectFactory):
             pocket, archive, changes_filename, changes_file_content,
             signing_key=signing_key, package_copy_job=package_copy_job)
         if status is not None:
-            naked_package_upload = removeSecurityProxy(package_upload)
-            status_changers = {
-                PackageUploadStatus.DONE: naked_package_upload.setDone,
-                PackageUploadStatus.ACCEPTED:
-                    naked_package_upload.setAccepted,
-                }
-            status_changers[status]()
+            if status is not PackageUploadStatus.NEW:
+                naked_package_upload = removeSecurityProxy(package_upload)
+                status_changers = {
+                    PackageUploadStatus.UNAPPROVED:
+                        naked_package_upload.setUnapproved,
+                    PackageUploadStatus.REJECTED:
+                        naked_package_upload.setRejected,
+                    PackageUploadStatus.DONE: naked_package_upload.setDone,
+                    PackageUploadStatus.ACCEPTED:
+                        naked_package_upload.setAccepted,
+                    }
+                status_changers[status]()
         return package_upload
 
     def makeSourcePackageUpload(self, distroseries=None,
@@ -3658,8 +3687,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                                            date_uploaded=UTC_NOW,
                                            scheduleddeletiondate=None,
                                            ancestor=None,
-                                           **kwargs
-                                           ):
+                                           **kwargs):
         """Make a `SourcePackagePublishingHistory`.
 
         :param sourcepackagerelease: The source package release to publish
@@ -3784,6 +3812,24 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         if status == PackagePublishingStatus.PUBLISHED:
             naked_bpph.datepublished = UTC_NOW
         return bpph
+
+    def makeSPPHForBPPH(self, bpph):
+        """Produce a `SourcePackagePublishingHistory` to match `bpph`.
+
+        :param bpph: A `BinaryPackagePublishingHistory`.
+        :return: A `SourcePackagePublishingHistory` stemming from the same
+            source package as `bpph`, published into the same distroseries,
+            pocket, and archive.
+        """
+        # JeroenVermeulen 2011-08-25, bug=834370: Julian says this isn't
+        # very complete, and ignores architectures.  Improve so we can
+        # remove more of our reliance on the SoyuzTestPublisher.
+        bpr = bpph.binarypackagerelease
+        spph = self.makeSourcePackagePublishingHistory(
+            distroseries=bpph.distroarchseries.distroseries,
+            sourcepackagerelease=bpr.build.source_package_release,
+            pocket=bpph.pocket, archive=bpph.archive)
+        return spph
 
     def makeBinaryPackageName(self, name=None):
         """Make an `IBinaryPackageName`."""
@@ -4045,7 +4091,7 @@ class BareLaunchpadObjectFactory(ObjectFactory):
                          emailaddress=u'test@canonical.com',
                          distroarchseries=None, private=False,
                          contactable=False, system=None,
-                         submission_data=None):
+                         submission_data=None, status=None):
         """Create a new HWSubmission."""
         if date_created is None:
             date_created = datetime.now(pytz.UTC)
@@ -4066,10 +4112,14 @@ class BareLaunchpadObjectFactory(ObjectFactory):
         format = HWSubmissionFormat.VERSION_1
         submission_set = getUtility(IHWSubmissionSet)
 
-        return submission_set.createSubmission(
+        submission = submission_set.createSubmission(
             date_created, format, private, contactable,
             submission_key, emailaddress, distroarchseries,
             raw_submission, filename, filesize, system)
+
+        if status is not None:
+            removeSecurityProxy(submission).status = status
+        return submission
 
     def makeHWSubmissionDevice(self, submission, device, driver, parent,
                                hal_device_id):

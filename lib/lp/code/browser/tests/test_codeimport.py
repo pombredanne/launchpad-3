@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 import re
-import unittest
 
 from canonical.launchpad.testing.pages import (
     extract_text,
@@ -54,9 +53,3 @@ class TestImportDetails(TestCaseWithFactory):
         svn_details = find_tag_by_id(browser.contents, 'svn-import-details')
         self.assertSvnDetailsDisplayed(
             svn_details, RevisionControlSystems.SVN)
-
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

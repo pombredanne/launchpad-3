@@ -26,7 +26,6 @@ from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.distroarchseriesbinarypackagerelease import (
     DistroArchSeriesBinaryPackageRelease,
     )
-from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
 from lp.soyuz.model.publishing import BinaryPackagePublishingHistory
 
 
@@ -76,6 +75,8 @@ class DistroArchSeriesBinaryPackage:
     @cachedproperty
     def cache(self):
         """See IDistroArchSeriesBinaryPackage."""
+        from lp.soyuz.model.distroseriespackagecache import (
+            DistroSeriesPackageCache)
         query = """
             distroseries = %s AND
             archive IN %s AND
