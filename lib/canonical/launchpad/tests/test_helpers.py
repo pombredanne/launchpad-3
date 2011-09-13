@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from doctest import DocTestSuite
+from textwrap import dedent
 import unittest
 
 from zope.interface import implements
@@ -67,30 +68,23 @@ def make_test_tarball_2():
     '# Test PO file.\n'
     '''
 
-    pot = helpers.join_lines(
-        '# Test POT file.',
-        'msgid "foo"',
-        'msgstr ""',
-        ),
+    pot = dedent("""
+        # Test POT file.
+        msgid "foo"
+        msgstr ""
+        """).strip()
 
-    po = helpers.join_lines(
-        '# Test PO file.',
-        'msgid "foo"',
-        'msgstr "bar"',
-        )
+    po = dedent("""
+        # Test PO file.
+        msgid "foo"
+        msgstr "bar"
+        """).strip()
 
     return LaunchpadWriteTarFile.files_to_tarfile({
         'test/test.pot': pot,
         'test/cy.po': po,
         'test/es.po': po,
     })
-
-
-def test_join_lines():
-    r"""
-    >>> helpers.join_lines('foo', 'bar', 'baz')
-    'foo\nbar\nbaz\n'
-    """
 
 
 class DummyLanguage:
