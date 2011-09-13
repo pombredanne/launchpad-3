@@ -6,47 +6,55 @@ SET client_min_messages=ERROR;
 CREATE OR REPLACE FUNCTION branch_transitive_privacy_update() RETURNS TRIGGER
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path TO public AS
 $$
+DECLARE
+    branch_id integer;
 BEGIN
     IF TG_OP = 'INSERT' OR NEW.stacked_on != OLD.stacked_on OR
         NEW.stacked_on IS null AND OLD.stacked_on IS NOT null OR
         NEW.stacked_on IS NOT null AND OLD.stacked_on IS null OR
         NEW.private != OLD.private THEN
-        UPDATE branch SET transitively_private = (
-            WITH
-            recursive stacked_branches AS
-            (
-                SELECT branch.id,
-                    branch.stacked_on,
-                    cast(private as int) AS private
-                FROM branch as selected_branch
-                WHERE selected_branch.id = branch.id
-                UNION all
-                SELECT stacked_branches.id,
-                    branch.stacked_on,
-                    cast(branch.private as int) AS private
-                FROM stacked_branches, branch
-                WHERE stacked_branches.stacked_on = branch.id)
-            SELECT
-                CASE WHEN sum(private)>0 THEN True
-                ELSE False
-                END
-            FROM stacked_branches
-            GROUP BY id
-        ) WHERE id IN (
-            WITH recursive
-            stacked_branches AS (
-                SELECT branch.id,
-                branch.stacked_on, cast(private as int) AS private
-                FROM branch WHERE id = NEW.id
-                UNION all
-                SELECT branch.id,
-                stacked_branches.stacked_on,
-                cast(stacked_branches.private as int) AS private
-                FROM stacked_branches, branch
-                WHERE stacked_branches.id = branch.stacked_on)
-            SELECT id FROM stacked_branches
-        );
+            branch_id = NEW.id;
+    ELSIF TG_OP = 'DELETE' THEN
+        branch_id = OLD.id;
+    ELSE
+        return NULL;
     END IF;
+
+    UPDATE branch SET transitively_private = (
+        WITH
+        recursive stacked_branches AS
+        (
+            SELECT branch.id,
+                branch.stacked_on,
+                cast(private as int) AS private
+            FROM branch as selected_branch
+            WHERE selected_branch.id = branch.id
+            UNION all
+            SELECT stacked_branches.id,
+                branch.stacked_on,
+                cast(branch.private as int) AS private
+            FROM stacked_branches, branch
+            WHERE stacked_branches.stacked_on = branch.id)
+        SELECT
+            CASE WHEN sum(private)>0 THEN True
+            ELSE False
+            END
+        FROM stacked_branches
+        GROUP BY id
+    ) WHERE id IN (
+        WITH recursive
+        stacked_branches AS (
+            SELECT branch.id,
+            branch.stacked_on, cast(private as int) AS private
+            FROM branch WHERE id = branch_id
+            UNION all
+            SELECT branch.id,
+            stacked_branches.stacked_on,
+            cast(stacked_branches.private as int) AS private
+            FROM stacked_branches, branch
+            WHERE stacked_branches.id = branch.stacked_on)
+        SELECT id FROM stacked_branches
+    );
     RETURN NULL; -- Ignored - this is an AFTER trigger
 END;
 $$;
