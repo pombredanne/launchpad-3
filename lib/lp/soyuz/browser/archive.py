@@ -2066,6 +2066,12 @@ class EnableRestrictedFamiliesMixin:
             self.setFieldError('require_virtualized', error_msg)
 
 
+ARCHIVE_ENABLED_RESTRICTED_FAMILITES_ERROR_MSG = (
+    u'Main archives can not be restricted to certain '
+    'architectures unless they are set to build on '
+    'virtualized builders.')
+
+
 class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
 
     field_names = ['enabled', 'private', 'commercial', 'require_virtualized',
@@ -2131,14 +2137,18 @@ class ArchiveAdminView(BaseArchiveEditView, EnableRestrictedFamiliesMixin):
                 'Can only set commericial for private archives.')
 
         enabled_restricted_families = data.get('enabled_restricted_families')
-        if (enabled_restricted_families and
-            not self.context.canSetEnabledRestrictedFamilies(
-                enabled_restricted_families)):
+        require_virtualized = data.get('require_virtualized')
+        proc_family_set = getUtility(IProcessorFamilySet)
+        if (enabled_restricted_families is not None and
+            not require_virtualized and
+            set(enabled_restricted_families) !=
+                set(proc_family_set.getRestricted())):
             self.setFieldError(
                 'enabled_restricted_families',
-                'Main archives can not be restricted to certain '
-                'architectures unless they are set to build on '
-                'virtualized builders.')
+                ARCHIVE_ENABLED_RESTRICTED_FAMILITES_ERROR_MSG)
+            self.setFieldError(
+                'require_virtualized',
+                ARCHIVE_ENABLED_RESTRICTED_FAMILITES_ERROR_MSG)
 
     @property
     def owner_is_private_team(self):

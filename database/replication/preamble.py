@@ -28,7 +28,7 @@ if __name__ == '__main__':
         parser.error("Too many arguments")
     scripts.execute_zcml_for_scripts(use_web_security=False)
 
-    con = connect(options.dbuser)
+    con = connect()
     print '# slonik(1) preamble generated %s' % time.ctime()
     print '# LPCONFIG=%s' % config.instance_name
     print
