@@ -1438,12 +1438,14 @@ class PublishingSet:
         insert_head = """
             INSERT INTO BinaryPackagePublishingHistory
             (archive, distroarchseries, pocket, binarypackagerelease,
-             component, section, priority, status, datecreated)
+             binarypackagename, component, section, priority, status,
+             datecreated)
             VALUES
             """
         insert_pubs = ", ".join(
             "(%s)" % ", ".join(sqlvalues(
                 get_archive(archive, bpr).id, das.id, pocket, bpr.id,
+                bpr.binarypackagename,
                 get_component(archive, das.distroseries, component).id,
                 section.id, priority, PackagePublishingStatus.PENDING,
                 UTC_NOW))
