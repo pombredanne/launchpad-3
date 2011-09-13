@@ -12,7 +12,6 @@ import datetime
 import time
 
 import pytz
-import simplejson
 from sqlobject import (
     IntCol,
     StringCol,
@@ -109,8 +108,10 @@ class Job(SQLBase):
             raise InvalidTransition(self._status, status)
         old_status, self._status = self._status, status
         # Announce the status change.
-        event = simplejson.dumps(dict(old_status=old_status.name))
-        emit(self, status, event)
+        change = dict(
+            status=self._status.name,
+            old_status=old_status.name)
+        emit(self, status, change)
 
     status = property(lambda x: x._status)
 
