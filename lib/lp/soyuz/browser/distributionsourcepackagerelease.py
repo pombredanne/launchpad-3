@@ -12,13 +12,14 @@ __all__ = [
 
 import operator
 
+from lazr.restful.utils import smartquote
+
 from canonical.launchpad.browser.librarian import ProxiedLibraryFileAlias
 from canonical.launchpad.webapp import (
     LaunchpadView,
     Navigation,
     )
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.lazr.utils import smartquote
 from lp.archivepublisher.debversion import Version
 from lp.services.propertycache import cachedproperty
 from lp.soyuz.browser.build import BuildNavigationMixin

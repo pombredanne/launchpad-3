@@ -21,6 +21,7 @@ from lazr.delegates import delegates
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.restful.declarations import error_status
+from lazr.restful.utils import safe_hasattr
 import pytz
 from sqlobject import (
     BoolCol,
@@ -78,7 +79,6 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector,
     MAIN_STORE,
     )
-from canonical.lazr.utils import safe_hasattr
 from lp.answers.enums import QUESTION_STATUS_DEFAULT_SEARCH
 from lp.answers.interfaces.faqtarget import IFAQTarget
 from lp.answers.model.faq import (
