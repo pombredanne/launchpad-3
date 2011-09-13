@@ -312,8 +312,7 @@ class BugTaskDelta:
     implements(IBugTaskDelta)
 
     def __init__(self, bugtask, status=None, importance=None,
-                 assignee=None, milestone=None, statusexplanation=None,
-                 bugwatch=None, target=None):
+                 assignee=None, milestone=None, bugwatch=None, target=None):
         self.bugtask = bugtask
 
         self.assignee = assignee
@@ -321,7 +320,6 @@ class BugTaskDelta:
         self.importance = importance
         self.milestone = milestone
         self.status = status
-        self.statusexplanation = statusexplanation
         self.target = target
 
 
@@ -482,7 +480,6 @@ class BugTask(SQLBase):
         schema=BugTaskStatus,
         default=BugTaskStatus.NEW,
         storm_validator=validate_status)
-    statusexplanation = StringCol(dbName='statusexplanation', default=None)
     importance = EnumCol(
         dbName='importance', notNull=True,
         schema=BugTaskImportance,
@@ -846,12 +843,17 @@ class BugTask(SQLBase):
             and self._checkAutoconfirmFeatureFlag()
             # END TEMPORARY BIT FOR BUGTASK AUTOCONFIRM FEATURE FLAG.
             ):
-            user = getUtility(ILaunchpadCelebrities).janitor
+            janitor = getUtility(ILaunchpadCelebrities).janitor
             bugtask_before_modification = Snapshot(
                 self, providing=providedBy(self))
-            self.transitionToStatus(BugTaskStatus.CONFIRMED, user)
+            # Create a bug message explaining why the janitor auto-confirmed
+            # the bugtask.
+            msg = ("Status changed to 'Confirmed' because the bug "
+                   "affects multiple users.")
+            self.bug.newMessage(owner=janitor, content=msg)
+            self.transitionToStatus(BugTaskStatus.CONFIRMED, janitor)
             notify(ObjectModifiedEvent(
-                self, bugtask_before_modification, ['status'], user=user))
+                self, bugtask_before_modification, ['status'], user=janitor))
 
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
@@ -1149,7 +1151,6 @@ class BugTask(SQLBase):
         name in this distribution will have their names updated to
         match. This should only be used by _syncSourcePackages.
         """
-
         if self.target == target:
             return
 
@@ -2004,9 +2005,10 @@ class BugTaskSet:
                 distroseries = params.distribution.currentseries
             elif params.distroseries:
                 distroseries = params.distroseries
-            assert distroseries, (
-                "Search by component requires a context with a distribution "
-                "or distroseries.")
+            if distroseries is None:
+                raise ValueError(
+                    "Search by component requires a context with a "
+                    "distribution or distroseries.")
 
             if zope_isinstance(params.component, any):
                 component_ids = sqlvalues(*params.component.query_values)
@@ -2078,25 +2080,10 @@ class BugTaskSet:
             extra_clauses.append(bug_reporter_clause)
 
         if params.bug_commenter:
-            bugmessage_owner = bool(features.getFeatureFlag(
-                'malone.bugmessage_owner'))
-            bug_commenter_old_clause = """
-            BugTask.id IN (
-                SELECT DISTINCT BugTask.id FROM BugTask, BugMessage, Message
-                WHERE Message.owner = %(bug_commenter)s
-                    AND Message.id = BugMessage.message
-                    AND BugTask.bug = BugMessage.bug
-                    AND BugMessage.index > 0
-            )
-            """ % sqlvalues(bug_commenter=params.bug_commenter)
-            bug_commenter_new_clause = """
+            bug_commenter_clause = """
             Bug.id IN (SELECT DISTINCT bug FROM Bugmessage WHERE
             BugMessage.index > 0 AND BugMessage.owner = %(bug_commenter)s)
             """ % sqlvalues(bug_commenter=params.bug_commenter)
-            if bugmessage_owner:
-                bug_commenter_clause = bug_commenter_new_clause
-            else:
-                bug_commenter_clause = bug_commenter_old_clause
             extra_clauses.append(bug_commenter_clause)
 
         if params.affects_me:

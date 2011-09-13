@@ -145,15 +145,6 @@
         <allow
             interface="lp.bugs.interfaces.bugtrackerperson.IBugTrackerPerson"/>
     </class>
-    <class
-        class="lp.bugs.model.packagebugsupervisor.PackageBugSupervisor">
-        <allow
-            attributes="
-                id
-                distribution
-                sourcepackagename
-                bug_supervisor"/>
-    </class>
 
     <!-- CveReference -->
 
@@ -223,7 +214,6 @@
                     distroseries
                     milestone
                     status
-                    statusexplanation
                     importance
                     assignee
                     bugwatch
@@ -277,7 +267,6 @@
                     setStatusFromDebbugs
                     statusdisplayhtml
                     statuselsewhere
-                    statusexplanation
                     targetname
                     title
                     "/>

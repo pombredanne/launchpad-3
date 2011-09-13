@@ -41,7 +41,7 @@ def main():
     log = logger(options)
 
     log.debug("Connecting")
-    con = connect(options.dbuser)
+    con = connect()
     con.set_isolation_level(0) # Autocommit
     cur = con.cursor()
 

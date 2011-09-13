@@ -73,9 +73,11 @@ for the import branch, and a subversion branch location.
 When the user clicks continue, the import branch is created
 
     >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
-    Import Status: Pending Review
+    Import Status: Reviewed
     This branch is an import of the Subversion branch
     from http://svn.example.com/firefox/trunk.
+    The next import is scheduled to run
+    as soon as possible.
     >>> browser.getLink("http://svn.example.com/firefox/trunk")
     <Link text='http://svn.example.com/firefox/trunk'
            url='http://svn.example.com/firefox/trunk'>
@@ -99,9 +101,11 @@ URL.
     >>> browser.getControl('Project').value = "firefox"
     >>> browser.getControl('Request Import').click()
     >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
-    Import Status: Pending Review
+    Import Status: Reviewed
     This branch is an import of the Subversion branch
     from http://user:password@svn.example.com/firefox/trunk.
+    The next import is scheduled to run
+    as soon as possible.
 
 
 Requesting a Git import
@@ -166,10 +170,11 @@ to identify the CVS branch.  A project and branch name are also required.
     >>> browser.getControl('Request Import').click()
 
     >>> print extract_text(find_tag_by_id(browser.contents, "import-details"))
-    Import Status: Pending Review
+    Import Status: Reviewed
     This branch is an import of the CVS module firefox from
     :pserver:anonymous@cvs.example.com:/mozilla/cvs.
-
+    The next import is scheduled to run
+    as soon as possible.
 
 Requesting a CVS import with invalid information
 ================================================

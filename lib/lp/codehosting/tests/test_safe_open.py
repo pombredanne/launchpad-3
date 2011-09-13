@@ -15,7 +15,7 @@ from bzrlib.bzrdir import (
     BzrDir,
     BzrDirMetaFormat1,
     )
-from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack1
+from bzrlib.repofmt.knitpack_repo import RepositoryFormatKnitPack1
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import chroot
 from lazr.uri import URI

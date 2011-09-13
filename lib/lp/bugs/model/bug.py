@@ -1295,11 +1295,11 @@ BugMessage""" % sqlvalues(self.id))
             notify(ObjectDeletedEvent(bug_branch, user=user))
             bug_branch.destroySelf()
 
-    def getVisibleLinkedBranches(self, user):
+    def getVisibleLinkedBranches(self, user, eager_load=False):
         """Return all the branches linked to the bug that `user` can see."""
         all_branches = getUtility(IAllBranches)
         linked_branches = list(all_branches.visibleByUser(
-            user).linkedToBugs([self]).getBranches())
+            user).linkedToBugs([self]).getBranches(eager_load=eager_load))
         if len(linked_branches) == 0:
             return EmptyResultSet()
         else:
@@ -1845,14 +1845,13 @@ BugMessage""" % sqlvalues(self.id))
             self.duplicateof = duplicate_of
         except LaunchpadValidationError, validation_error:
             raise InvalidDuplicateValue(validation_error)
-
         if duplicate_of is not None:
             # Update the heat of the master bug and set this bug's heat
             # to 0 (since it's a duplicate, it shouldn't have any heat
             # at all).
             self.setHeat(0, affected_targets=affected_targets)
             # Maybe confirm bug tasks, now that more people might be affected
-            # by this bug.
+            # by this bug from the duplicates.
             duplicate_of.maybeConfirmBugtasks()
         else:
             # Otherwise, recalculate this bug's heat, since it will be 0

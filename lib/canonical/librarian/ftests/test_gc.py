@@ -80,8 +80,9 @@ class TestLibrarianGarbageCollection(TestCase):
                 open(path, 'w').write('whatever')
         self.ztm.abort()
 
-        self.con = connect(config.librarian_gc.dbuser)
-        self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        self.con = connect(
+            user=config.librarian_gc.dbuser,
+            isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
     def tearDown(self):
         self.con.rollback()
@@ -748,8 +749,9 @@ class TestBlobCollection(TestCase):
         self.layer.switchDbUser(config.librarian_gc.dbuser)
 
         # Open a connection for our test
-        self.con = connect(config.librarian_gc.dbuser)
-        self.con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        self.con = connect(
+            user=config.librarian_gc.dbuser,
+            isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
         self.patch(librariangc, 'log', BufferLogger())
 

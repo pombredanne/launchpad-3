@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0611,W0212,W0141,F0401
@@ -171,11 +171,30 @@ class Branch(SQLBase, BzrIdentityMixin):
     whiteboard = StringCol(default=None)
     mirror_status_message = StringCol(default=None)
 
-    private = BoolCol(default=False, notNull=True)
+    # This attribute signifies whether *this* branch is private, irrespective
+    # of the state of any stacked on branches.
+    explicitly_private = BoolCol(
+        default=False, notNull=True, dbName='private')
+
+    @property
+    def private(self):
+        return self.explicitly_private or self._isStackedOnPrivate()
+
+    def _isStackedOnPrivate(self, checked_branches=None):
+        # Return True if any of this branch's stacked_on branches is private.
+        is_stacked_on_private = False
+        if self.stacked_on is not None:
+            checked_branches = checked_branches or []
+            checked_branches.append(self)
+            if self.stacked_on not in checked_branches:
+                is_stacked_on_private = (
+                    self.stacked_on.explicitly_private or
+                    self.stacked_on._isStackedOnPrivate(checked_branches))
+        return is_stacked_on_private
 
     def setPrivate(self, private, user):
         """See `IBranch`."""
-        if private == self.private:
+        if private == self.explicitly_private:
             return
         # Only check the privacy policy if the user is not special.
         if (not user_has_special_branch_access(user)):
@@ -185,7 +204,7 @@ class Branch(SQLBase, BzrIdentityMixin):
                 raise BranchCannotBePrivate()
             if not private and not policy.canBranchesBePublic():
                 raise BranchCannotBePublic()
-        self.private = private
+        self.explicitly_private = private
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person',
@@ -399,7 +418,7 @@ class Branch(SQLBase, BzrIdentityMixin):
                          prerequisite_branch=None, whiteboard=None,
                          date_created=None, needs_review=False,
                          description=None, review_requests=None,
-                         review_diff=None, commit_message=None):
+                         commit_message=None):
         """See `IBranch`."""
         if not self.target.supports_merge_proposals:
             raise InvalidBranchMergeProposal(
@@ -452,8 +471,7 @@ class Branch(SQLBase, BzrIdentityMixin):
             prerequisite_branch=prerequisite_branch, whiteboard=whiteboard,
             date_created=date_created,
             date_review_requested=date_review_requested,
-            queue_status=queue_status, review_diff=review_diff,
-            commit_message=commit_message,
+            queue_status=queue_status, commit_message=commit_message,
             description=description)
 
         for reviewer, review_type in review_requests:
@@ -1176,7 +1194,7 @@ class Branch(SQLBase, BzrIdentityMixin):
         This method doesn't check the stacked upon branch.  That is handled by
         the `visibleByUser` method.
         """
-        if not self.private:
+        if not self.explicitly_private:
             return True
         if user is None:
             return False

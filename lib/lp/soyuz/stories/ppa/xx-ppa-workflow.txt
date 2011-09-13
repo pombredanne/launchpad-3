@@ -363,7 +363,7 @@ build on a virtualized builder.
     >>> admin_browser.getControl(name="field.commercial").value = True
     >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl(
-    ...     name="field.require_virtualized").value = False
+    ...     name="field.require_virtualized").value = True
     >>> admin_browser.getControl(name="field.authorized_size").value = '1'
     >>> admin_browser.getControl(
     ...     name="field.relative_build_score").value = '199'

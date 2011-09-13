@@ -949,7 +949,10 @@ class IArchiveView(IHasBuildRecords):
             title=_("Created Since Date"),
             description=_("Return entries whose `date_created` is greater "
                           "than or equal to this date."),
-            required=False))
+            required=False),
+        component_name=TextLine(title=_("Component name"), required=False),
+        )
+
     # Really returns ISourcePackagePublishingHistory, see below for
     # patch to avoid circular import.
     @call_with(eager_load=True)
@@ -958,7 +961,7 @@ class IArchiveView(IHasBuildRecords):
     def getPublishedSources(name=None, version=None, status=None,
                             distroseries=None, pocket=None,
                             exact_match=False, created_since_date=None,
-                            eager_load=False):
+                            eager_load=False, component_name=None):
         """All `ISourcePackagePublishingHistory` target to this archive.
 
         :param name: source name filter (exact match or SQL LIKE controlled
@@ -973,8 +976,12 @@ class IArchiveView(IHasBuildRecords):
                              matching.
         :param created_since_date: Only return results whose `date_created`
             is greater than or equal to this date.
+        :param component_name: component filter. Only return source packages
+            that are in this component.
 
-        :return: SelectResults containing `ISourcePackagePublishingHistory`.
+        :return: SelectResults containing `ISourcePackagePublishingHistory`,
+            ordered by name. If there are multiple results for the same
+            name then they are sub-ordered newest first.
         """
 
     @rename_parameters_as(
@@ -1243,17 +1250,15 @@ class IArchiveView(IHasBuildRecords):
     @operation_for_version('devel')
     def copyPackages(source_names, from_archive, to_pocket, person,
                      to_series=None, include_binaries=False):
-        """Atomically copy named sources into this archive from another.
+        """Copy multiple named sources into this archive from another.
 
         Asynchronously copy the most recent PUBLISHED versions of the named
         sources to the destination archive if necessary.  Calls to this
         method will return immediately if the copy passes basic security
         checks and the copy will happen sometime later with full checking.
 
-        This operation will only succeed when all requested packages
-        are synchronised between the archives. If any of the requested
-        copies cannot be performed, the whole operation will fail. There
-        will be no partial changes of the destination archive.
+        Partial changes of the destination archive can happen because each
+        source is copied in its own transaction.
 
         :param source_names: a list of string names of packages to copy.
         :param from_archive: the source archive from which to copy.

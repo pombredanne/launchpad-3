@@ -248,6 +248,11 @@ class IBranchPublic(Interface):
             required=True,
             readonly=False))
 
+    explicitly_private = Bool(
+        title=_("Explicitly Private"),
+        description=_("This branch is explicitly marked private as opposed "
+        "to being private because it is stacked on a private branch."))
+
 
 class IBranchAnyone(Interface):
     """Attributes of IBranch that can be changed by launchpad.AnyPerson."""
@@ -587,7 +592,7 @@ class IBranchView(IHasOwner, IHasBranchTarget, IHasMergeProposals,
     def addLandingTarget(registrant, target_branch, prerequisite_branch=None,
                          date_created=None, needs_review=False,
                          description=None, review_requests=None,
-                         review_diff=None, commit_message=None):
+                         commit_message=None):
         """Create a new BranchMergeProposal with this branch as the source.
 
         Both the target_branch and the prerequisite_branch, if it is there,
@@ -1164,16 +1169,28 @@ class IBranch(IBranchPublic, IBranchView, IBranchEdit,
     # Mark branches as exported entries for the Launchpad API.
     export_as_webservice_entry(plural_name='branches')
 
-    # This is redefined from IPrivacy.private because the attribute is
-    # read-only. The value is guarded by setPrivate().
+    # This is redefined from IPrivacy.private and is read only. This attribute
+    # is true if this branch is explicitly private or any of its stacked on
+    # branches are private.
     private = exported(
+        Bool(
+            title=_("Branch is confidential"), required=False,
+            readonly=True, default=False,
+            description=_(
+                "This branch is visible only to its subscribers.")))
+
+    # Defines whether *this* branch is private. A branch may have
+    # explicitly private set false but still be considered private because it
+    # is stacked on a private branch. This attribute is read-only. The value
+    # is guarded by setPrivate().
+    explicitly_private = exported(
         Bool(
             title=_("Keep branch confidential"), required=False,
             readonly=True, default=False,
             description=_(
                 "Make this branch visible only to its subscribers.")))
 
-    @mutator_for(private)
+    @mutator_for(explicitly_private)
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         private=Bool(title=_("Keep branch confidential")))
