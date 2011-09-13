@@ -16,7 +16,6 @@ class MixedNewlineMarkersError(ValueError):
     more than one style of newline markers (windows, mac, unix).
     """
 
-
 class Sanitizer(object):
     """Provide a function to sanitize a translation text."""
 
@@ -24,6 +23,7 @@ class Sanitizer(object):
     windows_style = u'\r\n'
     mac_style = u'\r'
     unix_style = u'\n'
+    mixed_style = object()
 
     dot_char = u'\u2022'
 
@@ -44,28 +44,25 @@ class Sanitizer(object):
             self.prefix = ''
             self.postfix = ''
         # Get the newline style that is used in the English Singular.
-        self.newline_style = self._getNewlineStyle(
-            english_singular, 'Original')
+        self.newline_style = self._getNewlineStyle(english_singular)
 
-    def _getNewlineStyle(self, text, text_name):
+    @classmethod
+    def _getNewlineStyle(cls, text):
         """Find out which newline style is used in text."""
-        error_message = (
-            "%s text (%r) mixes different newline markers." % (
-                text_name, text))
         style = None
         # To avoid confusing the single-character newline styles for mac and
         # unix with the two-character windows one, remove the windows-style
         # newlines from the text and use that text to search for the other
         # two.
-        stripped_text = text.replace(self.windows_style, u'')
+        stripped_text = text.replace(cls.windows_style, u'')
         if text != stripped_text:
             # Text contains windows style new lines.
-            style = self.windows_style
+            style = cls.windows_style
 
-        for one_char_style in (self.mac_style, self.unix_style):
+        for one_char_style in (cls.mac_style, cls.unix_style):
             if one_char_style in stripped_text:
                 if style is not None:
-                    raise MixedNewlineMarkersError(error_message)
+                    return cls.mixed_style
                 style = one_char_style
 
         return style
@@ -135,25 +132,41 @@ class Sanitizer(object):
 
     def normalizeNewlines(self, translation_text):
         """Return 'translation_text' with newlines sync with english_singular.
+
+        Raises an exception if the text has mixed newline styles.
         """
         if self.newline_style is None:
             # No newlines in the English singular, so we have nothing to do.
             return translation_text
 
-        # Get the style that uses the given text.
-        translation_newline_style = self._getNewlineStyle(
-            translation_text, 'Translations')
+        # Get the style that is used in the given text.
+        translation_newline_style = self._getNewlineStyle(translation_text)
+
+        if translation_newline_style == self.mixed_style:
+            # The translation has mixed newlines in it; that is not allowed.
+            raise MixedNewlineMarkersError(
+                "Translations text (%r) mixes different newline markers." %
+                    translation_text)
 
         if translation_newline_style is None:
-            # We don't need to do anything, the text is not changed.
+            # The translation text doesn't contain any newlines, so there is
+            # nothing for us to do.
             return translation_text
 
-        # Fix the newline chars.
-        return translation_text.replace(
-            translation_newline_style, self.newline_style)
+        if self.newline_style is self.mixed_style:
+            # The original has mixed newlines (some very old data are like
+            # this, new data with mixed newlines are rejected), so we're just
+            # going to punt and normalize to unix style.
+            return translation_text.replace(
+                translation_newline_style, self.unix_style)
+        else:
+            # Otherwise the translation text should be normalized to use the
+            # same newline style as the original.
+            return translation_text.replace(
+                translation_newline_style, self.newline_style)
 
 
-def sanitize_translations_from_webui(
+def sanitize_translations(
         english_singular, translations, pluralforms):
     """Sanitize `translations` using sanitize_translation.
 
@@ -189,6 +202,16 @@ def sanitize_translations_from_webui(
 
     return sanitized_translations
 
-# There will be a different function for translation coming from imports but
-# for now it is identical to the one used in browser code.
-sanitize_translations_from_import = sanitize_translations_from_webui
+def sanitize_translations_from_import(
+        english_singular, translations, pluralforms):
+    # At import time we want to ensure that the english_singular does not
+    # contain mixed newline styles.
+    if Sanitizer._getNewlineStyle(english_singular) is Sanitizer.mixed_style:
+        raise MixedNewlineMarkersError(
+            "Original text (%r) mixes different newline markers." %
+                english_singular)
+    return sanitize_translations(english_singular, translations, pluralforms)
+
+def sanitize_translations_from_webui(
+        english_singular, translations, pluralforms):
+    return sanitize_translations(english_singular, translations, pluralforms)
