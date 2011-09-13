@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
@@ -73,8 +73,8 @@ class Katie:
         elif not q:
             return None
         else:
-            raise AssertionError, "%s killed us on %s %s" \
-                % (len(q), query, args)
+            raise AssertionError(
+                "%s killed us on %s %s" % (len(q), query, args))
 
     def _exec(self, query, args=None):
         #print repr(query), repr(args)
@@ -88,12 +88,17 @@ class Katie:
 
     def getSourcePackageRelease(self, name, version):
         log.debug("Hunting for release %s / %s" % (name, version))
-        ret =  self._query_to_dict("""SELECT * FROM source, fingerprint
-                                      WHERE  source = %s
-                                      AND    source.sig_fpr = fingerprint.id
-                                      AND    version = %s""", (name, version))
+        ret = self._query_to_dict("""
+            SELECT *
+            FROM source, fingerprint
+            WHERE
+                source = %s AND
+                source.sig_fpr = fingerprint.id AND
+                version = %s""",
+            (name, version))
         if not ret:
-            log.debug("that spr didn't turn up. Attempting to find via ubuntu")
+            log.debug(
+                "that spr didn't turn up. Attempting to find via ubuntu")
         else:
             return ret
 
@@ -114,6 +119,7 @@ class Katie:
                                                 architecture.id
                                       AND    arch_string = %s""",
                                         (name, version, arch))
+
     def getSections(self):
         return self._query("""SELECT section FROM section""")
 
@@ -129,4 +135,3 @@ class Katie:
            AND override.package = %s
            AND suite.suite_name = %s
         """, (sourcepackage, self.suite))[0]
-
