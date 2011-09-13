@@ -60,7 +60,6 @@ def referenced_oops():
         cur = cursor()
         cur.execute(query)
         for content in (row[0] for row in cur.fetchall()):
-            found = False
             for match in FormattersAPI._re_linkify.finditer(content):
                 if match.group('oops') is not None:
                     code_string = match.group('oopscode')
@@ -130,6 +129,7 @@ def old_oops_files(root_path, days):
                     ) is not None:
                 yield os.path.join(dirpath, filename)
 
+
 def prune_empty_oops_directories(root_path):
     for filename in os.listdir(root_path):
         if re.search(r'^\d\d\d\d-\d\d-\d\d$', filename) is None:
@@ -140,4 +140,3 @@ def prune_empty_oops_directories(root_path):
         if os.listdir(path):
             continue
         os.rmdir(path)
-

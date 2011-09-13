@@ -48,8 +48,8 @@ class TestOopsPrune(unittest.TestCase):
         # whole path rather than the path's basename.
         self.oops_dir = tempfile.mkdtemp('.directory.with.dots')
 
-        # TODO: This should be in the errorlog tests, and calling into errorlog
-        # methods.
+        # TODO: This should be in the errorlog tests, and calling into
+        # errorlog methods.
         # Create some fake OOPS files
         self.today = datetime.now(tz=UTC)
         self.ages_ago = uniquefileallocator.epoch + timedelta(days=1)
@@ -77,7 +77,6 @@ class TestOopsPrune(unittest.TestCase):
 
         # Need to commit or the changes are not visible on the slave.
         transaction.commit()
-
 
     def tearDown(self):
         shutil.rmtree(self.oops_dir)
@@ -171,7 +170,7 @@ class TestOopsPrune(unittest.TestCase):
                 referenced_oops())
 
     def test_script(self):
-        unwanted = unwanted_oops_files(self.oops_dir, 90)
+        unwanted_oops_files(self.oops_dir, 90)
         # Commit so our script can see changes made by the setUp method
         LaunchpadZopelessLayer.commit()
         process = Popen([
@@ -191,7 +190,7 @@ class TestOopsPrune(unittest.TestCase):
         for dirpath, dirnames, filenames in os.walk(today_dir):
             for filename in filenames:
                 found_oops_files.add(
-                        path_to_oopsid(os.path.join(dirpath,filename))
+                        path_to_oopsid(os.path.join(dirpath, filename))
                         )
         today_day_count = (self.today - uniquefileallocator.epoch).days + 1
         self.failUnlessEqual(
@@ -227,9 +226,8 @@ class TestOopsPrune(unittest.TestCase):
                 'Script failed to remove 2006-01-03 directory'
                 )
 
-
     def test_script_dryrun(self):
-        unwanted = unwanted_oops_files(self.oops_dir, 90)
+        unwanted_oops_files(self.oops_dir, 90)
         # Commit so our script can see changes made by the setUp method
         LaunchpadZopelessLayer.commit()
 
@@ -265,7 +263,7 @@ class TestOopsPrune(unittest.TestCase):
     def test_script_default_error_dir(self):
         # Verify that the script runs without the error_dir argument.
         default_error_dir = config.error_reports.error_dir
-        unwanted = unwanted_oops_files(default_error_dir, 90)
+        unwanted_oops_files(default_error_dir, 90)
         # Commit so our script can see changes made by the setUp method.
         LaunchpadZopelessLayer.commit()
         process = Popen([
@@ -283,7 +281,7 @@ class TestOopsPrune(unittest.TestCase):
         # And a directory empty of OOPS reports, but with some rubbish
         os.mkdir(os.path.join(self.oops_dir, '2001-12-02'))
         open(
-                os.path.join( self.oops_dir, '2001-12-02', 'foo'), 'w'
+                os.path.join(self.oops_dir, '2001-12-02', 'foo'), 'w'
                 ).write('foo')
 
         prune_empty_oops_directories(self.oops_dir)
