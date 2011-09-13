@@ -66,7 +66,7 @@ class LinkCheckerAPI(LaunchpadView):
         for link_type in links_to_check:
             links = links_to_check[link_type]
             invalid_links = self.link_checkers[link_type](links)
-            result['invalid_' + link_type] = invalid_links
+            result[link_type] = invalid_links
 
         self.request.response.setHeader('Content-type', 'application/json')
         return simplejson.dumps(result)
@@ -83,23 +83,26 @@ class LinkCheckerAPI(LaunchpadView):
                     InvalidProductName, NoLinkedBranch, NoSuchBranch,
                     NotFoundError) as e:
                 invalid_links[link] = self._error_message(e)
-        return invalid_links
+        return {'invalid': invalid_links}
 
     def check_bug_links(self, links):
         """Checks links of the form /bugs/100"""
         invalid_links = {}
+        valid_links = {}
         user = self.user
         bugs = [int(link[len('/bugs/'):]) for link in links]
         if bugs:
             params = BugTaskSearchParams(
                 user=user, status=None,
                 bug=any(*bugs))
-            bug_ids = getUtility(IBugTaskSet).searchBugIds(params)
-            invalid = set(bugs) - set(bug_ids)
-            for bug in invalid:
+            bugtasks = getUtility(IBugTaskSet).search(params)
+            for task in bugtasks:
+                valid_links['/bugs/' + str(task.bug.id)] = task.bug.title
+                bugs.remove(task.bug.id)
+            for bug in bugs:
                 invalid_links['/bugs/' + str(bug)] = (
                     "Bug %s cannot be found" % bug)
-        return invalid_links
+        return {'valid' : valid_links, 'invalid' : invalid_links}
 
     def _error_message(self, ex):
         if hasattr(ex, 'display_message'):
