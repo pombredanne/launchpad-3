@@ -114,6 +114,7 @@ from lp.registry.interfaces.series import SeriesStatus
 from lp.services.features import getFeatureFlag
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
+from lp.soyuz.interfaces.archive import ArchiveDisabled
 from lp.soyuz.model.archive import Archive
 
 
@@ -544,7 +545,7 @@ class SourcePackageRecipeRequestDailyBuildView(LaunchpadFormView):
         recipe = self.context
         try:
             builds = recipe.performDailyBuild()
-        except TooManyBuilds, e:
+        except (TooManyBuilds, ArchiveDisabled) as e:
             self.request.response.addErrorNotification(str(e))
             self.next_url = canonical_url(recipe)
             return

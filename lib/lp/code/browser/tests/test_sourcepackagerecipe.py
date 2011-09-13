@@ -1377,6 +1377,20 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
             "for distroseries ubuntu warty",
             harness.view.request.notifications[0].message)
 
+    def test_request_daily_builds_disabled_archive(self):
+        # Requesting a daily build from a disabled archive is a user error.
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, daily_build_archive=self.ppa,
+            name=u'julia', is_stale=True, build_daily=True)
+        harness = LaunchpadFormHarness(
+            recipe, SourcePackageRecipeRequestDailyBuildView)
+        with person_logged_in(self.ppa.owner):
+            self.ppa.disable()
+        harness.submit('build', {})
+        self.assertEqual(
+            "Secret PPA is disabled.",
+            harness.view.request.notifications[0].message)
+
     def test_request_builds_page(self):
         """Ensure the +request-builds page is sane."""
         recipe = self.makeRecipe()
