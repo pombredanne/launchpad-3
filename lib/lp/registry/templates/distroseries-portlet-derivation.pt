@@ -74,6 +74,7 @@
       define="job context/getInitializationJob"
       condition="job/status/enumvalue:FAILED|nothing">
     <h2>Series initialization has failed</h2>
+    <p tal:content="job/error_description" />
     <tal:retry
         define="can_retry context/@@+initseries/required:launchpad.Edit ">
       <tal:can_retry condition="can_retry">

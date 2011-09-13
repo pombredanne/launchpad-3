@@ -25,6 +25,7 @@ from zope.interface import (
 from zope.schema import (
     Int,
     Object,
+    Text,
     )
 
 from canonical.launchpad import _
@@ -116,6 +117,14 @@ class IInitializeDistroSeriesJobSource(IJobSource):
 
 class IInitializeDistroSeriesJob(IRunnableJob):
     """A Job that performs actions on a distribution."""
+
+    error_description = Text(
+        title=_("Error description"),
+        description=_(
+            "A short description of the last error this "
+            "job encountered, if any."),
+        readonly=True,
+        required=False)
 
 
 class IDistroSeriesDifferenceJobSource(IJobSource):
