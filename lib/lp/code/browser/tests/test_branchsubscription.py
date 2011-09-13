@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import TestCaseWithFactory
@@ -24,7 +22,3 @@ class TestBranchSubscriptionPrimaryContext(TestCaseWithFactory):
         self.assertEqual(
             IPrimaryContext(subscription).context,
             IPrimaryContext(subscription.branch).context)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

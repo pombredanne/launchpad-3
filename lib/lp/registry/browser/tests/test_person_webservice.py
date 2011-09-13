@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from zope.security.management import endInteraction
 from zope.security.proxy import removeSecurityProxy
 
@@ -76,7 +74,3 @@ class TestPersonRepresentation(TestCaseWithFactory):
         self.assertEquals(
             rendered_comment,
             '<a href="/~test-person" class="sprite person">Test Person</a>')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

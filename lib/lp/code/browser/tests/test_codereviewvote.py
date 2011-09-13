@@ -5,9 +5,6 @@
 
 __metaclass__ = type
 
-
-import unittest
-
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import (
@@ -46,7 +43,3 @@ class TestReassignReviewer(TestCaseWithFactory):
         with person_logged_in(reviewer):
             view = create_initialized_view(vote, '+reassign')
         self.assertEqual(canonical_url(bmp), view.cancel_url)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

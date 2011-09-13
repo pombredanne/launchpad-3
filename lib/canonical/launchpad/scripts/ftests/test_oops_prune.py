@@ -23,6 +23,7 @@ import sys
 import tempfile
 import unittest
 
+from oops_datedir_repo import uniquefileallocator
 from pytz import UTC
 import transaction
 
@@ -36,7 +37,6 @@ from canonical.launchpad.scripts.oops import (
     unwanted_oops_files,
     )
 from canonical.testing.layers import LaunchpadZopelessLayer
-from lp.services.log import uniquefileallocator
 
 
 class TestOopsPrune(unittest.TestCase):
@@ -304,8 +304,3 @@ class TestOopsPrune(unittest.TestCase):
             self.failIf(
                 os.path.isdir(os.path.join(self.oops_dir, date))
                 )
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

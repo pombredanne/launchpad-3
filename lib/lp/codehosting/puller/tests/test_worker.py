@@ -9,7 +9,6 @@ __metaclass__ = type
 
 import gc
 from StringIO import StringIO
-import unittest
 
 import bzrlib.branch
 from bzrlib.branch import (
@@ -90,6 +89,10 @@ class PrearrangedStackedBranchPolicy(BranchMirrorerPolicy,
 
 class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
     """Test the mirroring functionality of PullerWorker."""
+
+    def setUp(self):
+        super(TestPullerWorker, self).setUp()
+        SafeBranchOpener.install_hook()
 
     def test_mirror_opener_with_stacked_on_url(self):
         # A PullerWorker for a mirrored branch gets a MirroredBranchPolicy as
@@ -277,6 +280,10 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
 
 class TestReferenceOpener(TestCaseWithTransport):
     """Feature tests for safe opening of branch references."""
+
+    def setUp(self):
+        super(TestReferenceOpener, self).setUp()
+        SafeBranchOpener.install_hook()
 
     def createBranchReference(self, url):
         """Create a pure branch reference that points to the specified URL.
@@ -493,6 +500,7 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
+        SafeBranchOpener.install_hook()
         self.saved_factory = bzrlib.ui.ui_factory
         self.disable_directory_isolation()
 
@@ -534,7 +542,3 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
             http_server.get_url() + 'some-other-branch')
         b1.pull(b2_http)
         self.assertSubset([WORKER_ACTIVITY_NETWORK], p.calls)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

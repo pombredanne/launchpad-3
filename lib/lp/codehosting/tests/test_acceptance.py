@@ -11,6 +11,7 @@ import re
 import signal
 import subprocess
 import sys
+import time
 import unittest
 import urllib2
 import xmlrpclib
@@ -35,6 +36,9 @@ from lp.code.bzr import (
 from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranchSet
 from lp.code.interfaces.branchnamespace import get_branch_namespace
+from lp.code.tests.helpers import (
+    get_non_existant_source_package_branch_unique_name,
+    )
 from lp.codehosting import (
     get_bzr_path,
     get_BZR_PLUGIN_PATH_for_subprocess,
@@ -56,7 +60,7 @@ from lp.testing import TestCaseWithFactory
 
 
 class ForkingServerForTests(object):
-    """Map starting/stopping a LPForkingService with setUp() and tearDown()."""
+    """Map starting/stopping a LPForkingService to setUp() and tearDown()."""
 
     def __init__(self):
         self.process = None
@@ -68,29 +72,57 @@ class ForkingServerForTests(object):
         env = os.environ.copy()
         env['BZR_PLUGIN_PATH'] = BZR_PLUGIN_PATH
         # TODO: We probably want to use a random disk path for
-        #       forking_daemon_socket, but we need to update config so that the
-        #       CodeHosting service can find it.
+        #       forking_daemon_socket, but we need to update config so that
+        #       the CodeHosting service can find it.
         #       The main problem is that CodeHostingTac seems to start a tac
         #       server directly from the disk configs, and doesn't use the
         #       in-memory config. So we can't just override the memory
         #       settings, we have to somehow pass it a new config-on-disk to
         #       use.
         self.socket_path = config.codehosting.forking_daemon_socket
+        command = [sys.executable, bzr_path, 'launchpad-forking-service',
+                   '--path', self.socket_path, '-Derror']
         process = subprocess.Popen(
-            [sys.executable, bzr_path, 'launchpad-forking-service',
-             '--path', self.socket_path,
-            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
         self.process = process
-        # Wait for it to indicate it is running
+        stderr = []
         # The first line should be "Preloading" indicating it is ready
-        preloading_line = process.stderr.readline()
+        stderr.append(process.stderr.readline())
         # The next line is the "Listening on socket" line
-        socket_line = process.stderr.readline()
-        # Now it is ready
+        stderr.append(process.stderr.readline())
+        # Now it should be ready.  If there were any errors, let's check, and
+        # report them.
+        if (process.poll() is not None or
+            not stderr[1].strip().startswith('Listening on socket')):
+            if process.poll() is None:
+                time.sleep(1)  # Give the traceback a chance to render.
+                os.kill(process.pid, signal.SIGTERM)
+                process.wait()
+                self.process = None
+            # Looks like there was a problem. We cannot use the "addDetail"
+            # method because this class is not a TestCase and does not have
+            # access to one.  It runs as part of a layer. A "print" is the
+            # best we can do.  That should still be visible on buildbot, which
+            # is where we have seen spurious failures so far.
+            print
+            print "stdout:"
+            print process.stdout.read()
+            print "-" * 70
+            print "stderr:"
+            print ''.join(stderr)
+            print process.stderr.read()
+            print "-" * 70
+            raise RuntimeError(
+                'Bzr server did not start correctly.  See stdout and stderr '
+                'reported above. Command was "%s".  PYTHONPATH was "%s".  '
+                'BZR_PLUGIN_PATH was "%s".' %
+                (' '.join(command),
+                 env.get('PYTHONPATH'),
+                 env.get('BZR_PLUGIN_PATH')))
 
     def tearDown(self):
-        # SIGTERM is the graceful exit request, potentially we could wait a bit
-        # and send something stronger?
+        # SIGTERM is the graceful exit request, potentially we could wait a
+        # bit and send something stronger?
         if self.process is not None and self.process.poll() is None:
             os.kill(self.process.pid, signal.SIGTERM)
             self.process.wait()
@@ -100,7 +132,6 @@ class ForkingServerForTests(object):
         if os.path.exists(self.socket_path):
             # Should there be a warning/error here?
             os.remove(self.socket_path)
-
 
 
 class SSHServerLayer(ZopelessAppServerLayer):
@@ -611,6 +642,15 @@ class AcceptanceTests(SSHTestCase):
             self.local_branch_path, remote_url,
             ['Permission denied:', 'Transport operation not possible:'])
 
+    def test_push_new_branch_of_non_existant_source_package_name(self):
+        ZopelessAppServerLayer.txn.begin()
+        unique_name = get_non_existant_source_package_branch_unique_name(
+            'testuser', self.factory)
+        ZopelessAppServerLayer.txn.commit()
+        remote_url = self.getTransportURL(unique_name)
+        self.push(self.local_branch_path, remote_url)
+        self.assertBranchesMatch(self.local_branch_path, remote_url)
+
     def test_can_push_loom_branch(self):
         # We can push and pull a loom branch.
         self.makeLoomBranchAndTree('loom')
@@ -694,7 +734,6 @@ class SmartserverTests(SSHTestCase):
         port = int(config.codehosting.web_status_port[4:])
         web_status_url = 'http://localhost:%d/' % port
         urllib2.urlopen(web_status_url)
-
 
 
 def make_server_tests(base_suite, servers):

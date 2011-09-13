@@ -8,14 +8,13 @@ __all__ = [
     'DistroSeriesDifferenceJob',
     ]
 
-from storm.expr import And
 from zope.component import getUtility
 from zope.interface import (
     classProvides,
     implements,
     )
 
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import quote
 from canonical.launchpad.interfaces.lpstorm import (
     IMasterStore,
     IStore,
@@ -23,7 +22,6 @@ from canonical.launchpad.interfaces.lpstorm import (
 from lp.registry.interfaces.distroseriesdifference import (
     IDistroSeriesDifferenceSource,
     )
-from lp.registry.interfaces.distroseriesparent import IDistroSeriesParentSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
@@ -48,11 +46,11 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 FEATURE_FLAG_ENABLE_MODULE = u"soyuz.derived_series_jobs.enabled"
 
 
-def make_metadata(sourcepackagename, parent_series):
-    """Return JSON metadata for a job on `sourcepackagename`."""
+def make_metadata(sourcepackagename_id, parent_series_id):
+    """Return JSON metadata for a job on `sourcepackagename_id`."""
     return {
-        'sourcepackagename': sourcepackagename.id,
-        'parent_series': parent_series.id,
+        'sourcepackagename': sourcepackagename_id,
+        'parent_series': parent_series_id,
     }
 
 
@@ -70,50 +68,62 @@ def create_job(derived_series, sourcepackagename, parent_series):
     job = DistributionJob(
         distribution=derived_series.distribution, distroseries=derived_series,
         job_type=DistributionJobType.DISTROSERIESDIFFERENCE,
-        metadata=make_metadata(sourcepackagename, parent_series))
+        metadata=make_metadata(sourcepackagename.id, parent_series.id))
     IMasterStore(DistributionJob).add(job)
     return DistroSeriesDifferenceJob(job)
 
 
+def compose_job_insertion_tuple(derived_series, parent_series,
+                                sourcepackagename_id, job_id):
+    """Compose tuple for insertion into `DistributionJob`.
+
+    :param derived_series: Derived `DistroSeries`.
+    :param parent_series: Parent `DistroSeries`.
+    :param sourcepackagename_id: ID of `SourcePackageName`.
+    :param job_id: associated `Job` id.
+    :return: A tuple of: derived distribution id, derived distroseries id,
+        job type, job id, JSON data map.
+    """
+    json = DistributionJob.serializeMetadata(make_metadata(
+        sourcepackagename_id, parent_series.id))
+    return (
+        derived_series.distribution.id,
+        derived_series.id,
+        DistributionJobType.DISTROSERIESDIFFERENCE,
+        job_id,
+        json,
+        )
+
+
 def create_multiple_jobs(derived_series, parent_series):
-    """Create a `DistroSeriesDifferenceJob` for all the source packages in
-    archive.
+    """Create `DistroSeriesDifferenceJob`s between parent and derived series.
 
     :param derived_series: A `DistroSeries` that is assumed to be derived
         from another one.
     :param parent_series: A `DistroSeries` that is a parent of
         `derived_series`.
+    :return: A list of newly-created `DistributionJob` ids.
     """
     store = IStore(SourcePackageRelease)
     source_package_releases = store.find(
         SourcePackageRelease,
-        And(
-            SourcePackagePublishingHistory.sourcepackagerelease ==
-                SourcePackageRelease.id,
-            SourcePackagePublishingHistory.distroseries == derived_series.id,
-            SourcePackagePublishingHistory.status.is_in(
-                active_publishing_status)))
+        SourcePackagePublishingHistory.sourcepackagerelease ==
+            SourcePackageRelease.id,
+        SourcePackagePublishingHistory.distroseries == derived_series.id,
+        SourcePackagePublishingHistory.status.is_in(active_publishing_status))
     nb_jobs = source_package_releases.count()
+
+    if nb_jobs == 0:
+        return []
+
     sourcepackagenames = source_package_releases.values(
         SourcePackageRelease.sourcepackagenameID)
     job_ids = Job.createMultiple(store, nb_jobs)
 
-    def composeJobInsertionTuple(derived_series, parent_series,
-                                 sourcepackagename, job_id):
-        data = (
-            derived_series.distribution.id, derived_series.id,
-            DistributionJobType.DISTROSERIESDIFFERENCE, job_id,
-            DistributionJob.serializeMetadata(
-                {'sourcepackagename': sourcepackagename,
-                 'parent_series': parent_series.id}))
-        format_string = "(%s)" % ", ".join(["%s"] * len(data))
-        return format_string % sqlvalues(*data)
-
-    job_contents = [
-        composeJobInsertionTuple(
-            derived_series, parent_series, sourcepackagename, job_id)
-        for job_id, sourcepackagename in
-            zip(job_ids, sourcepackagenames)]
+    job_tuples = [
+        quote(compose_job_insertion_tuple(
+            derived_series, parent_series, sourcepackagename, job_id))
+        for job_id, sourcepackagename in zip(job_ids, sourcepackagenames)]
 
     store = IStore(DistributionJob)
     result = store.execute("""
@@ -121,7 +131,7 @@ def create_multiple_jobs(derived_series, parent_series):
             distribution, distroseries, job_type, job, json_data)
         VALUES %s
         RETURNING id
-        """ % ", ".join(job_contents))
+        """ % ", ".join(job_tuples))
     return [job_id for job_id, in result]
 
 
@@ -132,7 +142,7 @@ def find_waiting_jobs(derived_series, sourcepackagename, parent_series):
     # optimization.  It's not actually disastrous to create
     # redundant jobs occasionally.
     json_metadata = DistributionJob.serializeMetadata(
-        make_metadata(sourcepackagename, parent_series))
+        make_metadata(sourcepackagename.id, parent_series.id))
 
     # Use master store because we don't like outdated information
     # here.
@@ -161,16 +171,9 @@ def may_require_job(derived_series, sourcepackagename, parent_series):
     runner some unnecessary work, but we don't expect a bit of
     unnecessary work to be a big problem.
     """
-    if derived_series is None:
+    if parent_series.distribution == derived_series.distribution:
+        # Differences within a distribution are not tracked.
         return False
-    dsp = getUtility(IDistroSeriesParentSet).getByDerivedSeries(
-        derived_series)
-    if dsp.count() == 0:
-        return False
-    for parent in dsp:
-        if parent.parent_series.distribution == derived_series.distribution:
-            # Differences within a distribution are not tracked.
-            return False
     existing_jobs = find_waiting_jobs(
         derived_series, sourcepackagename, parent_series)
     return len(existing_jobs) == 0
@@ -196,31 +199,45 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
         """See `IDistroSeriesDifferenceJobSource`."""
         if not getFeatureFlag(FEATURE_FLAG_ENABLE_MODULE):
             return
+
         # -backports and -proposed are not really part of a standard
         # distribution's packages so we're ignoring them here.  They can
         # always be manually synced by the users if necessary, in the
         # rare occasions that they require them.
-        if pocket in (
+        ignored_pockets = [
             PackagePublishingPocket.BACKPORTS,
-            PackagePublishingPocket.PROPOSED):
+            PackagePublishingPocket.PROPOSED,
+            ]
+        if pocket in ignored_pockets:
             return
-        jobs = []
-        parent_series = derived_series.getParentSeries()
-        # Create jobs for DSDs between the derived_series and its
-        # parents.
-        for parent in parent_series:
-            if may_require_job(
-                derived_series, sourcepackagename, parent):
-                jobs.append(create_job(
-                    derived_series, sourcepackagename, parent))
+
+        # Create jobs for DSDs between the derived_series' parents and
+        # the derived_series itself.
+        parent_series_jobs = [
+            create_job(derived_series, sourcepackagename, parent)
+            for parent in derived_series.getParentSeries()
+                if may_require_job(derived_series, sourcepackagename, parent)]
+
         # Create jobs for DSDs between the derived_series and its
         # children.
-        for child in derived_series.getDerivedSeries():
-            if may_require_job(
-                child, sourcepackagename, derived_series):
-                jobs.append(create_job(
-                    child, sourcepackagename, derived_series))
-        return jobs
+        derived_series_jobs = [
+            create_job(child, sourcepackagename, derived_series)
+            for child in derived_series.getDerivedSeries()
+                if may_require_job(child, sourcepackagename, derived_series)]
+
+        return parent_series_jobs + derived_series_jobs
+
+    @classmethod
+    def createForSPPHs(cls, spphs):
+        """See `IDistroSeriesDifferenceJobSource`."""
+        # XXX JeroenVermeulen 2011-08-25, bug=834499: This won't do for
+        # some of the mass deletions we're planning to support.
+        # Optimize.
+        for spph in spphs:
+            if spph.archive.is_main:
+                cls.createForPackagePublication(
+                    spph.distroseries,
+                    spph.sourcepackagerelease.sourcepackagename, spph.pocket)
 
     @classmethod
     def massCreateForSeries(cls, derived_series):
@@ -327,7 +344,7 @@ class DistroSeriesDifferenceJob(DistributionJobDerived):
 
         ds_diff = self.getMatchingDSD()
         if ds_diff is None:
-            ds_diff = getUtility(IDistroSeriesDifferenceSource).new(
+            getUtility(IDistroSeriesDifferenceSource).new(
                 self.distroseries, self.sourcepackagename, self.parent_series)
         else:
             ds_diff.update()

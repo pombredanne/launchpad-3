@@ -4,7 +4,6 @@
 """Tests for bug duplicate validation."""
 
 from textwrap import dedent
-import unittest
 
 from zope.security.interfaces import ForbiddenAttribute
 
@@ -162,7 +161,3 @@ class TestMoveDuplicates(TestCaseWithFactory):
         # and one common target, i.e., N+3 targets for N duplicates.
         self.assertEqual(5, self.moveDuplicates(2, with_random_target=True))
         self.assertEqual(7, self.moveDuplicates(4, with_random_target=True))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

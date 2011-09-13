@@ -88,9 +88,16 @@
   <browser:page
     for="lp.answers.interfaces.questiontarget.IQuestionTarget"
     name="+portlet-answercontacts"
+    class=".questiontarget.QuestionTargetPortletAnswerContacts"
     permission="zope.Public"
     template="../templates/questiontarget-portlet-answercontacts.pt"
     />
+  <browser:page
+      for="lp.answers.interfaces.question.IQuestionTarget"
+      name="+portlet-answercontacts-details"
+      class="
+        lp.answers.browser.questiontarget.QuestionTargetPortletAnswerContactsWithDetails"
+      permission="zope.Public"/>
   <browser:page
     name="+addquestion"
     for="lp.answers.interfaces.questiontarget.IQuestionTarget"

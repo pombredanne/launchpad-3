@@ -8,6 +8,7 @@ __all__ = [
     'CannotTransitionToCountryMirror',
     'CountryMirrorAlreadySet',
     'DeleteSubscriptionError',
+    'InvalidName',
     'JoinNotAllowed',
     'MirrorNotOfficial',
     'MirrorHasNoHTTPURL',
@@ -40,6 +41,10 @@ class PrivatePersonLinkageError(ValueError):
 @error_status(httplib.CONFLICT)
 class NameAlreadyTaken(Exception):
     """The name given for a person is already in use by other person."""
+
+
+class InvalidName(Exception):
+    """The name given for a person is not valid."""
 
 
 class NoSuchDistroSeries(NameLookupFailed):

@@ -3,8 +3,6 @@
 
 """Unit tests for methods of PillarName and PillarNameSet."""
 
-import unittest
-
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login
@@ -29,7 +27,3 @@ class TestPillarNameSet(TestCaseWithFactory):
         result_names = [
             pillar.name for pillar in pillar_set.search('lz', limit=5)]
         self.assertEquals(result_names, [u'launchzap', u'lz-bar', u'lz-foo'])
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

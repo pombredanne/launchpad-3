@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.blueprints.browser.specification import (
     SpecificationActionMenu,
@@ -29,13 +27,3 @@ class TestSpecificationMenus(TestCaseWithFactory):
     def test_SpecificationActionMenu(self):
         menu = SpecificationActionMenu(self.specification)
         self.assertTrue(check_menu_links(menu))
-
-
-def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
-    return suite
-
-
-if __name__ == '__main__':
-    unittest.TextTestRunner().run(test_suite())

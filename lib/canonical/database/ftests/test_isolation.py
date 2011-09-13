@@ -134,8 +134,3 @@ class TestIsolation(unittest.TestCase):
         self.failUnlessEqual(self.getCurrentIsolation(con), 'serializable')
         con.rollback()
         self.failUnlessEqual(self.getCurrentIsolation(con), 'serializable')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
-

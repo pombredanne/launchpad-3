@@ -75,7 +75,7 @@ from lazr.restful.interfaces import (
 from lazr.uri import URI
 from pytz import utc
 from simplejson import dumps
-from z3c.ptcompat import ViewPageTemplateFile
+from z3c.pt.pagetemplate import ViewPageTemplateFile
 from zope import (
     component,
     formlib,
@@ -182,6 +182,8 @@ from lp.app.interfaces.launchpad import (
     IServiceUsage,
     )
 from lp.app.widgets.itemswidgets import LabeledMultiCheckBoxWidget
+from lp.app.widgets.launchpadtarget import LaunchpadTargetWidget
+from lp.app.widgets.popup import PersonPickerWidget
 from lp.app.widgets.project import ProjectScopeWidget
 from lp.bugs.browser.bug import (
     BugContextMenu,
@@ -245,7 +247,7 @@ from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.bugwatch import BugWatchActivityStatus
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.malone import IMaloneApplication
-from lp.bugs.model.bugtask import validate_target
+from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.interfaces.distribution import (
     IDistribution,
     IDistributionSet,
@@ -267,10 +269,10 @@ from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.personroles import PersonRoles
 from lp.registry.vocabularies import MilestoneVocabulary
-from lp.services.features import getFeatureFlag
 from lp.services.fields import PersonChoice
 from lp.services.propertycache import cachedproperty
 
+vocabulary_registry = getVocabularyRegistry()
 
 DISPLAY_BUG_STATUS_FOR_PATCHES = {
     BugTaskStatus.NEW: True,
@@ -672,7 +674,14 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     def initialize(self):
         """Set up the needed widgets."""
         bug = self.context.bug
-        IJSONRequestCache(self.request).objects['bug'] = bug
+        cache = IJSONRequestCache(self.request)
+        cache.objects['bug'] = bug
+        cache.objects['total_comments_and_activity'] = (
+            self.total_comments + self.total_activity)
+        cache.objects['initial_comment_batch_offset'] = (
+            self.visible_initial_comments)
+        cache.objects['first visible_recent_comment'] = (
+            self.total_comments - self.visible_recent_comments)
 
         # See render() for how this flag is used.
         self._redirecting_to_bug_list = False
@@ -738,21 +747,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
             for activity in self.context.bug.activity
             if interesting_match(activity.whatchanged) is not None)
 
-    @cachedproperty
-    def activity_and_comments(self):
-        """Build list of comments interleaved with activities
-
-        When activities occur on the same day a comment was posted,
-        encapsulate them with that comment.  For the remainder, group
-        then as if owned by the person who posted the first action
-        that day.
-
-        If the number of comments exceeds the configured maximum limit, the
-        list will be truncated to just the first and last sets of comments.
-
-        The division between the most recent and oldest is marked by an entry
-        in the list with the key 'num_hidden' defined.
-        """
+    def _getEventGroups(self, batch_size=None, offset=None):
         # Ensure truncation results in < max_length comments as expected
         assert(config.malone.comments_list_truncate_oldest_to
                + config.malone.comments_list_truncate_newest_to
@@ -779,7 +774,37 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
 
         event_groups = group_comments_with_activity(
             comments=visible_comments,
-            activities=self.interesting_activity)
+            activities=self.interesting_activity,
+            batch_size=batch_size, offset=offset)
+        return event_groups
+
+    @cachedproperty
+    def _event_groups(self):
+        """Return a sorted list of event groups for the current BugTask.
+
+        This is a @cachedproperty wrapper around _getEventGroups(). It's
+        here so that we can override it in descendant views, passing
+        batch size parameters and suchlike to _getEventGroups() as we
+        go.
+        """
+        return self._getEventGroups()
+
+    @cachedproperty
+    def activity_and_comments(self):
+        """Build list of comments interleaved with activities
+
+        When activities occur on the same day a comment was posted,
+        encapsulate them with that comment.  For the remainder, group
+        then as if owned by the person who posted the first action
+        that day.
+
+        If the number of comments exceeds the configured maximum limit, the
+        list will be truncated to just the first and last sets of comments.
+
+        The division between the most recent and oldest is marked by an entry
+        in the list with the key 'num_hidden' defined.
+        """
+        event_groups = self._event_groups
 
         def group_activities_by_target(activities):
             activities = sorted(
@@ -872,6 +897,11 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
         """We count all comments because the db cannot do visibility yet."""
         return self.context.bug.bug_messages.count() - 1
 
+    @cachedproperty
+    def total_activity(self):
+        """Return the count of all activity items for the bug."""
+        return self.context.bug.activity.count()
+
     def wasDescriptionModified(self):
         """Return a boolean indicating whether the description was modified"""
         return (self.context.bug._indexed_messages(
@@ -881,10 +911,14 @@ class BugTaskView(LaunchpadView, BugViewMixin, FeedsMixin):
     @cachedproperty
     def linked_branches(self):
         """Filter out the bug_branch links to non-visible private branches."""
-        linked_branches = []
-        for linked_branch in self.context.bug.linked_branches:
-            if check_permission('launchpad.View', linked_branch.branch):
-                linked_branches.append(linked_branch)
+        linked_branches = list(
+            self.context.bug.getVisibleLinkedBranches(
+                self.user, eager_load=True))
+        # This is an optimization for when we look at the merge proposals.
+        if linked_branches:
+            list(getUtility(IAllBranches).getMergeProposals(
+                for_branches=[link.branch for link in linked_branches],
+                eager_load=True))
         return linked_branches
 
     @property
@@ -1018,6 +1052,54 @@ def bugtask_heat_html(bugtask, target=None):
     return html
 
 
+class BugTaskBatchedCommentsAndActivityView(BugTaskView):
+    """A view for displaying batches of bug comments and activity."""
+
+    # We never truncate comments in this view; there would be no point.
+    visible_comments_truncated_for_display = False
+
+    @property
+    def offset(self):
+        try:
+            return int(self.request.form_ng.getOne('offset'))
+        except TypeError:
+            # We return visible_initial_comments, since otherwise we'd
+            # end up repeating comments that are already visible on the
+            # page.
+            return self.visible_initial_comments
+
+    @property
+    def batch_size(self):
+        try:
+            return int(self.request.form_ng.getOne('batch_size'))
+        except TypeError:
+            return config.malone.comments_list_default_batch_size
+
+    @property
+    def next_batch_url(self):
+        return "%s?offset=%s&batch_size=%s" % (
+            canonical_url(self.context, view_name='+batched-comments'),
+            self.next_offset, self.batch_size)
+
+    @property
+    def next_offset(self):
+        return self.offset + self.batch_size
+
+    @cachedproperty
+    def _event_groups(self):
+        """See `BugTaskView`."""
+        return self._getEventGroups(
+            batch_size=self.batch_size,
+            offset=self.offset)
+
+    @cachedproperty
+    def has_more_comments_and_activity(self):
+        """Return True if there are more camments and activity to load."""
+        return (
+            len(self.activity_and_comments) > 0 and
+            self.next_offset < (self.total_comments + self.total_activity))
+
+
 class BugTaskPortletView:
     """A portlet for displaying a bug's bugtasks."""
 
@@ -1053,18 +1135,20 @@ def get_prefix(bugtask):
     return '_'.join(parts)
 
 
-def get_assignee_vocabulary(context):
+def get_assignee_vocabulary_info(context):
     """The vocabulary of bug task assignees the current user can set."""
     if context.userCanSetAnyAssignee(getUtility(ILaunchBag).user):
-        return 'ValidAssignee'
+        vocab_name = 'ValidAssignee'
     else:
-        return 'AllUserTeamsParticipation'
+        vocab_name = 'AllUserTeamsParticipation'
+    vocab = vocabulary_registry.get(None, vocab_name)
+    return vocab_name, vocab.supportedFilters()
 
 
 class BugTaskBugWatchMixin:
     """A mixin to be used where a BugTask view displays BugWatch data."""
 
-    @property
+    @cachedproperty
     def bug_watch_error_message(self):
         """Return a browser-useable error message for a bug watch."""
         if not self.context.bugwatch:
@@ -1130,8 +1214,8 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
     # depending on the current context and the permissions of the user viewing
     # the form.
     default_field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
-                           'product', 'sourcepackagename', 'status',
-                           'statusexplanation']
+                           'status']
+    custom_widget('target', LaunchpadTargetWidget)
     custom_widget('sourcepackagename', BugTaskSourcePackageNameWidget)
     custom_widget('bugwatch', BugTaskBugWatchWidget)
     custom_widget('assignee', BugTaskAssigneeWidget)
@@ -1143,6 +1227,19 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         super(BugTaskEditView, self).initialize()
 
     page_title = 'Edit status'
+
+    @property
+    def show_target_widget(self):
+        # Only non-series tasks can be retargetted.
+        return not ISeriesBugTarget.providedBy(self.context.target)
+
+    @property
+    def show_sourcepackagename_widget(self):
+        # SourcePackage tasks can have only their sourcepackagename changed.
+        # Conjoinment means we can't rely on editing the
+        # DistributionSourcePackage task for this :(
+        return (IDistroSeries.providedBy(self.context.target) or
+                ISourcePackage.providedBy(self.context.target))
 
     @cachedproperty
     def field_names(self):
@@ -1177,14 +1274,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                 editable_field_names.remove("importance")
         else:
             editable_field_names = set(('bugwatch', ))
-            if not IProduct.providedBy(self.context.target):
-                #XXX: Bjorn Tillenius 2006-03-01:
-                #     Should be possible to edit the product as well,
-                #     but that's harder due to complications with bug
-                #     watches. The new product might use Launchpad
-                #     officially, thus we need to handle that case.
-                #     Let's deal with that later.
-                editable_field_names.add('sourcepackagename')
             if self.context.bugwatch is None:
                 editable_field_names.update(('status', 'assignee'))
                 if ('importance' in self.default_field_names
@@ -1197,6 +1286,11 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                     if ('importance' in self.default_field_names
                         and self.userCanEditImportance()):
                         editable_field_names.add('importance')
+
+        if self.show_target_widget:
+            editable_field_names.add('target')
+        elif self.show_sourcepackagename_widget:
+            editable_field_names.add('sourcepackagename')
 
         # To help with caching, return an immutable object.
         return frozenset(editable_field_names)
@@ -1241,6 +1335,11 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         """
         super(BugTaskEditView, self).setUpFields()
         read_only_field_names = self._getReadOnlyFieldNames()
+
+        if 'target' in self.editable_field_names:
+            self.form_fields = self.form_fields.omit('target')
+            target_field = copy_field(IBugTask['target'], readonly=False)
+            self.form_fields += formlib.form.Fields(target_field)
 
         # The status field is a special case because we alter the vocabulary
         # it uses based on the permissions of the user viewing form.
@@ -1324,20 +1423,12 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             self.form_fields.get('assignee', False)):
             # Make the assignee field editable
             self.form_fields = self.form_fields.omit('assignee')
+            vocabulary, ignored = get_assignee_vocabulary_info(self.context)
             self.form_fields += formlib.form.Fields(PersonChoice(
                 __name__='assignee', title=_('Assigned to'), required=False,
-                vocabulary=get_assignee_vocabulary(self.context),
-                readonly=False))
+                vocabulary=vocabulary, readonly=False))
             self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
                 BugTaskAssigneeWidget)
-
-        if bool(getFeatureFlag('disclosure.dsp_picker.enabled')):
-            # Replace the default field with a field that uses the better
-            # vocabulary.
-            self.form_fields = self.form_fields.omit('sourcepackagename')
-            self.form_fields += formlib.form.Fields(Choice(
-                __name__='sourcepackagename', title=_('SourcePackageName'),
-                required=False, vocabulary='DistributionSourcePackage'))
 
     def _getReadOnlyFieldNames(self):
         """Return the names of fields that will be rendered read only."""
@@ -1372,42 +1463,22 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         return self.context.userCanEditImportance(self.user)
 
     def validate(self, data):
-        """See `LaunchpadFormView`."""
-        bugtask = self.context
-        if bugtask.distroseries is not None:
-            distro = bugtask.distroseries.distribution
+        if self.show_sourcepackagename_widget and 'sourcepackagename' in data:
+            data['target'] = self.context.distroseries
+            spn = data.get('sourcepackagename')
+            if spn:
+                data['target'] = data['target'].getSourcePackage(spn)
+            del data['sourcepackagename']
+            error_field = 'sourcepackagename'
         else:
-            distro = bugtask.distribution
-        old_product = bugtask.product
+            error_field = 'target'
 
-        new_spn = data.get('sourcepackagename')
-        if distro is not None and bugtask.sourcepackagename != new_spn:
+        new_target = data.get('target')
+        if new_target and new_target != self.context.target:
             try:
-                target = distro
-                if new_spn is not None:
-                    target = distro.getSourcePackage(new_spn)
-                validate_target(bugtask.bug, target)
+                self.context.validateTransitionToTarget(new_target)
             except IllegalTarget as e:
-                # The field validator may have already set an error.
-                # Don't clobber it.
-                if not self.getFieldError('sourcepackagename'):
-                    self.setFieldError('sourcepackagename', e[0])
-
-        new_product = data.get('product')
-        if (old_product is None or old_product == new_product or
-            bugtask.pillar.bug_tracking_usage != ServiceUsage.LAUNCHPAD):
-            # Either the product wasn't changed, we're dealing with a #
-            # distro task, or the bugtask's product doesn't use Launchpad,
-            # which means the product can't be changed.
-            return
-
-        if new_product is None:
-            self.setFieldError('product', 'Enter a project name')
-        else:
-            try:
-                validate_target(bugtask.bug, new_product)
-            except IllegalTarget as e:
-                self.setFieldError('product', e[0])
+                self.setFieldError(error_field, e[0])
 
     def updateContextFromData(self, data, context=None):
         """Updates the context object using the submitted form data.
@@ -1439,9 +1510,14 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
         # product, we'll clear out the milestone value, to avoid
         # violating DB constraints that ensure an upstream task can't
         # be assigned to a milestone on a different product.
+        # This is also done by transitionToTarget, but do it here so we
+        # can display notifications and remove the milestone from the
+        # submitted data.
         milestone_cleared = None
         milestone_ignored = False
-        if bugtask.product and bugtask.product != new_values.get("product"):
+        missing = object()
+        new_target = new_values.pop("target", missing)
+        if new_target is not missing and bugtask.target != new_target:
             # We clear the milestone value if one was already set. We ignore
             # the milestone value if it was currently None, and the user tried
             # to set a milestone value while also changing the product. This
@@ -1460,12 +1536,10 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
             # what it was!
             data_to_apply.pop('milestone', None)
 
-        # We special case setting assignee and status, because there's
-        # a workflow associated with changes to these fields.
-        if "assignee" in data_to_apply:
-            del data_to_apply["assignee"]
-        if "status" in data_to_apply:
-            del data_to_apply["status"]
+        # We special case setting target, status and assignee, because
+        # there's a workflow associated with changes to these fields.
+        for manual_field in ('target', 'status', 'assignee'):
+            data_to_apply.pop(manual_field, None)
 
         # We grab the comment_on_change field before we update bugtask so as
         # to avoid problems accessing the field if the user has changed the
@@ -1475,6 +1549,16 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
 
         changed = formlib.form.applyChanges(
             bugtask, self.form_fields, data_to_apply, self.adapters)
+
+        # Set the "changed" flag properly, just in case status and/or assignee
+        # happen to be the only values that changed. We explicitly verify that
+        # we got a new status and/or assignee, because the form is not always
+        # guaranteed to pass all the values. For example: bugtasks linked to a
+        # bug watch don't allow editing the form, and the value is missing
+        # from the form.
+        if new_target is not missing and bugtask.target != new_target:
+            changed = True
+            bugtask.transitionToTarget(new_target)
 
         # Now that we've updated the bugtask we can add messages about
         # milestone changes, if there were any.
@@ -1496,13 +1580,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                 subject=bugtask.bug.followup_subject(),
                 content=comment_on_change)
 
-        # Set the "changed" flag properly, just in case status and/or assignee
-        # happen to be the only values that changed. We explicitly verify that
-        # we got a new status and/or assignee, because the form is not always
-        # guaranteed to pass all the values. For example: bugtasks linked to a
-        # bug watch don't allow editing the form, and the value is missing
-        # from the form.
-        missing = object()
         new_status = new_values.pop("status", missing)
         new_assignee = new_values.pop("assignee", missing)
         if new_status is not missing and bugtask.status != new_status:
@@ -1569,29 +1646,26 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                 bugtask.transitionToAssignee(None)
 
         if changed:
-            # We only set the statusexplanation field to the value of the
-            # change comment if the BugTask has actually been changed in some
-            # way. Otherwise, we just leave it as a comment on the bug.
-            if comment_on_change:
-                bugtask.statusexplanation = comment_on_change
-            else:
-                bugtask.statusexplanation = ""
-
             notify(
                 ObjectModifiedEvent(
                     object=bugtask,
                     object_before_modification=bugtask_before_modification,
                     edited_fields=field_names))
 
-        if bugtask.sourcepackagename is not None:
+        if (bugtask.sourcepackagename and (
+            self.widgets.get('target') or
+            self.widgets.get('sourcepackagename'))):
             real_package_name = bugtask.sourcepackagename.name
 
             # We get entered_package_name directly from the form here, since
             # validating the sourcepackagename field mutates its value in to
             # the one already in real_package_name, which makes our comparison
             # of the two below useless.
-            entered_package_name = self.request.form.get(
-                self.widgets['sourcepackagename'].name)
+            if self.widgets.get('sourcepackagename'):
+                field_name = self.widgets['sourcepackagename'].name
+            else:
+                field_name = self.widgets['target'].package_widget.name
+            entered_package_name = self.request.form.get(field_name)
 
             if real_package_name != entered_package_name:
                 # The user entered a binary package name which got
@@ -1602,14 +1676,6 @@ class BugTaskEditView(LaunchpadEditFormView, BugTaskBugWatchMixin):
                     " instead." %
                     {'entered_package': entered_package_name,
                      'real_package': real_package_name})
-
-        if (bugtask_before_modification.sourcepackagename !=
-            bugtask.sourcepackagename):
-            # The source package was changed, so tell the user that we've
-            # subscribed the new bug supervisors.
-            self.request.response.addNotification(
-                "The bug supervisor for %s has been subscribed to this bug."
-                 % (bugtask.bugtargetdisplayname))
 
     @action('Save Changes', name='save')
     def save_action(self, action, data):
@@ -1629,7 +1695,7 @@ class BugTaskStatusView(LaunchpadView):
         task or not.
         """
         field_names = [
-            'status', 'importance', 'assignee', 'statusexplanation']
+            'status', 'importance', 'assignee']
         if not self.context.target_uses_malone:
             field_names += ['bugwatch']
             self.milestone_widget = None
@@ -2230,6 +2296,11 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     custom_widget('tag', BugTagsWidget)
     custom_widget('tags_combinator', RadioWidget)
     custom_widget('component', LabeledMultiCheckBoxWidget)
+    custom_widget('assignee', PersonPickerWidget)
+    custom_widget('bug_reporter', PersonPickerWidget)
+    custom_widget('bug_commenter', PersonPickerWidget)
+    custom_widget('bug_supervisor', PersonPickerWidget)
+    custom_widget('subscriber', PersonPickerWidget)
 
     @cachedproperty
     def bug_tracking_usage(self):
@@ -2647,7 +2718,13 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         search_params = self.buildSearchParams(
             searchtext=searchtext, extra_params=extra_params)
         search_params.user = self.user
-        tasks = context.searchTasks(search_params, prejoins=prejoins)
+        try:
+            tasks = context.searchTasks(search_params, prejoins=prejoins)
+        except ValueError as e:
+            self.request.response.addErrorNotification(str(e))
+            self.request.response.redirect(canonical_url(
+                self.context, rootsite='bugs', view_name='+bugs'))
+            tasks = None
         return tasks
 
     def getWidgetValues(
@@ -2659,7 +2736,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
         if vocabulary is None:
             assert vocabulary_name is not None, 'No vocabulary specified.'
-            vocabulary_registry = getVocabularyRegistry()
             vocabulary = vocabulary_registry.get(
                 self.context, vocabulary_name)
         for term in vocabulary:
@@ -2746,6 +2822,10 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         return self.isUpstreamProduct or not (
             IProduct.providedBy(self.context) or
             IProjectGroup.providedBy(self.context))
+
+    def shouldShowTeamPortlet(self):
+        """Should the User's Teams portlet me shown in the results?"""
+        return False
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""
@@ -3386,9 +3466,49 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
     target_link_title = None
     many_bugtasks = False
 
+    template = ViewPageTemplateFile(
+        '../templates/bugtask-tasks-and-nominations-table-row.pt')
+
     def __init__(self, context, request):
         super(BugTaskTableRowView, self).__init__(context, request)
         self.milestone_source = MilestoneVocabulary
+
+    def initialize(self):
+        super(BugTaskTableRowView, self).initialize()
+        link = canonical_url(self.context)
+        edit_link = link + '/+editstatus'
+        view_link = link + '/+viewstatus'
+        can_edit = check_permission('launchpad.Edit', self.context)
+        task_link = edit_link if can_edit else view_link
+        bugtask_id = self.context.id
+        launchbag = getUtility(ILaunchBag)
+        is_primary = self.context.id == launchbag.bugtask.id
+        self.data = dict(
+            # Looking at many_bugtasks is an important optimization.  With
+            # 150+ bugtasks, it can save three or four seconds of rendering
+            # time.
+            expandable=(not self.many_bugtasks and self.canSeeTaskDetails()),
+            indent_task=ISeriesBugTarget.providedBy(self.context.target),
+            is_conjoined_slave=self.is_conjoined_slave,
+            task_link=task_link,
+            edit_link=edit_link,
+            view_link=view_link,
+            can_edit=can_edit,
+            link=link,
+            id=bugtask_id,
+            row_id='tasksummary%d' % bugtask_id,
+            form_row_id='task%d' % bugtask_id,
+            row_css_class='highlight' if is_primary else None,
+            target_link=canonical_url(self.context.target),
+            target_link_title=self.target_link_title,
+            user_can_edit_importance=self.context.userCanEditImportance(
+                self.user),
+            importance_css_class='importance' + self.context.importance.name,
+            importance_title=self.context.importance.title,
+            # We always look up all milestones, so there's no harm
+            # using len on the list here and avoid the COUNT query.
+            target_has_milestones=len(self._visible_milestones) > 0,
+            )
 
     def canSeeTaskDetails(self):
         """Whether someone can see a task's status details.
@@ -3407,33 +3527,6 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
                 not self.is_conjoined_slave and
                 self.context.bug.duplicateof is None and
                 not self.is_converted_to_question)
-
-    def getTaskRowCSSClass(self):
-        """The appropriate CSS class for the row in the Affects table.
-
-        Currently this consists solely of highlighting the current context.
-        """
-        bugtask = self.context
-        if bugtask == getUtility(ILaunchBag).bugtask:
-            return 'highlight'
-        else:
-            return None
-
-    def shouldIndentTask(self):
-        """Should this task be indented in the task listing on the bug page?
-
-        Returns True or False.
-        """
-        return ISeriesBugTarget.providedBy(self.context.target)
-
-    def taskLink(self):
-        """Return the proper link to the bugtask whether it's editable."""
-        user = getUtility(ILaunchBag).user
-        bugtask = self.context
-        if check_permission('launchpad.Edit', user):
-            return canonical_url(bugtask) + "/+editstatus"
-        else:
-            return canonical_url(bugtask) + "/+viewstatus"
 
     def _getSeriesTargetNameHelper(self, bugtask):
         """Return the short name of bugtask's targeted series."""
@@ -3529,15 +3622,6 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
         return items
 
-    @cachedproperty
-    def target_has_milestones(self):
-        """Are there any milestones we can target?
-
-        We always look up all milestones, so there's no harm
-        using len on the list here and avoid the COUNT query.
-        """
-        return len(self._visible_milestones) > 0
-
     def bugtask_canonical_url(self):
         """Return the canonical url for the bugtask."""
         return canonical_url(self.context)
@@ -3558,7 +3642,7 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
         """
         return self.user is not None
 
-    @property
+    @cachedproperty
     def user_can_edit_milestone(self):
         """Can the user edit the Milestone field?
 
@@ -3582,43 +3666,54 @@ class BugTaskTableRowView(LaunchpadView, BugTaskBugWatchMixin):
 
     def js_config(self):
         """Configuration for the JS widgets on the row, JSON-serialized."""
-        assignee_vocabulary = get_assignee_vocabulary(self.context)
+        assignee_vocabulary, assignee_vocabulary_filters = (
+            get_assignee_vocabulary_info(self.context))
+        # If we have no filters or just the ALL filter, then no filtering
+        # support is required.
+        filter_details = []
+        if (len(assignee_vocabulary_filters) > 1 or
+               (len(assignee_vocabulary_filters) == 1
+                and assignee_vocabulary_filters[0].name != 'ALL')):
+            for filter in assignee_vocabulary_filters:
+                filter_details.append({
+                    'name': filter.name,
+                    'title': filter.title,
+                    'description': filter.description,
+                    })
         # Display the search field only if the user can set any person
         # or team
-        user = getUtility(ILaunchBag).user
+        user = self.user
         hide_assignee_team_selection = (
             not self.context.userCanSetAnyAssignee(user) and
             (user is None or user.teams_participated_in.count() == 0))
-        return dumps({
-            'row_id': 'tasksummary%s' % self.context.id,
-            'bugtask_path': '/'.join(
-                [''] + canonical_url(self.context).split('/')[3:]),
-            'prefix': get_prefix(self.context),
-            'assignee_value': self.context.assignee
-                and self.context.assignee.name,
-            'assignee_is_team': self.context.assignee
-                and self.context.assignee.is_team,
-            'assignee_vocabulary': assignee_vocabulary,
-            'hide_assignee_team_selection': hide_assignee_team_selection,
-            'user_can_unassign': self.context.userCanUnassign(user),
-            'target_is_product': IProduct.providedBy(self.context.target),
-            'status_widget_items': self.status_widget_items,
-            'status_value': self.context.status.title,
-            'importance_widget_items': self.importance_widget_items,
-            'importance_value': self.context.importance.title,
-            'milestone_widget_items': self.milestone_widget_items,
-            'milestone_value': (self.context.milestone and
-                                canonical_url(
-                                    self.context.milestone,
-                                    request=IWebServiceClientRequest(
-                                        self.request)) or
-                                None),
-            'user_can_edit_assignee': self.user_can_edit_assignee,
-            'user_can_edit_milestone': self.user_can_edit_milestone,
-            'user_can_edit_status': not self.context.bugwatch,
-            'user_can_edit_importance': (
-                self.user_can_edit_importance and
-                not self.context.bugwatch)})
+        cx = self.context
+        return dumps(dict(
+            row_id=self.data['row_id'],
+            bugtask_path='/'.join([''] + self.data['link'].split('/')[3:]),
+            prefix=get_prefix(cx),
+            assignee_value=cx.assignee and cx.assignee.name,
+            assignee_is_team=cx.assignee and cx.assignee.is_team,
+            assignee_vocabulary=assignee_vocabulary,
+            assignee_vocabulary_filters=filter_details,
+            hide_assignee_team_selection=hide_assignee_team_selection,
+            user_can_unassign=cx.userCanUnassign(user),
+            target_is_product=IProduct.providedBy(cx.target),
+            status_widget_items=self.status_widget_items,
+            status_value=cx.status.title,
+            importance_widget_items=self.importance_widget_items,
+            importance_value=cx.importance.title,
+            milestone_widget_items=self.milestone_widget_items,
+            milestone_value=(
+                canonical_url(
+                    cx.milestone,
+                    request=IWebServiceClientRequest(self.request))
+                if cx.milestone else None),
+            user_can_edit_assignee=self.user_can_edit_assignee,
+            user_can_edit_milestone=self.user_can_edit_milestone,
+            user_can_edit_status=not cx.bugwatch,
+            user_can_edit_importance=(
+                self.user_can_edit_importance and not cx.bugwatch)
+            ))
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):
@@ -3637,7 +3732,7 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
             self._redirectToSearchContext()
 
     def _redirectToSearchContext(self):
-        """Check wether a target was given and redirect to it.
+        """Check whether a target was given and redirect to it.
 
         All the URL parameters will be passed on to the target's +bugs
         page.

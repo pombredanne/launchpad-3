@@ -6,7 +6,7 @@
 
 import _pythonpath
 
-import os.path
+from datetime import datetime
 from optparse import OptionParser
 import subprocess
 import sys
@@ -105,15 +105,16 @@ def main():
     # work unattended.
     #
 
+    # Confirm we can invoke PGBOUNCER_INITD
+    log.debug("Confirming sudo access to pgbouncer startup script")
+    pgbouncer_rc = run_pgbouncer(log, 'status')
+    if pgbouncer_rc != 0:
+        return pgbouncer_rc
+
     # We initially ignore open connections, as they will shortly be
     # killed.
     if not NoConnectionCheckPreflight(log).check_all():
         return 99
-
-    # Confirm we can invoke PGBOUNCER_INITD
-    pgbouncer_rc = run_pgbouncer(log, 'status')
-    if pgbouncer_rc != 0:
-        return pgbouncer_rc
 
     #
     # Start the actual upgrade. Failures beyond this point need to
@@ -125,8 +126,11 @@ def main():
     upgrade_run = False
     security_run = False
 
+    outage_start = datetime.now()
+
     try:
         # Shutdown pgbouncer
+        log.info("Outage starts. Shutting down pgbouncer.")
         pgbouncer_rc = run_pgbouncer(log, 'stop')
         if pgbouncer_rc != 0:
             log.fatal("pgbouncer not shut down [%s]", pgbouncer_rc)
@@ -136,10 +140,12 @@ def main():
         if not KillConnectionsPreflight(log).check_all():
             return 100
 
+        log.info("Preflight check succeeded. Starting upgrade.")
         upgrade_rc = run_upgrade(options, log)
         if upgrade_rc != 0:
             return upgrade_rc
         upgrade_run = True
+        log.info("Database patches applied. Stored procedures updated.")
 
         security_rc = run_security(options, log)
         if security_rc != 0:
@@ -148,11 +154,13 @@ def main():
 
         log.info("All database upgrade steps completed")
 
+        log.info("Restarting pgbouncer")
         pgbouncer_rc = run_pgbouncer(log, 'start')
         if pgbouncer_rc != 0:
             log.fatal("pgbouncer not restarted [%s]", pgbouncer_rc)
             return pgbouncer_rc
         pgbouncer_down = False
+        log.info("Outage complete. %s", datetime.now() - outage_start)
 
         # We will start seeing connections as soon as pgbouncer is
         # reenabled, so ignore them here.
@@ -180,6 +188,7 @@ def main():
             pgbouncer_rc = run_pgbouncer(log, 'start')
             if pgbouncer_rc == 0:
                 log.info("Despite failures, pgbouncer restarted.")
+                log.info("Outage complete. %s", datetime.now() - outage_start)
             else:
                 log.fatal("pgbouncer is down and refuses to restart")
         if not upgrade_run:

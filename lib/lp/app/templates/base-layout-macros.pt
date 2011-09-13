@@ -166,7 +166,13 @@
     We can revisit this IE-only optimization if we remove SSL.  Any changes that
     affect IE should be tested using webpagetest.org. (See the dev.launchpad.net
     wiki for details.)
-  </tal:comment>
+    </tal:comment>
+  <link
+        type="text/css"
+        rel="stylesheet"
+        media="screen, print"
+        href="https://fonts.googleapis.com/css?family=Ubuntu:400,400italic,700,700italic" />
+
   <link
         type="text/css"
         rel="stylesheet"

@@ -29,6 +29,7 @@ __all__ = [
     'logout',
     'map_branch_contents',
     'normalize_whitespace',
+    'nonblocking_readline',
     'oauth_access_token_for',
     'person_logged_in',
     'quote_jquery_expression',
@@ -58,6 +59,7 @@ from datetime import (
     timedelta,
     )
 from fnmatch import fnmatchcase
+from functools import partial
 from inspect import (
     getargspec,
     getmro,
@@ -68,6 +70,7 @@ import logging
 import os
 from pprint import pformat
 import re
+from select import select
 import shutil
 import subprocess
 import sys
@@ -82,6 +85,7 @@ from bzrlib.bzrdir import (
     )
 from bzrlib.transport import get_transport
 import fixtures
+import oops_datedir_repo.serializer_rfc822
 import pytz
 import simplejson
 from storm.expr import Variable
@@ -435,13 +439,22 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
                 'Events were generated: %s.' % event_list)
         return result
 
+    @contextmanager
+    def noOops(self):
+        oops = errorlog.globalErrorUtility.getLastOopsReport()
+        try:
+            yield
+        finally:
+            self.assertNoNewOops(oops)
+
     def assertNoNewOops(self, old_oops):
         """Assert that no oops has been recorded since old_oops."""
         oops = errorlog.globalErrorUtility.getLastOopsReport()
         if old_oops is None:
             self.assertIs(None, oops)
         else:
-            self.assertEqual(oops.id, old_oops.id)
+            self.assertTrue(
+                oops.id == old_oops.id, 'Oops recorded: %s' % oops.id)
 
     def assertSqlAttributeEqualsDate(self, sql_object, attribute_name, date):
         """Fail unless the value of the attribute is equal to the date.
@@ -552,8 +565,10 @@ class TestCase(testtools.TestCase, fixtures.TestWithFixtures):
 
     def attachOopses(self):
         if len(self.oopses) > 0:
-            for (i, oops) in enumerate(self.oopses):
-                content = Content(UTF8_TEXT, oops.get_chunks)
+            for (i, report) in enumerate(self.oopses):
+                content = Content(UTF8_TEXT,
+                    partial(oops_datedir_repo.serializer_rfc822.to_chunks,
+                    report))
                 self.addDetail("oops-%d" % i, content)
 
     def attachLibrarianLog(self, fixture):
@@ -1312,3 +1327,25 @@ class ExpectedException(TTExpectedException):
 def extract_lp_cache(text):
     match = re.search(r'<script>LP.cache = (\{.*\});</script>', text)
     return simplejson.loads(match.group(1))
+
+
+def nonblocking_readline(instream, timeout):
+    """Non-blocking readline.
+
+    Files must provide a valid fileno() method. This is a test helper
+    as it is inefficient and unlikely useful for production code.
+    """
+    result = StringIO()
+    start = now = time.time()
+    deadline = start + timeout
+    while (now < deadline and not result.getvalue().endswith('\n')):
+        rlist = select([instream], [], [], deadline - now)
+        if rlist:
+            # Reading 1 character at a time is inefficient, but means
+            # we don't need to implement put-back.
+            next_char = os.read(instream.fileno(), 1)
+            if next_char == "":
+                break  # EOF
+            result.write(next_char)
+        now = time.time()
+    return result.getvalue()

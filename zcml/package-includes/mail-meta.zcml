@@ -4,5 +4,5 @@
 
 <configure xmlns="http://namespaces.zope.org/zope">
     <include package="zope.sendmail" file="meta.zcml" />
-    <include package="canonical.launchpad.mail" file="meta.zcml" />
+    <include package="lp.services.mail" file="meta.zcml" />
 </configure>

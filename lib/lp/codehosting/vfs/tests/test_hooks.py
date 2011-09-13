@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from lp.codehosting.vfs.hooks import SetProcTitleHook
 from lp.testing import TestCase
 
@@ -57,7 +55,3 @@ class TestSetProcTitleHook(TestCase):
         self.assertEqual(
             initial_title + " BRANCH:" + branch_url2,
             setproctitle_mod.getproctitle())
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211,E0213
@@ -1035,7 +1035,7 @@ class IProductSet(Interface):
         with a given bugtracker type.
         """
 
-    def getSFLinkedProductsWithNoneRemoteProduct(self):
+    def getSFLinkedProductsWithNoneRemoteProduct():
         """Get IProducts with a sourceforge project and no remote_product."""
 
 

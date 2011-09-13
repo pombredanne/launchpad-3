@@ -12,6 +12,7 @@ from optparse import (
     OptionParser,
     OptionValueError,
     )
+from testtools.matchers import MatchesStructure
 from unittest import TestLoader
 
 from storm.store import Store
@@ -34,6 +35,7 @@ from lp.translations.model.translationrelicensingagreement import (
     TranslationRelicensingAgreement,
     )
 from lp.translations.scripts.remove_translations import (
+    process_options,
     remove_translations,
     RemoveTranslations,
     )
@@ -60,7 +62,9 @@ class TestRemoveTranslationsConstraints(TestCase):
 
     def _check_options(self, opts):
         """Get `_check_constraints_safety`'s answer for given options."""
-        return make_script(opts)._check_constraints_safety()
+        script = make_script(opts)
+        process_options(script.options)
+        return script._check_constraints_safety()
 
     def test_RecklessRemoval(self):
         # The script will refuse to run if no specific person or id is
@@ -157,6 +161,7 @@ def parse_opts(opts):
     parser = OptionChecker()
     parser.add_options(RemoveTranslations.my_options)
     options, arguments = parser.parse_args(args=opts)
+    process_options(options)
     return options
 
 
@@ -185,17 +190,17 @@ class TestRemoveTranslationsOptionsHandling(TestCase):
             '--origin=1',
             '--force',
             ])
-        self.assertEqual(options.submitter, 1)
-        self.assertEqual(options.reviewer, 2)
-        self.assertEqual(options.ids, [3, 4])
-        self.assertEqual(options.potemplate, 5)
-        self.assertEqual(options.language, 'te')
-        self.assertEqual(options.not_language, True)
-        self.assertEqual(options.is_current_ubuntu, True)
-        self.assertEqual(options.is_current_upstream, False)
-        self.assertEqual(options.is_current_upstream, False)
-        self.assertEqual(options.origin, 1)
-        self.assertEqual(options.force, True)
+        self.assertThat(options, MatchesStructure.byEquality(
+            submitter=1,
+            reviewer=2,
+            ids=[3, 4],
+            potemplate=5,
+            language='te',
+            not_language=True,
+            is_current_ubuntu=True,
+            is_current_upstream=False,
+            origin=1,
+            force=True))
 
     def test_WithLookups(self):
         # The script can also look up some items from different
@@ -211,11 +216,12 @@ class TestRemoveTranslationsOptionsHandling(TestCase):
             '--is-current-upstream=true',
             '--origin=SCM',
             ])
-        self.assertEqual(options.submitter, submitter.id)
-        self.assertEqual(options.reviewer, reviewer.id)
-        self.assertEqual(options.is_current_ubuntu, False)
-        self.assertEqual(options.is_current_upstream, True)
-        self.assertEqual(options.origin, RosettaTranslationOrigin.SCM.value)
+        self.assertThat(options, MatchesStructure.byEquality(
+            submitter=submitter.id,
+            reviewer=reviewer.id,
+            is_current_ubuntu=False,
+            is_current_upstream=True,
+            origin=RosettaTranslationOrigin.SCM.value))
 
     def test_BadBool(self):
         self.assertRaises(Exception, parse_opts, '--is-current-ubuntu=None')

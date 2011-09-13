@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the code import worker."""
@@ -11,22 +11,20 @@ import shutil
 import subprocess
 import tempfile
 import time
-import unittest
 
+from bzrlib import trace
 from bzrlib.branch import (
     Branch,
     BranchReferenceFormat,
     )
+from bzrlib.branchbuilder import BranchBuilder
 from bzrlib.bzrdir import (
     BzrDir,
     BzrDirFormat,
     format_registry,
     )
-from bzrlib.errors import (
-    NoSuchFile,
-    )
+from bzrlib.errors import NoSuchFile
 from bzrlib.tests import TestCaseWithTransport
-from bzrlib import trace
 from bzrlib.transport import get_transport
 from bzrlib.urlutils import (
     join as urljoin,
@@ -37,7 +35,9 @@ from CVS import (
     tree as CVSTree,
     )
 from dulwich.repo import Repo as GitRepo
-import pysvn
+import subvertpy
+import subvertpy.client
+import subvertpy.ra
 
 from canonical.config import config
 from canonical.testing.layers import BaseLayer
@@ -47,6 +47,7 @@ from lp.codehosting.codeimport.tarball import (
     extract_tarball,
     )
 from lp.codehosting.codeimport.tests.servers import (
+    BzrServer,
     CVSServer,
     GitServer,
     MercurialServer,
@@ -54,7 +55,9 @@ from lp.codehosting.codeimport.tests.servers import (
     )
 from lp.codehosting.codeimport.worker import (
     BazaarBranchStore,
+    BzrImportWorker,
     BzrSvnImportWorker,
+    CodeImportBranchOpenPolicy,
     CodeImportWorkerExitCode,
     CSCVSImportWorker,
     ForeignTreeStore,
@@ -63,6 +66,12 @@ from lp.codehosting.codeimport.worker import (
     HgImportWorker,
     ImportDataStore,
     ImportWorker,
+    )
+from lp.codehosting.safe_open import (
+    AcceptAnythingPolicy,
+    BadUrl,
+    BlacklistPolicy,
+    SafeBranchOpener,
     )
 from lp.codehosting.tests.helpers import create_branch_with_one_revision
 from lp.services.log.logger import BufferLogger
@@ -108,6 +117,7 @@ class WorkerTest(TestCaseWithTransport, TestCase):
     def setUp(self):
         TestCaseWithTransport.setUp(self)
         self.disable_directory_isolation()
+        SafeBranchOpener.install_hook()
 
     def assertDirectoryTreesEqual(self, directory1, directory2):
         """Assert that `directory1` has the same structure as `directory2`.
@@ -209,7 +219,8 @@ class TestBazaarBranchStore(WorkerTest):
         target_url = store._getMirrorURL(self.arbitrary_branch_id)
         knit_format = format_registry.get('knit')()
         tree = create_branch_with_one_revision(target_url, format=knit_format)
-        self.assertNotEquals(tree.bzrdir._format.repository_format.network_name(),
+        self.assertNotEquals(
+            tree.bzrdir._format.repository_format.network_name(),
             default_format.repository_format.network_name())
 
         # The fetched branch is in the default format.
@@ -480,7 +491,6 @@ class TestImportDataStore(WorkerTest):
         self.assertEquals(content, transport.get_bytes(remote_name))
 
 
-
 class MockForeignWorkingTree:
     """Working tree that records calls to checkout and update."""
 
@@ -612,7 +622,8 @@ class TestWorkerCore(WorkerTest):
         """Make an ImportWorker."""
         return ImportWorker(
             self.source_details, self.get_transport('import_data'),
-            self.makeBazaarBranchStore(), logging.getLogger("silent"))
+            self.makeBazaarBranchStore(), logging.getLogger("silent"),
+            AcceptAnythingPolicy())
 
     def test_construct(self):
         # When we construct an ImportWorker, it has a CodeImportSourceDetails
@@ -648,14 +659,16 @@ class TestCSCVSWorker(WorkerTest):
         """Make a CSCVSImportWorker."""
         return CSCVSImportWorker(
             self.source_details, self.get_transport('import_data'), None,
-            logging.getLogger("silent"))
+            logging.getLogger("silent"), opener_policy=AcceptAnythingPolicy())
 
     def test_getForeignTree(self):
         # getForeignTree returns an object that represents the 'foreign'
         # branch (i.e. a CVS or Subversion branch).
         worker = self.makeImportWorker()
+
         def _getForeignTree(target_path):
             return MockForeignWorkingTree(target_path)
+
         worker.foreign_tree_store._getForeignTree = _getForeignTree
         working_tree = worker.getForeignTree()
         self.assertIsSameRealPath(
@@ -677,7 +690,8 @@ class TestGitImportWorker(WorkerTest):
         source_details = self.factory.makeCodeImportSourceDetails()
         return GitImportWorker(
             source_details, self.get_transport('import_data'),
-            self.makeBazaarBranchStore(), logging.getLogger("silent"))
+            self.makeBazaarBranchStore(), logging.getLogger("silent"),
+            opener_policy=AcceptAnythingPolicy())
 
     def test_pushBazaarBranch_saves_git_cache(self):
         # GitImportWorker.pushBazaarBranch saves a tarball of the git cache
@@ -765,7 +779,7 @@ class TestActualImportMixin:
             self.get_transport('bazaar_store'))
         self.foreign_commit_count = 0
 
-    def makeImportWorker(self, source_details):
+    def makeImportWorker(self, source_details, opener_policy):
         """Make a new `ImportWorker`.
 
         Override this in your subclass.
@@ -804,7 +818,8 @@ class TestActualImportMixin:
         # Running the worker on a branch that hasn't been imported yet imports
         # the branch.
         worker = self.makeImportWorker(self.makeSourceDetails(
-            'trunk', [('README', 'Original contents')]))
+            'trunk', [('README', 'Original contents')]),
+            opener_policy=AcceptAnythingPolicy())
         worker.run()
         branch = self.getStoredBazaarBranch(worker)
         self.assertEqual(
@@ -813,7 +828,8 @@ class TestActualImportMixin:
     def test_sync(self):
         # Do an import.
         worker = self.makeImportWorker(self.makeSourceDetails(
-            'trunk', [('README', 'Original contents')]))
+            'trunk', [('README', 'Original contents')]),
+            opener_policy=AcceptAnythingPolicy())
         worker.run()
         branch = self.getStoredBazaarBranch(worker)
         self.assertEqual(
@@ -842,7 +858,8 @@ class TestActualImportMixin:
             config.root, 'scripts', 'code-import-worker.py')
         output = tempfile.TemporaryFile()
         retcode = subprocess.call(
-            [script_path] + source_details.asArguments(),
+            [script_path, '--access-policy=anything'] +
+            source_details.asArguments(),
             stderr=output, stdout=output)
         self.assertEqual(retcode, 0)
 
@@ -854,7 +871,7 @@ class TestActualImportMixin:
         self.assertPositive(output.tell())
 
         self.addCleanup(
-            lambda : clean_up_default_stores_for_import(source_details))
+            lambda: clean_up_default_stores_for_import(source_details))
 
         tree_path = tempfile.mkdtemp()
         self.addCleanup(lambda: shutil.rmtree(tree_path))
@@ -880,11 +897,13 @@ class TestActualImportMixin:
             config.root, 'scripts', 'code-import-worker.py')
         output = tempfile.TemporaryFile()
         retcode = subprocess.call(
-            [script_path] + source_details.asArguments(),
+            [script_path, '--access-policy=anything'] +
+            source_details.asArguments(),
             stderr=output, stdout=output)
         self.assertEqual(retcode, CodeImportWorkerExitCode.SUCCESS)
         retcode = subprocess.call(
-            [script_path] + source_details.asArguments(),
+            [script_path, '--access-policy=anything'] +
+            source_details.asArguments(),
             stderr=output, stdout=output)
         self.assertEqual(retcode, CodeImportWorkerExitCode.SUCCESS_NOCHANGE)
 
@@ -899,11 +918,11 @@ class CSCVSActualImportMixin(TestActualImportMixin):
         """
         TestActualImportMixin.setUpImport(self)
 
-    def makeImportWorker(self, source_details):
+    def makeImportWorker(self, source_details, opener_policy):
         """Make a new `ImportWorker`."""
         return CSCVSImportWorker(
             source_details, self.get_transport('foreign_store'),
-            self.bazaar_store, logging.getLogger())
+            self.bazaar_store, logging.getLogger(), opener_policy)
 
 
 class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
@@ -946,13 +965,19 @@ class SubversionImportHelpers:
 
     def makeForeignCommit(self, source_details):
         """Change the foreign tree."""
-        client = pysvn.Client()
-        client.checkout(source_details.url, 'working_tree')
+        auth = subvertpy.ra.Auth([subvertpy.ra.get_username_provider()])
+        auth.set_parameter(subvertpy.AUTH_PARAM_DEFAULT_USERNAME, "lptest2")
+        client = subvertpy.client.Client(auth=auth)
+        client.checkout(source_details.url, 'working_tree', "HEAD")
         file = open('working_tree/newfile', 'w')
         file.write('No real content\n')
         file.close()
         client.add('working_tree/newfile')
-        client.checkin('working_tree', 'Add a file', recurse=True)
+        client.log_msg_func = lambda c: 'Add a file'
+        (revnum, date, author) = client.commit(['working_tree'], recurse=True)
+        # CSCVS breaks on commits without an author, so make sure there
+        # is one.
+        self.assertIsNot(None, author)
         self.foreign_commit_count += 1
         shutil.rmtree('working_tree')
 
@@ -992,49 +1017,66 @@ class PullingImportWorkerTests:
         t.mkdir('reference')
         a_bzrdir = BzrDir.create(self.get_url('reference'))
         BranchReferenceFormat().initialize(a_bzrdir, target_branch=branch)
-        return a_bzrdir.root_transport.base
+        return a_bzrdir.root_transport.base, branch.base
 
     def test_reject_branch_reference(self):
         # URLs that point to other branch types than that expected by the
         # import should be rejected.
         args = {'rcstype': self.rcstype}
-        reference_url = self.createBranchReference()
+        reference_url, target_url = self.createBranchReference()
         if self.rcstype in ('git', 'bzr-svn', 'hg'):
             args['url'] = reference_url
         else:
-            raise AssertionError("unexpected rcs_type %r" % self.rcs_type)
+            raise AssertionError("unexpected rcs_type %r" % self.rcstype)
         source_details = self.factory.makeCodeImportSourceDetails(**args)
-        worker = self.makeImportWorker(source_details)
+        worker = self.makeImportWorker(source_details,
+            opener_policy=AcceptAnythingPolicy())
         self.assertEqual(
             CodeImportWorkerExitCode.FAILURE_INVALID, worker.run())
 
     def test_invalid(self):
         # If there is no branch in the target URL, exit with FAILURE_INVALID
-        worker = self.makeImportWorker(self.factory.makeCodeImportSourceDetails(
-            rcstype=self.rcstype, url="file:///path/non/existant"))
+        worker = self.makeImportWorker(
+            self.factory.makeCodeImportSourceDetails(
+                rcstype=self.rcstype,
+                url="http://localhost/path/non/existant"),
+            opener_policy=AcceptAnythingPolicy())
         self.assertEqual(
             CodeImportWorkerExitCode.FAILURE_INVALID, worker.run())
+
+    def test_forbidden(self):
+        # If the branch specified is using an invalid scheme, exit with
+        # FAILURE_FORBIDDEN
+        worker = self.makeImportWorker(
+            self.factory.makeCodeImportSourceDetails(
+                rcstype=self.rcstype, url="file:///local/path"),
+            opener_policy=CodeImportBranchOpenPolicy())
+        self.assertEqual(
+            CodeImportWorkerExitCode.FAILURE_FORBIDDEN, worker.run())
 
     def test_unsupported_feature(self):
         # If there is no branch in the target URL, exit with FAILURE_INVALID
         worker = self.makeImportWorker(self.makeSourceDetails(
-            'trunk', [('bzr\\doesnt\\support\\this', 'Original contents')]))
+            'trunk', [('bzr\\doesnt\\support\\this', 'Original contents')]),
+            opener_policy=AcceptAnythingPolicy())
         self.assertEqual(
-            CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE, worker.run())
+            CodeImportWorkerExitCode.FAILURE_UNSUPPORTED_FEATURE,
+            worker.run())
 
     def test_partial(self):
-        # Only config.codeimport.revisions_import_limit will be imported in a
-        # given run.
+        # Only config.codeimport.revisions_import_limit will be imported
+        # in a given run.
         worker = self.makeImportWorker(self.makeSourceDetails(
-            'trunk', [('README', 'Original contents')]))
+            'trunk', [('README', 'Original contents')]),
+            opener_policy=AcceptAnythingPolicy())
         self.makeForeignCommit(worker.source_details)
         self.assertTrue(self.foreign_commit_count > 1)
+        import_limit = self.foreign_commit_count - 1
         self.pushConfig(
             'codeimport',
-            git_revisions_import_limit=self.foreign_commit_count-1,
-            svn_revisions_import_limit=self.foreign_commit_count-1,
-            hg_revisions_import_limit=self.foreign_commit_count-1,
-            )
+            git_revisions_import_limit=import_limit,
+            svn_revisions_import_limit=import_limit,
+            hg_revisions_import_limit=import_limit)
         self.assertEqual(
             CodeImportWorkerExitCode.SUCCESS_PARTIAL, worker.run())
         self.assertEqual(
@@ -1063,15 +1105,16 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         mapdbs().clear()
         WorkerTest.tearDown(self)
 
-    def makeImportWorker(self, source_details):
+    def makeImportWorker(self, source_details, opener_policy):
         """Make a new `ImportWorker`."""
         return GitImportWorker(
             source_details, self.get_transport('import_data'),
-            self.bazaar_store, logging.getLogger())
+            self.bazaar_store, logging.getLogger(),
+            opener_policy=opener_policy)
 
     def makeForeignCommit(self, source_details):
         """Change the foreign tree, generating exactly one commit."""
-        repo = GitRepo(source_details.url)
+        repo = GitRepo(local_path_from_url(source_details.url))
         repo.do_commit(message=self.factory.getUniqueString(),
             committer="Joe Random Hacker <joe@example.com>")
         self.foreign_commit_count += 1
@@ -1088,8 +1131,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='git', url=repository_path)
-
+            rcstype='git', url=git_server.get_url())
 
 
 class TestMercurialImport(WorkerTest, TestActualImportMixin,
@@ -1114,17 +1156,18 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
         mapdbs().clear()
         WorkerTest.tearDown(self)
 
-    def makeImportWorker(self, source_details):
+    def makeImportWorker(self, source_details, opener_policy):
         """Make a new `ImportWorker`."""
         return HgImportWorker(
             source_details, self.get_transport('import_data'),
-            self.bazaar_store, logging.getLogger())
+            self.bazaar_store, logging.getLogger(),
+            opener_policy=opener_policy)
 
     def makeForeignCommit(self, source_details):
         """Change the foreign tree, generating exactly one commit."""
         from mercurial.ui import ui
         from mercurial.localrepo import localrepository
-        repo = localrepository(ui(), source_details.url)
+        repo = localrepository(ui(), local_path_from_url(source_details.url))
         repo.commit(text="hello world!", user="Jane Random Hacker", force=1)
         self.foreign_commit_count += 1
 
@@ -1140,7 +1183,7 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='hg', url=repository_path)
+            rcstype='hg', url=hg_server.get_url())
 
 
 class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
@@ -1153,12 +1196,115 @@ class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
         load_optional_plugin('svn')
         self.setUpImport()
 
-    def makeImportWorker(self, source_details):
+    def makeImportWorker(self, source_details, opener_policy):
         """Make a new `ImportWorker`."""
         return BzrSvnImportWorker(
             source_details, self.get_transport('import_data'),
-            self.bazaar_store, logging.getLogger())
+            self.bazaar_store, logging.getLogger(),
+            opener_policy=opener_policy)
 
 
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+class TestBzrImport(WorkerTest, TestActualImportMixin,
+                    PullingImportWorkerTests):
+
+    rcstype = 'bzr'
+
+    def setUp(self):
+        super(TestBzrImport, self).setUp()
+        self.setUpImport()
+
+    def makeImportWorker(self, source_details, opener_policy):
+        """Make a new `ImportWorker`."""
+        return BzrImportWorker(
+            source_details, self.get_transport('import_data'),
+            self.bazaar_store, logging.getLogger(), opener_policy)
+
+    def makeForeignCommit(self, source_details):
+        """Change the foreign tree, generating exactly one commit."""
+        branch = Branch.open(source_details.url)
+        builder = BranchBuilder(branch=branch)
+        builder.build_commit(message=self.factory.getUniqueString(),
+            committer="Joe Random Hacker <joe@example.com>")
+        self.foreign_commit_count += 1
+
+    def makeSourceDetails(self, branch_name, files):
+        """Make Bzr `CodeImportSourceDetails` pointing at a real Bzr repo.
+        """
+        repository_path = self.makeTemporaryDirectory()
+        bzr_server = BzrServer(repository_path)
+        bzr_server.start_server()
+        self.addCleanup(bzr_server.stop_server)
+
+        bzr_server.makeRepo(files)
+        self.foreign_commit_count = 1
+
+        return self.factory.makeCodeImportSourceDetails(
+            rcstype='bzr', url=bzr_server.get_url())
+
+    def test_partial(self):
+        self.skip(
+            "Partial fetching is not supported for native bzr branches "
+            "at the moment.")
+
+    def test_unsupported_feature(self):
+        self.skip("All Bazaar features are supported by Bazaar.")
+
+    def test_reject_branch_reference(self):
+        # Branch references are allowed in the BzrImporter, but their URL
+        # should be checked.
+        reference_url, target_url = self.createBranchReference()
+        source_details = self.factory.makeCodeImportSourceDetails(
+            url=reference_url, rcstype='bzr')
+        policy = BlacklistPolicy(True, [target_url])
+        worker = self.makeImportWorker(source_details, opener_policy=policy)
+        self.assertEqual(
+            CodeImportWorkerExitCode.FAILURE_FORBIDDEN, worker.run())
+
+    def test_support_branch_reference(self):
+        # Branch references are allowed in the BzrImporter.
+        reference_url, target_url = self.createBranchReference()
+        target_branch = Branch.open(target_url)
+        builder = BranchBuilder(branch=target_branch)
+        builder.build_commit(message=self.factory.getUniqueString(),
+            committer="Some Random Hacker <jane@example.com>")
+        source_details = self.factory.makeCodeImportSourceDetails(
+            url=reference_url, rcstype='bzr')
+        worker = self.makeImportWorker(source_details,
+            opener_policy=AcceptAnythingPolicy())
+        self.assertEqual(
+            CodeImportWorkerExitCode.SUCCESS, worker.run())
+        branch = self.getStoredBazaarBranch(worker)
+        self.assertEqual(
+            1, len(branch.revision_history()))
+        self.assertEqual(
+            "Some Random Hacker <jane@example.com>",
+            branch.repository.get_revision(branch.last_revision()).committer)
+
+
+class CodeImportBranchOpenPolicyTests(TestCase):
+
+    def setUp(self):
+        super(CodeImportBranchOpenPolicyTests, self).setUp()
+        self.policy = CodeImportBranchOpenPolicy()
+
+    def test_follows_references(self):
+        self.assertEquals(True, self.policy.shouldFollowReferences())
+
+    def assertBadUrl(self, url):
+        self.assertRaises(BadUrl, self.policy.checkOneURL, url)
+
+    def assertGoodUrl(self, url):
+        self.policy.checkOneURL(url)
+
+    def test_checkOneURL(self):
+        self.assertBadUrl("sftp://somehost/")
+        self.assertBadUrl("/etc/passwd")
+        self.assertBadUrl("file:///etc/passwd")
+        self.assertBadUrl("bzr+ssh://devpad/")
+        self.assertBadUrl("bzr+ssh://devpad/")
+        self.assertBadUrl("unknown-scheme://devpad/")
+        self.assertGoodUrl("http://svn.example/branches/trunk")
+        self.assertGoodUrl("http://user:password@svn.example/branches/trunk")
+        self.assertBadUrl("svn+ssh://svn.example.com/bla")
+        self.assertGoodUrl("git://git.example.com/repo")
+        self.assertGoodUrl("https://hg.example.com/hg/repo/branch")

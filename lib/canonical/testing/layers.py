@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # We like global!
@@ -110,7 +110,6 @@ from canonical.database.sqlbase import (
     session_store,
     ZopelessTransactionManager,
     )
-from canonical.launchpad.interfaces.mailbox import IMailBox
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR,
@@ -137,7 +136,10 @@ from canonical.testing.smtpd import SMTPController
 from lp.services.googlesearch.tests.googleserviceharness import (
     GoogleServiceTestSetup,
     )
-from lp.services.mail.mailbox import TestMailBox
+from lp.services.mail.mailbox import (
+    IMailBox,
+    TestMailBox,
+    )
 import lp.services.mail.stub
 from lp.services.memcache.client import memcache_client_factory
 from lp.services.osutils import kill_by_pidfile
@@ -911,9 +913,7 @@ class LibrarianLayer(DatabaseLayer):
     @classmethod
     @profiled
     def _check_and_reset(cls):
-        """Raise an exception if the Librarian has been killed.
-        Reset the storage unless this has been disabled.
-        """
+        """Raise an exception if the Librarian has been killed, else reset."""
         try:
             f = urlopen(config.librarian.download_url)
             f.read()
@@ -924,7 +924,8 @@ class LibrarianLayer(DatabaseLayer):
                     "LibrarianLayer.reveal() where possible, and ensure "
                     "the Librarian is restarted if it absolutely must be "
                     "shutdown: " + str(e))
-        cls.librarian_fixture.clear()
+        else:
+            cls.librarian_fixture.reset()
 
     @classmethod
     @profiled
@@ -1501,6 +1502,7 @@ class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
 class LaunchpadTestSetup(PgTestSetup):
     template = 'launchpad_ftest_template'
     dbuser = 'launchpad'
+    host = 'localhost'
 
 
 class LaunchpadZopelessLayer(LaunchpadScriptLayer):

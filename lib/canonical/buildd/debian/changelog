@@ -1,3 +1,9 @@
+launchpad-buildd (79) hardy-cat; urgency=low
+
+  * Fix sudoers.d/buildd permissions
+
+ -- LaMont Jones <lamont@canonical.com>  Fri, 19 Aug 2011 07:31:54 -0600
+
 launchpad-buildd (78) hardy-cat; urgency=low
 
   * Correctly update sudoers files when needed.  LP: #742881

@@ -5,7 +5,6 @@
 
 import logging
 import StringIO
-import unittest
 import urlparse
 
 
@@ -506,7 +505,3 @@ class Walker_CombineUrl(TestCase):
                           "file:///subdir/file")
         self.assertEquals(combine_url("file:///base", "/subdir", "file"),
                           "file:///subdir/file")
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

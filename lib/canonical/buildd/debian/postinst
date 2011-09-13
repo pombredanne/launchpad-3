@@ -45,6 +45,8 @@ ${USER}  ALL=(ALL) NOPASSWD: ALL
 %lpbuildd ALL=(ALL) NOPASSWD: ALL
 EOF
 		fi
+		chmod 440 /etc/sudoers.d/buildd
+		chown root:root /etc/sudoers.d/buildd
 	fi
 
         install -d -o${USER} -m0755 /home/${USER}
