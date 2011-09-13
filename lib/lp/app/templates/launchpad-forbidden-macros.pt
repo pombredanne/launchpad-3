@@ -6,9 +6,11 @@
   <p>
     Sorry, you don't have permission to access this page.
   </p>
-  <p tal:condition="request/lp:person">
+  <div tal:condition="request/lp:person">
+  <p>
     You are logged in as <span tal:content="request/lp:person/title" />.
   </p>
+  </div>
   <p tal:condition="not: request/lp:person">
     You are not logged in.
   </p>

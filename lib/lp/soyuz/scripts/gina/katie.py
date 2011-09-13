@@ -20,7 +20,7 @@ class Katie:
         self.dbname = dbname
         self.dry_run = dry_run
         log.info("Connecting to %s as %s" % (dbname, config.gina.dbuser))
-        self.db = connect(config.gina.dbuser, dbname=dbname)
+        self.db = connect(user=config.gina.dbuser, dbname=dbname)
 
     #
     # Database convenience methods

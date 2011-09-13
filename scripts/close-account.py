@@ -188,7 +188,7 @@ def main():
     con = None
     try:
         log.debug("Connecting to database")
-        con = connect(options.dbuser)
+        con = connect()
         for username in args:
             if not close_account(con, log, username):
                 log.debug("Rolling back")

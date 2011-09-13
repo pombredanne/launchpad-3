@@ -20,6 +20,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.soyuz.enums import PackageDiffStatus
 from lp.soyuz.tests.soyuz import TestPackageDiffsBase
+from lp.testing.dbuser import dbuser
 
 
 class TestPackageDiffs(TestPackageDiffsBase):
@@ -58,10 +59,8 @@ class TestPackageDiffs(TestPackageDiffsBase):
                 AND sprf.SourcePackageRelease = spr.id
                 AND sprf.libraryfile = lfa.id
             """ % sqlvalues(source.id)
-        self.layer.alterConnection(dbuser='launchpad')
-        result = store.execute(query)
-        self.layer.txn.commit()
-        self.layer.alterConnection(dbuser=self.dbuser)
+        with dbuser('launchpad'):
+            store.execute(query)
 
     def test_packagediff_with_expired_and_deleted_lfas(self):
         # Test the case where files required for the diff are expired *and*
