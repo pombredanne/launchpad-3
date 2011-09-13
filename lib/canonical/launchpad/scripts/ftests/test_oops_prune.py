@@ -161,10 +161,11 @@ class TestOopsPrune(unittest.TestCase):
         # doesn't match them.
         cur = cursor()
         cur.execute("""
-            UPDATE Bug SET
-                title='Some title',
-                description='https://lp-oops.canonical.com/oops.py/?oopsid=OOPS-1Foo666'
-            """)
+        UPDATE Bug SET
+            title='Some title',
+            description=
+                'https://lp-oops.canonical.com/oops.py/?oopsid=OOPS-1Foo666'
+        """)
         self.failUnlessEqual(
                 set([self.referenced_oops_code]),
                 referenced_oops())
