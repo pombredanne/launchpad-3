@@ -1209,6 +1209,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         # Append the modified package publishing entry
         return BinaryPackagePublishingHistory(
+            binarypackagename=self.binarypackagerelease.binarypackagename,
             binarypackagerelease=self.binarypackagerelease,
             distroarchseries=self.distroarchseries,
             status=PackagePublishingStatus.PENDING,
