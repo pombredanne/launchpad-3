@@ -329,9 +329,9 @@ class ISourcePackagePublishingHistoryPublic(IPublishingView):
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
-    sourcepackagenameID = Attribute(
+    sourcepackagenameID = Int(
         "The DB id for the sourcepackagename.")
-    sourcepackagename = Int(
+    sourcepackagename = Attribute(
         title=_('The source package name being published'),
         required=False, readonly=False,
         )
@@ -681,9 +681,9 @@ class IBinaryPackagePublishingHistoryPublic(IPublishingView):
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
-    binarypackagenameID = Attribute(
+    binarypackagenameID = Int(
         "The DB id for the binarypackagename.")
-    binarypackagename = Int(
+    binarypackagename = Attribute(
         title=_('The binary package name being published'),
         required=False, readonly=False,
         )

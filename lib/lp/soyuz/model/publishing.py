@@ -697,6 +697,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         return self.distroseries.distribution.getSourcePackageRelease(
             self.supersededby)
 
+    # XXX: StevenK 2011-09-13 bug=848563: This can die when 
+    # self.sourcepackagename is populated.
     @property
     def source_package_name(self):
         """See `ISourcePackagePublishingHistory`"""
@@ -958,6 +960,8 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See `IBinaryPackagePublishingHistory`"""
         return self.distroarchseries.distroseries
 
+    # XXX: StevenK 2011-09-13 bug=848563: This can die when 
+    # self.binarypackagename is populated.
     @property
     def binary_package_name(self):
         """See `IBinaryPackagePublishingHistory`"""
@@ -1466,6 +1470,7 @@ class PublishingSet:
             "Will not create new publications in a disabled architecture.")
         return BinaryPackagePublishingHistory(
             archive=archive,
+            binarypackagename=binarypackagerelease.binarypackagename,
             binarypackagerelease=binarypackagerelease,
             distroarchseries=distroarchseries,
             component=get_component(
@@ -1488,6 +1493,7 @@ class PublishingSet:
             distroseries=distroseries,
             pocket=pocket,
             archive=archive,
+            sourcepackagename=sourcepackagerelease.sourcepackagename,
             sourcepackagerelease=sourcepackagerelease,
             component=get_component(archive, distroseries, component),
             section=section,
