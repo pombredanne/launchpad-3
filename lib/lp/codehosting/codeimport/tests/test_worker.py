@@ -906,7 +906,9 @@ class TestActualImportMixin:
             [script_path, '--access-policy=anything'] +
             source_details.asArguments(),
             stderr=output, stdout=output)
-        self.assertEqual(retcode, CodeImportWorkerExitCode.SUCCESS)
+        output.seek(0)
+        self.assertEqual(retcode, CodeImportWorkerExitCode.SUCCESS,
+            output.read())
         retcode = subprocess.call(
             [script_path, '--access-policy=anything'] +
             source_details.asArguments(),
