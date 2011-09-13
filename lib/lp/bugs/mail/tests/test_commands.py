@@ -218,7 +218,33 @@ class PrivateEmailCommandTestCase(TestCaseWithFactory):
         login_person(user)
         bug_params = CreateBugParams(title='bug title', owner=user)
         command = PrivateEmailCommand('private', ['yes'])
-        params, event = command.execute(bug_params, None)
+        fake_event = object()
+        params, event = command.execute(bug_params, fake_event())
         self.assertEqual(bug_params, params)
         self.assertEqual(True, bug_params.private)
-        self.assertEqual(None, event)
+        self.assertEqual(fake_event, event)
+
+
+class SecurityEmailCommandTestCase(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_execute_bug(self):
+        bug = self.factory.makeBug()
+        login_person(bug.bugtasks[0].target.owner)
+        command = SecurityEmailCommand('security', ['yes'])
+        exec_bug, event = command.execute(bug, None)
+        self.assertEqual(bug, exec_bug)
+        self.assertEqual(True, bug.security_related)
+        self.assertTrue(IObjectModifiedEvent.providedBy(event))
+
+    def test_execute_bug_params(self):
+        user = self.factory.makePerson()
+        login_person(user)
+        bug_params = CreateBugParams(title='bug title', owner=user)
+        command = SecurityEmailCommand('security', ['yes'])
+        fake_event = object()
+        params, event = command.execute(bug_params, fake_event)
+        self.assertEqual(bug_params, params)
+        self.assertEqual(True, bug_params.security_related)
+        self.assertEqual(fake_event, event)

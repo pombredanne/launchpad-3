@@ -234,7 +234,10 @@ class SecurityEmailCommand(EmailCommand):
                     error_templates=error_templates),
                 stop_processing=True)
 
-        # XXX sinzui 2011-09-13: work with params.
+        if isinstance(context, CreateBugParams):
+            context.security_related = security_related
+            return context, current_event
+
         # Take a snapshot.
         edited = False
         edited_fields = set()
