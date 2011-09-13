@@ -28,6 +28,14 @@ __all__ = [
 import httplib
 import simplejson
 
+from lazr.restful import (
+    EntryResource,
+    ResourceJSONEncoder,
+    )
+from lazr.restful.declarations import error_status
+from lazr.restful.interfaces import IJSONRequestCache
+from lazr.restful.tales import WebLayerAPI
+from lazr.restful.utils import get_current_browser_request
 from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
@@ -52,15 +60,6 @@ from zope.security.checker import (
     )
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
-from lazr.restful import (
-    EntryResource,
-    ResourceJSONEncoder,
-    )
-from lazr.restful.declarations import error_status
-from lazr.restful.interfaces import IJSONRequestCache
-
-from lazr.restful.tales import WebLayerAPI
-
 from canonical.launchpad.layers import (
     LaunchpadLayer,
     setFirstLayer,
@@ -78,7 +77,6 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.lazr.utils import get_current_browser_request
 from lp.app.errors import NotFoundError
 from lp.services.encoding import is_ascii_only
 
