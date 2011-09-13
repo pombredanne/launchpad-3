@@ -30,7 +30,7 @@ SCHEMA_DIR = os.path.dirname(__file__)
 
 
 def main():
-    con = connect(options.dbuser)
+    con = connect()
     patches = get_patchlist(con)
 
     if replication.helpers.slony_installed(con):
@@ -39,7 +39,7 @@ def main():
             parser.error("--dry-run does not make sense with replicated db")
         log.info("Applying patches to Slony-I environment.")
         apply_patches_replicated()
-        con = connect(options.dbuser)
+        con = connect()
     else:
         log.info("Applying patches to unreplicated environment.")
         apply_patches_normal(con)
@@ -172,7 +172,7 @@ def apply_patches_replicated():
 
     # Get an autocommit connection. We use autocommit so we don't have to
     # worry about blocking locks needed by Slony-I.
-    con = connect(options.dbuser, isolation=ISOLATION_LEVEL_AUTOCOMMIT)
+    con = connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
     # We use three slonik scripts to apply our DB patches.
     # The first script applies the DB patches to all nodes.

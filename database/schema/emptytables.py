@@ -14,8 +14,9 @@ from canonical.database.sqlbase import connect
 from canonical.launchpad.scripts import db_options
 from fti import quote_identifier
 
+
 def main(options):
-    con = connect(options.dbuser)
+    con = connect()
     cur = con.cursor()
     cur.execute("""
         SELECT relname FROM pg_class,pg_namespace

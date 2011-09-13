@@ -27,7 +27,6 @@ import _pythonpath
 import psycopg2
 from zope.component import getUtility
 
-from canonical import lp
 from canonical.config import config
 from canonical.launchpad.scripts import log
 from lp.services.scripts.base import LaunchpadCronScript
@@ -90,9 +89,6 @@ def run_gina(options, ztm, target_section):
 
     dry_run = options.dry_run
 
-    LPDB = lp.get_dbname()
-    LPDB_HOST = lp.dbhost
-    LPDB_USER = config.gina.dbuser
     KTDB = target_section.katie_dbname
 
     LIBRHOST = config.librarian.upload_host
@@ -106,9 +102,7 @@ def run_gina(options, ztm, target_section):
     if component_override is not None:
         log.info("Override components to: %s", component_override)
     log.info("Architectures to import: %s", ", ".join(archs))
-    log.debug("Launchpad database: %s", LPDB)
-    log.debug("Launchpad database host: %s", LPDB_HOST)
-    log.debug("Launchpad database user: %s", LPDB_USER)
+    log.debug("Launchpad database: %s", config.database.rw_main_master)
     log.info("Katie database: %s", KTDB)
     log.info("SourcePackage Only: %s", source_only)
     log.info("SourcePackageName Only: %s", spnames_only)
