@@ -28,7 +28,6 @@ from canonical.testing.layers import (
     )
 from lp.registry.model.person import Person
 from lp.testing import TestCase
-from lp.testing.fixture import ZopeAdapterFixture
 from lp.testing.fixture import (
     PGBouncerFixture,
     RabbitServer,
