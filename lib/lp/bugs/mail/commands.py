@@ -127,7 +127,7 @@ class BugEmailCommand(EmailCommand):
             params = CreateBugParams(
                 msg=message, title=message.title,
                 owner=getUtility(ILaunchBag).user)
-            return getUtility(IBugSet).createBugWithoutTarget(params)
+            return params, None
         else:
             try:
                 bugid = int(bugid)
@@ -181,6 +181,7 @@ class PrivateEmailCommand(EmailCommand):
                     error_templates=error_templates),
                 stop_processing=True)
 
+        # XXX sinzui 2011-09-13: work with params.
         # Snapshot.
         edited_fields = set()
         if IObjectModifiedEvent.providedBy(current_event):
@@ -230,6 +231,7 @@ class SecurityEmailCommand(EmailCommand):
                     error_templates=error_templates),
                 stop_processing=True)
 
+        # XXX sinzui 2011-09-13: work with params.
         # Take a snapshot.
         edited = False
         edited_fields = set()
@@ -287,6 +289,7 @@ class SubscribeEmailCommand(EmailCommand):
                     'subscribe-too-many-arguments.txt',
                     error_templates=error_templates))
 
+        # XXX sinzui 2011-09-13: work with params.
         if bug.isSubscribed(person):
             # but we still need to find the subscription
             for bugsubscription in bug.subscriptions:
@@ -319,7 +322,7 @@ class UnsubscribeEmailCommand(EmailCommand):
                 get_error_message(
                     'unsubscribe-too-many-arguments.txt',
                     error_templates=error_templates))
-
+        # XXX sinzui 2011-09-13: work with params.
         if bug.isSubscribed(person):
             try:
                 bug.unsubscribe(person, getUtility(ILaunchBag).user)
@@ -358,7 +361,7 @@ class SummaryEmailCommand(EditEmailCommand):
                 get_error_message(
                     'summary-too-many-arguments.txt',
                     error_templates=error_templates))
-
+        # XXX sinzui 2011-09-13: work with params.
         return EditEmailCommand.execute(self, bug, current_event)
 
     def convertArguments(self, context):
@@ -421,6 +424,7 @@ class CVEEmailCommand(EmailCommand):
         if cve is None:
             raise EmailProcessingError(
                 'Launchpad can\'t find the CVE "%s".' % cve_sequence)
+        # XXX sinzui 2011-09-13: work with params?
         bug.linkCVE(cve, getUtility(ILaunchBag).user)
         return bug, current_event
 
@@ -551,6 +555,7 @@ class AffectsEmailCommand(EmailCommand):
         except BugTargetNotFound, error:
             raise EmailProcessingError(unicode(error), stop_processing=True)
         event = None
+        # XXX sinzui 2011-09-13: work with params.
         bugtask = bug.getBugTask(bug_target)
         if (bugtask is None and
             IDistributionSourcePackage.providedBy(bug_target)):
@@ -798,6 +803,7 @@ class TagEmailCommand(EmailCommand):
         string_args = [arg.lower() for arg in self.string_args]
         # Bug.tags returns a Zope List, which does not support Python list
         # operations so we need to convert it.
+        # XXX sinzui 2011-09-13: work with params.
         tags = list(bug.tags)
 
         # XXX: DaveMurphy 2007-07-11: in the following loop we process each

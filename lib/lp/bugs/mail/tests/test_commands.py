@@ -176,3 +176,18 @@ class BugEmailCommandTestCase(TestCaseWithFactory):
         message = str(error).split('\n')
         self.assertEqual(
             "There is no such bug in Launchpad: 9999999", message[0])
+
+    def test_execute_bug_id_new(self):
+        user = self.factory.makePerson()
+        login_person(user)
+        message = self.factory.makeSignedMessage(
+            body='borked\n affects fnord',
+            subject='title borked',
+            to_address='new@bugs.launchpad.dev')
+        filealias = self.factory.makeLibraryFileAlias()
+        command = BugEmailCommand('bug', ['new'])
+        params, event = command.execute(message, filealias)
+        self.assertEqual(None, event)
+        self.assertEqual(user, params.owner)
+        self.assertEqual('title borked', params.title)
+        self.assertEqual(message['Message-Id'], params.msg.rfc822msgid)
