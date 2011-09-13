@@ -8,49 +8,43 @@ __all__ = [
     "capture_longpoll_emissions",
     ]
 
+from collections import namedtuple
 from contextlib import contextmanager
+from functools import partial
 
 from lp.app.longpoll.adapters import event
 
 
-class LoggingRouterFactory:
-    """A drop-in test double for `RabbitRoutingKey`.
-
-    While `RabbitRoutingKey` returns instances of itself, this returns
-    instances of `LoggingRouter`.
-    """
-
-    def __init__(self):
-        self.log = []
-
-    def __call__(self, event_key):
-        return LoggingRouter(self, event_key)
+LongPollEventRecord = namedtuple(
+    "LongPollEventRecord", ("event_key", "data"))
 
 
 class LoggingRouter:
     """A test double for instances of `RabbitRoutingKey`.
 
-    Saves sent messages to a log.
+    Saves messages as `LongPollEventRecord` tuples to a log.
     """
 
-    def __init__(self, factory, event_key):
-        self.factory = factory
+    def __init__(self, event_key, log):
         self.event_key = event_key
+        self.log = log
 
     def send(self, data):
-        self.factory.log.append((self.event_key, data))
+        record = LongPollEventRecord(self.event_key, data)
+        self.log.append(record)
 
 
 @contextmanager
 def capture_longpoll_emissions():
     """Capture longpoll emissions while this context is in force.
 
-    This returns a list in which 2-tuples of `(event_key, payload)` will be
+    This returns a list in which `LongPollEventRecord` tuples will be
     recorded, in the order they're emitted.
     """
+    log = []
     original_router_factory = event.router_factory
-    event.router_factory = LoggingRouterFactory()
+    event.router_factory = partial(LoggingRouter, log=log)
     try:
-        yield event.router_factory.log
+        yield log
     finally:
         event.router_factory = original_router_factory
