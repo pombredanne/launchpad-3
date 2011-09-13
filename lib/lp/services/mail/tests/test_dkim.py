@@ -7,17 +7,16 @@ __metaclass__ = type
 
 import logging
 from StringIO import StringIO
-import unittest
 
 import dkim
 import dns.resolver
 
-from canonical.launchpad.interfaces.mail import IWeaklyAuthenticatedPrincipal
-from canonical.launchpad.mail import signed_message_from_string
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.services.features.testing import FeatureFixture
 from lp.services.mail import incoming
 from lp.services.mail.incoming import authenticateEmail
-from canonical.testing.layers import DatabaseFunctionalLayer
+from lp.services.mail.interfaces import IWeaklyAuthenticatedPrincipal
+from lp.services.mail.signedmessage import signed_message_from_string
 from lp.testing import TestCaseWithFactory
 
 # sample private key made with 'openssl genrsa' and public key using 'openssl
@@ -262,7 +261,3 @@ class TestDKIM(TestCaseWithFactory):
         self.assertEqual(principal.person.preferredemail.email,
             'foo.bar@canonical.com')
         self.assertDkimLogContains('body hash mismatch')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

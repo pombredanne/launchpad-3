@@ -39,7 +39,7 @@ logger_options(parser)
 db_options(parser)
 options, args = parser.parse_args()
 
-con = connect(options.dbuser, isolation=ISOLATION_LEVEL_AUTOCOMMIT)
+con = connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
 update_until_done(con, 'OAuthNonce', """
     DELETE FROM OAuthNonce

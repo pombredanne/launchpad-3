@@ -253,7 +253,7 @@ def main():
     else:
         assert False, "Unknown mode %s" % options.mode
 
-    con = connect(options.dbuser)
+    con = connect()
     cur = con.cursor()
 
     cur.execute(

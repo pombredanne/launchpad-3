@@ -226,7 +226,7 @@ the protocol is https:
 
 Librarian reads are logged in the request timeline.
 
-    >>> from canonical.lazr.utils import get_current_browser_request
+    >>> from lazr.restful.utils import get_current_browser_request
     >>> from lp.services.timeline.requesttimeline import get_request_timeline
     >>> request = get_current_browser_request()
     >>> timeline = get_request_timeline(request)

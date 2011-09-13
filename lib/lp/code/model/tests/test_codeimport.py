@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for methods of CodeImport and CodeImportSet."""
@@ -7,7 +7,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-import unittest
 
 import pytz
 from sqlobject import SQLObjectNotFound
@@ -57,19 +56,19 @@ class TestCodeImportCreation(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_new_svn_import(self):
-        """A new subversion code import should have NEW status."""
+    def test_new_svn_import_svn_scheme(self):
+        """A subversion import can use the svn:// scheme."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
             target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.SVN,
-            url=self.factory.getUniqueURL())
+            url=self.factory.getUniqueURL(scheme="svn"))
         self.assertEqual(
-            CodeImportReviewStatus.NEW,
+            CodeImportReviewStatus.REVIEWED,
             code_import.review_status)
         # No job is created for the import.
-        self.assertIs(None, code_import.import_job)
+        self.assertIsNot(None, code_import.import_job)
 
     def test_reviewed_svn_import(self):
         """A specific review status can be set for a new import."""
@@ -79,30 +78,15 @@ class TestCodeImportCreation(TestCaseWithFactory):
             branch_name='imported',
             rcs_type=RevisionControlSystems.SVN,
             url=self.factory.getUniqueURL(),
-            review_status=CodeImportReviewStatus.REVIEWED)
+            review_status=None)
         self.assertEqual(
             CodeImportReviewStatus.REVIEWED,
             code_import.review_status)
         # A job is created for the import.
         self.assertIsNot(None, code_import.import_job)
 
-    def test_new_cvs_import(self):
-        """A new CVS code import should have NEW status."""
-        code_import = CodeImportSet().new(
-            registrant=self.factory.makePerson(),
-            target=IBranchTarget(self.factory.makeProduct()),
-            branch_name='imported',
-            rcs_type=RevisionControlSystems.CVS,
-            cvs_root=self.factory.getUniqueURL(),
-            cvs_module='module')
-        self.assertEqual(
-            CodeImportReviewStatus.NEW,
-            code_import.review_status)
-        # No job is created for the import.
-        self.assertIs(None, code_import.import_job)
-
-    def test_reviewed_cvs_import(self):
-        """A specific review status can be set for a new import."""
+    def test_cvs_import_reviewed(self):
+        """A new CVS code import should have REVIEWED status."""
         code_import = CodeImportSet().new(
             registrant=self.factory.makePerson(),
             target=IBranchTarget(self.factory.makeProduct()),
@@ -110,7 +94,22 @@ class TestCodeImportCreation(TestCaseWithFactory):
             rcs_type=RevisionControlSystems.CVS,
             cvs_root=self.factory.getUniqueURL(),
             cvs_module='module',
-            review_status=CodeImportReviewStatus.REVIEWED)
+            review_status=None)
+        self.assertEqual(
+            CodeImportReviewStatus.REVIEWED,
+            code_import.review_status)
+        # A job is created for the import.
+        self.assertIsNot(None, code_import.import_job)
+
+    def test_git_import_git_scheme(self):
+        """A git import can have a git:// style URL."""
+        code_import = CodeImportSet().new(
+            registrant=self.factory.makePerson(),
+            target=IBranchTarget(self.factory.makeProduct()),
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.GIT,
+            url=self.factory.getUniqueURL(scheme="git"),
+            review_status=None)
         self.assertEqual(
             CodeImportReviewStatus.REVIEWED,
             code_import.review_status)
@@ -139,6 +138,21 @@ class TestCodeImportCreation(TestCaseWithFactory):
             target=IBranchTarget(self.factory.makeProduct()),
             branch_name='imported',
             rcs_type=RevisionControlSystems.HG,
+            url=self.factory.getUniqueURL(),
+            review_status=None)
+        self.assertEqual(
+            CodeImportReviewStatus.REVIEWED,
+            code_import.review_status)
+        # A job is created for the import.
+        self.assertIsNot(None, code_import.import_job)
+
+    def test_bzr_import_reviewed(self):
+        """A new bzr import is always reviewed by default."""
+        code_import = CodeImportSet().new(
+            registrant=self.factory.makePerson(),
+            target=IBranchTarget(self.factory.makeProduct()),
+            branch_name='mirrored',
+            rcs_type=RevisionControlSystems.BZR,
             url=self.factory.getUniqueURL(),
             review_status=None)
         self.assertEqual(
@@ -232,8 +246,7 @@ class TestCodeImportDeletion(TestCaseWithFactory):
         """Ensure deleting CodeImport objects deletes associated jobs."""
         code_import = self.factory.makeCodeImport()
         login_person(getUtility(ILaunchpadCelebrities).vcs_imports.teamowner)
-        code_import_job = self.factory.makeCodeImportJob(code_import)
-        job_id = code_import_job.id
+        job_id = code_import.import_job.id
         CodeImportJobSet().getById(job_id)
         job = CodeImportJobSet().getById(job_id)
         assert job is not None
@@ -305,7 +318,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
         # Suspending a new import has no impact on jobs.
         code_import = self.factory.makeCodeImport()
         code_import.updateFromData(
-            {'review_status':CodeImportReviewStatus.SUSPENDED},
+            {'review_status': CodeImportReviewStatus.SUSPENDED},
             self.import_operator)
         self.assertIs(None, code_import.import_job)
         self.assertEqual(
@@ -335,7 +348,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
         # Invalidating a new import has no impact on jobs.
         code_import = self.factory.makeCodeImport()
         code_import.updateFromData(
-            {'review_status':CodeImportReviewStatus.INVALID},
+            {'review_status': CodeImportReviewStatus.INVALID},
             self.import_operator)
         self.assertIs(None, code_import.import_job)
         self.assertEqual(
@@ -365,7 +378,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
         # Marking a new import as failing has no impact on jobs.
         code_import = self.factory.makeCodeImport()
         code_import.updateFromData(
-            {'review_status':CodeImportReviewStatus.FAILING},
+            {'review_status': CodeImportReviewStatus.FAILING},
             self.import_operator)
         self.assertIs(None, code_import.import_job)
         self.assertEqual(
@@ -375,7 +388,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
         # Marking an import with a pending job as failing, removes job.
         code_import = self.makeApprovedImportWithPendingJob()
         code_import.updateFromData(
-            {'review_status':CodeImportReviewStatus.FAILING},
+            {'review_status': CodeImportReviewStatus.FAILING},
             self.import_operator)
         self.assertIs(None, code_import.import_job)
         self.assertEqual(
@@ -385,7 +398,7 @@ class TestCodeImportStatusUpdate(TestCaseWithFactory):
         # Marking an import with a running job as failing leaves job.
         code_import = self.makeApprovedImportWithRunningJob()
         code_import.updateFromData(
-            {'review_status':CodeImportReviewStatus.FAILING},
+            {'review_status': CodeImportReviewStatus.FAILING},
             self.import_operator)
         self.assertIsNot(None, code_import.import_job)
         self.assertEqual(
@@ -601,7 +614,8 @@ class TestTryFailingImportAgain(TestCaseWithFactory):
         # tryFailingImportAgain only succeeds for imports that are FAILING.
         outcomes = {}
         for status in CodeImportReviewStatus.items:
-            code_import = self.factory.makeCodeImport()
+            code_import = self.factory.makeCodeImport(
+                review_status=CodeImportReviewStatus.NEW)
             code_import.updateFromData(
                 {'review_status': status}, self.factory.makePerson())
             try:
@@ -677,16 +691,16 @@ class TestRequestImport(TestCaseWithFactory):
             git_repo_url=self.factory.getUniqueURL())
         requester = self.factory.makePerson()
         code_import.requestImport(requester)
-        old_date = code_import.import_job.date_due
         e = self.assertRaises(
             CodeImportAlreadyRequested, code_import.requestImport, requester,
             error_if_already_requested=True)
         self.assertEqual(requester, e.requesting_user)
 
     def test_exception_on_disabled(self):
-        # get an SVN request, which isn't reviewed by default
+        # get an SVN request which is suspended
         code_import = self.factory.makeCodeImport(
-            svn_branch_url=self.factory.getUniqueURL())
+            svn_branch_url=self.factory.getUniqueURL(),
+            review_status=CodeImportReviewStatus.SUSPENDED)
         requester = self.factory.makePerson()
         # which leads to an exception if we try and ask for an import
         self.assertRaises(
@@ -702,7 +716,3 @@ class TestRequestImport(TestCaseWithFactory):
         self.assertRaises(
             CodeImportAlreadyRunning, code_import.requestImport,
             requester)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

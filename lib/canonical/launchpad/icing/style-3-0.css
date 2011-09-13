@@ -1197,6 +1197,16 @@ span.see-all {
     /* Work around float bug in MSIE */
     height: 1%;
     }
+div.beta {
+    background-color: #c24848;
+    margin-bottom: 7px;
+    margin-top: 7px;
+    height: 10px;
+    width: 175px;
+    }
+div.beta img {
+    height: 10px;
+    }
 
 
 /* =========================
@@ -1989,6 +1999,9 @@ body.tab-bugs #duplicate-actions .sprite {
     }
 .yui3-picker-results .affiliation-text {
     padding-left: 20px;
+    }
+.yui3-picker-filter div {
+    padding-bottom: 1em;
     }
 
 /* ====================

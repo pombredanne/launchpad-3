@@ -1,8 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-import unittest
-
 from zope.component import getUtility
 
 from storm.zope.interfaces import IZStorm
@@ -25,7 +23,3 @@ class TestZopelessTransactionManager(TestCase):
         new_active_stores = [
             item[0] for item in getUtility(IZStorm).iterstores()]
         self.assertContentEqual(active_stores, new_active_stores)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

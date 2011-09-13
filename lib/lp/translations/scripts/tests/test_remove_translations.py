@@ -12,10 +12,7 @@ from optparse import (
     OptionParser,
     OptionValueError,
     )
-from testtools.matchers import (
-    Equals,
-    MatchesStructure,
-    )
+from testtools.matchers import MatchesStructure
 from unittest import TestLoader
 
 from storm.store import Store
@@ -193,17 +190,17 @@ class TestRemoveTranslationsOptionsHandling(TestCase):
             '--origin=1',
             '--force',
             ])
-        self.assertThat(options, MatchesStructure(
-            submitter=Equals(1),
-            reviewer=Equals(2),
-            ids=Equals([3, 4]),
-            potemplate=Equals(5),
-            language=Equals('te'),
-            not_language=Equals(True),
-            is_current_ubuntu=Equals(True),
-            is_current_upstream=Equals(False),
-            origin=Equals(1),
-            force=Equals(True)))
+        self.assertThat(options, MatchesStructure.byEquality(
+            submitter=1,
+            reviewer=2,
+            ids=[3, 4],
+            potemplate=5,
+            language='te',
+            not_language=True,
+            is_current_ubuntu=True,
+            is_current_upstream=False,
+            origin=1,
+            force=True))
 
     def test_WithLookups(self):
         # The script can also look up some items from different
@@ -219,12 +216,12 @@ class TestRemoveTranslationsOptionsHandling(TestCase):
             '--is-current-upstream=true',
             '--origin=SCM',
             ])
-        self.assertThat(options, MatchesStructure(
-            submitter=Equals(submitter.id),
-            reviewer=Equals(reviewer.id),
-            is_current_ubuntu=Equals(False),
-            is_current_upstream=Equals(True),
-            origin=Equals(RosettaTranslationOrigin.SCM.value)))
+        self.assertThat(options, MatchesStructure.byEquality(
+            submitter=submitter.id,
+            reviewer=reviewer.id,
+            is_current_ubuntu=False,
+            is_current_upstream=True,
+            origin=RosettaTranslationOrigin.SCM.value))
 
     def test_BadBool(self):
         self.assertRaises(Exception, parse_opts, '--is-current-ubuntu=None')

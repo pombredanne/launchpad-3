@@ -29,17 +29,18 @@ from urlparse import (
     urlunparse,
     )
 
+from lazr.restful.utils import get_current_browser_request
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config, dbconfig
+from canonical.database.postgresql import ConnectionString
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.librarian.interfaces import (
     DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
     LIBRARIAN_SERVER_DEFAULT_TIMEOUT, LibrarianServerError, UploadFailed)
-from canonical.lazr.utils import get_current_browser_request
 from lp.services.timeline.requesttimeline import get_request_timeline
 
 
@@ -226,9 +227,10 @@ class FileUploadClient:
         try:
             # Use dbconfig.rw_main_master directly here because it doesn't
             # make sense to try and use ro_main_master (which might be
-            # returned if we use dbconfig.main_master).
-            database_name = re.search(
-                r"dbname=(\S*)", dbconfig.rw_main_master).group(1)
+            # returned if we use dbconfig.main_master). Note we can't
+            # use database introspection, as not all clients using this
+            # method have database access.
+            database_name = ConnectionString(dbconfig.rw_main_master).dbname
             self._sendLine('STORE %d %s' % (size, name))
             self._sendHeader('Database-Name', database_name)
             self._sendHeader('Content-Type', str(contentType))

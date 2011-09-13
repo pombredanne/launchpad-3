@@ -115,8 +115,3 @@ class TestPlacelessAuth(PlacelessSetup, unittest.TestCase):
     def test_getPrincipalByLogin(self):
         authsvc, request = self._make('bruce', 'bruce!')
         self.assertEqual(authsvc.getPrincipalByLogin('bruce'), Bruce)
-
-
-def test_suite():
-    t = unittest.makeSuite(TestPlacelessAuth)
-    return unittest.TestSuite((t,))

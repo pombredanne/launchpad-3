@@ -291,7 +291,8 @@ class TranslationsPerson:
         # should be fixed to use translations_usage.
         ProductJoin = LeftJoin(Product, And(
             Product.id == ProductSeries.productID,
-            Product._translations_usage == ServiceUsage.LAUNCHPAD))
+            Product._translations_usage == ServiceUsage.LAUNCHPAD,
+            Product.active == True))
 
         ProjectJoin = LeftJoin(
             ProjectGroup, ProjectGroup.id == Product.projectID)

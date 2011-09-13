@@ -4,11 +4,8 @@
 """Unit tests for the public codehosting API."""
 
 __metaclass__ = type
-__all__ = []
-
 
 import os
-import unittest
 import xmlrpclib
 
 from bzrlib import urlutils
@@ -323,7 +320,7 @@ class TestExpandURL(TestCaseWithFactory):
     def test_private_branch_as_development_focus(self):
         # We resolve private linked branches using the writable alias.
         product, trunk = self.makeProdutWithTrunk()
-        removeSecurityProxy(trunk).private = True
+        removeSecurityProxy(trunk).explicitly_private = True
         self.assertOnlyWritableResolves(product.name)
 
     def test_private_branch_as_user(self):
@@ -356,7 +353,3 @@ class TestExpandURL(TestCaseWithFactory):
         self.assertFault(
             branch.unique_name,
             faults.NoUrlForBranch(branch.unique_name))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

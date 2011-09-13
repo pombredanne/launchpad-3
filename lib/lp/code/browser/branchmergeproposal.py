@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=C0322,F0401
@@ -538,18 +538,16 @@ class DiffRenderingMixin:
 
     @cachedproperty
     def diff_oversized(self):
-        """Return True if the review_diff is over the configured size limit.
+        """Return True if the preview_diff is over the configured size limit.
 
         The diff can be over the limit in two ways.  If the diff is oversized
         in bytes it will be cut off at the Diff.text method.  If the number of
         lines is over the max_format_lines, then it is cut off at the fmt:diff
         processing.
         """
-        review_diff = self.preview_diff
-        if review_diff is None:
+        preview_diff = self.preview_diff
+        if preview_diff is None:
             return False
-        if review_diff.oversized:
-            return True
         diff_text = self.preview_diff_text
         return diff_text.count('\n') >= config.diff.max_format_lines
 
@@ -700,8 +698,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """
         if self.context.preview_diff is not None:
             return self.context.preview_diff
-        if self.context.review_diff is not None:
-            return self.context.review_diff.diff
         return None
 
     @property

@@ -1,14 +1,23 @@
-# Copyright 2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2010-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
+from storm.store import Store
 from testtools.testcase import ExpectedException
+from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
-from lp.bugs.enum import BugNotificationLevel
+from lp.bugs.enum import (
+    BugNotificationLevel,
+    BugNotificationStatus,
+    )
+from lp.bugs.interfaces.bugnotification import IBugNotificationSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
-from lp.bugs.model.bug import BugSubscriptionInfo
+from lp.bugs.model.bug import (
+    BugNotification,
+    BugSubscriptionInfo,
+    )
 from lp.registry.interfaces.person import PersonVisibility
 from lp.testing import (
     feature_flags,
@@ -19,6 +28,7 @@ from lp.testing import (
     TestCaseWithFactory,
     )
 from lp.testing.matchers import (
+    Equals,
     HasQueryCount,
     LessThan,
     )
@@ -131,6 +141,101 @@ class TestBug(TestCaseWithFactory):
         with person_logged_in(member):
             bug.subscribe(team, member)
         self.assertTrue(team in bug.getDirectSubscribers())
+
+    def test_get_direct_subscribers_query_count(self):
+        bug = self.factory.makeBug()
+        # Make lots of subscribers.
+        for i in xrange(10):
+            subscriber = self.factory.makePerson()
+            with person_logged_in(subscriber):
+                bug.subscribe(subscriber, subscriber)
+        Store.of(bug).flush()
+        with StormStatementRecorder() as recorder:
+            subscribers = list(bug.getDirectSubscribers())
+            self.assertThat(len(subscribers), Equals(10 + 1))
+            self.assertThat(recorder, HasQueryCount(Equals(1)))
+
+    def test_mark_as_duplicate_query_count(self):
+        bug = self.factory.makeBug()
+        # Make lots of duplicate bugs.
+        previous_dup = None
+        for i in xrange(10):
+            dup = self.factory.makeBug()
+            # Make lots of subscribers.
+            for j in xrange(10):
+                subscriber = self.factory.makePerson()
+                with person_logged_in(subscriber):
+                    dup.subscribe(subscriber, subscriber)
+            if previous_dup is not None:
+                with person_logged_in(previous_dup.owner):
+                    previous_dup.markAsDuplicate(dup)
+            previous_dup = dup
+        with person_logged_in(bug.owner):
+            Store.of(bug).flush()
+            with StormStatementRecorder() as recorder:
+                previous_dup.markAsDuplicate(bug)
+                self.assertThat(recorder, HasQueryCount(LessThan(95)))
+
+    def _get_notifications(self, status):
+        return self.store.find(
+            BugNotification,
+            BugNotification.date_emailed == None,
+            BugNotification.status == status)
+
+    def _get_pending(self):
+        return self._get_notifications(BugNotificationStatus.PENDING)
+
+    def _get_deferred(self):
+        return self._get_notifications(BugNotificationStatus.DEFERRED)
+
+    def _add_subscribers(self, bug, number):
+        for i in xrange(number):
+            subscriber = self.factory.makePerson()
+            with person_logged_in(subscriber):
+                bug.subscribe(subscriber, subscriber)
+
+    def test_duplicate_subscriber_notifications(self):
+        # Notifications for duplicate bugs are deferred where notifications
+        # for direct subscribers of the original bug are pending.
+        bug = self.factory.makeBug(title="bug-0")
+        self._add_subscribers(bug, 3)
+        self.store = Store.of(bug)
+        duplicates = []
+        # Make a few duplicate bugs.
+        for i in xrange(3):
+            duplicates.append(self.factory.makeBug(title="bug-%d" % (i + 1)))
+
+        # Pending messages exist for the bug creation.
+        self.assertEqual(4, self._get_pending().count())
+        self.assertEqual(0, self._get_deferred().count())
+
+        previous_dup = None
+        for dup in duplicates:
+            # Make a few subscribers.
+            self._add_subscribers(dup, 3)
+            if previous_dup is not None:
+                with person_logged_in(previous_dup.owner):
+                    previous_dup.markAsDuplicate(dup)
+            previous_dup = dup
+
+        # Pending messages are still all from bug creation.
+        # Only one deferred notification has been created, since notices for
+        # the primary bug are not deferred and are created by the calling
+        # process (browser or API).
+        self.assertEqual(4, self._get_pending().count())
+        self.assertEqual(1, self._get_deferred().count())
+
+        with person_logged_in(bug.owner):
+            previous_dup.markAsDuplicate(bug)
+
+        # Now there are two new deferred messages, for the duplicates to the
+        # last bug.
+        self.assertEqual(4, self._get_pending().count())
+        self.assertEqual(3, self._get_deferred().count())
+
+        # The method for retrieving deferred notification reports them all.
+        deferred = getUtility(IBugNotificationSet).getDeferredNotifications()
+        self.assertEqual(3, deferred.count())
 
     def test_get_subscribers_from_duplicates_with_private_team(self):
         product = self.factory.makeProduct()
@@ -350,7 +455,7 @@ class TestBug(TestCaseWithFactory):
             bug.setPrivate(True, person)
             self.assertFalse(bug.personIsDirectSubscriber(person))
 
-    def test_getVisibleLinkedBranches_doesnt_return_inaccessible_branches(self):
+    def test_getVisibleLinkedBranches_doesnt_rtn_inaccessible_branches(self):
         # If a Bug has branches linked to it that the current user
         # cannot access, those branches will not be returned in its
         # linked_branches property.

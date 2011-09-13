@@ -580,6 +580,15 @@ project with a name like this: ``lazr.restful-0.9.1DEV-20090512.tar.gz``.
 See the setuptools documentation for more information about `the egg_info
 command`_.
 
+It is also possible that setup.py does not support the egg_info command and
+it is sufficient to just run the sdist command. It adds the current revision
+of the bzr branch to the version number::
+
+    python setup.py sdist
+
+For instance, this might produce a distribution for the ``testtools``
+project with a name like this: ``testtools-0.9.12-r228.tar.gz``.
+
 .. _FeedValidator: http://feedvalidator.org/
 
 .. _`other answers`: http://pypi.python.org/pypi/zc.buildoutsftp

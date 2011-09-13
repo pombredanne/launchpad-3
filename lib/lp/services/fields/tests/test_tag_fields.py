@@ -3,8 +3,6 @@
 
 """Tests for tag related fields."""
 
-import unittest
-
 from zope.schema.interfaces import ConstraintNotSatisfied
 
 from canonical.testing.layers import LaunchpadFunctionalLayer
@@ -94,7 +92,3 @@ class TestSearchTag(TestTag):
         self.assertRaises(
             ConstraintNotSatisfied,
             self.field.validate, u'sn*t-allowed')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

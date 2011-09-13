@@ -157,8 +157,8 @@
       <h2>Import an OpenPGP key</h2>
 
       <p>To start using an OpenPGP key with your Launchpad account, simply
-        paste its fingerprint below. The key must be registered with with
-        an Ubuntu key server.
+        paste its fingerprint below. The key must be registered with the
+        Ubuntu key server.
         (<a href="/+help/import-pgp-key.html" target="help">How to get the
         fingerprint</a>)
       </p>

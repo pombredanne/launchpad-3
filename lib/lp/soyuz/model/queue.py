@@ -1121,13 +1121,11 @@ class PackageUploadSource(SQLBase):
 
     def verifyBeforePublish(self):
         """See `IPackageUploadSource`."""
-        distribution = self.packageupload.distroseries.distribution
         # Check for duplicate filenames currently present in the archive.
         for source_file in self.sourcepackagerelease.files:
             try:
-                published_file = distribution.getFileByName(
-                    source_file.libraryfile.filename, binary=False,
-                    archive=self.packageupload.archive)
+                published_file = self.packageupload.archive.getFileByName(
+                    source_file.libraryfile.filename)
             except NotFoundError:
                 # NEW files are *OK*.
                 continue
@@ -1441,6 +1439,37 @@ class PackageUploadSet:
             SourcePackageName.name == name)
 
         return conflicts.one()
+
+    def getBuildsForSources(self, distroseries, status=None, pockets=None,
+                            names=None):
+        """See `IPackageUploadSet`."""
+        # Avoiding circular imports.
+        from lp.soyuz.model.binarypackagebuild import BinaryPackageBuild
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
+        archives = distroseries.distribution.getArchiveIDList()
+        clauses = [
+            PackageUpload.distroseries == distroseries,
+            PackageUpload.archiveID.is_in(archives),
+            PackageUploadBuild.packageuploadID == PackageUpload.id,
+            ]
+
+        if status is not None:
+            clauses.append(PackageUpload.status.is_in(status))
+        if pockets is not None:
+            clauses.append(PackageUpload.pocket.is_in(pockets))
+        if names is not None:
+            clauses.extend([
+                BinaryPackageBuild.id == PackageUploadBuild.buildID,
+                BinaryPackageBuild.source_package_release ==
+                    SourcePackageRelease.id,
+                SourcePackageRelease.sourcepackagename ==
+                    SourcePackageName.id,
+                SourcePackageName.name.is_in(names),
+                ])
+
+        store = IStore(PackageUpload)
+        return store.find(PackageUpload, *clauses)
 
     def count(self, status=None, distroseries=None, pocket=None):
         """See `IPackageUploadSet`."""

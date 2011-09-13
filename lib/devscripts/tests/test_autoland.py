@@ -504,7 +504,3 @@ class TestGetBazaarHost(unittest.TestCase):
         # Any unrecognized URL will raise a ValueError.
         self.assertRaises(
             ValueError, get_bazaar_host, 'https://api.lunchpad.net')
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
