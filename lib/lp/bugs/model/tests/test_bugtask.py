@@ -1597,24 +1597,35 @@ class TestAutoConfirmBugTasks(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_auto_confirm(self):
-        # A typical new bugtask auto-confirms.
+        # A typical new bugtask auto-confirms.  Doing so changes the status of
+        # the bug task, creates a status event, and creates a new comment
+        # indicating the reason the Janitor auto-confirmed.
         # When feature flag code is removed, remove the next two lines and
         # dedent the rest.
         with feature_flags():
             set_feature_flag(u'bugs.autoconfirm.enabled_product_names', u'*')
             bug_task = self.factory.makeBugTask()
+            bug = bug_task.bug
             self.assertEqual(BugTaskStatus.NEW, bug_task.status)
+            original_comment_count = bug.messages.count()
             with EventRecorder() as recorder:
                 bug_task.maybeConfirm()
                 self.assertEqual(BugTaskStatus.CONFIRMED, bug_task.status)
-                self.assertEqual(1, len(recorder.events))
-                event = recorder.events[0]
+                self.assertEqual(2, len(recorder.events))
+                msg_event, mod_event = recorder.events
                 self.assertEqual(getUtility(ILaunchpadCelebrities).janitor,
-                                 event.user)
-                self.assertEqual(['status'], event.edited_fields)
+                                 mod_event.user)
+                self.assertEqual(['status'], mod_event.edited_fields)
                 self.assertEqual(BugTaskStatus.NEW,
-                                 event.object_before_modification.status)
-                self.assertEqual(bug_task, event.object)
+                                 mod_event.object_before_modification.status)
+                self.assertEqual(bug_task, mod_event.object)
+                # A new comment is recorded.
+                self.assertEqual(
+                    original_comment_count + 1, bug.messages.count())
+                self.assertEqual(
+                    u"Status changed to 'Confirmed' because the bug affects "
+                    "multiple users.",
+                    bug.messages[-1].text_contents)
 
     def test_do_not_confirm_bugwatch_tasks(self):
         # A bugwatch bugtask does not auto-confirm.
@@ -1708,8 +1719,9 @@ class TestValidateTransitionToTarget(TestCaseWithFactory):
             self.factory.makeDistributionSourcePackage(distribution=distro))
 
     def test_sourcepackage_to_sourcepackage_in_same_series_works(self):
-        sp1 = self.factory.makeSourcePackage()
-        sp2 = self.factory.makeSourcePackage(distroseries=sp1.distroseries)
+        sp1 = self.factory.makeSourcePackage(publish=True)
+        sp2 = self.factory.makeSourcePackage(distroseries=sp1.distroseries,
+                                             publish=True)
         self.assertTransitionWorks(sp1, sp2)
 
     def test_sourcepackage_to_same_series_works(self):
@@ -1910,6 +1922,29 @@ class TestTransitionToTarget(TestCaseWithFactory):
             new_product.bugtargetdisplayname,
             removeSecurityProxy(task).targetnamecache)
 
+    def test_matching_sourcepackage_tasks_updated_when_name_changed(self):
+        # If the sourcepackagename is changed, it's changed on all tasks
+        # with the same distribution and sourcepackagename.
+
+        # Create a distribution and distroseries with tasks.
+        ds = self.factory.makeDistroSeries()
+        bug = self.factory.makeBug(distribution=ds.distribution)
+        ds_task = self.factory.makeBugTask(bug=bug, target=ds)
+
+        # Also create a task for another distro. It will not be touched.
+        other_distro = self.factory.makeDistribution()
+        self.factory.makeBugTask(bug=bug, target=other_distro)
+
+        self.assertContentEqual(
+            (task.target for task in bug.bugtasks),
+            [ds, ds.distribution, other_distro])
+        sp = self.factory.makeSourcePackage(distroseries=ds, publish=True)
+        with person_logged_in(ds_task.owner):
+            ds_task.transitionToTarget(sp)
+        self.assertContentEqual(
+            (t.target for t in bug.bugtasks),
+            [sp, sp.distribution_sourcepackage, other_distro])
+
 
 class TestBugTargetKeys(TestCaseWithFactory):
     """Tests for bug_target_to_key and bug_target_from_key."""
@@ -2046,9 +2081,9 @@ class TestValidateTarget(TestCaseWithFactory):
 
     def test_new_sourcepackage_is_allowed(self):
         # A new sourcepackage not on the bug is OK.
-        sp1 = self.factory.makeSourcePackage()
+        sp1 = self.factory.makeSourcePackage(publish=True)
         task = self.factory.makeBugTask(target=sp1)
-        sp2 = self.factory.makeSourcePackage()
+        sp2 = self.factory.makeSourcePackage(publish=True)
         validate_target(task.bug, sp2)
 
     def test_multiple_packageless_distribution_tasks_are_forbidden(self):

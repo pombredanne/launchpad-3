@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 '''
@@ -41,7 +41,10 @@ class ConnectionWrapper:
     def close(self):
         if self in PgTestSetup.connections:
             PgTestSetup.connections.remove(self)
-            self.real_connection.close()
+            try:
+                self.real_connection.close()
+            except psycopg2.InterfaceError:
+                pass # Already closed, killed etc. Ignore.
 
     def rollback(self, InterfaceError=psycopg2.InterfaceError):
         # In our test suites, rollback ends up being called twice in some
@@ -186,8 +189,8 @@ class PgTestSetup:
                 # available.
                 # Avoid circular imports
                 section = """[database]
-rw_main_master: dbname=%s
-rw_main_slave:  dbname=%s
+rw_main_master: dbname=%s host=localhost
+rw_main_slave:  dbname=%s host=localhost
 
 """ % (self.dbname, self.dbname)
                 if BaseLayer.config_fixture is not None:
@@ -399,7 +402,11 @@ rw_main_slave:  dbname=%s
                 # always having this is a problem.
                 try:
                     cur = con.cursor()
-                    cur.execute('SELECT _killall_backends(%s)', [self.dbname])
+                    cur.execute("""
+                        SELECT pg_terminate_backend(procpid)
+                        FROM pg_stat_activity
+                        WHERE procpid <> pg_backend_pid() AND datname=%s
+                        """, [self.dbname])
                 except psycopg2.DatabaseError:
                     pass
 

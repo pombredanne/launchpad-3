@@ -5,22 +5,21 @@
 
 __metaclass__ = type
 
-import unittest
+import lp.codehosting # for bzr plugins
 
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import (
-    BzrDirFormat6,
-    BzrDirMetaFormat1,
-    )
-from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
-from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack5
-from bzrlib.repofmt.weaverepo import (
+from bzrlib.bzrdir import BzrDirMetaFormat1
+from bzrlib.plugins.weave_fmt.bzrdir import BzrDirFormat6
+from bzrlib.plugins.weave_fmt.repository import (
     RepositoryFormat6,
     RepositoryFormat7,
     )
+from bzrlib.repofmt.knitpack_repo import RepositoryFormatKnitPack5
+from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
 from bzrlib.tests.per_repository import TestCaseWithRepository
 
 from lp.codehosting.puller.tests import PullerWorkerMixin
+from lp.codehosting.safe_open import SafeBranchOpener
 from lp.codehosting.tests.helpers import LoomTestMixin
 
 
@@ -31,6 +30,7 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         TestCaseWithRepository.setUp(self)
         # make_bzrdir relies on this being a relative filesystem path.
         self._source_branch_path = 'source-branch'
+        SafeBranchOpener.install_hook()
         self.worker = self.makePullerWorker(
             self.get_url(self._source_branch_path),
             self.get_url('dest-path'))
@@ -130,7 +130,3 @@ class TestPullerWorkerFormats(TestCaseWithRepository, PullerWorkerMixin,
         # The mirrored branch should now be in knit format.
         self.assertMirrored(
             Branch.open(self.worker.source), Branch.open(self.worker.dest))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

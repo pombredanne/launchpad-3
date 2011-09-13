@@ -228,6 +228,11 @@ class LibrarianServerFixture(TacTestSetup):
         """Get a list with the contents of the librarian log in it."""
         return open(self.logfile, 'rb').readlines()
 
+    def reset(self):
+        """Reset the librarian to a consistent initial state."""
+        self.clear()
+        self.truncateLog()
+
 
 def fillLibrarianFile(fileid, content='Fake Content'):
     """Write contents in disk for a librarian sampledata."""

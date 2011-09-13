@@ -31,6 +31,7 @@ from lazr.enum import (
     Item,
     )
 from lazr.restful.interface import copy_field
+from lazr.restful.utils import smartquote
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.form.browser import DropdownWidget
 from zope.app.form.interfaces import IInputWidget
@@ -74,7 +75,6 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IBreadcrumb
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.lazr.utils import smartquote
 from lp.app.browser.launchpadform import (
     action,
     custom_widget,

@@ -7,11 +7,10 @@
 
 import _pythonpath
 
-from canonical.config import config
 from lp.archivepublisher.scripts.publish_ftpmaster import PublishFTPMaster
 
 
 if __name__ == '__main__':
     script = PublishFTPMaster(
-        "publish-ftpmaster", dbuser=config.archivepublisher.dbuser)
+        "publish-ftpmaster", 'publish_ftpmaster')
     script.lock_and_run()

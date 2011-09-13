@@ -5,8 +5,6 @@ __metaclass__ = type
 
 import os
 
-from unittest import TestLoader
-
 from lp.testing import TestCase
 from lp.testing.fakemethod import FakeMethod
 
@@ -173,7 +171,3 @@ class TestTranslationTemplatesBuildManagerIteration(TestCase):
             TranslationTemplatesBuildState.REAP, self.getState())
         self.assertEqual(expected_command, self.buildmanager.commands[-1])
         self.assertTrue(self.slave.wasCalled('buildFail'))
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

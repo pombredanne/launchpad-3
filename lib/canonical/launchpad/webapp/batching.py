@@ -5,8 +5,13 @@ __metaclass__ = type
 
 from datetime import datetime
 
+from iso8601 import (
+    parse_date,
+    ParseError,
+    )
 import lazr.batchnavigator
 from lazr.batchnavigator.interfaces import IRangeFactory
+from operator import isSequenceType
 import simplejson
 from storm import Undef
 from storm.expr import (
@@ -161,6 +166,71 @@ class DateTimeJSONEncoder(simplejson.JSONEncoder):
         return simplejson.JSONEncoder.default(self, obj)
 
 
+class ShadowedList:
+    """A (partial) sequence impementation which maintains two
+    sequences: A publicly visible one and a "shadow" sequence.
+
+    Background: StormRangeFactory.getSlice() returns a sequence
+    of records which is used in lazr.batchnavigator.Batchnavigator
+    and in lazr.batchnavigator.z3batching.Batch.
+
+    This slice is passed back by Batch.nextBatch() and Batch.prevBatch()
+    to StormRangeFactory.getEndpointMemos().
+
+    StormRangeFactory can work with DecoratedResultSets, which means
+    that the data required to create the memo values may only be
+    available in the plain, undecorated, result set.
+
+    This class allows to maintain the values needed by BachNavigator
+    and Batch as well as the values needed by
+    StormRangeFactory.getEndpointMemos().
+
+    It implements only those parts of the sequence protocol needed by
+    BatchNavigator and Batch.
+    """
+    def __init__(self, values, shadow_values):
+        if not isSequenceType(values) or not isSequenceType(shadow_values):
+            raise TypeError("values and shadow_values must be sequences.")
+        if len(values) != len(shadow_values):
+            raise ValueError(
+                "values and shadow_values must have the same length.")
+        self.values = values
+        # Store always a copy: values and shadow_values may be identical,
+        # and if this is the case, the two reverse() calls in the method
+        # reverse() below will cancel each other.
+        self.shadow_values = shadow_values[:]
+
+    def __len__(self):
+        """See `list`."""
+        return len(self.values)
+
+    def __getslice__(self, start, end):
+        """See `list`."""
+        return ShadowedList(
+            self.values[start:end], self.shadow_values[start:end])
+
+    def __getitem__(self, index):
+        """See `list`."""
+        return self.values[index]
+
+    def __add__(self, other):
+        """See `list`."""
+        if not isinstance(other, ShadowedList):
+            raise TypeError(
+                'You can only add another ShadowedList to a ShadowedList')
+        return ShadowedList(
+            self.values + other.values,
+            self.shadow_values + other.shadow_values)
+
+    def __iter__(self):
+        """See `list`."""
+        return iter(self.values)
+
+    def reverse(self):
+        self.values.reverse()
+        self.shadow_values.reverse()
+
+
 class StormRangeFactory:
     """A range factory for Storm result sets.
 
@@ -204,6 +274,11 @@ class StormRangeFactory:
         else:
             self.plain_resultset = resultset
         self.error_cb = error_cb
+        self.forward_sort_order = self.getOrderBy()
+        if self.forward_sort_order is Undef:
+            raise StormRangeFactoryError(
+                'StormRangeFactory requires a sorted result set.')
+        self.backward_sort_order = self.reverseSortOrder()
 
     def getOrderBy(self):
         """Return the order_by expressions of the result set."""
@@ -216,9 +291,6 @@ class StormRangeFactory:
         if not zope_isinstance(row, tuple):
             row = (row, )
         sort_expressions = self.getOrderBy()
-        if sort_expressions is Undef:
-            raise StormRangeFactoryError(
-                'StormRangeFactory requires a sorted result set.')
         for expression in sort_expressions:
             if zope_isinstance(expression, Desc):
                 expression = expression.expr
@@ -242,9 +314,9 @@ class StormRangeFactory:
 
     def getEndpointMemos(self, batch):
         """See `IRangeFactory`."""
-        lower = self.getOrderValuesFor(self.plain_resultset[0])
-        upper = self.getOrderValuesFor(
-            self.plain_resultset[batch.trueSize - 1])
+        plain_slice = batch.sliced_list.shadow_values
+        lower = self.getOrderValuesFor(plain_slice[0])
+        upper = self.getOrderValuesFor(plain_slice[batch.trueSize - 1])
         return (
             simplejson.dumps(lower, cls=DateTimeJSONEncoder),
             simplejson.dumps(upper, cls=DateTimeJSONEncoder),
@@ -303,20 +375,14 @@ class StormRangeFactory:
                 if (str(error).startswith('Expected datetime') and
                     isinstance(value, str)):
                     try:
-                        value = datetime.strptime(
-                            value, '%Y-%m-%dT%H:%M:%S.%f')
-                    except ValueError:
-                        # One more attempt: If the fractions of a second
-                        # are zero, datetime.isoformat() omits the
-                        # entire part '.000000', so we need a different
-                        # format for strptime().
-                        try:
-                            value = datetime.strptime(
-                                value, '%Y-%m-%dT%H:%M:%S')
-                        except ValueError:
-                            self.reportError(
-                                'Invalid datetime value: %r' % value)
-                            return None
+                        value = parse_date(value)
+                    except (ParseError, ValueError):
+                        # We get a ParseError if value does not match
+                        # a certain regex, and we get a ValueError
+                        # for formally correct but invalid dates,
+                        # like May 35.
+                        self.reportError('Invalid datetime value: %r' % value)
+                        return None
                 else:
                     self.reportError(
                         'Invalid parameter: %r' % value)
@@ -470,10 +536,26 @@ class StormRangeFactory:
 
     def getSlice(self, size, endpoint_memo='', forwards=True):
         """See `IRangeFactory`."""
-        if not forwards:
-            self.resultset.order_by(*self.reverseSortOrder())
-        parsed_memo = self.parseMemo(endpoint_memo)
-        if parsed_memo is None:
-            return self.resultset.config(limit=size)
+        if forwards:
+            self.resultset.order_by(*self.forward_sort_order)
         else:
-            return self.getSliceFromMemo(size, parsed_memo)
+            self.resultset.order_by(*self.backward_sort_order)
+
+        parsed_memo = self.parseMemo(endpoint_memo)
+        # Note that lazr.batchnavigator calls len(slice), so we can't
+        # return the plain result set.
+        if parsed_memo is None:
+            result = self.resultset.config(limit=size)
+        else:
+            result = self.getSliceFromMemo(size, parsed_memo)
+        real_result = list(result)
+        if zope_isinstance(result, DecoratedResultSet):
+            shadow_result = list(result.get_plain_result_set())
+        else:
+            shadow_result = real_result
+        return ShadowedList(real_result, shadow_result)
+
+    def getSliceByIndex(self, start, end):
+        """See `IRangeFactory."""
+        sliced = self.resultset[start:end]
+        return ShadowedList(list(sliced), list(sliced.get_plain_result_set()))

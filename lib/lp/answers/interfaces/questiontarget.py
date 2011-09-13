@@ -127,6 +127,23 @@ class IQuestionTargetPublic(ISearchableByQuestionOwner):
             "inherited from other context.)"),
         value_type=PublicPersonChoice(vocabulary="ValidPersonOrTeam"))
 
+    @operation_parameters(
+        person=PublicPersonChoice(
+            title=_('The user or an administered team'), required=True,
+            vocabulary='ValidPersonOrTeam'))
+    @call_with(subscribed_by=REQUEST_USER)
+    @export_read_operation()
+    @operation_for_version('devel')
+    def canUserAlterAnswerContact(person, subscribed_by):
+        """Can the user add or remove the answer contact.
+
+        Users can add or remove themselves or one of the teams they
+        administered. Admins and target owners can add/remove anyone.
+
+        :param person: The `IPerson` that is or will be an answer contact.
+        :param subscribed_by: The `IPerson` making the change.
+        """
+
 
 class IQuestionTargetView(Interface):
     """Methods that logged in user can access."""
@@ -162,23 +179,6 @@ class IQuestionTargetView(Interface):
         active.
 
         :bug: An IBug.
-        """
-
-    @operation_parameters(
-        person=PublicPersonChoice(
-            title=_('The user or an administered team'), required=True,
-            vocabulary='ValidPersonOrTeam'))
-    @call_with(subscribed_by=REQUEST_USER)
-    @export_read_operation()
-    @operation_for_version('devel')
-    def canUserAlterAnswerContact(person, subscribed_by):
-        """Can the user add or remove the answer contact.
-
-        Users can add or remove themselves or one of the teams they
-        administered.
-
-        :param person: The `IPerson` that is or will be an answer contact.
-        :param subscribed_by: The `IPerson` making the change.
         """
 
     @operation_parameters(

@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from lazr.uri import URI
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -708,7 +706,3 @@ class TestGetByLPPath(TestCaseWithFactory):
         result = self.branch_lookup.getByLPPath(
             '%s/other/bits' % package.path)
         self.assertEqual((branch, u'other/bits'), result)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

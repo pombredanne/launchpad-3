@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 import transaction
 from zope.component import getUtility
 
@@ -208,7 +206,3 @@ class TestRevisionAuthor(TestCase):
         # name_without_email is an empty string.
         author = RevisionAuthor(name=u'jml@localhost')
         self.assertEqual('', author.name_without_email)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

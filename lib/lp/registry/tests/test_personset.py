@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-from unittest import TestLoader
-
 import transaction
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -252,7 +250,3 @@ class TestPersonSetGetOrCreateByOpenIDIdentifier(TestCaseWithFactory):
             u'other-openid-identifier' in [
                 identifier.identifier for identifier in removeSecurityProxy(
                     person.account).openid_identifiers])
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

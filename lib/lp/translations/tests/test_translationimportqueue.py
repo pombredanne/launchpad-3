@@ -429,3 +429,21 @@ class TestTranslationImportQueue(TestCaseWithFactory):
             productseries=self.productseries)
         stripped_path = path.lstrip('/')
         self.assertEqual([stripped_path], self._getQueuePaths())
+
+    def test_addOrUpdateEntry_detects_conflicts(self):
+        pot = self.factory.makePOTemplate(translation_domain='domain')
+        uploader = self.factory.makePerson()
+        pofile = self.factory.makePOFile(potemplate=pot, language_code='fr')
+
+        # Add an import queue entry with a single pofile for a template.
+        tiqe1 = self.factory.makeTranslationImportQueueEntry(
+            path=pofile.path, productseries=pot.productseries,
+            potemplate=pot, uploader=uploader)
+
+        # Add an import queue entry for a the same pofile, but done
+        # directly on the pofile object (i.e. more specific).
+        tiqe2 = self.factory.makeTranslationImportQueueEntry(
+            path=pofile.path, productseries=pot.productseries,
+            potemplate=pot, pofile=pofile, uploader=uploader)
+
+        self.assertEquals(tiqe1, tiqe2)

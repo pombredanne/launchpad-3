@@ -11,7 +11,6 @@ import os
 import shutil
 import socket
 import tempfile
-from unittest import TestLoader
 
 from canonical.launchpad import scripts
 from canonical.testing.layers import BaseLayer
@@ -166,7 +165,3 @@ class TestCodeImportDispatcherUnit(TestCase):
         dispatcher._getSleepInterval = lambda : interval
         dispatcher.findAndDispatchJobs(StubSchedulerClient([10, 0]))
         self.assertEqual([interval], sleep_calls)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

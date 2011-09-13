@@ -1,4 +1,4 @@
-# Copyright 2009-2010 Canonical Ltd.  This software is licensed under the
+# Copyright 2009-2011 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=F0401
@@ -14,7 +14,6 @@ from datetime import (
     timedelta,
     )
 from difflib import unified_diff
-import unittest
 
 import pytz
 from soupmatchers import HTMLContains, Tag
@@ -55,10 +54,7 @@ from lp.code.enums import (
     BranchMergeProposalStatus,
     CodeReviewVote,
     )
-from lp.code.model.diff import (
-    PreviewDiff,
-    StaticDiff,
-    )
+from lp.code.model.diff import PreviewDiff
 from lp.code.tests.helpers import (
     add_revision_to_branch,
     make_merge_proposal_without_reviewers,
@@ -726,43 +722,11 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.assertEqual(diff_bytes.decode('windows-1252', 'replace'),
                          view.preview_diff_text)
 
-    def addReviewDiff(self):
-        review_diff_bytes = ''.join(unified_diff('', 'review'))
-        review_diff = StaticDiff.acquireFromText('x', 'y', review_diff_bytes)
-        self.bmp.review_diff = review_diff
-        return review_diff
-
-    def addBothDiffs(self):
-        self.addReviewDiff()
-        preview_diff_bytes = ''.join(unified_diff('', 'preview'))
-        return self.setPreviewDiff(preview_diff_bytes)
-
     def setPreviewDiff(self, preview_diff_bytes):
         preview_diff = PreviewDiff.create(
             preview_diff_bytes, u'a', u'b', None, u'')
         removeSecurityProxy(self.bmp).preview_diff = preview_diff
         return preview_diff
-
-    def test_preview_diff_prefers_preview_diff(self):
-        """The preview will be used for BMP with both a review and preview."""
-        preview_diff = self.addBothDiffs()
-        view = create_initialized_view(self.bmp, '+index')
-        self.assertEqual(preview_diff, view.preview_diff)
-
-    def test_preview_diff_uses_review_diff(self):
-        """The review diff will be used if there is no preview."""
-        review_diff = self.addReviewDiff()
-        view = create_initialized_view(self.bmp, '+index')
-        self.assertEqual(review_diff.diff,
-                         view.preview_diff)
-
-    def test_review_diff_text_prefers_preview_diff(self):
-        """The preview will be used for BMP with both a review and preview."""
-        preview_diff = self.addBothDiffs()
-        transaction.commit()
-        view = create_initialized_view(self.bmp, '+index')
-        self.assertEqual(
-            preview_diff.text, view.preview_diff_text)
 
     def test_linked_bugs_excludes_mutual_bugs(self):
         """List bugs that are linked to the source only."""
@@ -1075,7 +1039,7 @@ class TestLatestProposalsForEachBranch(TestCaseWithFactory):
         bmp2 = self.factory.makeBranchMergeProposal(
             date_created=(
                 datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
-        removeSecurityProxy(bmp2.source_branch).private = True
+        removeSecurityProxy(bmp2.source_branch).explicitly_private = True
         self.assertEqual(
             [bmp1], latest_proposals_for_each_branch([bmp1, bmp2]))
 
@@ -1091,7 +1055,3 @@ class TestLatestProposalsForEachBranch(TestCaseWithFactory):
                 datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
         self.assertEqual(
             [bmp2], latest_proposals_for_each_branch([bmp1, bmp2]))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

@@ -1854,11 +1854,11 @@ LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT AS $$
         AFFECTED_USER = 4
         SUBSCRIBER = 2
 
-
     def get_max_heat_for_bug(bug_id):
         results = plpy.execute("""
             SELECT MAX(
-                GREATEST(Product.max_bug_heat, Distribution.max_bug_heat))
+                GREATEST(Product.max_bug_heat,
+                         DistributionSourcePackage.max_bug_heat))
                     AS max_heat
             FROM BugTask
             LEFT OUTER JOIN ProductSeries ON
@@ -1871,6 +1871,9 @@ LANGUAGE plpythonu STABLE RETURNS NULL ON NULL INPUT AS $$
             LEFT OUTER JOIN Distribution ON (
                 BugTask.distribution = Distribution.id
                 OR DistroSeries.distribution = Distribution.id)
+            LEFT OUTER JOIN DistributionSourcePackage ON (
+                BugTask.sourcepackagename =
+                    DistributionSourcePackage.sourcepackagename)
             WHERE
                 BugTask.bug = %s""" % bug_id)
 

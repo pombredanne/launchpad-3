@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from lazr.restfulclient.errors import ClientError
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -21,6 +19,17 @@ from lp.testing import (
     login_person,
     TestCaseWithFactory,
     )
+
+
+class TestProjectGroup(TestCaseWithFactory):
+    """Tests project group object."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_pillar_category(self):
+        # The pillar category is correct.
+        pg = self.factory.makeProject()
+        self.assertEqual("Project Group", pg.pillar_category)
 
 
 class ProjectGroupSearchTestCase(TestCaseWithFactory):
@@ -157,7 +166,3 @@ class TestLaunchpadlibAPI(TestCaseWithFactory):
         self.assertIn(
             'This project cannot be deactivated since it is linked to source '
             'packages.', e.content)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

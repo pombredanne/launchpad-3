@@ -280,10 +280,12 @@ class PackageBuildDerived:
             specific_job.job.suspend()
 
         duration_estimate = self.estimateDuration()
+        job = specific_job.job
+        processor = specific_job.processor
         queue_entry = BuildQueue(
             estimated_duration=duration_estimate,
             job_type=self.build_farm_job_type,
-            job=specific_job.job, processor=specific_job.processor,
+            job=job, processor=processor,
             virtualized=specific_job.virtualized)
         Store.of(self).add(queue_entry)
         return queue_entry

@@ -206,7 +206,3 @@ class TestFindBranches(TestCase):
         some_file.write('hello\n')
         some_file.close()
         self.assertEqual([], list(find_branches(directory)))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

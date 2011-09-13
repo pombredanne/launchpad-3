@@ -3,8 +3,6 @@
 
 """Tests for notification strings of duplicate Bugs."""
 
-from unittest import TestLoader
-
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 import transaction
@@ -59,7 +57,3 @@ class TestAssignmentNotification(TestCaseWithFactory):
         rationale = 'duplicate bug report (%i)' % self.dup_bug.id
         msg = stub.test_emails[-1][2]
         self.assertIn(rationale, msg)
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

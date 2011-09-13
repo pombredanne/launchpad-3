@@ -9,7 +9,7 @@ people.
 
 First, let's take a look at how a Moin change notification looks like:
 
-    >>> from canonical.launchpad.mail.ftests import read_test_message
+    >>> from lp.services.mail.tests.helpers import read_test_message
     >>> moin_change = read_test_message('moin-change.txt')
 
 It contains some headers, which are of no use to us, and the body is

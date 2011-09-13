@@ -20,18 +20,16 @@ import _pythonpath
 from optparse import OptionParser
 from canonical.database.postgresql import resetSequences
 from canonical.database.sqlbase import connect
+from canonical.launchpad.scripts import db_options
 
 if __name__ == '__main__':
     parser = OptionParser()
-    parser.add_option(
-            "-d", "--dbname", dest="dbname", help="database name",
-            )
+    db_options(parser)
     (options, args) = parser.parse_args()
     if args:
         parser.error("Too many options given")
     if not options.dbname:
         parser.error("Required option --dbname not given")
-    con = connect(None, options.dbname)
+    con = connect()
     resetSequences(con.cursor())
     con.commit()
-

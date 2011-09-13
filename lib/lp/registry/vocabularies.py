@@ -62,6 +62,8 @@ __all__ = [
 
 from operator import attrgetter
 
+from lazr.restful.interfaces import IReference
+from lazr.restful.utils import safe_hasattr
 from sqlobject import (
     AND,
     CONTAINSSTRING,
@@ -95,8 +97,6 @@ from zope.security.proxy import (
     removeSecurityProxy,
     )
 
-from lazr.restful.interfaces import IReference
-
 from canonical.database.sqlbase import (
     quote,
     quote_like,
@@ -124,10 +124,12 @@ from canonical.launchpad.webapp.publisher import nearest
 from canonical.launchpad.webapp.vocabulary import (
     BatchedCountableIterator,
     CountableIterator,
+    FilteredVocabularyBase,
     IHugeVocabulary,
     NamedSQLObjectHugeVocabulary,
     NamedSQLObjectVocabulary,
     SQLObjectVocabularyBase,
+    VocabularyFilter,
     )
 from lp.app.browser.tales import DateTimeFormatterAPI
 from lp.app.interfaces.launchpad import ILaunchpadCelebrities
@@ -171,7 +173,11 @@ from lp.registry.interfaces.product import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.projectgroup import IProjectGroup
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.distribution import Distribution
+from lp.registry.model.distributionsourcepackage import (
+    DistributionSourcePackageInDatabase,
+    )
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distroseriesdifference import DistroSeriesDifference
 from lp.registry.model.distroseriesparent import DistroSeriesParent
@@ -290,7 +296,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
             raise LookupError(token)
         return self.toTerm(product)
 
-    def search(self, query):
+    def search(self, query, vocab_filter=None):
         """See `SQLObjectVocabularyBase`.
 
         Returns products where the product name, displayname, title,
@@ -343,7 +349,7 @@ class ProjectGroupVocabulary(SQLObjectVocabularyBase):
             raise LookupError(token)
         return self.toTerm(project)
 
-    def search(self, query):
+    def search(self, query, vocab_filter=None):
         """See `SQLObjectVocabularyBase`.
 
         Returns projects where the project name, displayname, title,
@@ -421,7 +427,7 @@ class NonMergedPeopleAndTeamsVocabulary(
         """Return `IPerson` objects that match the text."""
         return getUtility(IPersonSet).find(text)
 
-    def search(self, text):
+    def search(self, text, vocab_filter=None):
         """See `SQLObjectVocabularyBase`.
 
         Return people/teams whose fti or email address match :text.
@@ -455,7 +461,7 @@ class PersonAccountToMergeVocabulary(
             text, exclude_inactive_accounts=False,
             must_have_email=self.must_have_email)
 
-    def search(self, text):
+    def search(self, text, vocab_filter=None):
         """See `SQLObjectVocabularyBase`.
 
         Return people whose fti or email address match :text.
@@ -474,6 +480,32 @@ class AdminMergeablePersonVocabulary(PersonAccountToMergeVocabulary):
     admins to choose accounts to merge. You *don't* want to use it.
     """
     must_have_email = False
+
+
+class VocabularyFilterPerson(VocabularyFilter):
+    # A filter returning just persons.
+
+    def __new__(cls):
+        return super(VocabularyFilter, cls).__new__(
+            cls, 'PERSON', 'Person',
+            'Display search results for people only')
+
+    @property
+    def filter_terms(self):
+        return [Person.teamownerID == None]
+
+
+class VocabularyFilterTeam(VocabularyFilter):
+    # A filter returning just teams.
+
+    def __new__(cls):
+        return super(VocabularyFilter, cls).__new__(
+            cls, 'TEAM', 'Team',
+            'Display search results for teams only')
+
+    @property
+    def filter_terms(self):
+        return [Person.teamownerID != None]
 
 
 class ValidPersonOrTeamVocabulary(
@@ -505,6 +537,9 @@ class ValidPersonOrTeamVocabulary(
     cache_table_name = 'ValidPersonOrTeamCache'
 
     LIMIT = 100
+
+    PERSON_FILTER = VocabularyFilterPerson()
+    TEAM_FILTER = VocabularyFilterTeam()
 
     def __contains__(self, obj):
         return obj in self._doSearch()
@@ -554,19 +589,22 @@ class ValidPersonOrTeamVocabulary(
             private_query = False
         return (private_query, tables)
 
-    def _doSearch(self, text=""):
+    def _doSearch(self, text="", vocab_filter=None):
         """Return the people/teams whose fti or email address match :text:"""
         if self.enhanced_picker_enabled:
-            return self._doSearchWithImprovedSorting(text)
+            return self._doSearchWithImprovedSorting(text, vocab_filter)
         else:
-            return self._doSearchWithOriginalSorting(text)
+            return self._doSearchWithOriginalSorting(text, vocab_filter)
 
-    def _doSearchWithOriginalSorting(self, text=""):
+    def _doSearchWithOriginalSorting(self, text="", vocab_filter=None):
         private_query, private_tables = self._privateTeamQueryAndTables()
         exact_match = None
+        extra_clauses = [self.extra_clause]
+        if vocab_filter:
+            extra_clauses.extend(vocab_filter.filter_terms)
 
         # Short circuit if there is no search text - all valid people and
-        # teams have been requested.
+        # teams have been requested. We still honour the vocab filter.
         if not text:
             tables = [
                 Person,
@@ -581,7 +619,7 @@ class ValidPersonOrTeamVocabulary(
                        private_query,
                        ),
                     Person.merged == None,
-                    self.extra_clause
+                    *extra_clauses
                     )
                 )
         else:
@@ -681,7 +719,7 @@ class ValidPersonOrTeamVocabulary(
             exact_match = (Person.name == text)
             result = self.store.using(subselect).find(
                 (Person, exact_match),
-                self.extra_clause)
+                *extra_clauses)
         # XXX: BradCrittenden 2009-05-07 bug=373228: A bug in Storm prevents
         # setting the 'distinct' and 'limit' options in a single call to
         # .config().  The work-around is to split them up.  Note the limit has
@@ -702,13 +740,16 @@ class ValidPersonOrTeamVocabulary(
         result.config(limit=self.LIMIT)
         return result
 
-    def _doSearchWithImprovedSorting(self, text=""):
+    def _doSearchWithImprovedSorting(self, text="", vocab_filter=None):
         """Return the people/teams whose fti or email address match :text:"""
 
         private_query, private_tables = self._privateTeamQueryAndTables()
+        extra_clauses = [self.extra_clause]
+        if vocab_filter:
+            extra_clauses.extend(vocab_filter.filter_terms)
 
-        # Short circuit if there is no search text - all valid people and
-        # teams have been requested.
+        # Short circuit if there is no search text - all valid people and/or
+        # teams have been requested. We still honour the vocab filter.
         if not text:
             tables = [
                 Person,
@@ -723,7 +764,7 @@ class ValidPersonOrTeamVocabulary(
                        private_query,
                        ),
                     Person.merged == None,
-                    self.extra_clause
+                    *extra_clauses
                     )
                 )
             result.config(distinct=True)
@@ -850,7 +891,7 @@ class ValidPersonOrTeamVocabulary(
                                     EmailAddressStatus.PREFERRED)),
                         # Or a private team
                         private_teams_query),
-                    self.extra_clause),
+                    *extra_clauses),
                 )
             # Better ranked matches go first.
             if (getFeatureFlag('disclosure.person_affiliation_rank.enabled')
@@ -891,7 +932,7 @@ class ValidPersonOrTeamVocabulary(
 
         return DecoratedResultSet(result, pre_iter_hook=pre_iter_hook)
 
-    def search(self, text):
+    def search(self, text, vocab_filter=None):
         """Return people/teams whose fti or email address match :text:."""
         if not text:
             if self.allow_null_search:
@@ -900,12 +941,16 @@ class ValidPersonOrTeamVocabulary(
                 return self.emptySelectResults()
 
         text = ensure_unicode(text).lower()
-        return self._doSearch(text=text)
+        return self._doSearch(text=text, vocab_filter=vocab_filter)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
-        results = self.search(query)
+        results = self.search(query, vocab_filter)
         return CountableIterator(results.count(), results, self.toTerm)
+
+    def supportedFilters(self):
+        """See `IHugeVocabulary`."""
+        return [self.ALL_FILTER, self.PERSON_FILTER, self.TEAM_FILTER]
 
 
 class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
@@ -920,7 +965,7 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
     # Search with empty string returns all teams.
     allow_null_search = True
 
-    def _doSearch(self, text=""):
+    def _doSearch(self, text="", vocab_filter=None):
         """Return the teams whose fti, IRC, or email address match :text:"""
 
         private_query, private_tables = self._privateTeamQueryAndTables()
@@ -972,6 +1017,9 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         result.config(limit=self.LIMIT)
         return result
 
+    def supportedFilters(self):
+        return []
+
 
 class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):
     """The set of all valid persons who are not teams in Launchpad."""
@@ -983,6 +1031,9 @@ class ValidPersonVocabulary(ValidPersonOrTeamVocabulary):
     allow_null_search = True
     # Cache table to use for checking validity.
     cache_table_name = 'ValidPersonCache'
+
+    def supportedFilters(self):
+        return []
 
 
 class TeamVocabularyMixin:
@@ -1141,7 +1192,7 @@ class PersonActiveMembershipVocabulary:
         return obj in self._get_teams()
 
 
-class ActiveMailingListVocabulary:
+class ActiveMailingListVocabulary(FilteredVocabularyBase):
     """The set of all active mailing lists."""
 
     implements(IHugeVocabulary)
@@ -1200,7 +1251,7 @@ class ActiveMailingListVocabulary:
             raise LookupError(token)
         return self.getTerm(team_list)
 
-    def search(self, text=None):
+    def search(self, text=None, vocab_filter=None):
         """Search for active mailing lists.
 
         :param text: The name of a mailing list, which can be a partial
@@ -1221,7 +1272,7 @@ class ActiveMailingListVocabulary:
             """ % sqlvalues(text, MailingListStatus.ACTIVE),
             clauseTables=['Person'])
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         results = self.search(query)
         return CountableIterator(results.count(), results, self.toTerm)
@@ -1325,7 +1376,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
         except IndexError:
             raise LookupError(token)
 
-    def search(self, query):
+    def search(self, query, vocab_filter=None):
         """Return terms where query is a substring of the version or name"""
         if not query:
             return self.emptySelectResults()
@@ -1381,7 +1432,7 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
             return self.toTerm(result)
         raise LookupError(token)
 
-    def search(self, query):
+    def search(self, query, vocab_filter=None):
         """Return terms where query is a substring of the name."""
         if not query:
             return self.emptySelectResults()
@@ -1644,7 +1695,7 @@ class CommercialProjectsVocabulary(NamedSQLObjectVocabulary):
                 return self.toTerm(search_result)
         raise LookupError(token)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `SQLObjectVocabularyBase`."""
         results = self._doSearch(query)
         if type(results) is list:
@@ -1680,7 +1731,7 @@ class DistributionVocabulary(NamedSQLObjectVocabulary):
         else:
             return self.toTerm(obj)
 
-    def search(self, query):
+    def search(self, query, vocab_filter=None):
         """Return terms where query is a substring of the name"""
         if not query:
             return self.emptySelectResults()
@@ -1733,7 +1784,7 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
         else:
             return self.toTerm(obj)
 
-    def search(self, query):
+    def search(self, query, vocab_filter=None):
         """Return terms where query is a substring of the name."""
         if not query:
             return self.emptySelectResults()
@@ -1749,7 +1800,7 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
         return objs
 
 
-class DistroSeriesDerivationVocabulary:
+class DistroSeriesDerivationVocabulary(FilteredVocabularyBase):
     """A vocabulary source for series to derive from.
 
     Once a distribution has a series that has derived from a series in another
@@ -1816,7 +1867,7 @@ class DistroSeriesDerivationVocabulary:
         title = "%s: %s" % (series.distribution.displayname, series.title)
         return SimpleTerm(series, series.id, title)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         results = self.searchParents(query)
         return CountableIterator(len(results), results, self.toTerm)
@@ -1871,7 +1922,7 @@ class DistroSeriesDerivationVocabulary:
             return self.find_terms(where)
 
 
-class DistroSeriesDifferencesVocabulary:
+class DistroSeriesDifferencesVocabulary(FilteredVocabularyBase):
     """A vocabulary source for differences relating to a series.
 
     Specifically, all `DistroSeriesDifference`s relating to a derived series.
@@ -1929,7 +1980,7 @@ class DistroSeriesDifferencesVocabulary:
         """Return the term for a `DistroSeriesDifference`."""
         return SimpleTerm(dsd, dsd.id)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         results = self.searchForDifferences()
         return CountableIterator(results.count(), results, self.toTerm)
@@ -1942,11 +1993,57 @@ class DistroSeriesDifferencesVocabulary:
         return DistroSeriesDifference.getForDistroSeries(self.distroseries)
 
 
+class VocabularyFilterProject(VocabularyFilter):
+    # A filter returning just projects.
+
+    def __new__(cls):
+        return super(VocabularyFilter, cls).__new__(
+            cls, 'PROJECT', 'Project',
+            'Display search results associated with projects')
+
+    @property
+    def filter_terms(self):
+        return [PillarName.product != None]
+
+
+class VocabularyFilterProjectGroup(VocabularyFilter):
+    # A filter returning just project groups.
+
+    def __new__(cls):
+        return super(VocabularyFilter, cls).__new__(
+            cls, 'PROJECTGROUP', 'Project Group',
+            'Display search results associated with project groups')
+
+    @property
+    def filter_terms(self):
+        return [PillarName.project != None]
+
+
+class VocabularyFilterDistribution(VocabularyFilter):
+    # A filter returning just distros.
+
+    def __new__(cls):
+        return super(VocabularyFilter, cls).__new__(
+            cls, 'DISTRO', 'Distribution',
+            'Display search results associated with distributions')
+
+    @property
+    def filter_terms(self):
+        return [PillarName.distribution != None]
+
+
 class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
     """Active `IPillar` objects vocabulary."""
     displayname = 'Needs to be overridden'
     _table = PillarName
     _limit = 100
+
+    PROJECT_FILTER = VocabularyFilterProject()
+    PROJECTGROUP_FILTER = VocabularyFilterProjectGroup()
+    DISTRO_FILTER = VocabularyFilterDistribution()
+
+    def supportedFilters(self):
+        return [self.ALL_FILTER]
 
     def toTerm(self, obj):
         """See `IVocabulary`."""
@@ -1957,10 +2054,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
                     obj.__class__.__name__, obj.id)
             obj = obj.pillar
 
-        # It is a hack using the class name here, but it works
-        # fine and avoids an ugly if statement.
-        title = '%s (%s)' % (obj.title, obj.__class__.__name__)
-
+        title = '%s (%s)' % (obj.title, obj.pillar_category)
         return SimpleTerm(obj, obj.name, title)
 
     def getTermByToken(self, token):
@@ -1972,7 +2066,7 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
     def __contains__(self, obj):
         raise NotImplementedError
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         if not query:
             return self.emptySelectResults()
         query = ensure_unicode(query).lower()
@@ -1983,6 +2077,9 @@ class PillarVocabularyBase(NamedSQLObjectHugeVocabulary):
         if self._filter:
             equal_clauses.extend(self._filter)
             like_clauses.extend(self._filter)
+        if vocab_filter:
+            equal_clauses.extend(vocab_filter.filter_terms)
+            like_clauses.extend(vocab_filter.filter_terms)
         ranked_results = store.execute(
             Union(
                 Select(
@@ -2011,6 +2108,12 @@ class DistributionOrProductVocabulary(PillarVocabularyBase):
         else:
             return IDistribution.providedBy(obj)
 
+    def supportedFilters(self):
+        return [
+            self.ALL_FILTER,
+            self.PROJECT_FILTER,
+            self.DISTRO_FILTER]
+
 
 class DistributionOrProductOrProjectGroupVocabulary(PillarVocabularyBase):
     """Active `IProduct`, `IProjectGroup` or `IDistribution` vocabulary."""
@@ -2023,6 +2126,13 @@ class DistributionOrProductOrProjectGroupVocabulary(PillarVocabularyBase):
             return obj.active
         else:
             return IDistribution.providedBy(obj)
+
+    def supportedFilters(self):
+        return [
+            self.ALL_FILTER,
+            self.PROJECT_FILTER,
+            self.PROJECTGROUP_FILTER,
+            self.DISTRO_FILTER]
 
 
 class FeaturedProjectVocabulary(
@@ -2071,7 +2181,7 @@ class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
             token.lower())
 
 
-class DistributionSourcePackageVocabulary:
+class DistributionSourcePackageVocabulary(FilteredVocabularyBase):
 
     implements(IHugeVocabulary)
     displayname = 'Select a package'
@@ -2122,20 +2232,27 @@ class DistributionSourcePackageVocabulary:
         if IDistributionSourcePackage.providedBy(spn_or_dsp):
             dsp = spn_or_dsp
             distribution = spn_or_dsp.distribution
+        elif (not ISourcePackageName.providedBy(spn_or_dsp) and
+            safe_hasattr(spn_or_dsp, 'distribution')
+            and safe_hasattr(spn_or_dsp, 'sourcepackagename')):
+            # We use the hasattr checks rather than adaption because the
+            # DistributionSourcePackageInDatabase object is a little bit
+            # broken, and does not provide any interface.
+            distribution = spn_or_dsp.distribution
+            dsp = distribution.getSourcePackage(spn_or_dsp.sourcepackagename)
         else:
             distribution = distribution or self.distribution
             if distribution is not None and spn_or_dsp is not None:
                 dsp = distribution.getSourcePackage(spn_or_dsp)
         try:
             token = '%s/%s' % (dsp.distribution.name, dsp.name)
-            binaries = dsp.publishing_history[0].getBuiltBinaries()
-            binary_names = [binary.binary_package_name for binary in binaries]
-            if binary_names != []:
-                summary = ', '.join(binary_names)
-            else:
-                summary = 'Not yet built.'
-            summary = token + ' ' + summary
-            return SimpleTerm(dsp.sourcepackagename, token, summary)
+            summary = '%s (%s)' % (token, dsp.name)
+
+            # We try to get the binaries for the dsp; if this fails, we return
+            # lookup error instead.
+            dsp.publishing_history[0].getBuiltBinaries()
+            return SimpleTerm(dsp, token, summary)
+            #return SimpleTerm(dsp, token, summary)
         except (IndexError, AttributeError):
             # Either the DSP was None or there is no publishing history.
             raise LookupError(distribution, spn_or_dsp)
@@ -2149,7 +2266,7 @@ class DistributionSourcePackageVocabulary:
         distribution, package_name = self.getDistributionAndPackageName(token)
         return self.toTerm(package_name, distribution)
 
-    def searchForTerms(self, query=None):
+    def searchForTerms(self, query=None, vocab_filter=None):
         """See `IHugeVocabulary`."""
         if not query:
             return EmptyResultSet()
@@ -2161,7 +2278,7 @@ class DistributionSourcePackageVocabulary:
             return EmptyResultSet()
         search_term = unicode(query)
         store = IStore(SourcePackagePublishingHistory)
-        spns = store.using(
+        dsps = store.using(
             SourcePackagePublishingHistory,
             LeftJoin(
                 SourcePackageRelease,
@@ -2172,9 +2289,9 @@ class DistributionSourcePackageVocabulary:
                 SourcePackageRelease.sourcepackagenameID ==
                     SourcePackageName.id),
             LeftJoin(
-                DistroSeries,
-                SourcePackagePublishingHistory.distroseriesID ==
-                    DistroSeries.id),
+                DistributionSourcePackageInDatabase,
+                SourcePackageName.id ==
+                    DistributionSourcePackageInDatabase.sourcepackagename_id),
             LeftJoin(
                 BinaryPackageBuild,
                 BinaryPackageBuild.source_package_release_id ==
@@ -2187,8 +2304,9 @@ class DistributionSourcePackageVocabulary:
                 BinaryPackageRelease.binarypackagenameID ==
                     BinaryPackageName.id
             )).find(
-                SourcePackageName,
-                DistroSeries.distributionID == distribution.id,
+                DistributionSourcePackageInDatabase,
+                DistributionSourcePackageInDatabase.distribution_id ==
+                    distribution.id,
                 SourcePackagePublishingHistory.status.is_in((
                     PackagePublishingStatus.PENDING,
                     PackagePublishingStatus.PUBLISHED)),
@@ -2199,4 +2317,4 @@ class DistributionSourcePackageVocabulary:
                     BinaryPackageName.name.contains_string(
                         search_term))).config(distinct=True)
         # XXX sinzui 2011-07-26: This query ignored SPN branches.
-        return CountableIterator(spns.count(), spns, self.toTerm)
+        return CountableIterator(dsps.count(), dsps, self.toTerm)

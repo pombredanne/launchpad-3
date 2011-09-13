@@ -45,7 +45,7 @@ def main():
 
     log = logger(options)
 
-    con = connect(options.dbuser, isolation=ISOLATION_LEVEL_AUTOCOMMIT)
+    con = connect(isolation=ISOLATION_LEVEL_AUTOCOMMIT)
 
     if not replication.helpers.slony_installed(con):
         log.info("Slony-I not installed. Nothing to do.")

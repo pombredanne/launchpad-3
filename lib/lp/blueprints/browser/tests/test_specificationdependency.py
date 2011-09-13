@@ -8,8 +8,6 @@ There are also tests in lp/blueprints/stories/blueprints/xx-dependencies.txt.
 
 __metaclass__ = type
 
-import unittest
-
 from canonical.launchpad.webapp import canonical_url
 from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.testing import BrowserTestCase
@@ -27,7 +25,3 @@ class TestAddDependency(BrowserTestCase):
         browser.getControl('Depends On').value = canonical_url(dependency)
         browser.getControl('Continue').click()
         self.assertIn(dependency, spec.dependencies)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

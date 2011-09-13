@@ -9,7 +9,6 @@ from datetime import (
     datetime,
     timedelta,
     )
-from unittest import TestLoader
 
 from pytz import timezone
 import transaction
@@ -174,6 +173,13 @@ class TestReviewableProductTranslationFiles(TestCaseWithFactory,
         super(TestReviewableProductTranslationFiles, self).setUp()
         ReviewTestMixin.setUpMixin(self, for_product=True)
 
+    def test_getReviewableTranslationFiles_project_deactivated(self):
+        # Deactive project are excluded from the list.
+        from lp.testing import celebrity_logged_in
+        with celebrity_logged_in('admin'):
+            self.product.active = False
+        self.assertEqual([], self._getReviewables())
+
 
 class TestReviewableDistroTranslationFiles(TestCaseWithFactory,
                                            ReviewTestMixin,
@@ -250,7 +256,3 @@ class TestSuggestReviewableTranslationFiles(TestCaseWithFactory,
         # Translations without unreviewed suggestions are ignored.
         other_pofile = self._makeOtherPOFile(with_unreviewed=False)
         self.assertFalse(other_pofile in self._suggestReviewables())
-
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

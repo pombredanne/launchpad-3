@@ -7,6 +7,7 @@ __all__ = [
     "InitializeDistroSeriesJob",
 ]
 
+import simplejson
 from zope.interface import (
     classProvides,
     implements,
@@ -31,7 +32,10 @@ from lp.soyuz.model.distributionjob import (
     DistributionJobDerived,
     )
 from lp.soyuz.model.packageset import Packageset
-from lp.soyuz.scripts.initialize_distroseries import InitializeDistroSeries
+from lp.soyuz.scripts.initialize_distroseries import (
+    InitializationError,
+    InitializeDistroSeries,
+    )
 
 
 class InitializeDistroSeriesJob(DistributionJobDerived):
@@ -40,6 +44,8 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
 
     class_job_type = DistributionJobType.INITIALIZE_SERIES
     classProvides(IInitializeDistroSeriesJobSource)
+
+    user_error_types = (InitializationError,)
 
     @classmethod
     def create(cls, child, parents, arches=(), packagesets=(),
@@ -179,6 +185,10 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
     def rebuild(self):
         return self.metadata['rebuild']
 
+    @property
+    def error_description(self):
+        return self.metadata.get("error_description")
+
     def run(self):
         """See `IRunnableJob`."""
         ids = InitializeDistroSeries(
@@ -187,6 +197,17 @@ class InitializeDistroSeriesJob(DistributionJobDerived):
             self.overlay_pockets, self.overlay_components)
         ids.check()
         ids.initialize()
+
+    def notifyUserError(self, error):
+        """Calls up and slso saves the error text in this job's metadata.
+
+        See `BaseRunnableJob`.
+        """
+        # This method is called when error is an instance of
+        # self.user_error_types.
+        super(InitializeDistroSeriesJob, self).notifyUserError(error)
+        metadata = dict(self.metadata, error_description=unicode(error))
+        self.context._json_data = simplejson.dumps(metadata).decode("utf-8")
 
     def getOopsVars(self):
         """See `IRunnableJob`."""

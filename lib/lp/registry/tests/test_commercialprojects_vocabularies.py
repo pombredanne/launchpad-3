@@ -5,10 +5,7 @@
 
 __metaclass__ = type
 
-from unittest import (
-    TestCase,
-    TestLoader,
-    )
+from unittest import TestCase
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -122,6 +119,3 @@ class TestCommProjVocabulary(TestCase):
         self.assertEqual(0, len(results),
                          "Expected %d results but got %d." %
                          (0, len(results)))
-
-def test_suite():
-    return TestLoader().loadTestsFromName(__name__)

@@ -6,9 +6,9 @@
 __metaclass__ = type
 
 from datetime import datetime
-import unittest
 
 import pytz
+from storm.store import EmptyResultSet
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -743,6 +743,28 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         proposals = self.all_branches.getMergeProposals()
         self.assertEqual([], list(proposals))
 
+    def test_empty_branches_shortcut(self):
+        # If you explicitly pass an empty collection of branches,
+        # the method shortcuts and gives you an empty result set.  In this
+        # way, for_branches=None (the default) has a very different behavior
+        # than for_branches=[]: the first is no restriction, while the second
+        # excludes everything.
+        mp = self.factory.makeBranchMergeProposal()
+        proposals = self.all_branches.getMergeProposals(for_branches=[])
+        self.assertEqual([], list(proposals))
+        self.assertIsInstance(proposals, EmptyResultSet)
+
+    def test_empty_revisions_shortcut(self):
+        # If you explicitly pass an empty collection of revision numbers,
+        # the method shortcuts and gives you an empty result set.  In this
+        # way, merged_revnos=None (the default) has a very different behavior
+        # than merged_revnos=[]: the first is no restriction, while the second
+        # excludes everything.
+        mp = self.factory.makeBranchMergeProposal()
+        proposals = self.all_branches.getMergeProposals(merged_revnos=[])
+        self.assertEqual([], list(proposals))
+        self.assertIsInstance(proposals, EmptyResultSet)
+
     def test_some_branch_merge_proposals(self):
         mp = self.factory.makeBranchMergeProposal()
         proposals = self.all_branches.getMergeProposals()
@@ -801,7 +823,7 @@ class TestBranchMergeProposals(TestCaseWithFactory):
         # The target branch must be in the branch collection, as must the
         # source branch.
         mp1 = self.factory.makeBranchMergeProposal()
-        removeSecurityProxy(mp1.target_branch).private = True
+        removeSecurityProxy(mp1.target_branch).explicitly_private = True
         collection = self.all_branches.visibleByUser(None)
         proposals = collection.getMergeProposals()
         self.assertEqual([], list(proposals))
@@ -1204,7 +1226,3 @@ class TestBranchCollectionOwnerCounts(TestCaseWithFactory):
             *DEFAULT_BRANCH_STATUS_IN_LISTING)
         person_count, team_count = collection.ownerCounts()
         self.assertEqual(1, person_count)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

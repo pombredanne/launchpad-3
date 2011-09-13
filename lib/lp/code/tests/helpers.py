@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'add_revision_to_branch',
+    'get_non_existant_source_package_branch_unique_name',
     'make_erics_fooix_project',
     'make_linked_package_branch',
     'make_merge_proposal_without_reviewers',
@@ -313,3 +314,16 @@ def make_merge_proposal_without_reviewers(factory, **kwargs):
     for vote in proposal.votes:
         removeSecurityProxy(vote).destroySelf()
     return proposal
+
+
+def get_non_existant_source_package_branch_unique_name(owner, factory):
+    """Return the unique name for a non-existanct source package branch.
+
+    Neither the branch nor the source package name will exist.
+    """
+    distroseries = factory.makeDistroSeries()
+    source_package = factory.getUniqueString('source-package')
+    branch = factory.getUniqueString('branch')
+    return '~%s/%s/%s/%s/%s' % (
+        owner, distroseries.distribution.name, distroseries.name,
+        source_package, branch)

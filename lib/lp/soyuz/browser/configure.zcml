@@ -234,8 +234,7 @@
         classes="ArchiveNavigation" />
     <browser:navigation
         module="lp.soyuz.browser.processor"
-	classes="
-	    ProcessorFamilySetNavigation ProcessorSetNavigation"/>
+        classes="ProcessorFamilySetNavigation ProcessorSetNavigation"/>
     <browser:url
         for="lp.soyuz.interfaces.archive.IPPA"
         path_expression="string:+archive"
@@ -250,7 +249,8 @@
         for="*"
         name="+macros"
         permission="zope.Public"
-        template="../templates/archive-macros.pt"/>
+        template="../templates/archive-macros.pt"
+        class="lp.app.browser.launchpad.Macro"/>
     <browser:page
         for="lp.soyuz.interfaces.archive.IArchive"
         permission="launchpad.View"

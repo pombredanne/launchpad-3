@@ -5,8 +5,6 @@
 
 __metaclass__ = type
 
-import unittest
-
 from bzrlib.tests import per_transport
 from bzrlib.transport import (
     chroot,
@@ -110,7 +108,3 @@ class TestLaunchpadTransportImplementation(per_transport.TransportTests):
             result = self.defaultTestResult()
         super(TestLaunchpadTransportImplementation, self).run(
             TestResultWrapper(result))
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

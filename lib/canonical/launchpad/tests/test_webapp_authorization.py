@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-import unittest
+from unittest import TestCase
 
 from zope.component import provideAdapter
 from zope.interface import (
@@ -22,7 +22,7 @@ from canonical.testing.layers import ZopelessLayer
 
 
 class TestLaunchpadSecurityPolicy_getPrincipalsAccessLevel(
-    CleanUp, unittest.TestCase):
+    CleanUp, TestCase):
 
     def setUp(self):
         self.principal = LaunchpadPrincipal(
@@ -85,7 +85,3 @@ class LoneObject:
 def adapt_loneobject_to_container(loneobj):
     """Adapt a LoneObject to an `ILaunchpadContainer`."""
     return loneobj
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)

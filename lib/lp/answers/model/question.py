@@ -1351,6 +1351,7 @@ class QuestionTargetMixin:
         admins = getUtility(ILaunchpadCelebrities).admin
         if (person == subscribed_by
             or person in subscribed_by.administrated_teams
+            or subscribed_by.inTeam(self.owner)
             or subscribed_by.inTeam(admins)):
             return True
         return False

@@ -42,9 +42,7 @@ def duplicate_schema():
     log.info('Duplicating database schema')
 
     master_cs = ConnectionString(config.database.rw_main_master)
-    master_cs.user = options.dbuser
     slave1_cs = ConnectionString(config.database.rw_main_slave)
-    slave1_cs.user = options.dbuser
 
     # We can't use pg_dump to replicate security as not all of the roles
     # may exist in the slave databases' clusters yet.
@@ -154,7 +152,7 @@ def main():
 
     # Generate lists of sequences and tables for our replication sets.
     log.debug("Connecting as %s" % options.dbuser)
-    con = connect(options.dbuser)
+    con = connect()
     con.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
     global cur
     cur = con.cursor()

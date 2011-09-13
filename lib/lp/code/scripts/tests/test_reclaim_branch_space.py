@@ -6,7 +6,6 @@
 import datetime
 import os
 import shutil
-import unittest
 
 import transaction
 from zope.component import getUtility
@@ -66,7 +65,9 @@ class TestReclaimBranchSpaceScript(TestCaseWithFactory):
         self.assertEqual('', stdout)
         self.assertEqual(
             'INFO    Creating lockfile: /var/lock/launchpad-reclaimbranchspace.lock\n'
-            'INFO    Reclaimed space for 1 branches.\n', stderr)
+            'INFO    Running ReclaimBranchSpaceJob (ID %d) in status Waiting\n'
+            'INFO    Reclaimed space for 1 branches.\n' % reclaim_job.job.id,
+            stderr)
         self.assertEqual(0, retcode)
         self.assertFalse(
             os.path.exists(mirrored_path))
@@ -98,7 +99,3 @@ class TestReclaimBranchSpaceScript(TestCaseWithFactory):
         self.assertIn('INFO    Creating lockfile: ', stderr)
         self.assertIn('INFO    Job resulted in OOPS:', stderr)
         self.assertIn('INFO    Reclaimed space for 0 branches.\n', stderr)
-
-
-def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
