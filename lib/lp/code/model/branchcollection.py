@@ -10,6 +10,7 @@ __all__ = [
 
 from collections import defaultdict
 
+from lazr.restful.utils import safe_hasattr
 from storm.expr import (
     And,
     Count,
@@ -39,7 +40,6 @@ from canonical.launchpad.webapp.interfaces import (
     )
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp.vocabulary import CountableIterator
-from canonical.lazr.utils import safe_hasattr
 from lp.bugs.interfaces.bugtask import (
     IBugTaskSet,
     BugTaskSearchParams,
