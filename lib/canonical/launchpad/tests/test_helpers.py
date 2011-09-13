@@ -93,15 +93,6 @@ def test_join_lines():
     """
 
 
-def test_shortest():
-    """
-    >>> helpers.shortest(['xyzzy', 'foo', 'blah'])
-    ['foo']
-    >>> helpers.shortest(['xyzzy', 'foo', 'bar'])
-    ['foo', 'bar']
-    """
-
-
 class DummyLanguage:
 
     def __init__(self, code, pluralforms):

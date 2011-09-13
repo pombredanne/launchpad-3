@@ -107,32 +107,6 @@ def string_to_tarfile(s):
     return tarfile.open('', 'r', StringIO(s))
 
 
-def shortest(sequence):
-    """Return a list with the shortest items in sequence.
-
-    Return an empty list if the sequence is empty.
-    """
-    shortest_list = []
-    shortest_length = None
-
-    for item in list(sequence):
-        new_length = len(item)
-
-        if shortest_length is None:
-            # First item.
-            shortest_list.append(item)
-            shortest_length = new_length
-        elif new_length == shortest_length:
-            # Same length than shortest item found, we append it to the list.
-            shortest_list.append(item)
-        elif min(new_length, shortest_length) != shortest_length:
-            # Shorter than our shortest length found, discard old values.
-            shortest_list = [item]
-            shortest_length = new_length
-
-    return shortest_list
-
-
 def browserLanguages(request):
     """Return a list of Language objects based on the browser preferences."""
     return IRequestPreferredLanguages(request).getPreferredLanguages()
