@@ -76,6 +76,7 @@ from lp.app.validators.name import valid_name
 from lp.registry.browser.productseries import ProductSeriesFacets
 from lp.registry.browser.sourcepackage import SourcePackageFacets
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.role import IPersonRoles
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.packaging import Packaging
 from lp.registry.model.product import Product
@@ -928,7 +929,9 @@ class BaseSeriesTemplatesView(LaunchpadView):
             self.distroseries = series
         else:
             self.productseries = series
-        self.can_admin = check_permission('launchpad.Admin', series)
+        user = IPersonRoles(self.user, None)
+        self.can_admin = (user is not None and
+                          (user.in_admin or user.in_rosetta_experts))
         self.can_edit = (
             self.can_admin or
             check_permission('launchpad.TranslationsAdmin', series))

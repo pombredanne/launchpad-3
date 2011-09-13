@@ -40,7 +40,7 @@ SYSTEM_USERS = frozenset(['postgres', 'slony', 'nagios', 'lagmon'])
 # added here. The preflight check will fail if any of these users are
 # connected, so these systems will need to be shut down manually before
 # a database update.
-FRAGILE_USERS = frozenset(['archivepublisher'])
+FRAGILE_USERS = frozenset(['archivepublisher', 'fiera'])
 
 # How lagged the cluster can be before failing the preflight check.
 MAX_LAG = timedelta(seconds=60)
