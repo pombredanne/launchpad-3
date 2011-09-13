@@ -60,7 +60,6 @@ class Katie:
         return self._get_dicts(cursor)
 
     def _query(self, query, args=None):
-        #print repr(query), repr(args)
         cursor = self.db.cursor()
         cursor.execute(query, args or [])
         results = cursor.fetchall()
@@ -74,10 +73,10 @@ class Katie:
             return None
         else:
             raise AssertionError(
-                "%s killed us on %s %s" % (len(q), query, args))
+                "Expected 0 or 1 result from this query, but got %d: "
+                "'%s' (with arguments: %s)." % (len(q), query, args))
 
     def _exec(self, query, args=None):
-        #print repr(query), repr(args)
         cursor = self.db.cursor()
         cursor.execute(query, args or [])
         return cursor
