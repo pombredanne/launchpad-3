@@ -1317,6 +1317,21 @@ class TestSourcePackageRecipeView(TestCaseForRecipe):
         build_button = find_tag_by_id(browser.contents, 'field.actions.build')
         self.assertIs(None, build_button)
 
+    def test_request_daily_builds_button_ppa_disabled(self):
+        # Recipes whose daily build ppa is disabled do not have a build now
+        # link.
+        distroseries = self.factory.makeSourcePackageRecipeDistroseries()
+        daily_build_archive = self.factory.makeArchive(
+                distribution=distroseries.distribution, owner=self.user)
+        with person_logged_in(self.user):
+            daily_build_archive.disable()
+        recipe = self.factory.makeSourcePackageRecipe(
+            owner=self.chef, daily_build_archive=daily_build_archive,
+            is_stale=True, build_daily=True)
+        browser = self.getViewBrowser(recipe)
+        build_button = find_tag_by_id(browser.contents, 'field.actions.build')
+        self.assertIs(None, build_button)
+
     def test_request_daily_builds_ajax_link_not_rendered(self):
         # The Build now link should not be rendered without javascript.
         recipe = self.factory.makeSourcePackageRecipe(
