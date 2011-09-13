@@ -2674,11 +2674,15 @@ class Person(
                     sourcepackagepublishinghistory as ancestor_spph,
                     archive
                 WHERE
+                    spph.creator = %(creator)s AND
                     spph.ancestor = ancestor_spph.id AND
                     spph.archive = archive.id AND
                     ancestor_spph.archive != spph.archive AND
                     archive.purpose = %(archive_purpose)s
-                """ % dict(archive_purpose=quote(ArchivePurpose.PRIMARY))
+                """ % dict(
+                    creator=quote(self.id),
+                    archive_purpose=quote(ArchivePurpose.PRIMARY),
+                    )
 
             cur = cursor()
             cur.execute(query)

@@ -1684,6 +1684,22 @@ class TestRelatedPackages(TestCaseWithFactory):
             uploader,
             uploaded[0].sourcepackagerelease.creator)
 
+    def test_getLatestUploadedButNotMaintainedPackages_other_person(self):
+        uploader = self.factory.makePerson()
+        source_distroseries = self.factory.makeDistroSeries()
+        source = self.factory.makeSourcePackagePublishingHistory(
+            maintainer=self.factory.makePerson(), creator=uploader,
+            archive=source_distroseries.main_archive)
+        dest_distroseries = self.factory.makeDistroSeries()
+        source.copyTo(
+            dest_distroseries, creator=uploader,
+            pocket=PackagePublishingPocket.UPDATES,
+            archive=dest_distroseries.main_archive)
+        other_person = self.factory.makePerson()
+        uploaded = other_person.getLatestUploadedButNotMaintainedPackages()
+
+        self.assertEqual(0, uploaded.count())
+
     def test_getLatestUploadedButNotMaintainedPackages_cross_distro(self):
         # Someone copying a package cross distro should get credit for
         # it.

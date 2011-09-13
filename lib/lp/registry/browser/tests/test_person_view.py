@@ -3,8 +3,11 @@
 
 __metaclass__ = type
 
+from datetime import datetime
 import doctest
+import re
 
+import pytz
 import soupmatchers
 from storm.expr import LeftJoin
 from storm.store import Store
@@ -13,11 +16,9 @@ from testtools.matchers import (
     LessThan,
     Not,
     )
-import re
-import pytz
 import transaction
 from zope.component import getUtility
-from datetime import datetime
+
 from canonical.config import config
 from canonical.launchpad.ftests import (
     ANONYMOUS,
