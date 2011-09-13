@@ -36,7 +36,7 @@ class MemcachedStormRepresentationCache(BaseRepresentationCache):
             # There's no Storm data for this object. Don't cache it,
             # since we don't know how to invalidate the cache.
             return self.DO_NOT_CACHE
-        table_name = storm_info.cls_info.table
+        table_name = storm_info.cls_info.table.name
         primary_key = tuple(var.get() for var in storm_info.primary_vars)
         identifier = table_name + repr(primary_key)
 
