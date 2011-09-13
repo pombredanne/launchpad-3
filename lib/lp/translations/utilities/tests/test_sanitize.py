@@ -141,6 +141,7 @@ class TestSanitizer(TestCase):
             for english_newline_2 in other_newlines:
                 english_text = english_template % (
                     english_newline_1, english_newline_2)
+                Sanitizer(english_text)
 
     def test_normalizeNewlines_mixed_newlines_translation(self):
         # Mixed newlines in the translation text will raise an exception.

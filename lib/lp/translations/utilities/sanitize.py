@@ -16,6 +16,7 @@ class MixedNewlineMarkersError(ValueError):
     more than one style of newline markers (windows, mac, unix).
     """
 
+
 class Sanitizer(object):
     """Provide a function to sanitize a translation text."""
 
@@ -202,6 +203,7 @@ def sanitize_translations(
 
     return sanitized_translations
 
+
 def sanitize_translations_from_import(
         english_singular, translations, pluralforms):
     # At import time we want to ensure that the english_singular does not
@@ -211,6 +213,7 @@ def sanitize_translations_from_import(
             "Original text (%r) mixes different newline markers." %
                 english_singular)
     return sanitize_translations(english_singular, translations, pluralforms)
+
 
 def sanitize_translations_from_webui(
         english_singular, translations, pluralforms):

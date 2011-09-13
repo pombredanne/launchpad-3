@@ -31,7 +31,6 @@ from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue,
     )
 from lp.translations.utilities.gettext_po_importer import GettextPOImporter
-from lp.translations.utilities.sanitize import MixedNewlineMarkersError
 from lp.translations.utilities.translation_common_format import (
     TranslationMessageData,
     )
