@@ -10,17 +10,14 @@ __all__ = [
     'ZopeViewReplacementFixture',
     ]
 
-from fixtures import Fixture
 from ConfigParser import SafeConfigParser
 import os.path
-from textwrap import dedent
 
 from fixtures import (
     EnvironmentVariableFixture,
     Fixture,
     )
 import pgbouncer.fixture
-import rabbitfixture.server
 from zope.component import (
     getGlobalSiteManager,
     provideHandler,
@@ -34,24 +31,6 @@ from zope.security.checker import (
     )
 
 from canonical.config import config
-
-
-class RabbitServer(rabbitfixture.server.RabbitServer):
-    """A RabbitMQ server fixture with Launchpad-specific config.
-
-    :ivar service_config: A snippet of .ini that describes the `rabbitmq`
-        configuration.
-    """
-
-    def setUp(self):
-        super(RabbitServer, self).setUp()
-        self.config.service_config = dedent("""\
-            [rabbitmq]
-            host: localhost:%d
-            userid: guest
-            password: guest
-            virtual_host: /
-            """ % self.config.port)
 
 
 class PGBouncerFixture(pgbouncer.fixture.PGBouncerFixture):
